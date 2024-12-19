@@ -1,0 +1,8 @@
+2024-12-19 11:52:23,520 [INFO] Parameters Create Database:
+2024-12-19 11:52:23,520 [INFO] Function: create_probe_database
+2024-12-19 11:52:23,520 [INFO] Parameter: gene_ids = ['PRR35', 'AARS1', 'DECR2']
+2024-12-19 11:52:23,520 [INFO] Parameter: probe_length_min = 40
+2024-12-19 11:52:23,520 [INFO] Parameter: probe_length_max = 45
+2024-12-19 11:52:23,520 [INFO] Parameter: files_fasta_oligo_database = ['uploads/b2de3eaa662246428809e902c667a0db_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna- uploads/8248e583b13d43d28d3aa66560defd2f_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna']
+2024-12-19 11:52:23,520 [INFO] Parameter: min_probes_per_gene = 3
+2024-12-19 11:52:23,520 [INFO] Parameter: isoform_consensus = 50

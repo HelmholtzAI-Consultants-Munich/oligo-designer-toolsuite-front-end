@@ -1,0 +1,259 @@
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import yaml
+from flask_socketio import SocketIO, emit
+import threading
+import time
+import subprocess
+import os
+import shutil
+import uuid
+app = Flask(__name__)
+CORS(app)
+UPLOAD_FOLDER = "uploads"
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+#socketio = SocketIO(app, cors_allowed_origins="*")  # Enable CORS for frontend connection
+def split_on_newline(s):
+    if '\n' in s:
+        # Split the string before and after '\n'
+        result = []
+        parts = s.split('\n')
+        for i, part in enumerate(parts):
+            if i > 0:
+                result.append('\n')  # Add the newline back as its own part
+            result.append(part)
+        return result
+    else:
+        # Do nothing if '\n' is not in the string
+        return [s]
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    print(request.files)
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    # Generate a unique filename using UUID
+    unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
+    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+
+    # Save the file
+    file.save(file_path)
+    return jsonify({"filePath": file_path}), 200
+def run_command():
+    """Simulate a long-running task and send updates via WebSocket."""
+    for i in range(1, 11):  # Simulate 10 steps
+        time.sleep(1)  # Simulate work
+        progress = i * 10
+        socketio.emit("update", {"progress": progress, "status": "running"})  # Send progress update
+    socketio.emit("update", {"progress": 100, "status": "completed"})  # Send completion message
+@app.route('/api/scrinshot', methods=['POST'])
+def scrinshot():
+    config_path = "config.yaml"
+    #thread = threading.Thread(target=run_command)  # Run task in a separate thread
+    #thread.start()
+
+    form_data = request.json  # Assuming JSON is posted from React
+    # form_data keys are all strings; need to rebuild structure
+    
+    # Helper function to convert string booleans to Python booleans
+    def to_bool(val):
+        return True if str(val).lower() == 'true' else False
+
+    # Helper function to convert string integers to int where applicable
+    def to_int(val):
+        try:
+            return int(val)
+        except ValueError:
+            return val
+
+    # Helper for optional null values
+    def to_null(val):
+        return None if val == "" or val.lower() == "null" else val
+
+    # Convert multiline textarea fields to lists
+    def multiline_to_list(val):
+        # Strip leading/trailing spaces and split by newline
+        lines = [line.strip() for line in val.split('\n') if line.strip()]
+        return lines
+
+    # Build the nested config structure:
+    config = {
+        "n_jobs": to_int(form_data["n_jobs"]),
+        "dir_output": form_data["dir_output"],
+        "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]),
+
+        # Probe sequences generation
+        "file_regions": form_data["file_regions"],
+        "files_fasta_probe_database": multiline_to_list(form_data["files_fasta_probe_database"]),
+        "probe_length_min": to_int(form_data["probe_length_min"]),
+        "probe_length_max": to_int(form_data["probe_length_max"]),
+        "probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]),
+
+        # Property filters
+        "probe_GC_content_min": to_int(form_data["probe_GC_content_min"]),
+        "probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
+        "probe_Tm_min": to_int(form_data["probe_Tm_min"]),
+        "probe_Tm_max": to_int(form_data["probe_Tm_max"]),
+        "homopolymeric_base_n": {
+            "A": to_int(form_data["homopolymeric_A"]),
+            "T": to_int(form_data["homopolymeric_T"]),
+            "C": to_int(form_data["homopolymeric_C"]),
+            "G": to_int(form_data["homopolymeric_G"])
+        },
+
+        # Padlock arms
+        "arm_Tm_dif_max": to_int(form_data["arm_Tm_dif_max"]),
+        "arm_length_min": to_int(form_data["arm_length_min"]),
+        "arm_Tm_min": to_int(form_data["arm_Tm_min"]),
+        "arm_Tm_max": to_int(form_data["arm_Tm_max"]),
+
+        # Detection oligos
+        "min_thymines": to_int(form_data["min_thymines"]),
+        "detect_oligo_length_min": to_int(form_data["detect_oligo_length_min"]),
+        "detect_oligo_length_max": to_int(form_data["detect_oligo_length_max"]),
+
+        # Specificity filters
+        "files_fasta_reference_database": multiline_to_list(form_data["files_fasta_reference_database"]),
+        "ligation_region_size": to_int(form_data["ligation_region_size"]),
+
+        # Set selection parameters
+        "probe_isoform_weight": to_int(form_data["probe_isoform_weight"]),
+        "probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
+        "probe_GC_weight": to_int(form_data["probe_GC_weight"]),
+        "probe_Tm_opt": to_int(form_data["probe_Tm_opt"]),
+        "probe_Tm_weight": to_int(form_data["probe_Tm_weight"]),
+        "probeset_size_min": to_int(form_data["probeset_size_min"]),
+        "probeset_size_opt": to_int(form_data["probeset_size_opt"]),
+        "distance_between_probes": to_int(form_data["distance_between_probes"]),
+        "n_sets": to_int(form_data["n_sets"]),
+
+        # Final sequence design
+        "U_distance": to_int(form_data["U_distance"]),
+        "detect_oligo_Tm_opt": to_int(form_data["detect_oligo_Tm_opt"]),
+        "top_n_sets": to_int(form_data["top_n_sets"]),
+
+        # Developer parameters
+        "specificity_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["specificity_perc_identity"]),
+            "strand": form_data["specificity_strand"],
+            "word_size": to_int(form_data["specificity_word_size"]),
+            "dust": form_data["specificity_dust"],
+            "soft_masking": form_data["specificity_soft_masking"],
+            "max_target_seqs": to_int(form_data["specificity_max_target_seqs"]),
+            "max_hsps": to_int(form_data["specificity_max_hsps"])
+        },
+        "specificity_blastn_hit_parameters": {
+            "coverage": to_int(form_data["specificity_coverage"])
+        },
+
+        "cross_hybridization_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["crosshybridization_perc_identity"]),
+            "strand": form_data["crosshybridization_strand"],
+            "word_size": to_int(form_data["crosshybridization_word_size"]),
+            "dust": form_data["crosshybridization_dust"],
+            "soft_masking": form_data["crosshybridization_soft_masking"],
+            "max_target_seqs": to_int(form_data["crosshybridization_max_target_seqs"])
+        },
+        "cross_hybridization_blastn_hit_parameters": {
+            "coverage": to_int(form_data["crosshybridization_coverage"])
+        },
+
+        "max_graph_size": to_int(form_data["max_graph_size"]),
+        "n_attempts": to_int(form_data["n_attempts"]),
+        "pre_filtering": to_bool(form_data["pre_filtering"]),
+
+        # Melting Temperature Parameters
+        "Tm_parameters_probe": {
+            "check": to_bool(form_data["Tm_probe_check"]),
+            "strict": to_bool(form_data["Tm_probe_strict"]),
+            "c_seq": to_null(form_data["Tm_probe_c_seq"]),
+            "shift": to_int(form_data["Tm_probe_shift"]),
+            "nn_table": form_data["Tm_probe_nn_table"],
+            "tmm_table": form_data["Tm_probe_tmm_table"],
+            "imm_table": form_data["Tm_probe_imm_table"],
+            "de_table": form_data["DE_probe_imm_table"],
+            "dnac1": to_int(form_data["Tm_probe_dnac1"]),
+            "dnac2": to_int(form_data["Tm_probe_dnac2"]),
+            "selfcomp": to_bool(form_data["selfcomp"]),
+            "saltcorr": to_int(form_data["Tm_probe_saltcorr"]),
+            "Na": to_int(form_data["Tm_probe_Na"]),
+            "K": to_int(form_data["Tm_probe_K"]),
+            "Tris": to_int(form_data["Tm_probe_Tris"]),
+            "Mg": to_int(form_data["Tm_probe_Mg"]),
+            "dNTPs": to_int(form_data["Tm_probe_dNTPs"])
+        },
+        "Tm_chem_correction_param_probe": {
+            "DMSO": to_int(form_data["Tm_probe_DMSO"]),
+            "fmd": to_int(form_data["Tm_probe_fmd"]),
+            "DMSOfactor": float(form_data["Tm_probe_DMSOfactor"]),
+            "fmdfactor": float(form_data["Tm_probe_fmdfactor"]),
+            "fmdmethod": to_int(form_data["Tm_probe_fmdmethod"]),
+            "GC": to_null(form_data["Tm_probe_GC"])
+        },
+        # If Tm_salt_correction_param_probe is null, we just omit it or set it to None
+        "Tm_salt_correction_param_probe": None,
+
+        "Tm_parameters_detection_oligo": {
+            "check": to_bool(form_data["Tm_detection_check"]),
+            "strict": to_bool(form_data["Tm_detection_strict"]),
+            "c_seq": to_null(form_data["Tm_detection_c_seq"]),
+            "shift": to_int(form_data["Tm_detection_shift"]),
+            "nn_table": form_data["Tm_detection_nn_table"],
+            "tmm_table": form_data["Tm_detection_tmm_table"],
+            "imm_table": form_data["Tm_detection_imm_table"],
+            "de_table": form_data["Tm_detection_de_table"],
+            "dnac1": to_int(form_data["Tm_detection_dnac1"]),
+            "dnac2": to_int(form_data["Tm_detection_dnac2"]),
+            "selfcomp": to_bool(form_data["Tm_detection_selfcomp"]),
+            "saltcorr": to_int(form_data["Tm_detection_saltcorr"]),
+            "Na": to_int(form_data["Tm_detection_Na"]),
+            "K": to_int(form_data["Tm_detection_K"]),
+            "Tris": to_int(form_data["Tm_detection_Tris"]),
+            "Mg": to_int(form_data["Tm_detection_Mg"]),
+            "dNTPs": to_int(form_data["Tm_detection_dNTPs"])
+        },
+        "Tm_chem_correction_param_detection_oligo": {
+            "DMSO": to_int(form_data["Tm_detection_DMSO"]),
+            "fmd": to_int(form_data["Tm_detection_fmd"]),
+            "DMSOfactor": float(form_data["Tm_detection_DMSOfactor"]),
+            "fmdfactor": float(form_data["Tm_detection_fmdfactor"]),
+            "fmdmethod": to_int(form_data["Tm_detection_fmdmethod"]),
+            "GC": to_null(form_data["Tm_detection_GC"])
+        },
+        "Tm_salt_correction_param_detection_oligo": None
+    }
+
+    # Write the YAML file
+    with open("config.yaml", "w") as f:
+        yaml.dump(config, f, sort_keys=False)
+
+    result = subprocess.run(
+                ['scrinshot_probe_designer', '-c', config_path],
+                capture_output=True,
+                text=True
+            )
+
+    if os.path.exists(form_data['file_regions']):
+        print('deleted')
+        os.remove(form_data['file_regions'])  # Delete the file
+    a=split_on_newline(form_data['files_fasta_probe_database'])
+    for i in a:
+        print('deleted')
+        os.remove(i)
+
+
+
+    return jsonify({
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'returncode': result.returncode
+            })
+
+if __name__ == "__main__":
+    app.run(debug=True)
+   # socketio.run(app, debug=True)

@@ -1,0 +1,24 @@
+2024-12-19 11:54:08,410 [INFO] Parameters Create Database:
+2024-12-19 11:54:08,410 [INFO] Function: create_probe_database
+2024-12-19 11:54:08,410 [INFO] Parameter: gene_ids = ['PRR35', 'DECR2', 'AARS1']
+2024-12-19 11:54:08,410 [INFO] Parameter: probe_length_min = 40
+2024-12-19 11:54:08,410 [INFO] Parameter: probe_length_max = 45
+2024-12-19 11:54:08,410 [INFO] Parameter: files_fasta_oligo_database = ['uploads/3220e2e996794ceaab743b22ca5c876d_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna uploads/89dcd41dc677442b95b64e322c73eeb1_intron_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna']
+2024-12-19 11:54:08,410 [INFO] Parameter: min_probes_per_gene = 3
+2024-12-19 11:54:08,410 [INFO] Parameter: isoform_consensus = 50
+2024-12-19 11:54:25,414 [INFO] Parameters Create Database:
+2024-12-19 11:54:25,415 [INFO] Function: create_probe_database
+2024-12-19 11:54:25,415 [INFO] Parameter: gene_ids = ['PRR35', 'DECR2', 'AARS1']
+2024-12-19 11:54:25,415 [INFO] Parameter: probe_length_min = 40
+2024-12-19 11:54:25,415 [INFO] Parameter: probe_length_max = 45
+2024-12-19 11:54:25,415 [INFO] Parameter: files_fasta_oligo_database = ['uploads/3220e2e996794ceaab743b22ca5c876d_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna uploads/89dcd41dc677442b95b64e322c73eeb1_intron_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna']
+2024-12-19 11:54:25,415 [INFO] Parameter: min_probes_per_gene = 3
+2024-12-19 11:54:25,415 [INFO] Parameter: isoform_consensus = 50
+2024-12-19 11:54:35,155 [INFO] Parameters Create Database:
+2024-12-19 11:54:35,155 [INFO] Function: create_probe_database
+2024-12-19 11:54:35,155 [INFO] Parameter: gene_ids = ['AARS1', 'DECR2', 'PRR35']
+2024-12-19 11:54:35,155 [INFO] Parameter: probe_length_min = 40
+2024-12-19 11:54:35,155 [INFO] Parameter: probe_length_max = 45
+2024-12-19 11:54:35,155 [INFO] Parameter: files_fasta_oligo_database = ['uploads/3220e2e996794ceaab743b22ca5c876d_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna', 'uploads/89dcd41dc677442b95b64e322c73eeb1_intron_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna']
+2024-12-19 11:54:35,155 [INFO] Parameter: min_probes_per_gene = 3
+2024-12-19 11:54:35,155 [INFO] Parameter: isoform_consensus = 50

@@ -1,0 +1,16 @@
+2024-12-19 11:50:13,058 [INFO] Parameters Create Database:
+2024-12-19 11:50:13,058 [INFO] Function: create_probe_database
+2024-12-19 11:50:13,059 [INFO] Parameter: gene_ids = ['PRR35', 'DECR2', 'AARS1']
+2024-12-19 11:50:13,059 [INFO] Parameter: probe_length_min = 40
+2024-12-19 11:50:13,059 [INFO] Parameter: probe_length_max = 45
+2024-12-19 11:50:13,059 [INFO] Parameter: files_fasta_oligo_database = ['uploads/a46b9974eaf5457594e6f433432a4e53_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna - uploads/221a7537bab34558bd78831b90eea9f7_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna']
+2024-12-19 11:50:13,059 [INFO] Parameter: min_probes_per_gene = 3
+2024-12-19 11:50:13,059 [INFO] Parameter: isoform_consensus = 50
+2024-12-19 11:50:46,838 [INFO] Parameters Create Database:
+2024-12-19 11:50:46,838 [INFO] Function: create_probe_database
+2024-12-19 11:50:46,838 [INFO] Parameter: gene_ids = ['PRR35', 'DECR2', 'AARS1']
+2024-12-19 11:50:46,838 [INFO] Parameter: probe_length_min = 40
+2024-12-19 11:50:46,838 [INFO] Parameter: probe_length_max = 45
+2024-12-19 11:50:46,838 [INFO] Parameter: files_fasta_oligo_database = ['uploads/cf668e468a7f46eca97504e89b1e2144_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna -uploads/bc197ee6aa7545c09e40effcfc18a76f_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna -uploads/37b229557b004005aac0622ca7560ec0_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna']
+2024-12-19 11:50:46,838 [INFO] Parameter: min_probes_per_gene = 3
+2024-12-19 11:50:46,838 [INFO] Parameter: isoform_consensus = 50

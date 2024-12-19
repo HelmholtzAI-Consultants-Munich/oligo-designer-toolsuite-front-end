@@ -1,0 +1,1434 @@
+DECR2:
+  Oligoset 1:
+    Oligoset Score:
+      set_score_worst: 0.867
+      set_score_sum: 3.57
+    Oligo 1:
+      oligo_id: DECR2::4001
+      source: &id001 [[NCBI]]
+      species: &id002 [[Homo_sapiens]]
+      annotation_release: &id003 [['110']]
+      genome_assembly: &id004 [[GRCh38]]
+      regiontype: &id005 [[exonexonjunction]]
+      gene_id: &id006 [[DECR2]]
+      transcript_id: &id007 [[NM_020664.4]]
+      exon_number: &id008 [[2__JUNC__3]]
+      chromosome: &id009 [['16']]
+      start: &id010 [[404993]]
+      end: &id011 [[406358]]
+      strand: &id012 [[+]]
+      sequence_padlock_probe: &id013 [[ATGAAAATCTCAGCAATCCGGAACCCAATTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCAAACCTATCTTCTTTATGGCAGCCGTGCCGC]]
+      sequence_detection_oligo: &id014 [['[fluorophore]UGGCAGCCGUGCCGCATGAAAATCTCAGCA']]
+      sequence_padlock_arm1: &id015 [[ATGAAAATCTCAGCAATCCGGAACCCAAT]]
+      sequence_padlock_accessory1: &id016 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id017 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id018 [[AAAC]]
+      sequence_padlock_accessory2: &id019 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id020 [[ATGGCAGCCGTGCCGC]]
+      sequence_target: &id021 [[ATTGGGTTCCGGATTGCTGAGATTTTCATGCGGCACGGCTGCCAT]]
+      sequence_target_probe: &id022 [[ATGGCAGCCGTGCCGCATGAAAATCTCAGCAATCCGGAACCCAAT]]
+      length: &id023 [[45]]
+      ligation_site: &id024 [[16]]
+      Tm_arm1: &id025 [[56.97]]
+      Tm_arm2: &id026 [[58.49]]
+      Tm_diff_arms: &id027 [[1.52]]
+      Tm_detection_oligo: &id028 [[47.71]]
+      isoform_consensus: &id029 [[100.0]]
+    Oligo 2:
+      oligo_id: DECR2::4016
+      source: &id030 [[NCBI]]
+      species: &id031 [[Homo_sapiens]]
+      annotation_release: &id032 [['110']]
+      genome_assembly: &id033 [[GRCh38]]
+      regiontype: &id034 [[exonexonjunction]]
+      gene_id: &id035 [[DECR2]]
+      transcript_id: &id036 [[NM_020664.4]]
+      exon_number: &id037 [[2__JUNC__3]]
+      chromosome: &id038 [['16']]
+      start: &id039 [[405008]]
+      end: &id040 [[406373]]
+      strand: &id041 [[+]]
+      sequence_padlock_probe: &id042 [[CCGTGCCGCATGAAAATCTCAGCTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCAAACCTATCTTCTTTACTGGCAATCACCGTATGGCAG]]
+      sequence_detection_oligo: &id043 [['[fluorophore]UGGCAAUCACCGTATGGCAGCCGTGCCGCA']]
+      sequence_padlock_arm1: &id044 [[CCGTGCCGCATGAAAATCTCAGC]]
+      sequence_padlock_accessory1: &id045 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id046 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id047 [[AAAC]]
+      sequence_padlock_accessory2: &id048 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id049 [[ACTGGCAATCACCGTATGGCAG]]
+      sequence_target: &id050 [[GCTGAGATTTTCATGCGGCACGGCTGCCATACGGTGATTGCCAGT]]
+      sequence_target_probe: &id051 [[ACTGGCAATCACCGTATGGCAGCCGTGCCGCATGAAAATCTCAGC]]
+      length: &id052 [[45]]
+      ligation_site: &id053 [[22]]
+      Tm_arm1: &id054 [[57.48]]
+      Tm_arm2: &id055 [[55.99]]
+      Tm_diff_arms: &id056 [[1.49]]
+      Tm_detection_oligo: &id057 [[51.42]]
+      isoform_consensus: &id058 [[100.0]]
+    Oligo 3:
+      oligo_id: DECR2::3844
+      source: &id059 [[NCBI]]
+      species: &id060 [[Homo_sapiens]]
+      annotation_release: &id061 [['110']]
+      genome_assembly: &id062 [[GRCh38]]
+      regiontype: &id063 [[exonexonjunction]]
+      gene_id: &id064 [[DECR2]]
+      transcript_id: &id065 [[NM_020664.4]]
+      exon_number: &id066 [[2__JUNC__3]]
+      chromosome: &id067 [['16']]
+      start: &id068 [[405006]]
+      end: &id069 [[406367]]
+      strand: &id070 [[+]]
+      sequence_padlock_probe: &id071 [[TGCCGCATGAAAATCTCAGCAATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCAAACCTATCTTCTTTAATCACCGTATGGCAGCCG]]
+      sequence_detection_oligo: &id072 [['[fluorophore]AAUCACCGUATGGCAGCCGTGCCGCATGAAAATCTCAGC']]
+      sequence_padlock_arm1: &id073 [[TGCCGCATGAAAATCTCAGCAA]]
+      sequence_padlock_accessory1: &id074 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id075 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id076 [[AAAC]]
+      sequence_padlock_accessory2: &id077 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id078 [[AATCACCGTATGGCAGCCG]]
+      sequence_target: &id079 [[TTGCTGAGATTTTCATGCGGCACGGCTGCCATACGGTGATT]]
+      sequence_target_probe: &id080 [[AATCACCGTATGGCAGCCGTGCCGCATGAAAATCTCAGCAA]]
+      length: &id081 [[41]]
+      ligation_site: &id082 [[19]]
+      Tm_arm1: &id083 [[54.29]]
+      Tm_arm2: &id084 [[53.98]]
+      Tm_diff_arms: &id085 [[0.31]]
+      Tm_detection_oligo: &id086 [[49.0]]
+      isoform_consensus: &id087 [[100.0]]
+    Oligo 4:
+      oligo_id: DECR2::2750
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[three_prime_UTR]]
+      gene_id: [[DECR2]]
+      transcript_id: [[NM_020664.4]]
+      exon_number: [['9']]
+      chromosome: [['16']]
+      start: [[412204]]
+      end: [[412247]]
+      strand: [[+]]
+      sequence_padlock_probe: [[TGGCTCCCTCAGGCCCTTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCAAACCTATCTTCTTTAAGAGAACACAAGTCTCGGGATCCATG]]
+      sequence_detection_oligo: [['CAAGTCTCGGGATCCATGTGGCTCCCUCAGGCCCU[fluorophore]']]
+      sequence_padlock_arm1: [[TGGCTCCCTCAGGCCCT]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[AAAC]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[AAGAGAACACAAGTCTCGGGATCCATG]]
+      sequence_target: [[AGGGCCTGAGGGAGCCACATGGATCCCGAGACTTGTGTTCTCTT]]
+      sequence_target_probe: [[AAGAGAACACAAGTCTCGGGATCCATGTGGCTCCCTCAGGCCCT]]
+      length: [[44]]
+      ligation_site: [[27]]
+      Tm_arm1: [[57.2]]
+      Tm_arm2: [[56.39]]
+      Tm_diff_arms: [[0.81]]
+      Tm_detection_oligo: [[51.34]]
+      isoform_consensus: [[null]]
+    Oligo 5:
+      oligo_id: DECR2::3312
+      source: &id088 [[NCBI]]
+      species: &id089 [[Homo_sapiens]]
+      annotation_release: &id090 [['110']]
+      genome_assembly: &id091 [[GRCh38]]
+      regiontype: &id092 [[three_prime_UTR]]
+      gene_id: &id093 [[DECR2]]
+      transcript_id: &id094 [[NM_020664.4]]
+      exon_number: &id095 [['9']]
+      chromosome: &id096 [['16']]
+      start: &id097 [[412216]]
+      end: &id098 [[412260]]
+      strand: &id099 [[+]]
+      sequence_padlock_probe: &id100 [[GTCTCGGGATCCATGTGGCTTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCAAACCTATCTTCTTTAGTGTTTTCAGCCAAGAGAACACAA]]
+      sequence_detection_oligo: &id101 [['TTTCAGCCAAGAGAACACAAGTCTCGGGATCCAUGTGGCU[fluorophore]']]
+      sequence_padlock_arm1: &id102 [[GTCTCGGGATCCATGTGGCT]]
+      sequence_padlock_accessory1: &id103 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id104 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id105 [[AAAC]]
+      sequence_padlock_accessory2: &id106 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id107 [[AGTGTTTTCAGCCAAGAGAACACAA]]
+      sequence_target: &id108 [[AGCCACATGGATCCCGAGACTTGTGTTCTCTTGGCTGAAAACACT]]
+      sequence_target_probe: &id109 [[AGTGTTTTCAGCCAAGAGAACACAAGTCTCGGGATCCATGTGGCT]]
+      length: &id110 [[45]]
+      ligation_site: &id111 [[25]]
+      Tm_arm1: &id112 [[55.18]]
+      Tm_arm2: &id113 [[53.61]]
+      Tm_diff_arms: &id114 [[1.57]]
+      Tm_detection_oligo: &id115 [[47.16]]
+      isoform_consensus: &id116 [[null]]
+  Oligoset 2:
+    Oligoset Score:
+      set_score_worst: 0.867
+      set_score_sum: 3.572
+    Oligo 1:
+      oligo_id: DECR2::4001
+      source: *id001
+      species: *id002
+      annotation_release: *id003
+      genome_assembly: *id004
+      regiontype: *id005
+      gene_id: *id006
+      transcript_id: *id007
+      exon_number: *id008
+      chromosome: *id009
+      start: *id010
+      end: *id011
+      strand: *id012
+      sequence_padlock_probe: *id013
+      sequence_detection_oligo: *id014
+      sequence_padlock_arm1: *id015
+      sequence_padlock_accessory1: *id016
+      sequence_padlock_ISS_anchor: *id017
+      barcode: *id018
+      sequence_padlock_accessory2: *id019
+      sequence_padlock_arm2: *id020
+      sequence_target: *id021
+      sequence_target_probe: *id022
+      length: *id023
+      ligation_site: *id024
+      Tm_arm1: *id025
+      Tm_arm2: *id026
+      Tm_diff_arms: *id027
+      Tm_detection_oligo: *id028
+      isoform_consensus: *id029
+    Oligo 2:
+      oligo_id: DECR2::4016
+      source: *id030
+      species: *id031
+      annotation_release: *id032
+      genome_assembly: *id033
+      regiontype: *id034
+      gene_id: *id035
+      transcript_id: *id036
+      exon_number: *id037
+      chromosome: *id038
+      start: *id039
+      end: *id040
+      strand: *id041
+      sequence_padlock_probe: *id042
+      sequence_detection_oligo: *id043
+      sequence_padlock_arm1: *id044
+      sequence_padlock_accessory1: *id045
+      sequence_padlock_ISS_anchor: *id046
+      barcode: *id047
+      sequence_padlock_accessory2: *id048
+      sequence_padlock_arm2: *id049
+      sequence_target: *id050
+      sequence_target_probe: *id051
+      length: *id052
+      ligation_site: *id053
+      Tm_arm1: *id054
+      Tm_arm2: *id055
+      Tm_diff_arms: *id056
+      Tm_detection_oligo: *id057
+      isoform_consensus: *id058
+    Oligo 3:
+      oligo_id: DECR2::3844
+      source: *id059
+      species: *id060
+      annotation_release: *id061
+      genome_assembly: *id062
+      regiontype: *id063
+      gene_id: *id064
+      transcript_id: *id065
+      exon_number: *id066
+      chromosome: *id067
+      start: *id068
+      end: *id069
+      strand: *id070
+      sequence_padlock_probe: *id071
+      sequence_detection_oligo: *id072
+      sequence_padlock_arm1: *id073
+      sequence_padlock_accessory1: *id074
+      sequence_padlock_ISS_anchor: *id075
+      barcode: *id076
+      sequence_padlock_accessory2: *id077
+      sequence_padlock_arm2: *id078
+      sequence_target: *id079
+      sequence_target_probe: *id080
+      length: *id081
+      ligation_site: *id082
+      Tm_arm1: *id083
+      Tm_arm2: *id084
+      Tm_diff_arms: *id085
+      Tm_detection_oligo: *id086
+      isoform_consensus: *id087
+    Oligo 4:
+      oligo_id: DECR2::2763
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[three_prime_UTR]]
+      gene_id: [[DECR2]]
+      transcript_id: [[NM_020664.4]]
+      exon_number: [['9']]
+      chromosome: [['16']]
+      start: [[412217]]
+      end: [[412260]]
+      strand: [[+]]
+      sequence_padlock_probe: [[AGTCTCGGGATCCATGTGGCTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCAAACCTATCTTCTTTAGTGTTTTCAGCCAAGAGAACACA]]
+      sequence_detection_oligo: [['[fluorophore]UTTTCAGCCAAGAGAACACAAGUCTCGGGATCCATGTGGC']]
+      sequence_padlock_arm1: [[AGTCTCGGGATCCATGTGGC]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[AAAC]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[AGTGTTTTCAGCCAAGAGAACACA]]
+      sequence_target: [[GCCACATGGATCCCGAGACTTGTGTTCTCTTGGCTGAAAACACT]]
+      sequence_target_probe: [[AGTGTTTTCAGCCAAGAGAACACAAGTCTCGGGATCCATGTGGC]]
+      length: [[44]]
+      ligation_site: [[24]]
+      Tm_arm1: [[55.18]]
+      Tm_arm2: [[53.37]]
+      Tm_diff_arms: [[1.81]]
+      Tm_detection_oligo: [[46.54]]
+      isoform_consensus: [[null]]
+    Oligo 5:
+      oligo_id: DECR2::3312
+      source: *id088
+      species: *id089
+      annotation_release: *id090
+      genome_assembly: *id091
+      regiontype: *id092
+      gene_id: *id093
+      transcript_id: *id094
+      exon_number: *id095
+      chromosome: *id096
+      start: *id097
+      end: *id098
+      strand: *id099
+      sequence_padlock_probe: *id100
+      sequence_detection_oligo: *id101
+      sequence_padlock_arm1: *id102
+      sequence_padlock_accessory1: *id103
+      sequence_padlock_ISS_anchor: *id104
+      barcode: *id105
+      sequence_padlock_accessory2: *id106
+      sequence_padlock_arm2: *id107
+      sequence_target: *id108
+      sequence_target_probe: *id109
+      length: *id110
+      ligation_site: *id111
+      Tm_arm1: *id112
+      Tm_arm2: *id113
+      Tm_diff_arms: *id114
+      Tm_detection_oligo: *id115
+      isoform_consensus: *id116
+  Oligoset 3:
+    Oligoset Score:
+      set_score_worst: 0.867
+      set_score_sum: 3.572
+    Oligo 1:
+      oligo_id: DECR2::4001
+      source: *id001
+      species: *id002
+      annotation_release: *id003
+      genome_assembly: *id004
+      regiontype: *id005
+      gene_id: *id006
+      transcript_id: *id007
+      exon_number: *id008
+      chromosome: *id009
+      start: *id010
+      end: *id011
+      strand: *id012
+      sequence_padlock_probe: *id013
+      sequence_detection_oligo: *id014
+      sequence_padlock_arm1: *id015
+      sequence_padlock_accessory1: *id016
+      sequence_padlock_ISS_anchor: *id017
+      barcode: *id018
+      sequence_padlock_accessory2: *id019
+      sequence_padlock_arm2: *id020
+      sequence_target: *id021
+      sequence_target_probe: *id022
+      length: *id023
+      ligation_site: *id024
+      Tm_arm1: *id025
+      Tm_arm2: *id026
+      Tm_diff_arms: *id027
+      Tm_detection_oligo: *id028
+      isoform_consensus: *id029
+    Oligo 2:
+      oligo_id: DECR2::4016
+      source: *id030
+      species: *id031
+      annotation_release: *id032
+      genome_assembly: *id033
+      regiontype: *id034
+      gene_id: *id035
+      transcript_id: *id036
+      exon_number: *id037
+      chromosome: *id038
+      start: *id039
+      end: *id040
+      strand: *id041
+      sequence_padlock_probe: *id042
+      sequence_detection_oligo: *id043
+      sequence_padlock_arm1: *id044
+      sequence_padlock_accessory1: *id045
+      sequence_padlock_ISS_anchor: *id046
+      barcode: *id047
+      sequence_padlock_accessory2: *id048
+      sequence_padlock_arm2: *id049
+      sequence_target: *id050
+      sequence_target_probe: *id051
+      length: *id052
+      ligation_site: *id053
+      Tm_arm1: *id054
+      Tm_arm2: *id055
+      Tm_diff_arms: *id056
+      Tm_detection_oligo: *id057
+      isoform_consensus: *id058
+    Oligo 3:
+      oligo_id: DECR2::3844
+      source: *id059
+      species: *id060
+      annotation_release: *id061
+      genome_assembly: *id062
+      regiontype: *id063
+      gene_id: *id064
+      transcript_id: *id065
+      exon_number: *id066
+      chromosome: *id067
+      start: *id068
+      end: *id069
+      strand: *id070
+      sequence_padlock_probe: *id071
+      sequence_detection_oligo: *id072
+      sequence_padlock_arm1: *id073
+      sequence_padlock_accessory1: *id074
+      sequence_padlock_ISS_anchor: *id075
+      barcode: *id076
+      sequence_padlock_accessory2: *id077
+      sequence_padlock_arm2: *id078
+      sequence_target: *id079
+      sequence_target_probe: *id080
+      length: *id081
+      ligation_site: *id082
+      Tm_arm1: *id083
+      Tm_arm2: *id084
+      Tm_diff_arms: *id085
+      Tm_detection_oligo: *id086
+      isoform_consensus: *id087
+    Oligo 4:
+      oligo_id: DECR2::2762
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[three_prime_UTR]]
+      gene_id: [[DECR2]]
+      transcript_id: [[NM_020664.4]]
+      exon_number: [['9']]
+      chromosome: [['16']]
+      start: [[412216]]
+      end: [[412259]]
+      strand: [[+]]
+      sequence_padlock_probe: [[TCTCGGGATCCATGTGGCTTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCAAACCTATCTTCTTTGTGTTTTCAGCCAAGAGAACACAAG]]
+      sequence_detection_oligo: [['TCAGCCAAGAGAACACAAGTCTCGGGATCCAUGTGGCU[fluorophore]']]
+      sequence_padlock_arm1: [[TCTCGGGATCCATGTGGCT]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[AAAC]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[GTGTTTTCAGCCAAGAGAACACAAG]]
+      sequence_target: [[AGCCACATGGATCCCGAGACTTGTGTTCTCTTGGCTGAAAACAC]]
+      sequence_target_probe: [[GTGTTTTCAGCCAAGAGAACACAAGTCTCGGGATCCATGTGGCT]]
+      length: [[44]]
+      ligation_site: [[25]]
+      Tm_arm1: [[54.28]]
+      Tm_arm2: [[53.06]]
+      Tm_diff_arms: [[1.22]]
+      Tm_detection_oligo: [[47.73]]
+      isoform_consensus: [[null]]
+    Oligo 5:
+      oligo_id: DECR2::3312
+      source: *id088
+      species: *id089
+      annotation_release: *id090
+      genome_assembly: *id091
+      regiontype: *id092
+      gene_id: *id093
+      transcript_id: *id094
+      exon_number: *id095
+      chromosome: *id096
+      start: *id097
+      end: *id098
+      strand: *id099
+      sequence_padlock_probe: *id100
+      sequence_detection_oligo: *id101
+      sequence_padlock_arm1: *id102
+      sequence_padlock_accessory1: *id103
+      sequence_padlock_ISS_anchor: *id104
+      barcode: *id105
+      sequence_padlock_accessory2: *id106
+      sequence_padlock_arm2: *id107
+      sequence_target: *id108
+      sequence_target_probe: *id109
+      length: *id110
+      ligation_site: *id111
+      Tm_arm1: *id112
+      Tm_arm2: *id113
+      Tm_diff_arms: *id114
+      Tm_detection_oligo: *id115
+      isoform_consensus: *id116
+AARS1:
+  Oligoset 1:
+    Oligoset Score:
+      set_score_worst: 0.723
+      set_score_sum: 3.168
+    Oligo 1:
+      oligo_id: AARS1::6017
+      source: &id117 [[NCBI]]
+      species: &id118 [[Homo_sapiens]]
+      annotation_release: &id119 [['110']]
+      genome_assembly: &id120 [[GRCh38]]
+      regiontype: &id121 [[exonexonjunction]]
+      gene_id: &id122 [[AARS1]]
+      transcript_id: &id123 [[NM_001605.3, XM_047433666.1]]
+      exon_number: &id124 [[3__JUNC__2, 3__JUNC__2]]
+      chromosome: &id125 [['16']]
+      start: &id126 [[70277154]]
+      end: &id127 [[70282663]]
+      strand: &id128 [['-']]
+      sequence_padlock_probe: &id129 [[AAAGAGCAAAGTGGGGTCATCCATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCCCTACTATCTTCTTTACTGGTTCATGCCTGCATTGGC]]
+      sequence_detection_oligo: &id130 [['[fluorophore]UGGTTCAUGCCTGCATTGGCAAAGAGCAAAGTGGGGTCA']]
+      sequence_padlock_arm1: &id131 [[AAAGAGCAAAGTGGGGTCATCCA]]
+      sequence_padlock_accessory1: &id132 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id133 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id134 [[CCTA]]
+      sequence_padlock_accessory2: &id135 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id136 [[ACTGGTTCATGCCTGCATTGGC]]
+      sequence_target: &id137 [[TGGATGACCCCACTTTGCTCTTTGCCAATGCAGGCATGAACCAGT]]
+      sequence_target_probe: &id138 [[ACTGGTTCATGCCTGCATTGGCAAAGAGCAAAGTGGGGTCATCCA]]
+      length: &id139 [[45]]
+      ligation_site: &id140 [[22]]
+      Tm_arm1: &id141 [[55.13]]
+      Tm_arm2: &id142 [[57.08]]
+      Tm_diff_arms: &id143 [[1.95]]
+      Tm_detection_oligo: &id144 [[48.7]]
+      isoform_consensus: &id145 [[100.0]]
+    Oligo 2:
+      oligo_id: AARS1::5509
+      source: &id146 [[NCBI]]
+      species: &id147 [[Homo_sapiens]]
+      annotation_release: &id148 [['110']]
+      genome_assembly: &id149 [[GRCh38]]
+      regiontype: &id150 [[exonexonjunction]]
+      gene_id: &id151 [[AARS1]]
+      transcript_id: &id152 [[NM_001605.3]]
+      exon_number: &id153 [[21__JUNC__20]]
+      chromosome: &id154 [['16']]
+      start: &id155 [[70252873]]
+      end: &id156 [[70253277]]
+      strand: &id157 [['-']]
+      sequence_padlock_probe: &id158 [[GATTGGCTGCATTCTGGGGAACTTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCCCTACTATCTTCTTTACTCGCTGGCTTTTAAGCCCC]]
+      sequence_detection_oligo: &id159 [['[fluorophore]CUCGCTGGCUTTTAAGCCCCGATTGGCTGCATTCTGGGGA']]
+      sequence_padlock_arm1: &id160 [[GATTGGCTGCATTCTGGGGAACT]]
+      sequence_padlock_accessory1: &id161 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id162 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id163 [[CCTA]]
+      sequence_padlock_accessory2: &id164 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id165 [[ACTCGCTGGCTTTTAAGCCCC]]
+      sequence_target: &id166 [[AGTTCCCCAGAATGCAGCCAATCGGGGCTTAAAAGCCAGCGAGT]]
+      sequence_target_probe: &id167 [[ACTCGCTGGCTTTTAAGCCCCGATTGGCTGCATTCTGGGGAACT]]
+      length: &id168 [[44]]
+      ligation_site: &id169 [[21]]
+      Tm_arm1: &id170 [[56.05]]
+      Tm_arm2: &id171 [[56.36]]
+      Tm_diff_arms: &id172 [[0.31]]
+      Tm_detection_oligo: &id173 [[51.3]]
+      isoform_consensus: &id174 [[50.0]]
+    Oligo 3:
+      oligo_id: AARS1::6511
+      source: &id175 [[NCBI]]
+      species: &id176 [[Homo_sapiens]]
+      annotation_release: &id177 [['110']]
+      genome_assembly: &id178 [[GRCh38]]
+      regiontype: &id179 [[exonexonjunction]]
+      gene_id: &id180 [[AARS1]]
+      transcript_id: &id181 [[NM_001605.3, XM_047433666.1]]
+      exon_number: &id182 [[5__JUNC__4, 5__JUNC__4]]
+      chromosome: &id183 [['16']]
+      start: &id184 [[70271933]]
+      end: &id185 [[70276489]]
+      strand: &id186 [['-']]
+      sequence_padlock_probe: &id187 [[ATTTTGGTGTCATCCAGCCCCATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCCCTACTATCTTCTTTATCCTTCATGTTGCCTGGGAGG]]
+      sequence_detection_oligo: &id188 [['[fluorophore]CCUTCATGUTGCCTGGGAGGATTTTGGTGTCATCCAGCCC']]
+      sequence_padlock_arm1: &id189 [[ATTTTGGTGTCATCCAGCCCCA]]
+      sequence_padlock_accessory1: &id190 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id191 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id192 [[CCTA]]
+      sequence_padlock_accessory2: &id193 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id194 [[ATCCTTCATGTTGCCTGGGAGG]]
+      sequence_target: &id195 [[TGGGGCTGGATGACACCAAAATCCTCCCAGGCAACATGAAGGAT]]
+      sequence_target_probe: &id196 [[ATCCTTCATGTTGCCTGGGAGGATTTTGGTGTCATCCAGCCCCA]]
+      length: &id197 [[44]]
+      ligation_site: &id198 [[22]]
+      Tm_arm1: &id199 [[55.57]]
+      Tm_arm2: &id200 [[55.43]]
+      Tm_diff_arms: &id201 [[0.14]]
+      Tm_detection_oligo: &id202 [[48.9]]
+      isoform_consensus: &id203 [[100.0]]
+    Oligo 4:
+      oligo_id: AARS1::6498
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[exonexonjunction]]
+      gene_id: [[AARS1]]
+      transcript_id: [[NM_001605.3, XM_047433666.1]]
+      exon_number: [[5__JUNC__4, 5__JUNC__4]]
+      chromosome: [['16']]
+      start: [[70271946]]
+      end: [[70276502]]
+      strand: [['-']]
+      sequence_padlock_probe: [[CCAGCCCCAAATTTTGCCAGATTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCCCTACTATCTTCTTTCCTGGGAGGATTTTGGTGTCAT]]
+      sequence_detection_oligo: [['[fluorophore]UGGGAGGAUTTTGGTGTCATCCAGCCCCAAATTTTGCCAG']]
+      sequence_padlock_arm1: [[CCAGCCCCAAATTTTGCCAGAT]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[CCTA]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[CCTGGGAGGATTTTGGTGTCAT]]
+      sequence_target: [[ATCTGGCAAAATTTGGGGCTGGATGACACCAAAATCCTCCCAGG]]
+      sequence_target_probe: [[CCTGGGAGGATTTTGGTGTCATCCAGCCCCAAATTTTGCCAGAT]]
+      length: [[44]]
+      ligation_site: [[22]]
+      Tm_arm1: [[54.91]]
+      Tm_arm2: [[53.28]]
+      Tm_diff_arms: [[1.63]]
+      Tm_detection_oligo: [[47.3]]
+      isoform_consensus: [[100.0]]
+    Oligo 5:
+      oligo_id: AARS1::3768
+      source: &id204 [[NCBI]]
+      species: &id205 [[Homo_sapiens]]
+      annotation_release: &id206 [['110']]
+      genome_assembly: &id207 [[GRCh38]]
+      regiontype: &id208 [[exonexonjunction]]
+      gene_id: &id209 [[AARS1]]
+      transcript_id: &id210 [[NM_001605.3, XM_047433666.1]]
+      exon_number: &id211 [[14__JUNC__13, 14__JUNC__13]]
+      chromosome: &id212 [['16']]
+      start: &id213 [[70259151]]
+      end: &id214 [[70261051]]
+      strand: &id215 [['-']]
+      sequence_padlock_probe: &id216 [[GTCTTCGTCGGGGCTCATCAATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCCCTACTATCTTCTTTAGCTGTGTGGTTGCTCATGATGG]]
+      sequence_detection_oligo: &id217 [['[fluorophore]UGTGTGGUTGCTCATGATGGGTCTTCGTCGGGGCTCATCA']]
+      sequence_padlock_arm1: &id218 [[GTCTTCGTCGGGGCTCATCAA]]
+      sequence_padlock_accessory1: &id219 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id220 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id221 [[CCTA]]
+      sequence_padlock_accessory2: &id222 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id223 [[AGCTGTGTGGTTGCTCATGATGG]]
+      sequence_target: &id224 [[TTGATGAGCCCCGACGAAGACCCATCATGAGCAACCACACAGCT]]
+      sequence_target_probe: &id225 [[AGCTGTGTGGTTGCTCATGATGGGTCTTCGTCGGGGCTCATCAA]]
+      length: &id226 [[44]]
+      ligation_site: &id227 [[23]]
+      Tm_arm1: &id228 [[55.4]]
+      Tm_arm2: &id229 [[56.12]]
+      Tm_diff_arms: &id230 [[0.72]]
+      Tm_detection_oligo: &id231 [[50.04]]
+      isoform_consensus: &id232 [[100.0]]
+  Oligoset 2:
+    Oligoset Score:
+      set_score_worst: 0.723
+      set_score_sum: 3.169
+    Oligo 1:
+      oligo_id: AARS1::6017
+      source: *id117
+      species: *id118
+      annotation_release: *id119
+      genome_assembly: *id120
+      regiontype: *id121
+      gene_id: *id122
+      transcript_id: *id123
+      exon_number: *id124
+      chromosome: *id125
+      start: *id126
+      end: *id127
+      strand: *id128
+      sequence_padlock_probe: *id129
+      sequence_detection_oligo: *id130
+      sequence_padlock_arm1: *id131
+      sequence_padlock_accessory1: *id132
+      sequence_padlock_ISS_anchor: *id133
+      barcode: *id134
+      sequence_padlock_accessory2: *id135
+      sequence_padlock_arm2: *id136
+      sequence_target: *id137
+      sequence_target_probe: *id138
+      length: *id139
+      ligation_site: *id140
+      Tm_arm1: *id141
+      Tm_arm2: *id142
+      Tm_diff_arms: *id143
+      Tm_detection_oligo: *id144
+      isoform_consensus: *id145
+    Oligo 2:
+      oligo_id: AARS1::5509
+      source: *id146
+      species: *id147
+      annotation_release: *id148
+      genome_assembly: *id149
+      regiontype: *id150
+      gene_id: *id151
+      transcript_id: *id152
+      exon_number: *id153
+      chromosome: *id154
+      start: *id155
+      end: *id156
+      strand: *id157
+      sequence_padlock_probe: *id158
+      sequence_detection_oligo: *id159
+      sequence_padlock_arm1: *id160
+      sequence_padlock_accessory1: *id161
+      sequence_padlock_ISS_anchor: *id162
+      barcode: *id163
+      sequence_padlock_accessory2: *id164
+      sequence_padlock_arm2: *id165
+      sequence_target: *id166
+      sequence_target_probe: *id167
+      length: *id168
+      ligation_site: *id169
+      Tm_arm1: *id170
+      Tm_arm2: *id171
+      Tm_diff_arms: *id172
+      Tm_detection_oligo: *id173
+      isoform_consensus: *id174
+    Oligo 3:
+      oligo_id: AARS1::6511
+      source: *id175
+      species: *id176
+      annotation_release: *id177
+      genome_assembly: *id178
+      regiontype: *id179
+      gene_id: *id180
+      transcript_id: *id181
+      exon_number: *id182
+      chromosome: *id183
+      start: *id184
+      end: *id185
+      strand: *id186
+      sequence_padlock_probe: *id187
+      sequence_detection_oligo: *id188
+      sequence_padlock_arm1: *id189
+      sequence_padlock_accessory1: *id190
+      sequence_padlock_ISS_anchor: *id191
+      barcode: *id192
+      sequence_padlock_accessory2: *id193
+      sequence_padlock_arm2: *id194
+      sequence_target: *id195
+      sequence_target_probe: *id196
+      length: *id197
+      ligation_site: *id198
+      Tm_arm1: *id199
+      Tm_arm2: *id200
+      Tm_diff_arms: *id201
+      Tm_detection_oligo: *id202
+      isoform_consensus: *id203
+    Oligo 4:
+      oligo_id: AARS1::4272
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[exonexonjunction]]
+      gene_id: [[AARS1]]
+      transcript_id: [[NM_001605.3]]
+      exon_number: [[16__JUNC__15]]
+      chromosome: [['16']]
+      start: [[70255795]]
+      end: [[70258034]]
+      strand: [['-']]
+      sequence_padlock_probe: [[TCGAGTTCCGCAGGTGCGTTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCCCTACTATCTTCTTTACGATCACAAAAGCTCCTGCATGAC]]
+      sequence_detection_oligo: [['CACAAAAGCTCCTGCATGACTCGAGTUCCGCAGGTGCGU[fluorophore]']]
+      sequence_padlock_arm1: [[TCGAGTTCCGCAGGTGCGT]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[CCTA]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[ACGATCACAAAAGCTCCTGCATGAC]]
+      sequence_target: [[ACGCACCTGCGGAACTCGAGTCATGCAGGAGCTTTTGTGATCGT]]
+      sequence_target_probe: [[ACGATCACAAAAGCTCCTGCATGACTCGAGTTCCGCAGGTGCGT]]
+      length: [[44]]
+      ligation_site: [[25]]
+      Tm_arm1: [[57.92]]
+      Tm_arm2: [[56.03]]
+      Tm_diff_arms: [[1.89]]
+      Tm_detection_oligo: [[50.07]]
+      isoform_consensus: [[50.0]]
+    Oligo 5:
+      oligo_id: AARS1::3768
+      source: *id204
+      species: *id205
+      annotation_release: *id206
+      genome_assembly: *id207
+      regiontype: *id208
+      gene_id: *id209
+      transcript_id: *id210
+      exon_number: *id211
+      chromosome: *id212
+      start: *id213
+      end: *id214
+      strand: *id215
+      sequence_padlock_probe: *id216
+      sequence_detection_oligo: *id217
+      sequence_padlock_arm1: *id218
+      sequence_padlock_accessory1: *id219
+      sequence_padlock_ISS_anchor: *id220
+      barcode: *id221
+      sequence_padlock_accessory2: *id222
+      sequence_padlock_arm2: *id223
+      sequence_target: *id224
+      sequence_target_probe: *id225
+      length: *id226
+      ligation_site: *id227
+      Tm_arm1: *id228
+      Tm_arm2: *id229
+      Tm_diff_arms: *id230
+      Tm_detection_oligo: *id231
+      isoform_consensus: *id232
+  Oligoset 3:
+    Oligoset Score:
+      set_score_worst: 0.723
+      set_score_sum: 3.169
+    Oligo 1:
+      oligo_id: AARS1::6017
+      source: *id117
+      species: *id118
+      annotation_release: *id119
+      genome_assembly: *id120
+      regiontype: *id121
+      gene_id: *id122
+      transcript_id: *id123
+      exon_number: *id124
+      chromosome: *id125
+      start: *id126
+      end: *id127
+      strand: *id128
+      sequence_padlock_probe: *id129
+      sequence_detection_oligo: *id130
+      sequence_padlock_arm1: *id131
+      sequence_padlock_accessory1: *id132
+      sequence_padlock_ISS_anchor: *id133
+      barcode: *id134
+      sequence_padlock_accessory2: *id135
+      sequence_padlock_arm2: *id136
+      sequence_target: *id137
+      sequence_target_probe: *id138
+      length: *id139
+      ligation_site: *id140
+      Tm_arm1: *id141
+      Tm_arm2: *id142
+      Tm_diff_arms: *id143
+      Tm_detection_oligo: *id144
+      isoform_consensus: *id145
+    Oligo 2:
+      oligo_id: AARS1::5509
+      source: *id146
+      species: *id147
+      annotation_release: *id148
+      genome_assembly: *id149
+      regiontype: *id150
+      gene_id: *id151
+      transcript_id: *id152
+      exon_number: *id153
+      chromosome: *id154
+      start: *id155
+      end: *id156
+      strand: *id157
+      sequence_padlock_probe: *id158
+      sequence_detection_oligo: *id159
+      sequence_padlock_arm1: *id160
+      sequence_padlock_accessory1: *id161
+      sequence_padlock_ISS_anchor: *id162
+      barcode: *id163
+      sequence_padlock_accessory2: *id164
+      sequence_padlock_arm2: *id165
+      sequence_target: *id166
+      sequence_target_probe: *id167
+      length: *id168
+      ligation_site: *id169
+      Tm_arm1: *id170
+      Tm_arm2: *id171
+      Tm_diff_arms: *id172
+      Tm_detection_oligo: *id173
+      isoform_consensus: *id174
+    Oligo 3:
+      oligo_id: AARS1::6511
+      source: *id175
+      species: *id176
+      annotation_release: *id177
+      genome_assembly: *id178
+      regiontype: *id179
+      gene_id: *id180
+      transcript_id: *id181
+      exon_number: *id182
+      chromosome: *id183
+      start: *id184
+      end: *id185
+      strand: *id186
+      sequence_padlock_probe: *id187
+      sequence_detection_oligo: *id188
+      sequence_padlock_arm1: *id189
+      sequence_padlock_accessory1: *id190
+      sequence_padlock_ISS_anchor: *id191
+      barcode: *id192
+      sequence_padlock_accessory2: *id193
+      sequence_padlock_arm2: *id194
+      sequence_target: *id195
+      sequence_target_probe: *id196
+      length: *id197
+      ligation_site: *id198
+      Tm_arm1: *id199
+      Tm_arm2: *id200
+      Tm_diff_arms: *id201
+      Tm_detection_oligo: *id202
+      isoform_consensus: *id203
+    Oligo 4:
+      oligo_id: AARS1::2013
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[three_prime_UTR]]
+      gene_id: [[AARS1]]
+      transcript_id: [[NM_001605.3]]
+      exon_number: [['21']]
+      chromosome: [['16']]
+      start: [[70252477]]
+      end: [[70252520]]
+      strand: [['-']]
+      sequence_padlock_probe: [[CAGCAATGCGGGGTTAGTGGTTTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCCCTACTATCTTCTTTTAGATGCGAGCGTGACGATCAA]]
+      sequence_detection_oligo: [['GATGCGAGCGTGACGATCAACAGCAAUGCGGGGTTAGUGG[fluorophore]']]
+      sequence_padlock_arm1: [[CAGCAATGCGGGGTTAGTGGTT]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[CCTA]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[TAGATGCGAGCGTGACGATCAA]]
+      sequence_target: [[AACCACTAACCCCGCATTGCTGTTGATCGTCACGCTCGCATCTA]]
+      sequence_target_probe: [[TAGATGCGAGCGTGACGATCAACAGCAATGCGGGGTTAGTGGTT]]
+      length: [[44]]
+      ligation_site: [[22]]
+      Tm_arm1: [[56.48]]
+      Tm_arm2: [[54.63]]
+      Tm_diff_arms: [[1.85]]
+      Tm_detection_oligo: [[50.19]]
+      isoform_consensus: [[null]]
+    Oligo 5:
+      oligo_id: AARS1::3768
+      source: *id204
+      species: *id205
+      annotation_release: *id206
+      genome_assembly: *id207
+      regiontype: *id208
+      gene_id: *id209
+      transcript_id: *id210
+      exon_number: *id211
+      chromosome: *id212
+      start: *id213
+      end: *id214
+      strand: *id215
+      sequence_padlock_probe: *id216
+      sequence_detection_oligo: *id217
+      sequence_padlock_arm1: *id218
+      sequence_padlock_accessory1: *id219
+      sequence_padlock_ISS_anchor: *id220
+      barcode: *id221
+      sequence_padlock_accessory2: *id222
+      sequence_padlock_arm2: *id223
+      sequence_target: *id224
+      sequence_target_probe: *id225
+      length: *id226
+      ligation_site: *id227
+      Tm_arm1: *id228
+      Tm_arm2: *id229
+      Tm_diff_arms: *id230
+      Tm_detection_oligo: *id231
+      isoform_consensus: *id232
+PRR35:
+  Oligoset 1:
+    Oligoset Score:
+      set_score_worst: 0.993
+      set_score_sum: 4.188
+    Oligo 1:
+      oligo_id: PRR35::9599
+      source: &id233 [[NCBI]]
+      species: &id234 [[Homo_sapiens]]
+      annotation_release: &id235 [['110']]
+      genome_assembly: &id236 [[GRCh38]]
+      regiontype: &id237 [[five_prime_UTR]]
+      gene_id: &id238 [[PRR35]]
+      transcript_id: &id239 [[XM_017022961.1]]
+      exon_number: &id240 [['1']]
+      chromosome: &id241 [['16']]
+      start: &id242 [[562631]]
+      end: &id243 [[562675]]
+      strand: &id244 [[+]]
+      sequence_padlock_probe: &id245 [[ACGGAAGGGTCTGTGTGGGATTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCTACACTATCTTCTTTAAAAGGCACTGAGATGAGACACCA]]
+      sequence_detection_oligo: &id246 [['GGCACTGAGATGAGACACCAACGGAAGGGUCTGTGUGGGA[fluorophore]']]
+      sequence_padlock_arm1: &id247 [[ACGGAAGGGTCTGTGTGGGAT]]
+      sequence_padlock_accessory1: &id248 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id249 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id250 [[TACA]]
+      sequence_padlock_accessory2: &id251 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id252 [[AAAAGGCACTGAGATGAGACACCA]]
+      sequence_target: &id253 [[ATCCCACACAGACCCTTCCGTTGGTGTCTCATCTCAGTGCCTTTT]]
+      sequence_target_probe: &id254 [[AAAAGGCACTGAGATGAGACACCAACGGAAGGGTCTGTGTGGGAT]]
+      length: &id255 [[45]]
+      ligation_site: &id256 [[24]]
+      Tm_arm1: &id257 [[56.61]]
+      Tm_arm2: &id258 [[54.71]]
+      Tm_diff_arms: &id259 [[1.9]]
+      Tm_detection_oligo: &id260 [[50.29]]
+      isoform_consensus: &id261 [[null]]
+    Oligo 2:
+      oligo_id: PRR35::7368
+      source: &id349 [[NCBI]]
+      species: &id350 [[Homo_sapiens]]
+      annotation_release: &id351 [['110']]
+      genome_assembly: &id352 [[GRCh38]]
+      regiontype: &id353 [[five_prime_UTR]]
+      gene_id: &id354 [[PRR35]]
+      transcript_id: &id355 [[XM_017022960.3]]
+      exon_number: &id356 [['1']]
+      chromosome: &id357 [['16']]
+      start: &id358 [[561188]]
+      end: &id359 [[561231]]
+      strand: &id360 [[+]]
+      sequence_padlock_probe: &id361 [[GAGCAAAAGACACCCCTGGACATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCTACACTATCTTCTTTACCCACCTGGTGTGTGTACACA]]
+      sequence_detection_oligo: &id362 [['CCACCTGGTGTGTGUACACAGAGCAAAAGACACCCCUGGA[fluorophore]']]
+      sequence_padlock_arm1: &id363 [[GAGCAAAAGACACCCCTGGACA]]
+      sequence_padlock_accessory1: &id364 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id365 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id366 [[TACA]]
+      sequence_padlock_accessory2: &id367 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id368 [[ACCCACCTGGTGTGTGTACACA]]
+      sequence_target: &id369 [[TGTCCAGGGGTGTCTTTTGCTCTGTGTACACACACCAGGTGGGT]]
+      sequence_target_probe: &id370 [[ACCCACCTGGTGTGTGTACACAGAGCAAAAGACACCCCTGGACA]]
+      length: &id371 [[44]]
+      ligation_site: &id372 [[22]]
+      Tm_arm1: &id373 [[55.66]]
+      Tm_arm2: &id374 [[56.8]]
+      Tm_diff_arms: &id375 [[1.14]]
+      Tm_detection_oligo: &id376 [[49.14]]
+      isoform_consensus: &id377 [[null]]
+    Oligo 3:
+      oligo_id: PRR35::10530
+      source: &id262 [[NCBI]]
+      species: &id263 [[Homo_sapiens]]
+      annotation_release: &id264 [['110']]
+      genome_assembly: &id265 [[GRCh38]]
+      regiontype: &id266 [[three_prime_UTR]]
+      gene_id: &id267 [[PRR35, PRR35, PRR35, PRR35]]
+      transcript_id: &id268 [[NM_145270.3, XM_017022959.3, XM_017022960.3, XM_017022961.1]]
+      exon_number: &id269 [['3', '3', '4', '4']]
+      chromosome: &id270 [['16']]
+      start: &id271 [[565448]]
+      end: &id272 [[565491]]
+      strand: &id273 [[+]]
+      sequence_padlock_probe: &id274 [[TGTGTGGCCCCAGGGATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCTACACTATCTTCTTTAATAAATAACTGTGACCTCCAGTGTCCC]]
+      sequence_detection_oligo: &id275 [['[fluorophore]GUGACCUCCAGTGTCCCTGTGTGGCCCCAGGGA']]
+      sequence_padlock_arm1: &id276 [[TGTGTGGCCCCAGGGA]]
+      sequence_padlock_accessory1: &id277 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id278 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id279 [[TACA]]
+      sequence_padlock_accessory2: &id280 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id281 [[AATAAATAACTGTGACCTCCAGTGTCCC]]
+      sequence_target: &id282 [[TCCCTGGGGCCACACAGGGACACTGGAGGTCACAGTTATTTATT]]
+      sequence_target_probe: &id283 [[AATAAATAACTGTGACCTCCAGTGTCCCTGTGTGGCCCCAGGGA]]
+      length: &id284 [[44]]
+      ligation_site: &id285 [[28]]
+      Tm_arm1: &id286 [[55.03]]
+      Tm_arm2: &id287 [[54.57]]
+      Tm_diff_arms: &id288 [[0.46]]
+      Tm_detection_oligo: &id289 [[52.67]]
+      isoform_consensus: &id290 [[null]]
+    Oligo 4:
+      oligo_id: PRR35::2129
+      source: &id291 [[NCBI]]
+      species: &id292 [[Homo_sapiens]]
+      annotation_release: &id293 [['110']]
+      genome_assembly: &id294 [[GRCh38]]
+      regiontype: &id295 [[five_prime_UTR]]
+      gene_id: &id296 [[PRR35]]
+      transcript_id: &id297 [[XM_017022959.3]]
+      exon_number: &id298 [['1']]
+      chromosome: &id299 [['16']]
+      start: &id300 [[559818]]
+      end: &id301 [[559859]]
+      strand: &id302 [[+]]
+      sequence_padlock_probe: &id303 [[CTCCGTTCTCTTTTCCTCTAAACCGGATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCTACACTATCTTCTTTTGGGCGAGCCCTGCC]]
+      sequence_detection_oligo: &id304 [['TGGGCGAGCCCTGCCCTCCGUTCTCU[fluorophore]']]
+      sequence_padlock_arm1: &id305 [[CTCCGTTCTCTTTTCCTCTAAACCGGA]]
+      sequence_padlock_accessory1: &id306 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id307 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id308 [[TACA]]
+      sequence_padlock_accessory2: &id309 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id310 [[TGGGCGAGCCCTGCC]]
+      sequence_target: &id311 [[TCCGGTTTAGAGGAAAAGAGAACGGAGGGCAGGGCTCGCCCA]]
+      sequence_target_probe: &id312 [[TGGGCGAGCCCTGCCCTCCGTTCTCTTTTCCTCTAAACCGGA]]
+      length: &id313 [[42]]
+      ligation_site: &id314 [[15]]
+      Tm_arm1: &id315 [[56.08]]
+      Tm_arm2: &id316 [[57.16]]
+      Tm_diff_arms: &id317 [[1.08]]
+      Tm_detection_oligo: &id318 [[50.81]]
+      isoform_consensus: &id319 [[null]]
+    Oligo 5:
+      oligo_id: PRR35::10348
+      source: &id320 [[NCBI]]
+      species: &id321 [[Homo_sapiens]]
+      annotation_release: &id322 [['110']]
+      genome_assembly: &id323 [[GRCh38]]
+      regiontype: &id324 [[three_prime_UTR]]
+      gene_id: &id325 [[PRR35, PRR35, PRR35, PRR35]]
+      transcript_id: &id326 [[NM_145270.3, XM_017022959.3, XM_017022960.3, XM_017022961.1]]
+      exon_number: &id327 [['3', '3', '4', '4']]
+      chromosome: &id328 [['16']]
+      start: &id329 [[565449]]
+      end: &id330 [[565491]]
+      strand: &id331 [[+]]
+      sequence_padlock_probe: &id332 [[CTGTGTGGCCCCAGGGTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCTACACTATCTTCTTTAATAAATAACTGTGACCTCCAGTGTCC]]
+      sequence_detection_oligo: &id333 [['[fluorophore]UGTGACCUCCAGTGTCCCTGTGTGGCCCCAGGG']]
+      sequence_padlock_arm1: &id334 [[CTGTGTGGCCCCAGGG]]
+      sequence_padlock_accessory1: &id335 [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: &id336 [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: &id337 [[TACA]]
+      sequence_padlock_accessory2: &id338 [[CTATCTTCTTT]]
+      sequence_padlock_arm2: &id339 [[AATAAATAACTGTGACCTCCAGTGTCC]]
+      sequence_target: &id340 [[CCCTGGGGCCACACAGGGACACTGGAGGTCACAGTTATTTATT]]
+      sequence_target_probe: &id341 [[AATAAATAACTGTGACCTCCAGTGTCCCTGTGTGGCCCCAGGG]]
+      length: &id342 [[43]]
+      ligation_site: &id343 [[27]]
+      Tm_arm1: &id344 [[54.23]]
+      Tm_arm2: &id345 [[52.86]]
+      Tm_diff_arms: &id346 [[1.37]]
+      Tm_detection_oligo: &id347 [[52.82]]
+      isoform_consensus: &id348 [[null]]
+  Oligoset 2:
+    Oligoset Score:
+      set_score_worst: 0.993
+      set_score_sum: 4.188
+    Oligo 1:
+      oligo_id: PRR35::9599
+      source: *id233
+      species: *id234
+      annotation_release: *id235
+      genome_assembly: *id236
+      regiontype: *id237
+      gene_id: *id238
+      transcript_id: *id239
+      exon_number: *id240
+      chromosome: *id241
+      start: *id242
+      end: *id243
+      strand: *id244
+      sequence_padlock_probe: *id245
+      sequence_detection_oligo: *id246
+      sequence_padlock_arm1: *id247
+      sequence_padlock_accessory1: *id248
+      sequence_padlock_ISS_anchor: *id249
+      barcode: *id250
+      sequence_padlock_accessory2: *id251
+      sequence_padlock_arm2: *id252
+      sequence_target: *id253
+      sequence_target_probe: *id254
+      length: *id255
+      ligation_site: *id256
+      Tm_arm1: *id257
+      Tm_arm2: *id258
+      Tm_diff_arms: *id259
+      Tm_detection_oligo: *id260
+      isoform_consensus: *id261
+    Oligo 2:
+      oligo_id: PRR35::10527
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[three_prime_UTR]]
+      gene_id: [[PRR35, PRR35, PRR35, PRR35]]
+      transcript_id: [[NM_145270.3, XM_017022959.3, XM_017022960.3, XM_017022961.1]]
+      exon_number: [['3', '3', '4', '4']]
+      chromosome: [['16']]
+      start: [[565445]]
+      end: [[565488]]
+      strand: [[+]]
+      sequence_padlock_probe: [[GTGTGGCCCCAGGGACAATCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCTACACTATCTTCTTTAAATAACTGTGACCTCCAGTGTCCCT]]
+      sequence_detection_oligo: [['[fluorophore]UGTGACCUCCAGTGTCCCTGTGTGGCCCCAGGGACA']]
+      sequence_padlock_arm1: [[GTGTGGCCCCAGGGACAA]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[TACA]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[AAATAACTGTGACCTCCAGTGTCCCT]]
+      sequence_target: [[TTGTCCCTGGGGCCACACAGGGACACTGGAGGTCACAGTTATTT]]
+      sequence_target_probe: [[AAATAACTGTGACCTCCAGTGTCCCTGTGTGGCCCCAGGGACAA]]
+      length: [[44]]
+      ligation_site: [[26]]
+      Tm_arm1: [[56.24]]
+      Tm_arm2: [[55.85]]
+      Tm_diff_arms: [[0.39]]
+      Tm_detection_oligo: [[53.54]]
+      isoform_consensus: [[null]]
+    Oligo 3:
+      oligo_id: PRR35::10530
+      source: *id262
+      species: *id263
+      annotation_release: *id264
+      genome_assembly: *id265
+      regiontype: *id266
+      gene_id: *id267
+      transcript_id: *id268
+      exon_number: *id269
+      chromosome: *id270
+      start: *id271
+      end: *id272
+      strand: *id273
+      sequence_padlock_probe: *id274
+      sequence_detection_oligo: *id275
+      sequence_padlock_arm1: *id276
+      sequence_padlock_accessory1: *id277
+      sequence_padlock_ISS_anchor: *id278
+      barcode: *id279
+      sequence_padlock_accessory2: *id280
+      sequence_padlock_arm2: *id281
+      sequence_target: *id282
+      sequence_target_probe: *id283
+      length: *id284
+      ligation_site: *id285
+      Tm_arm1: *id286
+      Tm_arm2: *id287
+      Tm_diff_arms: *id288
+      Tm_detection_oligo: *id289
+      isoform_consensus: *id290
+    Oligo 4:
+      oligo_id: PRR35::2129
+      source: *id291
+      species: *id292
+      annotation_release: *id293
+      genome_assembly: *id294
+      regiontype: *id295
+      gene_id: *id296
+      transcript_id: *id297
+      exon_number: *id298
+      chromosome: *id299
+      start: *id300
+      end: *id301
+      strand: *id302
+      sequence_padlock_probe: *id303
+      sequence_detection_oligo: *id304
+      sequence_padlock_arm1: *id305
+      sequence_padlock_accessory1: *id306
+      sequence_padlock_ISS_anchor: *id307
+      barcode: *id308
+      sequence_padlock_accessory2: *id309
+      sequence_padlock_arm2: *id310
+      sequence_target: *id311
+      sequence_target_probe: *id312
+      length: *id313
+      ligation_site: *id314
+      Tm_arm1: *id315
+      Tm_arm2: *id316
+      Tm_diff_arms: *id317
+      Tm_detection_oligo: *id318
+      isoform_consensus: *id319
+    Oligo 5:
+      oligo_id: PRR35::10348
+      source: *id320
+      species: *id321
+      annotation_release: *id322
+      genome_assembly: *id323
+      regiontype: *id324
+      gene_id: *id325
+      transcript_id: *id326
+      exon_number: *id327
+      chromosome: *id328
+      start: *id329
+      end: *id330
+      strand: *id331
+      sequence_padlock_probe: *id332
+      sequence_detection_oligo: *id333
+      sequence_padlock_arm1: *id334
+      sequence_padlock_accessory1: *id335
+      sequence_padlock_ISS_anchor: *id336
+      barcode: *id337
+      sequence_padlock_accessory2: *id338
+      sequence_padlock_arm2: *id339
+      sequence_target: *id340
+      sequence_target_probe: *id341
+      length: *id342
+      ligation_site: *id343
+      Tm_arm1: *id344
+      Tm_arm2: *id345
+      Tm_diff_arms: *id346
+      Tm_detection_oligo: *id347
+      isoform_consensus: *id348
+  Oligoset 3:
+    Oligoset Score:
+      set_score_worst: 0.993
+      set_score_sum: 4.189
+    Oligo 1:
+      oligo_id: PRR35::9599
+      source: *id233
+      species: *id234
+      annotation_release: *id235
+      genome_assembly: *id236
+      regiontype: *id237
+      gene_id: *id238
+      transcript_id: *id239
+      exon_number: *id240
+      chromosome: *id241
+      start: *id242
+      end: *id243
+      strand: *id244
+      sequence_padlock_probe: *id245
+      sequence_detection_oligo: *id246
+      sequence_padlock_arm1: *id247
+      sequence_padlock_accessory1: *id248
+      sequence_padlock_ISS_anchor: *id249
+      barcode: *id250
+      sequence_padlock_accessory2: *id251
+      sequence_padlock_arm2: *id252
+      sequence_target: *id253
+      sequence_target_probe: *id254
+      length: *id255
+      ligation_site: *id256
+      Tm_arm1: *id257
+      Tm_arm2: *id258
+      Tm_diff_arms: *id259
+      Tm_detection_oligo: *id260
+      isoform_consensus: *id261
+    Oligo 2:
+      oligo_id: PRR35::7368
+      source: *id349
+      species: *id350
+      annotation_release: *id351
+      genome_assembly: *id352
+      regiontype: *id353
+      gene_id: *id354
+      transcript_id: *id355
+      exon_number: *id356
+      chromosome: *id357
+      start: *id358
+      end: *id359
+      strand: *id360
+      sequence_padlock_probe: *id361
+      sequence_detection_oligo: *id362
+      sequence_padlock_arm1: *id363
+      sequence_padlock_accessory1: *id364
+      sequence_padlock_ISS_anchor: *id365
+      barcode: *id366
+      sequence_padlock_accessory2: *id367
+      sequence_padlock_arm2: *id368
+      sequence_target: *id369
+      sequence_target_probe: *id370
+      length: *id371
+      ligation_site: *id372
+      Tm_arm1: *id373
+      Tm_arm2: *id374
+      Tm_diff_arms: *id375
+      Tm_detection_oligo: *id376
+      isoform_consensus: *id377
+    Oligo 3:
+      oligo_id: PRR35::10530
+      source: *id262
+      species: *id263
+      annotation_release: *id264
+      genome_assembly: *id265
+      regiontype: *id266
+      gene_id: *id267
+      transcript_id: *id268
+      exon_number: *id269
+      chromosome: *id270
+      start: *id271
+      end: *id272
+      strand: *id273
+      sequence_padlock_probe: *id274
+      sequence_detection_oligo: *id275
+      sequence_padlock_arm1: *id276
+      sequence_padlock_accessory1: *id277
+      sequence_padlock_ISS_anchor: *id278
+      barcode: *id279
+      sequence_padlock_accessory2: *id280
+      sequence_padlock_arm2: *id281
+      sequence_target: *id282
+      sequence_target_probe: *id283
+      length: *id284
+      ligation_site: *id285
+      Tm_arm1: *id286
+      Tm_arm2: *id287
+      Tm_diff_arms: *id288
+      Tm_detection_oligo: *id289
+      isoform_consensus: *id290
+    Oligo 4:
+      oligo_id: PRR35::9379
+      source: [[NCBI]]
+      species: [[Homo_sapiens]]
+      annotation_release: [['110']]
+      genome_assembly: [[GRCh38]]
+      regiontype: [[five_prime_UTR]]
+      gene_id: [[PRR35]]
+      transcript_id: [[XM_017022961.1]]
+      exon_number: [['1']]
+      chromosome: [['16']]
+      start: [[562633]]
+      end: [[562675]]
+      strand: [[+]]
+      sequence_padlock_probe: [[ACGGAAGGGTCTGTGTGGGTCCTCTATGATTACTGACTGCGTCTATTTAGTGGAGCCTACACTATCTTCTTTAAAAGGCACTGAGATGAGACACCA]]
+      sequence_detection_oligo: [['GGCACTGAGATGAGACACCAACGGAAGGGUCTGTGUGGG[fluorophore]']]
+      sequence_padlock_arm1: [[ACGGAAGGGTCTGTGTGGG]]
+      sequence_padlock_accessory1: [[TCCTCTATGATTACTGAC]]
+      sequence_padlock_ISS_anchor: [[TGCGTCTATTTAGTGGAGCC]]
+      barcode: [[TACA]]
+      sequence_padlock_accessory2: [[CTATCTTCTTT]]
+      sequence_padlock_arm2: [[AAAAGGCACTGAGATGAGACACCA]]
+      sequence_target: [[CCCACACAGACCCTTCCGTTGGTGTCTCATCTCAGTGCCTTTT]]
+      sequence_target_probe: [[AAAAGGCACTGAGATGAGACACCAACGGAAGGGTCTGTGTGGG]]
+      length: [[43]]
+      ligation_site: [[24]]
+      Tm_arm1: [[55.36]]
+      Tm_arm2: [[54.71]]
+      Tm_diff_arms: [[0.65]]
+      Tm_detection_oligo: [[50.04]]
+      isoform_consensus: [[null]]
+    Oligo 5:
+      oligo_id: PRR35::10348
+      source: *id320
+      species: *id321
+      annotation_release: *id322
+      genome_assembly: *id323
+      regiontype: *id324
+      gene_id: *id325
+      transcript_id: *id326
+      exon_number: *id327
+      chromosome: *id328
+      start: *id329
+      end: *id330
+      strand: *id331
+      sequence_padlock_probe: *id332
+      sequence_detection_oligo: *id333
+      sequence_padlock_arm1: *id334
+      sequence_padlock_accessory1: *id335
+      sequence_padlock_ISS_anchor: *id336
+      barcode: *id337
+      sequence_padlock_accessory2: *id338
+      sequence_padlock_arm2: *id339
+      sequence_target: *id340
+      sequence_target_probe: *id341
+      length: *id342
+      ligation_site: *id343
+      Tm_arm1: *id344
+      Tm_arm2: *id345
+      Tm_diff_arms: *id346
+      Tm_detection_oligo: *id347
+      isoform_consensus: *id348

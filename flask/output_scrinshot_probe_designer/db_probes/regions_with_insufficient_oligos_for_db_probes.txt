@@ -1,0 +1,82 @@
+Region	Pipeline step
+MIR4519	Property Filters
+Region	Pipeline step
+Region	Pipeline step
+Region	Pipeline step
+Region	Pipeline step
+Region	Pipeline step
+Region	Pipeline step
+DECR2	Not in Annotation
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+Region	Pipeline step
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+DECR2	Not in Annotation
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+Region	Pipeline step
+DECR2	Not in Annotation
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+Region	Pipeline step
+PRR35	Not in Annotation
+DECR2	Not in Annotation
+AARS1	Not in Annotation
+Region	Pipeline step
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+PRR35	Not in Annotation
+AARS1	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+PRR35	Not in Annotation
+AARS1	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+AARS1	Not in Annotation
+PRR35	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+PRR35	Not in Annotation
+AARS1	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+PRR35	Not in Annotation
+AARS1	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+PRR35	Not in Annotation
+DECR2	Not in Annotation
+AARS1	Not in Annotation
+Region	Pipeline step
+PRR35	Not in Annotation
+AARS1	Not in Annotation
+DECR2	Not in Annotation
+Region	Pipeline step
+DECR2	oligoset generation
+Region	Pipeline step
+Region	Pipeline step
+DECR2	oligoset generation
+Region	Pipeline step
+DECR2	oligoset generation
+Region	Pipeline step
+DECR2	oligoset generation
+Region	Pipeline step
+DECR2	oligoset generation
+Region	Pipeline step
+DECR2	oligoset generation
+Region	Pipeline step
+Region	Pipeline step

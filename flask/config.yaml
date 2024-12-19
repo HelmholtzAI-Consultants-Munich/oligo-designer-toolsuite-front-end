@@ -1,0 +1,116 @@
+n_jobs: 4
+dir_output: output_scrinshot_probe_designer
+write_intermediate_steps: true
+file_regions: uploads/45a58b7499634492bf9d3f917528690d_custom_3.txt
+files_fasta_probe_database:
+- uploads/5c60a82944e444e69556c7e4126589ca_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/3dd0425b5cf04bbeadfb34ab5b16681d_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+probe_length_min: 40
+probe_length_max: 45
+probe_isoform_consensus: 50
+probe_GC_content_min: 40
+probe_GC_content_max: 60
+probe_Tm_min: 65
+probe_Tm_max: 75
+homopolymeric_base_n:
+  A: 5
+  T: 5
+  C: 5
+  G: 5
+arm_Tm_dif_max: 2
+arm_length_min: 10
+arm_Tm_min: 50
+arm_Tm_max: 60
+min_thymines: 2
+detect_oligo_length_min: 15
+detect_oligo_length_max: 40
+files_fasta_reference_database:
+- data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+ligation_region_size: 5
+probe_isoform_weight: 2
+probe_GC_content_opt: 50
+probe_GC_weight: 1
+probe_Tm_opt: 70
+probe_Tm_weight: 1
+probeset_size_min: 3
+probeset_size_opt: 5
+distance_between_probes: 0
+n_sets: 100
+U_distance: 5
+detect_oligo_Tm_opt: 56
+top_n_sets: 3
+specificity_blastn_search_parameters:
+  perc_identity: 80
+  strand: minus
+  word_size: 10
+  dust: 'no'
+  soft_masking: 'false'
+  max_target_seqs: 10
+  max_hsps: 1000
+specificity_blastn_hit_parameters:
+  coverage: 50
+cross_hybridization_blastn_search_parameters:
+  perc_identity: 80
+  strand: minus
+  word_size: 10
+  dust: 'no'
+  soft_masking: 'false'
+  max_target_seqs: 10
+cross_hybridization_blastn_hit_parameters:
+  coverage: 80
+max_graph_size: 5000
+n_attempts: 10000
+pre_filtering: false
+Tm_parameters_probe:
+  check: true
+  strict: true
+  c_seq: null
+  shift: 0
+  nn_table: DNA_NN3
+  tmm_table: DNA_TMM1
+  imm_table: DNA_IMM1
+  de_table: DNA_DE1
+  dnac1: 50
+  dnac2: 0
+  selfcomp: false
+  saltcorr: 7
+  Na: 39
+  K: 75
+  Tris: 20
+  Mg: 10
+  dNTPs: 0
+Tm_chem_correction_param_probe:
+  DMSO: 0
+  fmd: 20
+  DMSOfactor: 0.75
+  fmdfactor: 0.65
+  fmdmethod: 1
+  GC: null
+Tm_salt_correction_param_probe: null
+Tm_parameters_detection_oligo:
+  check: true
+  strict: true
+  c_seq: null
+  shift: 0
+  nn_table: DNA_NN3
+  tmm_table: DNA_TMM1
+  imm_table: DNA_IMM1
+  de_table: DNA_DE1
+  dnac1: 50
+  dnac2: 0
+  selfcomp: false
+  saltcorr: 7
+  Na: 39
+  K: 0
+  Tris: 0
+  Mg: 0
+  dNTPs: 0
+Tm_chem_correction_param_detection_oligo:
+  DMSO: 0
+  fmd: 30
+  DMSOfactor: 0.75
+  fmdfactor: 0.65
+  fmdmethod: 1
+  GC: null
+Tm_salt_correction_param_detection_oligo: null
