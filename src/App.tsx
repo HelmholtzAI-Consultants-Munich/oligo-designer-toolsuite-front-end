@@ -8,6 +8,7 @@ import Scrinshot from "./pages/scrinshot";
 import Runs from "./pages/runs";
 import Genomic from "./pages/genomic";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 import Login from "./pages/login";
 function App() {
     return (
