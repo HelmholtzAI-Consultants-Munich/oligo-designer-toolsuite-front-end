@@ -86,16 +86,18 @@ def scrinshot():
         "n_jobs": to_int(form_data["n_jobs"]),
         "dir_output": form_data["dir_output"],
         "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]),
-
+        "top_n_sets": to_int(form_data["top_n_sets"]),
         # Probe sequences generation
         "file_regions": form_data["file_regions"],
-        "files_fasta_probe_database": multiline_to_list(form_data["files_fasta_probe_database"]),
+        "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]),
         "probe_length_min": to_int(form_data["probe_length_min"]),
         "probe_length_max": to_int(form_data["probe_length_max"]),
         "probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]),
 
         # Property filters
         "probe_GC_content_min": to_int(form_data["probe_GC_content_min"]),
+        "probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
         "probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
         "probe_Tm_min": to_int(form_data["probe_Tm_min"]),
         "probe_Tm_max": to_int(form_data["probe_Tm_max"]),
@@ -118,12 +120,10 @@ def scrinshot():
         "detect_oligo_length_max": to_int(form_data["detect_oligo_length_max"]),
 
         # Specificity filters
-        "files_fasta_reference_database": multiline_to_list(form_data["files_fasta_reference_database"]),
         "ligation_region_size": to_int(form_data["ligation_region_size"]),
 
         # Set selection parameters
         "probe_isoform_weight": to_int(form_data["probe_isoform_weight"]),
-        "probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
         "probe_GC_weight": to_int(form_data["probe_GC_weight"]),
         "probe_Tm_opt": to_int(form_data["probe_Tm_opt"]),
         "probe_Tm_weight": to_int(form_data["probe_Tm_weight"]),
@@ -135,7 +135,7 @@ def scrinshot():
         # Final sequence design
         "U_distance": to_int(form_data["U_distance"]),
         "detect_oligo_Tm_opt": to_int(form_data["detect_oligo_Tm_opt"]),
-        "top_n_sets": to_int(form_data["top_n_sets"]),
+
 
         # Developer parameters
         "specificity_blastn_search_parameters": {

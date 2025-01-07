@@ -11,7 +11,8 @@ const Scrinshot: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [files, setFiles] = useState({
         file_regions: null,
-        files_fasta_probe_database: null,
+        files_fasta_target_probe_database: null,
+        files_fasta_reference_database_target_probe : null,
     });
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
@@ -21,7 +22,7 @@ const Scrinshot: React.FC = () => {
         // @ts-ignore
         setFiles((prevFiles) => {
             // Check if the input field should support multiple files
-            if (name === "files_fasta_probe_database") {
+            if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe") {
                 return {
                     ...prevFiles,
                     [name]: [...(prevFiles[name] || []), ...Array.from(selectedFiles)], // Append new files to existing ones
@@ -112,16 +113,19 @@ const Scrinshot: React.FC = () => {
         n_jobs: "4",
         dir_output: "output_scrinshot_probe_designer",
         write_intermediate_steps: "true",
+        top_n_sets: '3',
 
         // Probe Sequences Generation
         file_regions: "",
-        files_fasta_probe_database: ``,
+        files_fasta_target_probe_database: ``,
+        files_fasta_reference_database_targe_probe: '',
         probe_length_min: "40",
         probe_length_max: "45",
         probe_isoform_consensus: "50",
 
         // Probe Property Filters
         probe_GC_content_min: "40",
+        probe_GC_content_opt: "50",
         probe_GC_content_max: "60",
         probe_Tm_min: "65",
         probe_Tm_max: "75",
@@ -136,19 +140,10 @@ const Scrinshot: React.FC = () => {
         arm_Tm_min: "50",
         arm_Tm_max: "60",
 
-        // Detection Oligo Properties
-        min_thymines: "2",
-        detect_oligo_length_min: "15",
-        detect_oligo_length_max: "40",
-
-        // Specificity Filters
-        files_fasta_reference_database: `data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
-data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna`,
         ligation_region_size: "5",
 
         // Set Selection Parameters
         probe_isoform_weight: "2",
-        probe_GC_content_opt: "50",
         probe_GC_weight: "1",
         probe_Tm_opt: "70",
         probe_Tm_weight: "1",
@@ -157,10 +152,16 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
         distance_between_probes: "0",
         n_sets: "100",
 
+        // Detection Oligo Properties
+        min_thymines: "2",
+        detect_oligo_length_min: "15",
+        detect_oligo_length_max: "40",
+
+
+
         // Final Sequence Design
         U_distance: "5",
         detect_oligo_Tm_opt: "56",
-        top_n_sets: "3",
 
         // Developer Parameters - Specificity Filters with BlastN
         specificity_perc_identity: "80",
@@ -185,6 +186,8 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
         max_graph_size: "5000",
         n_attempts: "10000",
         pre_filtering: "false",
+        heuristic: 'True',
+        heuristic_n_attempts: '100',
 
         // Target Probe Parameters
         Tm_probe_check: "true",
@@ -248,20 +251,27 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                         <div className="mb-3">
                             <label htmlFor="n_jobs" className="form-label">Number of Jobs:</label>
                             <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                   value={formData.n_jobs} onChange={handleChange} required />
+                                   value={formData.n_jobs} onChange={handleChange} required/>
                         </div>
                         <div className="mb-3">
                             <label htmlFor="dir_output" className="form-label">Output Directory:</label>
                             <input type="text" className="form-control" id="dir_output" name="dir_output"
-                                   value={formData.dir_output} onChange={handleChange} required />
+                                   value={formData.dir_output} onChange={handleChange} required/>
                         </div>
                         <div className="mb-3">
-                            <label htmlFor="write_intermediate_steps" className="form-label">Write Intermediate Steps:</label>
-                            <select className="form-select" id="write_intermediate_steps" name="write_intermediate_steps"
+                            <label htmlFor="write_intermediate_steps" className="form-label">Write Intermediate
+                                Steps:</label>
+                            <select className="form-select" id="write_intermediate_steps"
+                                    name="write_intermediate_steps"
                                     value={formData.write_intermediate_steps} onChange={handleChange}>
                                 <option value="true">True</option>
                                 <option value="false">False</option>
                             </select>
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
+                            <input type="number" className="form-control" id="n_jobs" name="n_jobs"
+                                   value={formData.top_n_sets} onChange={handleChange} required/>
                         </div>
                     </div>
                 );
@@ -269,7 +279,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                 return (
                     <div>
                         <div className="mb-4">
-                            <h4>Probe Sequences Generation</h4>
+                            <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
                                 <label htmlFor="file_regions" className="form-label">Regions File:</label>
                                 <input
@@ -281,13 +291,26 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_probe_database" className="form-label">Fasta Probe
+                                <label htmlFor="files_fasta_target_probe_database" className="form-label">Fasta Probe
                                     Database:</label>
                                 <input
                                     type="file"
                                     className="form-control"
-                                    id="files_fasta_probe_database"
-                                    name="files_fasta_probe_database"
+                                    id="files_fasta_target_probe_database"
+                                    name="files_fasta_target_probe_database"
+                                    onChange={handleFileChange}
+                                    multiple
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="files_fasta_reference_database_targe_probe" className="form-label">Fasta
+                                    Probe
+                                    Database:</label>
+                                <input
+                                    type="file"
+                                    className="form-control"
+                                    id="files_fasta_reference_database_targe_probe"
+                                    name="files_fasta_reference_database_targe_probe"
                                     onChange={handleFileChange}
                                     multiple
                                 />
@@ -300,7 +323,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                    value={formData.probe_length_min} onChange={handleChange} required/>
                         </div>
                         <div className="mb-3">
-                        <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
+                            <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
                             <input type="number" className="form-control" id="probe_length_max"
                                    name="probe_length_max"
                                    value={formData.probe_length_max} onChange={handleChange} required/>
@@ -312,77 +335,62 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                    name="probe_isoform_consensus"
                                    value={formData.probe_isoform_consensus} onChange={handleChange} required/>
                         </div>
-                    </div>
-                );
-
-            case 'filters':
-                return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Probe Property Filters</h4>
-                            <div className="mb-3">
-                                <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
-                                    (%):</label>
-                                <input type="number" className="form-control" id="probe_GC_content_min"
-                                       name="probe_GC_content_min"
-                                       value={formData.probe_GC_content_min} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
-                                    (%):</label>
-                                <input type="number" className="form-control" id="probe_GC_content_max"
-                                       name="probe_GC_content_max"
-                                       value={formData.probe_GC_content_max} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="probe_Tm_min" className="form-label">Min Tm (°C):</label>
-                                <input type="number" className="form-control" id="probe_Tm_min" name="probe_Tm_min"
-                                       value={formData.probe_Tm_min} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="probe_Tm_max" className="form-label">Max Tm (°C):</label>
-                                <input type="number" className="form-control" id="probe_Tm_max" name="probe_Tm_max"
-                                       value={formData.probe_Tm_max} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label className="form-label">Homopolymeric Base Run (min number of
-                                    nucleotides):</label>
-                                <div className="row g-3">
-                                    <div className="col">
-                                        <label htmlFor="homopolymeric_A" className="form-label">A:</label>
-                                        <input type="number" className="form-control" id="homopolymeric_A"
-                                               name="homopolymeric_A"
-                                               value={formData.homopolymeric_A} onChange={handleChange} required/>
-                                    </div>
-                                    <div className="col">
-                                        <label htmlFor="homopolymeric_T" className="form-label">T:</label>
-                                        <input type="number" className="form-control" id="homopolymeric_T"
-                                               name="homopolymeric_T"
-                                               value={formData.homopolymeric_T} onChange={handleChange} required/>
-                                    </div>
-                                    <div className="col">
-                                        <label htmlFor="homopolymeric_C" className="form-label">C:</label>
-                                        <input type="number" className="form-control" id="homopolymeric_C"
-                                               name="homopolymeric_C"
-                                               value={formData.homopolymeric_C} onChange={handleChange} required/>
-                                    </div>
-                                    <div className="col">
-                                        <label htmlFor="homopolymeric_G" className="form-label">G:</label>
-                                        <input type="number" className="form-control" id="homopolymeric_G"
-                                               name="homopolymeric_G"
-                                               value={formData.homopolymeric_G} onChange={handleChange} required/>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="mb-3">
+                            <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
+                                (%):</label>
+                            <input type="number" className="form-control" id="probe_GC_content_min"
+                                   name="probe_GC_content_min"
+                                   value={formData.probe_GC_content_min} onChange={handleChange} required/>
                         </div>
-                    </div>
-                );
-
-            case 'padlock_arms':
-                return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Padlock Arms</h4>
+                        <div className="mb-3">
+                            <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
+                                (%):</label>
+                            <input type="number" className="form-control" id="probe_GC_content_opt"
+                                   name="probe_GC_content_opt"
+                                   value={formData.probe_GC_content_opt} onChange={handleChange} required/>
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
+                                (%):</label>
+                            <input type="number" className="form-control" id="probe_GC_content_max"
+                                   name="probe_GC_content_max"
+                                   value={formData.probe_GC_content_max} onChange={handleChange} required/>
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="probe_Tm_min" className="form-label">Min Tm (°C):</label>
+                            <input type="number" className="form-control" id="probe_Tm_min" name="probe_Tm_min"
+                                   value={formData.probe_Tm_min} onChange={handleChange} required/>
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="probe_Tm_max" className="form-label">Max Tm (°C):</label>
+                            <input type="number" className="form-control" id="probe_Tm_max" name="probe_Tm_max"
+                                   value={formData.probe_Tm_max} onChange={handleChange} required/>
+                        </div>
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="homopolymeric_A" className="form-label">A:</label>
+                                <input type="number" className="form-control" id="homopolymeric_A"
+                                       name="homopolymeric_A"
+                                       value={formData.homopolymeric_A} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="homopolymeric_T" className="form-label">T:</label>
+                                <input type="number" className="form-control" id="homopolymeric_T"
+                                       name="homopolymeric_T"
+                                       value={formData.homopolymeric_T} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="homopolymeric_C" className="form-label">C:</label>
+                                <input type="number" className="form-control" id="homopolymeric_C"
+                                       name="homopolymeric_C"
+                                       value={formData.homopolymeric_C} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="homopolymeric_G" className="form-label">G:</label>
+                                <input type="number" className="form-control" id="homopolymeric_G"
+                                       name="homopolymeric_G"
+                                       value={formData.homopolymeric_G} onChange={handleChange} required/>
+                            </div>
                             <div className="mb-3">
                                 <label htmlFor="arm_Tm_dif_max" className="form-label">Max Tm Difference Between
                                     Arms:</label>
@@ -406,42 +414,14 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                 <input type="number" className="form-control" id="arm_Tm_max" name="arm_Tm_max"
                                        value={formData.arm_Tm_max} onChange={handleChange}/>
                             </div>
-                        </div>
-                    </div>
-                );
-            case 'detection_oligos':
-                return (
-                    <div>
-
-                        <div className="mb-4">
-                            <h4>Detection Oligo Properties</h4>
                             <div className="mb-3">
-                                <label htmlFor="min_thymines" className="form-label">Min Thymines:</label>
-                                <input type="number" className="form-control" id="min_thymines" name="min_thymines"
-                                       value={formData.min_thymines} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="detect_oligo_length_min" className="form-label">Min Length
-                                    (bp):</label>
-                                <input type="number" className="form-control" id="detect_oligo_length_min"
-                                       name="detect_oligo_length_min"
-                                       value={formData.detect_oligo_length_min} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="detect_oligo_length_max" className="form-label">Max Length
-                                    (bp):</label>
-                                <input type="number" className="form-control" id="detect_oligo_length_max"
-                                       name="detect_oligo_length_max"
-                                       value={formData.detect_oligo_length_max} onChange={handleChange} required/>
+                                <label htmlFor="ligation_region_size" className="form-label">Litigation Region
+                                    Size:</label>
+                                <input type="number" className="form-control" id="ligation_region_size"
+                                       name="ligation_region_size"
+                                       value={formData.ligation_region_size} onChange={handleChange}/>
                             </div>
                         </div>
-
-                    </div>
-                );
-            case 'set_selection':
-                return (
-                    <div>
-
                         <div className="mb-4">
                             <h4>Set Selection Parameters</h4>
                             <div className="mb-3">
@@ -451,13 +431,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                        name="probe_isoform_weight"
                                        value={formData.probe_isoform_weight} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
-                                    (%):</label>
-                                <input type="number" className="form-control" id="probe_GC_content_opt"
-                                       name="probe_GC_content_opt"
-                                       value={formData.probe_GC_content_opt} onChange={handleChange} required/>
-                            </div>
+
                             <div className="mb-3">
                                 <label htmlFor="probe_GC_weight" className="form-label">GC Content Weight:</label>
                                 <input type="number" className="form-control" id="probe_GC_weight"
@@ -502,15 +476,58 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                        value={formData.n_sets} onChange={handleChange} required/>
                             </div>
                         </div>
-
                     </div>
-                )
-            case 'final_seq':
+                );
+
+            case 'filters':
+                return (
+                    <div>
+                        <div className="mb-4">
+                            <h4>Probe Property Filters</h4>
+
+                            <div className="mb-3">
+                                <label className="form-label">Homopolymeric Base Run (min number of
+                                    nucleotides):</label>
+
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'padlock_arms':
+                return (
+                    <div>
+                        <div className="mb-4">
+                            <h4>Padlock Arms</h4>
+
+                        </div>
+                    </div>
+                );
+            case 'detection_oligos':
                 return (
                     <div>
 
                         <div className="mb-4">
-                            <h4>Final Sequence Design</h4>
+                            <h4>Detection Oligo Properties</h4>
+                            <div className="mb-3">
+                                <label htmlFor="min_thymines" className="form-label">Min Thymines:</label>
+                                <input type="number" className="form-control" id="min_thymines" name="min_thymines"
+                                       value={formData.min_thymines} onChange={handleChange} required/>
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="detect_oligo_length_min" className="form-label">Min Length
+                                    (bp):</label>
+                                <input type="number" className="form-control" id="detect_oligo_length_min"
+                                       name="detect_oligo_length_min"
+                                       value={formData.detect_oligo_length_min} onChange={handleChange} required/>
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="detect_oligo_length_max" className="form-label">Max Length
+                                    (bp):</label>
+                                <input type="number" className="form-control" id="detect_oligo_length_max"
+                                       name="detect_oligo_length_max"
+                                       value={formData.detect_oligo_length_max} onChange={handleChange} required/>
+                            </div>
                             <div className="mb-3">
                                 <label htmlFor="U_distance" className="form-label">Preferred U Distance:</label>
                                 <input type="number" className="form-control" id="U_distance" name="U_distance"
@@ -523,12 +540,24 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                        name="detect_oligo_Tm_opt"
                                        value={formData.detect_oligo_Tm_opt} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets to
-                                    Report:</label>
-                                <input type="number" className="form-control" id="top_n_sets" name="top_n_sets"
-                                       value={formData.top_n_sets} onChange={handleChange} required/>
-                            </div>
+                        </div>
+
+                    </div>
+                );
+            case 'set_selection':
+                return (
+                    <div>
+
+
+                    </div>
+                )
+            case 'final_seq':
+                return (
+                    <div>
+
+                        <div className="mb-4">
+                            <h4>Final Sequence Design</h4>
+
                         </div>
 
                     </div>
@@ -708,6 +737,21 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                     <option value="false">False</option>
                                 </select>
                             </div>
+                            <div className="col-md-6">
+                                <label htmlFor="heuristic" className="form-label">Heuristic:</label>
+                                <select className="form-control" id="heuristic" name="heuristic"
+                                        value={formData.heuristic} onChange={handleChange}>
+                                    <option value="true">True</option>
+                                    <option value="false">False</option>
+                                </select>
+                            </div>
+                            <div className="col-md-6">
+                                <label htmlFor="heuristic_n_attempts" className="form-label"> Heuristics number of
+                                    Attempts:</label>
+                                <input type="number" className="form-control" id="n_attempts"
+                                       name="heuristic_n_attempts"
+                                       value={formData.heuristic_n_attempts} onChange={handleChange} required/>
+                            </div>
                         </div>
 
                     </div>
@@ -842,138 +886,54 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                             </div>
 
                         </div>
-                        <h5>Melting Temperature Parameters for Detection Oligo</h5>
                         <div className="row g-3">
                             <div className="col-md-6">
-                                <label htmlFor="Tm_detection_check"
-                                       className="form-label">Check:</label>
-                                <select className="form-control" id="Tm_detection_check"
-                                        name="Tm_detection_check"
-                                        value={formData.Tm_detection_check} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
+                                <label htmlFor="Tm_probe_DMSO" className="form-label">DMSO
+                                    (%):</label>
+                                <input type="number" className="form-control" id="Tm_probe_DMSO"
+                                       name="Tm_probe_DMSO"
+                                       value={formData.Tm_probe_DMSO} onChange={handleChange}/>
                             </div>
                             <div className="col-md-6">
-                                <label htmlFor="Tm_detection_strict"
-                                       className="form-label">Strict:</label>
-                                <select className="form-control" id="Tm_detection_strict"
-                                        name="Tm_detection_strict"
-                                        value={formData.Tm_detection_strict} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
+                                <label htmlFor="Tm_probe_fmd" className="form-label">Formamide (fmd,
+                                    %):</label>
+                                <input type="number" className="form-control" id="Tm_probe_fmd"
+                                       name="Tm_probe_fmd"
+                                       value={formData.Tm_probe_fmd} onChange={handleChange}/>
                             </div>
                             <div className="col-md-6">
-                                <label htmlFor="Tm_detection_c_seq" className="form-label">Complementary
-                                    Sequence:</label>
-                                <input type="text" className="form-control" id="Tm_detection_c_seq"
-                                       name="Tm_detection_c_seq"
-                                       value={formData.Tm_detection_c_seq} onChange={handleChange}
+                                <label htmlFor="Tm_probe_DMSOfactor" className="form-label">DMSO
+                                    Factor:</label>
+                                <input type="number" className="form-control"
+                                       id="Tm_probe_DMSOfactor" name="Tm_probe_DMSOfactor"
+                                       value={formData.Tm_probe_DMSOfactor} step="0.01"
+                                       onChange={handleChange}/>
+                            </div>
+                            <div className="col-md-6">
+                                <label htmlFor="Tm_probe_fmdfactor" className="form-label">Formamide
+                                    Factor:</label>
+                                <input type="number" className="form-control"
+                                       id="Tm_probe_fmdfactor" name="Tm_probe_fmdfactor"
+                                       value={formData.Tm_probe_fmdfactor} step="0.01"
+                                       onChange={handleChange}/>
+                            </div>
+                            <div className="col-md-6">
+                                <label htmlFor="Tm_probe_fmdmethod" className="form-label">Formamide
+                                    Method:</label>
+                                <input type="number" className="form-control"
+                                       id="Tm_probe_fmdmethod" name="Tm_probe_fmdmethod"
+                                       value={formData.Tm_probe_fmdmethod} onChange={handleChange}/>
+                            </div>
+                            <div className="col-md-6">
+                                <label htmlFor="Tm_probe_GC" className="form-label">GC
+                                    (optional):</label>
+                                <input type="text" className="form-control" id="Tm_probe_GC"
+                                       name="Tm_probe_GC"
+                                       value={formData.Tm_probe_GC} onChange={handleChange}
                                        placeholder="null"/>
                             </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_shift"
-                                       className="form-label">Shift:</label>
-                                <input type="number" className="form-control" id="Tm_detection_shift"
-                                       name="Tm_detection_shift"
-                                       value={formData.Tm_detection_shift} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_nn_table" className="form-label">Nearest
-                                    Neighbor Table:</label>
-                                <input type="text" className="form-control" id="Tm_detection_nn_table"
-                                       name="Tm_detection_nn_table"
-                                       value={formData.Tm_detection_nn_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_tmm_table" className="form-label">TMM
-                                    Table:</label>
-                                <input type="text" className="form-control" id="Tm_detection_tmm_table"
-                                       name="Tm_detection_tmm_table"
-                                       value={formData.Tm_detection_tmm_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_imm_table" className="form-label">IMM
-                                    Table:</label>
-                                <input type="text" className="form-control" id="Tm_detection_imm_table"
-                                       name="Tm_detection_imm_table"
-                                       value={formData.Tm_detection_imm_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_de_table" className="form-label">DE
-                                    Table:</label>
-                                <input type="text" className="form-control" id="Tm_detection_de_table"
-                                       name="Tm_detection_de_table"
-                                       value={formData.Tm_detection_de_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_dnac1" className="form-label">DNA
-                                    Concentration 1 (nM):</label>
-                                <input type="number" className="form-control" id="Tm_detection_dnac1"
-                                       name="Tm_detection_dnac1"
-                                       value={formData.Tm_detection_dnac1} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_dnac2" className="form-label">DNA
-                                    Concentration 2 (nM):</label>
-                                <input type="number" className="form-control" id="Tm_detection_dnac2"
-                                       name="Tm_detection_dnac2"
-                                       value={formData.Tm_detection_dnac2} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_selfcomp"
-                                       className="form-label">Self-Complementarity:</label>
-                                <select className="form-control" id="Tm_detection_selfcomp"
-                                        name="Tm_detection_selfcomp"
-                                        value={formData.Tm_detection_selfcomp} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_saltcorr" className="form-label">Salt
-                                    Correction:</label>
-                                <input type="number" className="form-control" id="Tm_detection_saltcorr"
-                                       name="Tm_detection_saltcorr"
-                                       value={formData.Tm_detection_saltcorr} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_Na" className="form-label">Na Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_detection_Na"
-                                       name="Tm_detection_Na"
-                                       value={formData.Tm_detection_Na} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_K" className="form-label">K Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_detection_K"
-                                       name="Tm_detection_K"
-                                       value={formData.Tm_detection_K} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_Tris" className="form-label">Tris
-                                    Concentration (mM):</label>
-                                <input type="number" className="form-control" id="Tm_detection_Tris"
-                                       name="Tm_detection_Tris"
-                                       value={formData.Tm_detection_Tris} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_Mg" className="form-label">Mg Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_detection_Mg"
-                                       name="Tm_detection_Mg"
-                                       value={formData.Tm_detection_Mg} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_detection_dNTPs" className="form-label">dNTPs
-                                    Concentration (mM):</label>
-                                <input type="number" className="form-control" id="Tm_detection_dNTPs"
-                                       name="Tm_detection_dNTPs"
-                                       value={formData.Tm_detection_dNTPs} onChange={handleChange}/>
-                            </div>
                         </div>
+
 
                     </div>
                 );
@@ -981,52 +941,136 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                 return (
                     <div>
                         <div className="mb-4">
-                            <h5>Chemical Correction Parameters for Target Probe</h5>
+                            <h5>Melting Temperature Parameters for Detection Oligo</h5>
                             <div className="row g-3">
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_DMSO" className="form-label">DMSO
-                                        (%):</label>
-                                    <input type="number" className="form-control" id="Tm_probe_DMSO"
-                                           name="Tm_probe_DMSO"
-                                           value={formData.Tm_probe_DMSO} onChange={handleChange}/>
+                                    <label htmlFor="Tm_detection_check"
+                                           className="form-label">Check:</label>
+                                    <select className="form-control" id="Tm_detection_check"
+                                            name="Tm_detection_check"
+                                            value={formData.Tm_detection_check} onChange={handleChange}>
+                                        <option value="true">True</option>
+                                        <option value="false">False</option>
+                                    </select>
                                 </div>
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_fmd" className="form-label">Formamide (fmd,
-                                        %):</label>
-                                    <input type="number" className="form-control" id="Tm_probe_fmd"
-                                           name="Tm_probe_fmd"
-                                           value={formData.Tm_probe_fmd} onChange={handleChange}/>
+                                    <label htmlFor="Tm_detection_strict"
+                                           className="form-label">Strict:</label>
+                                    <select className="form-control" id="Tm_detection_strict"
+                                            name="Tm_detection_strict"
+                                            value={formData.Tm_detection_strict} onChange={handleChange}>
+                                        <option value="true">True</option>
+                                        <option value="false">False</option>
+                                    </select>
                                 </div>
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_DMSOfactor" className="form-label">DMSO
-                                        Factor:</label>
-                                    <input type="number" className="form-control"
-                                           id="Tm_probe_DMSOfactor" name="Tm_probe_DMSOfactor"
-                                           value={formData.Tm_probe_DMSOfactor} step="0.01"
-                                           onChange={handleChange}/>
-                                </div>
-                                <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_fmdfactor" className="form-label">Formamide
-                                        Factor:</label>
-                                    <input type="number" className="form-control"
-                                           id="Tm_probe_fmdfactor" name="Tm_probe_fmdfactor"
-                                           value={formData.Tm_probe_fmdfactor} step="0.01"
-                                           onChange={handleChange}/>
-                                </div>
-                                <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_fmdmethod" className="form-label">Formamide
-                                        Method:</label>
-                                    <input type="number" className="form-control"
-                                           id="Tm_probe_fmdmethod" name="Tm_probe_fmdmethod"
-                                           value={formData.Tm_probe_fmdmethod} onChange={handleChange}/>
-                                </div>
-                                <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_GC" className="form-label">GC
-                                        (optional):</label>
-                                    <input type="text" className="form-control" id="Tm_probe_GC"
-                                           name="Tm_probe_GC"
-                                           value={formData.Tm_probe_GC} onChange={handleChange}
+                                    <label htmlFor="Tm_detection_c_seq" className="form-label">Complementary
+                                        Sequence:</label>
+                                    <input type="text" className="form-control" id="Tm_detection_c_seq"
+                                           name="Tm_detection_c_seq"
+                                           value={formData.Tm_detection_c_seq} onChange={handleChange}
                                            placeholder="null"/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_shift"
+                                           className="form-label">Shift:</label>
+                                    <input type="number" className="form-control" id="Tm_detection_shift"
+                                           name="Tm_detection_shift"
+                                           value={formData.Tm_detection_shift} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_nn_table" className="form-label">Nearest
+                                        Neighbor Table:</label>
+                                    <input type="text" className="form-control" id="Tm_detection_nn_table"
+                                           name="Tm_detection_nn_table"
+                                           value={formData.Tm_detection_nn_table} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_tmm_table" className="form-label">TMM
+                                        Table:</label>
+                                    <input type="text" className="form-control" id="Tm_detection_tmm_table"
+                                           name="Tm_detection_tmm_table"
+                                           value={formData.Tm_detection_tmm_table} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_imm_table" className="form-label">IMM
+                                        Table:</label>
+                                    <input type="text" className="form-control" id="Tm_detection_imm_table"
+                                           name="Tm_detection_imm_table"
+                                           value={formData.Tm_detection_imm_table} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_de_table" className="form-label">DE
+                                        Table:</label>
+                                    <input type="text" className="form-control" id="Tm_detection_de_table"
+                                           name="Tm_detection_de_table"
+                                           value={formData.Tm_detection_de_table} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_dnac1" className="form-label">DNA
+                                        Concentration 1 (nM):</label>
+                                    <input type="number" className="form-control" id="Tm_detection_dnac1"
+                                           name="Tm_detection_dnac1"
+                                           value={formData.Tm_detection_dnac1} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_dnac2" className="form-label">DNA
+                                        Concentration 2 (nM):</label>
+                                    <input type="number" className="form-control" id="Tm_detection_dnac2"
+                                           name="Tm_detection_dnac2"
+                                           value={formData.Tm_detection_dnac2} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_selfcomp"
+                                           className="form-label">Self-Complementarity:</label>
+                                    <select className="form-control" id="Tm_detection_selfcomp"
+                                            name="Tm_detection_selfcomp"
+                                            value={formData.Tm_detection_selfcomp} onChange={handleChange}>
+                                        <option value="true">True</option>
+                                        <option value="false">False</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_saltcorr" className="form-label">Salt
+                                        Correction:</label>
+                                    <input type="number" className="form-control" id="Tm_detection_saltcorr"
+                                           name="Tm_detection_saltcorr"
+                                           value={formData.Tm_detection_saltcorr} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_Na" className="form-label">Na Concentration
+                                        (mM):</label>
+                                    <input type="number" className="form-control" id="Tm_detection_Na"
+                                           name="Tm_detection_Na"
+                                           value={formData.Tm_detection_Na} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_K" className="form-label">K Concentration
+                                        (mM):</label>
+                                    <input type="number" className="form-control" id="Tm_detection_K"
+                                           name="Tm_detection_K"
+                                           value={formData.Tm_detection_K} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_Tris" className="form-label">Tris
+                                        Concentration (mM):</label>
+                                    <input type="number" className="form-control" id="Tm_detection_Tris"
+                                           name="Tm_detection_Tris"
+                                           value={formData.Tm_detection_Tris} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_Mg" className="form-label">Mg Concentration
+                                        (mM):</label>
+                                    <input type="number" className="form-control" id="Tm_detection_Mg"
+                                           name="Tm_detection_Mg"
+                                           value={formData.Tm_detection_Mg} onChange={handleChange}/>
+                                </div>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_dNTPs" className="form-label">dNTPs
+                                        Concentration (mM):</label>
+                                    <input type="number" className="form-control" id="Tm_detection_dNTPs"
+                                           name="Tm_detection_dNTPs"
+                                           value={formData.Tm_detection_dNTPs} onChange={handleChange}/>
                                 </div>
                             </div>
                             <div className="mb-4">
@@ -1112,7 +1156,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
             };
             const response = await axios.post('http://localhost:5000/api/scrinshot', finalFormData,
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {"Content-Type": "application/json"},
                 });
             setStatus("running");
             alert('Form submitted successfully!');
@@ -1122,7 +1166,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
         }
     };
     return (<div>
-            <Navbar />
+            <Navbar/>
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
                     <h2 className="text-center mb-4">Scrinshot Probe Designer</h2>
@@ -1133,7 +1177,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                 className={`nav-link ${activeTab === "general" ? "active" : ""}`}
                                 onClick={() => setActiveTab("general")}
                             >
-                                General
+                                General Parameters
                             </button>
                         </li>
                         <li className="nav-item">
@@ -1142,54 +1186,21 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                 className={`nav-link ${activeTab === "probe_sequences" ? "active" : ""}`}
                                 onClick={() => setActiveTab("probe_sequences")}
                             >
-                                Probe Sequences
+                                Target Probe Parameters
                             </button>
                         </li>
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "filters" ? "active" : ""}`}
-                                onClick={() => setActiveTab("filters")}
-                            >
-                                Filters
-                            </button>
-                        </li>
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "padlock_arms" ? "active" : ""}`}
-                                onClick={() => setActiveTab("padlock_arms")}
-                            >
-                                Padlock Arms
-                            </button>
-                        </li>
+
                         <li className="nav-item">
                             <button
                                 type="button"
                                 className={`nav-link ${activeTab === "detection_oligos" ? "active" : ""}`}
                                 onClick={() => setActiveTab("detection_oligos")}
                             >
-                                Detection Oligos
+                                Detection Oligo Parameters
                             </button>
                         </li>
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "set_selection" ? "active" : ""}`}
-                                onClick={() => setActiveTab("set_selection")}
-                            >
-                                Set Selection
-                            </button>
-                        </li>
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "final_seq" ? "active" : ""}`}
-                                onClick={() => setActiveTab("final_seq")}
-                            >
-                                Final Sequence
-                            </button>
-                        </li>
+
+
                     </ul>
 
 
@@ -1236,7 +1247,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                             className={`nav-link ${activetab2 === "oligosetselection" ? "active" : ""}`}
                                             onClick={() => setActivetab2("oligosetselection")}
                                         >
-                                            Oligo Set Selection
+                                            Oligo Set Selection Parameters
                                         </button>
                                     </li>
                                     <li className="nav-item">
@@ -1245,7 +1256,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                             className={`nav-link ${activetab2 === "meltingtemp" ? "active" : ""}`}
                                             onClick={() => setActivetab2("meltingtemp")}
                                         >
-                                            Melting Temperature Parameters
+                                            Parameters for Melting Temperature
                                         </button>
                                     </li>
                                     <li className="nav-item">
@@ -1254,7 +1265,7 @@ data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapi
                                             className={`nav-link ${activetab2 === "chemcorr" ? "active" : ""}`}
                                             onClick={() => setActivetab2("chemcorr")}
                                         >
-                                            Chemical Correction Parameters
+                                            Detection Oligo Parameters
                                         </button>
                                     </li>
                                 </ul>
