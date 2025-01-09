@@ -7,6 +7,9 @@ import Pipelines from "./pages/pipelines";
 import Scrinshot from "./pages/scrinshot";
 import Runs from "./pages/runs";
 import Genomic from "./pages/genomic";
+import Merfish from "./pages/merfish";
+import  SeqFish from "./pages/seqfish";
+import OligoSeq from "./pages/OligoSeq";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Login from "./pages/login";
@@ -23,6 +26,10 @@ function App() {
                 <Route path="/contacts" element={<Contacts />} />
                 <Route path="/pipelines" element={<Pipelines />} />
                 <Route path="/pipelines/scrinshot" element={<Scrinshot />} />
+                <Route path="/pipelines/merfish" element={<Merfish />} />
+                <Route path="/pipelines/seqfish" element={<SeqFish />} />
+                <Route path="/pipelines/oligoseq" element={<OligoSeq />} />
+
             </Routes>
         </Router>
     );
