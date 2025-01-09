@@ -58,6 +58,7 @@ def scrinshot():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
+    print(form_data)
     # form_data keys are all strings; need to rebuild structure
     
     # Helper function to convert string booleans to Python booleans

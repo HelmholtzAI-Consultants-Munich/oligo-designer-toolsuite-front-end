@@ -118,7 +118,7 @@ const Scrinshot: React.FC = () => {
         // Probe Sequences Generation
         file_regions: "",
         files_fasta_target_probe_database: ``,
-        files_fasta_reference_database_targe_probe: '',
+        files_fasta_reference_database_target_probe: '',
         probe_length_min: "40",
         probe_length_max: "45",
         probe_isoform_consensus: "50",
