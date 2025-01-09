@@ -14,6 +14,25 @@ UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 #socketio = SocketIO(app, cors_allowed_origins="*")  # Enable CORS for frontend connection
+def to_bool(val):
+    return True if str(val).lower() == 'true' else False
+
+    # Helper function to convert string integers to int where applicable
+def to_int(val):
+    try:
+        return int(val)
+    except ValueError:
+        return val
+
+    # Helper for optional null values
+def to_null(val):
+    return None if val == "" or val.lower() == "null" else val
+
+    # Convert multiline textarea fields to lists
+def multiline_to_list(val):
+    # Strip leading/trailing spaces and split by newline
+    lines = [line.strip() for line in val.split('\n') if line.strip()]
+    return lines
 def split_on_newline(s):
     if '\n' in s:
         # Split the string before and after '\n'
@@ -58,29 +77,6 @@ def scrinshot():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
-    print(form_data)
-    # form_data keys are all strings; need to rebuild structure
-    
-    # Helper function to convert string booleans to Python booleans
-    def to_bool(val):
-        return True if str(val).lower() == 'true' else False
-
-    # Helper function to convert string integers to int where applicable
-    def to_int(val):
-        try:
-            return int(val)
-        except ValueError:
-            return val
-
-    # Helper for optional null values
-    def to_null(val):
-        return None if val == "" or val.lower() == "null" else val
-
-    # Convert multiline textarea fields to lists
-    def multiline_to_list(val):
-        # Strip leading/trailing spaces and split by newline
-        lines = [line.strip() for line in val.split('\n') if line.strip()]
-        return lines
 
     # Build the nested config structure:
     config = {
@@ -254,6 +250,76 @@ def scrinshot():
                 'stderr': result.stderr,
                 'returncode': result.returncode
             })
+
+@app.route('/api/genomic', methods=['POST'])
+def genomic():
+
+    try:
+        # Define the path for the configuration file
+        config_path = "config_genomic.yaml"
+        config_genomic = {}
+
+        # Parse JSON data from the request
+        form_data = request.get_json()
+
+        # Populate the config_genomic dictionary based on the received data
+        config_genomic['dir_output'] = form_data.get('dir_output', 'output_genomic_region_generator_custom')
+        config_genomic['source'] = form_data.get('source', 'custom')
+        config_genomic['source_params'] = {
+            'file_annotation': form_data.get('file_annotation', ''),
+            'file_sequence': form_data.get('file_sequence', ''),
+            'files_source': form_data.get('files_source', 'NCBI'),
+            'species': form_data.get('species', 'Homo_sapiens'),
+            'annotation_release': form_data.get('annotation_release', 110),
+            'genome_assembly': form_data.get('genome_assembly', 'GRCh38')
+        }
+        config_genomic['genomic_regions'] = form_data.get('genomic_regions', {
+            'gene': True,
+            'intergenic': True,
+            'exon': True,
+            'exon_exon_junction': True,
+            'utr': True,
+            'cds': True,
+            'intron': True
+        })
+        config_genomic['exon_exon_junction_block_size'] = form_data.get('exon_exon_junction_block_size', 50)
+
+        # Write the dictionary to a YAML file
+        with open(config_path, 'w') as yaml_file:
+            yaml.dump(config_genomic, yaml_file)
+
+        # If you need to run a subprocess based on this configuration, do so here
+        try:
+            result = subprocess.run(
+                ['genomic_tool', config_path],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            # Return success response
+            return jsonify({
+                "status": "success",
+                "message": "Genomic processing completed successfully.",
+                "output": result.stdout
+            }), 200
+        except subprocess.CalledProcessError as e:
+            return jsonify({
+                "status": "error",
+                "message": "An error occurred during genomic processing.",
+                "error": e.stderr
+            }), 500
+
+    except Exception as e:
+        # Handle errors
+        return jsonify({
+            "status": "error",
+            "message": "An error occurred.",
+            "error": str(e)
+        }), 500
+
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
