@@ -91,17 +91,17 @@ def scrinshot():
         "file_regions": form_data["file_regions"],
         "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]),
         "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]),
-        "probe_length_min": to_int(form_data["probe_length_min"]),
-        "probe_length_max": to_int(form_data["probe_length_max"]),
-        "probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]),
+        "target_probe_length_min": to_int(form_data["probe_length_min"]),
+        "target_probe_length_max": to_int(form_data["probe_length_max"]),
+        "target_probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]),
 
         # Property filters
-        "probe_GC_content_min": to_int(form_data["probe_GC_content_min"]),
-        "probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
-        "probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
-        "probe_Tm_min": to_int(form_data["probe_Tm_min"]),
-        "probe_Tm_max": to_int(form_data["probe_Tm_max"]),
-        "homopolymeric_base_n": {
+        "target_probe_GC_content_min": to_int(form_data["probe_GC_content_min"]),
+        "target_probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
+        "target_probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
+        "target_probe_Tm_min": to_int(form_data["probe_Tm_min"]),
+        "target_probe_Tm_max": to_int(form_data["probe_Tm_max"]),
+        "target_homopolymeric_base_n": {
             "A": to_int(form_data["homopolymeric_A"]),
             "T": to_int(form_data["homopolymeric_T"]),
             "C": to_int(form_data["homopolymeric_C"]),
@@ -109,36 +109,36 @@ def scrinshot():
         },
 
         # Padlock arms
-        "arm_Tm_dif_max": to_int(form_data["arm_Tm_dif_max"]),
-        "arm_length_min": to_int(form_data["arm_length_min"]),
-        "arm_Tm_min": to_int(form_data["arm_Tm_min"]),
-        "arm_Tm_max": to_int(form_data["arm_Tm_max"]),
+        "target_probe_padlock_arm_Tm_dif_max": to_int(form_data["arm_Tm_dif_max"]),
+        "target_probe_padlock_arm_length_min": to_int(form_data["arm_length_min"]),
+        "target_probe_padlock_arm_Tm_min": to_int(form_data["arm_Tm_min"]),
+        "target_probe_padlock_arm_Tm_max": to_int(form_data["arm_Tm_max"]),
 
         # Detection oligos
-        "min_thymines": to_int(form_data["min_thymines"]),
-        "detect_oligo_length_min": to_int(form_data["detect_oligo_length_min"]),
-        "detect_oligo_length_max": to_int(form_data["detect_oligo_length_max"]),
+        "detection_oligo_min_thymines": to_int(form_data["min_thymines"]),
+        "detection_oligo_length_min": to_int(form_data["detect_oligo_length_min"]),
+        "detection_oligo_length_max": to_int(form_data["detect_oligo_length_max"]),
 
         # Specificity filters
-        "ligation_region_size": to_int(form_data["ligation_region_size"]),
+        "target_probe_padlock_ligation_region_size": to_int(form_data["ligation_region_size"]),
 
         # Set selection parameters
-        "probe_isoform_weight": to_int(form_data["probe_isoform_weight"]),
-        "probe_GC_weight": to_int(form_data["probe_GC_weight"]),
+        "target_probe_isoform_weight": to_int(form_data["probe_isoform_weight"]),
+        "target_probe_GC_weight": to_int(form_data["probe_GC_weight"]),
         "probe_Tm_opt": to_int(form_data["probe_Tm_opt"]),
-        "probe_Tm_weight": to_int(form_data["probe_Tm_weight"]),
-        "probeset_size_min": to_int(form_data["probeset_size_min"]),
-        "probeset_size_opt": to_int(form_data["probeset_size_opt"]),
-        "distance_between_probes": to_int(form_data["distance_between_probes"]),
+        "target_probe_Tm_weight": to_int(form_data["probe_Tm_weight"]),
+        "set_size_min": to_int(form_data["probeset_size_min"]),
+        "set_size_opt": to_int(form_data["probeset_size_opt"]),
+        "distance_between_target_probes": to_int(form_data["distance_between_probes"]),
         "n_sets": to_int(form_data["n_sets"]),
 
         # Final sequence design
-        "U_distance": to_int(form_data["U_distance"]),
-        "detect_oligo_Tm_opt": to_int(form_data["detect_oligo_Tm_opt"]),
+        "detection_oligo_U_distance": to_int(form_data["U_distance"]),
+        "detection_oligo_Tm_opt": to_int(form_data["detect_oligo_Tm_opt"]),
 
 
         # Developer parameters
-        "specificity_blastn_search_parameters": {
+        "target_probe_specificity_blastn_search_parameters": {
             "perc_identity": to_int(form_data["specificity_perc_identity"]),
             "strand": form_data["specificity_strand"],
             "word_size": to_int(form_data["specificity_word_size"]),
@@ -147,11 +147,11 @@ def scrinshot():
             "max_target_seqs": to_int(form_data["specificity_max_target_seqs"]),
             "max_hsps": to_int(form_data["specificity_max_hsps"])
         },
-        "specificity_blastn_hit_parameters": {
+        "target_probe_specificity_blastn_hit_parameters": {
             "coverage": to_int(form_data["specificity_coverage"])
         },
 
-        "cross_hybridization_blastn_search_parameters": {
+        "target_probe_cross_hybridization_blastn_search_parameters": {
             "perc_identity": to_int(form_data["crosshybridization_perc_identity"]),
             "strand": form_data["crosshybridization_strand"],
             "word_size": to_int(form_data["crosshybridization_word_size"]),
@@ -159,7 +159,7 @@ def scrinshot():
             "soft_masking": form_data["crosshybridization_soft_masking"],
             "max_target_seqs": to_int(form_data["crosshybridization_max_target_seqs"])
         },
-        "cross_hybridization_blastn_hit_parameters": {
+        "target_probe_cross_hybridization_blastn_hit_parameters": {
             "coverage": to_int(form_data["crosshybridization_coverage"])
         },
 
@@ -168,7 +168,7 @@ def scrinshot():
         "pre_filtering": to_bool(form_data["pre_filtering"]),
 
         # Melting Temperature Parameters
-        "Tm_parameters_probe": {
+        "target_probe_Tm_parameters_probe": {
             "check": to_bool(form_data["Tm_probe_check"]),
             "strict": to_bool(form_data["Tm_probe_strict"]),
             "c_seq": to_null(form_data["Tm_probe_c_seq"]),
@@ -187,7 +187,7 @@ def scrinshot():
             "Mg": to_int(form_data["Tm_probe_Mg"]),
             "dNTPs": to_int(form_data["Tm_probe_dNTPs"])
         },
-        "Tm_chem_correction_param_probe": {
+        "target_probe_Tm_chem_correction_param_probe": {
             "DMSO": to_int(form_data["Tm_probe_DMSO"]),
             "fmd": to_int(form_data["Tm_probe_fmd"]),
             "DMSOfactor": float(form_data["Tm_probe_DMSOfactor"]),
@@ -196,9 +196,9 @@ def scrinshot():
             "GC": to_null(form_data["Tm_probe_GC"])
         },
         # If Tm_salt_correction_param_probe is null, we just omit it or set it to None
-        "Tm_salt_correction_param_probe": None,
+        "target_probe_Tm_salt_correction_param_probe": None,
 
-        "Tm_parameters_detection_oligo": {
+        "detection_oligo_Tm_parameters": {
             "check": to_bool(form_data["Tm_detection_check"]),
             "strict": to_bool(form_data["Tm_detection_strict"]),
             "c_seq": to_null(form_data["Tm_detection_c_seq"]),
@@ -217,7 +217,7 @@ def scrinshot():
             "Mg": to_int(form_data["Tm_detection_Mg"]),
             "dNTPs": to_int(form_data["Tm_detection_dNTPs"])
         },
-        "Tm_chem_correction_param_detection_oligo": {
+        "detection_oligo_Tm_chem_correction_parameters": {
             "DMSO": to_int(form_data["Tm_detection_DMSO"]),
             "fmd": to_int(form_data["Tm_detection_fmd"]),
             "DMSOfactor": float(form_data["Tm_detection_DMSOfactor"]),
@@ -225,7 +225,7 @@ def scrinshot():
             "fmdmethod": to_int(form_data["Tm_detection_fmdmethod"]),
             "GC": to_null(form_data["Tm_detection_GC"])
         },
-        "Tm_salt_correction_param_detection_oligo": None
+        "detection_oligo_Tm_salt_correction_parameters": None
     }
 
     # Write the YAML file
