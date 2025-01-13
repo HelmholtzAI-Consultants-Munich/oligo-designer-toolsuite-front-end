@@ -1,30 +1,19 @@
 import React, {useState} from "react";
 import Navbar from "../modules/nav";
-
-
-interface FormData {
-    dir_output: string;
-    source: string;
-    file_annotation: File | null;
-    file_sequence: File | null;
-    species: string;
-    annotation_release: string;
-    genome_assembly: string;
-    exon_exon_junction_block_size: number;
-    genomic_regions: {
-        [key: string]: boolean;
-    };
-}
-
+import axios from "axios";
 const Genomic: React.FC = () => {
-    const [formData, setFormData] = useState<FormData>({
-        dir_output: "",
-        source: "custom",
-        file_annotation: null,
+    const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
+
+    const [files, setFiles] = useState({
         file_sequence: null,
-        species: "",
-        annotation_release: "",
-        genome_assembly: "",
+        file_annotation : null,
+    });
+    const [formDataNcbi, setFormDataNcbi] = useState({
+        dir_output: "output_genomic",
+        source: "ncbi",
+        taxon: 'vertebrate_mammalian',
+        species: "Homo_sapiens",
+        annotation_release: "110",
         exon_exon_junction_block_size: 50,
         genomic_regions: {
             gene: true,
@@ -36,219 +25,216 @@ const Genomic: React.FC = () => {
             intron: true,
         },
     });
+    const [formDataEns, setFormDataEns] = useState({
+        dir_output: "output_genomic",
+        source: "ensembl",
+        species: "Homo_sapiens",
+        annotation_release: "current",
+        exon_exon_junction_block_size: 50,
+        genomic_regions: {
+            gene: true,
+            intergenic: true,
+            exon: true,
+            exon_exon_junction: true,
+            utr: true,
+            cds: true,
+            intron: true,
+        },
+    });
+    const [formDataCustom, setFormDataCustom] = useState({
+        dir_output: "output_genomic",
+        source: "custom",
+        file_annotation: '',
+        file_sequence: '',
+        species: "Homo_sapiens",
+        annotation_release: "110",
+        genome_assembly: "GRCh38",
+        exon_exon_junction_block_size: 50,
+        genomic_regions: {
+            gene: true,
+            intergenic: true,
+            exon: true,
+            exon_exon_junction: true,
+            utr: true,
+            cds: true,
+            intron: true,
+        },
+    });
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, files: selectedFiles } = e.target;
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
+        if (!selectedFiles) return;
+
         // @ts-ignore
-        const { name, value, type, checked } = e.target;
-
-        if (type === "checkbox") {
-            setFormData((prev) => ({
-                ...prev,
-                genomic_regions: {
-                    ...prev.genomic_regions,
-                    [name]: checked,
-                },
-            }));
-        } else if (type === "file") {
-            const file = (e.target as HTMLInputElement).files?.[0] || null;
-            setFormData((prev) => ({
-                ...prev,
-                [name]: file,
-            }));
-        } else {
-            setFormData((prev) => ({
-                ...prev,
-                [name]: value,
-            }));
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const payload = new FormData();
-        payload.append("dir_output", formData.dir_output);
-        payload.append("source", formData.source);
-        if (formData.file_annotation) {
-            payload.append("file_annotation", formData.file_annotation);
-        }
-        if (formData.file_sequence) {
-            payload.append("file_sequence", formData.file_sequence);
-        }
-        payload.append("species", formData.species);
-        payload.append("annotation_release", formData.annotation_release);
-        payload.append("genome_assembly", formData.genome_assembly);
-        payload.append(
-            "exon_exon_junction_block_size",
-            String(formData.exon_exon_junction_block_size)
-        );
-
-        Object.keys(formData.genomic_regions).forEach((region) => {
-            payload.append(region, formData.genomic_regions[region] ? "true" : "false");
+        setFiles((prevFiles) => {
+            // Check if the input field should support multiple files
+             // For single-file inputs, replace the existing file
+            return {
+                ...prevFiles,
+                [name]: selectedFiles[0],
+            };
         });
-
-        try {
-            const response = await fetch("/api/genomic", {
-                method: "POST",
-                body: payload,
-            });
-
-            if (response.ok) {
-                alert("Configuration uploaded successfully!");
-            } else {
-                alert("Error uploading configuration.");
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert("An error occurred while uploading configuration.");
-        }
     };
+    const uploadFiles = async () => {
+        const filePaths: { [key: string]: string } = {};
+        console.log(files,'from the event');
+        for (const key in files) {
+            // @ts-ignore
+            if (files[key]) {
+                const formData = new FormData();
+                // @ts-ignore
+                if (Array.isArray(files[key])) {
+                    console.log(`Processing multiple files for key: ${key}`);
+                    let paths = []; // Temporary array to collect file paths
+                    // @ts-ignore
+                    for (const file of files[key]) { // Use for...of to iterate over the array
+                        console.log(file);
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        // Perform upload logic here
+                        try {
+                            const response = await axios.post(
+                                "http://localhost:5000/api/upload",
+                                formData,
+                                {
+                                    headers: { "Content-Type": "multipart/form-data" },
+                                }
+                            );
+                            paths.push(response.data.filePath); // Append the returned file path
+                        } catch (error) {
+                            console.error(`Error uploading ${key}:`, error);
+                        }
+                    }
+                    filePaths[key] = paths.join("\n");
+                } else {
+                    // @ts-ignore
+                    formData.append("file", files[key]);
+                    // @ts-ignore
+                    console.log(files[key],key,'what it look like not array');
+                    try {
+                        const response = await axios.post(
+                            "http://localhost:5000/api/upload",
+                            formData,
+                            {
+                                headers: { "Content-Type": "multipart/form-data" },
+                            }
+                        );
+                        filePaths[key] = response.data.filePath;
+                        // Save the returned file path
+                    } catch (error) {
+                        console.error(`Error uploading ${key}:`, error);
+                    }
+                }
+            }
+        }
+        console.log(filePaths);
+        return filePaths;
+    };
+    const handleSourceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedSource(e.target.value);
+    };
+
+
 
     return (
         <div>
-            <Navbar />
-            <div className="container mt-5">
-                <h2>Genomic Region Generator</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-3">
-                        <label htmlFor="dir_output" className="form-label">
-                            Output Directory
-                        </label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            id="dir_output"
-                            name="dir_output"
-                            value={formData.dir_output}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+            <Navbar/>
+            <div className="container py-5">
+                <h2 className="text-center mb-5"> Genomic Region Generator </h2>
 
-                    <div className="mb-3">
-                        <label htmlFor="source" className="form-label">
-                            Source
-                        </label>
-                        <select
-                            className="form-select"
-                            id="source"
-                            name="source"
-                            value={formData.source}
-                            onChange={handleChange}
-                        >
-                            <option value="custom">Custom</option>
-                            <option value="NCBI">NCBI</option>
-                        </select>
-                    </div>
+                <div className="row justify-content-center">
+                    <div className="col-md-8">
+                        <div className="card shadow-lg border-0 rounded-lg">
+                            <div className="card-header bg-primary text-white text-center">
+                                <h4>Select Data Source</h4>
+                            </div>
+                            <div className="card-body p-4">
 
-                    <div className="mb-3">
-                        <label htmlFor="file_annotation" className="form-label">
-                            Annotation File (GTF)
-                        </label>
-                        <input
-                            type="file"
-                            className="form-control"
-                            id="file_annotation"
-                            name="file_annotation"
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+                                {/* Source Selection */}
+                                <div className="btn-group w-100 mb-4" role="group">
+                                    <input
+                                        type="radio"
+                                        className="btn-check"
+                                        id="ncbi"
+                                        name="source"
+                                        value="ncbi"
+                                        checked={selectedSource === "ncbi"}
+                                        onChange={handleSourceChange}
+                                    />
+                                    <label
+                                        className={`btn btn-outline-primary ${selectedSource === "ncbi" ? "active" : ""}`}
+                                        htmlFor="ncbi">
+                                        🧬 NCBI
+                                    </label>
 
-                    <div className="mb-3">
-                        <label htmlFor="file_sequence" className="form-label">
-                            Genome Sequence File (FASTA)
-                        </label>
-                        <input
-                            type="file"
-                            className="form-control"
-                            id="file_sequence"
-                            name="file_sequence"
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
+                                    <input
+                                        type="radio"
+                                        className="btn-check"
+                                        id="ensembl"
+                                        name="source"
+                                        value="ensembl"
+                                        checked={selectedSource === "ensembl"}
+                                        onChange={handleSourceChange}
+                                    />
+                                    <label
+                                        className={`btn btn-outline-success ${selectedSource === "ensembl" ? "active" : ""}`}
+                                        htmlFor="ensembl">
+                                        🔬 Ensembl
+                                    </label>
 
-                    <div className="mb-3">
-                        <label htmlFor="species" className="form-label">
-                            Species (Optional)
-                        </label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            id="species"
-                            name="species"
-                            value={formData.species}
-                            onChange={handleChange}
-                        />
-                    </div>
+                                    <input
+                                        type="radio"
+                                        className="btn-check"
+                                        id="custom"
+                                        name="source"
+                                        value="custom"
+                                        checked={selectedSource === "custom"}
+                                        onChange={handleSourceChange}
+                                    />
+                                    <label
+                                        className={`btn btn-outline-warning ${selectedSource === "custom" ? "active" : ""}`}
+                                        htmlFor="custom">
+                                        📂 Custom
+                                    </label>
+                                </div>
 
-                    <div className="mb-3">
-                        <label htmlFor="annotation_release" className="form-label">
-                            Annotation Release (Optional)
-                        </label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            id="annotation_release"
-                            name="annotation_release"
-                            value={formData.annotation_release}
-                            onChange={handleChange}
-                        />
-                    </div>
+                                {/* Dynamic Info Box */}
+                                <div className="alert alert-info text-center" role="alert">
+                                    <strong>Selected Source:</strong> {selectedSource.toUpperCase()}
+                                </div>
 
-                    <div className="mb-3">
-                        <label htmlFor="genome_assembly" className="form-label">
-                            Genome Assembly (Optional)
-                        </label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            id="genome_assembly"
-                            name="genome_assembly"
-                            value={formData.genome_assembly}
-                            onChange={handleChange}
-                        />
-                    </div>
+                                {/* Placeholder for Dynamic Forms */}
+                                <div className="mt-4">
+                                    {selectedSource === "ncbi" && (
+                                        <div className="alert alert-primary">
+                                            <h5>🧬 NCBI Settings</h5>
+                                            <p>Configure genomic regions using NCBI databases.</p>
+                                        </div>
+                                    )}
+                                    {selectedSource === "ensembl" && (
+                                        <div className="alert alert-success">
+                                            <h5>🔬 Ensembl Settings</h5>
+                                            <p>Configure genomic regions using Ensembl databases.</p>
+                                        </div>
+                                    )}
+                                    {selectedSource === "custom" && (
+                                        <div className="alert alert-warning">
+                                            <h5>📂 Custom Upload</h5>
+                                            <p>Upload your custom annotation and sequence files.</p>
+                                        </div>
+                                    )}
+                                </div>
 
-                    <div className="mb-3">
-                        <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                            Exon-Exon Junction Block Size
-                        </label>
-                        <input
-                            type="number"
-                            className="form-control"
-                            id="exon_exon_junction_block_size"
-                            name="exon_exon_junction_block_size"
-                            value={formData.exon_exon_junction_block_size}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-
-                    <h4>Genomic Regions</h4>
-                    {Object.keys(formData.genomic_regions).map((region) => (
-                        <div className="form-check" key={region}>
-                            <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id={region}
-                                name={region}
-                                checked={formData.genomic_regions[region]}
-                                onChange={handleChange}
-                            />
-                            <label className="form-check-label" htmlFor={region}>
-                                {region}
-                            </label>
+                                {/* Action Buttons */}
+                                <div className="d-flex justify-content-center mt-4">
+                                    <button className="btn btn-outline-secondary me-3">Reset</button>
+                                    <button className="btn btn-success">Proceed 🚀</button>
+                                </div>
+                            </div>
                         </div>
-                    ))}
+                    </div>
+                </div>
 
-                    <button type="submit" className="btn btn-primary mt-3">
-                        Submit Configuration
-                    </button>
-                </form>
             </div>
         </div>
 
