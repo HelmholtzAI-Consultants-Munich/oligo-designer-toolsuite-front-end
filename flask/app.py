@@ -238,7 +238,13 @@ def scrinshot():
     if os.path.exists(form_data['file_regions']):
         print('deleted')
         os.remove(form_data['file_regions'])  # Delete the file
-    a=split_on_newline(form_data['files_fasta_probe_database'])
+    a=split_on_newline(form_data['files_fasta_target_probe_database'])
+    a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+    a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
+    a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)

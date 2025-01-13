@@ -303,14 +303,14 @@ const Scrinshot: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_targe_probe" className="form-label">Fasta
-                                    Probe
+                                <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">Fasta
+                                    Probe Reference
                                     Database:</label>
                                 <input
                                     type="file"
                                     className="form-control"
-                                    id="files_fasta_reference_database_targe_probe"
-                                    name="files_fasta_reference_database_targe_probe"
+                                    id="files_fasta_reference_database_target_probe"
+                                    name="files_fasta_reference_database_target_probe"
                                     onChange={handleFileChange}
                                     multiple
                                 />
