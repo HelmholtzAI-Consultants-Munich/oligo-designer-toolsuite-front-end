@@ -8,6 +8,54 @@ const Genomic: React.FC = () => {
         file_sequence: null,
         file_annotation : null,
     });
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    ) => {
+        const {name, value} = e.target;
+        if (selectedSource === 'ncbi') {
+            setFormDataNcbi({...formDataNcbi, [name]: value});
+
+        }
+        if (selectedSource === 'ensembl'){
+            setFormDataEns({...formDataEns, [name]: value});
+
+        }
+        if (selectedSource === 'custom'){
+            setFormDataCustom({...formDataCustom, [name]: value});
+
+        }
+
+
+    };
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        let finalFormData;
+        try {
+            // Send formData to the backend
+
+            if (selectedSource === 'ncbi'){
+                const finalFormData = formDataNcbi }
+            if (selectedSource === 'ensembl'){
+                const finalFormData = formDataEns }
+            if (selectedSource === 'custom'){
+                const uploadedPaths = await uploadFiles();
+                const finalFormData = {
+                    ...formDataCustom,
+                    ...uploadedPaths, // Include uploaded file paths
+                };
+            }
+
+
+            const response = await axios.post('http://localhost:5000/api/genomic/' + selectedSource, finalFormData,
+                {
+                    headers: {"Content-Type": "application/json"},
+                });
+            alert('Form submitted successfully!');
+        } catch (error) {
+            console.error('Error submitting form:', error);
+            alert('Error submitting form. Please try again.');
+        }
+    };
     const [formDataNcbi, setFormDataNcbi] = useState({
         dir_output: "output_genomic",
         source: "ncbi",
@@ -15,15 +63,13 @@ const Genomic: React.FC = () => {
         species: "Homo_sapiens",
         annotation_release: "110",
         exon_exon_junction_block_size: 50,
-        genomic_regions: {
-            gene: true,
-            intergenic: true,
-            exon: true,
-            exon_exon_junction: true,
-            utr: true,
-            cds: true,
-            intron: true,
-        },
+        gene: 'True',
+        intergenic: 'True',
+        exon: 'True',
+        exon_exon_junction: 'True',
+        utr: 'True',
+        cds: 'True',
+        intron: 'True'
     });
     const [formDataEns, setFormDataEns] = useState({
         dir_output: "output_genomic",
@@ -31,15 +77,14 @@ const Genomic: React.FC = () => {
         species: "Homo_sapiens",
         annotation_release: "current",
         exon_exon_junction_block_size: 50,
-        genomic_regions: {
-            gene: true,
-            intergenic: true,
-            exon: true,
-            exon_exon_junction: true,
-            utr: true,
-            cds: true,
-            intron: true,
-        },
+
+        gene: 'True',
+        intergenic: 'True',
+        exon: 'True',
+        exon_exon_junction: 'True',
+        utr: 'True',
+        cds: 'True',
+        intron: 'True'
     });
     const [formDataCustom, setFormDataCustom] = useState({
         dir_output: "output_genomic",
@@ -50,15 +95,14 @@ const Genomic: React.FC = () => {
         annotation_release: "110",
         genome_assembly: "GRCh38",
         exon_exon_junction_block_size: 50,
-        genomic_regions: {
-            gene: true,
-            intergenic: true,
-            exon: true,
-            exon_exon_junction: true,
-            utr: true,
-            cds: true,
-            intron: true,
-        },
+
+        gene: 'True',
+        intergenic: 'True',
+        exon: 'True',
+        exon_exon_junction: 'True',
+        utr: 'True',
+        cds: 'True',
+        intron: 'True'
     });
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
@@ -136,11 +180,13 @@ const Genomic: React.FC = () => {
 
 
 
+    // @ts-ignore
+    // @ts-ignore
     return (
         <div>
             <Navbar/>
             <div className="container py-5">
-                <h2 className="text-center mb-5"> Genomic Region Generator </h2>
+                <h2 className="text-center mb-5">✨ Genomic Region Generator ✨</h2>
 
                 <div className="row justify-content-center">
                     <div className="col-md-8">
@@ -198,43 +244,225 @@ const Genomic: React.FC = () => {
                                     </label>
                                 </div>
 
-                                {/* Dynamic Info Box */}
-                                <div className="alert alert-info text-center" role="alert">
-                                    <strong>Selected Source:</strong> {selectedSource.toUpperCase()}
-                                </div>
-
-                                {/* Placeholder for Dynamic Forms */}
+                                {/* Dynamic Content */}
                                 <div className="mt-4">
                                     {selectedSource === "ncbi" && (
-                                        <div className="alert alert-primary">
-                                            <h5>🧬 NCBI Settings</h5>
-                                            <p>Configure genomic regions using NCBI databases.</p>
+                                        <div className="card shadow-sm mb-4 border-primary">
+                                            <div className="card-header bg-primary text-white">
+                                                <h5>🧬 NCBI Configuration</h5>
+                                            </div>
+                                            <div className="card-body">
+                                                <form onSubmit={handleSubmit}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="species" className="form-label">Species</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="species"
+                                                            value={formDataNcbi.species}
+                                                            onChange={handleChange}
+                                                            placeholder="Homo_sapiens"
+                                                        />
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <label htmlFor="taxon" className="form-label">Taxon</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="taxon"
+                                                            value={formDataNcbi.taxon}
+                                                            onChange={handleChange}
+                                                            placeholder="vertebrate_mammalian"
+                                                        />
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <label htmlFor="annotation_release" className="form-label">Annotation
+                                                            Release</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            id="annotation_release"
+                                                            value={formDataNcbi.annotation_release}
+                                                            onChange={handleChange}
+                                                            placeholder="110"
+                                                        />
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <label htmlFor="exon_exon_junction_block_size"
+                                                               className="form-label">Exon-Exon Junction Block
+                                                            Size</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            id="exon_exon_junction_block_size"
+                                                            value={formDataNcbi.exon_exon_junction_block_size}
+                                                            onChange={handleChange}
+                                                            placeholder="50"
+                                                        />
+                                                    </div>
+
+                                                    <h5>Genomic Regions</h5>
+
+                                                    <div className="row">
+                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "utr", "cds", "intron"].map((region) => (
+                                                            <div className="col-md-4 mb-3" key={region}>
+                                                                <label htmlFor={region} className="form-label">
+                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, ' ')}
+                                                                </label>
+                                                                <select
+                                                                    className="form-select"
+                                                                    id={region}
+                                                                    name={region}
+                                                                    value={formDataNcbi[region as keyof typeof formDataNcbi]}
+                                                                    onChange={handleChange}
+                                                                >
+                                                                    <option value="true">True</option>
+                                                                    <option value="false">False</option>
+                                                                </select>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button type="submit" className="btn btn-primary">Submit NCBI
+                                                        Query
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     )}
+
                                     {selectedSource === "ensembl" && (
-                                        <div className="alert alert-success">
-                                            <h5>🔬 Ensembl Settings</h5>
-                                            <p>Configure genomic regions using Ensembl databases.</p>
+                                        <div className="card shadow-sm mb-4 border-success">
+                                            <div className="card-header bg-success text-white">
+                                                <h5>🔬 Ensembl Configuration</h5>
+                                            </div>
+                                            <div className="card-body">
+                                                <form onSubmit={handleSubmit}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="species" className="form-label">Species</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="species"
+                                                            value={formDataEns.species}
+                                                            onChange={handleChange}
+                                                            placeholder="Homo_sapiens"
+                                                        />
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <label htmlFor="annotation_release" className="form-label">Annotation
+                                                            Release</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            id="annotation_release"
+                                                            value={formDataEns.annotation_release}
+                                                            onChange={handleChange}
+                                                            placeholder="110"
+                                                        />
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <label htmlFor="exon_exon_junction_block_size"
+                                                               className="form-label">Exon-Exon Junction Block
+                                                            Size</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            id="exon_exon_junction_block_size"
+                                                            value={formDataEns.exon_exon_junction_block_size}
+                                                            onChange={handleChange}
+                                                            placeholder="50"
+                                                        />
+                                                    </div>
+
+                                                    <h5>Genomic Regions</h5>
+
+                                                    <div className="row">
+                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "utr", "cds", "intron"].map((region) => (
+                                                            <div className="col-md-4 mb-3" key={region}>
+                                                                <label htmlFor={region} className="form-label">
+                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, ' ')}
+                                                                </label>
+                                                                <select
+                                                                    className="form-select"
+                                                                    id={region}
+                                                                    name={region}
+                                                                    value={formDataEns[region as keyof typeof formDataEns]}
+                                                                    onChange={handleChange}
+                                                                >
+                                                                    <option value="true">True</option>
+                                                                    <option value="false">False</option>
+                                                                </select>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button type="submit" className="btn btn-primary">Submit NCBI
+                                                        Query
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     )}
+
                                     {selectedSource === "custom" && (
-                                        <div className="alert alert-warning">
-                                            <h5>📂 Custom Upload</h5>
-                                            <p>Upload your custom annotation and sequence files.</p>
+                                        <div className="card shadow-sm mb-4 border-warning">
+                                            <div className="card-header bg-warning text-dark">
+                                                <h5>📂 Custom Data Upload</h5>
+                                            </div>
+                                            <div className="card-body">
+                                                <form onSubmit={handleSubmit}>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="file_sequence" className="form-label">Upload
+                                                            Sequence File</label>
+                                                        <input type="file" className="form-control" id="file_sequence" onChange={handleFileChange}/>
+                                                    </div>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="file_annotation" className="form-label">Upload
+                                                            Annotation File</label>
+                                                        <input type="file" className="form-control"
+                                                               id="file_annotation" onChange={handleFileChange}/>
+                                                    </div>
+                                                    <div className="row">
+                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "utr", "cds", "intron"].map((region) => (
+                                                            <div className="col-md-4 mb-3" key={region}>
+                                                                <label htmlFor={region} className="form-label">
+                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, ' ')}
+                                                                </label>
+                                                                <select
+                                                                    className="form-select"
+                                                                    id={region}
+                                                                    name={region}
+                                                                    value={formDataCustom[region as keyof typeof formDataCustom]}
+                                                                    onChange={handleChange}
+                                                                >
+                                                                    <option value="true">True</option>
+                                                                    <option value="false">False</option>
+                                                                </select>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <button type="submit" className="btn btn-warning">Upload Files
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div className="d-flex justify-content-center mt-4">
-                                    <button className="btn btn-outline-secondary me-3">Reset</button>
-                                    <button className="btn btn-success">Proceed 🚀</button>
-                                </div>
+
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {/* Footer */}
+                <div className="text-center mt-5 text-muted">
+                    <small>Powered by Genomic Tools © 2025</small>
+                </div>
             </div>
         </div>
 

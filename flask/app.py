@@ -257,38 +257,37 @@ def scrinshot():
                 'returncode': result.returncode
             })
 
-@app.route('/api/genomic', methods=['POST'])
+@app.route('/api/genomic/ncbi', methods=['POST'])
 def genomic():
 
     try:
         # Define the path for the configuration file
-        config_path = "config_genomic.yaml"
+        config_path = "config_genomic_ncbi.yaml"
         config_genomic = {}
 
         # Parse JSON data from the request
-        form_data = request.get_json()
+        form_data = request.json
 
         # Populate the config_genomic dictionary based on the received data
-        config_genomic['dir_output'] = form_data.get('dir_output', 'output_genomic_region_generator_custom')
-        config_genomic['source'] = form_data.get('source', 'custom')
+        config_genomic['dir_output'] = form_data['dir_output']
+        config_genomic['source'] = form_data['source']
+        config_genomic['taxon'] = form_data['taxon']
+        config_genomic['species'] = form_data['species']
         config_genomic['source_params'] = {
-            'file_annotation': form_data.get('file_annotation', ''),
-            'file_sequence': form_data.get('file_sequence', ''),
-            'files_source': form_data.get('files_source', 'NCBI'),
-            'species': form_data.get('species', 'Homo_sapiens'),
-            'annotation_release': form_data.get('annotation_release', 110),
-            'genome_assembly': form_data.get('genome_assembly', 'GRCh38')
+            'taxon' : form_data['taxon'],
+            'species' : form_data['species'],
+            'annotation_release': form_data['annotation_release'],
         }
-        config_genomic['genomic_regions'] = form_data.get('genomic_regions', {
-            'gene': True,
-            'intergenic': True,
-            'exon': True,
-            'exon_exon_junction': True,
-            'utr': True,
-            'cds': True,
-            'intron': True
-        })
-        config_genomic['exon_exon_junction_block_size'] = form_data.get('exon_exon_junction_block_size', 50)
+        config_genomic['genomic_regions'] =  {
+            'gene': form_data['gene'],
+            'intergenic': form_data['intergenic'],
+            'exon': form_data['exon'],
+            'exon_exon_junction': form_data['exon_exon_junction'],
+            'utr': form_data['utr'],
+            'cds': form_data['cds'],
+            'intron': form_data['intron']
+        }
+        config_genomic['exon_exon_junction_block_size'] = form_data['exon_exon_junction_block_size']
 
         # Write the dictionary to a YAML file
         with open(config_path, 'w') as yaml_file:
