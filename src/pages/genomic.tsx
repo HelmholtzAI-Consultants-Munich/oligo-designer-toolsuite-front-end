@@ -77,7 +77,6 @@ const Genomic: React.FC = () => {
         species: "Homo_sapiens",
         annotation_release: "current",
         exon_exon_junction_block_size: 50,
-
         gene: 'True',
         intergenic: 'True',
         exon: 'True',
@@ -325,8 +324,8 @@ const Genomic: React.FC = () => {
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button type="submit" className="btn btn-primary">Submit NCBI
-                                                        Query
+                                                    <button type="submit" className="btn btn-primary">Submit 
+
                                                     </button>
                                                 </form>
                                             </div>
@@ -400,8 +399,8 @@ const Genomic: React.FC = () => {
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button type="submit" className="btn btn-primary">Submit NCBI
-                                                        Query
+                                                    <button type="submit" className="btn btn-primary">Submit
+
                                                     </button>
                                                 </form>
                                             </div>
