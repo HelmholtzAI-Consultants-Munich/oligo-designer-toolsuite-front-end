@@ -271,23 +271,21 @@ def genomic():
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = form_data['dir_output']
         config_genomic['source'] = form_data['source']
-        config_genomic['taxon'] = form_data['taxon']
-        config_genomic['species'] = form_data['species']
         config_genomic['source_params'] = {
             'taxon' : form_data['taxon'],
             'species' : form_data['species'],
-            'annotation_release': form_data['annotation_release'],
+            'annotation_release': to_int(form_data['annotation_release']),
         }
         config_genomic['genomic_regions'] =  {
-            'gene': form_data['gene'],
-            'intergenic': form_data['intergenic'],
-            'exon': form_data['exon'],
-            'exon_exon_junction': form_data['exon_exon_junction'],
-            'utr': form_data['utr'],
-            'cds': form_data['cds'],
-            'intron': form_data['intron']
+            'gene': to_bool(form_data['gene']),
+            'intergenic': to_bool(form_data['intergenic']),
+            'exon': to_bool(form_data['exon']),
+            'exon_exon_junction': to_bool(form_data['exon_exon_junction']),
+            'utr': to_bool(form_data['utr']),
+            'cds': to_bool(form_data['cds']),
+            'intron': to_bool(form_data['intron'])
         }
-        config_genomic['exon_exon_junction_block_size'] = form_data['exon_exon_junction_block_size']
+        config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size'])
 
         # Write the dictionary to a YAML file
         with open(config_path, 'w') as yaml_file:
@@ -296,7 +294,7 @@ def genomic():
         # If you need to run a subprocess based on this configuration, do so here
         try:
             result = subprocess.run(
-                ['genomic_tool', config_path],
+                ['genomic_region_generator','-c', config_path],
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

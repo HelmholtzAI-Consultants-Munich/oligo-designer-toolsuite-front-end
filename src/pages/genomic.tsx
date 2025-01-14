@@ -34,17 +34,17 @@ const Genomic: React.FC = () => {
             // Send formData to the backend
 
             if (selectedSource === 'ncbi'){
-                const finalFormData = formDataNcbi }
+                finalFormData = formDataNcbi }
             if (selectedSource === 'ensembl'){
-                const finalFormData = formDataEns }
+                finalFormData = formDataEns }
             if (selectedSource === 'custom'){
                 const uploadedPaths = await uploadFiles();
-                const finalFormData = {
+                finalFormData = {
                     ...formDataCustom,
                     ...uploadedPaths, // Include uploaded file paths
                 };
             }
-
+            console.log(finalFormData);
 
             const response = await axios.post('http://localhost:5000/api/genomic/' + selectedSource, finalFormData,
                 {
