@@ -185,7 +185,7 @@ const Genomic: React.FC = () => {
         <div>
             <Navbar/>
             <div className="container py-5">
-                <h2 className="text-center mb-5">✨ Genomic Region Generator ✨</h2>
+                <h2 className="text-center mb-5"> Genomic Region Generator </h2>
 
                 <div className="row justify-content-center">
                     <div className="col-md-8">
@@ -324,7 +324,7 @@ const Genomic: React.FC = () => {
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button type="submit" className="btn btn-primary">Submit 
+                                                    <button type="submit" className="btn btn-primary">Submit
 
                                                     </button>
                                                 </form>
@@ -417,13 +417,64 @@ const Genomic: React.FC = () => {
                                                     <div className="mb-3">
                                                         <label htmlFor="file_sequence" className="form-label">Upload
                                                             Sequence File</label>
-                                                        <input type="file" className="form-control" id="file_sequence" onChange={handleFileChange}/>
+                                                        <input type="file" className="form-control" id="file_sequence"
+                                                               onChange={handleFileChange}/>
                                                     </div>
                                                     <div className="mb-3">
                                                         <label htmlFor="file_annotation" className="form-label">Upload
                                                             Annotation File</label>
                                                         <input type="file" className="form-control"
                                                                id="file_annotation" onChange={handleFileChange}/>
+                                                    </div>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="species" className="form-label">Species</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="species"
+                                                            value={formDataCustom.species}
+                                                            onChange={handleChange}
+                                                            placeholder="Homo_sapiens"
+                                                        />
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <label htmlFor="annotation_release" className="form-label">Annotation
+                                                            Release</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            id="annotation_release"
+                                                            value={formDataCustom.annotation_release}
+                                                            onChange={handleChange}
+                                                            placeholder="110"
+                                                        />
+                                                    </div>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="genome_assembly" className="form-label">Annotation
+                                                            Release</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            id="genome_assembly"
+                                                            value={formDataCustom.genome_assembly}
+                                                            onChange={handleChange}
+                                                            placeholder="GRCh38"
+                                                        />
+                                                    </div>
+
+                                                    <div className="mb-3">
+                                                        <label htmlFor="exon_exon_junction_block_size"
+                                                               className="form-label">Exon-Exon Junction Block
+                                                            Size</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            id="exon_exon_junction_block_size"
+                                                            value={formDataCustom.exon_exon_junction_block_size}
+                                                            onChange={handleChange}
+                                                            placeholder="50"
+                                                        />
                                                     </div>
                                                     <div className="row">
                                                         {["gene", "intergenic", "exon", "exon_exon_junction", "utr", "cds", "intron"].map((region) => (

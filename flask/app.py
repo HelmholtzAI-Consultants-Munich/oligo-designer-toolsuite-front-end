@@ -382,7 +382,68 @@ def genomic_ensemble():
             "message": "An error occurred.",
             "error": str(e)
         }), 500
+@app.route('/api/genomic/custom', methods=['POST'])
+def genomic_custom():
 
+    try:
+        # Define the path for the configuration file
+        config_path = "config_genomic_custom.yaml"
+        config_genomic = {}
+
+        # Parse JSON data from the request
+        form_data = request.json
+
+        # Populate the config_genomic dictionary based on the received data
+        config_genomic['dir_output'] = form_data['dir_output']
+        config_genomic['source'] = form_data['source']
+        config_genomic['source_params'] = {
+            'species' : form_data['species'],
+            'annotation_release': to_int(form_data['annotation_release']),
+        }
+        config_genomic['genomic_regions'] =  {
+            'gene': to_bool(form_data['gene']),
+            'intergenic': to_bool(form_data['intergenic']),
+            'exon': to_bool(form_data['exon']),
+            'exon_exon_junction': to_bool(form_data['exon_exon_junction']),
+            'utr': to_bool(form_data['utr']),
+            'cds': to_bool(form_data['cds']),
+            'intron': to_bool(form_data['intron'])
+        }
+        config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size'])
+
+        # Write the dictionary to a YAML file
+        with open(config_path, 'w') as yaml_file:
+            yaml.dump(config_genomic, yaml_file)
+
+        # If you need to run a subprocess based on this configuration, do so here
+        try:
+            result = subprocess.run(
+                ['genomic_region_generator','-c', config_path],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            # Return success response
+            return jsonify({
+                "status": "success",
+                "message": "Genomic processing completed successfully.",
+                "output": result.stdout
+            }), 200
+        except subprocess.CalledProcessError as e:
+            return jsonify({
+                "status": "error",
+                "message": "An error occurred during genomic processing.",
+                "error": e.stderr
+            }), 500
+
+    except Exception as e:
+        # Handle errors
+        return jsonify({
+            "status": "error",
+            "message": "An error occurred.",
+            "error": str(e)
+        }), 500
 
 
 
