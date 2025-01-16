@@ -291,13 +291,10 @@ def genomic_ncbi():
         with open(config_path, 'w') as yaml_file:
             yaml.dump(config_genomic, yaml_file)
 
-        # If you need to run a subprocess based on this configuration, do so here
         try:
             result = subprocess.run(
                 ['genomic_region_generator','-c', config_path],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True
             )
             # Return success response
@@ -357,9 +354,7 @@ def genomic_ensemble():
         try:
             result = subprocess.run(
                 ['genomic_region_generator','-c', config_path],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 text=True
             )
             # Return success response
@@ -397,8 +392,12 @@ def genomic_custom():
         config_genomic['dir_output'] = form_data['dir_output']
         config_genomic['source'] = form_data['source']
         config_genomic['source_params'] = {
+            'file_annotation' :  form_data['file_annotation'],
+            'file_sequence' :  form_data['file_sequence'],
             'species' : form_data['species'],
             'annotation_release': to_int(form_data['annotation_release']),
+            'genome_assembly' : form_data['genome_assembly'],
+            'files_source' : form_data['files_source']
         }
         config_genomic['genomic_regions'] =  {
             'gene': to_bool(form_data['gene']),
@@ -417,27 +416,42 @@ def genomic_custom():
 
         # If you need to run a subprocess based on this configuration, do so here
         try:
+            print('try to run ')
             result = subprocess.run(
-                ['genomic_region_generator','-c', config_path],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                ['conda', 'run', '-n', 'odt', 'genomic_region_generator', '-c', config_path],
+                capture_output=True,
                 text=True
             )
+            if os.path.exists(form_data['file_sequence']):
+                os.remove(form_data['file_sequence'])
+                os.remove(form_data['file_sequence']+'.fai')
+            if os.path.exists(form_data['file_annotation']):
+                os.remove(form_data['file_annotation'])  # Delete the file# Delete the file
             # Return success response
             return jsonify({
                 "status": "success",
                 "message": "Genomic processing completed successfully.",
                 "output": result.stdout
             }), 200
+
         except subprocess.CalledProcessError as e:
+            print('subprocess failed')
+            if os.path.exists(form_data['file_sequence']):
+                os.remove(form_data['file_sequence'])
+                os.remove(form_data['file_sequence']+'.fai')
+            if os.path.exists(form_data['file_annotation']):
+                os.remove(form_data['file_annotation'])
             return jsonify({
                 "status": "error",
                 "message": "An error occurred during genomic processing.",
                 "error": e.stderr
             }), 500
 
+
+
     except Exception as e:
+        print('error without the subprocess')
+
         # Handle errors
         return jsonify({
             "status": "error",

@@ -90,6 +90,7 @@ const Genomic: React.FC = () => {
         source: "custom",
         file_annotation: '',
         file_sequence: '',
+        files_source: 'NCBI',
         species: "Homo_sapiens",
         annotation_release: "110",
         genome_assembly: "GRCh38",
@@ -111,17 +112,24 @@ const Genomic: React.FC = () => {
         // @ts-ignore
         setFiles((prevFiles) => {
             // Check if the input field should support multiple files
-             // For single-file inputs, replace the existing file
-            return {
-                ...prevFiles,
-                [name]: selectedFiles[0],
-            };
+            if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe") {
+                // @ts-ignore
+                return {
+                };
+            } else {
+                // For single-file inputs, replace the existing file
+                return {
+                    ...prevFiles,
+                    [name]: selectedFiles[0],
+                };
+            }
         });
     };
     const uploadFiles = async () => {
         const filePaths: { [key: string]: string } = {};
         console.log(files,'from the event');
         for (const key in files) {
+            console.log(key);
             // @ts-ignore
             if (files[key]) {
                 const formData = new FormData();
@@ -162,6 +170,7 @@ const Genomic: React.FC = () => {
                                 headers: { "Content-Type": "multipart/form-data" },
                             }
                         );
+                        console.log(key,'OUR KEY');
                         filePaths[key] = response.data.filePath;
                         // Save the returned file path
                     } catch (error) {
@@ -170,7 +179,7 @@ const Genomic: React.FC = () => {
                 }
             }
         }
-        console.log(filePaths);
+        console.log(filePaths,'these are the paths');
         return filePaths;
     };
     const handleSourceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -417,13 +426,13 @@ const Genomic: React.FC = () => {
                                                     <div className="mb-3">
                                                         <label htmlFor="file_sequence" className="form-label">Upload
                                                             Sequence File</label>
-                                                        <input type="file" className="form-control" id="file_sequence"
+                                                        <input type="file" className="form-control" id="file_sequence" name='file_sequence'
                                                                onChange={handleFileChange}/>
                                                     </div>
                                                     <div className="mb-3">
                                                         <label htmlFor="file_annotation" className="form-label">Upload
                                                             Annotation File</label>
-                                                        <input type="file" className="form-control"
+                                                        <input type="file" className="form-control" name='file_annotation'
                                                                id="file_annotation" onChange={handleFileChange}/>
                                                     </div>
                                                     <div className="mb-3">
@@ -454,12 +463,24 @@ const Genomic: React.FC = () => {
                                                         <label htmlFor="genome_assembly" className="form-label">Annotation
                                                             Release</label>
                                                         <input
-                                                            type="number"
+                                                            type='text'
                                                             className="form-control"
                                                             id="genome_assembly"
                                                             value={formDataCustom.genome_assembly}
                                                             onChange={handleChange}
                                                             placeholder="GRCh38"
+                                                        />
+                                                    </div>
+                                                    <div className="mb-3">
+                                                        <label htmlFor="files_source" className="form-label">Files Source
+                                                            </label>
+                                                        <input
+                                                            type='text'
+                                                            className="form-control"
+                                                            id="files_source"
+                                                            value={formDataCustom.files_source}
+                                                            onChange={handleChange}
+                                                            placeholder="NCBI"
                                                         />
                                                     </div>
 
