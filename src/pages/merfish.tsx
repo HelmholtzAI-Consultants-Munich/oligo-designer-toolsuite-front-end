@@ -1720,10 +1720,19 @@ const Merfish: React.FC = () => {
                         <li className="nav-item">
                             <button
                                 type="button"
-                                className={`nav-link ${activeTab === "detection_oligos" ? "active" : ""}`}
-                                onClick={() => setActiveTab("detection_oligos")}
+                                className={`nav-link ${activeTab === "readout" ? "active" : ""}`}
+                                onClick={() => setActiveTab("readout")}
                             >
-                                Detection Oligo Parameters
+                                Readout Probe Parameters
+                            </button>
+                        </li>
+                        <li className="nav-item">
+                            <button
+                                type="button"
+                                className={`nav-link ${activeTab === "primer_parameters" ? "active" : ""}`}
+                                onClick={() => setActiveTab("primer_parameters")}
+                            >
+                                Primer Parameters
                             </button>
                         </li>
 
@@ -1789,10 +1798,19 @@ const Merfish: React.FC = () => {
                                     <li className="nav-item">
                                         <button
                                             type="button"
-                                            className={`nav-link ${activetab2 === "chemcorr" ? "active" : ""}`}
-                                            onClick={() => setActivetab2("chemcorr")}
+                                            className={`nav-link ${activetab2 === "readout" ? "active" : ""}`}
+                                            onClick={() => setActivetab2("readout")}
                                         >
-                                            Detection Oligo Parameters
+                                            Readout Parameters
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            type="button"
+                                            className={`nav-link ${activetab2 === "primerpro" ? "active" : ""}`}
+                                            onClick={() => setActivetab2("primerpro")}
+                                        >
+                                            Primer Parameters
                                         </button>
                                     </li>
                                 </ul>
@@ -1806,7 +1824,7 @@ const Merfish: React.FC = () => {
 
                     <div className="d-flex justify-content-center mt-3">
                         <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                        {isSubmitting ? "Running..." : "Submit"}
+                            {isSubmitting ? "Running..." : "Submit"}
                         </button>
                     </div>
 
