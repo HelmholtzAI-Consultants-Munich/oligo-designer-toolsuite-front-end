@@ -529,11 +529,6 @@ const Genomic: React.FC = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Footer */}
-                <div className="text-center mt-5 text-muted">
-                    <small>Powered by Genomic Tools © 2025</small>
-                </div>
             </div>
         </div>
 
