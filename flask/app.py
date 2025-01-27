@@ -225,6 +225,7 @@ def scrinshot():
         "detection_oligo_Tm_salt_correction_parameters": None
     }
 
+
     # Write the YAML file
     with open("config.yaml", "w") as f:
         yaml.dump(config, f, sort_keys=False)
@@ -256,6 +257,203 @@ def scrinshot():
                 'stderr': result.stderr,
                 'returncode': result.returncode
             })
+@app.route('/api/merfish', methods=['POST'])
+def merfish():
+    config_path = "config_merfish.yaml"
+    #thread = threading.Thread(target=run_command)  # Run task in a separate thread
+    #thread.start()
+
+    form_data = request.json  # Assuming JSON is posted from React
+
+    # Build the nested config structure:
+    config = {
+        "n_jobs": to_int(form_data["n_jobs"]),
+        "dir_output": form_data["dir_output"],
+        "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]),
+        "top_n_sets": to_int(form_data["top_n_sets"]),
+        # Probe sequences generation
+        "file_regions": form_data["file_regions"],
+        "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]),
+        "target_probe_length_min": to_int(form_data["probe_length_min"]),
+        "target_probe_length_max": to_int(form_data["probe_length_max"]),
+        "target_probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]),
+
+        # Property filters
+        "target_probe_GC_content_min": to_int(form_data["probe_GC_content_min"]),
+        "target_probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
+        "target_probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
+        "target_probe_Tm_min": to_int(form_data["probe_Tm_min"]),
+        "target_probe_Tm_opt": to_int(form_data["probe_Tm_opt"]),
+        "target_probe_Tm_max": to_int(form_data["probe_Tm_max"]),
+        "target_homopolymeric_base_n": {
+            "A": to_int(form_data["homopolymeric_A"]),
+            "T": to_int(form_data["homopolymeric_T"]),
+            "C": to_int(form_data["homopolymeric_C"]),
+            "G": to_int(form_data["homopolymeric_G"])
+        },
+
+        "target_probe_T_secondary_structure": to_int(form_data["target_probe_T_secondary_structure"]),
+        "target_probe_secondary_structures_threshold_deltaG": to_int(form_data["target_probe_secondary_structures_threshold_deltaG"]),
+        "target_probe_GC_weight": to_int(form_data["target_probe_GC_weight"]),
+        "target_probe_Tm_weight": to_int(form_data["target_probe_Tm_weight"]),
+
+        "target_probe_isoform_weight": to_int(form_data["probe_isoform_weight"]),
+
+        "set_size_min": to_int(form_data["probeset_size_min"]),
+        "set_size_opt": to_int(form_data["probeset_size_opt"]),
+        "distance_between_target_probes": to_int(form_data["distance_between_probes"]),
+        "n_sets": to_int(form_data["n_sets"]),
+
+        "files_fasta_reference_database_readout_probe": multiline_to_list(form_data["files_fasta_reference_database_readout_probe"]),
+        "readout_probe_base_prob_a": float(form_data["readout_probe_base_prob_a"]),
+        "readout_probe_base_prob_c": float(form_data["readout_probe_base_prob_c"]),
+        "readout_probe_base_prob_g": float(form_data["readout_probe_base_prob_g"]),
+        "readout_probe_base_prob_t": float(form_data["readout_probe_base_prob_t"]),
+        "readout_probe_length": float(form_data["readout_probe_length"]),
+
+
+        "readout_probe_GC_content_min": to_int(form_data["readout_probe_GC_content_min"]),
+        "readout_probe_GC_content_max": to_int(form_data["readout_probe_GC_content_max"]),
+        "readout_probe_homopolymeric_base_n_g": to_int(form_data["readout_probe_homopolymeric_base_n_g"]),
+        "readout_probe_set_size": to_int(form_data["readout_probe_set_size"]),
+        "readout_probe_homogeneous_properties_weights_tmnn": to_int(form_data["readout_probe_homogeneous_properties_weights_tmnn"]),
+        "readout_probe_homogeneous_properties_weights_GC_content": to_int(form_data["readout_probe_homogeneous_properties_weights_GC_content"]),
+        "n_bits": to_int(form_data["n_bits"]),
+        "min_hamming_dist": to_int(form_data["min_hamming_dist"]),
+        "hamming_weight": to_int(form_data["hamming_weight"]),
+        "channels_ids": form_data["channels_ids"],
+
+        #PRIMER PARAMETERS
+
+
+
+
+
+        # Developer parameters
+        "target_probe_specificity_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["specificity_perc_identity"]),
+            "strand": form_data["specificity_strand"],
+            "word_size": to_int(form_data["specificity_word_size"]),
+            "dust": form_data["specificity_dust"],
+            "soft_masking": form_data["specificity_soft_masking"],
+            "max_target_seqs": to_int(form_data["specificity_max_target_seqs"]),
+            "max_hsps": to_int(form_data["specificity_max_hsps"])
+        },
+        "target_probe_specificity_blastn_hit_parameters": {
+            "coverage": to_int(form_data["specificity_coverage"])
+        },
+
+        "target_probe_cross_hybridization_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["crosshybridization_perc_identity"]),
+            "strand": form_data["crosshybridization_strand"],
+            "word_size": to_int(form_data["crosshybridization_word_size"]),
+            "dust": form_data["crosshybridization_dust"],
+            "soft_masking": form_data["crosshybridization_soft_masking"],
+            "max_target_seqs": to_int(form_data["crosshybridization_max_target_seqs"])
+        },
+        "target_probe_cross_hybridization_blastn_hit_parameters": {
+            "coverage": to_int(form_data["crosshybridization_coverage"])
+        },
+
+        "max_graph_size": to_int(form_data["max_graph_size"]),
+        "n_attempts": to_int(form_data["n_attempts"]),
+        "pre_filtering": to_bool(form_data["pre_filtering"]),
+
+        # Melting Temperature Parameters
+        "target_probe_Tm_parameters_probe": {
+            "check": to_bool(form_data["Tm_probe_check"]),
+            "strict": to_bool(form_data["Tm_probe_strict"]),
+            "c_seq": to_null(form_data["Tm_probe_c_seq"]),
+            "shift": to_int(form_data["Tm_probe_shift"]),
+            "nn_table": form_data["Tm_probe_nn_table"],
+            "tmm_table": form_data["Tm_probe_tmm_table"],
+            "imm_table": form_data["Tm_probe_imm_table"],
+            "de_table": form_data["DE_probe_imm_table"],
+            "dnac1": to_int(form_data["Tm_probe_dnac1"]),
+            "dnac2": to_int(form_data["Tm_probe_dnac2"]),
+            "selfcomp": to_bool(form_data["selfcomp"]),
+            "saltcorr": to_int(form_data["Tm_probe_saltcorr"]),
+            "Na": to_int(form_data["Tm_probe_Na"]),
+            "K": to_int(form_data["Tm_probe_K"]),
+            "Tris": to_int(form_data["Tm_probe_Tris"]),
+            "Mg": to_int(form_data["Tm_probe_Mg"]),
+            "dNTPs": to_int(form_data["Tm_probe_dNTPs"])
+        },
+        "target_probe_Tm_chem_correction_param_probe": {
+            "DMSO": to_int(form_data["Tm_probe_DMSO"]),
+            "fmd": to_int(form_data["Tm_probe_fmd"]),
+            "DMSOfactor": float(form_data["Tm_probe_DMSOfactor"]),
+            "fmdfactor": float(form_data["Tm_probe_fmdfactor"]),
+            "fmdmethod": to_int(form_data["Tm_probe_fmdmethod"]),
+            "GC": to_null(form_data["Tm_probe_GC"])
+        },
+        # If Tm_salt_correction_param_probe is null, we just omit it or set it to None
+        "target_probe_Tm_salt_correction_param_probe": None,
+
+        "detection_oligo_Tm_parameters": {
+            "check": to_bool(form_data["Tm_detection_check"]),
+            "strict": to_bool(form_data["Tm_detection_strict"]),
+            "c_seq": to_null(form_data["Tm_detection_c_seq"]),
+            "shift": to_int(form_data["Tm_detection_shift"]),
+            "nn_table": form_data["Tm_detection_nn_table"],
+            "tmm_table": form_data["Tm_detection_tmm_table"],
+            "imm_table": form_data["Tm_detection_imm_table"],
+            "de_table": form_data["Tm_detection_de_table"],
+            "dnac1": to_int(form_data["Tm_detection_dnac1"]),
+            "dnac2": to_int(form_data["Tm_detection_dnac2"]),
+            "selfcomp": to_bool(form_data["Tm_detection_selfcomp"]),
+            "saltcorr": to_int(form_data["Tm_detection_saltcorr"]),
+            "Na": to_int(form_data["Tm_detection_Na"]),
+            "K": to_int(form_data["Tm_detection_K"]),
+            "Tris": to_int(form_data["Tm_detection_Tris"]),
+            "Mg": to_int(form_data["Tm_detection_Mg"]),
+            "dNTPs": to_int(form_data["Tm_detection_dNTPs"])
+        },
+        "detection_oligo_Tm_chem_correction_parameters": {
+            "DMSO": to_int(form_data["Tm_detection_DMSO"]),
+            "fmd": to_int(form_data["Tm_detection_fmd"]),
+            "DMSOfactor": float(form_data["Tm_detection_DMSOfactor"]),
+            "fmdfactor": float(form_data["Tm_detection_fmdfactor"]),
+            "fmdmethod": to_int(form_data["Tm_detection_fmdmethod"]),
+            "GC": to_null(form_data["Tm_detection_GC"])
+        },
+        "detection_oligo_Tm_salt_correction_parameters": None
+    }
+
+
+    # Write the YAML file
+    with open("config.yaml", "w") as f:
+        yaml.dump(config, f, sort_keys=False)
+
+    result = subprocess.run(
+        ['scrinshot_probe_designer', '-c', config_path],
+        capture_output=True,
+        text=True
+    )
+
+    if os.path.exists(form_data['file_regions']):
+        print('deleted')
+        os.remove(form_data['file_regions'])  # Delete the file
+    a=split_on_newline(form_data['files_fasta_target_probe_database'])
+    a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+    a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
+    a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+
+
+
+    return jsonify({
+        'stdout': result.stdout,
+        'stderr': result.stderr,
+        'returncode': result.returncode
+    })
+
 
 @app.route('/api/genomic/ncbi', methods=['POST'])
 def genomic_ncbi():
