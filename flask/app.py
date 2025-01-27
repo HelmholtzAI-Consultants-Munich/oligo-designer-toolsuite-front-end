@@ -325,6 +325,30 @@ def merfish():
         "channels_ids": form_data["channels_ids"],
 
         #PRIMER PARAMETERS
+        "files_fasta_reference_database_primer": multiline_to_list(form_data["files_fasta_reference_database_primer"]),
+        "reverse_primer_sequence": form_data["reverse_primer_sequence"],
+        "primer_length": to_int(form_data["primer_length"]),
+        "primer_base_probabilities_a": float(form_data["primer_base_probabilities_a"]),
+        "primer_base_probabilities_c": float(form_data["primer_base_probabilities_c"]),
+        "primer_base_probabilities_g": float(form_data["primer_base_probabilities_g"]),
+        "primer_base_probabilities_t": float(form_data["primer_base_probabilities_t"]),
+        "primer_GC_content_min": to_int(form_data["primer_GC_content_min"]),
+        "primer_GC_content_max": to_int(form_data["primer_GC_content_max"]),
+        "primer_number_GC_GCclamp": to_int(form_data["primer_number_GC_GCclamp"]),
+        "primer_number_three_prime_base_GCclamp": to_int(form_data["primer_number_three_prime_base_GCclamp"]),
+        "primer_homopolymeric_base_n_a": to_int(form_data["primer_homopolymeric_base_n_a"]),
+        "primer_homopolymeric_base_n_t": to_int(form_data["primer_homopolymeric_base_n_t"]),
+        "primer_homopolymeric_base_n_c": to_int(form_data["primer_homopolymeric_base_n_c"]),
+        "primer_homopolymeric_base_n_g": to_int(form_data["primer_homopolymeric_base_n_g"]),
+        "primer_max_len_selfcomplement": to_int(form_data["primer_max_len_selfcomplement"]),
+        "primer_max_len_complement_reverse_primer": to_int(form_data["primer_max_len_complement_reverse_primer"]),
+        "primer_Tm_min": to_int(form_data["primer_Tm_min"]),
+        "primer_Tm_max": to_int(form_data["primer_Tm_max"]),
+        "primer_T_secondary_structure": to_int(form_data["primer_T_secondary_structure"]),
+        "primer_secondary_structures_threshold_deltaG": to_int(form_data["primer_secondary_structures_threshold_deltaG"]),
+
+
+
 
 
 
@@ -332,36 +356,39 @@ def merfish():
 
         # Developer parameters
         "target_probe_specificity_blastn_search_parameters": {
-            "perc_identity": to_int(form_data["specificity_perc_identity"]),
-            "strand": form_data["specificity_strand"],
-            "word_size": to_int(form_data["specificity_word_size"]),
-            "dust": form_data["specificity_dust"],
-            "soft_masking": form_data["specificity_soft_masking"],
-            "max_target_seqs": to_int(form_data["specificity_max_target_seqs"]),
-            "max_hsps": to_int(form_data["specificity_max_hsps"])
+            "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["target_probe_specificity_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["target_probe_specificity_blastn_search_parameters_word_size"]),
+            "dust": form_data["target_probe_specificity_blastn_search_parameters_dust"],
+            "soft_masking": form_data["target_probe_specificity_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["target_probe_specificity_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["target_probe_specificity_blastn_search_parameters_max_hsps"])
         },
         "target_probe_specificity_blastn_hit_parameters": {
-            "coverage": to_int(form_data["specificity_coverage"])
+            "min_alignment_length": to_int(form_data["target_probe_specificity_blastn_hit_parameters_min_alignment_length"])
         },
 
         "target_probe_cross_hybridization_blastn_search_parameters": {
-            "perc_identity": to_int(form_data["crosshybridization_perc_identity"]),
-            "strand": form_data["crosshybridization_strand"],
-            "word_size": to_int(form_data["crosshybridization_word_size"]),
-            "dust": form_data["crosshybridization_dust"],
-            "soft_masking": form_data["crosshybridization_soft_masking"],
-            "max_target_seqs": to_int(form_data["crosshybridization_max_target_seqs"])
+            "perc_identity": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["target_probe_cross_hybridization_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters_word_size"]),
+            "dust": form_data["target_probe_cross_hybridization_blastn_search_parameters_dust"],
+            "soft_masking": form_data["target_probe_cross_hybridization_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters_max_target_seqs"])
         },
         "target_probe_cross_hybridization_blastn_hit_parameters": {
-            "coverage": to_int(form_data["crosshybridization_coverage"])
+            "min_alignment_length": to_int(form_data["target_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length"])
         },
 
         "max_graph_size": to_int(form_data["max_graph_size"]),
         "n_attempts": to_int(form_data["n_attempts"]),
-        "pre_filtering": to_bool(form_data["pre_filtering"]),
+        "pre_filter": to_bool(form_data["pre_filter"]),
+        "heuristic": to_bool(form_data["heuristic"]),
+        "heuristic_n_attempts": to_int(form_data["heuristic_n_attempts"]),
+
 
         # Melting Temperature Parameters
-        "target_probe_Tm_parameters_probe": {
+        "target_probe_Tm_parameters": {
             "check": to_bool(form_data["Tm_probe_check"]),
             "strict": to_bool(form_data["Tm_probe_strict"]),
             "c_seq": to_null(form_data["Tm_probe_c_seq"]),
@@ -380,18 +407,36 @@ def merfish():
             "Mg": to_int(form_data["Tm_probe_Mg"]),
             "dNTPs": to_int(form_data["Tm_probe_dNTPs"])
         },
-        "target_probe_Tm_chem_correction_param_probe": {
-            "DMSO": to_int(form_data["Tm_probe_DMSO"]),
-            "fmd": to_int(form_data["Tm_probe_fmd"]),
-            "DMSOfactor": float(form_data["Tm_probe_DMSOfactor"]),
-            "fmdfactor": float(form_data["Tm_probe_fmdfactor"]),
-            "fmdmethod": to_int(form_data["Tm_probe_fmdmethod"]),
-            "GC": to_null(form_data["Tm_probe_GC"])
-        },
+        "target_probe_Tm_chem_correction_param_probe": None,
         # If Tm_salt_correction_param_probe is null, we just omit it or set it to None
         "target_probe_Tm_salt_correction_param_probe": None,
+        #READOUT PROBE PARAMETERS
+        "readout_probe_initial_num_sequences": to_int(form_data["readout_probe_initial_num_sequences"]),
+        "readout_probe_specificity_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["readout_probe_specificity_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["readout_probe_specificity_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["readout_probe_specificity_blastn_search_parameters_word_size"]),
+            "dust": form_data["readout_probe_specificity_blastn_search_parameters_dust"],
+            "soft_masking": form_data["readout_probe_specificity_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["readout_probe_specificity_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["readout_probe_specificity_blastn_search_parameters_max_hsps"])
+        },
+        "readout_probe_specificity_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["readout_probe_specificity_blastn_hit_parameters_min_alignment_length"])
+        },
 
-        "detection_oligo_Tm_parameters": {
+        "readout_probe_cross_hybridization_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["readout_probe_cross_hybridization_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters_word_size"]),
+            "dust": form_data["readout_probe_cross_hybridization_blastn_search_parameters_dust"],
+            "soft_masking": form_data["readout_probe_cross_hybridization_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters_max_target_seqs"])
+        },
+        "readout_probe_cross_hybridization_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["readout_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length"])
+        },
+        "readout_probe_Tm_parameters": {
             "check": to_bool(form_data["Tm_detection_check"]),
             "strict": to_bool(form_data["Tm_detection_strict"]),
             "c_seq": to_null(form_data["Tm_detection_c_seq"]),
@@ -479,8 +524,8 @@ def genomic_ncbi():
             'intergenic': to_bool(form_data['intergenic']),
             'exon': to_bool(form_data['exon']),
             'exon_exon_junction': to_bool(form_data['exon_exon_junction']),
-            'utr': to_bool(form_data['utr']),
-            'cds': to_bool(form_data['cds']),
+            'utr': to_bool(form_data['UTR']),
+            'cds': to_bool(form_data['CDS']),
             'intron': to_bool(form_data['intron'])
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size'])
@@ -538,8 +583,8 @@ def genomic_ensemble():
             'intergenic': to_bool(form_data['intergenic']),
             'exon': to_bool(form_data['exon']),
             'exon_exon_junction': to_bool(form_data['exon_exon_junction']),
-            'utr': to_bool(form_data['utr']),
-            'cds': to_bool(form_data['cds']),
+            'utr': to_bool(form_data['UTR']),
+            'cds': to_bool(form_data['CDS']),
             'intron': to_bool(form_data['intron'])
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size'])
@@ -602,8 +647,8 @@ def genomic_custom():
             'intergenic': to_bool(form_data['intergenic']),
             'exon': to_bool(form_data['exon']),
             'exon_exon_junction': to_bool(form_data['exon_exon_junction']),
-            'utr': to_bool(form_data['utr']),
-            'cds': to_bool(form_data['cds']),
+            'utr': to_bool(form_data['UTR']),
+            'cds': to_bool(form_data['CDS']),
             'intron': to_bool(form_data['intron'])
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size'])

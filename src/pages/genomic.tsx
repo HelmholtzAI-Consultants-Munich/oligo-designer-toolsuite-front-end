@@ -63,13 +63,13 @@ const Genomic: React.FC = () => {
         species: "Homo_sapiens",
         annotation_release: "110",
         exon_exon_junction_block_size: 50,
-        gene: 'True',
-        intergenic: 'True',
-        exon: 'True',
-        exon_exon_junction: 'True',
-        utr: 'True',
-        cds: 'True',
-        intron: 'True'
+        gene: 'False',
+        intergenic: 'False',
+        exon: 'False',
+        exon_exon_junction: 'False',
+        UTR: 'False',
+        CDS: 'False',
+        intron: 'False'
     });
     const [formDataEns, setFormDataEns] = useState({
         dir_output: "output_genomic",
@@ -77,32 +77,32 @@ const Genomic: React.FC = () => {
         species: "Homo_sapiens",
         annotation_release: "current",
         exon_exon_junction_block_size: 50,
-        gene: 'True',
-        intergenic: 'True',
-        exon: 'True',
-        exon_exon_junction: 'True',
-        utr: 'True',
-        cds: 'True',
-        intron: 'True'
+        gene: 'False',
+        intergenic: 'False',
+        exon: 'False',
+        exon_exon_junction: 'False',
+        UTR: 'False',
+        CDS: 'False',
+        intron: 'False'
     });
     const [formDataCustom, setFormDataCustom] = useState({
         dir_output: "output_genomic",
         source: "custom",
         file_annotation: '',
         file_sequence: '',
-        files_source: 'NCBI',
-        species: "Homo_sapiens",
-        annotation_release: "110",
-        genome_assembly: "GRCh38",
+        files_source: '',
+        species: "",
+        annotation_release: "",
+        genome_assembly: "",
         exon_exon_junction_block_size: 50,
 
-        gene: 'True',
-        intergenic: 'True',
-        exon: 'True',
-        exon_exon_junction: 'True',
-        utr: 'True',
-        cds: 'True',
-        intron: 'True'
+        gene: 'False',
+        intergenic: 'False',
+        exon: 'False',
+        exon_exon_junction: 'False',
+        UTR: 'False',
+        CDS: 'False',
+        intron: 'False'
     });
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
@@ -190,6 +190,7 @@ const Genomic: React.FC = () => {
 
     // @ts-ignore
     // @ts-ignore
+    // @ts-ignore
     return (
         <div>
             <Navbar/>
@@ -218,7 +219,7 @@ const Genomic: React.FC = () => {
                                     <label
                                         className={`btn btn-outline-primary ${selectedSource === "ncbi" ? "active" : ""}`}
                                         htmlFor="ncbi">
-                                        🧬 NCBI
+                                        🗄️ NCBI
                                     </label>
 
                                     <input
@@ -233,7 +234,7 @@ const Genomic: React.FC = () => {
                                     <label
                                         className={`btn btn-outline-success ${selectedSource === "ensembl" ? "active" : ""}`}
                                         htmlFor="ensembl">
-                                        🔬 Ensembl
+                                        🗄️ Ensembl
                                     </label>
 
                                     <input
@@ -262,6 +263,17 @@ const Genomic: React.FC = () => {
                                             <div className="card-body">
                                                 <form onSubmit={handleSubmit}>
                                                     <div className="mb-3">
+                                                        <label htmlFor="taxon" className="form-label">Taxon</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            id="taxon"
+                                                            value={formDataNcbi.taxon}
+                                                            onChange={handleChange}
+                                                            placeholder="vertebrate_mammalian"
+                                                        />
+                                                    </div>
+                                                    <div className="mb-3">
                                                         <label htmlFor="species" className="form-label">Species</label>
                                                         <input
                                                             type="text"
@@ -273,17 +285,6 @@ const Genomic: React.FC = () => {
                                                         />
                                                     </div>
 
-                                                    <div className="mb-3">
-                                                        <label htmlFor="taxon" className="form-label">Taxon</label>
-                                                        <input
-                                                            type="text"
-                                                            className="form-control"
-                                                            id="taxon"
-                                                            value={formDataNcbi.taxon}
-                                                            onChange={handleChange}
-                                                            placeholder="vertebrate_mammalian"
-                                                        />
-                                                    </div>
 
                                                     <div className="mb-3">
                                                         <label htmlFor="annotation_release" className="form-label">Annotation
@@ -294,42 +295,50 @@ const Genomic: React.FC = () => {
                                                             id="annotation_release"
                                                             value={formDataNcbi.annotation_release}
                                                             onChange={handleChange}
-                                                            placeholder="110"
+                                                            placeholder="current"
                                                         />
                                                     </div>
 
-                                                    <div className="mb-3">
-                                                        <label htmlFor="exon_exon_junction_block_size"
-                                                               className="form-label">Exon-Exon Junction Block
-                                                            Size</label>
-                                                        <input
-                                                            type="number"
-                                                            className="form-control"
-                                                            id="exon_exon_junction_block_size"
-                                                            value={formDataNcbi.exon_exon_junction_block_size}
-                                                            onChange={handleChange}
-                                                            placeholder="50"
-                                                        />
-                                                    </div>
+                                                    {formDataNcbi.exon_exon_junction === "true" && (
+                                                        <div className="mb-3">
+                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
+                                                                Exon-Exon Junction Block Size
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                id="exon_exon_junction_block_size"
+                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                onChange={handleChange}
+                                                                placeholder="50"
+                                                            />
+                                                        </div>
+                                                    )}
 
                                                     <h5>Genomic Regions</h5>
 
                                                     <div className="row">
-                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "utr", "cds", "intron"].map((region) => (
+                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "UTR", "CDS", "intron"].map((region) => (
                                                             <div className="col-md-4 mb-3" key={region}>
-                                                                <label htmlFor={region} className="form-label">
-                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, ' ')}
-                                                                </label>
-                                                                <select
-                                                                    className="form-select"
-                                                                    id={region}
-                                                                    name={region}
-                                                                    value={formDataNcbi[region as keyof typeof formDataNcbi]}
-                                                                    onChange={handleChange}
-                                                                >
-                                                                    <option value="true">True</option>
-                                                                    <option value="false">False</option>
-                                                                </select>
+                                                                <div className="form-check">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="form-check-input"
+                                                                        id={region}
+                                                                        name={region}
+                                                                        checked={formDataNcbi[region as keyof typeof formDataNcbi] === "true"}
+                                                                        onChange={(e) =>
+                                                                            setFormDataNcbi((prev) => ({
+                                                                                ...prev,
+                                                                                [region]: e.target.checked ? "true" : "false",
+                                                                            }))
+                                                                        }
+                                                                    />
+                                                                    <label htmlFor={region}
+                                                                           className="form-check-label">
+                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, " ")}
+                                                                    </label>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -369,42 +378,50 @@ const Genomic: React.FC = () => {
                                                             id="annotation_release"
                                                             value={formDataEns.annotation_release}
                                                             onChange={handleChange}
-                                                            placeholder="110"
+                                                            placeholder="current"
                                                         />
                                                     </div>
 
-                                                    <div className="mb-3">
-                                                        <label htmlFor="exon_exon_junction_block_size"
-                                                               className="form-label">Exon-Exon Junction Block
-                                                            Size</label>
-                                                        <input
-                                                            type="number"
-                                                            className="form-control"
-                                                            id="exon_exon_junction_block_size"
-                                                            value={formDataEns.exon_exon_junction_block_size}
-                                                            onChange={handleChange}
-                                                            placeholder="50"
-                                                        />
-                                                    </div>
+                                                    {formDataEns.exon_exon_junction === "true" && (
+                                                        <div className="mb-3">
+                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
+                                                                Exon-Exon Junction Block Size
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                id="exon_exon_junction_block_size"
+                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                onChange={handleChange}
+                                                                placeholder="50"
+                                                            />
+                                                        </div>
+                                                    )}
 
                                                     <h5>Genomic Regions</h5>
 
                                                     <div className="row">
-                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "utr", "cds", "intron"].map((region) => (
+                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "UTR", "CDS", "intron"].map((region) => (
                                                             <div className="col-md-4 mb-3" key={region}>
-                                                                <label htmlFor={region} className="form-label">
-                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, ' ')}
-                                                                </label>
-                                                                <select
-                                                                    className="form-select"
-                                                                    id={region}
-                                                                    name={region}
-                                                                    value={formDataEns[region as keyof typeof formDataEns]}
-                                                                    onChange={handleChange}
-                                                                >
-                                                                    <option value="true">True</option>
-                                                                    <option value="false">False</option>
-                                                                </select>
+                                                                <div className="form-check">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="form-check-input"
+                                                                        id={region}
+                                                                        name={region}
+                                                                        checked={formDataEns[region as keyof typeof formDataEns] === "true"}
+                                                                        onChange={(e) =>
+                                                                            setFormDataEns((prev) => ({
+                                                                                ...prev,
+                                                                                [region]: e.target.checked ? "true" : "false",
+                                                                            }))
+                                                                        }
+                                                                    />
+                                                                    <label htmlFor={region}
+                                                                           className="form-check-label">
+                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, " ")}
+                                                                    </label>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -426,13 +443,15 @@ const Genomic: React.FC = () => {
                                                     <div className="mb-3">
                                                         <label htmlFor="file_sequence" className="form-label">Upload
                                                             Sequence File</label>
-                                                        <input type="file" className="form-control" id="file_sequence" name='file_sequence'
+                                                        <input type="file" className="form-control" id="file_sequence"
+                                                               name='file_sequence'
                                                                onChange={handleFileChange}/>
                                                     </div>
                                                     <div className="mb-3">
                                                         <label htmlFor="file_annotation" className="form-label">Upload
                                                             Annotation File</label>
-                                                        <input type="file" className="form-control" name='file_annotation'
+                                                        <input type="file" className="form-control"
+                                                               name='file_annotation'
                                                                id="file_annotation" onChange={handleFileChange}/>
                                                     </div>
                                                     <div className="mb-3">
@@ -443,7 +462,7 @@ const Genomic: React.FC = () => {
                                                             id="species"
                                                             value={formDataCustom.species}
                                                             onChange={handleChange}
-                                                            placeholder="Homo_sapiens"
+                                                            placeholder=""
                                                         />
                                                     </div>
 
@@ -456,7 +475,7 @@ const Genomic: React.FC = () => {
                                                             id="annotation_release"
                                                             value={formDataCustom.annotation_release}
                                                             onChange={handleChange}
-                                                            placeholder="110"
+                                                            placeholder=""
                                                         />
                                                     </div>
                                                     <div className="mb-3">
@@ -468,51 +487,60 @@ const Genomic: React.FC = () => {
                                                             id="genome_assembly"
                                                             value={formDataCustom.genome_assembly}
                                                             onChange={handleChange}
-                                                            placeholder="GRCh38"
+                                                            placeholder=""
                                                         />
                                                     </div>
                                                     <div className="mb-3">
-                                                        <label htmlFor="files_source" className="form-label">Files Source
-                                                            </label>
+                                                        <label htmlFor="files_source" className="form-label">Files
+                                                            Source
+                                                        </label>
                                                         <input
                                                             type='text'
                                                             className="form-control"
                                                             id="files_source"
                                                             value={formDataCustom.files_source}
                                                             onChange={handleChange}
-                                                            placeholder="NCBI"
+                                                            placeholder=""
                                                         />
                                                     </div>
 
-                                                    <div className="mb-3">
-                                                        <label htmlFor="exon_exon_junction_block_size"
-                                                               className="form-label">Exon-Exon Junction Block
-                                                            Size</label>
-                                                        <input
-                                                            type="number"
-                                                            className="form-control"
-                                                            id="exon_exon_junction_block_size"
-                                                            value={formDataCustom.exon_exon_junction_block_size}
-                                                            onChange={handleChange}
-                                                            placeholder="50"
-                                                        />
-                                                    </div>
+                                                    {formDataCustom.exon_exon_junction === "true" && (
+                                                        <div className="mb-3">
+                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
+                                                                Exon-Exon Junction Block Size
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                id="exon_exon_junction_block_size"
+                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                onChange={handleChange}
+                                                                placeholder="50"
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <div className="row">
-                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "utr", "cds", "intron"].map((region) => (
+                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "UTR", "CDS", "intron"].map((region) => (
                                                             <div className="col-md-4 mb-3" key={region}>
-                                                                <label htmlFor={region} className="form-label">
-                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, ' ')}
-                                                                </label>
-                                                                <select
-                                                                    className="form-select"
-                                                                    id={region}
-                                                                    name={region}
-                                                                    value={formDataCustom[region as keyof typeof formDataCustom]}
-                                                                    onChange={handleChange}
-                                                                >
-                                                                    <option value="true">True</option>
-                                                                    <option value="false">False</option>
-                                                                </select>
+                                                                <div className="form-check">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="form-check-input"
+                                                                        id={region}
+                                                                        name={region}
+                                                                        checked={formDataCustom[region as keyof typeof formDataCustom] === "true"}
+                                                                        onChange={(e) =>
+                                                                            setFormDataCustom((prev) => ({
+                                                                                ...prev,
+                                                                                [region]: e.target.checked ? "true" : "false",
+                                                                            }))
+                                                                        }
+                                                                    />
+                                                                    <label htmlFor={region}
+                                                                           className="form-check-label">
+                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, " ")}
+                                                                    </label>
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
