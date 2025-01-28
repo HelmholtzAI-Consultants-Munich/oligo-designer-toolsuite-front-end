@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import {Link} from "react-router-dom";
-import { io } from "socket.io-client";
 import Navbar from "../modules/nav";
 import axios from "axios";
 const Merfish: React.FC = () => {
@@ -24,7 +22,7 @@ const Merfish: React.FC = () => {
         // @ts-ignore
         setFiles((prevFiles) => {
             // Check if the input field should support multiple files
-            if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe") {
+            if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe"  ||  name === "files_fasta_reference_database_readout_probe" ||  name === "files_fasta_reference_database_primer") {
                 return {
                     ...prevFiles,
                     [name]: [...(prevFiles[name] || []), ...Array.from(selectedFiles)], // Append new files to existing ones

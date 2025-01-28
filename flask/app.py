@@ -437,23 +437,23 @@ def merfish():
             "min_alignment_length": to_int(form_data["readout_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length"])
         },
         "readout_probe_Tm_parameters": {
-            "check": to_bool(form_data["Tm_detection_check"]),
-            "strict": to_bool(form_data["Tm_detection_strict"]),
-            "c_seq": to_null(form_data["Tm_detection_c_seq"]),
-            "shift": to_int(form_data["Tm_detection_shift"]),
-            "nn_table": form_data["Tm_detection_nn_table"],
-            "tmm_table": form_data["Tm_detection_tmm_table"],
-            "imm_table": form_data["Tm_detection_imm_table"],
-            "de_table": form_data["Tm_detection_de_table"],
-            "dnac1": to_int(form_data["Tm_detection_dnac1"]),
-            "dnac2": to_int(form_data["Tm_detection_dnac2"]),
-            "selfcomp": to_bool(form_data["Tm_detection_selfcomp"]),
-            "saltcorr": to_int(form_data["Tm_detection_saltcorr"]),
-            "Na": to_int(form_data["Tm_detection_Na"]),
-            "K": to_int(form_data["Tm_detection_K"]),
-            "Tris": to_int(form_data["Tm_detection_Tris"]),
-            "Mg": to_int(form_data["Tm_detection_Mg"]),
-            "dNTPs": to_int(form_data["Tm_detection_dNTPs"])
+            "check": to_bool(form_data["readout_probe_Tm_parameters_check"]),
+            "strict": to_bool(form_data["readout_probe_Tm_parameters_strict"]),
+            "c_seq": to_null(form_data["readout_probe_Tm_parameters_c_seq"]),
+            "shift": to_int(form_data["readout_probe_Tm_parameters_shift"]),
+            "nn_table": form_data["readout_probe_Tm_parameters_nn_table"],
+            "tmm_table": form_data["readout_probe_Tm_parameters_tmm_table"],
+            "imm_table": form_data["readout_probe_Tm_parameters_imm_table"],
+            "de_table": form_data["readout_probe_Tm_parameters_de_table"],
+            "dnac1": to_int(form_data["readout_probe_Tm_parameters_dnac1"]),
+            "dnac2": to_int(form_data["readout_probe_Tm_parameters_dnac2"]),
+            "selfcomp": to_bool(form_data["readout_probe_Tm_parameters_selfcomp"]),
+            "saltcorr": to_int(form_data["readout_probe_Tm_parameters_saltcorr"]),
+            "Na": to_int(form_data["readout_probe_Tm_parameters_Na"]),
+            "K": to_int(form_data["readout_probe_Tm_parameters_K"]),
+            "Tris": to_int(form_data["readout_probe_Tm_parameters_Tris"]),
+            "Mg": to_int(form_data["readout_probe_Tm_parameters_Mg"]),
+            "dNTPs": to_int(form_data["readout_probe_Tm_parameters_dNTPs"])
         },
         "detection_oligo_Tm_chem_correction_parameters": {
             "DMSO": to_int(form_data["Tm_detection_DMSO"]),
@@ -463,7 +463,62 @@ def merfish():
             "fmdmethod": to_int(form_data["Tm_detection_fmdmethod"]),
             "GC": to_null(form_data["Tm_detection_GC"])
         },
-        "detection_oligo_Tm_salt_correction_parameters": None
+        "readout_probe_Tm_chem_correction_parameters": None,
+        "readout_probe_Tm_salt_correction_parameters": None,
+        "readout_probe_n_combinations": to_int(form_data["readout_probe_n_combinations"]),
+        #PRIMER PARAMETERS
+
+        "primer_initial_num_sequences": to_int(form_data["primer_initial_num_sequences"]),
+
+        "primer_specificity_refrence_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["primer_specificity_reference_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["primer_specificity_reference_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["primer_specificity_reference_blastn_search_parameters_word_size"]),
+            "dust": form_data["primer_specificity_reference_blastn_search_parameters_dust"],
+            "soft_masking": form_data["primer_specificity_reference_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["primer_specificity_reference_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["primer_specificity_reference_blastn_search_parameters_max_hsps"])
+        },
+        "primer_specificity_refrence_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["primer_specificity_reference_blastn_hit_parameters_min_alignment_length"])
+        },
+        "primer_specificity_encoding_probes_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["primer_specificity_encoding_probes_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_word_size"]),
+            "dust": form_data["primer_specificity_encoding_probes_blastn_search_parameters_dust"],
+            "soft_masking": form_data["primer_specificity_encoding_probes_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_max_hsps"])
+        },
+        "primer_specificity_encoding_probes_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["primer_specificity_encoding_probes_blastn_hit_parameters_min_alignment_length"])
+        },
+        "primer_Tm_parameters": {
+            "check": to_bool(form_data["primer_Tm_parameters_check"]),
+            "strict": to_bool(form_data["primer_Tm_parameters_strict"]),
+            "c_seq": to_null(form_data["primer_Tm_parameters_c_seq"]),
+            "shift": to_int(form_data["primer_Tm_parameters_shift"]),
+            "nn_table": form_data["primer_Tm_parameters_nn_table"],
+            "tmm_table": form_data["primer_Tm_parameters_tmm_table"],
+            "imm_table": form_data["primer_Tm_parameters_imm_table"],
+            "de_table": form_data["primer_Tm_parameters_de_table"],
+            "dnac1": to_int(form_data["primer_Tm_parameters_dnac1"]),
+            "dnac2": to_int(form_data["primer_Tm_parameters_dnac2"]),
+            "selfcomp": to_bool(form_data["primer_Tm_parameters_selfcomp"]),
+            "saltcorr": to_int(form_data["primer_Tm_parameters_saltcorr"]),
+            "Na": to_int(form_data["primer_Tm_parameters_Na"]),
+            "K": to_int(form_data["primer_Tm_parameters_K"]),
+            "Tris": to_int(form_data["primer_Tm_parameters_Tris"]),
+            "Mg": to_int(form_data["primer_Tm_parameters_Mg"]),
+            "dNTPs": to_int(form_data["primer_Tm_parameters_dNTPs"])
+        },
+        "primer_Tm_chem_correction_parameters": None,
+        "primer_Tm_salt_correction_parameters": None
+
+
+
+
     }
 
 
