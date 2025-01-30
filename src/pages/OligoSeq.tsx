@@ -903,7 +903,7 @@ const OligoSeq: React.FC = () => {
             <Navbar/>
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
-                    <h2 className="text-center mb-4">Merfish Probe Designer</h2>
+                    <h2 className="text-center mb-4">Oligo-Seq Designer</h2>
                     <ul className="nav nav-tabs">
                         <li className="nav-item">
                             <button
