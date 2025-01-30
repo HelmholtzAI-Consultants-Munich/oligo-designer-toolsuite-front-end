@@ -3,8 +3,7 @@ import { Link } from "react-router-dom";
 // index.tsx
 import Navbar from "../modules/nav";
 
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+
 const index: React.FC = () => {
     return (
         <div>

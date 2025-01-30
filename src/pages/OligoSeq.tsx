@@ -161,7 +161,6 @@ const OligoSeq: React.FC = () => {
 
         target_probe_cross_hybridization_alignment_method: 'blastn',
 
-        target_probe_specificity_blastn_hit_parameters_min_alignment_length: "17",
 
         target_probe_cross_hybridization_blastn_search_parameters_perc_identity: "80",
         target_probe_cross_hybridization_blastn_search_parameters_strand: "minus", // this parameter is fixed
@@ -247,6 +246,7 @@ const OligoSeq: React.FC = () => {
             case "probe_sequences":
                 return (
                     <div>
+
                         <div className="mb-4">
                             <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
@@ -296,6 +296,24 @@ const OligoSeq: React.FC = () => {
                             <input type="number" className="form-control" id="probe_length_max"
                                    name="probe_length_max"
                                    value={formData.probe_length_max} onChange={handleChange} required/>
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="target_probe_split_region" className="form-label">Minimum Exon Junction
+                                Coverage</label>
+                            <input type="number" className="form-control" id="target_probe_split_region"
+                                   name="target_probe_split_region"
+                                   value={formData.target_probe_split_region} onChange={handleChange} required/>
+                        </div>
+                        <div className="col-md-6">
+                            <label htmlFor="target_probe_targeted_exons" className="form-label">Target Probe Exons:</label>
+                            <select className="form-control" id="target_probe_targeted_exons"
+                                    name="target_probe_targeted_exons"
+                                    value={formData.target_probe_targeted_exons} onChange={handleChange}>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+
+                            </select>
                         </div>
                         <div className="mb-3">
                             <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
@@ -366,11 +384,11 @@ const OligoSeq: React.FC = () => {
                                        value={formData.homopolymeric_G} onChange={handleChange} required/>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="target_probe_T_secondary_structure" className="form-label">Secondary
+                                <label htmlFor="target_probe_secondary_structures_T" className="form-label">Secondary
                                     Structure Temperature:</label>
-                                <input type="number" className="form-control" id="target_probe_T_secondary_structure"
-                                       name="target_probe_T_secondary_structure"
-                                       value={formData.target_probe_T_secondary_structure} onChange={handleChange}/>
+                                <input type="number" className="form-control" id="target_probe_secondary_structures_T"
+                                       name="target_probe_secondary_structures_T"
+                                       value={formData.target_probe_secondary_structures_T} onChange={handleChange}/>
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="target_probe_secondary_structures_threshold_deltaG"
@@ -424,403 +442,6 @@ const OligoSeq: React.FC = () => {
                         </div>
                     </div>
                 );
-
-            case 'readout':
-                return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Readout Probe Parameters</h4>
-
-                            <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">Fasta
-                                    Readout Probe Reference
-                                    Database:</label>
-                                <input
-                                    type="file"
-                                    className="form-control"
-                                    id="files_fasta_reference_database_readout_probe"
-                                    name="files_fasta_reference_database_readout_probe"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_length" className="form-label">Length of readout
-                                    probes:</label>
-                                <input type="number" className="form-control" id="readout_probe_length"
-                                       name="readout_probe_length"
-                                       value={formData.readout_probe_length} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_a" className="form-label">Probability of base
-                                    A:</label>
-                                <input type="number" className="form-control" id="readout_probe_base_prob_a"
-                                       name="readout_probe_base_prob_a"
-                                       value={formData.readout_probe_base_prob_a} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_c" className="form-label">Probability of base
-                                    C:</label>
-                                <input type="number" className="form-control" id="readout_probe_base_prob_c"
-                                       name="readout_probe_base_prob_c"
-                                       value={formData.readout_probe_base_prob_c} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_g" className="form-label">Probability of base
-                                    A:</label>
-                                <input type="number" className="form-control" id="readout_probe_base_prob_g"
-                                       name="readout_probe_base_prob_g"
-                                       value={formData.readout_probe_base_prob_g} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_t" className="form-label">Probability of base
-                                    A:</label>
-                                <input type="number" className="form-control" id="readout_probe_base_prob_t"
-                                       name="readout_probe_base_prob_t"
-                                       value={formData.readout_probe_base_prob_t} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_GC_content_min" className="form-label">Minimum GC
-                                    content:</label>
-                                <input type="number" className="form-control" id="readout_probe_GC_content_min"
-                                       name="readout_probe_GC_content_min"
-                                       value={formData.readout_probe_GC_content_min} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_GC_content_max" className="form-label">Maximum GC
-                                    content:</label>
-                                <input type="number" className="form-control" id="readout_probe_GC_content_max"
-                                       name="readout_probe_GC_content_max"
-                                       value={formData.readout_probe_GC_content_max} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_homopolymeric_base_n_g" className="form-label">Minimum
-                                    number of Nucleotides:</label>
-                                <input type="number" className="form-control" id="readout_probe_homopolymeric_base_n_g"
-                                       name="readout_probe_homopolymeric_base_n_g"
-                                       value={formData.readout_probe_homopolymeric_base_n_g} onChange={handleChange}
-                                       required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_set_size" className="form-label">Total number of readout
-                                    probes:</label>
-                                <input type="number" className="form-control" id="readout_probe_set_size"
-                                       name="readout_probe_set_size"
-                                       value={formData.readout_probe_set_size} onChange={handleChange}
-                                       required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_homogeneous_properties_weights_tmnn"
-                                       className="form-label">Homogeneous Properties Weights (TmNN):</label>
-                                <input type="number" className="form-control"
-                                       id="readout_probe_homogeneous_properties_weights_tmnn"
-                                       name="readout_probe_homogeneous_properties_weights_tmnn"
-                                       value={formData.readout_probe_homogeneous_properties_weights_tmnn}
-                                       onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_homogeneous_properties_weights_GC_content"
-                                       className="form-label">Homogeneous Properties Weights (GC Content):</label>
-                                <input type="number" className="form-control"
-                                       id="readout_probe_homogeneous_properties_weights_GC_content"
-                                       name="readout_probe_homogeneous_properties_weights_GC_content"
-                                       value={formData.readout_probe_homogeneous_properties_weights_GC_content}
-                                       onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="n_bits" className="form-label">Number of Bits:</label>
-                                <input type="number" className="form-control" id="n_bits"
-                                       name="n_bits"
-                                       value={formData.n_bits} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="min_hamming_dist" className="form-label">Minimum Hamming
-                                    Distance:</label>
-                                <input type="number" className="form-control" id="min_hamming_dist"
-                                       name="min_hamming_dist"
-                                       value={formData.min_hamming_dist} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="hamming_weight" className="form-label">Hamming Weight:</label>
-                                <input type="number" className="form-control" id="hamming_weight"
-                                       name="hamming_weight"
-                                       value={formData.hamming_weight} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="channels_ids" className="form-label">Channel IDs:</label>
-                                <input type="text" className="form-control" id="channels_ids"
-                                       name="channels_ids"
-                                       value={formData.channels_ids} onChange={handleChange} required/>
-                            </div>
-
-                        </div>
-                    </div>
-                );
-
-            case 'primer_parameters':
-                return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Primer Parameters</h4>
-
-                            <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_primer" className="form-label">Fasta Reference Database:</label>
-                                <input
-                                    type="file"
-                                    className="form-control"
-                                    id="files_fasta_reference_database_primer"
-                                    name="files_fasta_reference_database_primer"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="reverse_primer_sequence" className="form-label">Reverse Primer Sequence:</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    id="reverse_primer_sequence"
-                                    name="reverse_primer_sequence"
-                                    value={formData.reverse_primer_sequence}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_length" className="form-label">Primer Length:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_length"
-                                    name="primer_length"
-                                    value={formData.primer_length}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_a" className="form-label">Probability of Base A:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_a"
-                                    name="primer_base_probabilities_a"
-                                    value={formData.primer_base_probabilities_a}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_c" className="form-label">Probability of Base C:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_c"
-                                    name="primer_base_probabilities_c"
-                                    value={formData.primer_base_probabilities_c}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_g" className="form-label">Probability of Base G:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_g"
-                                    name="primer_base_probabilities_g"
-                                    value={formData.primer_base_probabilities_g}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_t" className="form-label">Probability of Base T:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_t"
-                                    name="primer_base_probabilities_t"
-                                    value={formData.primer_base_probabilities_t}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_GC_content_min" className="form-label">Min GC Content:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_GC_content_min"
-                                    name="primer_GC_content_min"
-                                    value={formData.primer_GC_content_min}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_GC_content_max" className="form-label">Max GC Content:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_GC_content_max"
-                                    name="primer_GC_content_max"
-                                    value={formData.primer_GC_content_max}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_number_GC_GCclamp" className="form-label">GC Clamp (GC Count):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_number_GC_GCclamp"
-                                    name="primer_number_GC_GCclamp"
-                                    value={formData.primer_number_GC_GCclamp}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_number_three_prime_base_GCclamp" className="form-label">3' Base GC Clamp Count:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_number_three_prime_base_GCclamp"
-                                    name="primer_number_three_prime_base_GCclamp"
-                                    value={formData.primer_number_three_prime_base_GCclamp}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="row g-3">
-                                <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_a" className="form-label">Homopolymeric A:</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="primer_homopolymeric_base_n_a"
-                                        name="primer_homopolymeric_base_n_a"
-                                        value={formData.primer_homopolymeric_base_n_a}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_t" className="form-label">Homopolymeric T:</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="primer_homopolymeric_base_n_t"
-                                        name="primer_homopolymeric_base_n_t"
-                                        value={formData.primer_homopolymeric_base_n_t}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_c" className="form-label">Homopolymeric C:</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="primer_homopolymeric_base_n_c"
-                                        name="primer_homopolymeric_base_n_c"
-                                        value={formData.primer_homopolymeric_base_n_c}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                                <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_g" className="form-label">Homopolymeric G:</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="primer_homopolymeric_base_n_g"
-                                        name="primer_homopolymeric_base_n_g"
-                                        value={formData.primer_homopolymeric_base_n_g}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_max_len_selfcomplement" className="form-label">Max Self-Complementary Length:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_max_len_selfcomplement"
-                                    name="primer_max_len_selfcomplement"
-                                    value={formData.primer_max_len_selfcomplement}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_max_len_complement_reverse_primer" className="form-label">Max Complement Reverse Primer Length:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_max_len_complement_reverse_primer"
-                                    name="primer_max_len_complement_reverse_primer"
-                                    value={formData.primer_max_len_complement_reverse_primer}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_Tm_min" className="form-label">Min Primer Tm (°C):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_Tm_min"
-                                    name="primer_Tm_min"
-                                    value={formData.primer_Tm_min}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_Tm_max" className="form-label">Max Primer Tm (°C):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_Tm_max"
-                                    name="primer_Tm_max"
-                                    value={formData.primer_Tm_max}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_T_secondary_structure" className="form-label">Secondary Structure Temperature (°C):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_T_secondary_structure"
-                                    name="primer_T_secondary_structure"
-                                    value={formData.primer_T_secondary_structure}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_secondary_structures_threshold_deltaG" className="form-label">Threshold Delta G:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_secondary_structures_threshold_deltaG"
-                                    name="primer_secondary_structures_threshold_deltaG"
-                                    value={formData.primer_secondary_structures_threshold_deltaG}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'set_selection':
-                return (
-                    <div>
-
-
-                    </div>
-                )
-            case 'final_seq':
-                return (
-                    <div>
-
-                        <div className="mb-4">
-                            <h4>Final Sequence Design</h4>
-
-                        </div>
-
-                    </div>
-                );
-
-
-
             // Add cases for other tabs
             default:
                 return null;
@@ -831,6 +452,17 @@ const OligoSeq: React.FC = () => {
             case "specfblastn":
                 return (
                     <div>
+                        <div className="mb-3">
+                            <label htmlFor="target_probe_hybridization_probability_alignment_method"
+                                   className="form-label">Alignment Method:</label>
+                            <select className="form-select" id="target_probe_hybridization_probability_alignment_method"
+                                    name="target_probe_hybridization_probability_alignment_method"
+                                    value={formData.target_probe_hybridization_probability_alignment_method}
+                                    onChange={handleChange}>
+                                <option value="blastn">BlastN</option>
+                                <option value="bowtie">Bowtie</option>
+                            </select>
+                        </div>
                         <div className="row g-3">
                             <div className="col-md-6">
                                 <label htmlFor="target_probe_specificity_blastn_search_parameters_perc_identity"
@@ -839,7 +471,7 @@ const OligoSeq: React.FC = () => {
                                 <input type="number" className="form-control"
                                        id="target_probe_specificity_blastn_search_parameters_perc_identity"
                                        name="target_probe_specificity_blastn_search_parameters_perc_identity"
-                                       value={formData.target_probe_specificity_blastn_search_parameters_perc_identity}
+                                       value={formData.target_probe_hybridization_probability_blastn_search_parameters_perc_identity}
                                        onChange={handleChange}
                                        required/>
                             </div>
@@ -850,7 +482,7 @@ const OligoSeq: React.FC = () => {
                                 <input type="text" className="form-control"
                                        id="target_probe_specificity_blastn_search_parameters_strand"
                                        name="specificity_strand"
-                                       value={formData.target_probe_specificity_blastn_search_parameters_strand}
+                                       value={formData.target_probe_hybridization_probability_blastn_search_parameters_strand}
                                        onChange={handleChange}
                                        required/>
                             </div>
@@ -861,63 +493,52 @@ const OligoSeq: React.FC = () => {
                                 <input type="number" className="form-control"
                                        id="target_probe_specificity_blastn_search_parameters_word_size"
                                        name="target_probe_specificity_blastn_search_parameters_word_size"
-                                       value={formData.target_probe_specificity_blastn_search_parameters_word_size}
+                                       value={formData.target_probe_hybridization_probability_blastn_search_parameters_word_size}
                                        onChange={handleChange}
                                        required/>
                             </div>
                             <div className="col-md-6">
-                                <label htmlFor="target_probe_specificity_blastn_search_parameters_dust"
-                                       className="form-label">Dust:</label>
-                                <input type="text" className="form-control"
-                                       id="target_probe_specificity_blastn_search_parameters_dust"
-                                       name="target_probe_specificity_blastn_search_parameters_dust"
-                                       value={formData.target_probe_specificity_blastn_search_parameters_dust}
-                                       onChange={handleChange} required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_specificity_blastn_search_parameters_soft_masking"
-                                       className="form-label">Soft
-                                    Masking:</label>
-                                <input type="text" className="form-control"
-                                       id="target_probe_specificity_blastn_search_parameters_soft_masking"
-                                       name="target_probe_specificity_blastn_search_parameters_soft_masking"
-                                       value={formData.target_probe_specificity_blastn_search_parameters_soft_masking}
-                                       onChange={handleChange}
-                                       required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_specificity_blastn_search_parameters_max_target_seqs"
+                                <label htmlFor="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
                                        className="form-label">Max
                                     Target Sequences:</label>
                                 <input type="number" className="form-control"
-                                       id="target_probe_specificity_blastn_search_parameters_max_target_seqs"
-                                       name="target_probe_specificity_blastn_search_parameters_max_target_seqs"
-                                       value={formData.target_probe_specificity_blastn_search_parameters_max_target_seqs}
+                                       id="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
+                                       name="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
+                                       value={formData.target_probe_hybridization_probability_blastn_hit_parameters_coverage}
                                        onChange={handleChange}
                                        required/>
                             </div>
                             <div className="col-md-6">
-                                <label htmlFor="target_probe_specificity_blastn_search_parameters_max_hsps"
-                                       className="form-label">Max
-                                    HSPs:</label>
+                                <label htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_v"
+                                       className="form-label">Allowed Mismatches:</label>
                                 <input type="number" className="form-control"
-                                       id="target_probe_specificity_blastn_search_parameters_max_hsps"
-                                       name="target_probe_specificity_blastn_search_parameters_max_hsps"
-                                       value={formData.target_probe_specificity_blastn_search_parameters_max_hsps}
+                                       id="target_probe_hybridization_probability_bowtie_search_parameters_v"
+                                       name="target_probe_hybridization_probability_bowtie_search_parameters_v"
+                                       value={formData.target_probe_hybridization_probability_bowtie_search_parameters_v}
                                        onChange={handleChange}
                                        required/>
                             </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_specificity_blastn_hit_parameters_min_alignment_length"
-                                       className="form-label">Max
-                                    HSPs:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_specificity_blastn_hit_parameters_min_alignment_length"
-                                       name="target_probe_specificity_blastn_hit_parameters_min_alignment_length"
-                                       value={formData.target_probe_specificity_blastn_hit_parameters_min_alignment_length}
-                                       onChange={handleChange}
-                                       required/>
+                            <div className="mb-3 form-check">
+                                <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                    name="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                    checked={formData.target_probe_hybridization_probability_bowtie_search_parameters_nofw === "true"}
+                                    onChange={(e) =>
+                                        setFormData((prev: any) => ({
+                                            ...prev,
+                                            target_probe_hybridization_probability_bowtie_search_parameters_nofw: e.target.checked ? "true" : "false",
+                                        }))
+                                    }
+                                />
+                                <label htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                       className="form-check-label">
+                                    No forward strand: Uncheck if the reference is whole genome
+                                </label>
                             </div>
+                            //CROSS HYBRID FİLTERS
+
                         </div>
                     </div>
                 );
@@ -925,68 +546,93 @@ const OligoSeq: React.FC = () => {
                 return (
                     <div>
 
-                        <h5>Cross-Hybridization Filters with BlastN</h5>
-                        <div className="row g-3">
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_perc_identity" className="form-label">Percent
-                                    Identity:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
-                                       name="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
-                                       value={formData.target_probe_cross_hybridization_blastn_search_parameters_perc_identity}
-                                       onChange={handleChange} required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_strand"
-                                       className="form-label">Strand:</label>
-                                <input type="text" className="form-control" id="target_probe_cross_hybridization_blastn_search_parameters_strand"
-                                       name="target_probe_cross_hybridization_blastn_search_parameters_strand"
-                                       value={formData.target_probe_cross_hybridization_blastn_search_parameters_strand} onChange={handleChange}
-                                       required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_word_size" className="form-label">Word
-                                    Size:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_cross_hybridization_blastn_search_parameters_word_size" name="target_probe_cross_hybridization_blastn_search_parameters_word_size"
-                                       value={formData.target_probe_cross_hybridization_blastn_search_parameters_word_size} onChange={handleChange}
-                                       required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_dust"
-                                       className="form-label">Dust:</label>
-                                <input type="text" className="form-control" id="target_probe_cross_hybridization_blastn_search_parameters_dust"
-                                       name="target_probe_cross_hybridization_blastn_search_parameters_dust"
-                                       value={formData.target_probe_cross_hybridization_blastn_search_parameters_dust} onChange={handleChange}
-                                       required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_soft_masking" className="form-label">Soft
-                                    Masking:</label>
-                                <input type="text" className="form-control"
-                                       id="target_probe_cross_hybridization_blastn_search_parameters_soft_masking"
-                                       name="target_probe_cross_hybridization_blastn_search_parameters_soft_masking"
-                                       value={formData.target_probe_cross_hybridization_blastn_search_parameters_soft_masking}
-                                       onChange={handleChange} required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_max_target_seqs" className="form-label">Max
-                                    Target Sequences:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_cross_hybridization_blastn_search_parameters_max_target_seqs"
-                                       name="target_probe_cross_hybridization_blastn_search_parameters_max_target_seqs"
-                                       value={formData.target_probe_cross_hybridization_blastn_search_parameters_max_target_seqs}
-                                       onChange={handleChange} required/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="target_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length"
-                                       className="form-label">Minimum alignment Length</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length" name="target_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length"
-                                       value={formData.target_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length} onChange={handleChange}
-                                       required/>
-                            </div>
+                        <h5>Cross-Hybridization Filters</h5>
+                        <div className="mb-3">
+                            <label htmlFor="target_probe_cross_hybridization_alignment_method"
+                                   className="form-label">Alignment Method for cross hybridization:</label>
+                            <select className="form-select"
+                                    id="target_probe_cross_hybridization_alignment_method"
+                                    name="target_probe_cross_hybridization_alignment_method"
+                                    value={formData.target_probe_cross_hybridization_alignment_method}
+                                    onChange={handleChange}>
+                                <option value="blastn">BlastN</option>
+                                <option value="bowtie">Bowtie</option>
+                            </select>
                         </div>
+                        <div className="col-md-6">
+                            <label htmlFor="target_probe_specificity_blastn_search_parameters_perc_identity"
+                                   className="form-label">Percent
+                                Identity:</label>
+                            <input type="number" className="form-control"
+                                   id="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
+                                   name="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
+                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_perc_identity}
+                                   onChange={handleChange}
+                                   required/>
+                        </div>
+                        <div className="col-md-6">
+                            <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters"
+                                   className="form-label">Strand: if
+                                reference is whole genome, consider using "both"</label>
+                            <input type="text" className="form-control"
+                                   id="target_probe_cross_hybridization_blastn_search_parameters"
+                                   name="specificity_strand"
+                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_strand}
+                                   onChange={handleChange}
+                                   required/>
+                        </div>
+                        <div className="col-md-6">
+                            <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_word_size"
+                                   className="form-label">Word
+                                Size:</label>
+                            <input type="number" className="form-control"
+                                   id="target_probe_cross_hybridization_blastn_search_parameters_word_size"
+                                   name="target_probe_cross_hybridization_blastn_search_parameterss_word_size"
+                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_word_size}
+                                   onChange={handleChange}
+                                   required/>
+                        </div>
+                        <div className="col-md-6">
+                            <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_coverage"
+                                   className="form-label">Max
+                                Target Sequences:</label>
+                            <input type="number" className="form-control"
+                                   id="target_probe_cross_hybridization_blastn_search_parameters_coverage"
+                                   name="target_probe_cross_hybridization_blastn_search_parameters_coverage"
+                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_coverage}
+                                   onChange={handleChange}
+                                   required/>
+                        </div>
+                        <div className="col-md-6">
+                            <label htmlFor="target_probe_cross_hybridization_bowtie_search_parameters_v"
+                                   className="form-label">Allowed Mismatches:</label>
+                            <input type="number" className="form-control"
+                                   id="target_probe_cross_hybridization_bowtie_search_parameters_v"
+                                   name="target_probe_cross_hybridization_bowtie_search_parameters_v"
+                                   value={formData.target_probe_cross_hybridization_bowtie_search_parameters_v}
+                                   onChange={handleChange}
+                                   required/>
+                        </div>
+                        <div className="mb-3 form-check">
+                            <input
+                                type="checkbox"
+                                className="form-check-input"
+                                id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                name="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                checked={formData.target_probe_hybridization_probability_bowtie_search_parameters_nofw === "true"}
+                                onChange={(e) =>
+                                    setFormData((prev: any) => ({
+                                        ...prev,
+                                        target_probe_hybridization_probability_bowtie_search_parameters_nofw: e.target.checked ? "true" : "false",
+                                    }))
+                                }
+                            />
+                            <label htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                   className="form-check-label">
+                                No forward strand: Uncheck if the reference is whole genome
+                            </label>
+                        </div>
+
 
                     </div>
                 );
@@ -1164,373 +810,56 @@ const OligoSeq: React.FC = () => {
                                        name="Tm_probe_dNTPs"
                                        value={formData.Tm_probe_dNTPs} onChange={handleChange}/>
                             </div>
-
-                        </div>
-                    </div>
-                );
-            case'readout':
-                return (
-                    <div>
-                        <div className="mb-4">
-                            <h5>Readout Probe Parameters</h5>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_initial_num_sequences" className="form-label">Initial
-                                    Number of Sequences:</label>
-                                <input type="number" className="form-control" id="readout_probe_initial_num_sequences"
-                                       name="readout_probe_initial_num_sequences"
-                                       value={formData.readout_probe_initial_num_sequences} onChange={handleChange}
-                                       required/>
-                            </div>
                             <div className="row g-3">
-                                <div className="mb-3">
-                                    <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
-                                    <input type="number" className="form-control" id="perc_identity"
-                                           name="readout_probe_specificity_blastn_search_parameters_perc_identity"
-                                           value={formData.readout_probe_specificity_blastn_search_parameters_perc_identity}
-                                           onChange={handleChange} required/>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_probe_DMSO" className="form-label">DMSO
+                                        (%):</label>
+                                    <input type="number" className="form-control" id="Tm_probe_DMSO"
+                                           name="Tm_probe_DMSO"
+                                           value={formData.target_probe_Tm_chem_correction_parameters_DMSO} onChange={handleChange}/>
                                 </div>
-                                <div className="mb-3">
-                                    <label htmlFor="strand" className="form-label">Strand:</label>
-                                    <select className="form-select" id="strand"
-                                            name="readout_probe_specificity_blastn_search_parameters_strand"
-                                            value={formData.readout_probe_specificity_blastn_search_parameters_strand}
-                                            onChange={handleChange}>
-                                        <option value="minus">Minus</option>
-                                        <option value="plus">Plus</option>
-                                    </select>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_probe_fmd" className="form-label">Formamide (fmd,
+                                        %):</label>
+                                    <input type="number" className="form-control" id="Tm_probe_fmd"
+                                           name="Tm_probe_fmd"
+                                           value={formData.target_probe_Tm_chem_correction_parameters_fmd} onChange={handleChange}/>
                                 </div>
-                                <div className="mb-3">
-                                    <label htmlFor="word_size" className="form-label">Word Size:</label>
-                                    <input type="number" className="form-control" id="word_size"
-                                           name="readout_probe_specificity_blastn_search_parameters_word_size"
-                                           value={formData.readout_probe_specificity_blastn_search_parameters_word_size}
-                                           onChange={handleChange} required/>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_probe_DMSOfactor" className="form-label">DMSO
+                                        Factor:</label>
+                                    <input type="number" className="form-control"
+                                           id="Tm_probe_DMSOfactor" name="Tm_probe_DMSOfactor"
+                                           value={formData.target_probe_Tm_chem_correction_parameters_DMSOfactor} step="0.01"
+                                           onChange={handleChange}/>
                                 </div>
-                                <div className="mb-3">
-                                    <label htmlFor="dust" className="form-label">Dust:</label>
-                                    <select className="form-select" id="dust"
-                                            name="readout_probe_specificity_blastn_search_parameters_dust"
-                                            value={formData.readout_probe_specificity_blastn_search_parameters_dust}
-                                            onChange={handleChange}>
-                                        <option value="no">No</option>
-                                        <option value="yes">Yes</option>
-                                    </select>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_probe_fmdfactor" className="form-label">Formamide
+                                        Factor:</label>
+                                    <input type="number" className="form-control"
+                                           id="Tm_probe_fmdfactor" name="Tm_probe_fmdfactor"
+                                           value={formData.target_probe_Tm_chem_correction_parameters_fmdfactor} step="0.01"
+                                           onChange={handleChange}/>
                                 </div>
-                                <div className="mb-3">
-                                    <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
-                                    <select className="form-select" id="soft_masking"
-                                            name="readout_probe_specificity_blastn_search_parameters_soft_masking"
-                                            value={formData.readout_probe_specificity_blastn_search_parameters_soft_masking}
-                                            onChange={handleChange}>
-                                        <option value="false">False</option>
-                                        <option value="true">True</option>
-                                    </select>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_probe_fmdmethod" className="form-label">Formamide
+                                        Method:</label>
+                                    <input type="number" className="form-control"
+                                           id="Tm_probe_fmdmethod" name="Tm_probe_fmdmethod"
+                                           value={formData.target_probe_Tm_chem_correction_parameters_fmdmethod} onChange={handleChange}/>
                                 </div>
-                                <div className="mb-3">
-                                    <label htmlFor="max_target_seqs" className="form-label">Max Target
-                                        Sequences:</label>
-                                    <input type="number" className="form-control" id="max_target_seqs"
-                                           name="readout_probe_specificity_blastn_search_parameters_max_target_seqs"
-                                           value={formData.readout_probe_specificity_blastn_search_parameters_max_target_seqs}
-                                           onChange={handleChange} required/>
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_probe_GC" className="form-label">GC
+                                        (optional):</label>
+                                    <input type="text" className="form-control" id="Tm_probe_GC"
+                                           name="Tm_probe_GC"
+                                           value={formData.target_probe_Tm_chem_correction_parameters_GC} onChange={handleChange}
+                                           placeholder="null"/>
                                 </div>
-                                <div className="mb-3">
-                                    <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
-                                    <input type="number" className="form-control" id="max_hsps"
-                                           name="readout_probe_specificity_blastn_search_parameters_max_hsps"
-                                           value={formData.readout_probe_specificity_blastn_search_parameters_max_hsps}
-                                           onChange={handleChange} required/>
-                                </div>
-                                <div>
-                                    <h4>Readout Probe BLASTn Hit Parameters</h4>
-                                    <div className="mb-3">
-                                        <label htmlFor="min_alignment_length" className="form-label">Min Alignment
-                                            Length:</label>
-                                        <input type="number" className="form-control" id="min_alignment_length"
-                                               name="readout_probe_specificity_blastn_hit_parameters_min_alignment_length"
-                                               value={formData.readout_probe_specificity_blastn_hit_parameters_min_alignment_length}
-                                               onChange={handleChange} required/>
-                                    </div>
-                                </div>
-
-
                             </div>
-                        </div>
 
+                        </div>
                     </div>
-                );
-            case 'primerpro':
-                return (
-                    <div>
-                        <div className="mb-3">
-                            <label htmlFor="primer_initial_num_sequences" className="form-label">Initial Number of
-                                Sequences:</label>
-                            <input type="number" className="form-control" id="primer_initial_num_sequences"
-                                   name="primer_initial_num_sequences"
-                                   value={formData.primer_initial_num_sequences} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
-                            <input type="number" className="form-control" id="perc_identity"
-                                   name="primer_specificity_reference_blastn_search_parameters_perc_identity"
-                                   value={formData.primer_specificity_reference_blastn_search_parameters_perc_identity}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="strand" className="form-label">Strand:</label>
-                            <select className="form-select" id="strand"
-                                    name="primer_specificity_reference_blastn_search_parameters_strand"
-                                    value={formData.primer_specificity_reference_blastn_search_parameters_strand}
-                                    onChange={handleChange}>
-                                <option value="minus">Minus</option>
-                                <option value="plus">Plus</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="word_size" className="form-label">Word Size:</label>
-                            <input type="number" className="form-control" id="word_size"
-                                   name="primer_specificity_reference_blastn_search_parameters_word_size"
-                                   value={formData.primer_specificity_reference_blastn_search_parameters_word_size}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="dust" className="form-label">Dust:</label>
-                            <select className="form-select" id="dust"
-                                    name="primer_specificity_reference_blastn_search_parameters_dust"
-                                    value={formData.primer_specificity_reference_blastn_search_parameters_dust}
-                                    onChange={handleChange}>
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
-                            <select className="form-select" id="soft_masking"
-                                    name="primer_specificity_reference_blastn_search_parameters_soft_masking"
-                                    value={formData.primer_specificity_reference_blastn_search_parameters_soft_masking}
-                                    onChange={handleChange}>
-                                <option value="false">False</option>
-                                <option value="true">True</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
-                            <input type="number" className="form-control" id="max_target_seqs"
-                                   name="primer_specificity_reference_blastn_search_parameters_max_target_seqs"
-                                   value={formData.primer_specificity_reference_blastn_search_parameters_max_target_seqs}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
-                            <input type="number" className="form-control" id="max_hsps"
-                                   name="primer_specificity_reference_blastn_search_parameters_max_hsps"
-                                   value={formData.primer_specificity_reference_blastn_search_parameters_max_hsps}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
-                            <input type="number" className="form-control" id="min_alignment_length"
-                                   name="primer_specificity_reference_blastn_hit_parameters_min_alignment_length"
-                                   value={formData.primer_specificity_reference_blastn_hit_parameters_min_alignment_length}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
-                            <input type="number" className="form-control" id="perc_identity"
-                                   name="primer_specificity_encoding_probes_blastn_search_parameters_perc_identity"
-                                   value={formData.primer_specificity_encoding_probes_blastn_search_parameters_perc_identity}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="strand" className="form-label">Strand:</label>
-                            <select className="form-select" id="strand"
-                                    name="primer_specificity_encoding_probes_blastn_search_parameters_strand"
-                                    value={formData.primer_specificity_encoding_probes_blastn_search_parameters_strand}
-                                    onChange={handleChange}>
-                                <option value="minus">Minus</option>
-                                <option value="plus">Plus</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="word_size" className="form-label">Word Size:</label>
-                            <input type="number" className="form-control" id="word_size"
-                                   name="primer_specificity_encoding_probes_blastn_search_parameters_word_size"
-                                   value={formData.primer_specificity_encoding_probes_blastn_search_parameters_word_size}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="dust" className="form-label">Dust:</label>
-                            <select className="form-select" id="dust"
-                                    name="primer_specificity_encoding_probes_blastn_search_parameters_dust"
-                                    value={formData.primer_specificity_encoding_probes_blastn_search_parameters_dust}
-                                    onChange={handleChange}>
-                                <option value="no">No</option>
-                                <option value="yes">Yes</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
-                            <select className="form-select" id="soft_masking"
-                                    name="primer_specificity_encoding_probes_blastn_search_parameters_soft_masking"
-                                    value={formData.primer_specificity_encoding_probes_blastn_search_parameters_soft_masking}
-                                    onChange={handleChange}>
-                                <option value="false">False</option>
-                                <option value="true">True</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
-                            <input type="number" className="form-control" id="max_target_seqs"
-                                   name="primer_specificity_encoding_probes_blastn_search_parameters_max_target_seqs"
-                                   value={formData.primer_specificity_encoding_probes_blastn_search_parameters_max_target_seqs}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
-                            <input type="number" className="form-control" id="max_hsps"
-                                   name="primer_specificity_encoding_probes_blastn_search_parameters_max_hsps"
-                                   value={formData.primer_specificity_encoding_probes_blastn_search_parameters_max_hsps}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
-                            <input type="number" className="form-control" id="min_alignment_length"
-                                   name="primer_specificity_encoding_probes_blastn_hit_parameters_min_alignment_length"
-                                   value={formData.primer_specificity_encoding_probes_blastn_hit_parameters_min_alignment_length}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="check" className="form-label">Check Tm Parameters:</label>
-                            <select className="form-select" id="check"
-                                    name="primer_Tm_parameters_check"
-                                    value={formData.primer_Tm_parameters_check}
-                                    onChange={handleChange}>
-                                <option value="true">True</option>
-                                <option value="false">False</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="strict" className="form-label">Strict Tm Parameters:</label>
-                            <select className="form-select" id="strict"
-                                    name="primer_Tm_parameters_strict"
-                                    value={formData.primer_Tm_parameters_strict}
-                                    onChange={handleChange}>
-                                <option value="true">True</option>
-                                <option value="false">False</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="c_seq" className="form-label">C Sequence:</label>
-                            <input type="text" className="form-control" id="c_seq"
-                                   name="primer_Tm_parameters_c_seq"
-                                   value={formData.primer_Tm_parameters_c_seq || ""}
-                                   onChange={handleChange}/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="shift" className="form-label">Shift:</label>
-                            <input type="number" className="form-control" id="shift"
-                                   name="primer_Tm_parameters_shift"
-                                   value={formData.primer_Tm_parameters_shift}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="nn_table" className="form-label">NN Table:</label>
-                            <input type="text" className="form-control" id="nn_table"
-                                   name="primer_Tm_parameters_nn_table"
-                                   value={formData.primer_Tm_parameters_nn_table}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="tmm_table" className="form-label">TMM Table:</label>
-                            <input type="text" className="form-control" id="tmm_table"
-                                   name="primer_Tm_parameters_tmm_table"
-                                   value={formData.primer_Tm_parameters_tmm_table}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="imm_table" className="form-label">IMM Table:</label>
-                            <input type="text" className="form-control" id="imm_table"
-                                   name="primer_Tm_parameters_imm_table"
-                                   value={formData.primer_Tm_parameters_imm_table}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="de_table" className="form-label">DE Table:</label>
-                            <input type="text" className="form-control" id="de_table"
-                                   name="primer_Tm_parameters_de_table"
-                                   value={formData.primer_Tm_parameters_de_table}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="dnac1" className="form-label">DNA Concentration 1 (dnac1):</label>
-                            <input type="number" className="form-control" id="dnac1"
-                                   name="primer_Tm_parameters_dnac1"
-                                   value={formData.primer_Tm_parameters_dnac1}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="dnac2" className="form-label">DNA Concentration 2 (dnac2):</label>
-                            <input type="number" className="form-control" id="dnac2"
-                                   name="primer_Tm_parameters_dnac2"
-                                   value={formData.primer_Tm_parameters_dnac2}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="selfcomp" className="form-label">Self-Complementarity:</label>
-                            <select className="form-select" id="selfcomp"
-                                    name="primer_Tm_parameters_selfcomp"
-                                    value={formData.primer_Tm_parameters_selfcomp}
-                                    onChange={handleChange}>
-                                <option value="false">False</option>
-                                <option value="true">True</option>
-                            </select>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="saltcorr" className="form-label">Salt Correction (saltcorr):</label>
-                            <input type="number" className="form-control" id="saltcorr"
-                                   name="primer_Tm_parameters_saltcorr"
-                                   value={formData.primer_Tm_parameters_saltcorr}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="Na" className="form-label">Sodium Concentration (Na):</label>
-                            <input type="number" className="form-control" id="Na"
-                                   name="primer_Tm_parameters_Na"
-                                   value={formData.primer_Tm_parameters_Na}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="K" className="form-label">Potassium Concentration (K):</label>
-                            <input type="number" className="form-control" id="K"
-                                   name="primer_Tm_parameters_K"
-                                   value={formData.primer_Tm_parameters_K}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="Tris" className="form-label">Tris Concentration:</label>
-                            <input type="number" className="form-control" id="Tris"
-                                   name="primer_Tm_parameters_Tris"
-                                   value={formData.primer_Tm_parameters_Tris}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="Mg" className="form-label">Magnesium Concentration (Mg):</label>
-                            <input type="number" className="form-control" id="Mg"
-                                   name="primer_Tm_parameters_Mg"
-                                   value={formData.primer_Tm_parameters_Mg}
-                                   onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="dNTPs" className="form-label">dNTPs Concentration:</label>
-                            <input type="number" className="form-control" id="dNTPs"
-                                   name="primer_Tm_parameters_dNTPs"
-                                   value={formData.primer_Tm_parameters_dNTPs}
-                                   onChange={handleChange} required/>
-                        </div>
-
-
-                    </div>
-
                 );
 
             // Add cases for other tabs
@@ -1569,7 +898,8 @@ const OligoSeq: React.FC = () => {
             alert('Error submitting form. Please try again.');
         }
     };
-    return (<div>
+    return (
+        <div>
             <Navbar/>
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
@@ -1591,25 +921,6 @@ const OligoSeq: React.FC = () => {
                                 onClick={() => setActiveTab("probe_sequences")}
                             >
                                 Target Probe Parameters
-                            </button>
-                        </li>
-
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "readout" ? "active" : ""}`}
-                                onClick={() => setActiveTab("readout")}
-                            >
-                                Readout Probe Parameters
-                            </button>
-                        </li>
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "primer_parameters" ? "active" : ""}`}
-                                onClick={() => setActiveTab("primer_parameters")}
-                            >
-                                Primer Parameters
                             </button>
                         </li>
 
@@ -1672,24 +983,6 @@ const OligoSeq: React.FC = () => {
                                             Parameters for Melting Temperature
                                         </button>
                                     </li>
-                                    <li className="nav-item">
-                                        <button
-                                            type="button"
-                                            className={`nav-link ${activetab2 === "readout" ? "active" : ""}`}
-                                            onClick={() => setActivetab2("readout")}
-                                        >
-                                            Readout Parameters
-                                        </button>
-                                    </li>
-                                    <li className="nav-item">
-                                        <button
-                                            type="button"
-                                            className={`nav-link ${activetab2 === "primerpro" ? "active" : ""}`}
-                                            onClick={() => setActivetab2("primerpro")}
-                                        >
-                                            Primer Parameters
-                                        </button>
-                                    </li>
                                 </ul>
 
                                 <div className="tab-content mt-4">
@@ -1706,11 +999,7 @@ const OligoSeq: React.FC = () => {
                     </div>
 
                 </form>
-                <div className="mt-4">
-                    <p>Status: {status}</p>
-                    <progress value={progress} max="100"></progress>
-                    <p>{progress}%</p>
-                </div>
+
             </div>
         </div>
     );

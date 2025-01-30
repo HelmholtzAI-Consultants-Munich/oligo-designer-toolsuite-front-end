@@ -60,7 +60,7 @@ const Navbar: React.FC = () => {
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link className="dropdown-item" to="/pipelines/oligo-seq">
+                                    <Link className="dropdown-item" to="/pipelines/OligoSeq">
                                         Oligo-Seq Probe
                                     </Link>
                                 </li>

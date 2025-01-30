@@ -1827,11 +1827,6 @@ const Merfish: React.FC = () => {
                     </div>
 
                 </form>
-                <div className="mt-4">
-                    <p>Status: {status}</p>
-                    <progress value={progress} max="100"></progress>
-                    <p>{progress}%</p>
-                </div>
             </div>
         </div>
     );
