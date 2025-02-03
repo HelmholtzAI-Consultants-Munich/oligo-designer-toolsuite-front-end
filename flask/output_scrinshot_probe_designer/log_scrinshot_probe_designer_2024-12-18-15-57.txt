@@ -1,8 +1,0 @@
-2024-12-18 15:57:36,264 [INFO] Parameters Create Database:
-2024-12-18 15:57:36,264 [INFO] Function: create_probe_database
-2024-12-18 15:57:36,264 [INFO] Parameter: gene_ids = ['DECR2', 'PRR35', 'AARS1']
-2024-12-18 15:57:36,264 [INFO] Parameter: probe_length_min = 40
-2024-12-18 15:57:36,264 [INFO] Parameter: probe_length_max = 45
-2024-12-18 15:57:36,264 [INFO] Parameter: files_fasta_oligo_database = ['uploads/b1e523506aa640beabe77bf6318a72c1_custom_100.txt uploads/dd4ea9f68e5c4d0eb9e777215a2a965b_custom_10.txt uploads/ad33163984d645eba6e5517fb83473fe_custom_3.txt uploads/559468c423394581a22eecdb5e5d80ff_custom_200.txt']
-2024-12-18 15:57:36,264 [INFO] Parameter: min_probes_per_gene = 3
-2024-12-18 15:57:36,264 [INFO] Parameter: isoform_consensus = 50
