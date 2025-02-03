@@ -887,7 +887,7 @@ const OligoSeq: React.FC = () => {
                 ...formData,
                 ...uploadedPaths, // Include uploaded file paths
             };
-            const response = await axios.post('http://localhost:5000/api/scrinshot', finalFormData,
+            const response = await axios.post('http://localhost:5000/api/oligoseq', finalFormData,
                 {
                     headers: {"Content-Type": "application/json"},
                 });

@@ -1,0 +1,18 @@
+dir_output: output_genomic
+exon_exon_junction_block_size: 50
+genomic_regions:
+  cds: true
+  exon: true
+  exon_exon_junction: true
+  gene: true
+  intergenic: true
+  intron:
+  utr: true
+source: custom
+source_params:
+  annotation_release: 110
+  file_annotation: uploads/98fbeec087d84701828c3d8893032a2c_custom_GCF_000001405.40_GRCh38.p14_genomic_chr16.gtf
+  file_sequence: uploads/c1b052458eb44f63a9e530db56db24cf_custom_GCF_000001405.40_GRCh38.p14_genomic_chr16.fna
+  files_source: NCBI
+  genome_assembly: GRCh38
+  species: Homo_sapiens

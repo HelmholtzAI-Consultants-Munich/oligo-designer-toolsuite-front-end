@@ -1448,7 +1448,7 @@ const SeqFish: React.FC = () => {
                 ...formData,
                 ...uploadedPaths, // Include uploaded file paths
             };
-            const response = await axios.post('http://localhost:5000/api/scrinshot', finalFormData,
+            const response = await axios.post('http://localhost:5000/api/seqfish', finalFormData,
                 {
                     headers: {"Content-Type": "application/json"},
                 });
