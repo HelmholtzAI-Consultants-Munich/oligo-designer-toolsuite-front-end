@@ -554,6 +554,248 @@ def merfish():
         'returncode': result.returncode
     })
 
+@app.route('/api/seqfish', methods=['POST'])
+def seqfish():
+    config_path = "config_seqfish.yaml"
+    #thread = threading.Thread(target=run_command)  # Run task in a separate thread
+    #thread.start()
+
+    form_data = request.json  # Assuming JSON is posted from React
+
+    # Build the nested config structure:
+    config = {
+        "n_jobs": to_int(form_data["n_jobs"]),
+        "dir_output": form_data["dir_output"],
+        "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]),
+        "top_n_sets": to_int(form_data["top_n_sets"]),
+        # Probe sequences generation
+        "file_regions": form_data["file_regions"],
+        "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]),
+        "target_probe_length_min": to_int(form_data["probe_length_min"]),
+        "target_probe_length_max": to_int(form_data["probe_length_max"]),
+        "target_probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]),
+        "target_probe_GC_content_min": to_int(form_data["probe_GC_content_min"]),
+        "target_probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
+        "target_probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
+
+
+        "target_probe_secondary_structures_T": to_int(form_data["target_probe_secondary_structures_T"]),
+        "target_probe_secondary_structures_threshold_deltaG": to_int(form_data["target_probe_secondary_structures_threshold_deltaG"]),
+        "target_homopolymeric_base_n": {
+            "A": to_int(form_data["homopolymeric_A"]),
+            "T": to_int(form_data["homopolymeric_T"]),
+            "C": to_int(form_data["homopolymeric_C"]),
+            "G": to_int(form_data["homopolymeric_G"])
+        },
+        "target_probe_GC_weight": to_int(form_data["target_probe_GC_weight"]),
+
+
+        "target_probe_UTR_weight": to_int(form_data["target_probe_UTR_weight"]),
+
+        "set_size_min": to_int(form_data["probeset_size_min"]),
+        "set_size_opt": to_int(form_data["probeset_size_opt"]),
+        "distance_between_target_probes": to_int(form_data["distance_between_probes"]),
+        "n_sets": to_int(form_data["n_sets"]),
+
+        #READOUT PROBE PARAMETERS
+
+        "files_fasta_reference_database_readout_probe": multiline_to_list(form_data["files_fasta_reference_database_readout_probe"]),
+        "readout_probe_base_prob_a": float(form_data["readout_probe_base_prob_a"]),
+        "readout_probe_base_prob_c": float(form_data["readout_probe_base_prob_c"]),
+        "readout_probe_base_prob_g": float(form_data["readout_probe_base_prob_g"]),
+        "readout_probe_base_prob_t": float(form_data["readout_probe_base_prob_t"]),
+        "readout_probe_length": float(form_data["readout_probe_length"]),
+
+
+        "readout_probe_GC_content_min": to_int(form_data["readout_probe_GC_content_min"]),
+        "readout_probe_GC_content_max": to_int(form_data["readout_probe_GC_content_max"]),
+        "readout_probe_homopolymeric_base_n":{
+           "G": to_int(form_data["readout_probe_homopolymeric_base_n_g"])
+        },
+
+        "n_barcode_rounds": to_int(form_data["n_barcode_rounds"]),
+        "n_pseudocolors": to_int(form_data["n_pseudocolors"]),
+        "channels_ids": form_data["channels_ids"],
+
+        #PRIMER PARAMETERS
+        "files_fasta_reference_database_primer": multiline_to_list(form_data["files_fasta_reference_database_primer"]),
+        "reverse_primer_sequence": form_data["reverse_primer_sequence"],
+        "primer_length": to_int(form_data["primer_length"]),
+        "primer_base_probabilities_a": float(form_data["primer_base_probabilities_a"]),
+        "primer_base_probabilities_c": float(form_data["primer_base_probabilities_c"]),
+        "primer_base_probabilities_g": float(form_data["primer_base_probabilities_g"]),
+        "primer_base_probabilities_t": float(form_data["primer_base_probabilities_t"]),
+        "primer_GC_content_min": to_int(form_data["primer_GC_content_min"]),
+        "primer_GC_content_max": to_int(form_data["primer_GC_content_max"]),
+        "primer_number_GC_GCclamp": to_int(form_data["primer_number_GC_GCclamp"]),
+        "primer_number_three_prime_base_GCclamp": to_int(form_data["primer_number_three_prime_base_GCclamp"]),
+        "primer_homopolymeric_base_n_a": to_int(form_data["primer_homopolymeric_base_n_a"]),
+        "primer_homopolymeric_base_n_t": to_int(form_data["primer_homopolymeric_base_n_t"]),
+        "primer_homopolymeric_base_n_c": to_int(form_data["primer_homopolymeric_base_n_c"]),
+        "primer_homopolymeric_base_n_g": to_int(form_data["primer_homopolymeric_base_n_g"]),
+        "primer_max_len_selfcomplement": to_int(form_data["primer_max_len_selfcomplement"]),
+        "primer_max_len_complement_reverse_primer": to_int(form_data["primer_max_len_complement_reverse_primer"]),
+        "primer_Tm_min": to_int(form_data["primer_Tm_min"]),
+        "primer_Tm_max": to_int(form_data["primer_Tm_max"]),
+        "primer_T_secondary_structure": to_int(form_data["primer_T_secondary_structure"]),
+        "primer_secondary_structures_threshold_deltaG": to_int(form_data["primer_secondary_structures_threshold_deltaG"]),
+
+
+
+
+
+
+
+
+        # Developer parameters
+        "target_probe_specificity_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["target_probe_specificity_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["target_probe_specificity_blastn_search_parameters_word_size"]),
+            "dust": form_data["target_probe_specificity_blastn_search_parameters_dust"],
+            "soft_masking": form_data["target_probe_specificity_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["target_probe_specificity_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["target_probe_specificity_blastn_search_parameters_max_hsps"])
+        },
+        "target_probe_specificity_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["target_probe_specificity_blastn_hit_parameters_min_alignment_length"])
+        },
+
+        "target_probe_cross_hybridization_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["target_probe_cross_hybridization_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters_word_size"]),
+            "dust": form_data["target_probe_cross_hybridization_blastn_search_parameters_dust"],
+            "soft_masking": form_data["target_probe_cross_hybridization_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters_max_target_seqs"])
+        },
+        "target_probe_cross_hybridization_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["target_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length"])
+        },
+
+        "max_graph_size": to_int(form_data["max_graph_size"]),
+        "n_attempts": to_int(form_data["n_attempts"]),
+        "pre_filter": to_bool(form_data["pre_filter"]),
+        "heuristic": to_bool(form_data["heuristic"]),
+        "heuristic_n_attempts": to_int(form_data["heuristic_n_attempts"]),
+
+
+        #READOUT PROBE PARAMETERS
+        "readout_probe_initial_num_sequences": to_int(form_data["readout_probe_initial_num_sequences"]),
+        "readout_probe_specificity_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["readout_probe_specificity_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["readout_probe_specificity_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["readout_probe_specificity_blastn_search_parameters_word_size"]),
+            "dust": form_data["readout_probe_specificity_blastn_search_parameters_dust"],
+            "soft_masking": form_data["readout_probe_specificity_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["readout_probe_specificity_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["readout_probe_specificity_blastn_search_parameters_max_hsps"])
+        },
+        "readout_probe_specificity_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["readout_probe_specificity_blastn_hit_parameters_min_alignment_length"])
+        },
+
+        "readout_probe_cross_hybridization_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["readout_probe_cross_hybridization_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters_word_size"]),
+            "dust": form_data["readout_probe_cross_hybridization_blastn_search_parameters_dust"],
+            "soft_masking": form_data["readout_probe_cross_hybridization_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters_max_target_seqs"])
+        },
+        "readout_probe_cross_hybridization_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["readout_probe_cross_hybridization_blastn_hit_parameters_min_alignment_length"])
+        },
+
+        #PRIMER PARAMETERS
+
+        "primer_initial_num_sequences": to_int(form_data["primer_initial_num_sequences"]),
+
+        "primer_specificity_refrence_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["primer_specificity_reference_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["primer_specificity_reference_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["primer_specificity_reference_blastn_search_parameters_word_size"]),
+            "dust": form_data["primer_specificity_reference_blastn_search_parameters_dust"],
+            "soft_masking": form_data["primer_specificity_reference_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["primer_specificity_reference_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["primer_specificity_reference_blastn_search_parameters_max_hsps"])
+        },
+        "primer_specificity_refrence_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["primer_specificity_reference_blastn_hit_parameters_min_alignment_length"])
+        },
+        "primer_specificity_encoding_probes_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_perc_identity"]),
+            "strand": form_data["primer_specificity_encoding_probes_blastn_search_parameters_strand"],
+            "word_size": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_word_size"]),
+            "dust": form_data["primer_specificity_encoding_probes_blastn_search_parameters_dust"],
+            "soft_masking": form_data["primer_specificity_encoding_probes_blastn_search_parameters_soft_masking"],
+            "max_target_seqs": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_max_target_seqs"]),
+            "max_hsps": to_int(form_data["primer_specificity_encoding_probes_blastn_search_parameters_max_hsps"])
+        },
+        "primer_specificity_encoding_probes_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["primer_specificity_encoding_probes_blastn_hit_parameters_min_alignment_length"])
+        },
+        "primer_Tm_parameters": {
+            "check": to_bool(form_data["primer_Tm_parameters_check"]),
+            "strict": to_bool(form_data["primer_Tm_parameters_strict"]),
+            "c_seq": to_null(form_data["primer_Tm_parameters_c_seq"]),
+            "shift": to_int(form_data["primer_Tm_parameters_shift"]),
+            "nn_table": form_data["primer_Tm_parameters_nn_table"],
+            "tmm_table": form_data["primer_Tm_parameters_tmm_table"],
+            "imm_table": form_data["primer_Tm_parameters_imm_table"],
+            "de_table": form_data["primer_Tm_parameters_de_table"],
+            "dnac1": to_int(form_data["primer_Tm_parameters_dnac1"]),
+            "dnac2": to_int(form_data["primer_Tm_parameters_dnac2"]),
+            "selfcomp": to_bool(form_data["primer_Tm_parameters_selfcomp"]),
+            "saltcorr": to_int(form_data["primer_Tm_parameters_saltcorr"]),
+            "Na": to_int(form_data["primer_Tm_parameters_Na"]),
+            "K": to_int(form_data["primer_Tm_parameters_K"]),
+            "Tris": to_int(form_data["primer_Tm_parameters_Tris"]),
+            "Mg": to_int(form_data["primer_Tm_parameters_Mg"]),
+            "dNTPs": to_int(form_data["primer_Tm_parameters_dNTPs"])
+        },
+        "primer_Tm_chem_correction_parameters": None,
+        "primer_Tm_salt_correction_parameters": None
+
+
+
+
+    }
+
+
+    # Write the YAML file
+    with open("config.yaml", "w") as f:
+        yaml.dump(config, f, sort_keys=False)
+
+    result = subprocess.run(
+        ['scrinshot_probe_designer', '-c', config_path],
+        capture_output=True,
+        text=True
+    )
+
+    if os.path.exists(form_data['file_regions']):
+        print('deleted')
+        os.remove(form_data['file_regions'])  # Delete the file
+    a=split_on_newline(form_data['files_fasta_target_probe_database'])
+    a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+    a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
+    a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+
+
+
+    return jsonify({
+        'stdout': result.stdout,
+        'stderr': result.stderr,
+        'returncode': result.returncode
+    })
+
 
 @app.route('/api/genomic/ncbi', methods=['POST'])
 def genomic_ncbi():
