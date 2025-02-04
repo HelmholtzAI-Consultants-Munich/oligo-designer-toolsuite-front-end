@@ -1,12 +1,14 @@
 n_jobs: 4
-dir_output: output_scrinshot_probe_designer
+dir_output: output_merfish_probe_designer
 write_intermediate_steps: true
 top_n_sets: 3
-file_regions: uploads/b1695e2ac3e54b03bb6f0845cda98146_sample.GTF
+file_regions: uploads/ac7c06c0803d4e42882a860b72bad45e_custom_3.txt
 files_fasta_target_probe_database:
-- uploads/f63f3652a22b4caabd81b4a71af6390d_sample.GTF
+- uploads/fae970cbcb4c4e5a9fb18dbd3f62f76c_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/09e487c506f748c3a57fe143dbac3ca2_cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
 files_fasta_reference_database_target_probe:
-- uploads/2308db268ddc40cc809b69a6b81f5bbb_sample.GTF
+- uploads/261d8ac87994407f865f889140539d57_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/b113d9ec037c4d31bca1e91c2f92e853_cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
 target_probe_length_min: 40
 target_probe_length_max: 45
 target_probe_isoform_consensus: 50
@@ -14,30 +16,65 @@ target_probe_GC_content_min: 40
 target_probe_GC_content_opt: 50
 target_probe_GC_content_max: 60
 target_probe_Tm_min: 65
+target_probe_Tm_opt: 70
 target_probe_Tm_max: 75
 target_homopolymeric_base_n:
-  A: 5
-  T: 5
-  C: 5
-  G: 5
-target_probe_padlock_arm_Tm_dif_max: 2
-target_probe_padlock_arm_length_min: 10
-target_probe_padlock_arm_Tm_min: 50
-target_probe_padlock_arm_Tm_max: 60
-detection_oligo_min_thymines: 2
-detection_oligo_length_min: 15
-detection_oligo_length_max: 40
-target_probe_padlock_ligation_region_size: 5
-target_probe_isoform_weight: 2
+  A: 6
+  T: 6
+  C: 6
+  G: 6
+target_probe_T_secondary_structure: 76
+target_probe_secondary_structures_threshold_deltaG: 0
 target_probe_GC_weight: 1
-probe_Tm_opt: 70
 target_probe_Tm_weight: 1
-set_size_min: 3
-set_size_opt: 5
+target_probe_isoform_weight: 2
+set_size_min: 50
+set_size_opt: 50
 distance_between_target_probes: 0
 n_sets: 100
-detection_oligo_U_distance: 5
-detection_oligo_Tm_opt: 56
+files_fasta_reference_database_readout_probe:
+- uploads/dd916a20794e4bac8ae5fbb972738538_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/f729ac249c8b4294b557e6dc97d45330_cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+readout_probe_base_prob_a: 0.25
+readout_probe_base_prob_c: 0.0
+readout_probe_base_prob_g: 0.5
+readout_probe_base_prob_t: 0.25
+readout_probe_length: 20.0
+readout_probe_GC_content_min: 40
+readout_probe_GC_content_max: 50
+readout_probe_homopolymeric_base_n:
+  G: 3
+readout_probe_set_size: 16
+readout_probe_homogeneous_properties_weights:
+  TmNN: 1
+  GC_content: 1
+n_bits: 16
+min_hamming_dist: 4
+hamming_weight: 4
+channels_ids: Cy3b
+files_fasta_reference_database_primer: []
+reverse_primer_sequence: CCCTATAGTGAGTCGTATTA
+primer_length: 20
+primer_base_probabilities:
+  A: 0.25
+  T: 0.25
+  C: 0.25
+  G: 0.25
+primer_GC_content_min: 50
+primer_GC_content_max: 65
+primer_number_GC_GCclamp: 1
+primer_number_three_prime_base_GCclamp: 2
+primer_homopolymeric_base_n:
+  A: 4
+  T: 4.0
+  C: 4.0
+  G: 4.0
+primer_max_len_selfcomplement: 6
+primer_max_len_complement_reverse_primer: 5
+primer_Tm_min: 60
+primer_Tm_max: 75
+primer_T_secondary_structure: 76
+primer_secondary_structures_threshold_deltaG: 0
 target_probe_specificity_blastn_search_parameters:
   perc_identity: 80
   strand: minus
@@ -47,68 +84,120 @@ target_probe_specificity_blastn_search_parameters:
   max_target_seqs: 10
   max_hsps: 1000
 target_probe_specificity_blastn_hit_parameters:
-  coverage: 50
+  min_alignment_length: 17
 target_probe_cross_hybridization_blastn_search_parameters:
   perc_identity: 80
   strand: minus
-  word_size: 10
+  word_size: 7
   dust: 'no'
   soft_masking: 'false'
   max_target_seqs: 10
 target_probe_cross_hybridization_blastn_hit_parameters:
-  coverage: 80
+  min_alignment_length: 17
 max_graph_size: 5000
-n_attempts: 10000
-pre_filtering: false
-target_probe_Tm_parameters_probe:
+n_attempts: 100000
+pre_filter: true
+heuristic: true
+heuristic_n_attempts: 100
+target_probe_Tm_parameters:
   check: true
   strict: true
   c_seq: null
   shift: 0
-  nn_table: DNA_NN3
+  nn_table: DNA_NN4
   tmm_table: DNA_TMM1
   imm_table: DNA_IMM1
   de_table: DNA_DE1
-  dnac1: 50
+  dnac1: 5
   dnac2: 0
   selfcomp: false
-  saltcorr: 7
-  Na: 39
-  K: 75
-  Tris: 20
-  Mg: 10
-  dNTPs: 0
-target_probe_Tm_chem_correction_param_probe:
-  DMSO: 0
-  fmd: 20
-  DMSOfactor: 0.75
-  fmdfactor: 0.65
-  fmdmethod: 1
-  GC: null
-target_probe_Tm_salt_correction_param_probe: null
-detection_oligo_Tm_parameters:
-  check: true
-  strict: true
-  c_seq: null
-  shift: 0
-  nn_table: DNA_NN3
-  tmm_table: DNA_TMM1
-  imm_table: DNA_IMM1
-  de_table: DNA_DE1
-  dnac1: 50
-  dnac2: 0
-  selfcomp: false
-  saltcorr: 7
-  Na: 39
+  saltcorr: 5
+  Na: 300
   K: 0
   Tris: 0
   Mg: 0
   dNTPs: 0
-detection_oligo_Tm_chem_correction_parameters:
-  DMSO: 0
-  fmd: 30
-  DMSOfactor: 0.75
-  fmdfactor: 0.65
-  fmdmethod: 1
-  GC: null
-detection_oligo_Tm_salt_correction_parameters: null
+target_probe_Tm_chem_correction_param_probe: null
+target_probe_Tm_salt_correction_param_probe: null
+readout_probe_initial_num_sequences: 100000
+readout_probe_specificity_blastn_search_parameters:
+  perc_identity: 100
+  strand: minus
+  word_size: 7
+  dust: 'no'
+  soft_masking: 'false'
+  max_target_seqs: 10
+  max_hsps: 1000
+readout_probe_specificity_blastn_hit_parameters:
+  min_alignment_length: 11
+readout_probe_cross_hybridization_blastn_search_parameters:
+  perc_identity: 100
+  strand: minus
+  word_size: 7
+  dust: 'no'
+  soft_masking: 'false'
+  max_target_seqs: 10
+readout_probe_cross_hybridization_blastn_hit_parameters:
+  min_alignment_length: 11
+readout_probe_Tm_parameters:
+  check: true
+  strict: true
+  c_seq: null
+  shift: 0
+  nn_table: DNA_NN4
+  tmm_table: DNA_TMM1
+  imm_table: DNA_IMM1
+  de_table: DNA_DE1
+  dnac1: 25
+  dnac2: 25
+  selfcomp: false
+  saltcorr: 5
+  Na: 300
+  K: 0
+  Tris: 0
+  Mg: 0
+  dNTPs: 0
+readout_probe_Tm_chem_correction_parameters: null
+readout_probe_Tm_salt_correction_parameters: null
+readout_probe_n_combinations: 100000
+primer_initial_num_sequences: 1000000
+primer_specificity_refrence_blastn_search_parameters:
+  perc_identity: 100
+  strand: minus
+  word_size: 7
+  dust: 'no'
+  soft_masking: 'false'
+  max_target_seqs: 10
+  max_hsps: 1000
+primer_specificity_refrence_blastn_hit_parameters:
+  min_alignment_length: 14
+primer_specificity_encoding_probes_blastn_search_parameters:
+  perc_identity: 100
+  strand: minus
+  word_size: 7
+  dust: 'no'
+  soft_masking: 'false'
+  max_target_seqs: 10
+  max_hsps: 1000
+primer_specificity_encoding_probes_blastn_hit_parameters:
+  min_alignment_length: 11
+primer_Tm_parameters:
+  check: true
+  strict: true
+  c_seq: null
+  shift: 0
+  nn_table: DNA_NN4
+  tmm_table: DNA_TMM1
+  imm_table: DNA_IMM1
+  de_table: DNA_DE1
+  dnac1: 500
+  dnac2: 25
+  selfcomp: false
+  saltcorr: 5
+  Na: 300
+  K: 0
+  Tris: 0
+  Mg: 0
+  dNTPs: 0
+primer_Tm_chem_correction_parameters: null
+primer_Tm_salt_correction_parameters: null

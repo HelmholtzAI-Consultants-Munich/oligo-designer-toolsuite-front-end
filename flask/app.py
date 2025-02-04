@@ -298,10 +298,10 @@ def merfish():
         "target_probe_GC_weight": to_int(form_data["target_probe_GC_weight"]),
         "target_probe_Tm_weight": to_int(form_data["target_probe_Tm_weight"]),
 
-        "target_probe_isoform_weight": to_int(form_data["probe_isoform_weight"]),
+        "target_probe_isoform_weight": to_int(form_data["target_probe_isoform_weight"]),
 
-        "set_size_min": to_int(form_data["probeset_size_min"]),
-        "set_size_opt": to_int(form_data["probeset_size_opt"]),
+        "set_size_min": to_int(form_data["set_size_min"]),
+        "set_size_opt": to_int(form_data["set_size_opt"]),
         "distance_between_target_probes": to_int(form_data["distance_between_probes"]),
         "n_sets": to_int(form_data["n_sets"]),
 
@@ -315,10 +315,12 @@ def merfish():
 
         "readout_probe_GC_content_min": to_int(form_data["readout_probe_GC_content_min"]),
         "readout_probe_GC_content_max": to_int(form_data["readout_probe_GC_content_max"]),
-        "readout_probe_homopolymeric_base_n_g": to_int(form_data["readout_probe_homopolymeric_base_n_g"]),
+        "readout_probe_homopolymeric_base_n": {"G":to_int(form_data["readout_probe_homopolymeric_base_n_g"]),},
         "readout_probe_set_size": to_int(form_data["readout_probe_set_size"]),
-        "readout_probe_homogeneous_properties_weights_tmnn": to_int(form_data["readout_probe_homogeneous_properties_weights_tmnn"]),
-        "readout_probe_homogeneous_properties_weights_GC_content": to_int(form_data["readout_probe_homogeneous_properties_weights_GC_content"]),
+        "readout_probe_homogeneous_properties_weights":{
+           "TmNN": to_int(form_data["readout_probe_homogeneous_properties_weights_tmnn"]),
+            "GC_content": to_int(form_data["readout_probe_homogeneous_properties_weights_GC_content"]),
+        } ,
         "n_bits": to_int(form_data["n_bits"]),
         "min_hamming_dist": to_int(form_data["min_hamming_dist"]),
         "hamming_weight": to_int(form_data["hamming_weight"]),
@@ -328,18 +330,24 @@ def merfish():
         "files_fasta_reference_database_primer": multiline_to_list(form_data["files_fasta_reference_database_primer"]),
         "reverse_primer_sequence": form_data["reverse_primer_sequence"],
         "primer_length": to_int(form_data["primer_length"]),
-        "primer_base_probabilities_a": float(form_data["primer_base_probabilities_a"]),
-        "primer_base_probabilities_c": float(form_data["primer_base_probabilities_c"]),
-        "primer_base_probabilities_g": float(form_data["primer_base_probabilities_g"]),
-        "primer_base_probabilities_t": float(form_data["primer_base_probabilities_t"]),
+        "primer_base_probabilities":{
+            "A": float(form_data["primer_base_probabilities_a"]),
+            "T": float(form_data["primer_base_probabilities_t"]),
+            "C": float(form_data["primer_base_probabilities_c"]),
+            "G": float(form_data["primer_base_probabilities_g"]),
+
+        },
         "primer_GC_content_min": to_int(form_data["primer_GC_content_min"]),
         "primer_GC_content_max": to_int(form_data["primer_GC_content_max"]),
         "primer_number_GC_GCclamp": to_int(form_data["primer_number_GC_GCclamp"]),
         "primer_number_three_prime_base_GCclamp": to_int(form_data["primer_number_three_prime_base_GCclamp"]),
-        "primer_homopolymeric_base_n_a": to_int(form_data["primer_homopolymeric_base_n_a"]),
-        "primer_homopolymeric_base_n_t": to_int(form_data["primer_homopolymeric_base_n_t"]),
-        "primer_homopolymeric_base_n_c": to_int(form_data["primer_homopolymeric_base_n_c"]),
-        "primer_homopolymeric_base_n_g": to_int(form_data["primer_homopolymeric_base_n_g"]),
+        "primer_homopolymeric_base_n": {
+            "A": to_int(form_data["primer_homopolymeric_base_n_a"]),
+            "T": float(form_data["primer_homopolymeric_base_n_t"]),
+            "C": float(form_data["primer_homopolymeric_base_n_c"]),
+            "G": float(form_data["primer_homopolymeric_base_n_g"]),
+        },
+
         "primer_max_len_selfcomplement": to_int(form_data["primer_max_len_selfcomplement"]),
         "primer_max_len_complement_reverse_primer": to_int(form_data["primer_max_len_complement_reverse_primer"]),
         "primer_Tm_min": to_int(form_data["primer_Tm_min"]),
@@ -455,14 +463,7 @@ def merfish():
             "Mg": to_int(form_data["readout_probe_Tm_parameters_Mg"]),
             "dNTPs": to_int(form_data["readout_probe_Tm_parameters_dNTPs"])
         },
-        "detection_oligo_Tm_chem_correction_parameters": {
-            "DMSO": to_int(form_data["Tm_detection_DMSO"]),
-            "fmd": to_int(form_data["Tm_detection_fmd"]),
-            "DMSOfactor": float(form_data["Tm_detection_DMSOfactor"]),
-            "fmdfactor": float(form_data["Tm_detection_fmdfactor"]),
-            "fmdmethod": to_int(form_data["Tm_detection_fmdmethod"]),
-            "GC": to_null(form_data["Tm_detection_GC"])
-        },
+
         "readout_probe_Tm_chem_correction_parameters": None,
         "readout_probe_Tm_salt_correction_parameters": None,
         "readout_probe_n_combinations": to_int(form_data["readout_probe_n_combinations"]),
@@ -523,11 +524,11 @@ def merfish():
 
 
     # Write the YAML file
-    with open("config.yaml", "w") as f:
+    with open("config_merfish.yaml", "w") as f:
         yaml.dump(config, f, sort_keys=False)
 
     result = subprocess.run(
-        ['scrinshot_probe_designer', '-c', config_path],
+        ['merfish_probe_designer', '-c', config_path],
         capture_output=True,
         text=True
     )
@@ -541,6 +542,16 @@ def merfish():
         print('deleted')
         os.remove(i)
     a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
+    a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+    a=split_on_newline(form_data['files_fasta_reference_database_readout_probe'])
+    a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+    a=split_on_newline(form_data['files_fasta_reference_database_primer'])
     a.remove('\n')
     for i in a:
         print('deleted')
@@ -765,11 +776,11 @@ def seqfish():
 
 
     # Write the YAML file
-    with open("config.yaml", "w") as f:
+    with open("config_seqfish.yaml", "w") as f:
         yaml.dump(config, f, sort_keys=False)
 
     result = subprocess.run(
-        ['scrinshot_probe_designer', '-c', config_path],
+        ['seqfish_plus_probe_designer', '-c', config_path],
         capture_output=True,
         text=True
     )
@@ -1129,7 +1140,7 @@ def oligoseq():
 
 
     # Write the YAML file
-    with open("config.yaml", "w") as f:
+    with open("config_OligoSeq.yaml", "w") as f:
         yaml.dump(config, f, sort_keys=False)
 
     result = subprocess.run(
