@@ -7,34 +7,30 @@ const SeqFish: React.FC = () => {
     //const [output, setOutput] = useState("");
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [files, setFiles] = useState({
+    interface FileState {
+        file_regions: File | null;
+        files_fasta_target_probe_database: File[]; // Always an array
+        files_fasta_reference_database_target_probe: File[]; // Always an array
+        files_fasta_reference_database_readout_probe: File[]; // Always an array
+        files_fasta_reference_database_primer: File[]; // Always an array
+    }
+    const [files, setFiles] = useState<FileState>({
         file_regions: null,
-        files_fasta_target_probe_database: null,
-        files_fasta_reference_database_target_probe : null,
-        files_fasta_reference_database_readout_probe: null,
-        files_fasta_reference_database_primer: null,
+        files_fasta_target_probe_database: [], // Empty array
+        files_fasta_reference_database_target_probe: [], // Empty array
+        files_fasta_reference_database_readout_probe: [], // Empty array
+        files_fasta_reference_database_primer: [], // Empty array
     });
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
-
         if (!selectedFiles) return;
 
-        // @ts-ignore
-        setFiles((prevFiles) => {
-            // Check if the input field should support multiple files
-            if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe"  ||  name === "files_fasta_reference_database_readout_probe" ||  name === "files_fasta_reference_database_primer") {
-                return {
-                    ...prevFiles,
-                    [name]: [...(prevFiles[name] || []), ...Array.from(selectedFiles)], // Append new files to existing ones
-                };
-            } else {
-                // For single-file inputs, replace the existing file
-                return {
-                    ...prevFiles,
-                    [name]: selectedFiles[0],
-                };
-            }
-        });
+        setFiles((prevFiles) => ({
+            ...prevFiles,
+            [name]: name === 'file_regions'
+                ? selectedFiles[0] // Single file
+                : Array.from(selectedFiles), // Multiple files (always an array)
+        }));
     };
     const uploadFiles = async () => {
         const filePaths: { [key: string]: string } = {};
@@ -320,39 +316,83 @@ const SeqFish: React.FC = () => {
                         <div className="mb-4">
                             <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
-                                <label htmlFor="file_regions" className="form-label">Regions File:</label>
+                                <label htmlFor="file_regions" className="form-label">
+                                    Regions File:
+                                </label>
+                                {/* Hide the default file input */}
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="file_regions"
                                     name="file_regions"
                                     onChange={handleFileChange}
                                 />
+                                {/* Custom file input button */}
+                                <label
+                                    htmlFor="file_regions"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose File
+                                </label>
+                                {/* Display selected file name */}
+                                <div className="text-muted small mt-1">
+                                    {files.file_regions
+                                        ? `Selected: ${files.file_regions.name}`
+                                        : "No file selected"}
+                                </div>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_target_probe_database" className="form-label">Fasta Probe
-                                    Database:</label>
+                                <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                    Fasta Probe Database:
+                                </label>
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="files_fasta_target_probe_database"
                                     name="files_fasta_target_probe_database"
                                     onChange={handleFileChange}
                                     multiple
                                 />
+                                <label
+                                    htmlFor="files_fasta_target_probe_database"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose Files
+                                </label>
+                                {/* Display selected file names */}
+                                <div className="text-muted small mt-1">
+                                    {files.files_fasta_target_probe_database.length > 0
+                                        ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                        : "No files selected"}
+                                </div>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">Fasta
-                                    Probe Reference
-                                    Database:</label>
+                                <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                    Fasta Probe Reference Database:
+                                </label>
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="files_fasta_reference_database_target_probe"
                                     name="files_fasta_reference_database_target_probe"
                                     onChange={handleFileChange}
                                     multiple
                                 />
+                                <label
+                                    htmlFor="files_fasta_reference_database_target_probe"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose Files
+                                </label>
+                                {/* Display selected file names */}
+                                <div className="text-muted small mt-1">
+                                    {files.files_fasta_reference_database_target_probe.length > 0
+                                        ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                        : "No files selected"}
+                                </div>
                             </div>
                         </div>
                         <div className="mb-3">
@@ -487,17 +527,30 @@ const SeqFish: React.FC = () => {
                             <h4>Readout Probe Parameters</h4>
 
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">Fasta
-                                    Readout Probe Reference
-                                    Database:</label>
+                                <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">
+                                    Fasta Probe Reference Database:
+                                </label>
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="files_fasta_reference_database_readout_probe"
                                     name="files_fasta_reference_database_readout_probe"
                                     onChange={handleFileChange}
                                     multiple
                                 />
+                                <label
+                                    htmlFor="files_fasta_reference_database_readout_probe"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose Files
+                                </label>
+                                {/* Display selected file names */}
+                                <div className="text-muted small mt-1">
+                                    {files.files_fasta_reference_database_readout_probe.length > 0
+                                        ? `Selected: ${files.files_fasta_reference_database_readout_probe.map(f => f.name).join(', ')}`
+                                        : "No files selected"}
+                                </div>
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="readout_probe_length" className="form-label">Length of readout
@@ -557,7 +610,8 @@ const SeqFish: React.FC = () => {
                                        required/>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="n_barcode_rounds" className="form-label">Number of Barcoding Rounds:</label>
+                                <label htmlFor="n_barcode_rounds" className="form-label">Number of Barcoding
+                                    Rounds:</label>
                                 <input type="number" className="form-control" id="n_barcode_rounds"
                                        name="n_barcode_rounds"
                                        value={formData.n_barcode_rounds} onChange={handleChange} required/>
@@ -586,18 +640,34 @@ const SeqFish: React.FC = () => {
                             <h4>Primer Parameters</h4>
 
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_primer" className="form-label">Fasta Reference Database:</label>
+                                <label htmlFor="files_fasta_reference_database_primer" className="form-label">
+                                    Fasta Probe Reference Database:
+                                </label>
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="files_fasta_reference_database_primer"
                                     name="files_fasta_reference_database_primer"
                                     onChange={handleFileChange}
                                     multiple
                                 />
+                                <label
+                                    htmlFor="files_fasta_reference_database_primer"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose Files
+                                </label>
+                                {/* Display selected file names */}
+                                <div className="text-muted small mt-1">
+                                    {files.files_fasta_reference_database_primer.length > 0
+                                        ? `Selected: ${files.files_fasta_reference_database_primer.map(f => f.name).join(', ')}`
+                                        : "No files selected"}
+                                </div>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="reverse_primer_sequence" className="form-label">Reverse Primer Sequence:</label>
+                                <label htmlFor="reverse_primer_sequence" className="form-label">Reverse Primer
+                                    Sequence:</label>
                                 <input
                                     type="text"
                                     className="form-control"
@@ -619,7 +689,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_a" className="form-label">Probability of Base A:</label>
+                                <label htmlFor="primer_base_probabilities_a" className="form-label">Probability of Base
+                                    A:</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -630,7 +701,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_c" className="form-label">Probability of Base C:</label>
+                                <label htmlFor="primer_base_probabilities_c" className="form-label">Probability of Base
+                                    C:</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -641,7 +713,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_g" className="form-label">Probability of Base G:</label>
+                                <label htmlFor="primer_base_probabilities_g" className="form-label">Probability of Base
+                                    G:</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -652,7 +725,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_t" className="form-label">Probability of Base T:</label>
+                                <label htmlFor="primer_base_probabilities_t" className="form-label">Probability of Base
+                                    T:</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -685,7 +759,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_number_GC_GCclamp" className="form-label">GC Clamp (GC Count):</label>
+                                <label htmlFor="primer_number_GC_GCclamp" className="form-label">GC Clamp (GC
+                                    Count):</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -696,7 +771,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_number_three_prime_base_GCclamp" className="form-label">3' Base GC Clamp Count:</label>
+                                <label htmlFor="primer_number_three_prime_base_GCclamp" className="form-label">3' Base
+                                    GC Clamp Count:</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -708,7 +784,8 @@ const SeqFish: React.FC = () => {
                             </div>
                             <div className="row g-3">
                                 <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_a" className="form-label">Homopolymeric A:</label>
+                                    <label htmlFor="primer_homopolymeric_base_n_a" className="form-label">Homopolymeric
+                                        A:</label>
                                     <input
                                         type="number"
                                         className="form-control"
@@ -719,7 +796,8 @@ const SeqFish: React.FC = () => {
                                     />
                                 </div>
                                 <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_t" className="form-label">Homopolymeric T:</label>
+                                    <label htmlFor="primer_homopolymeric_base_n_t" className="form-label">Homopolymeric
+                                        T:</label>
                                     <input
                                         type="number"
                                         className="form-control"
@@ -730,7 +808,8 @@ const SeqFish: React.FC = () => {
                                     />
                                 </div>
                                 <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_c" className="form-label">Homopolymeric C:</label>
+                                    <label htmlFor="primer_homopolymeric_base_n_c" className="form-label">Homopolymeric
+                                        C:</label>
                                     <input
                                         type="number"
                                         className="form-control"
@@ -741,7 +820,8 @@ const SeqFish: React.FC = () => {
                                     />
                                 </div>
                                 <div className="col-md-3">
-                                    <label htmlFor="primer_homopolymeric_base_n_g" className="form-label">Homopolymeric G:</label>
+                                    <label htmlFor="primer_homopolymeric_base_n_g" className="form-label">Homopolymeric
+                                        G:</label>
                                     <input
                                         type="number"
                                         className="form-control"
@@ -753,7 +833,8 @@ const SeqFish: React.FC = () => {
                                 </div>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_max_len_selfcomplement" className="form-label">Max Self-Complementary Length:</label>
+                                <label htmlFor="primer_max_len_selfcomplement" className="form-label">Max
+                                    Self-Complementary Length:</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -764,7 +845,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_max_len_complement_reverse_primer" className="form-label">Max Complement Reverse Primer Length:</label>
+                                <label htmlFor="primer_max_len_complement_reverse_primer" className="form-label">Max
+                                    Complement Reverse Primer Length:</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -797,7 +879,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_T_secondary_structure" className="form-label">Secondary Structure Temperature (°C):</label>
+                                <label htmlFor="primer_T_secondary_structure" className="form-label">Secondary Structure
+                                    Temperature (°C):</label>
                                 <input
                                     type="number"
                                     className="form-control"
@@ -808,7 +891,8 @@ const SeqFish: React.FC = () => {
                                 />
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="primer_secondary_structures_threshold_deltaG" className="form-label">Threshold Delta G:</label>
+                                <label htmlFor="primer_secondary_structures_threshold_deltaG" className="form-label">Threshold
+                                    Delta G:</label>
                                 <input
                                     type="number"
                                     className="form-control"

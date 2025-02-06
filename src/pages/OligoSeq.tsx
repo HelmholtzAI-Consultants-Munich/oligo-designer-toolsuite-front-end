@@ -7,34 +7,28 @@ const OligoSeq: React.FC = () => {
     //const [output, setOutput] = useState("");
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [files, setFiles] = useState({
+    interface FileState {
+        file_regions: File | null;
+        files_fasta_target_probe_database: File[]; // Always an array
+        files_fasta_reference_database_target_probe: File[]; // Always an array
+        files_fasta_reference_database_readout_probe: File[]; // Always an array
+    }
+    const [files, setFiles] = useState<FileState>({
         file_regions: null,
-        files_fasta_target_probe_database: null,
-        files_fasta_reference_database_target_probe : null,
-        files_fasta_reference_database_readout_probe: null,
-        files_fasta_reference_database_primer: null,
+        files_fasta_target_probe_database: [], // Empty array
+        files_fasta_reference_database_target_probe: [], // Empty array
+        files_fasta_reference_database_readout_probe: [], // Empty array
     });
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
-
         if (!selectedFiles) return;
 
-        // @ts-ignore
-        setFiles((prevFiles) => {
-            // Check if the input field should support multiple files
-            if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe"  ||  name === "files_fasta_reference_database_readout_probe" ||  name === "files_fasta_reference_database_primer") {
-                return {
-                    ...prevFiles,
-                    [name]: [...(prevFiles[name] || []), ...Array.from(selectedFiles)], // Append new files to existing ones
-                };
-            } else {
-                // For single-file inputs, replace the existing file
-                return {
-                    ...prevFiles,
-                    [name]: selectedFiles[0],
-                };
-            }
-        });
+        setFiles((prevFiles) => ({
+            ...prevFiles,
+            [name]: name === 'file_regions'
+                ? selectedFiles[0] // Single file
+                : Array.from(selectedFiles), // Multiple files (always an array)
+        }));
     };
     const uploadFiles = async () => {
         const filePaths: { [key: string]: string } = {};
@@ -71,7 +65,6 @@ const OligoSeq: React.FC = () => {
                     // @ts-ignore
                     formData.append("file", files[key]);
                     // @ts-ignore
-                    console.log(files[key],key,'what it look like not array');
                     try {
                         const response = await axios.post(
                             "http://localhost:5000/api/upload",
@@ -250,39 +243,83 @@ const OligoSeq: React.FC = () => {
                         <div className="mb-4">
                             <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
-                                <label htmlFor="file_regions" className="form-label">Regions File:</label>
+                                <label htmlFor="file_regions" className="form-label">
+                                    Regions File:
+                                </label>
+                                {/* Hide the default file input */}
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="file_regions"
                                     name="file_regions"
                                     onChange={handleFileChange}
                                 />
+                                {/* Custom file input button */}
+                                <label
+                                    htmlFor="file_regions"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose File
+                                </label>
+                                {/* Display selected file name */}
+                                <div className="text-muted small mt-1">
+                                    {files.file_regions
+                                        ? `Selected: ${files.file_regions.name}`
+                                        : "No file selected"}
+                                </div>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_target_probe_database" className="form-label">Fasta Probe
-                                    Database:</label>
+                                <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                    Fasta Probe Database:
+                                </label>
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="files_fasta_target_probe_database"
                                     name="files_fasta_target_probe_database"
                                     onChange={handleFileChange}
                                     multiple
                                 />
+                                <label
+                                    htmlFor="files_fasta_target_probe_database"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose Files
+                                </label>
+                                {/* Display selected file names */}
+                                <div className="text-muted small mt-1">
+                                    {files.files_fasta_target_probe_database.length > 0
+                                        ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                        : "No files selected"}
+                                </div>
                             </div>
                             <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">Fasta
-                                    Probe Reference
-                                    Database:</label>
+                                <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                    Fasta Probe Reference Database:
+                                </label>
                                 <input
                                     type="file"
-                                    className="form-control"
+                                    className="form-control visually-hidden"
                                     id="files_fasta_reference_database_target_probe"
                                     name="files_fasta_reference_database_target_probe"
                                     onChange={handleFileChange}
                                     multiple
                                 />
+                                <label
+                                    htmlFor="files_fasta_reference_database_target_probe"
+                                    className="btn btn-outline-primary d-block"
+                                    style={{cursor: 'pointer'}}
+                                >
+                                    Choose Files
+                                </label>
+                                {/* Display selected file names */}
+                                <div className="text-muted small mt-1">
+                                    {files.files_fasta_reference_database_target_probe.length > 0
+                                        ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                        : "No files selected"}
+                                </div>
                             </div>
                         </div>
                         <div className="mb-3">
@@ -305,7 +342,8 @@ const OligoSeq: React.FC = () => {
                                    value={formData.target_probe_split_region} onChange={handleChange} required/>
                         </div>
                         <div className="col-md-6">
-                            <label htmlFor="target_probe_targeted_exons" className="form-label">Target Probe Exons:</label>
+                            <label htmlFor="target_probe_targeted_exons" className="form-label">Target Probe
+                                Exons:</label>
                             <select className="form-control" id="target_probe_targeted_exons"
                                     name="target_probe_targeted_exons"
                                     value={formData.target_probe_targeted_exons} onChange={handleChange}>

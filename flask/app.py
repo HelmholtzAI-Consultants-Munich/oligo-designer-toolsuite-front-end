@@ -1009,7 +1009,7 @@ def genomic_custom():
             "message": "An error occurred.",
             "error": str(e)
         }), 500
-@app.route('/api/genomic/oligoseq', methods=['POST'])
+@app.route('/api/oligoseq', methods=['POST'])
 def oligoseq():
     config_path = "config_OligoSeq.yaml"
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
@@ -1056,8 +1056,8 @@ def oligoseq():
         "target_probe_Tm_weight": to_int(form_data["target_probe_Tm_weight"]),
 
 
-        "set_size_min": to_int(form_data["probeset_size_min"]),
-        "set_size_opt": to_int(form_data["probeset_size_opt"]),
+        "set_size_min": to_int(form_data["set_size_min"]),
+        "set_size_opt": to_int(form_data["set_size_opt"]),
         "distance_between_target_probes": to_int(form_data["distance_between_probes"]),
         "n_sets": to_int(form_data["n_sets"]),
 
