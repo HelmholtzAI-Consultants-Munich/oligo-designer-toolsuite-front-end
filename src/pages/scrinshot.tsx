@@ -28,6 +28,13 @@ const Scrinshot: React.FC = () => {
                 : Array.from(selectedFiles), // Multiple files (always an array)
         }));
     };
+    const areAllFilesUploaded = () => {
+        return (
+            files.file_regions !== null &&
+            files.files_fasta_target_probe_database.length > 0 &&
+            files.files_fasta_reference_database_target_probe.length > 0
+        );
+    };
     const uploadFiles = async () => {
         const filePaths: { [key: string]: string } = {};
         console.log(files,'from the event');
@@ -1183,17 +1190,31 @@ const Scrinshot: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Check if all files are uploaded
+        if (!areAllFilesUploaded()) {
+            alert('Please upload all required files before submitting.');
+            return;
+        }
+
         try {
-            // Send formData to the backend
+            // Upload files and get their paths
             const uploadedPaths = await uploadFiles();
+
+            // Combine form data with uploaded file paths
             const finalFormData = {
                 ...formData,
-                ...uploadedPaths, // Include uploaded file paths
+                ...uploadedPaths,
             };
-            const response = await axios.post('http://localhost:5000/api/scrinshot', finalFormData,
+
+            // Submit the form data
+            const response = await axios.post(
+                'http://localhost:5000/api/oligoseq',
+                finalFormData,
                 {
-                    headers: {"Content-Type": "application/json"},
-                });
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
+
             setStatus("running");
             alert('Form submitted successfully!');
         } catch (error) {
@@ -1313,10 +1334,25 @@ const Scrinshot: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="d-flex justify-content-center mt-3">
-                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                            {isSubmitting ? "Running..." : "Submit"}
-                        </button>
+                    <div className="container my-4">
+                        <form onSubmit={handleSubmit} id="scrinshotForm">
+                            {/* File upload inputs */}
+                            {/* ... */}
+                            {!areAllFilesUploaded() && (
+                                <div className="alert alert-warning mt-3">
+                                    Please upload all required files before submitting.
+                                </div>
+                            )}
+                            <div className="d-flex justify-content-center mt-3">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={isSubmitting || !areAllFilesUploaded()}
+                                >
+                                    {isSubmitting ? "Running..." : "Submit"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
                 </form>

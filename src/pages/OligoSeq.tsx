@@ -11,13 +11,11 @@ const OligoSeq: React.FC = () => {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
         files_fasta_reference_database_target_probe: File[]; // Always an array
-        files_fasta_reference_database_readout_probe: File[]; // Always an array
     }
     const [files, setFiles] = useState<FileState>({
         file_regions: null,
         files_fasta_target_probe_database: [], // Empty array
         files_fasta_reference_database_target_probe: [], // Empty array
-        files_fasta_reference_database_readout_probe: [], // Empty array
     });
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
@@ -29,6 +27,13 @@ const OligoSeq: React.FC = () => {
                 ? selectedFiles[0] // Single file
                 : Array.from(selectedFiles), // Multiple files (always an array)
         }));
+    };
+    const areAllFilesUploaded = () => {
+        return (
+            files.file_regions !== null &&
+            files.files_fasta_target_probe_database.length > 0 &&
+            files.files_fasta_reference_database_target_probe.length > 0
+        );
     };
     const uploadFiles = async () => {
         const filePaths: { [key: string]: string } = {};
@@ -918,17 +923,31 @@ const OligoSeq: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // Check if all files are uploaded
+        if (!areAllFilesUploaded()) {
+            alert('Please upload all required files before submitting.');
+            return;
+        }
+
         try {
-            // Send formData to the backend
+            // Upload files and get their paths
             const uploadedPaths = await uploadFiles();
+
+            // Combine form data with uploaded file paths
             const finalFormData = {
                 ...formData,
-                ...uploadedPaths, // Include uploaded file paths
+                ...uploadedPaths,
             };
-            const response = await axios.post('http://localhost:5000/api/oligoseq', finalFormData,
+
+            // Submit the form data
+            const response = await axios.post(
+                'http://localhost:5000/api/oligoseq',
+                finalFormData,
                 {
-                    headers: {"Content-Type": "application/json"},
-                });
+                    headers: { "Content-Type": "application/json" },
+                }
+            );
+
             setStatus("running");
             alert('Form submitted successfully!');
         } catch (error) {
@@ -1030,10 +1049,25 @@ const OligoSeq: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="d-flex justify-content-center mt-3">
-                        <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                            {isSubmitting ? "Running..." : "Submit"}
-                        </button>
+                    <div className="container my-4">
+                        <form onSubmit={handleSubmit} id="scrinshotForm">
+                            {/* File upload inputs */}
+                            {/* ... */}
+                            {!areAllFilesUploaded() && (
+                                <div className="alert alert-warning mt-3">
+                                    Please upload all required files before submitting.
+                                </div>
+                            )}
+                            <div className="d-flex justify-content-center mt-3">
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={isSubmitting || !areAllFilesUploaded()}
+                                >
+                                    {isSubmitting ? "Running..." : "Submit"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
                 </form>

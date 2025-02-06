@@ -3,11 +3,18 @@ import Navbar from "../modules/nav";
 import axios from "axios";
 const Genomic: React.FC = () => {
     const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [files, setFiles] = useState({
         file_sequence: null,
         file_annotation : null,
     });
+    const areAllFilesUploaded = () => {
+        return (
+            files.file_sequence !== null &&
+            files.file_annotation !== null
+        );
+    };
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
@@ -38,6 +45,11 @@ const Genomic: React.FC = () => {
             if (selectedSource === 'ensembl'){
                 finalFormData = formDataEns }
             if (selectedSource === 'custom'){
+                if (!areAllFilesUploaded()) {
+                    alert('Please upload all required files before submitting.');
+                    return;
+                }
+
                 const uploadedPaths = await uploadFiles();
                 finalFormData = {
                     ...formDataCustom,
@@ -506,7 +518,8 @@ const Genomic: React.FC = () => {
 
                                                     {formDataCustom.exon_exon_junction === "true" && (
                                                         <div className="mb-3">
-                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
+                                                            <label htmlFor="exon_exon_junction_block_size"
+                                                                   className="form-label">
                                                                 Exon-Exon Junction Block Size
                                                             </label>
                                                             <input
@@ -544,8 +557,26 @@ const Genomic: React.FC = () => {
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <button type="submit" className="btn btn-warning">Upload Files
-                                                    </button>
+                                                    <div className="container my-4">
+                                                        <form onSubmit={handleSubmit} id="scrinshotForm">
+                                                            {/* File upload inputs */}
+                                                            {/* ... */}
+                                                            {!areAllFilesUploaded() && (
+                                                                <div className="alert alert-warning mt-3">
+                                                                    Please upload all required files before submitting.
+                                                                </div>
+                                                            )}
+                                                            <div className="d-flex justify-content-center mt-3">
+                                                                <button
+                                                                    type="submit"
+                                                                    className="btn btn-primary"
+                                                                    disabled={isSubmitting || !areAllFilesUploaded()}
+                                                                >
+                                                                    {isSubmitting ? "Running..." : "Submit"}
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
                                                 </form>
                                             </div>
                                         </div>
