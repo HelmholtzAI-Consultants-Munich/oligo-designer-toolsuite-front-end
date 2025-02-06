@@ -240,12 +240,14 @@ def scrinshot():
         print('deleted')
         os.remove(form_data['file_regions'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
     a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
@@ -537,22 +539,27 @@ def merfish():
         print('deleted')
         os.remove(form_data['file_regions'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database'])
+    print(a,"I am A")
+
     a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
     a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
     a=split_on_newline(form_data['files_fasta_reference_database_readout_probe'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
     a=split_on_newline(form_data['files_fasta_reference_database_primer'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
@@ -789,12 +796,14 @@ def seqfish():
         print('deleted')
         os.remove(form_data['file_regions'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
     a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
@@ -1153,12 +1162,14 @@ def oligoseq():
         print('deleted')
         os.remove(form_data['file_regions'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
     a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
