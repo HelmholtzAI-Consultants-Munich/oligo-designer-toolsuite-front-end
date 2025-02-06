@@ -598,7 +598,7 @@ def seqfish():
         "target_probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
 
 
-        "target_probe_secondary_structures_T": to_int(form_data["target_probe_secondary_structures_T"]),
+        "target_probe_T_secondary_structure": to_int(form_data["target_probe_T_secondary_structure"]),
         "target_probe_secondary_structures_threshold_deltaG": to_int(form_data["target_probe_secondary_structures_threshold_deltaG"]),
         "target_homopolymeric_base_n": {
             "A": to_int(form_data["homopolymeric_A"]),
@@ -611,8 +611,8 @@ def seqfish():
 
         "target_probe_UTR_weight": to_int(form_data["target_probe_UTR_weight"]),
 
-        "set_size_min": to_int(form_data["probeset_size_min"]),
-        "set_size_opt": to_int(form_data["probeset_size_opt"]),
+        "set_size_min": to_int(form_data["set_size_min"]),
+        "set_size_opt": to_int(form_data["set_size_opt"]),
         "distance_between_target_probes": to_int(form_data["distance_between_probes"]),
         "n_sets": to_int(form_data["n_sets"]),
 
