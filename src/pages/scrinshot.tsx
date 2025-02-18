@@ -1070,26 +1070,6 @@ const Scrinshot: React.FC = () => {
 
                     </div>
                 );
-            case 'set_selection':
-                return (
-                    <div>
-
-
-                    </div>
-                )
-            case 'final_seq':
-                return (
-                    <div>
-
-                        <div className="mb-4">
-                            <h4>Final Sequence Design</h4>
-
-                        </div>
-
-                    </div>
-                );
-
-
 
             // Add cases for other tabs
             default:
@@ -1113,10 +1093,38 @@ const Scrinshot: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="specificity_strand" className="form-label">Strand: if
                                     reference is whole genome, consider using "both"</label>
-                                <input type="text" className="form-control" id="specificity_strand"
-                                       name="specificity_strand"
-                                       value={formData.specificity_strand} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="text" className="form-control" id="specificity_strand"
+                                           name="specificity_strand"
+                                           value={formData.specificity_strand} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="specificity_word_size" className="form-label">Word
@@ -1128,9 +1136,37 @@ const Scrinshot: React.FC = () => {
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="specificity_dust" className="form-label">Dust:</label>
-                                <input type="text" className="form-control" id="specificity_dust"
-                                       name="specificity_dust"
-                                       value={formData.specificity_dust} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="text" className="form-control" id="specificity_dust"
+                                           name="specificity_dust"
+                                           value={formData.specificity_dust} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="specificity_soft_masking" className="form-label">Soft
@@ -1143,10 +1179,38 @@ const Scrinshot: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="specificity_max_target_seqs" className="form-label">Max
                                     Target Sequences:</label>
-                                <input type="number" className="form-control"
-                                       id="specificity_max_target_seqs" name="specificity_max_target_seqs"
-                                       value={formData.specificity_max_target_seqs} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="specificity_max_target_seqs" name="specificity_max_target_seqs"
+                                           value={formData.specificity_max_target_seqs} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="specificity_max_hsps" className="form-label">Max
@@ -1159,10 +1223,38 @@ const Scrinshot: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="specificity_coverage" className="form-label">Coverage:
                                     (Specificity_blastn_hit_parameter)</label>
-                                <input type="number" className="form-control" id="specificity_coverage"
-                                       name="specificity_coverage"
-                                       value={formData.specificity_coverage} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="specificity_coverage"
+                                           name="specificity_coverage"
+                                           value={formData.specificity_coverage} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -1185,10 +1277,38 @@ const Scrinshot: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_strand"
                                        className="form-label">Strand:</label>
-                                <input type="text" className="form-control" id="crosshybridization_strand"
-                                       name="crosshybridization_strand"
-                                       value={formData.crosshybridization_strand} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="text" className="form-control" id="crosshybridization_strand"
+                                           name="crosshybridization_strand"
+                                           value={formData.crosshybridization_strand} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_word_size" className="form-label">Word
@@ -1201,10 +1321,38 @@ const Scrinshot: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_dust"
                                        className="form-label">Dust:</label>
-                                <input type="text" className="form-control" id="crosshybridization_dust"
-                                       name="crosshybridization_dust"
-                                       value={formData.crosshybridization_dust} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="text" className="form-control" id="crosshybridization_dust"
+                                           name="crosshybridization_dust"
+                                           value={formData.crosshybridization_dust} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_soft_masking" className="form-label">Soft
@@ -1218,19 +1366,75 @@ const Scrinshot: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_max_target_seqs" className="form-label">Max
                                     Target Sequences:</label>
-                                <input type="number" className="form-control"
-                                       id="crosshybridization_max_target_seqs"
-                                       name="crosshybridization_max_target_seqs"
-                                       value={formData.crosshybridization_max_target_seqs}
-                                       onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="crosshybridization_max_target_seqs"
+                                           name="crosshybridization_max_target_seqs"
+                                           value={formData.crosshybridization_max_target_seqs}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_coverage"
                                        className="form-label">Coverage:</label>
-                                <input type="number" className="form-control"
-                                       id="crosshybridization_coverage" name="crosshybridization_coverage"
-                                       value={formData.crosshybridization_coverage} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="crosshybridization_coverage" name="crosshybridization_coverage"
+                                           value={formData.crosshybridization_coverage} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                         </div>
 
@@ -1251,9 +1455,37 @@ const Scrinshot: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="n_attempts" className="form-label">Number of
                                     Attempts:</label>
-                                <input type="number" className="form-control" id="n_attempts"
-                                       name="n_attempts"
-                                       value={formData.n_attempts} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="n_attempts"
+                                           name="n_attempts"
+                                           value={formData.n_attempts} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="pre_filtering" className="form-label">Pre-Filtering:</label>
@@ -1265,11 +1497,39 @@ const Scrinshot: React.FC = () => {
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="heuristic" className="form-label">Heuristic:</label>
-                                <select className="form-control" id="heuristic" name="heuristic"
-                                        value={formData.heuristic} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-control" id="heuristic" name="heuristic"
+                                            value={formData.heuristic} onChange={handleChange}>
+                                        <option value="true">True</option>
+                                        <option value="false">False</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="heuristic_n_attempts" className="form-label"> Heuristics number of
@@ -1285,11 +1545,38 @@ const Scrinshot: React.FC = () => {
             case'meltingtemp':
                 return (
                     <div>
-                        <h4>Melting Temperature Parameters</h4>
-                        {/* Target Probe Parameters */}
-                        <h5>Target Probe Parameters</h5>
+                        <div className="d-flex align-items-center">
+                            <h4>Melting Temperature Parameters</h4>
+
+                            <OverlayTrigger
+                                trigger="hover"
+                                placement="top"
+                                overlay={
+                                    <Popover id="popover-n_jobs">
+                                        <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                        <Popover.Body>
+                                            Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                            that should be stored in cache. If memory consumption of pipeline is
+                                            too high reduce this number, if a lot of RAM is available increase
+                                            this number to decrease runtime
+
+                                        </Popover.Body>
+                                    </Popover>
+                                }
+                            >
+                                <InfoCircle
+                                    style={{
+                                        fontSize: "1.2rem",
+                                        cursor: "pointer",
+                                        color: "#0d6efd",
+                                        marginLeft: "10px"
+                                    }}
+                                />
+                            </OverlayTrigger>
+                        </div>
+
                         <div className="row g-3">
-                            <div className="col-md-6">
+                        <div className="col-md-6">
                                 <label htmlFor="Tm_probe_check" className="form-label">Check:</label>
                                 <select className="form-control" id="Tm_probe_check" name="Tm_probe_check"
                                         value={formData.Tm_probe_check} onChange={handleChange}>
@@ -1467,7 +1754,35 @@ const Scrinshot: React.FC = () => {
                 return (
                     <div>
                         <div className="mb-4">
-                            <h5>Melting Temperature Parameters for Detection Oligo</h5>
+                            <div className="d-flex align-items-center">
+                                <h5>Melting Temperature Parameters for Detection Oligo</h5>
+
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                            <Popover.Body>
+                                                Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                that should be stored in cache. If memory consumption of pipeline is
+                                                too high reduce this number, if a lot of RAM is available increase
+                                                this number to decrease runtime
+
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
                             <div className="row g-3">
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_detection_check"
@@ -1600,7 +1915,35 @@ const Scrinshot: React.FC = () => {
                                 </div>
                             </div>
                             <div className="mb-4">
-                                <h5>Chemical Correction Parameters for Detection Oligo</h5>
+                                <div className="d-flex align-items-center">
+                                    <h5>Chemical Correction Parameters for Detection Oligo</h5>
+
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
                                 <div className="row g-3">
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_DMSO" className="form-label">DMSO
@@ -1694,7 +2037,7 @@ const Scrinshot: React.FC = () => {
                 'http://localhost:5000/api/oligoseq',
                 finalFormData,
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {"Content-Type": "application/json"},
                 }
             );
 
