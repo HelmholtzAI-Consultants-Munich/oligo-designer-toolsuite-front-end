@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
+import { OverlayTrigger, Popover ,Tooltip} from 'react-bootstrap';
+import { InfoCircle } from "react-bootstrap-icons"; // Bootstrap icon
+
 const Scrinshot: React.FC = () => {
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -17,6 +20,7 @@ const Scrinshot: React.FC = () => {
         files_fasta_target_probe_database: [], // Empty array
         files_fasta_reference_database_target_probe: [], // Empty array
     });
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
         if (!selectedFiles) return;
@@ -240,117 +244,319 @@ const Scrinshot: React.FC = () => {
     });
     const [activeTab, setActiveTab] = useState("general");
     const [activetab2, setActivetab2] = useState("specfblastn");
-
     const renderTabContent = () => {
         switch (activeTab) {
             case "general":
                 return (
                     <div>
-                        <h4>General Parameters</h4>
-                        <div className="mb-3">
-                            <label htmlFor="n_jobs" className="form-label">Number of Jobs:</label>
-                            <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                   value={formData.n_jobs} onChange={handleChange} required/>
+                        <div>
+                            <h4>General Parameters</h4>
+                            <div className="mb-3">
+                                <label
+                                    htmlFor="n_jobs"
+                                    className="form-label mb-2"
+                                >
+                                    Number of Jobs:
+                                </label>
+                                <div className="d-flex align-items-center">
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="n_jobs"
+                                        name="n_jobs"
+                                        value={formData.n_jobs}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
                         </div>
                         <div className="mb-3">
                             <label htmlFor="dir_output" className="form-label">Output Directory:</label>
+                            <div className="d-flex align-items-center">
                             <input type="text" className="form-control" id="dir_output" name="dir_output"
                                    value={formData.dir_output} onChange={handleChange} required/>
+                            <OverlayTrigger
+                                trigger="hover"
+                                placement="top"
+                                overlay={
+                                    <Popover id="popover-n_jobs">
+                                        <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                        <Popover.Body>
+                                            Name of the directory where the output files will be written
+                                        </Popover.Body>
+                                    </Popover>
+                                }
+                            >
+                                <InfoCircle
+                                    style={{
+                                        fontSize: "1.2rem",
+                                        cursor: "pointer",
+                                        color: "#0d6efd",
+                                        marginLeft: "10px"
+                                    }}
+                                />
+                            </OverlayTrigger>
+                                </div>
                         </div>
                         <div className="mb-3">
-                            <label htmlFor="write_intermediate_steps" className="form-label">Write Intermediate
-                                Steps:</label>
-                            <select className="form-select" id="write_intermediate_steps"
+                            <label
+                                htmlFor="write_intermediate_steps"
+                                className="form-label mb-2" // mb-2 ile label ile input arasında biraz boşluk bırakıyoruz
+                            >
+                                Write Intermediate Steps:
+                            </label>
+                            <div className="d-flex align-items-center">
+                                <select
+                                    className="form-select"
+                                    id="write_intermediate_steps"
                                     name="write_intermediate_steps"
-                                    value={formData.write_intermediate_steps} onChange={handleChange}>
-                                <option value="true">True</option>
-                                <option value="false">False</option>
-                            </select>
+                                    value={formData.write_intermediate_steps}
+                                    onChange={handleChange}
+                                >
+                                    <option value="true">True</option>
+                                    <option value="false">False</option>
+                                </select>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-write_intermediate_steps">
+                                            <Popover.Header as="h3">Write Intermediate Steps</Popover.Header>
+                                            <Popover.Body>
+                                                if true, writes the oligo sequences after each step of the pipeline into a csv file
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
                         </div>
                         <div className="mb-3">
                             <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
-                            <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                   value={formData.top_n_sets} onChange={handleChange} required/>
+                            <div className="d-flex align-items-center">
+                                <input type="number" className="form-control" id="n_jobs" name="n_jobs"
+                                       value={formData.top_n_sets} onChange={handleChange} required/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                            <Popover.Body>
+                                                maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
+
                         </div>
                     </div>
                 );
             case "probe_sequences":
                 return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Target Probe Parameters</h4>
-                            <div className="mb-3">
-                                <label htmlFor="file_regions" className="form-label">
-                                    Regions File:
-                                </label>
-                                {/* Hide the default file input */}
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="file_regions"
-                                    name="file_regions"
-                                    onChange={handleFileChange}
-                                />
-                                {/* Custom file input button */}
-                                <label
-                                    htmlFor="file_regions"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose File
-                                </label>
-                                {/* Display selected file name */}
+                    <div className="mb-4">
+                        <h4>Target Probe Parameters</h4>
+                        <div className="mb-3">
+                            <label htmlFor="file_regions" className="form-label">
+                                Target File:
+                            </label>
+                            <div className="d-flex flex-column w-100">
+                                {/* Flex container for file input and custom button */}
+                                <div className="d-flex align-items-center w-100">
+                                    {/* Hidden file input */}
+                                    <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="file_regions"
+                                        name="file_regions"
+                                        onChange={handleFileChange}
+                                    />
+
+                                    {/* Custom file input button spanning full width */}
+                                    <label
+                                        htmlFor="file_regions"
+                                        className="btn btn-outline-primary d-block me-2 w-100 "
+                                        style={{cursor: 'pointer'}}
+                                    >
+                                        Choose File
+                                    </label>
+
+                                    {/* Info icon with popover */}
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Target File </Popover.Header>
+                                                <Popover.Body>
+                                                    File with a list the genes used to generate the oligos sequences,
+                                                    leave empty if all the genes are used
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                                {/* Display selected file name under the icon */}
                                 <div className="text-muted small mt-1">
                                     {files.file_regions
                                         ? `Selected: ${files.file_regions.name}`
                                         : "No file selected"}
                                 </div>
                             </div>
+
                             <div className="mb-3">
                                 <label htmlFor="files_fasta_target_probe_database" className="form-label">
                                     Fasta Probe Database:
                                 </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_target_probe_database"
-                                    name="files_fasta_target_probe_database"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_target_probe_database"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
-                                {/* Display selected file names */}
+                                <div className="d-flex align-items-center w-100">
+                                    {/* Hidden file input */}
+                                    <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="files_fasta_target_probe_database"
+                                        name="files_fasta_target_probe_database"
+                                        onChange={handleFileChange}
+                                        multiple
+                                    />
+                                    <label
+                                        htmlFor="file_regions"
+                                        className="btn btn-outline-primary d-block me-2 w-100 "
+                                        style={{cursor: 'pointer'}}
+                                    >
+                                        Choose File
+                                    </label>
+
+                                    {/* Info icon with popover */}
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Target File </Popover.Header>
+                                                <Popover.Body>
+                                                    Fasta file with sequences form which the probes should be generated.
+                                                    Use the genomic region generator to create fasta files
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+
+                                </div>
                                 <div className="text-muted small mt-1">
                                     {files.files_fasta_target_probe_database.length > 0
                                         ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
                                         : "No files selected"}
                                 </div>
+
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
                                     Fasta Probe Reference Database:
                                 </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_reference_database_target_probe"
-                                    name="files_fasta_reference_database_target_probe"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_reference_database_target_probe"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
+                                <div className="d-flex align-items-center w-100">
+                                    {/* Hidden file input */}
+                                    <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="files_fasta_reference_database_target_probe"
+                                        name="files_fasta_reference_database_target_probe"
+                                        onChange={handleFileChange}
+                                        multiple
+                                    />
+                                    <label
+                                        htmlFor="file_regions"
+                                        className="btn btn-outline-primary d-block me-2 w-100 "
+                                        style={{cursor: 'pointer'}}
+                                    >
+                                        Choose File
+                                    </label>
+
+                                    {/* Info icon with popover */}
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Target File </Popover.Header>
+                                                <Popover.Body>
+                                                    Fasta file with sequences used as reference for the specificity
+                                                    filters. Use the genomic region generator to create fasta files.
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+
+                                </div>
                                 {/* Display selected file names */}
                                 <div className="text-muted small mt-1">
                                     {files.files_fasta_reference_database_target_probe.length > 0
@@ -359,56 +565,157 @@ const Scrinshot: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
-                            <input type="number" className="form-control" id="probe_length_min"
-                                   name="probe_length_min"
-                                   value={formData.probe_length_min} onChange={handleChange} required/>
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
+                                <input type="number" className="form-control" id="probe_length_min"
+                                       name="probe_length_min"
+                                       value={formData.probe_length_min} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
+                                <input type="number" className="form-control" id="probe_length_max"
+                                       name="probe_length_max"
+                                       value={formData.probe_length_max} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
+                                    (%):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_isoform_consensus"
+                                           name="probe_isoform_consensus"
+                                           value={formData.probe_isoform_consensus} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
                         </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
-                            <input type="number" className="form-control" id="probe_length_max"
-                                   name="probe_length_max"
-                                   value={formData.probe_length_max} onChange={handleChange} required/>
+
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
+                                    (%):</label>
+                                <input type="number" className="form-control" id="probe_GC_content_min"
+                                       name="probe_GC_content_min"
+                                       value={formData.probe_GC_content_min} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
+                                    (%):</label>
+                                <input type="number" className="form-control" id="probe_GC_content_opt"
+                                       name="probe_GC_content_opt"
+                                       value={formData.probe_GC_content_opt} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
+                                    (%):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_GC_content_max"
+                                           name="probe_GC_content_max"
+                                           value={formData.probe_GC_content_max} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
                         </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_isoform_consensus"
-                                   name="probe_isoform_consensus"
-                                   value={formData.probe_isoform_consensus} onChange={handleChange} required/>
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="probe_Tm_min" className="form-label">Min Tm (°C):</label>
+                                <input type="number" className="form-control" id="probe_Tm_min" name="probe_Tm_min"
+                                       value={formData.probe_Tm_min} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_Tm_max" className="form-label">Max Tm (°C):</label>
+                                <input type="number" className="form-control" id="probe_Tm_max" name="probe_Tm_max"
+                                       value={formData.probe_Tm_max} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_Tm_opt" className="form-label">Opt Tm (°C):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_Tm_opt" name="probe_Tm_opt"
+                                           value={formData.probe_Tm_opt} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+
+                            </div>
+
                         </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_GC_content_min"
-                                   name="probe_GC_content_min"
-                                   value={formData.probe_GC_content_min} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_GC_content_opt"
-                                   name="probe_GC_content_opt"
-                                   value={formData.probe_GC_content_opt} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_GC_content_max"
-                                   name="probe_GC_content_max"
-                                   value={formData.probe_GC_content_max} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_Tm_min" className="form-label">Min Tm (°C):</label>
-                            <input type="number" className="form-control" id="probe_Tm_min" name="probe_Tm_min"
-                                   value={formData.probe_Tm_min} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_Tm_max" className="form-label">Max Tm (°C):</label>
-                            <input type="number" className="form-control" id="probe_Tm_max" name="probe_Tm_max"
-                                   value={formData.probe_Tm_max} onChange={handleChange} required/>
-                        </div>
+
+                        <h6 className="pt-2">Minimum number of nucleotides to consider it a homopolymeric run per
+                            base </h6>
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="homopolymeric_A" className="form-label">A:</label>
@@ -434,115 +741,232 @@ const Scrinshot: React.FC = () => {
                                        name="homopolymeric_G"
                                        value={formData.homopolymeric_G} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="arm_Tm_dif_max" className="form-label">Max Tm Difference Between
-                                    Arms:</label>
+                        </div>
+
+                        <div className="mb-3">
+                            <label htmlFor="arm_Tm_dif_max" className="form-label">Max Tm Difference Between
+                                Arms:</label>
+                            <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="arm_Tm_dif_max"
                                        name="arm_Tm_dif_max"
                                        value={formData.arm_Tm_dif_max} onChange={handleChange}/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                            <Popover.Body>
+                                                Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                that should be stored in cache. If memory consumption of pipeline is
+                                                too high reduce this number, if a lot of RAM is available increase
+                                                this number to decrease runtime
+
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
                             </div>
-                            <div className="mb-3">
+
+                        </div>
+                        <div className="row g-3">
+
+                            <div className="col">
                                 <label htmlFor="arm_length_min" className="form-label">Min Arm Length:</label>
                                 <input type="number" className="form-control" id="arm_length_min"
                                        name="arm_length_min"
                                        value={formData.arm_length_min} onChange={handleChange}/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="arm_Tm_min" className="form-label">Min Arm Tm:</label>
                                 <input type="number" className="form-control" id="arm_Tm_min" name="arm_Tm_min"
                                        value={formData.arm_Tm_min} onChange={handleChange}/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="arm_Tm_max" className="form-label">Max Arm Tm:</label>
-                                <input type="number" className="form-control" id="arm_Tm_max" name="arm_Tm_max"
-                                       value={formData.arm_Tm_max} onChange={handleChange}/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="arm_Tm_max" name="arm_Tm_max"
+                                           value={formData.arm_Tm_max} onChange={handleChange}/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="ligation_region_size" className="form-label">Litigation Region
-                                    Size:</label>
+
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="ligation_region_size" className="form-label">Litigation Region
+                                Size:</label>
+                            <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="ligation_region_size"
                                        name="ligation_region_size"
                                        value={formData.ligation_region_size} onChange={handleChange}/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                            <Popover.Body>
+                                                Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                that should be stored in cache. If memory consumption of pipeline is
+                                                too high reduce this number, if a lot of RAM is available increase
+                                                this number to decrease runtime
+
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
                             </div>
+
                         </div>
-                        <div className="mb-4">
-                            <h4>Set Selection Parameters</h4>
-                            <div className="mb-3">
-                                <label htmlFor="probe_isoform_weight" className="form-label">Probe Isoform
+                        <div className="row g-3">
+                            <div className="col">
+                            <label htmlFor="probe_isoform_weight" className="form-label">Probe Isoform
                                     Weight:</label>
                                 <input type="number" className="form-control" id="probe_isoform_weight"
                                        name="probe_isoform_weight"
                                        value={formData.probe_isoform_weight} onChange={handleChange} required/>
                             </div>
 
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="probe_GC_weight" className="form-label">GC Content Weight:</label>
                                 <input type="number" className="form-control" id="probe_GC_weight"
                                        name="probe_GC_weight"
                                        value={formData.probe_GC_weight} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="probe_Tm_opt" className="form-label">Optimal Tm (°C):</label>
-                                <input type="number" className="form-control" id="probe_Tm_opt" name="probe_Tm_opt"
-                                       value={formData.probe_Tm_opt} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="probe_Tm_weight" className="form-label">Tm Weight:</label>
-                                <input type="number" className="form-control" id="probe_Tm_weight"
-                                       name="probe_Tm_weight"
-                                       value={formData.probe_Tm_weight} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_Tm_weight"
+                                           name="probe_Tm_weight"
+                                           value={formData.probe_Tm_weight} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
-                            <div className="mb-3">
+                        </div>
+                        <div className="row g-3">
+
+                            <div className="col">
                                 <label htmlFor="probeset_size_min" className="form-label">Minimum Probe Set
                                     Size:</label>
                                 <input type="number" className="form-control" id="probeset_size_min"
                                        name="probeset_size_min"
                                        value={formData.probeset_size_min} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="probeset_size_opt" className="form-label">Optimal Probe Set
                                     Size:</label>
                                 <input type="number" className="form-control" id="probeset_size_opt"
                                        name="probeset_size_opt"
                                        value={formData.probeset_size_opt} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="distance_between_probes" className="form-label">Distance Between
                                     Probes:</label>
                                 <input type="number" className="form-control" id="distance_between_probes"
                                        name="distance_between_probes"
                                        value={formData.distance_between_probes} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="n_sets" className="form-label">Maximum Number of Sets:</label>
-                                <input type="number" className="form-control" id="n_sets" name="n_sets"
-                                       value={formData.n_sets} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="n_sets" name="n_sets"
+                                           value={formData.n_sets} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
-                        </div>
-                    </div>
-                );
-
-            case 'filters':
-                return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Probe Property Filters</h4>
-
-                            <div className="mb-3">
-                                <label className="form-label">Homopolymeric Base Run (min number of
-                                    nucleotides):</label>
-
-                            </div>
-                        </div>
-                    </div>
-                );
-
-            case 'padlock_arms':
-                return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Padlock Arms</h4>
-
                         </div>
                     </div>
                 );
@@ -550,40 +974,99 @@ const Scrinshot: React.FC = () => {
                 return (
                     <div>
 
-                        <div className="mb-4">
+                        <div className="row g-3">
                             <h4>Detection Oligo Properties</h4>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="min_thymines" className="form-label">Min Thymines:</label>
                                 <input type="number" className="form-control" id="min_thymines" name="min_thymines"
                                        value={formData.min_thymines} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="detect_oligo_length_min" className="form-label">Min Length
                                     (bp):</label>
                                 <input type="number" className="form-control" id="detect_oligo_length_min"
                                        name="detect_oligo_length_min"
                                        value={formData.detect_oligo_length_min} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="detect_oligo_length_max" className="form-label">Max Length
                                     (bp):</label>
-                                <input type="number" className="form-control" id="detect_oligo_length_max"
-                                       name="detect_oligo_length_max"
-                                       value={formData.detect_oligo_length_max} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="detect_oligo_length_max"
+                                           name="detect_oligo_length_max"
+                                           value={formData.detect_oligo_length_max} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
-                            <div className="mb-3">
+                        </div>
+                        <div className="row g-3">
+                            <div className="col">
                                 <label htmlFor="U_distance" className="form-label">Preferred U Distance:</label>
                                 <input type="number" className="form-control" id="U_distance" name="U_distance"
                                        value={formData.U_distance} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="detect_oligo_Tm_opt" className="form-label">Optimal Detection Oligo
                                     Tm (°C):</label>
-                                <input type="number" className="form-control" id="detect_oligo_Tm_opt"
-                                       name="detect_oligo_Tm_opt"
-                                       value={formData.detect_oligo_Tm_opt} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="detect_oligo_Tm_opt"
+                                           name="detect_oligo_Tm_opt"
+                                           value={formData.detect_oligo_Tm_opt} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                         </div>
+
 
                     </div>
                 );

@@ -491,8 +491,7 @@ const Genomic: React.FC = () => {
                                                         />
                                                     </div>
                                                     <div className="mb-3">
-                                                        <label htmlFor="genome_assembly" className="form-label">Annotation
-                                                            Release</label>
+                                                        <label htmlFor="genome_assembly" className="form-label"> Genome Assembly </label>
                                                         <input
                                                             type='text'
                                                             className="form-control"
