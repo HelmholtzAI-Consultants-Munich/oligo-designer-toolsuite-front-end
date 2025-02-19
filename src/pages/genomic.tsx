@@ -212,7 +212,7 @@ const Genomic: React.FC = () => {
                 <div className="row justify-content-center">
                     <div className="col-md-8">
                         <div className="card shadow-lg border-0 rounded-lg">
-                            <div className="card-header bg-primary text-white text-center">
+                            <div className="card-header text-center">
                                 <h4>Select Data Source</h4>
                             </div>
                             <div className="card-body p-4">
@@ -269,8 +269,8 @@ const Genomic: React.FC = () => {
                                 <div className="mt-4">
                                     {selectedSource === "ncbi" && (
                                         <div className="card shadow-sm mb-4 border-primary">
-                                            <div className="card-header bg-primary text-white">
-                                                <h5>🧬 NCBI Configuration</h5>
+                                            <div className="card-header ">
+                                                <h5>NCBI Configuration</h5>
                                             </div>
                                             <div className="card-body">
                                                 <form onSubmit={handleSubmit}>
@@ -311,26 +311,12 @@ const Genomic: React.FC = () => {
                                                         />
                                                     </div>
 
-                                                    {formDataNcbi.exon_exon_junction === "true" && (
-                                                        <div className="mb-3">
-                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                                                                Exon-Exon Junction Block Size
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control"
-                                                                id="exon_exon_junction_block_size"
-                                                                value={formDataEns.exon_exon_junction_block_size}
-                                                                onChange={handleChange}
-                                                                placeholder="50"
-                                                            />
-                                                        </div>
-                                                    )}
+
 
                                                     <h5>Genomic Regions</h5>
 
                                                     <div className="row">
-                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "UTR", "CDS", "intron"].map((region) => (
+                                                        {["gene", "intergenic", "exon", "UTR", "CDS", "intron", "exon_exon_junction"].map((region) => (
                                                             <div className="col-md-4 mb-3" key={region}>
                                                                 <div className="form-check">
                                                                     <input
@@ -348,12 +334,27 @@ const Genomic: React.FC = () => {
                                                                     />
                                                                     <label htmlFor={region}
                                                                            className="form-check-label">
-                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, " ")}
+                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                                                     </label>
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
+                                                    {formDataNcbi.exon_exon_junction === "true" && (
+                                                        <div className="mb-3">
+                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
+                                                                Exon-Exon-Junction Block Size
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                id="exon_exon_junction_block_size"
+                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                onChange={handleChange}
+                                                                placeholder="50"
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <button type="submit" className="btn btn-primary">Submit
 
                                                     </button>
@@ -364,7 +365,7 @@ const Genomic: React.FC = () => {
 
                                     {selectedSource === "ensembl" && (
                                         <div className="card shadow-sm mb-4 border-success">
-                                            <div className="card-header bg-success text-white">
+                                            <div className="card-header">
                                                 <h5>🔬 Ensembl Configuration</h5>
                                             </div>
                                             <div className="card-body">
@@ -394,26 +395,12 @@ const Genomic: React.FC = () => {
                                                         />
                                                     </div>
 
-                                                    {formDataEns.exon_exon_junction === "true" && (
-                                                        <div className="mb-3">
-                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                                                                Exon-Exon Junction Block Size
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control"
-                                                                id="exon_exon_junction_block_size"
-                                                                value={formDataEns.exon_exon_junction_block_size}
-                                                                onChange={handleChange}
-                                                                placeholder="50"
-                                                            />
-                                                        </div>
-                                                    )}
+
 
                                                     <h5>Genomic Regions</h5>
 
                                                     <div className="row">
-                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "UTR", "CDS", "intron"].map((region) => (
+                                                        {["gene", "intergenic", "exon", "UTR", "CDS", "intron", "exon_exon_junction"].map((region) => (
                                                             <div className="col-md-4 mb-3" key={region}>
                                                                 <div className="form-check">
                                                                     <input
@@ -431,12 +418,27 @@ const Genomic: React.FC = () => {
                                                                     />
                                                                     <label htmlFor={region}
                                                                            className="form-check-label">
-                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, " ")}
+                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                                                     </label>
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
+                                                    {formDataEns.exon_exon_junction === "true" && (
+                                                        <div className="mb-3">
+                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
+                                                                Exon-Exon-Junction Block Size
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                id="exon_exon_junction_block_size"
+                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                onChange={handleChange}
+                                                                placeholder="50"
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <button type="submit" className="btn btn-primary">Submit
 
                                                     </button>
@@ -447,7 +449,7 @@ const Genomic: React.FC = () => {
 
                                     {selectedSource === "custom" && (
                                         <div className="card shadow-sm mb-4 border-warning">
-                                            <div className="card-header bg-warning text-dark">
+                                            <div className="card-header ">
                                                 <h5>📂 Custom Data Upload</h5>
                                             </div>
                                             <div className="card-body">
@@ -515,24 +517,9 @@ const Genomic: React.FC = () => {
                                                         />
                                                     </div>
 
-                                                    {formDataCustom.exon_exon_junction === "true" && (
-                                                        <div className="mb-3">
-                                                            <label htmlFor="exon_exon_junction_block_size"
-                                                                   className="form-label">
-                                                                Exon-Exon Junction Block Size
-                                                            </label>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control"
-                                                                id="exon_exon_junction_block_size"
-                                                                value={formDataEns.exon_exon_junction_block_size}
-                                                                onChange={handleChange}
-                                                                placeholder="50"
-                                                            />
-                                                        </div>
-                                                    )}
+
                                                     <div className="row">
-                                                        {["gene", "intergenic", "exon", "exon_exon_junction", "UTR", "CDS", "intron"].map((region) => (
+                                                        {["gene", "intergenic", "exon", "UTR", "CDS", "intron", "exon_exon_junction"].map((region) => (
                                                             <div className="col-md-4 mb-3" key={region}>
                                                                 <div className="form-check">
                                                                     <input
@@ -550,12 +537,28 @@ const Genomic: React.FC = () => {
                                                                     />
                                                                     <label htmlFor={region}
                                                                            className="form-check-label">
-                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, " ")}
+                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                                                     </label>
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
+                                                    {formDataCustom.exon_exon_junction === "true" && (
+                                                        <div className="mb-3">
+                                                            <label htmlFor="exon_exon_junction_block_size"
+                                                                   className="form-label">
+                                                                Exon-Exon-Junction Block Size
+                                                            </label>
+                                                            <input
+                                                                type="number"
+                                                                className="form-control"
+                                                                id="exon_exon_junction_block_size"
+                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                onChange={handleChange}
+                                                                placeholder="50"
+                                                            />
+                                                        </div>
+                                                    )}
                                                     <div className="container my-4">
                                                         <form onSubmit={handleSubmit} id="scrinshotForm">
                                                             {/* File upload inputs */}
