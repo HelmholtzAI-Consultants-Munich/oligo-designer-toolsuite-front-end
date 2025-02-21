@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,send_file
 from flask_cors import CORS
 import yaml
 from flask_socketio import SocketIO, emit
@@ -9,6 +9,7 @@ import os
 import shutil
 import uuid
 app = Flask(__name__)
+
 CORS(app)
 UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
@@ -852,17 +853,35 @@ def genomic_ncbi():
             yaml.dump(config_genomic, yaml_file)
 
         try:
+            # Run the genomic region generator
             result = subprocess.run(
-                ['genomic_region_generator','-c', config_path],
+                ['genomic_region_generator', '-c', config_path],
                 capture_output=True,
                 text=True
             )
-            # Return success response
-            return jsonify({
-                "status": "success",
-                "message": "Genomic processing completed successfully.",
-                "output": result.stdout
-            }), 200
+
+            # Check if the process was successful
+            if result.returncode != 0:
+                return jsonify({
+                    "status": "error",
+                    "message": "An error occurred during genomic processing.",
+                    "error": result.stderr
+                }), 500
+
+            # Get the output file path
+            output_dir = form_data['dir_output']
+            generated_file = os.path.join(output_dir, "genomic_output.fasta")  # Adjust filename if needed
+
+            # Check if the file exists
+            if not os.path.exists(generated_file):
+                return jsonify({
+                    "status": "error",
+                    "message": "Output file not found."
+                }), 500
+
+            # Return the file as a response for download
+            return send_file(generated_file, as_attachment=True)
+
         except subprocess.CalledProcessError as e:
             return jsonify({
                 "status": "error",
@@ -871,12 +890,12 @@ def genomic_ncbi():
             }), 500
 
     except Exception as e:
-        # Handle errors
         return jsonify({
             "status": "error",
             "message": "An error occurred.",
             "error": str(e)
         }), 500
+
 @app.route('/api/genomic/ensembl', methods=['POST'])
 def genomic_ensemble():
 
