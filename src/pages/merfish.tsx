@@ -1168,18 +1168,75 @@ const Merfish: React.FC = () => {
                             <div className="mb-3">
                                 <label htmlFor="readout_probe_homopolymeric_base_n_g" className="form-label">Minimum
                                     number of Nucleotides:</label>
-                                <input type="number" className="form-control" id="readout_probe_homopolymeric_base_n_g"
-                                       name="readout_probe_homopolymeric_base_n_g"
-                                       value={formData.readout_probe_homopolymeric_base_n_g} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="readout_probe_homopolymeric_base_n_g"
+                                           name="readout_probe_homopolymeric_base_n_g"
+                                           value={formData.readout_probe_homopolymeric_base_n_g} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="readout_probe_set_size" className="form-label">Total number of readout
                                     probes:</label>
-                                <input type="number" className="form-control" id="readout_probe_set_size"
-                                       name="readout_probe_set_size"
-                                       value={formData.readout_probe_set_size} onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="readout_probe_set_size"
+                                           name="readout_probe_set_size"
+                                           value={formData.readout_probe_set_size} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="row g-3">
                                 <div className="col">
