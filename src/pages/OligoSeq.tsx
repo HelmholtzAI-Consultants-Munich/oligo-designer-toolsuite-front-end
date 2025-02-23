@@ -368,81 +368,171 @@ const OligoSeq: React.FC = () => {
                             <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
                                 <label htmlFor="file_regions" className="form-label">
-                                    Regions File:
+                                    Target File:
                                 </label>
-                                {/* Hide the default file input */}
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="file_regions"
-                                    name="file_regions"
-                                    onChange={handleFileChange}
-                                />
-                                {/* Custom file input button */}
-                                <label
-                                    htmlFor="file_regions"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose File
-                                </label>
-                                {/* Display selected file name */}
-                                <div className="text-muted small mt-1">
-                                    {files.file_regions
-                                        ? `Selected: ${files.file_regions.name}`
-                                        : "No file selected"}
+                                <div className="d-flex flex-column w-100">
+                                    {/* Flex container for file input and custom button */}
+                                    <div className="d-flex align-items-center w-100">
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            className="form-control visually-hidden"
+                                            id="file_regions"
+                                            name="file_regions"
+                                            onChange={handleFileChange}
+                                        />
+
+                                        {/* Custom file input button spanning full width */}
+                                        <label
+                                            htmlFor="file_regions"
+                                            className="btn btn-outline-primary d-block me-2 w-100 "
+                                            style={{cursor: 'pointer'}}
+                                        >
+                                            Choose File
+                                        </label>
+
+                                        {/* Info icon with popover */}
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Target File </Popover.Header>
+                                                    <Popover.Body>
+                                                        File with a list the genes used to generate the oligos
+                                                        sequences,
+                                                        leave empty if all the genes are used
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                    {/* Display selected file name under the icon */}
+                                    <div className="text-muted small mt-1">
+                                        {files.file_regions
+                                            ? `Selected: ${files.file_regions.name}`
+                                            : "No file selected"}
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="files_fasta_target_probe_database" className="form-label">
-                                    Fasta Probe Database:
-                                </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_target_probe_database"
-                                    name="files_fasta_target_probe_database"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_target_probe_database"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
-                                {/* Display selected file names */}
-                                <div className="text-muted small mt-1">
-                                    {files.files_fasta_target_probe_database.length > 0
-                                        ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
-                                        : "No files selected"}
+
+                                <div className="mb-3">
+                                    <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                        Fasta Probe Database:
+                                    </label>
+                                    <div className="d-flex align-items-center w-100">
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            className="form-control visually-hidden"
+                                            id="files_fasta_target_probe_database"
+                                            name="files_fasta_target_probe_database"
+                                            onChange={handleFileChange}
+                                            multiple
+                                        />
+                                        <label
+                                            htmlFor="file_regions"
+                                            className="btn btn-outline-primary d-block me-2 w-100 "
+                                            style={{cursor: 'pointer'}}
+                                        >
+                                            Choose File
+                                        </label>
+
+                                        {/* Info icon with popover */}
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Target File </Popover.Header>
+                                                    <Popover.Body>
+                                                        Fasta file with sequences form which the probes should be
+                                                        generated.
+                                                        Use the genomic region generator to create fasta files
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+
+                                    </div>
+                                    <div className="text-muted small mt-1">
+                                        {files.files_fasta_target_probe_database.length > 0
+                                            ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                            : "No files selected"}
+                                    </div>
+
                                 </div>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
-                                    Fasta Probe Reference Database:
-                                </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_reference_database_target_probe"
-                                    name="files_fasta_reference_database_target_probe"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_reference_database_target_probe"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
-                                {/* Display selected file names */}
-                                <div className="text-muted small mt-1">
-                                    {files.files_fasta_reference_database_target_probe.length > 0
-                                        ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
-                                        : "No files selected"}
+                                <div className="mb-3">
+                                    <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                        Fasta Probe Reference Database:
+                                    </label>
+                                    <div className="d-flex align-items-center w-100">
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            className="form-control visually-hidden"
+                                            id="files_fasta_reference_database_target_probe"
+                                            name="files_fasta_reference_database_target_probe"
+                                            onChange={handleFileChange}
+                                            multiple
+                                        />
+                                        <label
+                                            htmlFor="file_regions"
+                                            className="btn btn-outline-primary d-block me-2 w-100 "
+                                            style={{cursor: 'pointer'}}
+                                        >
+                                            Choose File
+                                        </label>
+
+                                        {/* Info icon with popover */}
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Target File </Popover.Header>
+                                                    <Popover.Body>
+                                                        Fasta file with sequences used as reference for the specificity
+                                                        filters. Use the genomic region generator to create fasta files.
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+
+                                    </div>
+                                    {/* Display selected file names */}
+                                    <div className="text-muted small mt-1">
+                                        {files.files_fasta_reference_database_target_probe.length > 0
+                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                            : "No files selected"}
+                                    </div>
                                 </div>
                             </div>
                         </div>

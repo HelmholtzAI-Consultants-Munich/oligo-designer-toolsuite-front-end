@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
+import {OverlayTrigger, Popover} from "react-bootstrap";
+import {InfoCircle} from "react-bootstrap-icons";
 const SeqFish: React.FC = () => {
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -291,33 +293,151 @@ const SeqFish: React.FC = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case "general":
+                // @ts-ignore
                 return (
                     <div>
-                        <h4>General Parameters</h4>
-                        <div className="mb-3">
-                            <label htmlFor="n_jobs" className="form-label">Number of Jobs:</label>
-                            <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                   value={formData.n_jobs} onChange={handleChange} required/>
+                        <div>
+                            <h4>General Parameters</h4>
+                            <div className="mb-3">
+                                <label
+                                    htmlFor="n_jobs"
+                                    className="form-label mb-2"
+                                >
+                                    Number of Jobs:
+                                </label>
+                                <div className="d-flex align-items-center">
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="n_jobs"
+                                        name="n_jobs"
+                                        value={formData.n_jobs}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
                         </div>
                         <div className="mb-3">
                             <label htmlFor="dir_output" className="form-label">Output Directory:</label>
-                            <input type="text" className="form-control" id="dir_output" name="dir_output"
-                                   value={formData.dir_output} onChange={handleChange} required/>
+                            <div className="d-flex align-items-center">
+                                <input type="text" className="form-control" id="dir_output" name="dir_output"
+                                       value={formData.dir_output} onChange={handleChange} required/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                            <Popover.Body>
+                                                Name of the directory where the output files will be written
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
                         </div>
                         <div className="mb-3">
-                            <label htmlFor="write_intermediate_steps" className="form-label">Write Intermediate
-                                Steps:</label>
-                            <select className="form-select" id="write_intermediate_steps"
+                            <label
+                                htmlFor="write_intermediate_steps"
+                                className="form-label mb-2" // mb-2 ile label ile input arasında biraz boşluk bırakıyoruz
+                            >
+                                Write Intermediate Steps:
+                            </label>
+                            <div className="d-flex align-items-center">
+                                <select
+                                    className="form-select"
+                                    id="write_intermediate_steps"
                                     name="write_intermediate_steps"
-                                    value={formData.write_intermediate_steps} onChange={handleChange}>
-                                <option value="true">True</option>
-                                <option value="false">False</option>
-                            </select>
+                                    value={formData.write_intermediate_steps}
+                                    onChange={handleChange}
+                                >
+                                    <option value="true">True</option>
+                                    <option value="false">False</option>
+                                </select>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-write_intermediate_steps">
+                                            <Popover.Header as="h3">Write Intermediate Steps</Popover.Header>
+                                            <Popover.Body>
+                                                if true, writes the oligo sequences after each step of the pipeline into a csv file
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
                         </div>
                         <div className="mb-3">
                             <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
-                            <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                   value={formData.top_n_sets} onChange={handleChange} required/>
+                            <div className="d-flex align-items-center">
+                                <input type="number" className="form-control" id="n_jobs" name="n_jobs"
+                                       value={formData.top_n_sets} onChange={handleChange} required/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                            <Popover.Body>
+                                                maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
+
                         </div>
                     </div>
                 );
