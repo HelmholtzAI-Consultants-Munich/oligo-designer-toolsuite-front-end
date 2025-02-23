@@ -442,132 +442,286 @@ const SeqFish: React.FC = () => {
                     </div>
                 );
             case "probe_sequences":
+                // @ts-ignore
                 return (
                     <div>
                         <div className="mb-4">
                             <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
                                 <label htmlFor="file_regions" className="form-label">
-                                    Regions File:
+                                    Target File:
                                 </label>
-                                {/* Hide the default file input */}
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="file_regions"
-                                    name="file_regions"
-                                    onChange={handleFileChange}
-                                />
-                                {/* Custom file input button */}
-                                <label
-                                    htmlFor="file_regions"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose File
-                                </label>
-                                {/* Display selected file name */}
-                                <div className="text-muted small mt-1">
-                                    {files.file_regions
-                                        ? `Selected: ${files.file_regions.name}`
-                                        : "No file selected"}
+                                <div className="d-flex flex-column w-100">
+                                    {/* Flex container for file input and custom button */}
+                                    <div className="d-flex align-items-center w-100">
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            className="form-control visually-hidden"
+                                            id="file_regions"
+                                            name="file_regions"
+                                            onChange={handleFileChange}
+                                        />
+
+                                        {/* Custom file input button spanning full width */}
+                                        <label
+                                            htmlFor="file_regions"
+                                            className="btn btn-outline-primary d-block me-2 w-100 "
+                                            style={{cursor: 'pointer'}}
+                                        >
+                                            Choose File
+                                        </label>
+
+                                        {/* Info icon with popover */}
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Target File </Popover.Header>
+                                                    <Popover.Body>
+                                                        File with a list the genes used to generate the oligos
+                                                        sequences,
+                                                        leave empty if all the genes are used
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                    {/* Display selected file name under the icon */}
+                                    <div className="text-muted small mt-1">
+                                        {files.file_regions
+                                            ? `Selected: ${files.file_regions.name}`
+                                            : "No file selected"}
+                                    </div>
+                                </div>
+
+                                <div className="mb-3">
+                                    <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                        Fasta Probe Database:
+                                    </label>
+                                    <div className="d-flex align-items-center w-100">
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            className="form-control visually-hidden"
+                                            id="files_fasta_target_probe_database"
+                                            name="files_fasta_target_probe_database"
+                                            onChange={handleFileChange}
+                                            multiple
+                                        />
+                                        <label
+                                            htmlFor="file_regions"
+                                            className="btn btn-outline-primary d-block me-2 w-100 "
+                                            style={{cursor: 'pointer'}}
+                                        >
+                                            Choose File
+                                        </label>
+
+                                        {/* Info icon with popover */}
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Target File </Popover.Header>
+                                                    <Popover.Body>
+                                                        Fasta file with sequences form which the probes should be
+                                                        generated.
+                                                        Use the genomic region generator to create fasta files
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+
+                                    </div>
+                                    <div className="text-muted small mt-1">
+                                        {files.files_fasta_target_probe_database.length > 0
+                                            ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                            : "No files selected"}
+                                    </div>
+
+                                </div>
+                                <div className="mb-3">
+                                    <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                        Fasta Probe Reference Database:
+                                    </label>
+                                    <div className="d-flex align-items-center w-100">
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            className="form-control visually-hidden"
+                                            id="files_fasta_reference_database_target_probe"
+                                            name="files_fasta_reference_database_target_probe"
+                                            onChange={handleFileChange}
+                                            multiple
+                                        />
+                                        <label
+                                            htmlFor="file_regions"
+                                            className="btn btn-outline-primary d-block me-2 w-100 "
+                                            style={{cursor: 'pointer'}}
+                                        >
+                                            Choose File
+                                        </label>
+
+                                        {/* Info icon with popover */}
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Target File </Popover.Header>
+                                                    <Popover.Body>
+                                                        Fasta file with sequences used as reference for the specificity
+                                                        filters. Use the genomic region generator to create fasta files.
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+
+                                    </div>
+                                    {/* Display selected file names */}
+                                    <div className="text-muted small mt-1">
+                                        {files.files_fasta_reference_database_target_probe.length > 0
+                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                            : "No files selected"}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="files_fasta_target_probe_database" className="form-label">
-                                    Fasta Probe Database:
-                                </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_target_probe_database"
-                                    name="files_fasta_target_probe_database"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_target_probe_database"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
-                                {/* Display selected file names */}
-                                <div className="text-muted small mt-1">
-                                    {files.files_fasta_target_probe_database.length > 0
-                                        ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
-                                        : "No files selected"}
-                                </div>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
-                                    Fasta Probe Reference Database:
-                                </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_reference_database_target_probe"
-                                    name="files_fasta_reference_database_target_probe"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_reference_database_target_probe"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
-                                {/* Display selected file names */}
-                                <div className="text-muted small mt-1">
-                                    {files.files_fasta_reference_database_target_probe.length > 0
-                                        ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
-                                        : "No files selected"}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
-                            <input type="number" className="form-control" id="probe_length_min"
-                                   name="probe_length_min"
-                                   value={formData.probe_length_min} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
-                            <input type="number" className="form-control" id="probe_length_max"
-                                   name="probe_length_max"
-                                   value={formData.probe_length_max} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_isoform_consensus"
-                                   name="probe_isoform_consensus"
-                                   value={formData.probe_isoform_consensus} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_GC_content_min"
-                                   name="probe_GC_content_min"
-                                   value={formData.probe_GC_content_min} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_GC_content_opt"
-                                   name="probe_GC_content_opt"
-                                   value={formData.probe_GC_content_opt} onChange={handleChange} required/>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
-                                (%):</label>
-                            <input type="number" className="form-control" id="probe_GC_content_max"
-                                   name="probe_GC_content_max"
-                                   value={formData.probe_GC_content_max} onChange={handleChange} required/>
                         </div>
                         <div className="row g-3">
                             <div className="col">
+                                <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
+                                <input type="number" className="form-control" id="probe_length_min"
+                                       name="probe_length_min"
+                                       value={formData.probe_length_min} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
+                                <input type="number" className="form-control" id="probe_length_max"
+                                       name="probe_length_max"
+                                       value={formData.probe_length_max} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
+                                    (%):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_isoform_consensus"
+                                           name="probe_isoform_consensus"
+                                           value={formData.probe_isoform_consensus} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
+                        </div>
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
+                                    (%):</label>
+                                <input type="number" className="form-control" id="probe_GC_content_min"
+                                       name="probe_GC_content_min"
+                                       value={formData.probe_GC_content_min} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
+                                    (%):</label>
+                                <input type="number" className="form-control" id="probe_GC_content_opt"
+                                       name="probe_GC_content_opt"
+                                       value={formData.probe_GC_content_opt} onChange={handleChange} required/>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
+                                    (%):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_GC_content_max"
+                                           name="probe_GC_content_max"
+                                           value={formData.probe_GC_content_max} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                    that should be stored in cache. If memory consumption of pipeline is
+                                                    too high reduce this number, if a lot of RAM is available increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
+                        </div>
+                        <h6 className="pt-2">Minimum number of nucleotides to consider it a homopolymeric run per
+                            base </h6>
+                        <div className="row g-3">
+                            <div className="col">
+
                                 <label htmlFor="homopolymeric_A" className="form-label">A:</label>
                                 <input type="number" className="form-control" id="homopolymeric_A"
                                        name="homopolymeric_A"
@@ -591,61 +745,158 @@ const SeqFish: React.FC = () => {
                                        name="homopolymeric_G"
                                        value={formData.homopolymeric_G} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="target_probe_T_secondary_structure" className="form-label">Secondary
-                                    Structure Temperature:</label>
-                                <input type="number" className="form-control" id="target_probe_T_secondary_structure"
-                                       name="target_probe_T_secondary_structure"
-                                       value={formData.target_probe_T_secondary_structure} onChange={handleChange}/>
+                            <div className="row g-3">
+                                <div className="col">
+                                    <label htmlFor="target_probe_T_secondary_structure" className="form-label">Secondary
+                                        Structure Temperature:</label>
+                                    <input type="number" className="form-control"
+                                           id="target_probe_T_secondary_structure"
+                                           name="target_probe_T_secondary_structure"
+                                           value={formData.target_probe_T_secondary_structure} onChange={handleChange}/>
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="target_probe_secondary_structures_threshold_deltaG"
+                                           className="form-label">Threshold for secondary structure:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control"
+                                               id="target_probe_secondary_structures_threshold_deltaG"
+                                               name="target_probe_secondary_structures_threshold_deltaG"
+                                               value={formData.target_probe_secondary_structures_threshold_deltaG}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                    <Popover.Body>
+                                                        Number of cores used to run the pipeline and 2*n_jobs +1 of
+                                                        regions
+                                                        that should be stored in cache. If memory consumption of
+                                                        pipeline is
+                                                        too high reduce this number, if a lot of RAM is available
+                                                        increase
+                                                        this number to decrease runtime
+
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="target_probe_secondary_structures_threshold_deltaG"
-                                       className="form-label">Threshold for secondary structure:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_secondary_structures_threshold_deltaG"
-                                       name="target_probe_secondary_structures_threshold_deltaG"
-                                       value={formData.target_probe_secondary_structures_threshold_deltaG}
-                                       onChange={handleChange}/>
+
+                            <div className="row g-3">
+
+                                <div className="col">
+                                    <label htmlFor="probe_GC_weight" className="form-label">GC Content Weight:</label>
+
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="probe_GC_weight"
+                                               name="probe_GC_weight"
+                                               value={formData.target_probe_GC_weight} onChange={handleChange}
+                                               required/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                    <Popover.Body>
+                                                        Number of cores used to run the pipeline and 2*n_jobs +1 of
+                                                        regions
+                                                        that should be stored in cache. If memory consumption of
+                                                        pipeline is
+                                                        too high reduce this number, if a lot of RAM is available
+                                                        increase
+                                                        this number to decrease runtime
+
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="target_probe_GC_weight" className="form-label">Weight of the GC
-                                    content:</label>
-                                <input type="number" className="form-control" id="target_probe_GC_weight"
-                                       name="target_probe_GC_weight"
-                                       value={formData.target_probe_GC_weight} onChange={handleChange}/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="target_probe_Tm_weight" className="form-label">Weight of the temperature
-                                    of the probe:</label>
-                                <input type="number" className="form-control" id="target_probe_Tm_weight"
-                                       name="target_probe_Tm_weight"
-                                       value={formData.target_probe_UTR_weight} onChange={handleChange}/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="set_size_min" className="form-label">Minimum Probe Set
-                                    Size:</label>
-                                <input type="number" className="form-control" id="set_size_min"
-                                       name="set_size_min"
-                                       value={formData.set_size_min} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="set_size_opt" className="form-label">Optimal Probe Set
-                                    Size:</label>
-                                <input type="number" className="form-control" id="set_size_opt"
-                                       name="probeset_size_opt"
-                                       value={formData.set_size_opt} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="distance_between_probes" className="form-label">Distance Between
-                                    Probes:</label>
-                                <input type="number" className="form-control" id="distance_between_probes"
-                                       name="distance_between_probes"
-                                       value={formData.distance_between_probes} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="n_sets" className="form-label">Maximum Number of Sets:</label>
-                                <input type="number" className="form-control" id="n_sets" name="n_sets"
-                                       value={formData.n_sets} onChange={handleChange} required/>
+                            <div className="row g-3">
+
+                                <div className="col">
+                                <label htmlFor="probeset_size_min" className="form-label">Minimum Probe Set
+                                        Size:</label>
+                                    <input type="number" className="form-control" id="probeset_size_min"
+                                           name="probeset_size_min"
+                                           value={formData.set_size_min} onChange={handleChange} required/>
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="probeset_size_opt" className="form-label">Optimal Probe Set
+                                        Size:</label>
+                                    <input type="number" className="form-control" id="probeset_size_opt"
+                                           name="probeset_size_opt"
+                                           value={formData.set_size_opt} onChange={handleChange} required/>
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="distance_between_probes" className="form-label">Distance Between
+                                        Probes:</label>
+                                    <input type="number" className="form-control" id="distance_between_probes"
+                                           name="distance_between_probes"
+                                           value={formData.distance_between_probes} onChange={handleChange} required/>
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="n_sets" className="form-label">Maximum Number of Sets:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="n_sets" name="n_sets"
+                                               value={formData.n_sets} onChange={handleChange} required/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                    <Popover.Body>
+                                                        Number of cores used to run the pipeline and 2*n_jobs +1 of
+                                                        regions
+                                                        that should be stored in cache. If memory consumption of
+                                                        pipeline is
+                                                        too high reduce this number, if a lot of RAM is available
+                                                        increase
+                                                        this number to decrease runtime
+
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -653,115 +904,243 @@ const SeqFish: React.FC = () => {
 
             case 'readout':
                 return (
-                    <div>
-                        <div className="mb-4">
-                            <h4>Readout Probe Parameters</h4>
+                    <div className="mb-4">
+                        <h4>Readout Probe Parameters</h4>
+                        <div className="mb-3">
+                            <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">
+                                Fasta Probe Reference Database:
+                            </label>
+                            <div className="d-flex flex-column w-100">
+                                {/* Flex container for file input and custom button */}
+                                <div className="d-flex align-items-center w-100">
+                                    {/* Hidden file input */}
+                                    <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="files_fasta_reference_database_readout_probe"
+                                        name="files_fasta_reference_database_readout_probe"
+                                        onChange={handleFileChange}
+                                        multiple
+                                    />
+                                    <label
+                                        htmlFor="files_fasta_reference_database_readout_probe"
+                                        className="btn btn-outline-primary d-block  me-2 w-100"
+                                        style={{cursor: 'pointer'}}
+                                    >
+                                        Choose Files
+                                    </label>
 
-                            <div className="mb-3">
-                                <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">
-                                    Fasta Probe Reference Database:
-                                </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_reference_database_readout_probe"
-                                    name="files_fasta_reference_database_readout_probe"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_reference_database_readout_probe"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
-                                {/* Display selected file names */}
+                                    {/* Info icon with popover */}
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Target File </Popover.Header>
+                                                <Popover.Body>
+                                                    File with a list the genes used to generate the oligos
+                                                    sequences,
+                                                    leave empty if all the genes are used
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                                {/* Display selected file name under the icon */}
                                 <div className="text-muted small mt-1">
                                     {files.files_fasta_reference_database_readout_probe.length > 0
                                         ? `Selected: ${files.files_fasta_reference_database_readout_probe.map(f => f.name).join(', ')}`
                                         : "No files selected"}
                                 </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_length" className="form-label">Length of readout
-                                    probes:</label>
-                                <input type="number" className="form-control" id="readout_probe_length"
-                                       name="readout_probe_length"
-                                       value={formData.readout_probe_length} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_a" className="form-label">Probability of base
+
+                            {/* Display selected file names */}
+
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="readout_probe_length" className="form-label">Length of readout
+                                probes:</label>
+                            <input type="number" className="form-control" id="readout_probe_length"
+                                   name="readout_probe_length"
+                                   value={formData.readout_probe_length} onChange={handleChange} required/>
+                        </div>
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="readout_probe_base_prob_a" className="form-label">Probability of
+                                    base
                                     A:</label>
                                 <input type="number" className="form-control" id="readout_probe_base_prob_a"
                                        name="readout_probe_base_prob_a"
                                        value={formData.readout_probe_base_prob_a} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_c" className="form-label">Probability of base
+                            <div className="col">
+                                <label htmlFor="readout_probe_base_prob_c" className="form-label">Probability of
+                                    base
                                     C:</label>
                                 <input type="number" className="form-control" id="readout_probe_base_prob_c"
                                        name="readout_probe_base_prob_c"
                                        value={formData.readout_probe_base_prob_c} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_g" className="form-label">Probability of base
+                            <div className="col">
+                                <label htmlFor="readout_probe_base_prob_g" className="form-label">Probability of
+                                    base
                                     A:</label>
                                 <input type="number" className="form-control" id="readout_probe_base_prob_g"
                                        name="readout_probe_base_prob_g"
                                        value={formData.readout_probe_base_prob_g} onChange={handleChange} required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_base_prob_t" className="form-label">Probability of base
+                            <div className="col">
+                                <label htmlFor="readout_probe_base_prob_t" className="form-label">Probability of
+                                    base
                                     A:</label>
-                                <input type="number" className="form-control" id="readout_probe_base_prob_t"
-                                       name="readout_probe_base_prob_t"
-                                       value={formData.readout_probe_base_prob_t} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="readout_probe_base_prob_t"
+                                           name="readout_probe_base_prob_t"
+                                           value={formData.readout_probe_base_prob_t} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of
+                                                    regions
+                                                    that should be stored in cache. If memory consumption of
+                                                    pipeline is
+                                                    too high reduce this number, if a lot of RAM is available
+                                                    increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
-                            <div className="mb-3">
+                        </div>
+                        <div className="row g-3">
+                            <div className="col">
                                 <label htmlFor="readout_probe_GC_content_min" className="form-label">Minimum GC
                                     content:</label>
                                 <input type="number" className="form-control" id="readout_probe_GC_content_min"
                                        name="readout_probe_GC_content_min"
-                                       value={formData.readout_probe_GC_content_min} onChange={handleChange} required/>
+                                       value={formData.readout_probe_GC_content_min} onChange={handleChange}
+                                       required/>
                             </div>
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="readout_probe_GC_content_max" className="form-label">Maximum GC
                                     content:</label>
                                 <input type="number" className="form-control" id="readout_probe_GC_content_max"
                                        name="readout_probe_GC_content_max"
-                                       value={formData.readout_probe_GC_content_max} onChange={handleChange} required/>
+                                       value={formData.readout_probe_GC_content_max} onChange={handleChange}
+                                       required/>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_homopolymeric_base_n_g" className="form-label">Minimum
-                                    number of Nucleotides:</label>
-                                <input type="number" className="form-control" id="readout_probe_homopolymeric_base_n_g"
+                        </div>
+
+                        <div className="mb-3">
+                            <label htmlFor="readout_probe_homopolymeric_base_n_g" className="form-label">Minimum
+                                number of Nucleotides:</label>
+                            <div className="d-flex align-items-center">
+                                <input type="number" className="form-control"
+                                       id="readout_probe_homopolymeric_base_n_g"
                                        name="readout_probe_homopolymeric_base_n_g"
                                        value={formData.readout_probe_homopolymeric_base_n_g} onChange={handleChange}
                                        required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="n_barcode_rounds" className="form-label">Number of Barcoding
-                                    Rounds:</label>
-                                <input type="number" className="form-control" id="n_barcode_rounds"
-                                       name="n_barcode_rounds"
-                                       value={formData.n_barcode_rounds} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="n_pseudocolors" className="form-label">number of Pseudocolors:</label>
-                                <input type="number" className="form-control" id="n_pseudocolors"
-                                       name="n_pseudocolors"
-                                       value={formData.n_pseudocolors} onChange={handleChange} required/>
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="channels_ids" className="form-label">Channel IDs:</label>
-                                <input type="text" className="form-control" id="channels_ids"
-                                       name="channels_ids"
-                                       value={formData.channels_ids} onChange={handleChange} required/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                            <Popover.Body>
+                                                Number of cores used to run the pipeline and 2*n_jobs +1 of regions
+                                                that should be stored in cache. If memory consumption of pipeline is
+                                                too high reduce this number, if a lot of RAM is available increase
+                                                this number to decrease runtime
+
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
                             </div>
 
                         </div>
+
+
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="channels_ids" className="form-label">Channel IDs:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="text" className="form-control" id="channels_ids"
+                                           name="channels_ids"
+                                           value={formData.channels_ids} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                                <Popover.Body>
+                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of
+                                                    regions
+                                                    that should be stored in cache. If memory consumption of
+                                                    pipeline is
+                                                    too high reduce this number, if a lot of RAM is available
+                                                    increase
+                                                    this number to decrease runtime
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
+                        </div>
+
+
                     </div>
+
                 );
 
             case 'primer_parameters':
@@ -772,23 +1151,51 @@ const SeqFish: React.FC = () => {
 
                             <div className="mb-3">
                                 <label htmlFor="files_fasta_reference_database_primer" className="form-label">
-                                    Fasta Probe Reference Database:
+                                    Fasta Probe Primer Reference Database:
                                 </label>
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_reference_database_primer"
-                                    name="files_fasta_reference_database_primer"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_reference_database_primer"
-                                    className="btn btn-outline-primary d-block"
-                                    style={{cursor: 'pointer'}}
-                                >
-                                    Choose Files
-                                </label>
+                                <div className="d-flex align-items-center w-100">
+                                    {/* Hidden file input */}
+                                    <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="files_fasta_reference_database_primer"
+                                        name="files_fasta_reference_database_primer"
+                                        onChange={handleFileChange}
+                                        multiple
+                                    />
+                                    <label
+                                        htmlFor="files_fasta_reference_database_primer"
+                                        className="btn btn-outline-primary d-block me-2 w-100"
+                                        style={{cursor: 'pointer'}}
+                                    >
+                                        Choose Files
+                                    </label>
+                                    {/* Info icon with popover */}
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Header as="h3">Target File </Popover.Header>
+                                                <Popover.Body>
+                                                    Fasta file with sequences used as reference for the specificity
+                                                    filters. Use the genomic region generator to create fasta files.
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+
+                                </div>
+
                                 {/* Display selected file names */}
                                 <div className="text-muted small mt-1">
                                     {files.files_fasta_reference_database_primer.length > 0
@@ -796,123 +1203,242 @@ const SeqFish: React.FC = () => {
                                         : "No files selected"}
                                 </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="reverse_primer_sequence" className="form-label">Reverse Primer
-                                    Sequence:</label>
-                                <input
-                                    type="text"
-                                    className="form-control"
-                                    id="reverse_primer_sequence"
-                                    name="reverse_primer_sequence"
-                                    value={formData.reverse_primer_sequence}
-                                    onChange={handleChange}
-                                />
+                            <div className="row g-3">
+                                <div className="col">
+                                    <label htmlFor="reverse_primer_sequence" className="form-label">Reverse Primer
+                                        Sequence:</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        id="reverse_primer_sequence"
+                                        name="reverse_primer_sequence"
+                                        value={formData.reverse_primer_sequence}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_length" className="form-label">Primer Length:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_length"
+                                            name="primer_length"
+                                            value={formData.primer_length}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                                    <Popover.Body>
+                                                        maximum number of sets to report in padlock_probes.yaml and
+                                                        "padlock_probes_order.yaml"
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_length" className="form-label">Primer Length:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_length"
-                                    name="primer_length"
-                                    value={formData.primer_length}
-                                    onChange={handleChange}
-                                />
+                            <div className="row g-3">
+                                <div className="col">
+                                    <label htmlFor="primer_base_probabilities_a" className="form-label">Probability of
+                                        Base
+                                        A:</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_base_probabilities_a"
+                                        name="primer_base_probabilities_a"
+                                        value={formData.primer_base_probabilities_a}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_base_probabilities_c" className="form-label">Probability of
+                                        Base
+                                        C:</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_base_probabilities_c"
+                                        name="primer_base_probabilities_c"
+                                        value={formData.primer_base_probabilities_c}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_base_probabilities_g" className="form-label">Probability of
+                                        Base
+                                        G:</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_base_probabilities_g"
+                                        name="primer_base_probabilities_g"
+                                        value={formData.primer_base_probabilities_g}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_base_probabilities_t" className="form-label">Probability of
+                                        Base
+                                        T:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_base_probabilities_t"
+                                            name="primer_base_probabilities_t"
+                                            value={formData.primer_base_probabilities_t}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                                    <Popover.Body>
+                                                        maximum number of sets to report in padlock_probes.yaml and
+                                                        "padlock_probes_order.yaml"
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_a" className="form-label">Probability of Base
-                                    A:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_a"
-                                    name="primer_base_probabilities_a"
-                                    value={formData.primer_base_probabilities_a}
-                                    onChange={handleChange}
-                                />
+
+                            <div className="row g-3">
+                                <div className="col">
+                                    <label htmlFor="primer_GC_content_min" className="form-label">Min GC
+                                        Content:</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_GC_content_min"
+                                        name="primer_GC_content_min"
+                                        value={formData.primer_GC_content_min}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_GC_content_max" className="form-label">Max GC
+                                        Content:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_GC_content_max"
+                                            name="primer_GC_content_max"
+                                            value={formData.primer_GC_content_max}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                                    <Popover.Body>
+                                                        maximum number of sets to report in padlock_probes.yaml and
+                                                        "padlock_probes_order.yaml"
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_c" className="form-label">Probability of Base
-                                    C:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_c"
-                                    name="primer_base_probabilities_c"
-                                    value={formData.primer_base_probabilities_c}
-                                    onChange={handleChange}
-                                />
+
+                            <div className="row g-3">
+                                <div className="col">
+                                    <label htmlFor="primer_number_GC_GCclamp" className="form-label">GC Clamp (GC
+                                        Count):</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_number_GC_GCclamp"
+                                        name="primer_number_GC_GCclamp"
+                                        value={formData.primer_number_GC_GCclamp}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_number_three_prime_base_GCclamp" className="form-label">3'
+                                        Base
+                                        GC Clamp Count:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_number_three_prime_base_GCclamp"
+                                            name="primer_number_three_prime_base_GCclamp"
+                                            value={formData.primer_number_three_prime_base_GCclamp}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                                    <Popover.Body>
+                                                        maximum number of sets to report in padlock_probes.yaml and
+                                                        "padlock_probes_order.yaml"
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_g" className="form-label">Probability of Base
-                                    G:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_g"
-                                    name="primer_base_probabilities_g"
-                                    value={formData.primer_base_probabilities_g}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_base_probabilities_t" className="form-label">Probability of Base
-                                    T:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_base_probabilities_t"
-                                    name="primer_base_probabilities_t"
-                                    value={formData.primer_base_probabilities_t}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_GC_content_min" className="form-label">Min GC Content:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_GC_content_min"
-                                    name="primer_GC_content_min"
-                                    value={formData.primer_GC_content_min}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_GC_content_max" className="form-label">Max GC Content:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_GC_content_max"
-                                    name="primer_GC_content_max"
-                                    value={formData.primer_GC_content_max}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_number_GC_GCclamp" className="form-label">GC Clamp (GC
-                                    Count):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_number_GC_GCclamp"
-                                    name="primer_number_GC_GCclamp"
-                                    value={formData.primer_number_GC_GCclamp}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_number_three_prime_base_GCclamp" className="form-label">3' Base
-                                    GC Clamp Count:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_number_three_prime_base_GCclamp"
-                                    name="primer_number_three_prime_base_GCclamp"
-                                    value={formData.primer_number_three_prime_base_GCclamp}
-                                    onChange={handleChange}
-                                />
-                            </div>
+
+
                             <div className="row g-3">
                                 <div className="col-md-3">
                                     <label htmlFor="primer_homopolymeric_base_n_a" className="form-label">Homopolymeric
@@ -953,109 +1479,174 @@ const SeqFish: React.FC = () => {
                                 <div className="col-md-3">
                                     <label htmlFor="primer_homopolymeric_base_n_g" className="form-label">Homopolymeric
                                         G:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_homopolymeric_base_n_g"
+                                            name="primer_homopolymeric_base_n_g"
+                                            value={formData.primer_homopolymeric_base_n_g}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                                    <Popover.Body>
+                                                        maximum number of sets to report in padlock_probes.yaml and
+                                                        "padlock_probes_order.yaml"
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div className="row g-3">
+                                <div className="col">
+                                    <label htmlFor="primer_max_len_selfcomplement" className="form-label">Max
+                                        Self-Complementary Length:</label>
                                     <input
                                         type="number"
                                         className="form-control"
-                                        id="primer_homopolymeric_base_n_g"
-                                        name="primer_homopolymeric_base_n_g"
-                                        value={formData.primer_homopolymeric_base_n_g}
+                                        id="primer_max_len_selfcomplement"
+                                        name="primer_max_len_selfcomplement"
+                                        value={formData.primer_max_len_selfcomplement}
                                         onChange={handleChange}
                                     />
                                 </div>
+
+                                <div className="col">
+                                    <label htmlFor="primer_max_len_complement_reverse_primer" className="form-label">Max
+                                        Complement Reverse Primer Length:</label>
+
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_max_len_complement_reverse_primer"
+                                        name="primer_max_len_complement_reverse_primer"
+                                        value={formData.primer_max_len_complement_reverse_primer}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_Tm_min" className="form-label">Min Primer Tm (°C):</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_Tm_min"
+                                        name="primer_Tm_min"
+                                        value={formData.primer_Tm_min}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_Tm_max" className="form-label">Max Primer Tm (°C):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_Tm_max"
+                                            name="primer_Tm_max"
+                                            value={formData.primer_Tm_max}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                                    <Popover.Body>
+                                                        maximum number of sets to report in padlock_probes.yaml and
+                                                        "padlock_probes_order.yaml"
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_max_len_selfcomplement" className="form-label">Max
-                                    Self-Complementary Length:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_max_len_selfcomplement"
-                                    name="primer_max_len_selfcomplement"
-                                    value={formData.primer_max_len_selfcomplement}
-                                    onChange={handleChange}
-                                />
+                            <div className="row g-3">
+                                <div className="col">
+                                    <label htmlFor="primer_T_secondary_structure" className="form-label">Secondary
+                                        Structure
+                                        Temperature (°C):</label>
+                                    <input
+                                        type="number"
+                                        className="form-control"
+                                        id="primer_T_secondary_structure"
+                                        name="primer_T_secondary_structure"
+                                        value={formData.primer_T_secondary_structure}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="col">
+                                    <label htmlFor="primer_secondary_structures_threshold_deltaG"
+                                           className="form-label">Threshold
+                                        Delta G:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_secondary_structures_threshold_deltaG"
+                                            name="primer_secondary_structures_threshold_deltaG"
+                                            value={formData.primer_secondary_structures_threshold_deltaG}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
+                                                    <Popover.Body>
+                                                        maximum number of sets to report in padlock_probes.yaml and
+                                                        "padlock_probes_order.yaml"
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_max_len_complement_reverse_primer" className="form-label">Max
-                                    Complement Reverse Primer Length:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_max_len_complement_reverse_primer"
-                                    name="primer_max_len_complement_reverse_primer"
-                                    value={formData.primer_max_len_complement_reverse_primer}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_Tm_min" className="form-label">Min Primer Tm (°C):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_Tm_min"
-                                    name="primer_Tm_min"
-                                    value={formData.primer_Tm_min}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_Tm_max" className="form-label">Max Primer Tm (°C):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_Tm_max"
-                                    name="primer_Tm_max"
-                                    value={formData.primer_Tm_max}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_T_secondary_structure" className="form-label">Secondary Structure
-                                    Temperature (°C):</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_T_secondary_structure"
-                                    name="primer_T_secondary_structure"
-                                    value={formData.primer_T_secondary_structure}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="mb-3">
-                                <label htmlFor="primer_secondary_structures_threshold_deltaG" className="form-label">Threshold
-                                    Delta G:</label>
-                                <input
-                                    type="number"
-                                    className="form-control"
-                                    id="primer_secondary_structures_threshold_deltaG"
-                                    name="primer_secondary_structures_threshold_deltaG"
-                                    value={formData.primer_secondary_structures_threshold_deltaG}
-                                    onChange={handleChange}
-                                />
-                            </div>
+
+
                         </div>
                     </div>
                 );
-
-            case 'set_selection':
-                return (
-                    <div>
-
-
-                    </div>
-                )
-            case 'final_seq':
-                return (
-                    <div>
-
-                        <div className="mb-4">
-                            <h4>Final Sequence Design</h4>
-
-                        </div>
-
-                    </div>
-                );
-
 
 
             // Add cases for other tabs
