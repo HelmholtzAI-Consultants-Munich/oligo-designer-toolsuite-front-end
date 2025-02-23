@@ -10,6 +10,7 @@ const Scrinshot: React.FC = () => {
     //const [output, setOutput] = useState("");
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [geneInput, setGeneInput] = useState("");
     interface FileState {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
@@ -20,6 +21,10 @@ const Scrinshot: React.FC = () => {
         files_fasta_target_probe_database: [], // Empty array
         files_fasta_reference_database_target_probe: [], // Empty array
     });
+    const handleGeneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setGeneInput(e.target.value);
+    };
+
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
@@ -99,18 +104,6 @@ const Scrinshot: React.FC = () => {
     const toggleDeveloperSettings = () => {
         setShowDeveloperSettings(!showDeveloperSettings);
     };
-    // useEffect(() => {
-    //     const socket = io("http://localhost:5000"); // Connect to Flask-SocketIO
-    //     socket.on("update", (data) => {
-    //         setProgress(data.progress);
-    //         setStatus(data.status);
-    //
-    //     });
-    //
-    //     return () => {
-    //         socket.disconnect(); // Clean up connection on component unmount
-    //     };
-    // }, []);
     const [formData, setFormData] = useState({
         // General Parameters
         n_jobs: "4",
@@ -297,30 +290,30 @@ const Scrinshot: React.FC = () => {
                         <div className="mb-3">
                             <label htmlFor="dir_output" className="form-label">Output Directory:</label>
                             <div className="d-flex align-items-center">
-                            <input type="text" className="form-control" id="dir_output" name="dir_output"
-                                   value={formData.dir_output} onChange={handleChange} required/>
-                            <OverlayTrigger
-                                trigger="hover"
-                                placement="top"
-                                overlay={
-                                    <Popover id="popover-n_jobs">
-                                        <Popover.Header as="h3">Number of Jobs</Popover.Header>
-                                        <Popover.Body>
-                                            Name of the directory where the output files will be written
-                                        </Popover.Body>
-                                    </Popover>
-                                }
-                            >
-                                <InfoCircle
-                                    style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}
-                                />
-                            </OverlayTrigger>
-                                </div>
+                                <input type="text" className="form-control" id="dir_output" name="dir_output"
+                                       value={formData.dir_output} onChange={handleChange} required/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                            <Popover.Body>
+                                                Name of the directory where the output files will be written
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
                         </div>
                         <div className="mb-3">
                             <label
@@ -412,6 +405,14 @@ const Scrinshot: React.FC = () => {
                                         id="file_regions"
                                         name="file_regions"
                                         onChange={handleFileChange}
+                                        disabled={geneInput.length > 0}
+                                    />
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Enter genes (comma-separated)"
+                                        value={geneInput}
+                                        onChange={handleGeneInputChange}
                                     />
 
                                     {/* Custom file input button spanning full width */}
@@ -471,8 +472,8 @@ const Scrinshot: React.FC = () => {
                                         multiple
                                     />
                                     <label
-                                        htmlFor="file_regions"
-                                        className="btn btn-outline-primary d-block me-2 w-100 "
+                                        htmlFor="files_fasta_target_probe_database" // Corrected from "file_regions"
+                                        className="btn btn-outline-primary d-block me-2 w-100"
                                         style={{cursor: 'pointer'}}
                                     >
                                         Choose File
@@ -525,8 +526,8 @@ const Scrinshot: React.FC = () => {
                                         multiple
                                     />
                                     <label
-                                        htmlFor="file_regions"
-                                        className="btn btn-outline-primary d-block me-2 w-100 "
+                                        htmlFor="files_fasta_reference_database_target_probe" // Correct ID
+                                        className="btn btn-outline-primary d-block me-2 w-100"
                                         style={{cursor: 'pointer'}}
                                     >
                                         Choose File

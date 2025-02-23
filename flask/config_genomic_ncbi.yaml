@@ -4,10 +4,10 @@ genomic_regions:
   cds: false
   exon: false
   exon_exon_junction: false
-  gene: false
+  gene: true
   intergenic: false
   intron: false
-  utr: true
+  utr: false
 source: ncbi
 source_params:
   annotation_release: 110
