@@ -2401,24 +2401,20 @@ const SeqFish: React.FC = () => {
                     </div>
 
                     <div className="container my-4">
-                        <form onSubmit={handleSubmit} id="scrinshotForm">
-                            {/* File upload inputs */}
-                            {/* ... */}
-                            {!areAllFilesUploaded() && (
-                                <div className="alert alert-warning mt-3">
-                                    Please upload all required files before submitting.
-                                </div>
-                            )}
-                            <div className="d-flex justify-content-center mt-3">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={isSubmitting || !areAllFilesUploaded()}
-                                >
-                                    {isSubmitting ? "Running..." : "Submit"}
-                                </button>
+                        {!areAllFilesUploaded() && (
+                            <div className="alert alert-warning mt-3">
+                                Please upload all required files before submitting.
                             </div>
-                        </form>
+                        )}
+                        <div className="d-flex justify-content-center mt-3">
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                disabled={isSubmitting || !areAllFilesUploaded()}
+                            >
+                                {isSubmitting ? "Running..." : "Submit"}
+                            </button>
+                        </div>
                     </div>
 
                 </form>
