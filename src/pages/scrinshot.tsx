@@ -64,7 +64,7 @@ const Scrinshot: React.FC = () => {
                         try {
                             const response = await axios.post(
                                 "http://localhost:5000/api/upload",
-                                formData,
+                                formDataU,
                                 {
                                     headers: { "Content-Type": "multipart/form-data" },
                                 }
@@ -76,15 +76,16 @@ const Scrinshot: React.FC = () => {
                     }
                     filePaths[key] = paths.join("\n");
                 } else {
+
                     if (formData.file_regions.length ===0) {
                         // @ts-ignore
-                        formData.append("file", files[key]);
+                        formDataU.append("file", files[key]);
                         // @ts-ignore
                         console.log(files[key],key,'what it look like not array');
                         try {
                             const response = await axios.post(
                                 "http://localhost:5000/api/upload",
-                                formData,
+                                formDataU,
                                 {
                                     headers: { "Content-Type": "multipart/form-data" },
                                 }

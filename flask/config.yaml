@@ -2,11 +2,11 @@ n_jobs: 4
 dir_output: output_scrinshot_probe_designer
 write_intermediate_steps: true
 top_n_sets: 3
-file_regions: uploads/fcaf0072ae704ea78857a6a4a44e632a_custom_3.txt
+file_regions: /var/folders/b8/ckhxj97x2svcv7j3zv11bj2r0000gn/T/tmp_gayldm1.txt
 files_fasta_target_probe_database:
-- uploads/b0473e694a974c6cb2c547819dadbe78_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/8ecebba3fb194c3ba2a274cd7c20889a_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
 files_fasta_reference_database_target_probe:
-- uploads/1a57d018c4ce4717b9fb6966461330f3_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/cdc93b8b0a9e456a9cbd8cf5298a1d49_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
 target_probe_length_min: 40
 target_probe_length_max: 45
 target_probe_isoform_consensus: 50

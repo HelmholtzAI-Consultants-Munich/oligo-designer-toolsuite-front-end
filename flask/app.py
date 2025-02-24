@@ -8,6 +8,8 @@ import subprocess
 import os
 import shutil
 import uuid
+import tempfile
+
 app = Flask(__name__)
 
 CORS(app)
@@ -78,8 +80,18 @@ def scrinshot():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
-
     # Build the nested config structure:
+    if ".txt" not in form_data["file_regions"]:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+            file_path = temp_file.name
+            # Write each gene on a new line
+            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+        print(f"File created: {file_path}")
+        with open(file_path, "r") as f:
+            print("File content:")
+            print(f.read())
+
+        form_data["file_regions"]=file_path
     config = {
         "n_jobs": to_int(form_data["n_jobs"]),
         "dir_output": form_data["dir_output"],
@@ -241,6 +253,7 @@ def scrinshot():
         print('deleted')
         os.remove(form_data['file_regions'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database'])
+
     if '\n' in a:
         a.remove('\n')
     for i in a:
