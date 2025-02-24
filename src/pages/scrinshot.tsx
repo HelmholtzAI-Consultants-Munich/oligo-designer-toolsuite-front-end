@@ -39,7 +39,7 @@ const Scrinshot: React.FC = () => {
     };
     const areAllFilesUploaded = () => {
         return (
-            files.file_regions !== null &&
+            (files.file_regions !== null || formData.file_regions.length >0)&&
             files.files_fasta_target_probe_database.length > 0 &&
             files.files_fasta_reference_database_target_probe.length > 0
         );
@@ -50,7 +50,7 @@ const Scrinshot: React.FC = () => {
         for (const key in files) {
             // @ts-ignore
             if (files[key]) {
-                const formData = new FormData();
+                const formDataU = new FormData();
                 // @ts-ignore
                 if (Array.isArray(files[key])) {
                     console.log(`Processing multiple files for key: ${key}`);
@@ -58,8 +58,8 @@ const Scrinshot: React.FC = () => {
                     // @ts-ignore
                     for (const file of files[key]) { // Use for...of to iterate over the array
                         console.log(file);
-                        const formData = new FormData();
-                        formData.append("file", file);
+                        const formDataU = new FormData();
+                        formDataU.append("file", file);
                         // Perform upload logic here
                         try {
                             const response = await axios.post(
@@ -76,23 +76,26 @@ const Scrinshot: React.FC = () => {
                     }
                     filePaths[key] = paths.join("\n");
                 } else {
-                    // @ts-ignore
-                    formData.append("file", files[key]);
-                    // @ts-ignore
-                    console.log(files[key],key,'what it look like not array');
-                    try {
-                        const response = await axios.post(
-                            "http://localhost:5000/api/upload",
-                            formData,
-                            {
-                                headers: { "Content-Type": "multipart/form-data" },
-                            }
-                        );
-                        filePaths[key] = response.data.filePath;
-                        // Save the returned file path
-                    } catch (error) {
-                        console.error(`Error uploading ${key}:`, error);
+                    if (formData.file_regions.length ===0) {
+                        // @ts-ignore
+                        formData.append("file", files[key]);
+                        // @ts-ignore
+                        console.log(files[key],key,'what it look like not array');
+                        try {
+                            const response = await axios.post(
+                                "http://localhost:5000/api/upload",
+                                formData,
+                                {
+                                    headers: { "Content-Type": "multipart/form-data" },
+                                }
+                            );
+                            filePaths[key] = response.data.filePath;
+                            // Save the returned file path
+                        } catch (error) {
+                            console.error(`Error uploading ${key}:`, error);
+                        }
                     }
+
                 }
             }
         }
@@ -405,14 +408,16 @@ const Scrinshot: React.FC = () => {
                                         id="file_regions"
                                         name="file_regions"
                                         onChange={handleFileChange}
-                                        disabled={geneInput.length > 0}
+                                        disabled={formData.file_regions.length > 0}
                                     />
                                     <input
                                         type="text"
                                         className="form-control"
+                                        id="file_regions"
+                                        name="file_regions"
                                         placeholder="Enter genes (comma-separated)"
-                                        value={geneInput}
-                                        onChange={handleGeneInputChange}
+                                        value={formData.file_regions}
+                                        onChange={handleChange}
                                     />
 
                                     {/* Custom file input button spanning full width */}
@@ -425,28 +430,30 @@ const Scrinshot: React.FC = () => {
                                     </label>
 
                                     {/* Info icon with popover */}
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Target File </Popover.Header>
-                                                <Popover.Body>
-                                                    File with a list the genes used to generate the oligos sequences,
-                                                    leave empty if all the genes are used
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px"
-                                            }}
-                                        />
-                                    </OverlayTrigger>
+                                    <div className="d-flex align-items-center ms-2">
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Header as="h3">Target File</Popover.Header>
+                                                    <Popover.Body>
+                                                        File with a list of the genes used to generate the oligos
+                                                        sequences,
+                                                        leave empty if all the genes are used.
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem", // Adjust as needed
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
 
                                 {/* Display selected file name under the icon */}
