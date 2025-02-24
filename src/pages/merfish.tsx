@@ -567,7 +567,7 @@ const Merfish: React.FC = () => {
                                             multiple
                                         />
                                         <label
-                                            htmlFor="file_regions"
+                                            htmlFor="files_fasta_target_probe_database"
                                             className="btn btn-outline-primary d-block me-2 w-100 "
                                             style={{cursor: 'pointer'}}
                                         >
@@ -622,7 +622,7 @@ const Merfish: React.FC = () => {
                                             multiple
                                         />
                                         <label
-                                            htmlFor="file_regions"
+                                            htmlFor="files_fasta_reference_database_target_probe"
                                             className="btn btn-outline-primary d-block me-2 w-100 "
                                             style={{cursor: 'pointer'}}
                                         >
@@ -3006,24 +3006,20 @@ const Merfish: React.FC = () => {
                     </div>
 
                     <div className="container my-4">
-                        <form onSubmit={handleSubmit} id="scrinshotForm">
-                            {/* File upload inputs */}
-                            {/* ... */}
-                            {!areAllFilesUploaded() && (
-                                <div className="alert alert-warning mt-3">
-                                    Please upload all required files before submitting.
-                                </div>
-                            )}
-                            <div className="d-flex justify-content-center mt-3">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={isSubmitting || !areAllFilesUploaded()}
-                                >
-                                    {isSubmitting ? "Running..." : "Submit"}
-                                </button>
+                        {!areAllFilesUploaded() && (
+                            <div className="alert alert-warning mt-3">
+                                Please upload all required files before submitting.
                             </div>
-                        </form>
+                        )}
+                        <div className="d-flex justify-content-center mt-3">
+                            <button
+                                type="submit"
+                                className="btn btn-primary"
+                                disabled={isSubmitting || !areAllFilesUploaded()}
+                            >
+                                {isSubmitting ? "Running..." : "Submit"}
+                            </button>
+                        </div>
                     </div>
 
                 </form>
