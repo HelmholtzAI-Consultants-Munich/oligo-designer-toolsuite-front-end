@@ -49,6 +49,7 @@ def split_on_newline(s):
     else:
         # Do nothing if '\n' is not in the string
         return [s]
+
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     print(request.files)
@@ -280,7 +281,17 @@ def merfish():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
+    if ".txt" not in form_data["file_regions"]:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+            file_path = temp_file.name
+            # Write each gene on a new line
+            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+        print(f"File created: {file_path}")
+        with open(file_path, "r") as f:
+            print("File content:")
+            print(f.read())
 
+        form_data["file_regions"]=file_path
     # Build the nested config structure:
     config = {
         "n_jobs": to_int(form_data["n_jobs"]),
@@ -593,7 +604,17 @@ def seqfish():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
+    if ".txt" not in form_data["file_regions"]:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+            file_path = temp_file.name
+            # Write each gene on a new line
+            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+        print(f"File created: {file_path}")
+        with open(file_path, "r") as f:
+            print("File content:")
+            print(f.read())
 
+        form_data["file_regions"]=file_path
     # Build the nested config structure:
     config = {
         "n_jobs": to_int(form_data["n_jobs"]),
@@ -1057,7 +1078,17 @@ def oligoseq():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
+    if ".txt" not in form_data["file_regions"]:
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+            file_path = temp_file.name
+            # Write each gene on a new line
+            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+        print(f"File created: {file_path}")
+        with open(file_path, "r") as f:
+            print("File content:")
+            print(f.read())
 
+        form_data["file_regions"]=file_path
     # Build the nested config structure:
     config = {
         "n_jobs": to_int(form_data["n_jobs"]),

@@ -6,11 +6,8 @@ import { InfoCircle } from "react-bootstrap-icons"; // Bootstrap icon
 
 const Scrinshot: React.FC = () => {
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-    const [progress, setProgress] = useState(0);
-    //const [output, setOutput] = useState("");
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [geneInput, setGeneInput] = useState("");
     interface FileState {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
@@ -21,9 +18,6 @@ const Scrinshot: React.FC = () => {
         files_fasta_target_probe_database: [], // Empty array
         files_fasta_reference_database_target_probe: [], // Empty array
     });
-    const handleGeneInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setGeneInput(e.target.value);
-    };
 
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
