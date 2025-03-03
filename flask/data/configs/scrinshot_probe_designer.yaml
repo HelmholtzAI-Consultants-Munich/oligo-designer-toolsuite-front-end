@@ -157,12 +157,14 @@ Tm_parameters_detection_oligo:
     Mg: 0 #[mM] default
     dNTPs: 0 #[mM] default
 
-Tm_chem_correction_param_detection_oligo:
-    DMSO: 0 #default
+Tm_chem_correction_param_detection_oligo: {
+  DMSO: 0 #default
     fmd: 30
     DMSOfactor: 0.75 #default
     fmdfactor: 0.65 #default
     fmdmethod: 1 #default
     GC: null #default
+}
+
 
 Tm_salt_correction_param_detection_oligo: null # if salt correction desired, please add parameters below as above

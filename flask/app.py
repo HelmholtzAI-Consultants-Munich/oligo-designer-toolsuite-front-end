@@ -102,76 +102,76 @@ def scrinshot():
         "file_regions": form_data["file_regions"],
         "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]),
         "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]),
-        "target_probe_length_min": to_int(form_data["probe_length_min"]),
-        "target_probe_length_max": to_int(form_data["probe_length_max"]),
-        "target_probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]),
+        "target_probe_length_min": to_int(form_data["target_probe_length_min"]),
+        "target_probe_length_max": to_int(form_data["target_probe_length_max"]),
+        "target_probe_isoform_consensus": to_int(form_data["target_probe_isoform_consensus"]),
 
         # Property filters
-        "target_probe_GC_content_min": to_int(form_data["probe_GC_content_min"]),
-        "target_probe_GC_content_opt": to_int(form_data["probe_GC_content_opt"]),
-        "target_probe_GC_content_max": to_int(form_data["probe_GC_content_max"]),
-        "target_probe_Tm_min": to_int(form_data["probe_Tm_min"]),
-        "target_probe_Tm_max": to_int(form_data["probe_Tm_max"]),
+        "target_probe_GC_content_min": to_int(form_data["target_probe_GC_content_min"]),
+        "target_probe_GC_content_opt": to_int(form_data["target_probe_GC_content_opt"]),
+        "target_probe_GC_content_max": to_int(form_data["target_probe_GC_content_max"]),
+        "target_probe_Tm_min": to_int(form_data["target_probe_Tm_min"]),
+        "target_probe_Tm_max": to_int(form_data["target_probe_Tm_max"]),
         "target_homopolymeric_base_n": {
-            "A": to_int(form_data["homopolymeric_A"]),
-            "T": to_int(form_data["homopolymeric_T"]),
-            "C": to_int(form_data["homopolymeric_C"]),
-            "G": to_int(form_data["homopolymeric_G"])
+            "A": to_int(form_data["target_homopolymeric_base_n.A"]),
+            "T": to_int(form_data["target_homopolymeric_base_n.T"]),
+            "C": to_int(form_data["target_homopolymeric_base_n.C"]),
+            "G": to_int(form_data["target_homopolymeric_base_n.G"])
         },
 
         # Padlock arms
-        "target_probe_padlock_arm_Tm_dif_max": to_int(form_data["arm_Tm_dif_max"]),
-        "target_probe_padlock_arm_length_min": to_int(form_data["arm_length_min"]),
-        "target_probe_padlock_arm_Tm_min": to_int(form_data["arm_Tm_min"]),
-        "target_probe_padlock_arm_Tm_max": to_int(form_data["arm_Tm_max"]),
+        "target_probe_padlock_arm_Tm_dif_max": to_int(form_data["target_probe_padlock_arm_Tm_dif_max"]),
+        "target_probe_padlock_arm_length_min": to_int(form_data["target_probe_padlock_arm_length_min"]),
+        "target_probe_padlock_arm_Tm_min": to_int(form_data["target_probe_padlock_arm_Tm_min"]),
+        "target_probe_padlock_arm_Tm_max": to_int(form_data["target_probe_padlock_arm_Tm_max"]),
 
         # Detection oligos
-        "detection_oligo_min_thymines": to_int(form_data["min_thymines"]),
-        "detection_oligo_length_min": to_int(form_data["detect_oligo_length_min"]),
-        "detection_oligo_length_max": to_int(form_data["detect_oligo_length_max"]),
+        "detection_oligo_min_thymines": to_int(form_data["detection_oligo_min_thymines"]),
+        "detection_oligo_length_min": to_int(form_data["detection_oligo_length_min"]),
+        "detection_oligo_length_max": to_int(form_data["detection_oligo_length_max"]),
 
         # Specificity filters
-        "target_probe_padlock_ligation_region_size": to_int(form_data["ligation_region_size"]),
+        "target_probe_padlock_ligation_region_size": to_int(form_data["target_probe_padlock_ligation_region_size"]),
 
         # Set selection parameters
-        "target_probe_isoform_weight": to_int(form_data["probe_isoform_weight"]),
-        "target_probe_GC_weight": to_int(form_data["probe_GC_weight"]),
+        "target_probe_isoform_weight": to_int(form_data["target_probe_isoform_weight"]),
+        "target_probe_GC_weight": to_int(form_data["target_probe_GC_weight"]),
         "probe_Tm_opt": to_int(form_data["probe_Tm_opt"]),
-        "target_probe_Tm_weight": to_int(form_data["probe_Tm_weight"]),
-        "set_size_min": to_int(form_data["probeset_size_min"]),
-        "set_size_opt": to_int(form_data["probeset_size_opt"]),
-        "distance_between_target_probes": to_int(form_data["distance_between_probes"]),
+        "target_probe_Tm_weight": to_int(form_data["target_probe_Tm_weight"]),
+        "set_size_min": to_int(form_data["set_size_min"]),
+        "set_size_opt": to_int(form_data["set_size_opt"]),
+        "distance_between_target_probes": to_int(form_data["distance_between_target_probes"]),
         "n_sets": to_int(form_data["n_sets"]),
 
         # Final sequence design
-        "detection_oligo_U_distance": to_int(form_data["U_distance"]),
-        "detection_oligo_Tm_opt": to_int(form_data["detect_oligo_Tm_opt"]),
+        "detection_oligo_U_distance": to_int(form_data["detection_oligo_U_distance"]),
+        "detection_oligo_Tm_opt": to_int(form_data["detection_oligo_Tm_opt"]),
 
 
         # Developer parameters
         "target_probe_specificity_blastn_search_parameters": {
-            "perc_identity": to_int(form_data["specificity_perc_identity"]),
-            "strand": form_data["specificity_strand"],
-            "word_size": to_int(form_data["specificity_word_size"]),
-            "dust": form_data["specificity_dust"],
-            "soft_masking": form_data["specificity_soft_masking"],
-            "max_target_seqs": to_int(form_data["specificity_max_target_seqs"]),
-            "max_hsps": to_int(form_data["specificity_max_hsps"])
+            "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters.perc_identity"]),
+            "strand": form_data["target_probe_specificity_blastn_search_parameters.strand"],
+            "word_size": to_int(form_data["target_probe_specificity_blastn_search_parameters.word_size"]),
+            "dust": form_data["target_probe_specificity_blastn_search_parameters.dust"],
+            "soft_masking": form_data["target_probe_specificity_blastn_search_parameters.soft_masking"],
+            "max_target_seqs": to_int(form_data["target_probe_specificity_blastn_search_parameters.max_target_seqs"]),
+            "max_hsps": to_int(form_data["target_probe_specificity_blastn_search_parameters.max_hsps"])
         },
         "target_probe_specificity_blastn_hit_parameters": {
-            "coverage": to_int(form_data["specificity_coverage"])
+            "coverage": to_int(form_data["target_probe_specificity_blastn_hit_parameters.coverage"])
         },
 
         "target_probe_cross_hybridization_blastn_search_parameters": {
-            "perc_identity": to_int(form_data["crosshybridization_perc_identity"]),
-            "strand": form_data["crosshybridization_strand"],
-            "word_size": to_int(form_data["crosshybridization_word_size"]),
-            "dust": form_data["crosshybridization_dust"],
-            "soft_masking": form_data["crosshybridization_soft_masking"],
-            "max_target_seqs": to_int(form_data["crosshybridization_max_target_seqs"])
+            "perc_identity": to_int(form_data["ctarget_probe_cross_hybridization_blastn_search_parameters.perc_identity"]),
+            "strand": form_data["target_probe_cross_hybridization_blastn_search_parameters.strand"],
+            "word_size": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters.word_size"]),
+            "dust": form_data["target_probe_cross_hybridization_blastn_search_parameters.dust"],
+            "soft_masking": form_data["target_probe_cross_hybridization_blastn_search_parameters.soft_masking"],
+            "max_target_seqs": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters.max_target_seqs"])
         },
         "target_probe_cross_hybridization_blastn_hit_parameters": {
-            "coverage": to_int(form_data["crosshybridization_coverage"])
+            "coverage": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters.coverage"])
         },
 
         "max_graph_size": to_int(form_data["max_graph_size"]),
@@ -180,61 +180,54 @@ def scrinshot():
 
         # Melting Temperature Parameters
         "target_probe_Tm_parameters_probe": {
-            "check": to_bool(form_data["Tm_probe_check"]),
-            "strict": to_bool(form_data["Tm_probe_strict"]),
-            "c_seq": to_null(form_data["Tm_probe_c_seq"]),
-            "shift": to_int(form_data["Tm_probe_shift"]),
-            "nn_table": form_data["Tm_probe_nn_table"],
-            "tmm_table": form_data["Tm_probe_tmm_table"],
-            "imm_table": form_data["Tm_probe_imm_table"],
-            "de_table": form_data["DE_probe_imm_table"],
-            "dnac1": to_int(form_data["Tm_probe_dnac1"]),
-            "dnac2": to_int(form_data["Tm_probe_dnac2"]),
-            "selfcomp": to_bool(form_data["selfcomp"]),
-            "saltcorr": to_int(form_data["Tm_probe_saltcorr"]),
-            "Na": to_int(form_data["Tm_probe_Na"]),
-            "K": to_int(form_data["Tm_probe_K"]),
-            "Tris": to_int(form_data["Tm_probe_Tris"]),
-            "Mg": to_int(form_data["Tm_probe_Mg"]),
-            "dNTPs": to_int(form_data["Tm_probe_dNTPs"])
+            "nn_table": form_data["target_probe_Tm_parameters_probe.nn_table"],
+            "tmm_table": form_data["target_probe_Tm_parameters_probe.tmm_table"],
+            "imm_table": form_data["target_probe_Tm_parameters_probe.imm_table"],
+            "de_table": form_data["target_probe_Tm_parameters_probe.de_table"],
+            "dnac1": to_int(form_data["target_probe_Tm_parameters_probe.dnac1"]),
+            "dnac2": to_int(form_data["target_probe_Tm_parameters_probe.dnac2"]),
+            "selfcomp": to_bool(form_data["target_probe_Tm_parameters_probe.selfcomp"]),
+            "saltcorr": to_int(form_data["target_probe_Tm_parameters_probe.saltcorr"]),
+            "Na": to_int(form_data["target_probe_Tm_parameters_probe.Na"]),
+            "K": to_int(form_data["target_probe_Tm_parameters_probe.K"]),
+            "Tris": to_int(form_data["target_probe_Tm_parameters_probe.Tris"]),
+            "Mg": to_int(form_data["target_probe_Tm_parameters_probe.Mg"]),
+            "dNTPs": to_int(form_data["target_probe_Tm_parameters_probe.dNTPs"])
         },
+
         "target_probe_Tm_chem_correction_param_probe": {
-            "DMSO": to_int(form_data["Tm_probe_DMSO"]),
-            "fmd": to_int(form_data["Tm_probe_fmd"]),
-            "DMSOfactor": float(form_data["Tm_probe_DMSOfactor"]),
-            "fmdfactor": float(form_data["Tm_probe_fmdfactor"]),
-            "fmdmethod": to_int(form_data["Tm_probe_fmdmethod"]),
-            "GC": to_null(form_data["Tm_probe_GC"])
+            "DMSO": to_int(form_data["target_probe_Tm_chem_correction_param_probe.DMSO"]),
+            "fmd": to_int(form_data["target_probe_Tm_chem_correction_param_probe.fmd"]),
+            "DMSOfactor": float(form_data["target_probe_Tm_chem_correction_param_probe.DMSOfactor"]),
+            "fmdfactor": float(form_data["target_probe_Tm_chem_correction_param_probe.fmdfactor"]),
+            "fmdmethod": to_int(form_data["target_probe_Tm_chem_correction_param_probe.fmdmethod"]),
+            "GC": to_null(form_data["target_probe_Tm_chem_correction_param_probe.GC"])
         },
         # If Tm_salt_correction_param_probe is null, we just omit it or set it to None
         "target_probe_Tm_salt_correction_param_probe": None,
 
         "detection_oligo_Tm_parameters": {
-            "check": to_bool(form_data["Tm_detection_check"]),
-            "strict": to_bool(form_data["Tm_detection_strict"]),
-            "c_seq": to_null(form_data["Tm_detection_c_seq"]),
-            "shift": to_int(form_data["Tm_detection_shift"]),
-            "nn_table": form_data["Tm_detection_nn_table"],
-            "tmm_table": form_data["Tm_detection_tmm_table"],
-            "imm_table": form_data["Tm_detection_imm_table"],
-            "de_table": form_data["Tm_detection_de_table"],
-            "dnac1": to_int(form_data["Tm_detection_dnac1"]),
-            "dnac2": to_int(form_data["Tm_detection_dnac2"]),
-            "selfcomp": to_bool(form_data["Tm_detection_selfcomp"]),
-            "saltcorr": to_int(form_data["Tm_detection_saltcorr"]),
-            "Na": to_int(form_data["Tm_detection_Na"]),
-            "K": to_int(form_data["Tm_detection_K"]),
-            "Tris": to_int(form_data["Tm_detection_Tris"]),
-            "Mg": to_int(form_data["Tm_detection_Mg"]),
-            "dNTPs": to_int(form_data["Tm_detection_dNTPs"])
+            "nn_table": form_data["detection_oligo_Tm_parameters.nn_table"],
+            "tmm_table": form_data["detection_oligo_Tm_parameters.tmm_table"],
+            "imm_table": form_data["detection_oligo_Tm_parameters.imm_table"],
+            "de_table": form_data["detection_oligo_Tm_parameters.de_table"],
+            "dnac1": to_int(form_data["detection_oligo_Tm_parameters.dnac1"]),
+            "dnac2": to_int(form_data["detection_oligo_Tm_parameters.dnac2"]),
+            "selfcomp": to_bool(form_data["detection_oligo_Tm_parameters.selfcomp"]),
+            "saltcorr": to_int(form_data["detection_oligo_Tm_parameters.saltcorr"]),
+            "Na": to_int(form_data["detection_oligo_Tm_parameters.Na"]),
+            "K": to_int(form_data["detection_oligo_Tm_parameters.K"]),
+            "Tris": to_int(form_data["detection_oligo_Tm_parameters.Tris"]),
+            "Mg": to_int(form_data["detection_oligo_Tm_parameters.Mg"]),
+            "dNTPs": to_int(form_data["detection_oligo_Tm_parameters.dNTPs"])
         },
         "detection_oligo_Tm_chem_correction_parameters": {
-            "DMSO": to_int(form_data["Tm_detection_DMSO"]),
-            "fmd": to_int(form_data["Tm_detection_fmd"]),
-            "DMSOfactor": float(form_data["Tm_detection_DMSOfactor"]),
-            "fmdfactor": float(form_data["Tm_detection_fmdfactor"]),
-            "fmdmethod": to_int(form_data["Tm_detection_fmdmethod"]),
-            "GC": to_null(form_data["Tm_detection_GC"])
+            "DMSO": to_int(form_data["detection_oligo_Tm_chem_correction_parameters.DMSO"]),
+            "fmd": to_int(form_data["detection_oligo_Tm_chem_correction_parameters.fmd"]),
+            "DMSOfactor": float(form_data["detection_oligo_Tm_chem_correction_parameters.DMSOfactor"]),
+            "fmdfactor": float(form_data["detection_oligo_Tm_chem_correction_parameters.fmdfactor"]),
+            "fmdmethod": to_int(form_data["detection_oligo_Tm_chem_correction_parameters.fmdmethod"]),
+            "GC": to_null(form_data["detection_oligo_Tm_chem_correction_parameters.GC"])
         },
         "detection_oligo_Tm_salt_correction_parameters": None
     }

@@ -1,0 +1,201 @@
+import yaml
+import re
+
+def convert_value_to_js(value, indent=8):
+    if isinstance(value, dict):
+        items = []
+        for k, v in value.items():
+            converted = convert_value_to_js(v, indent + 4)
+            items.append(f"{' ' * indent}{k}: {converted}")
+        return '{\n' + ',\n'.join(items) + '\n' + ' ' * (indent - 4) + '}'
+    elif isinstance(value, list):
+        elements = [convert_value_to_js(e, indent) for e in value]
+        return '[ ' + ', '.join(elements) + ' ]'
+    elif isinstance(value, bool):
+        return '"true"' if value else '"false"'
+    else:
+        return f'"{str(value)}"'
+
+def yaml_to_js(yaml_text):
+    parsed_data = yaml.safe_load(yaml_text)
+    js_lines = []
+    lines = yaml_text.split('\n')
+
+    for line in lines:
+        stripped = line.strip()
+        # Process section headers
+        if stripped.startswith('###'):
+            section_name = re.sub(r'#+', '', stripped).strip()
+            js_lines.append(f'    // {section_name}')
+        # Process key-value lines
+        elif ':' in line and not stripped.startswith('#'):
+            key_part, remainder = line.split(':', 1)
+            key = key_part.strip()
+
+            # Extract comment and value part
+            comment = ''
+            if '#' in remainder:
+                value_part, comment_part = remainder.split('#', 1)
+                comment = comment_part.strip()
+            else:
+                value_part = remainder
+
+            # Skip if key not in parsed data (handles nested keys)
+            if key not in parsed_data:
+                continue
+
+            value = parsed_data[key]
+            js_value = convert_value_to_js(value)
+
+            # Build JavaScript line
+            js_line = f'    {key}: {js_value},'
+            if comment:
+                js_line += f' // {comment}'
+            js_lines.append(js_line)
+
+    # Clean up trailing commas
+    js_code = '\n'.join(js_lines)
+    js_code = re.sub(r',\n\s+}', '\n}', js_code)    # Objects
+    js_code = re.sub(r',\n\s+\]', '\n]', js_code)   # Arrays
+    js_code = re.sub(r',\n}', '\n}', js_code)       # Last object property
+    return js_code
+
+# Example YAML input with comments
+yaml_text = """### General parameters
+### -----------------------------------------------
+n_jobs: 4 # number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime
+dir_output: output_scrinshot_probe_designer # name of the directory where the output files will be written
+write_intermediate_steps: true # if true, writes the oligo sequences after each step of the pipeline into a csv file
+top_n_sets: 3 #maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"
+
+### Target Probe Parameters
+### -----------------------------------------------
+file_regions: data/genes/custom_3.txt # file with a list the genes used to generate the oligos sequences, leave empty if all the genes are used
+files_fasta_target_probe_database: # fasta file with sequences form which the probes should be generated. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest
+  - data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+  - data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+files_fasta_reference_database_targe_probe: # fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest
+  - data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+  - data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+target_probe_length_min: 40 #min length of probe
+target_probe_length_max: 45 #max length of probe
+target_probe_isoform_consensus: 50 #min isoform consesnsus for probes, i.e. how many transcripts of the total number of transcripts of a gene are covered by the probe, given in %
+target_probe_GC_content_min: 40 # minimum GC content of oligos
+target_probe_GC_content_opt: 50 # max and min values are defiend above
+target_probe_GC_content_max: 60 # maximum GC content of oligos
+target_probe_Tm_min: 65 # minimum GC content of oligos
+target_probe_Tm_opt: 70 # max and min values are defiend above
+target_probe_Tm_max: 75 # maximum GC content of oligos
+target_probe_homopolymeric_base_n: # minimum number of nucleotides to consider it a homopolymeric run per base
+  A: 5
+  T: 5
+  C: 5
+  G: 5
+target_probe_padlock_arm_Tm_dif_max: 2 # maximum melting temperature difference of both arms (difference shouldn't be higher than 5! But range is not super important, the lower the better)
+target_probe_padlock_arm_length_min: 10 # minimum length of each arm
+target_probe_padlock_arm_Tm_min: 50 # minimum melting temperature of each arm
+target_probe_padlock_arm_Tm_max: 60 # maximum melting temperature of each arm
+target_probe_ligation_region_size: 5 # size of the seed region around the ligation site for blast seed region filter; set to 0 if ligation region should not be considered for blast search
+target_probe_isoform_weight: 2 # weight of the isoform consensus of the probe in the efficiency score
+target_probe_GC_weight: 1 # weight of the GC content of the probe in the efficiency score
+target_probe_Tm_weight: 1 # weight of the Tm of the probe in the efficiency score
+set_size_min: 3 # minimum size of probe sets (in case there exist no set of the optimal size) -> genes with less oligos will be filtered out and stored in regions_with_insufficient_oligos_for_db_probes
+set_size_opt: 5 # optimal size of probe sets
+distance_between_target_probes: 0 # how much overlap should be allowed between oligos, e.g. if oligos can overlpap x bases choose -x, if oligos can be next to one another choose 0, if oligos should be x bases apart choose x
+n_sets: 100 # maximum number of sets to generate
+
+
+### Detection Oligo Parameters
+### -----------------------------------------------
+detection_oligo_min_thymines: 2 # minimal number of Thymines in detection oligo.
+detection_oligo_length_min: 15 # minimum length of detection probe
+detection_oligo_length_max: 40 # maximum length of detection probe
+detection_oligo_U_distance: 5 # preferred minimal distance between U(racils)
+detection_oligo_Tm_opt: 56 # optimal melting temperature of detection probe
+
+
+############################
+### DEVELOPER PARAMETERS ###
+############################
+
+### Target Probe Parameters
+### -----------------------------------------------
+# Specificity filter with BlastN
+target_probe_specificity_blastn_search_parameters:
+  perc_identity: 80
+  strand: "minus" # this parameter is fixed, if reference is whole genome, consider using "both"
+  word_size: 10
+  dust: "no"
+  soft_masking: "false"
+  max_target_seqs: 10
+  max_hsps: 1000
+target_probe_specificity_blastn_hit_parameters:
+  coverage: 50 # can be turned into min_alignment_length
+# Crosshybridization filter with BlastN
+target_probe_cross_hybridization_blastn_search_parameters:
+  perc_identity: 80
+  strand: "minus" # this parameter is fixed
+  word_size: 10
+  dust: "no"
+  soft_masking: "false"
+  max_target_seqs: 10
+target_probe_cross_hybridization_blastn_hit_parameters:
+  coverage: 80 # can be turned into min_alignment_length
+# Parameters for the Oligo set selection
+max_graph_size: 5000 # maximum number of oligos that are taken into consisderation in the last step (5000 -> ~5GB, 2500 -> ~1GB)
+n_attempts: 100000 # number of attempts to find the optimal set of oligos
+heuristic: true # apply heuristic pre-search to reduce search space and runtime of oligo set selection
+heuristic_n_attempts: 100 # number of attempts to find the optimal set of oligos for heuristic pre-search
+# Parameters for Melting Temperature
+# The melting temperature is used in 2 different stages (property filters and padlock detection probe design), where a few parameters are shared and the others differ.
+# parameters for melting temperature -> for more information on parameters, see: https://biopython.org/docs/1.75/api/Bio.SeqUtils.MeltingTemp.html#Bio.SeqUtils.MeltingTemp.Tm_NN
+target_probe_Tm_parameters:
+    nn_table: DNA_NN3 # Allawi & SantaLucia (1997)
+    tmm_table: DNA_TMM1 #default
+    imm_table: DNA_IMM1 #default
+    de_table: DNA_DE1 #default
+    dnac1: 50 #[nM]
+    dnac2: 0 #[nM]
+    saltcorr: 7 # Owczarzy et al. (2008)
+    Na: 39 #[mM]
+    K: 75 #[mM]
+    Tris: 20 #[mM]
+    Mg: 10 #[mM]
+    dNTPs: 0 #[mM] default
+target_probe_Tm_chem_correction_parameters: # if chem correction desired, please add parameters below
+    DMSO: 0 #default
+    DMSOfactor: 0.75 #default
+    fmd: 20
+    fmdfactor: 0.65 #default
+    fmdmethod: 1 #default
+    GC: null #default
+target_probe_Tm_salt_correction_parameters: null # if salt correction desired, please add parameters below
+
+### Detection Oligo Parameters
+### -----------------------------------------------
+# Parameters for Melting Temperature
+# The melting temperature is used in 2 different stages (property filters and padlock detection probe design), where a few parameters are shared and the others differ.
+# parameters for melting temperature -> for more information on parameters, see: https://biopython.org/docs/1.75/api/Bio.SeqUtils.MeltingTemp.html#Bio.SeqUtils.MeltingTemp.Tm_NN
+detection_oligo_Tm_parameters:
+    nn_table: DNA_NN3 # Allawi & SantaLucia (1997)
+    tmm_table: DNA_TMM1 #default
+    imm_table: DNA_IMM1 #default
+    de_table: DNA_DE1 #default
+    dnac1: 50 #[nM]
+    dnac2: 0 #[nM]
+    saltcorr: 7 # Owczarzy et al. (2008)
+    Na: 39 #[mM]
+    K: 0 #[mM] default
+    Tris: 0 #[mM] default
+    Mg: 0 #[mM] default
+    dNTPs: 0 #[mM] default
+detection_oligo_Tm_chem_correction_parameters: # if chem correction desired, please add parameters below
+    DMSO: 0 #default
+    DMSOfactor: 0.75 #default
+    fmd: 30
+    fmdfactor: 0.65 #default
+    fmdmethod: 1 #default
+    GC: null #default
+detection_oligo_Tm_salt_correction_parameters: null"""
+
+print(yaml_to_js(yaml_text))
