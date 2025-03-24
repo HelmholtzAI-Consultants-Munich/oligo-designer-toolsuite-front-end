@@ -82,152 +82,151 @@ def scrinshot():
 
     form_data = request.json  # Assuming JSON is posted from React
     # Build the nested config structure:
-    if ".txt" not in form_data["file_regions"]:
+    if ".txt" not in form_data["file_regions"]['value']:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
             file_path = temp_file.name
             # Write each gene on a new line
-            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
         print(f"File created: {file_path}")
         with open(file_path, "r") as f:
             print("File content:")
             print(f.read())
 
-        form_data["file_regions"]=file_path
+        form_data["file_regions"]['value']=file_path
+        print(form_data["file_regions"])
     config = {
-        "n_jobs": to_int(form_data["n_jobs"]),
-        "dir_output": form_data["dir_output"],
-        "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]),
-        "top_n_sets": to_int(form_data["top_n_sets"]),
+        "n_jobs": to_int(form_data["n_jobs"]['value']),
+        "dir_output": form_data["dir_output"]['value'],
+        "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]['value']),
+        "top_n_sets": to_int(form_data["top_n_sets"]['value']),
         # Probe sequences generation
-        "file_regions": form_data["file_regions"],
-        "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]),
-        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]),
-        "target_probe_length_min": to_int(form_data["target_probe_length_min"]),
-        "target_probe_length_max": to_int(form_data["target_probe_length_max"]),
-        "target_probe_isoform_consensus": to_int(form_data["target_probe_isoform_consensus"]),
+        "file_regions": form_data["file_regions"]['value'],
+        "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]['value']),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]['value']),
+        "target_probe_length_min": to_int(form_data["target_probe_length_min"]['value']),
+        "target_probe_length_max": to_int(form_data["target_probe_length_max"]['value']),
+        "target_probe_isoform_consensus": to_int(form_data["target_probe_isoform_consensus"]['value']),
 
         # Property filters
-        "target_probe_GC_content_min": to_int(form_data["target_probe_GC_content_min"]),
-        "target_probe_GC_content_opt": to_int(form_data["target_probe_GC_content_opt"]),
-        "target_probe_GC_content_max": to_int(form_data["target_probe_GC_content_max"]),
-        "target_probe_Tm_min": to_int(form_data["target_probe_Tm_min"]),
-        "target_probe_Tm_max": to_int(form_data["target_probe_Tm_max"]),
-        "target_homopolymeric_base_n": {
-            "A": to_int(form_data["target_homopolymeric_base_n.A"]),
-            "T": to_int(form_data["target_homopolymeric_base_n.T"]),
-            "C": to_int(form_data["target_homopolymeric_base_n.C"]),
-            "G": to_int(form_data["target_homopolymeric_base_n.G"])
+        "target_probe_GC_content_min": to_int(form_data["target_probe_GC_content_min"]['value']),
+        "target_probe_GC_content_opt": to_int(form_data["target_probe_GC_content_opt"]['value']),
+        "target_probe_GC_content_max": to_int(form_data["target_probe_GC_content_max"]['value']),
+        "target_probe_Tm_min": to_int(form_data["target_probe_Tm_min"]['value']),
+        "target_probe_Tm_max": to_int(form_data["target_probe_Tm_max"]['value']),
+        "target_probe_homopolymeric_base_n": {
+            "A": to_int(form_data["target_probe_homopolymeric_base_n"]['A']['value']),
+            "T": to_int(form_data["target_probe_homopolymeric_base_n"]['T']['value']),
+            "C": to_int(form_data["target_probe_homopolymeric_base_n"]['C']['value']),
+            "G": to_int(form_data["target_probe_homopolymeric_base_n"]['G']['value'])
         },
 
         # Padlock arms
-        "target_probe_padlock_arm_Tm_dif_max": to_int(form_data["target_probe_padlock_arm_Tm_dif_max"]),
-        "target_probe_padlock_arm_length_min": to_int(form_data["target_probe_padlock_arm_length_min"]),
-        "target_probe_padlock_arm_Tm_min": to_int(form_data["target_probe_padlock_arm_Tm_min"]),
-        "target_probe_padlock_arm_Tm_max": to_int(form_data["target_probe_padlock_arm_Tm_max"]),
+        "target_probe_padlock_arm_Tm_dif_max": to_int(form_data["target_probe_padlock_arm_Tm_dif_max"]['value']),
+        "target_probe_padlock_arm_length_min": to_int(form_data["target_probe_padlock_arm_length_min"]['value']),
+        "target_probe_padlock_arm_Tm_min": to_int(form_data["target_probe_padlock_arm_Tm_min"]['value']),
+        "target_probe_padlock_arm_Tm_max": to_int(form_data["target_probe_padlock_arm_Tm_max"]['value']),
 
         # Detection oligos
-        "detection_oligo_min_thymines": to_int(form_data["detection_oligo_min_thymines"]),
-        "detection_oligo_length_min": to_int(form_data["detection_oligo_length_min"]),
-        "detection_oligo_length_max": to_int(form_data["detection_oligo_length_max"]),
+        "detection_oligo_min_thymines": to_int(form_data["detection_oligo_min_thymines"]['value']),
+        "detection_oligo_length_min": to_int(form_data["detection_oligo_length_min"]['value']),
+        "detection_oligo_length_max": to_int(form_data["detection_oligo_length_max"]['value']),
 
         # Specificity filters
-        "target_probe_padlock_ligation_region_size": to_int(form_data["target_probe_padlock_ligation_region_size"]),
+        "target_probe_ligation_region_size": to_int(form_data["target_probe_ligation_region_size"]['value']),
 
         # Set selection parameters
-        "target_probe_isoform_weight": to_int(form_data["target_probe_isoform_weight"]),
-        "target_probe_GC_weight": to_int(form_data["target_probe_GC_weight"]),
-        "probe_Tm_opt": to_int(form_data["probe_Tm_opt"]),
-        "target_probe_Tm_weight": to_int(form_data["target_probe_Tm_weight"]),
-        "set_size_min": to_int(form_data["set_size_min"]),
-        "set_size_opt": to_int(form_data["set_size_opt"]),
-        "distance_between_target_probes": to_int(form_data["distance_between_target_probes"]),
-        "n_sets": to_int(form_data["n_sets"]),
+        "target_probe_isoform_weight": to_int(form_data["target_probe_isoform_weight"]['value']),
+        "target_probe_GC_weight": to_int(form_data["target_probe_GC_weight"]['value']),
+        "target_probe_Tm_weight": to_int(form_data["target_probe_Tm_weight"]['value']),
+        "set_size_min": to_int(form_data["set_size_min"]['value']),
+        "set_size_opt": to_int(form_data["set_size_opt"]['value']),
+        "distance_between_target_probes": to_int(form_data["distance_between_target_probes"]['value']),
+        "n_sets": to_int(form_data["n_sets"]['value']),
 
         # Final sequence design
-        "detection_oligo_U_distance": to_int(form_data["detection_oligo_U_distance"]),
-        "detection_oligo_Tm_opt": to_int(form_data["detection_oligo_Tm_opt"]),
+        "detection_oligo_U_distance": to_int(form_data["detection_oligo_U_distance"]['value']),
+        "detection_oligo_Tm_opt": to_int(form_data["detection_oligo_Tm_opt"]['value']),
 
 
         # Developer parameters
         "target_probe_specificity_blastn_search_parameters": {
-            "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters.perc_identity"]),
-            "strand": form_data["target_probe_specificity_blastn_search_parameters.strand"],
-            "word_size": to_int(form_data["target_probe_specificity_blastn_search_parameters.word_size"]),
-            "dust": form_data["target_probe_specificity_blastn_search_parameters.dust"],
-            "soft_masking": form_data["target_probe_specificity_blastn_search_parameters.soft_masking"],
-            "max_target_seqs": to_int(form_data["target_probe_specificity_blastn_search_parameters.max_target_seqs"]),
-            "max_hsps": to_int(form_data["target_probe_specificity_blastn_search_parameters.max_hsps"])
+            "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['perc_identity']['value']),
+            "strand": form_data["target_probe_specificity_blastn_search_parameters"]['strand']['value'],
+            "word_size": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['word_size']['value']),
+            "dust": form_data["target_probe_specificity_blastn_search_parameters"]['dust']['value'],
+            "soft_masking": form_data["target_probe_specificity_blastn_search_parameters"]['soft_masking']['value'],
+            "max_target_seqs": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['max_target_seqs']['value']),
+            "max_hsps": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['max_hsps']['value'])
         },
         "target_probe_specificity_blastn_hit_parameters": {
-            "coverage": to_int(form_data["target_probe_specificity_blastn_hit_parameters.coverage"])
+            "coverage": to_int(form_data["target_probe_specificity_blastn_hit_parameters"]['coverage']['value'])
         },
 
         "target_probe_cross_hybridization_blastn_search_parameters": {
-            "perc_identity": to_int(form_data["ctarget_probe_cross_hybridization_blastn_search_parameters.perc_identity"]),
-            "strand": form_data["target_probe_cross_hybridization_blastn_search_parameters.strand"],
-            "word_size": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters.word_size"]),
-            "dust": form_data["target_probe_cross_hybridization_blastn_search_parameters.dust"],
-            "soft_masking": form_data["target_probe_cross_hybridization_blastn_search_parameters.soft_masking"],
-            "max_target_seqs": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters.max_target_seqs"])
+            "perc_identity": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters"]['perc_identity']['value']),
+            "strand": form_data["target_probe_cross_hybridization_blastn_search_parameters"]['strand']['value'],
+            "word_size": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters"]['word_size']['value']),
+            "dust": form_data["target_probe_cross_hybridization_blastn_search_parameters"]['dust']['value'],
+            "soft_masking": form_data["target_probe_cross_hybridization_blastn_search_parameters"]['soft_masking']['value'],
+            "max_target_seqs": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters"]['max_target_seqs']['value'])
         },
         "target_probe_cross_hybridization_blastn_hit_parameters": {
-            "coverage": to_int(form_data["target_probe_cross_hybridization_blastn_search_parameters.coverage"])
+            "coverage": to_int(form_data["target_probe_cross_hybridization_blastn_hit_parameters"]['coverage']['value'])
         },
 
-        "max_graph_size": to_int(form_data["max_graph_size"]),
-        "n_attempts": to_int(form_data["n_attempts"]),
-        "pre_filtering": to_bool(form_data["pre_filtering"]),
+        "max_graph_size": to_int(form_data["max_graph_size"]['value']),
+        "n_attempts": to_int(form_data["n_attempts"]['value']),
+        "heuristic": to_bool(form_data["heuristic"]['value']),
+        "heuristic_n_attempts": to_int(form_data["heuristic_n_attempts"]['value']),
 
         # Melting Temperature Parameters
-        "target_probe_Tm_parameters_probe": {
-            "nn_table": form_data["target_probe_Tm_parameters_probe.nn_table"],
-            "tmm_table": form_data["target_probe_Tm_parameters_probe.tmm_table"],
-            "imm_table": form_data["target_probe_Tm_parameters_probe.imm_table"],
-            "de_table": form_data["target_probe_Tm_parameters_probe.de_table"],
-            "dnac1": to_int(form_data["target_probe_Tm_parameters_probe.dnac1"]),
-            "dnac2": to_int(form_data["target_probe_Tm_parameters_probe.dnac2"]),
-            "selfcomp": to_bool(form_data["target_probe_Tm_parameters_probe.selfcomp"]),
-            "saltcorr": to_int(form_data["target_probe_Tm_parameters_probe.saltcorr"]),
-            "Na": to_int(form_data["target_probe_Tm_parameters_probe.Na"]),
-            "K": to_int(form_data["target_probe_Tm_parameters_probe.K"]),
-            "Tris": to_int(form_data["target_probe_Tm_parameters_probe.Tris"]),
-            "Mg": to_int(form_data["target_probe_Tm_parameters_probe.Mg"]),
-            "dNTPs": to_int(form_data["target_probe_Tm_parameters_probe.dNTPs"])
+        "target_probe_Tm_parameters": {
+            "nn_table": form_data["target_probe_Tm_parameters"]['nn_table']['value'],
+            "tmm_table": form_data["target_probe_Tm_parameters"]['tmm_table']['value'],
+            "imm_table": form_data["target_probe_Tm_parameters"]['imm_table']['value'],
+            "de_table": form_data["target_probe_Tm_parameters"]['de_table']['value'],
+            "dnac1": to_int(form_data["target_probe_Tm_parameters"]['dnac1']['value']),
+            "dnac2": to_int(form_data["target_probe_Tm_parameters"]['dnac2']['value']),
+            "saltcorr": to_int(form_data["target_probe_Tm_parameters"]['saltcorr']['value']),
+            "Na": to_int(form_data["target_probe_Tm_parameters"]['Na']['value']),
+            "K": to_int(form_data["target_probe_Tm_parameters"]['K']['value']),
+            "Tris": to_int(form_data["target_probe_Tm_parameters"]['Tris']['value']),
+            "Mg": to_int(form_data["target_probe_Tm_parameters"]['Mg']['value']),
+            "dNTPs": to_int(form_data["target_probe_Tm_parameters"]['dNTPs']['value'])
         },
 
-        "target_probe_Tm_chem_correction_param_probe": {
-            "DMSO": to_int(form_data["target_probe_Tm_chem_correction_param_probe.DMSO"]),
-            "fmd": to_int(form_data["target_probe_Tm_chem_correction_param_probe.fmd"]),
-            "DMSOfactor": float(form_data["target_probe_Tm_chem_correction_param_probe.DMSOfactor"]),
-            "fmdfactor": float(form_data["target_probe_Tm_chem_correction_param_probe.fmdfactor"]),
-            "fmdmethod": to_int(form_data["target_probe_Tm_chem_correction_param_probe.fmdmethod"]),
-            "GC": to_null(form_data["target_probe_Tm_chem_correction_param_probe.GC"])
+        "target_probe_Tm_chem_correction_parameters": {
+            "DMSO": to_int(form_data["target_probe_Tm_chem_correction_parameters"]['DMSO']['value']),
+            "fmd": to_int(form_data["target_probe_Tm_chem_correction_parameters"]['fmd']['value']),
+            "DMSOfactor": float(form_data["target_probe_Tm_chem_correction_parameters"]['DMSOfactor']['value']),
+            "fmdfactor": float(form_data["target_probe_Tm_chem_correction_parameters"]['fmdfactor']['value']),
+            "fmdmethod": to_int(form_data["target_probe_Tm_chem_correction_parameters"]['fmdmethod']['value']),
+            "GC": to_null(form_data["target_probe_Tm_chem_correction_parameters"]['GC']['value'])
         },
         # If Tm_salt_correction_param_probe is null, we just omit it or set it to None
         "target_probe_Tm_salt_correction_param_probe": None,
 
         "detection_oligo_Tm_parameters": {
-            "nn_table": form_data["detection_oligo_Tm_parameters.nn_table"],
-            "tmm_table": form_data["detection_oligo_Tm_parameters.tmm_table"],
-            "imm_table": form_data["detection_oligo_Tm_parameters.imm_table"],
-            "de_table": form_data["detection_oligo_Tm_parameters.de_table"],
-            "dnac1": to_int(form_data["detection_oligo_Tm_parameters.dnac1"]),
-            "dnac2": to_int(form_data["detection_oligo_Tm_parameters.dnac2"]),
-            "selfcomp": to_bool(form_data["detection_oligo_Tm_parameters.selfcomp"]),
-            "saltcorr": to_int(form_data["detection_oligo_Tm_parameters.saltcorr"]),
-            "Na": to_int(form_data["detection_oligo_Tm_parameters.Na"]),
-            "K": to_int(form_data["detection_oligo_Tm_parameters.K"]),
-            "Tris": to_int(form_data["detection_oligo_Tm_parameters.Tris"]),
-            "Mg": to_int(form_data["detection_oligo_Tm_parameters.Mg"]),
-            "dNTPs": to_int(form_data["detection_oligo_Tm_parameters.dNTPs"])
+            "nn_table": form_data["detection_oligo_Tm_parameters"]['nn_table']['value'],
+            "tmm_table": form_data["detection_oligo_Tm_parameters"]['tmm_table']['value'],
+            "imm_table": form_data["detection_oligo_Tm_parameters"]['imm_table']['value'],
+            "de_table": form_data["detection_oligo_Tm_parameters"]['de_table']['value'],
+            "dnac1": to_int(form_data["detection_oligo_Tm_parameters"]['dnac1']['value']),
+            "dnac2": to_int(form_data["detection_oligo_Tm_parameters"]['dnac2']['value']),
+            "saltcorr": to_int(form_data["detection_oligo_Tm_parameters"]['saltcorr']['value']),
+            "Na": to_int(form_data["detection_oligo_Tm_parameters"]['Na']['value']),
+            "K": to_int(form_data["detection_oligo_Tm_parameters"]['K']['value']),
+            "Tris": to_int(form_data["detection_oligo_Tm_parameters"]['Tris']['value']),
+            "Mg": to_int(form_data["detection_oligo_Tm_parameters"]['Mg']['value']),
+            "dNTPs": to_int(form_data["detection_oligo_Tm_parameters"]['dNTPs']['value'])
         },
         "detection_oligo_Tm_chem_correction_parameters": {
-            "DMSO": to_int(form_data["detection_oligo_Tm_chem_correction_parameters.DMSO"]),
-            "fmd": to_int(form_data["detection_oligo_Tm_chem_correction_parameters.fmd"]),
-            "DMSOfactor": float(form_data["detection_oligo_Tm_chem_correction_parameters.DMSOfactor"]),
-            "fmdfactor": float(form_data["detection_oligo_Tm_chem_correction_parameters.fmdfactor"]),
-            "fmdmethod": to_int(form_data["detection_oligo_Tm_chem_correction_parameters.fmdmethod"]),
-            "GC": to_null(form_data["detection_oligo_Tm_chem_correction_parameters.GC"])
+            "DMSO": to_int(form_data["detection_oligo_Tm_chem_correction_parameters"]['DMSO']['value']),
+            "fmd": to_int(form_data["detection_oligo_Tm_chem_correction_parameters"]['fmd']['value']),
+            "DMSOfactor": float(form_data["detection_oligo_Tm_chem_correction_parameters"]['DMSOfactor']['value']),
+            "fmdfactor": float(form_data["detection_oligo_Tm_chem_correction_parameters"]['fmdfactor']['value']),
+            "fmdmethod": to_int(form_data["detection_oligo_Tm_chem_correction_parameters"]['fmdmethod']['value']),
+            "GC": to_null(form_data["detection_oligo_Tm_chem_correction_parameters"]['GC']['value'])
         },
         "detection_oligo_Tm_salt_correction_parameters": None
     }
@@ -243,17 +242,17 @@ def scrinshot():
                 text=True
             )
 
-    if os.path.exists(form_data['file_regions']):
+    if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
-        os.remove(form_data['file_regions'])  # Delete the file
-    a=split_on_newline(form_data['files_fasta_target_probe_database'])
+        os.remove(form_data['file_regions']['value'])  # Delete the file
+    a=split_on_newline(form_data['files_fasta_target_probe_database']['value'])
 
     if '\n' in a:
         a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
-    a=split_on_newline(form_data['files_fasta_reference_database_target_probe'])
+    a=split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
     if '\n' in a:
         a.remove('\n')
     for i in a:

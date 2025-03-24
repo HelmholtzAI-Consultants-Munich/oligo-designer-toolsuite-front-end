@@ -3,11 +3,14 @@
     import axios from "axios";
     import { OverlayTrigger, Popover} from 'react-bootstrap';
     import { InfoCircle } from "react-bootstrap-icons"; // Bootstrap icon
-    
+    import formDatas from "../forms/scrinshot_form";
     const Scrinshot: React.FC = () => {
         const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
         const [status, setStatus] = useState("idle");
         const [isSubmitting, setIsSubmitting] = useState(false);
+        const [fileRegionsText, setFileRegionsText] = useState("");
+        const [formData, setFormData] = useState(formDatas);
+
         interface FileState {
             file_regions: File | null;
             files_fasta_target_probe_database: File[]; // Always an array
@@ -18,7 +21,7 @@
             files_fasta_target_probe_database: [], // Empty array
             files_fasta_reference_database_target_probe: [], // Empty array
         });
-    
+
     
         const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const { name, files: selectedFiles } = e.target;
@@ -33,7 +36,7 @@
         };
         const areAllFilesUploaded = () => {
             return (
-                (files.file_regions !== null || formData.file_regions.length >0)&&
+                (files.file_regions !== null || formData.file_regions.value.length >0)&&
                 files.files_fasta_target_probe_database.length > 0 &&
                 files.files_fasta_reference_database_target_probe.length > 0
             );
@@ -71,11 +74,10 @@
                         filePaths[key] = paths.join("\n");
                     } else {
     
-                        if (formData.file_regions.length ===0) {
+                        if (formData.file_regions.value.length ===0) {
                             // @ts-ignore
                             formDataU.append("file", files[key]);
                             // @ts-ignore
-                            console.log(files[key],key,'what it look like not array');
                             try {
                                 const response = await axios.post(
                                     "http://localhost:5000/api/upload",
@@ -102,134 +104,7 @@
         const toggleDeveloperSettings = () => {
             setShowDeveloperSettings(!showDeveloperSettings);
         };
-        const [formData, setFormData] = useState({
-    // General parameters
-            // -----------------------------------------------
-            n_jobs: "4", // number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime
-            dir_output: "output_scrinshot_probe_designer", // name of the directory where the output files will be written
-            write_intermediate_steps: "true", // if true, writes the oligo sequences after each step of the pipeline into a csv file
-            top_n_sets: "3", // maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"
-            // Target Probe Parameters
-            // -----------------------------------------------
-            file_regions: "", // file with a list the genes used to generate the oligos sequences, leave empty if all the genes are used
-            files_fasta_target_probe_database: "", // fasta file with sequences form which the probes should be generated. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest
-            files_fasta_reference_database_targe_probe:"", // fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest
-            target_probe_length_min: "40", // min length of probe
-            target_probe_length_max: "45", // max length of probe
-            target_probe_isoform_consensus: "50", // min isoform consesnsus for probes, i.e. how many transcripts of the total number of transcripts of a gene are covered by the probe, given in %
-            target_probe_GC_content_min: "40", // minimum GC content of oligos
-            target_probe_GC_content_opt: "50", // max and min values are defiend above
-            target_probe_GC_content_max: "60", // maximum GC content of oligos
-            target_probe_Tm_min: "65", // minimum GC content of oligos
-            target_probe_Tm_opt: "70", // max and min values are defiend above
-            target_probe_Tm_max: "75", // maximum GC content of oligos
-            target_probe_homopolymeric_base_n: {
-                A: "5",
-                T: "5",
-                C: "5",
-                G: "5"
-            }, // minimum number of nucleotides to consider it a homopolymeric run per base
-            target_probe_padlock_arm_Tm_dif_max: "2", // maximum melting temperature difference of both arms (difference shouldn't be higher than 5! But range is not super important, the lower the better)
-            target_probe_padlock_arm_length_min: "10", // minimum length of each arm
-            target_probe_padlock_arm_Tm_min: "50", // minimum melting temperature of each arm
-            target_probe_padlock_arm_Tm_max: "60", // maximum melting temperature of each arm
-            target_probe_ligation_region_size: "5", // size of the seed region around the ligation site for blast seed region filter; set to 0 if ligation region should not be considered for blast search
-            target_probe_isoform_weight: "2", // weight of the isoform consensus of the probe in the efficiency score
-            target_probe_GC_weight: "1", // weight of the GC content of the probe in the efficiency score
-            target_probe_Tm_weight: "1", // weight of the Tm of the probe in the efficiency score
-            set_size_min: "3", // minimum size of probe sets (in case there exist no set of the optimal size) -> genes with less oligos will be filtered out and stored in regions_with_insufficient_oligos_for_db_probes
-            set_size_opt: "5", // optimal size of probe sets
-            distance_between_target_probes: "0", // how much overlap should be allowed between oligos, e.g. if oligos can overlpap x bases choose -x, if oligos can be next to one another choose 0, if oligos should be x bases apart choose x
-            n_sets: "100", // maximum number of sets to generate
-            // Detection Oligo Parameters
-            // -----------------------------------------------
-            detection_oligo_min_thymines: "2", // minimal number of Thymines in detection oligo.
-            detection_oligo_length_min: "15", // minimum length of detection probe
-            detection_oligo_length_max: "40", // maximum length of detection probe
-            detection_oligo_U_distance: "5", // preferred minimal distance between U(racils)
-            detection_oligo_Tm_opt: "56", // optimal melting temperature of detection probe
-            //
-            // DEVELOPER PARAMETERS
-            //
-            // Target Probe Parameters
-            // -----------------------------------------------
-            target_probe_specificity_blastn_search_parameters: {
-                perc_identity: "80",
-                strand: "minus",
-                word_size: "10",
-                dust: "no",
-                soft_masking: "false",
-                max_target_seqs: "10",
-                max_hsps: "1000"
-            },
-            target_probe_specificity_blastn_hit_parameters: {
-                coverage: "50"
-            },
-            target_probe_cross_hybridization_blastn_search_parameters: {
-                perc_identity: "80",
-                strand: "minus",
-                word_size: "10",
-                dust: "no",
-                soft_masking: "false",
-                max_target_seqs: "10"
-            },
-            target_probe_cross_hybridization_blastn_hit_parameters: {
-                coverage: "80"
-            },
-            max_graph_size: "5000", // maximum number of oligos that are taken into consisderation in the last step (5000 -> ~5GB, 2500 -> ~1GB)
-            n_attempts: "100000", // number of attempts to find the optimal set of oligos
-            heuristic: "true", // apply heuristic pre-search to reduce search space and runtime of oligo set selection
-            heuristic_n_attempts: "100", // number of attempts to find the optimal set of oligos for heuristic pre-search
-            target_probe_Tm_parameters: {
-                nn_table: "DNA_NN3",
-                tmm_table: "DNA_TMM1",
-                imm_table: "DNA_IMM1",
-                de_table: "DNA_DE1",
-                dnac1: "50",
-                dnac2: "0",
-                saltcorr: "7",
-                Na: "39",
-                K: "75",
-                Tris: "20",
-                Mg: "10",
-                dNTPs: "0"
-            },
-            target_probe_Tm_chem_correction_parameters: {
-                DMSO: "0",
-                DMSOfactor: "0.75",
-                fmd: "20",
-                fmdfactor: "0.65",
-                fmdmethod: "1",
-                GC: "None"
-            }, // if chem correction desired, please add parameters below
-            target_probe_Tm_salt_correction_parameters: "None", // if salt correction desired, please add parameters below
-            // Detection Oligo Parameters
-            // -----------------------------------------------
-            detection_oligo_Tm_parameters: {
-                nn_table: "DNA_NN3",
-                tmm_table: "DNA_TMM1",
-                imm_table: "DNA_IMM1",
-                de_table: "DNA_DE1",
-                dnac1: "50",
-                dnac2: "0",
-                saltcorr: "7",
-                Na: "39",
-                K: "0",
-                Tris: "0",
-                Mg: "0",
-                dNTPs: "0"
-            },
-            detection_oligo_Tm_chem_correction_parameters: {
-                DMSO: "0",
-                DMSOfactor: "0.75",
-                fmd: "30",
-                fmdfactor: "0.65",
-                fmdmethod: "1",
-                GC: "None"
-            }, // if chem correction desired, please add parameters below
-            detection_oligo_Tm_salt_correction_parameters: "None",
-    
-        });
+
         const [activeTab, setActiveTab] = useState("general");
         const [activetab2, setActivetab2] = useState("specfblastn");
         const renderTabContent = () => {
@@ -252,7 +127,7 @@
                                             className="form-control"
                                             id="n_jobs"
                                             name="n_jobs"
-                                            value={formData.n_jobs}
+                                            value={formData.n_jobs.value}
                                             onChange={handleChange}
                                             required
                                         />
@@ -261,10 +136,8 @@
                                             placement="top"
                                             overlay={
                                                 <Popover id="n_jobs">
-                                                    <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                                     <Popover.Body>
-                                                        Number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime
-    
+                                                        {formData.n_jobs.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -286,15 +159,14 @@
                                 <label htmlFor="dir_output" className="form-label">Output Directory:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="text" className="form-control" id="dir_output" name="dir_output"
-                                           value={formData.dir_output} onChange={handleChange} required/>
+                                           value={formData.dir_output.value} onChange={handleChange} required/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
                                             <Popover id="dir_output">
-                                                <Popover.Header as="h3">Output directory</Popover.Header>
                                                 <Popover.Body>
-                                                    Name of the directory where the output files will be written
+                                                    {formData.dir_output.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -313,7 +185,7 @@
                             <div className="mb-3">
                                 <label
                                     htmlFor="write_intermediate_steps"
-                                    className="form-label mb-2" // mb-2 ile label ile input arasında biraz boşluk bırakıyoruz
+                                    className="form-label mb-2"
                                 >
                                     Write Intermediate Steps:
                                 </label>
@@ -322,7 +194,7 @@
                                         className="form-select"
                                         id="write_intermediate_steps"
                                         name="write_intermediate_steps"
-                                        value={formData.write_intermediate_steps}
+                                        value={formData.write_intermediate_steps.value}
                                         onChange={handleChange}
                                     >
                                         <option value="true">True</option>
@@ -334,9 +206,8 @@
                                         overlay={
     
                                             <Popover id="write_intermediate_steps">
-                                                <Popover.Header as="h3">Write Intermediate Steps</Popover.Header>
                                                 <Popover.Body>
-                                                    if true, writes the oligo sequences after each step of the pipeline into a csv file
+                                                    {formData.write_intermediate_steps.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -355,16 +226,15 @@
                             <div className="mb-3">
                                 <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
                                 <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                           value={formData.top_n_sets} onChange={handleChange} required/>
+                                    <input type="number" className="form-control" id="top_n_sets" name="top_n_sets"
+                                           value={formData.top_n_sets.value} onChange={handleChange} required/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
                                             <Popover id="top_n_sets">
-                                                <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
                                                 <Popover.Body>
-                                                    Maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"
+                                                    {formData.top_n_sets.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -401,7 +271,6 @@
                                             id="file_regions"
                                             name="file_regions"
                                             onChange={handleFileChange}
-                                            disabled={formData.file_regions.length > 0}
                                         />
                                         <input
                                             type="text"
@@ -409,10 +278,10 @@
                                             id="file_regions"
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
-                                            value={formData.file_regions}
+                                            value={formData.file_regions.value}
                                             onChange={handleChange}
                                         />
-    
+
                                         {/* Custom file input button spanning full width */}
                                         <label
                                             htmlFor="file_regions"
@@ -421,7 +290,7 @@
                                         >
                                             Choose File
                                         </label>
-    
+
                                         {/* Info icon with popover */}
                                         <div className="d-flex align-items-center ms-2">
                                             <OverlayTrigger
@@ -429,11 +298,8 @@
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="file_regions">
-                                                        <Popover.Header as="h3">Target File</Popover.Header>
                                                         <Popover.Body>
-                                                            File with a list of the genes used to generate the oligos
-                                                            sequences,
-                                                            leave empty if all the genes are used.
+                                                            {formData.file_regions.comment}
                                                         </Popover.Body>
                                                     </Popover>
                                                 }
@@ -448,7 +314,7 @@
                                             </OverlayTrigger>
                                         </div>
                                     </div>
-    
+
                                     {/* Display selected file name under the icon */}
                                     <div className="text-muted small mt-1">
                                         {files.file_regions
@@ -456,7 +322,7 @@
                                             : "No file selected"}
                                     </div>
                                 </div>
-    
+
                                 <div className="mb-3">
                                     <label htmlFor="files_fasta_target_probe_database" className="form-label">
                                         Fasta Probe Database:
@@ -478,7 +344,7 @@
                                         >
                                             Choose File
                                         </label>
-    
+
                                         {/* Info icon with popover */}
                                         <OverlayTrigger
                                             trigger="hover"
@@ -487,8 +353,7 @@
                                                 <Popover id="files_fasta_target_probe_database">
                                                     <Popover.Header as="h3">Fasta Probe Database </Popover.Header>
                                                     <Popover.Body>
-                                                        Fasta file with sequences form which the probes should be generated.
-                                                        Use the genomic region generator to create fasta files
+                                                        {formData.files_fasta_target_probe_database.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -539,10 +404,8 @@
                                             placement="top"
                                             overlay={
                                                 <Popover id="files_fasta_reference_database_target_probe">
-                                                    <Popover.Header as="h3">Fasta Probe Reference Database: </Popover.Header>
                                                     <Popover.Body>
-                                                        Fasta file with sequences used as reference for the specificity
-                                                        filters. Use the genomic region generator to create fasta files.
+                                                        {formData.files_fasta_reference_database_targe_probe.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -568,21 +431,18 @@
                             </div>
                             <div className="row g-3">
                                 <div className="col">
-                                    <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
+                                    <label htmlFor="probe_length_min.value" className="form-label">Min Probe Length:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="probe_length_min"
-                                               name="probe_length_min"
-                                               value={formData.target_probe_length_min} onChange={handleChange} required/>
+                                        <input type="number" className="form-control" id="probe_length_min.value"
+                                               name="probe_length_min.value"
+                                               value={formData.target_probe_length_min.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
                                             overlay={
                                                 <Popover id="probe_length_min">
-                                                    <Popover.Header as="h3">Probe Length:</Popover.Header>
                                                     <Popover.Body>
-                                                        how many transcripts of the total number of transcripts of a gene
-                                                        are covered by the probe,
-    
+                                                        {formData.target_probe_length_min.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -604,17 +464,14 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="probe_length_max"
                                                name="probe_length_max"
-                                               value={formData.target_probe_length_max} onChange={handleChange} required/>
+                                               value={formData.target_probe_length_max.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
                                             overlay={
                                                 <Popover id="probe_length_max">
-                                                    <Popover.Header as="h3">Probe Length:</Popover.Header>
                                                     <Popover.Body>
-                                                        how many transcripts of the total number of transcripts of a gene
-                                                        are covered by the probe,
-    
+                                                        {formData.target_probe_length_max.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -637,17 +494,16 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="probe_isoform_consensus"
                                                name="probe_isoform_consensus"
-                                               value={formData.target_probe_isoform_consensus} onChange={handleChange} required/>
+                                               value={formData.target_probe_isoform_consensus.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
                                             overlay={
                                                 <Popover id="probe_isoform_consensus">
-                                                    <Popover.Header as="h3">Probe Length:</Popover.Header>
                                                     <Popover.Body>
-                                                        how many transcripts of the total number of transcripts of a gene
-                                                        are covered by the probe,
-    
+                                                        {formData.target_probe_isoform_consensus.comment}
+
+
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -673,17 +529,17 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="probe_GC_content_min"
                                                name="probe_GC_content_min"
-                                               value={formData.target_probe_GC_content_min} onChange={handleChange} required/>
+                                               value={formData.target_probe_GC_content_min.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
                                             overlay={
                                                 <Popover id="probe_GC_content_min">
-                                                    <Popover.Header as="h3">Probe Length:</Popover.Header>
+
                                                     <Popover.Body>
-                                                        how many transcripts of the total number of transcripts of a gene
-                                                        are covered by the probe,
-    
+                                                        {formData.target_probe_GC_content_min.comment}
+
+
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -703,9 +559,34 @@
                                 <div className="col">
                                     <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
                                         (%):</label>
-                                    <input type="number" className="form-control" id="probe_GC_content_opt"
-                                           name="probe_GC_content_opt"
-                                           value={formData.target_probe_GC_content_opt} onChange={handleChange} required/>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="probe_GC_content_opt"
+                                               name="probe_GC_content_opt"
+                                               value={formData.target_probe_GC_content_opt.value}
+                                               onChange={handleChange}
+                                               required/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="probe_GC_content_opt">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_GC_content_opt.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
@@ -713,16 +594,15 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="probe_GC_content_max"
                                                name="probe_GC_content_max"
-                                               value={formData.target_probe_GC_content_max} onChange={handleChange} required/>
+                                               value={formData.target_probe_GC_content_max.value}
+                                               onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
                                             overlay={
-                                                <Popover id="popover-n_jobs">
-                                                    <Popover.Header as="h3">GC Content:</Popover.Header>
+                                                <Popover id="popover-probe_GC_content_max">
                                                     <Popover.Body>
-                                                        Guanine (G) or Cytosine (C) content of the oligos.
-    
+                                                        {formData.target_probe_GC_content_max.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -743,19 +623,46 @@
                             <div className="row g-3">
                                 <div className="col">
                                     <label htmlFor="probe_Tm_min" className="form-label">Min Tm (°C):</label>
-                                    <input type="number" className="form-control" id="probe_Tm_min" name="probe_Tm_min"
-                                           value={formData.target_probe_Tm_min} onChange={handleChange} required/>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="probe_Tm_min"
+                                               name="probe_Tm_min"
+                                               value={formData.target_probe_Tm_min.value} onChange={handleChange}
+                                               required/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-probe_Tm_min">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_min.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probe_Tm_max" className="form-label">Max Tm (°C):</label>
                                     <input type="number" className="form-control" id="probe_Tm_max" name="probe_Tm_max"
-                                           value={formData.target_probe_Tm_max} onChange={handleChange} required/>
+                                           value={formData.target_probe_Tm_max.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probe_Tm_opt" className="form-label">Opt Tm (°C):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="probe_Tm_opt" name="probe_Tm_opt"
-                                               value={formData.target_probe_Tm_opt} onChange={handleChange} required/>
+                                        <input type="number" className="form-control" id="probe_Tm_opt"
+                                               name="probe_Tm_opt"
+                                               value={formData.target_probe_Tm_opt.value} onChange={handleChange}
+                                               required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -764,7 +671,7 @@
                                                     <Popover.Header as="h3">Melting Temperature:</Popover.Header>
                                                     <Popover.Body>
                                                         Melting temperatures of the Oligos
-    
+
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -792,26 +699,26 @@
                                     <label htmlFor="homopolymeric_A" className="form-label">A:</label>
                                     <input type="number" className="form-control" id="homopolymeric_A"
                                            name="homopolymeric_A"
-                                           value={formData.target_probe_homopolymeric_base_n.A} onChange={handleChange} required/>
+                                           value={formData.target_probe_homopolymeric_base_n.A.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="homopolymeric_T" className="form-label">T:</label>
                                     <input type="number" className="form-control" id="homopolymeric_T"
                                            name="homopolymeric_T"
-                                           value={formData.target_probe_homopolymeric_base_n.T} onChange={handleChange} required/>
+                                           value={formData.target_probe_homopolymeric_base_n.T.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="homopolymeric_C" className="form-label">C:</label>
                                     <input type="number" className="form-control" id="homopolymeric_C"
                                            name="homopolymeric_C"
-                                           value={formData.target_probe_homopolymeric_base_n.C} onChange={handleChange} required/>
+                                           value={formData.target_probe_homopolymeric_base_n.C.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="homopolymeric_G" className="form-label">G:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="homopolymeric_G"
                                         name="homopolymeric_G"
-                                        value={formData.target_probe_homopolymeric_base_n.G} onChange={handleChange} required/>
+                                        value={formData.target_probe_homopolymeric_base_n.G.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -845,7 +752,7 @@
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="arm_Tm_dif_max"
                                            name="arm_Tm_dif_max"
-                                           value={formData.target_probe_padlock_arm_Tm_dif_max} onChange={handleChange}/>
+                                           value={formData.target_probe_padlock_arm_Tm_dif_max.value} onChange={handleChange}/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
@@ -879,18 +786,18 @@
                                     <label htmlFor="arm_length_min" className="form-label">Min Arm Length:</label>
                                     <input type="number" className="form-control" id="arm_length_min"
                                            name="arm_length_min"
-                                           value={formData.target_probe_padlock_arm_length_min} onChange={handleChange}/>
+                                           value={formData.target_probe_padlock_arm_length_min.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="arm_Tm_min" className="form-label">Min Arm Tm:</label>
                                     <input type="number" className="form-control" id="arm_Tm_min" name="arm_Tm_min"
-                                           value={formData.target_probe_padlock_arm_Tm_min} onChange={handleChange}/>
+                                           value={formData.target_probe_padlock_arm_Tm_min.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="arm_Tm_max" className="form-label">Max Arm Tm:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="arm_Tm_max" name="arm_Tm_max"
-                                               value={formData.target_probe_padlock_arm_Tm_dif_max} onChange={handleChange}/>
+                                               value={formData.target_probe_padlock_arm_Tm_dif_max.value} onChange={handleChange}/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -924,7 +831,7 @@
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="ligation_region_size"
                                            name="ligation_region_size"
-                                           value={formData.target_probe_ligation_region_size} onChange={handleChange}/>
+                                           value={formData.target_probe_ligation_region_size.value} onChange={handleChange}/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
@@ -956,21 +863,21 @@
                                         Weight:</label>
                                     <input type="number" className="form-control" id="probe_isoform_weight"
                                            name="probe_isoform_weight"
-                                           value={formData.target_probe_isoform_weight} onChange={handleChange} required/>
+                                           value={formData.target_probe_isoform_weight.value} onChange={handleChange} required/>
                                 </div>
     
                                 <div className="col">
                                     <label htmlFor="probe_GC_weight" className="form-label">GC Content Weight:</label>
                                     <input type="number" className="form-control" id="probe_GC_weight"
                                            name="probe_GC_weight"
-                                           value={formData.target_probe_GC_weight} onChange={handleChange} required/>
+                                           value={formData.target_probe_GC_weight.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probe_Tm_weight" className="form-label">Tm Weight:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="probe_Tm_weight"
                                                name="probe_Tm_weight"
-                                               value={formData.target_probe_Tm_weight} onChange={handleChange} required/>
+                                               value={formData.target_probe_Tm_weight.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -1004,27 +911,27 @@
                                         Size:</label>
                                     <input type="number" className="form-control" id="probeset_size_min"
                                            name="probeset_size_min"
-                                           value={formData.set_size_min} onChange={handleChange} required/>
+                                           value={formData.set_size_min.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probeset_size_opt" className="form-label">Optimal Probe Set
                                         Size:</label>
                                     <input type="number" className="form-control" id="probeset_size_opt"
                                            name="probeset_size_opt"
-                                           value={formData.set_size_opt} onChange={handleChange} required/>
+                                           value={formData.set_size_opt.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="distance_between_probes" className="form-label">Distance Between
                                         Probes:</label>
                                     <input type="number" className="form-control" id="distance_between_probes"
                                            name="distance_between_probes"
-                                           value={formData.distance_between_target_probes} onChange={handleChange} required/>
+                                           value={formData.distance_between_target_probes.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="n_sets" className="form-label">Maximum Number of Sets:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="n_sets" name="n_sets"
-                                               value={formData.n_sets} onChange={handleChange} required/>
+                                               value={formData.n_sets.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -1065,14 +972,14 @@
                                 <div className="col">
                                     <label htmlFor="min_thymines" className="form-label">Min Thymines:</label>
                                     <input type="number" className="form-control" id="min_thymines" name="min_thymines"
-                                           value={formData.detection_oligo_min_thymines} onChange={handleChange} required/>
+                                           value={formData.detection_oligo_min_thymines.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="detect_oligo_length_min" className="form-label">Min Length
                                         (bp):</label>
                                     <input type="number" className="form-control" id="detect_oligo_length_min"
                                            name="detect_oligo_length_min"
-                                           value={formData.detection_oligo_length_min} onChange={handleChange} required/>
+                                           value={formData.detection_oligo_length_min.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="detect_oligo_length_max" className="form-label">Max Length
@@ -1080,7 +987,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="detect_oligo_length_max"
                                                name="detect_oligo_length_max"
-                                               value={formData.detection_oligo_length_max} onChange={handleChange} required/>
+                                               value={formData.detection_oligo_length_max.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -1114,7 +1021,7 @@
                                 <div className="col">
                                     <label htmlFor="detection_oligo_U_distance" className="form-label">Preferred U Distance:</label>
                                     <input type="number" className="form-control" id="detection_oligo_U_distance" name="detection_oligo_U_distance"
-                                           value={formData.detection_oligo_U_distance} onChange={handleChange} required/>
+                                           value={formData.detection_oligo_U_distance.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col">
                                     <label htmlFor="detect_oligo_Tm_opt" className="form-label">Optimal Detection Oligo
@@ -1122,7 +1029,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="detect_oligo_Tm_opt"
                                                name="detect_oligo_Tm_opt"
-                                               value={formData.detection_oligo_Tm_opt} onChange={handleChange} required/>
+                                               value={formData.detection_oligo_Tm_opt.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -1173,7 +1080,7 @@
                                         Identity:</label>
                                     <input type="number" className="form-control" id="specificity_perc_identity"
                                            name="specificity_perc_identity"
-                                           value={formData.target_probe_specificity_blastn_search_parameters.perc_identity} onChange={handleChange}
+                                           value={formData.target_probe_specificity_blastn_search_parameters.perc_identity.value} onChange={handleChange}
                                            required/>
                                 </div>
                                 <div className="col-md-6">
@@ -1182,7 +1089,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="text" className="form-control" id="specificity_strand"
                                                name="specificity_strand"
-                                               value={formData.target_probe_specificity_blastn_search_parameters.strand} onChange={handleChange}
+                                               value={formData.target_probe_specificity_blastn_search_parameters.strand.value} onChange={handleChange}
                                                required/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1217,7 +1124,7 @@
                                         Size:</label>
                                     <input type="number" className="form-control" id="specificity_word_size"
                                            name="specificity_word_size"
-                                           value={formData.target_probe_specificity_blastn_search_parameters.word_size} onChange={handleChange}
+                                           value={formData.target_probe_specificity_blastn_search_parameters.word_size.value} onChange={handleChange}
                                            required/>
                                 </div>
                                 <div className="col-md-6">
@@ -1225,7 +1132,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="text" className="form-control" id="specificity_dust"
                                                name="specificity_dust"
-                                               value={formData.target_probe_specificity_blastn_search_parameters.dust} onChange={handleChange} required/>
+                                               value={formData.target_probe_specificity_blastn_search_parameters.dust.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -1259,7 +1166,7 @@
                                         Masking:</label>
                                     <input type="text" className="form-control" id="specificity_soft_masking"
                                            name="specificity_soft_masking"
-                                           value={formData.target_probe_specificity_blastn_search_parameters.soft_masking} onChange={handleChange}
+                                           value={formData.target_probe_specificity_blastn_search_parameters.soft_masking.value} onChange={handleChange}
                                            required/>
                                 </div>
                                 <div className="col-md-6">
@@ -1268,7 +1175,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control"
                                                id="specificity_max_target_seqs" name="specificity_max_target_seqs"
-                                               value={formData.target_probe_specificity_blastn_search_parameters.max_target_seqs} onChange={handleChange}
+                                               value={formData.target_probe_specificity_blastn_search_parameters.max_target_seqs.value} onChange={handleChange}
                                                required/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1303,7 +1210,7 @@
                                         HSPs:</label>
                                     <input type="number" className="form-control" id="specificity_max_hsps"
                                            name="specificity_max_hsps"
-                                           value={formData.target_probe_specificity_blastn_search_parameters.max_hsps} onChange={handleChange}
+                                           value={formData.target_probe_specificity_blastn_search_parameters.max_hsps.value} onChange={handleChange}
                                            required/>
                                 </div>
                                 <div className="col-md-6">
@@ -1312,7 +1219,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="specificity_coverage"
                                                name="specificity_coverage"
-                                               value={formData.target_probe_cross_hybridization_blastn_hit_parameters.coverage} onChange={handleChange}
+                                               value={formData.target_probe_cross_hybridization_blastn_hit_parameters.coverage.value} onChange={handleChange}
                                                required/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1357,7 +1264,7 @@
                                     <input type="number" className="form-control"
                                            id="crosshybridization_perc_identity"
                                            name="crosshybridization_perc_identity"
-                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.perc_identity}
+                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.perc_identity.value}
                                            onChange={handleChange} required/>
                                 </div>
                                 <div className="col-md-6">
@@ -1366,7 +1273,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="text" className="form-control" id="crosshybridization_strand"
                                                name="crosshybridization_strand"
-                                               value={formData.target_probe_cross_hybridization_blastn_search_parameters.strand} onChange={handleChange}
+                                               value={formData.target_probe_cross_hybridization_blastn_search_parameters.strand.value} onChange={handleChange}
                                                required/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1401,7 +1308,7 @@
                                         Size:</label>
                                     <input type="number" className="form-control"
                                            id="crosshybridization_word_size" name="crosshybridization_word_size"
-                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.word_size} onChange={handleChange}
+                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.word_size.value} onChange={handleChange}
                                            required/>
                                 </div>
                                 <div className="col-md-6">
@@ -1410,7 +1317,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="text" className="form-control" id="crosshybridization_dust"
                                                name="crosshybridization_dust"
-                                               value={formData.target_probe_cross_hybridization_blastn_search_parameters.dust} onChange={handleChange}
+                                               value={formData.target_probe_cross_hybridization_blastn_search_parameters.dust.value} onChange={handleChange}
                                                required/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1446,7 +1353,7 @@
                                     <input type="text" className="form-control"
                                            id="crosshybridization_soft_masking"
                                            name="crosshybridization_soft_masking"
-                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.soft_masking}
+                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.soft_masking.value}
                                            onChange={handleChange} required/>
                                 </div>
                                 <div className="col-md-6">
@@ -1456,7 +1363,7 @@
                                         <input type="number" className="form-control"
                                                id="crosshybridization_max_target_seqs"
                                                name="crosshybridization_max_target_seqs"
-                                               value={formData.target_probe_cross_hybridization_blastn_search_parameters.max_target_seqs}
+                                               value={formData.target_probe_cross_hybridization_blastn_search_parameters.max_target_seqs.value}
                                                onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1492,7 +1399,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control"
                                                id="crosshybridization_coverage" name="crosshybridization_coverage"
-                                               value={formData.target_probe_cross_hybridization_blastn_hit_parameters.coverage} onChange={handleChange}
+                                               value={formData.target_probe_cross_hybridization_blastn_hit_parameters.coverage.value} onChange={handleChange}
                                                required/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1536,7 +1443,7 @@
                                         Size:</label>
                                     <input type="number" className="form-control" id="max_graph_size"
                                            name="max_graph_size"
-                                           value={formData.max_graph_size} onChange={handleChange} required/>
+                                           value={formData.max_graph_size.value} onChange={handleChange} required/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="n_attempts" className="form-label">Number of
@@ -1544,7 +1451,7 @@
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="n_attempts"
                                                name="n_attempts"
-                                               value={formData.n_attempts} onChange={handleChange} required/>
+                                               value={formData.n_attempts.value} onChange={handleChange} required/>
                                         <OverlayTrigger
                                             trigger="hover"
                                             placement="top"
@@ -1577,7 +1484,7 @@
                                     <label htmlFor="heuristic" className="form-label">Heuristic:</label>
                                     <div className="d-flex align-items-center">
                                         <select className="form-control" id="heuristic" name="heuristic"
-                                                value={formData.heuristic} onChange={handleChange}>
+                                                value={formData.heuristic.value} onChange={handleChange}>
                                             <option value="true">True</option>
                                             <option value="false">False</option>
                                         </select>
@@ -1614,7 +1521,7 @@
                                         Attempts:</label>
                                     <input type="number" className="form-control" id="n_attempts"
                                            name="heuristic_n_attempts"
-                                           value={formData.heuristic_n_attempts} onChange={handleChange} required/>
+                                           value={formData.heuristic_n_attempts.value} onChange={handleChange} required/>
                                 </div>
                             </div>
     
@@ -1660,83 +1567,83 @@
                                         Table:</label>
                                     <input type="text" className="form-control" id="Tm_probe_nn_table"
                                            name="Tm_probe_nn_table"
-                                           value={formData.target_probe_Tm_parameters.nn_table} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.nn_table.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_tmm_table" className="form-label">TMM
                                         Table:</label>
                                     <input type="text" className="form-control" id="Tm_probe_tmm_table"
                                            name="Tm_probe_tmm_table"
-                                           value={formData.target_probe_Tm_parameters.tmm_table} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.tmm_table.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_imm_table" className="form-label">IMM
                                         Table:</label>
                                     <input type="text" className="form-control" id="Tm_probe_imm_table"
                                            name="Tm_probe_imm_table"
-                                           value={formData.target_probe_Tm_parameters.imm_table} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.imm_table.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="DE_probe_imm_table" className="form-label">DE Table:</label>
                                     <input type="text" className="form-control" id="DE_probe_imm_table"
                                            name="DE_probe_imm_table"
-                                           value={formData.target_probe_Tm_parameters.de_table} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.de_table.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_dnac1" className="form-label">DNA Concentration 1
                                         (nM):</label>
                                     <input type="number" className="form-control" id="Tm_probe_dnac1"
                                            name="Tm_probe_dnac1"
-                                           value={formData.target_probe_Tm_parameters.dnac1} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.dnac1.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_dnac2" className="form-label">DNA Concentration 2
                                         (nM):</label>
                                     <input type="number" className="form-control" id="Tm_probe_dnac2"
                                            name="Tm_probe_dnac2"
-                                           value={formData.target_probe_Tm_parameters.dnac2} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.dnac2.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_saltcorr" className="form-label">Salt
                                         Correction:</label>
                                     <input type="number" className="form-control" id="Tm_probe_saltcorr"
                                            name="Tm_probe_saltcorr"
-                                           value={formData.target_probe_Tm_parameters.saltcorr} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.saltcorr.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_Na" className="form-label">Na Concentration
                                         (mM):</label>
                                     <input type="number" className="form-control" id="Tm_probe_Na"
                                            name="Tm_probe_Na"
-                                           value={formData.target_probe_Tm_parameters.Na} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.Na.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_K" className="form-label">K Concentration
                                         (mM):</label>
                                     <input type="number" className="form-control" id="Tm_probe_K"
                                            name="Tm_probe_K"
-                                           value={formData.target_probe_Tm_parameters.K} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.K.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_Tris" className="form-label">Tris Concentration
                                         (mM):</label>
                                     <input type="number" className="form-control" id="Tm_probe_Tris"
                                            name="Tm_probe_Tris"
-                                           value={formData.target_probe_Tm_parameters.Tris} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.Tris.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_Mg" className="form-label">Mg Concentration
                                         (mM):</label>
                                     <input type="number" className="form-control" id="Tm_probe_Mg"
                                            name="Tm_probe_Mg"
-                                           value={formData.target_probe_Tm_parameters.Mg} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.Mg.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_dNTPs" className="form-label">dNTPs Concentration
                                         (mM):</label>
                                     <input type="number" className="form-control" id="Tm_probe_dNTPs"
                                            name="Tm_probe_dNTPs"
-                                           value={formData.target_probe_Tm_parameters.dNTPs} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_parameters.dNTPs.value} onChange={handleChange}/>
                                 </div>
 
                             </div>
@@ -1746,21 +1653,21 @@
                                         (%):</label>
                                     <input type="number" className="form-control" id="Tm_probe_DMSO"
                                            name="Tm_probe_DMSO"
-                                           value={formData.target_probe_Tm_chem_correction_parameters.DMSO} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_chem_correction_parameters.DMSO.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_fmd" className="form-label">Formamide (fmd,
                                         %):</label>
                                     <input type="number" className="form-control" id="Tm_probe_fmd"
                                            name="Tm_probe_fmd"
-                                           value={formData.target_probe_Tm_chem_correction_parameters.fmd} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_chem_correction_parameters.fmd.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_DMSOfactor" className="form-label">DMSO
                                         Factor:</label>
                                     <input type="number" className="form-control"
                                            id="Tm_probe_DMSOfactor" name="Tm_probe_DMSOfactor"
-                                           value={formData.target_probe_Tm_chem_correction_parameters.DMSOfactor} step="0.01"
+                                           value={formData.target_probe_Tm_chem_correction_parameters.DMSOfactor.value} step="0.01"
                                            onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
@@ -1768,7 +1675,7 @@
                                         Factor:</label>
                                     <input type="number" className="form-control"
                                            id="Tm_probe_fmdfactor" name="Tm_probe_fmdfactor"
-                                           value={formData.target_probe_Tm_chem_correction_parameters.fmdfactor} step="0.01"
+                                           value={formData.target_probe_Tm_chem_correction_parameters.fmdfactor.value} step="0.01"
                                            onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
@@ -1776,14 +1683,14 @@
                                         Method:</label>
                                     <input type="number" className="form-control"
                                            id="Tm_probe_fmdmethod" name="Tm_probe_fmdmethod"
-                                           value={formData.target_probe_Tm_chem_correction_parameters.fmdmethod} onChange={handleChange}/>
+                                           value={formData.target_probe_Tm_chem_correction_parameters.fmdmethod.value} onChange={handleChange}/>
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_probe_GC" className="form-label">GC
                                         (optional):</label>
                                     <input type="text" className="form-control" id="Tm_probe_GC"
                                            name="Tm_probe_GC"
-                                           value={formData.target_probe_Tm_chem_correction_parameters.GC} onChange={handleChange}
+                                           value={formData.target_probe_Tm_chem_correction_parameters.GC.value} onChange={handleChange}
                                            placeholder="null"/>
                                 </div>
                             </div>
@@ -1830,42 +1737,42 @@
                                             Neighbor Table:</label>
                                         <input type="text" className="form-control" id="Tm_detection_nn_table"
                                                name="Tm_detection_nn_table"
-                                               value={formData.detection_oligo_Tm_parameters.nn_table} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.nn_table.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_tmm_table" className="form-label">TMM
                                             Table:</label>
                                         <input type="text" className="form-control" id="Tm_detection_tmm_table"
                                                name="Tm_detection_tmm_table"
-                                               value={formData.detection_oligo_Tm_parameters.tmm_table} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.tmm_table.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_imm_table" className="form-label">IMM
                                             Table:</label>
                                         <input type="text" className="form-control" id="Tm_detection_imm_table"
                                                name="Tm_detection_imm_table"
-                                               value={formData.detection_oligo_Tm_parameters.imm_table} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.imm_table.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_de_table" className="form-label">DE
                                             Table:</label>
                                         <input type="text" className="form-control" id="Tm_detection_de_table"
                                                name="Tm_detection_de_table"
-                                               value={formData.detection_oligo_Tm_parameters.de_table} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.de_table.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_dnac1" className="form-label">DNA
                                             Concentration 1 (nM):</label>
                                         <input type="number" className="form-control" id="Tm_detection_dnac1"
                                                name="Tm_detection_dnac1"
-                                               value={formData.detection_oligo_Tm_parameters.dnac1} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.dnac1.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_dnac2" className="form-label">DNA
                                             Concentration 2 (nM):</label>
                                         <input type="number" className="form-control" id="Tm_detection_dnac2"
                                                name="Tm_detection_dnac2"
-                                               value={formData.detection_oligo_Tm_parameters.dnac2} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.dnac2.value} onChange={handleChange}/>
                                     </div>
 
                                     <div className="col-md-6">
@@ -1873,42 +1780,42 @@
                                             Correction:</label>
                                         <input type="number" className="form-control" id="Tm_detection_saltcorr"
                                                name="Tm_detection_saltcorr"
-                                               value={formData.detection_oligo_Tm_parameters.saltcorr} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.saltcorr.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_Na" className="form-label">Na Concentration
                                             (mM):</label>
                                         <input type="number" className="form-control" id="Tm_detection_Na"
                                                name="Tm_detection_Na"
-                                               value={formData.detection_oligo_Tm_parameters.Na} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.Na.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_K" className="form-label">K Concentration
                                             (mM):</label>
                                         <input type="number" className="form-control" id="Tm_detection_K"
                                                name="Tm_detection_K"
-                                               value={formData.detection_oligo_Tm_parameters.K} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.K.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_Tris" className="form-label">Tris
                                             Concentration (mM):</label>
                                         <input type="number" className="form-control" id="Tm_detection_Tris"
                                                name="Tm_detection_Tris"
-                                               value={formData.detection_oligo_Tm_parameters.Tris} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.Tris.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_Mg" className="form-label">Mg Concentration
                                             (mM):</label>
                                         <input type="number" className="form-control" id="Tm_detection_Mg"
                                                name="Tm_detection_Mg"
-                                               value={formData.detection_oligo_Tm_parameters.Mg} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.Mg.value} onChange={handleChange}/>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="Tm_detection_dNTPs" className="form-label">dNTPs
                                             Concentration (mM):</label>
                                         <input type="number" className="form-control" id="Tm_detection_dNTPs"
                                                name="Tm_detection_dNTPs"
-                                               value={formData.detection_oligo_Tm_parameters.dNTPs} onChange={handleChange}/>
+                                               value={formData.detection_oligo_Tm_parameters.dNTPs.value} onChange={handleChange}/>
                                     </div>
                                 </div>
                                 <div className="mb-4">
@@ -1947,21 +1854,21 @@
                                                 (%):</label>
                                             <input type="number" className="form-control" id="Tm_detection_DMSO"
                                                    name="Tm_detection_DMSO"
-                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.DMSO} onChange={handleChange}/>
+                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.DMSO.value} onChange={handleChange}/>
                                         </div>
                                         <div className="col-md-6">
                                             <label htmlFor="Tm_detection_fmd" className="form-label">Formamide
                                                 (fmd, %):</label>
                                             <input type="number" className="form-control" id="Tm_detection_fmd"
                                                    name="Tm_detection_fmd"
-                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.fmd} onChange={handleChange}/>
+                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.fmd.value} onChange={handleChange}/>
                                         </div>
                                         <div className="col-md-6">
                                             <label htmlFor="Tm_detection_DMSOfactor" className="form-label">DMSO
                                                 Factor:</label>
                                             <input type="number" className="form-control"
                                                    id="Tm_detection_DMSOfactor" name="Tm_detection_DMSOfactor"
-                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.DMSOfactor} step="0.01"
+                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.DMSOfactor.value} step="0.01"
                                                    onChange={handleChange}/>
                                         </div>
                                         <div className="col-md-6">
@@ -1969,7 +1876,7 @@
                                                 Factor:</label>
                                             <input type="number" className="form-control"
                                                    id="Tm_detection_fmdfactor" name="Tm_detection_fmdfactor"
-                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.fmdfactor} step="0.01"
+                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.fmdfactor.value} step="0.01"
                                                    onChange={handleChange}/>
                                         </div>
                                         <div className="col-md-6">
@@ -1977,7 +1884,7 @@
                                                 Method:</label>
                                             <input type="number" className="form-control"
                                                    id="Tm_detection_fmdmethod" name="Tm_detection_fmdmethod"
-                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.fmdmethod}
+                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.fmdmethod.value}
                                                    onChange={handleChange}/>
                                         </div>
                                         <div className="col-md-6">
@@ -1985,7 +1892,7 @@
                                                 (optional):</label>
                                             <input type="text" className="form-control" id="Tm_detection_GC"
                                                    name="Tm_detection_GC"
-                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.GC} onChange={handleChange}
+                                                   value={formData.detection_oligo_Tm_chem_correction_parameters.GC.value} onChange={handleChange}
                                                    placeholder="null"/>
                                         </div>
                                     </div>
@@ -2023,11 +1930,29 @@
                 // Upload files and get their paths
                 const uploadedPaths = await uploadFiles();
 
-                // Combine form data with uploaded file paths
-                const finalFormData = {
-                    ...formData,
-                    ...uploadedPaths,
-                };
+                // Combine form data with uploaded file paths while preserving the { value, comment } structure
+                const finalFormData = { ...formData };
+
+                for (const key in uploadedPaths) {
+                    // @ts-ignore
+                    if (finalFormData[key]) {
+                        // Preserve the existing comment and update the value with the uploaded path
+                        // @ts-ignore
+
+                        finalFormData[key] = {
+                            value: uploadedPaths[key], // Update the value with the uploaded path
+                            // @ts-ignore
+                            comment: finalFormData[key].comment, // Preserve the existing comment
+                        };
+                    } else {
+                        // If the key doesn't exist in formData, create a new entry with an empty comment
+                        // @ts-ignore
+                        finalFormData[key] = {
+                            value: uploadedPaths[key],
+                            comment: "",
+                        };
+                    }
+                }
 
                 // Submit the form data
                 const response = await axios.post(

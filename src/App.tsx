@@ -1,7 +1,6 @@
 import React from 'react';
 import './App.css';
 import FAQ from "./pages/faq";
-import Index from "./pages/index";
 import Contacts from "./pages/contacs";
 import Pipelines from "./pages/pipelines";
 import Scrinshot from "./pages/scrinshot";

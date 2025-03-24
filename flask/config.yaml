@@ -2,11 +2,11 @@ n_jobs: 4
 dir_output: output_scrinshot_probe_designer
 write_intermediate_steps: true
 top_n_sets: 3
-file_regions: /var/folders/b8/ckhxj97x2svcv7j3zv11bj2r0000gn/T/tmp_gayldm1.txt
+file_regions: uploads/00a9831db68e4799bfd5704c59a0b859_custom_3.txt
 files_fasta_target_probe_database:
-- uploads/8ecebba3fb194c3ba2a274cd7c20889a_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/bd9c6a90b0244f01bc435cc70fe11bd3_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
 files_fasta_reference_database_target_probe:
-- uploads/cdc93b8b0a9e456a9cbd8cf5298a1d49_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
+- uploads/16ddb4d981ff430db8fa33b3a4596afb_utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna
 target_probe_length_min: 40
 target_probe_length_max: 45
 target_probe_isoform_consensus: 50
@@ -15,7 +15,7 @@ target_probe_GC_content_opt: 50
 target_probe_GC_content_max: 60
 target_probe_Tm_min: 65
 target_probe_Tm_max: 75
-target_homopolymeric_base_n:
+target_probe_homopolymeric_base_n:
   A: 5
   T: 5
   C: 5
@@ -27,10 +27,9 @@ target_probe_padlock_arm_Tm_max: 60
 detection_oligo_min_thymines: 2
 detection_oligo_length_min: 15
 detection_oligo_length_max: 40
-target_probe_padlock_ligation_region_size: 5
+target_probe_ligation_region_size: 5
 target_probe_isoform_weight: 2
 target_probe_GC_weight: 1
-probe_Tm_opt: 70
 target_probe_Tm_weight: 1
 set_size_min: 3
 set_size_opt: 5
@@ -58,46 +57,37 @@ target_probe_cross_hybridization_blastn_search_parameters:
 target_probe_cross_hybridization_blastn_hit_parameters:
   coverage: 80
 max_graph_size: 5000
-n_attempts: 10000
-pre_filtering: false
-target_probe_Tm_parameters_probe:
-  check: true
-  strict: true
-  c_seq: null
-  shift: 0
+n_attempts: 100000
+heuristic: true
+heuristic_n_attempts: 100
+target_probe_Tm_parameters:
   nn_table: DNA_NN3
   tmm_table: DNA_TMM1
   imm_table: DNA_IMM1
   de_table: DNA_DE1
   dnac1: 50
   dnac2: 0
-  selfcomp: false
   saltcorr: 7
   Na: 39
   K: 75
   Tris: 20
   Mg: 10
   dNTPs: 0
-target_probe_Tm_chem_correction_param_probe:
+target_probe_Tm_chem_correction_parameters:
   DMSO: 0
   fmd: 20
   DMSOfactor: 0.75
   fmdfactor: 0.65
   fmdmethod: 1
-  GC: null
+  GC: None
 target_probe_Tm_salt_correction_param_probe: null
 detection_oligo_Tm_parameters:
-  check: true
-  strict: true
-  c_seq: null
-  shift: 0
   nn_table: DNA_NN3
   tmm_table: DNA_TMM1
   imm_table: DNA_IMM1
   de_table: DNA_DE1
   dnac1: 50
   dnac2: 0
-  selfcomp: false
   saltcorr: 7
   Na: 39
   K: 0
@@ -110,5 +100,5 @@ detection_oligo_Tm_chem_correction_parameters:
   DMSOfactor: 0.75
   fmdfactor: 0.65
   fmdmethod: 1
-  GC: null
+  GC: None
 detection_oligo_Tm_salt_correction_parameters: null
