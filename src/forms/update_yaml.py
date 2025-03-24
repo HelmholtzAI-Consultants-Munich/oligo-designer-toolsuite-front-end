@@ -1,9 +1,6 @@
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
-from collections import OrderedDict
 import requests
-import re
-import yaml
 def fetch_yaml_from_github(raw_url):
     """Fetch YAML content from a GitHub raw URL"""
     response = requests.get(raw_url)
