@@ -22,7 +22,7 @@ jobs:
         run: pip install pyyaml ruamel.yaml requests
 
       - name: Convert YAML to JS
-        run: python ../../src/forms/update_yaml.py
+        run: python src/forms/update_yaml.py
 
       - name: Commit and push changes
         run: |
