@@ -73,4 +73,65 @@ js_code = yaml_to_js(yaml_content)
 full_js = f"const formDatas = {js_code};\n\nexport default formDatas;"
 with open('scrinshot_form.ts', 'w') as f:
     f.write(full_js)
-print(full_js)
+
+github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/merfish_probe_designer.yaml"
+yaml_content = fetch_yaml_from_github(github_raw_url)
+
+
+js_code = yaml_to_js(yaml_content)
+full_js = f"const formDatas = {js_code};\n\nexport default formDatas;"
+with open('merfish_form.ts', 'w') as f:
+    f.write(full_js)
+
+
+github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/oligo_seq_probe_designer.yaml"
+yaml_content = fetch_yaml_from_github(github_raw_url)
+
+
+js_code = yaml_to_js(yaml_content)
+full_js = f"const formDatas = {js_code};\n\nexport default formDatas;"
+with open('oligoseq_form.ts', 'w') as f:
+    f.write(full_js)
+
+
+github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/seqfish_plus_probe_designer.yaml"
+yaml_content = fetch_yaml_from_github(github_raw_url)
+
+
+js_code = yaml_to_js(yaml_content)
+full_js = f"const formDatas = {js_code};\n\nexport default formDatas;"
+with open('seqfish_form.ts', 'w') as f:
+    f.write(full_js)
+
+
+github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/genomic_region_generator_custom.yaml"
+yaml_content = fetch_yaml_from_github(github_raw_url)
+
+
+js_code = yaml_to_js(yaml_content)
+full_js = f"const formDataCustom= {js_code};\n\nexport default formDataCustom;"
+with open('genomic_custom_form.ts', 'w') as f:
+    f.write(full_js)
+
+
+github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/genomic_region_generator_ncbi.yaml"
+yaml_content = fetch_yaml_from_github(github_raw_url)
+
+
+js_code = yaml_to_js(yaml_content)
+full_js = f"const formDataNcbi= {js_code};\n\nexport default formDataNcbi;"
+with open('genomic_ncbi_form.ts', 'w') as f:
+    f.write(full_js)
+
+github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/genomic_region_generator_ensemble.yaml"
+yaml_content = fetch_yaml_from_github(github_raw_url)
+
+
+js_code = yaml_to_js(yaml_content)
+full_js = f"const formDataEns= {js_code};\n\nexport default formDataEns;"
+with open('genomic_ens_form.ts', 'w') as f:
+    f.write(full_js)
+
+
+
+
