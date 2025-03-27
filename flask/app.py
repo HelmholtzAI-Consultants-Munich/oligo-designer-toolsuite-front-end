@@ -856,23 +856,23 @@ def genomic_ncbi():
         form_data = request.json
 
         # Populate the config_genomic dictionary based on the received data
-        config_genomic['dir_output'] = form_data['dir_output']
-        config_genomic['source'] = form_data['source']
+        config_genomic['dir_output'] = form_data['dir_output']['value']
+        config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
-            'taxon' : form_data['taxon'],
-            'species' : form_data['species'],
-            'annotation_release': to_int(form_data['annotation_release']),
+            'taxon' : form_data['source_params']['taxon']['value'],
+            'species' : form_data['source_params']['species']['value'],
+            'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
         }
         config_genomic['genomic_regions'] =  {
-            'gene': to_bool(form_data['gene']),
-            'intergenic': to_bool(form_data['intergenic']),
-            'exon': to_bool(form_data['exon']),
-            'exon_exon_junction': to_bool(form_data['exon_exon_junction']),
-            'utr': to_bool(form_data['UTR']),
-            'cds': to_bool(form_data['CDS']),
-            'intron': to_bool(form_data['intron'])
+            'gene': to_bool(form_data['genomic_regions']['gene']['value']),
+            'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
+            'exon': to_bool(form_data['genomic_regions']['exon']['value']),
+            'exon_exon_junction': to_bool(form_data['genomic_regions']['exon_exon_junction']['value']),
+            'utr': to_bool(form_data['genomic_regions']['UTR']['value']),
+            'cds': to_bool(form_data['genomic_regions']['CDS']['value']),
+            'intron': to_bool(form_data['genomic_regions']['intron']['value'])
         }
-        config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size'])
+        config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
 
         # Write the dictionary to a YAML file
         with open(config_path, 'w') as yaml_file:

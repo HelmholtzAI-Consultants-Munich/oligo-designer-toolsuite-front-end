@@ -4,6 +4,9 @@ import axios from "axios";
 import genomic_custom_form from "../forms/genomic_custom_form";
 import genomic_ncbi_form from "../forms/genomic_ncbi_form";
 import genomic_ens_form from "../forms/genomic_ens_form";
+import form_Data_Ncbi from "../forms/genomic_ncbi_form";
+import form_Data_Ens from "../forms/genomic_ens_form";
+import form_Data_Custom from "../forms/genomic_custom_form";
 const Genomic: React.FC = () => {
     const [fileReady, setFileReady] = useState(false);
 
@@ -65,6 +68,7 @@ const Genomic: React.FC = () => {
         let finalFormData;
 
         try {
+
             setLoading(true); // Start loading animation
 
             // Determine which formData to send
@@ -80,10 +84,26 @@ const Genomic: React.FC = () => {
                 }
 
                 const uploadedPaths = await uploadFiles();
-                finalFormData = {
-                    ...formDataCustom,
-                    ...uploadedPaths,
-                };
+                for (const key in uploadedPaths) {
+                    // @ts-ignore
+                    if (finalFormData[key]) {
+                        // Preserve the existing comment and update the value with the uploaded path
+                        // @ts-ignore
+
+                        finalFormData[key] = {
+                            value: uploadedPaths[key], // Update the value with the uploaded path
+                            // @ts-ignore
+                            comment: finalFormData[key].comment, // Preserve the existing comment
+                        };
+                    } else {
+                        // If the key doesn't exist in formData, create a new entry with an empty comment
+                        // @ts-ignore
+                        finalFormData[key] = {
+                            value: uploadedPaths[key],
+                            comment: "",
+                        };
+                    }
+                }
             }
 
             console.log(finalFormData);
@@ -107,54 +127,9 @@ const Genomic: React.FC = () => {
             setLoading(false); // Stop loading
         }
     };
-    const [formDataNcbi, setFormDataNcbi] = useState({
-        dir_output: "output_genomic",
-        source: "ncbi",
-        taxon: 'vertebrate_mammalian',
-        species: "Homo_sapiens",
-        annotation_release: "110",
-        exon_exon_junction_block_size: 50,
-        gene: 'False',
-        intergenic: 'False',
-        exon: 'False',
-        exon_exon_junction: 'False',
-        UTR: 'False',
-        CDS: 'False',
-        intron: 'False'
-    });
-    const [formDataEns, setFormDataEns] = useState({
-        dir_output: "output_genomic",
-        source: "ensembl",
-        species: "Homo_sapiens",
-        annotation_release: "current",
-        exon_exon_junction_block_size: 50,
-        gene: 'False',
-        intergenic: 'False',
-        exon: 'False',
-        exon_exon_junction: 'False',
-        UTR: 'False',
-        CDS: 'False',
-        intron: 'False'
-    });
-    const [formDataCustom, setFormDataCustom] = useState({
-        dir_output: "output_genomic",
-        source: "custom",
-        file_annotation: '',
-        file_sequence: '',
-        files_source: '',
-        species: "",
-        annotation_release: "",
-        genome_assembly: "",
-        exon_exon_junction_block_size: 50,
-
-        gene: 'False',
-        intergenic: 'False',
-        exon: 'False',
-        exon_exon_junction: 'False',
-        UTR: 'False',
-        CDS: 'False',
-        intron: 'False'
-    });
+    const [formDataNcbi, setFormDataNcbi] = useState(form_Data_Ncbi);
+    const [formDataEns, setFormDataEns] = useState(form_Data_Ens);
+    const [formDataCustom, setFormDataCustom] = useState(form_Data_Custom);
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
 
