@@ -2,7 +2,7 @@ const formDatas = {
     n_jobs: { value: "4", comment: "number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime" },
     dir_output: { value: "output_merfish_probe_designer", comment: "name of the directory where the output files will be written" },
     write_intermediate_steps: { value: "true", comment: "if true, writes the oligo sequences after each step of the pipeline into a csv file" },
-    top_n_sets: { value: "3", comment: "maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"" },
+    top_n_sets: { value: "3", comment: "maximum number of sets to report in padlock_probes.yaml and \"padlock_probes_order.yaml\"" },
     file_regions: { value: "data/genes/custom_3.txt", comment: "file with a list the genes used to generate the probe sequences, leave empty if all the genes are used" },
     files_fasta_target_probe_database: { value: ["data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna, data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"], comment: "fasta file with sequences form which the probes should be generated. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
     files_fasta_reference_database_targe_probe: { value: ["data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna, data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"], comment: "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
@@ -79,7 +79,7 @@ const formDatas = {
     primer_secondary_structures_threshold_deltaG: { value: "0", comment: "threshold for the secondary structure free energy -> oligo rejected if it presents a structure with a negative free energy at the defined temperature" },
     target_probe_specificity_blastn_search_parameters: {
         perc_identity: { value: "80", comment: "the higher the percent identity is, the more significant the match" },
-        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using "both"" },
+        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using \"both\"" },
         word_size: { value: "10", comment: "" },
         dust: { value: "no", comment: "" },
         soft_masking: { value: "false", comment: "" },
@@ -123,7 +123,7 @@ const formDatas = {
     readout_probe_initial_num_sequences: { value: "100000", comment: "if not enough readout probes can be generated, increase this number" },
     readout_probe_specificity_blastn_search_parameters: {
         perc_identity: { value: "100", comment: "the higher the percent identity is, the more significant the match" },
-        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using "both"" },
+        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using \"both\"" },
         word_size: { value: "7", comment: "" },
         dust: { value: "no", comment: "" },
         soft_masking: { value: "false", comment: "" },
@@ -164,7 +164,7 @@ const formDatas = {
     primer_initial_num_sequences: { value: "1000000", comment: "if no primer can be generated, increase this number" },
     primer_specificity_refrence_blastn_search_parameters: {
         perc_identity: { value: "100", comment: "the higher the percent identity is, the more significant the match" },
-        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using "both"" },
+        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using \"both\"" },
         word_size: { value: "7", comment: "" },
         dust: { value: "no", comment: "" },
         soft_masking: { value: "false", comment: "" },
@@ -176,7 +176,7 @@ const formDatas = {
     },
     primer_specificity_encoding_probes_blastn_search_parameters: {
         perc_identity: { value: "100", comment: "the higher the percent identity is, the more significant the match" },
-        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using "both"" },
+        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using \"both\"" },
         word_size: { value: "7", comment: "" },
         dust: { value: "no", comment: "" },
         soft_masking: { value: "false", comment: "" },
