@@ -1,4 +1,4 @@
-const formDataNcbi= {
+const form_Data_Ncbi= {
     dir_output: { value: "output_genomic_region_generator_ncbi", comment: "name of the directory where the output files will be written" },
     source: { value: "ncbi", comment: "required: indicate that ncbi annotation should be used" },
     source_params: {
@@ -18,4 +18,4 @@ const formDataNcbi= {
     exon_exon_junction_block_size: { value: "50", comment: "" }
 };
 
-export default formDataNcbi;
+export default form_Data_Ncbi;

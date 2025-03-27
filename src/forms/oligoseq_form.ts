@@ -2,7 +2,7 @@ const formDatas = {
     n_jobs: { value: "4", comment: "number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime" },
     dir_output: { value: "output_oligo_seq_probe_designer", comment: "name of the directory where the output files will be written" },
     write_intermediate_steps: { value: "true", comment: "if true, saves intermediate results after each step" },
-    top_n_sets: { value: "3", comment: "maximum number of sets to report in padlock_probes.yaml and \"padlock_probes_order.yaml\"" },
+    top_n_sets: { value: "3", comment: "maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"" },
     file_regions: { value: "data/genes/custom_3.txt", comment: "file with a list the genes used to generate the oligos sequences, leave empty if all the genes are used" },
     files_fasta_target_probe_database: { value: ["data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna, data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"], comment: "fasta file with sequences form which the oligos should be generated. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
     files_fasta_reference_database_targe_probe: { value: ["data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna, data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"], comment: "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
@@ -36,7 +36,7 @@ const formDatas = {
     target_probe_hybridization_probability_alignment_method: { value: "blastn", comment: "options: blastn, bowtie" },
     target_probe_hybridization_probability_blastn_search_parameters: {
         perc_identity: { value: "80", comment: "the higher the percent identity is, the more significant the match" },
-        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using \"both\"" },
+        strand: { value: "minus", comment: "this parameter is fixed, if reference is whole genome, consider using "both"" },
         word_size: { value: "10", comment: "" }
     },
     target_probe_hybridization_probability_blastn_hit_parameters: {

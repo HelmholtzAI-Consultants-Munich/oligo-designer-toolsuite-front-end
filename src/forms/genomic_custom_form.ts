@@ -1,4 +1,4 @@
-const formDataCustom= {
+const form_Data_Custom= {
     dir_output: { value: "output_genomic_region_generator_custom", comment: "name of the directory where the output files will be written" },
     source: { value: "custom", comment: "required: indicate that own annotation should be used" },
     source_params: {
@@ -21,4 +21,4 @@ const formDataCustom= {
     exon_exon_junction_block_size: { value: "50", comment: "" }
 };
 
-export default formDataCustom;
+export default form_Data_Custom;

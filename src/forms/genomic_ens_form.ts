@@ -1,4 +1,4 @@
-const formDataEns= {
+const form_Data_Ens= {
     dir_output: { value: "output_genomic_region_generator_ensembl", comment: "name of the directory where the output files will be written" },
     source: { value: "ensembl", comment: "required: indicate that ensembl annotation should be used" },
     source_params: {
@@ -17,4 +17,4 @@ const formDataEns= {
     exon_exon_junction_block_size: { value: "50", comment: "" }
 };
 
-export default formDataEns;
+export default form_Data_Ens;
