@@ -292,7 +292,7 @@ const Genomic: React.FC = () => {
                                                             className="form-select"
                                                             id="taxon"
                                                             name="taxon"
-                                                            value={formDataNcbi.taxon}
+                                                            value={formDataNcbi.source_params.taxon.value}
                                                             onChange={handleChange}
                                                         >
                                                             <option value="vertebrate_mammalian">Vertebrate Mammalian
@@ -316,12 +316,12 @@ const Genomic: React.FC = () => {
                                                     <div className="mb-3">
                                                         <label htmlFor="species" className="form-label">Species</label>
 
-                                                        {formDataNcbi.taxon === "vertebrate_mammalian" ? (
+                                                        {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -899,12 +899,12 @@ const Genomic: React.FC = () => {
                                                                     </option>
                                                                 </select>
                                                             </>
-                                                        ) : formDataNcbi.taxon === "archaea" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "archaea" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -3734,12 +3734,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "bacteria" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "bacteria" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -3748,12 +3748,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "fungi" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "fungi" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -5834,12 +5834,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "invertebrate" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "invertebrate" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -6678,12 +6678,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "metagenomes" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "metagenomes" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="mine_drainage_metagenome">Mine
@@ -6693,12 +6693,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "mitochondrion" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "mitochondrion" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -6720,12 +6720,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "plant" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "plant" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -7185,12 +7185,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "plasmid" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "plasmid" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option
@@ -7320,12 +7320,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "plastid" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "plastid" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -7372,12 +7372,12 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "protozoa" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "protozoa" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="">Select a species</option>
@@ -7724,24 +7724,24 @@ const Genomic: React.FC = () => {
 
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "unknown" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "unknown" ? (
                                                             <>
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
-                                                                    value={formDataNcbi.species}
+                                                                    value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
                                                                     <option value="taxid_0/">taxid_0/</option>
                                                                 </select>
 
                                                             </>
-                                                        ) : formDataNcbi.taxon === "vertebrate_other" ? (
+                                                        ) : formDataNcbi.source_params.taxon.value === "vertebrate_other" ? (
                                                                 <>
                                                                     <select
                                                                         className="form-control"
                                                                         id="species"
-                                                                        value={formDataNcbi.species}
+                                                                        value={formDataNcbi.source_params.species.value}
                                                                         onChange={handleChange}
                                                                     >
                                                                         <option value="">Select a species</option>
@@ -9155,12 +9155,12 @@ const Genomic: React.FC = () => {
 
                                                                 </>
                                                             ) :
-                                                            formDataNcbi.taxon === "viral" ? (
+                                                            formDataNcbi.source_params.taxon.value === "viral" ? (
                                                                 <>
                                                                     <select
                                                                         className="form-control"
                                                                         id="species"
-                                                                        value={formDataNcbi.species}
+                                                                        value={formDataNcbi.source_params.species.value}
                                                                         onChange={handleChange}
                                                                     >
                                                                         <option value="">Select a species</option>
@@ -9180,7 +9180,7 @@ const Genomic: React.FC = () => {
                                                             type="number"
                                                             className="form-control"
                                                             id="annotation_release"
-                                                            value={formDataNcbi.annotation_release}
+                                                            value={formDataNcbi.source_params.annotation_release.value}
                                                             onChange={handleChange}
                                                             placeholder="current"
                                                         />
@@ -9189,32 +9189,35 @@ const Genomic: React.FC = () => {
 
                                                     <h5>Genomic Regions</h5>
 
-                                                    <div className="row">
-                                                        {["gene", "intergenic", "exon", "UTR", "CDS", "intron", "exon_exon_junction"].map((region) => (
-                                                            <div className="col-md-4 mb-3" key={region}>
-                                                                <div className="form-check">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        className="form-check-input"
-                                                                        id={region}
-                                                                        name={region}
-                                                                        checked={formDataNcbi[region as keyof typeof formDataNcbi] === "true"}
-                                                                        onChange={(e) =>
-                                                                            setFormDataNcbi((prev) => ({
-                                                                                ...prev,
-                                                                                [region]: e.target.checked ? "true" : "false",
-                                                                            }))
-                                                                        }
-                                                                    />
-                                                                    <label htmlFor={region}
-                                                                           className="form-check-label">
-                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
-                                                                    </label>
-                                                                </div>
+                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
+                                                        <div className="col-md-4 mb-3" key={region}>
+                                                            <div className="form-check">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-check-input"
+                                                                    id={region}
+                                                                    name={region}
+                                                                    checked={formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions]?.value === "true"}
+                                                                    onChange={(e) =>
+                                                                        setFormDataNcbi((prev) => ({
+                                                                            ...prev,
+                                                                            genomic_regions: {
+                                                                                ...prev.genomic_regions,
+                                                                                [region]: {
+                                                                                    ...prev.genomic_regions[region as keyof typeof prev.genomic_regions],
+                                                                                    value: e.target.checked ? "true" : "false",
+                                                                                },
+                                                                            },
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <label htmlFor={region} className="form-check-label">
+                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
+                                                                </label>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                    {formDataNcbi.exon_exon_junction === "true" && (
+                                                        </div>
+                                                    ))}
+                                                    {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
                                                         <div className="mb-3">
                                                             <label htmlFor="exon_exon_junction_block_size"
                                                                    className="form-label">
@@ -9224,7 +9227,7 @@ const Genomic: React.FC = () => {
                                                                 type="number"
                                                                 className="form-control"
                                                                 id="exon_exon_junction_block_size"
-                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                value={formDataNcbi.exon_exon_junction_block_size.value}
                                                                 onChange={handleChange}
                                                                 placeholder="50"
                                                             />
@@ -9280,7 +9283,7 @@ const Genomic: React.FC = () => {
                                                         <select
                                                             className="form-control"
                                                             id="species"
-                                                            value={formDataEns.species}
+                                                            value={formDataEns.source_params.species.value}
                                                             onChange={handleChange}
                                                         >
                                                             <option value="acanthochromis_polyacanthus">acanthochromis
@@ -9902,7 +9905,7 @@ const Genomic: React.FC = () => {
                                                             type="number"
                                                             className="form-control"
                                                             id="annotation_release"
-                                                            value={formDataEns.annotation_release}
+                                                            value={formDataEns.source_params.annotation_release.value}
                                                             onChange={handleChange}
                                                             placeholder="current"
                                                         />
@@ -9911,32 +9914,35 @@ const Genomic: React.FC = () => {
 
                                                     <h5>Genomic Regions</h5>
 
-                                                    <div className="row">
-                                                        {["gene", "intergenic", "exon", "UTR", "CDS", "intron", "exon_exon_junction"].map((region) => (
-                                                            <div className="col-md-4 mb-3" key={region}>
-                                                                <div className="form-check">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        className="form-check-input"
-                                                                        id={region}
-                                                                        name={region}
-                                                                        checked={formDataEns[region as keyof typeof formDataEns] === "true"}
-                                                                        onChange={(e) =>
-                                                                            setFormDataEns((prev) => ({
-                                                                                ...prev,
-                                                                                [region]: e.target.checked ? "true" : "false",
-                                                                            }))
-                                                                        }
-                                                                    />
-                                                                    <label htmlFor={region}
-                                                                           className="form-check-label">
-                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
-                                                                    </label>
-                                                                </div>
+                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
+                                                        <div className="col-md-4 mb-3" key={region}>
+                                                            <div className="form-check">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-check-input"
+                                                                    id={region}
+                                                                    name={region}
+                                                                    checked={formDataEns.genomic_regions[region as keyof typeof formDataEns.genomic_regions]?.value === "true"} // ✅ FIXED
+                                                                    onChange={(e) =>
+                                                                        setFormDataEns((prev) => ({
+                                                                            ...prev,
+                                                                            genomic_regions: {
+                                                                                ...prev.genomic_regions,
+                                                                                [region]: {
+                                                                                    ...prev.genomic_regions[region as keyof typeof prev.genomic_regions],
+                                                                                    value: e.target.checked ? "true" : "false",
+                                                                                },
+                                                                            },
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <label htmlFor={region} className="form-check-label">
+                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
+                                                                </label>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                    {formDataEns.exon_exon_junction === "true" && (
+                                                        </div>
+                                                    ))}
+                                                    {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
                                                         <div className="mb-3">
                                                             <label htmlFor="exon_exon_junction_block_size"
                                                                    className="form-label">
@@ -9946,7 +9952,7 @@ const Genomic: React.FC = () => {
                                                                 type="number"
                                                                 className="form-control"
                                                                 id="exon_exon_junction_block_size"
-                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                value={formDataEns.exon_exon_junction_block_size.value}
                                                                 onChange={handleChange}
                                                                 placeholder="50"
                                                             />
@@ -9987,7 +9993,7 @@ const Genomic: React.FC = () => {
                                                             type="text"
                                                             className="form-control"
                                                             id="species"
-                                                            value={formDataCustom.species}
+                                                            value={formDataCustom.source_params.species.value}
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
@@ -10000,7 +10006,7 @@ const Genomic: React.FC = () => {
                                                             type="number"
                                                             className="form-control"
                                                             id="annotation_release"
-                                                            value={formDataCustom.annotation_release}
+                                                            value={formDataCustom.source_params.annotation_release.value}
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
@@ -10012,7 +10018,7 @@ const Genomic: React.FC = () => {
                                                             type='text'
                                                             className="form-control"
                                                             id="genome_assembly"
-                                                            value={formDataCustom.genome_assembly}
+                                                            value={formDataCustom.source_params.genome_assembly.value}
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
@@ -10025,39 +10031,42 @@ const Genomic: React.FC = () => {
                                                             type='text'
                                                             className="form-control"
                                                             id="files_source"
-                                                            value={formDataCustom.files_source}
+                                                            value={formDataCustom.source_params.files_source.value}
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
                                                     </div>
 
 
-                                                    <div className="row">
-                                                        {["gene", "intergenic", "exon", "UTR", "CDS", "intron", "exon_exon_junction"].map((region) => (
-                                                            <div className="col-md-4 mb-3" key={region}>
-                                                                <div className="form-check">
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        className="form-check-input"
-                                                                        id={region}
-                                                                        name={region}
-                                                                        checked={formDataCustom[region as keyof typeof formDataCustom] === "true"}
-                                                                        onChange={(e) =>
-                                                                            setFormDataCustom((prev) => ({
-                                                                                ...prev,
-                                                                                [region]: e.target.checked ? "true" : "false",
-                                                                            }))
-                                                                        }
-                                                                    />
-                                                                    <label htmlFor={region}
-                                                                           className="form-check-label">
-                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
-                                                                    </label>
-                                                                </div>
+                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
+                                                        <div className="col-md-4 mb-3" key={region}>
+                                                            <div className="form-check">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    className="form-check-input"
+                                                                    id={region}
+                                                                    name={region}
+                                                                    checked={formDataCustom.genomic_regions[region as keyof typeof formDataCustom.genomic_regions]?.value === "true"}
+                                                                    onChange={(e) =>
+                                                                        setFormDataCustom((prev) => ({
+                                                                            ...prev,
+                                                                            genomic_regions: {
+                                                                                ...prev.genomic_regions,
+                                                                                [region]: {
+                                                                                    ...prev.genomic_regions[region as keyof typeof prev.genomic_regions],
+                                                                                    value: e.target.checked ? "true" : "false",
+                                                                                },
+                                                                            },
+                                                                        }))
+                                                                    }
+                                                                />
+                                                                <label htmlFor={region} className="form-check-label">
+                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
+                                                                </label>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                    {formDataCustom.exon_exon_junction === "true" && (
+                                                        </div>
+                                                    ))}
+                                                    {formDataCustom.genomic_regions.exon_exon_junction.value === "true" && (
                                                         <div className="mb-3">
                                                             <label htmlFor="exon_exon_junction_block_size"
                                                                    className="form-label">
@@ -10067,7 +10076,7 @@ const Genomic: React.FC = () => {
                                                                 type="number"
                                                                 className="form-control"
                                                                 id="exon_exon_junction_block_size"
-                                                                value={formDataEns.exon_exon_junction_block_size}
+                                                                value={formDataCustom.exon_exon_junction_block_size.value}
                                                                 onChange={handleChange}
                                                                 placeholder="50"
                                                             />

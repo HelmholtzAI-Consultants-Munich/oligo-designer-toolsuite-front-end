@@ -3,6 +3,7 @@ import Navbar from "../modules/nav";
 import axios from "axios";
 import {OverlayTrigger, Popover} from "react-bootstrap";
 import {InfoCircle} from "react-bootstrap-icons";
+import formDatas from "../forms/oligoseq_form";
 const OligoSeq: React.FC = () => {
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
     const [progress, setProgress] = useState(0);
