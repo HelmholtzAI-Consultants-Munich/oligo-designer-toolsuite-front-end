@@ -8,7 +8,6 @@
         const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
         const [status, setStatus] = useState("idle");
         const [isSubmitting, setIsSubmitting] = useState(false);
-        const [fileRegionsText, setFileRegionsText] = useState("");
         const [formData, setFormData] = useState(formDatas);
 
         interface FileState {

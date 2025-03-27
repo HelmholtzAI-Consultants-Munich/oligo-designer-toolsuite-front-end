@@ -43,8 +43,8 @@ const formDatas = {
         coverage: { value: "50", comment: "could be turned into min_alignment_length" }
     },
     target_probe_hybridization_probability_bowtie_search_parameters: {
-        -v: { value: "3", comment: "" },
-        --nofw: { value: "", comment: "this parameter is fixed, if reference is whole genome, consider using both strands (remove this parameter)" }
+        v: { value: "3", comment: "" },
+        nofw: { value: "", comment: "this parameter is fixed, if reference is whole genome, consider using both strands (remove this parameter)" }
     },
     target_probe_hybridization_probability_bowtie_hit_parameters: { value: "None", comment: "No hit parameters available currently" },
     target_probe_cross_hybridization_alignment_method: { value: "blastn", comment: "options: blastn, bowtie" },
@@ -57,8 +57,8 @@ const formDatas = {
         coverage: { value: "50", comment: "could be turned into min_alignment_length" }
     },
     target_probe_cross_hybridization_bowtie_search_parameters: {
-        -v: { value: "3", comment: "" },
-        --nofw: { value: "", comment: "this parameter is fixed" }
+        v: { value: "3", comment: "" },
+        nofw: { value: "", comment: "this parameter is fixed" }
     },
     target_probe_cross_hybridization_bowtie_hit_parameters: { value: "None", comment: "No hit parameters available currently" },
     max_graph_size: { value: "5000", comment: "maximum number of oligos that are taken into consisderation in the last step (5000 -> ~5GB, 2500 -> ~1GB)" },

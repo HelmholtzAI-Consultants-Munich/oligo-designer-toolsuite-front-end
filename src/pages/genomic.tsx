@@ -1,7 +1,9 @@
 import React, {useState} from "react";
 import Navbar from "../modules/nav";
 import axios from "axios";
-
+import genomic_custom_form from "../forms/genomic_custom_form";
+import genomic_ncbi_form from "../forms/genomic_ncbi_form";
+import genomic_ens_form from "../forms/genomic_ens_form";
 const Genomic: React.FC = () => {
     const [fileReady, setFileReady] = useState(false);
 

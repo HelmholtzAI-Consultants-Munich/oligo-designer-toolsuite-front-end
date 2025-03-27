@@ -1,6 +1,8 @@
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
 import requests
+import re
+
 def fetch_yaml_from_github(raw_url):
     """Fetch YAML content from a GitHub raw URL"""
     response = requests.get(raw_url)
@@ -8,6 +10,7 @@ def fetch_yaml_from_github(raw_url):
         return response.text
     else:
         raise Exception(f"Failed to fetch YAML: {response.status_code}")
+
 def clean_yaml_text(yaml_text):
     """Removes section headers (### ...) and comments (# ...) before processing"""
     lines = yaml_text.split("\n")
@@ -26,12 +29,16 @@ def escape_js_string(s):
     """Escape double quotes and backslashes for JavaScript strings"""
     return str(s).replace('\\', r'\\').replace('"', r'\"')
 
+def normalize_key(key):
+    """Replace hyphens with underscores in keys"""
+    return re.sub(r'-', '', str(key))
+
 def convert_value_to_js(value, comment=""):
     """Convert Python values to JS-like syntax with comments."""
     escaped_comment = escape_js_string(comment)
 
     if isinstance(value, dict):
-        items = [f'    {k}: {convert_value_to_js(v, comment)}' for k, v in value.items()]
+        items = [f'    {normalize_key(k)}: {convert_value_to_js(v, comment)}' for k, v in value.items()]
         return "{\n" + ",\n".join(items) + "\n    }"
     elif isinstance(value, list):
         escaped_items = [escape_js_string(item) for item in value]
@@ -40,30 +47,38 @@ def convert_value_to_js(value, comment=""):
         return f'{{ value: "{str(value).lower()}", comment: "{comment}" }}'  # Convert to lowercase string
     else:
         escaped_value = escape_js_string(value)
-        return f'{{ value: "{escaped_value}", comment: "{escaped_comment}" }}'
+        return f'{{ value: "{escaped_value}", comment: "{comment}" }}'
 
 def process_dict(d, indent=4):
     """Recursively process CommentedMap into JS object"""
     items = []
     for k, v in d.items():
         comment = extract_inline_comment(d, k)
+        normalized_key = normalize_key(k)
 
         if isinstance(v, CommentedMap):
             nested = process_dict(v, indent + 4)
-            items.append(f'{" " * indent}{k}: {nested}')
+            items.append(f'{" " * indent}{normalized_key}: {nested}')
         else:
-            items.append(f'{" " * indent}{k}: {convert_value_to_js(v, comment)}')
+            items.append(f'{" " * indent}{normalized_key}: {convert_value_to_js(v, comment)}')
 
     return "{\n" + ",\n".join(items) + f"\n{' ' * (indent - 4)}}}"
 
 def yaml_to_js(yaml_text):
-    """Convert YAML to JS with preserved inline comments"""
+    """Convert YAML to JS with preserved inline comments and normalized keys"""
     yaml = YAML()
     yaml.preserve_quotes = True
     data = yaml.load(clean_yaml_text(yaml_text))
     return process_dict(data)
 
+github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/oligo_seq_probe_designer.yaml"
+yaml_content = fetch_yaml_from_github(github_raw_url)
 
+
+js_code = yaml_to_js(yaml_content)
+full_js = f"const formDatas = {js_code};\n\nexport default formDatas;"
+with open('src/forms/oligoseq_form.ts', 'w') as f:
+    f.write(full_js)
 # Example usage
 github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/scrinshot_probe_designer.yaml"
 yaml_content = fetch_yaml_from_github(github_raw_url)
@@ -84,16 +99,6 @@ with open('src/forms/merfish_form.ts', 'w') as f:
     f.write(full_js)
 
 
-github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/oligo_seq_probe_designer.yaml"
-yaml_content = fetch_yaml_from_github(github_raw_url)
-
-
-js_code = yaml_to_js(yaml_content)
-full_js = f"const formDatas = {js_code};\n\nexport default formDatas;"
-with open('src/forms/oligoseq_form.ts', 'w') as f:
-    f.write(full_js)
-
-
 github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/seqfish_plus_probe_designer.yaml"
 yaml_content = fetch_yaml_from_github(github_raw_url)
 
@@ -109,7 +114,7 @@ yaml_content = fetch_yaml_from_github(github_raw_url)
 
 
 js_code = yaml_to_js(yaml_content)
-full_js = f"const formDataCustom= {js_code};\n\nexport default formDataCustom;"
+full_js = f"const form_Data_Custom= {js_code};\n\nexport default form_Data_Custom;"
 with open('src/forms/genomic_custom_form.ts', 'w') as f:
     f.write(full_js)
 
@@ -119,7 +124,7 @@ yaml_content = fetch_yaml_from_github(github_raw_url)
 
 
 js_code = yaml_to_js(yaml_content)
-full_js = f"const formDataNcbi= {js_code};\n\nexport default formDataNcbi;"
+full_js = f"const form_Data_Ncbi= {js_code};\n\nexport default form_Data_Ncbi;"
 with open('src/forms/genomic_ncbi_form.ts', 'w') as f:
     f.write(full_js)
 
@@ -128,7 +133,7 @@ yaml_content = fetch_yaml_from_github(github_raw_url)
 
 
 js_code = yaml_to_js(yaml_content)
-full_js = f"const formDataEns= {js_code};\n\nexport default formDataEns;"
+full_js = f"const form_Data_Ens= {js_code};\n\nexport default form_Data_Ens;"
 with open('src/forms/genomic_ens_form.ts', 'w') as f:
     f.write(full_js)
 
