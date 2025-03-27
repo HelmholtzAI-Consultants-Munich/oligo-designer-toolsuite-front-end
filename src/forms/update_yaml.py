@@ -26,8 +26,14 @@ def extract_inline_comment(d, key):
     return ""
 
 def escape_js_string(s):
-    """Escape double quotes and backslashes for JavaScript strings"""
-    return str(s).replace('\\', r'\\').replace('"', r'\"')
+    """Escape special characters for JavaScript strings"""
+    return (str(s)
+            .replace('\\', r'\\')  # Escape backslashes first
+            .replace('"', r'\"')   # Then escape double quotes
+            .replace('\n', r'\n')  # Escape newlines
+            .replace('\r', r'\r')  # Escape carriage returns
+            .replace('\t', r'\t')  # Escape tabs
+            )
 
 def normalize_key(key):
     """Replace hyphens with underscores in keys"""
@@ -44,11 +50,10 @@ def convert_value_to_js(value, comment=""):
         escaped_items = [escape_js_string(item) for item in value]
         return f'{{ value: ["{", ".join(escaped_items)}"], comment: "{escaped_comment}" }}'
     elif isinstance(value, bool):
-        return f'{{ value: "{str(value).lower()}", comment: "{comment}" }}'  # Convert to lowercase string
+        return f'{{ value: "{str(value).lower()}", comment: "{escaped_comment}" }}'  # Convert to lowercase string
     else:
         escaped_value = escape_js_string(value)
-        return f'{{ value: "{escaped_value}", comment: "{comment}" }}'
-
+        return f'{{ value: "{escaped_value}", comment: "{escaped_comment}" }}'
 def process_dict(d, indent=4):
     """Recursively process CommentedMap into JS object"""
     items = []
