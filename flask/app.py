@@ -147,7 +147,6 @@ def scrinshot():
         "detection_oligo_U_distance": to_int(form_data["detection_oligo_U_distance"]['value']),
         "detection_oligo_Tm_opt": to_int(form_data["detection_oligo_Tm_opt"]['value']),
 
-
         # Developer parameters
         "target_probe_specificity_blastn_search_parameters": {
             "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['perc_identity']['value']),
@@ -330,8 +329,6 @@ def merfish():
         "readout_probe_base_prob_g": float(form_data["readout_probe_base_prob_g"]),
         "readout_probe_base_prob_t": float(form_data["readout_probe_base_prob_t"]),
         "readout_probe_length": float(form_data["readout_probe_length"]),
-
-
         "readout_probe_GC_content_min": to_int(form_data["readout_probe_GC_content_min"]),
         "readout_probe_GC_content_max": to_int(form_data["readout_probe_GC_content_max"]),
         "readout_probe_homopolymeric_base_n": {"G":to_int(form_data["readout_probe_homopolymeric_base_n_g"]),},
@@ -373,13 +370,6 @@ def merfish():
         "primer_Tm_max": to_int(form_data["primer_Tm_max"]),
         "primer_T_secondary_structure": to_int(form_data["primer_T_secondary_structure"]),
         "primer_secondary_structures_threshold_deltaG": to_int(form_data["primer_secondary_structures_threshold_deltaG"]),
-
-
-
-
-
-
-
 
         # Developer parameters
         "target_probe_specificity_blastn_search_parameters": {
@@ -686,13 +676,6 @@ def seqfish():
         "primer_T_secondary_structure": to_int(form_data["primer_T_secondary_structure"]),
         "primer_secondary_structures_threshold_deltaG": to_int(form_data["primer_secondary_structures_threshold_deltaG"]),
 
-
-
-
-
-
-
-
         # Developer parameters
         "target_probe_specificity_blastn_search_parameters": {
             "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters_perc_identity"]),
@@ -725,7 +708,6 @@ def seqfish():
         "heuristic": to_bool(form_data["heuristic"]),
         "heuristic_n_attempts": to_int(form_data["heuristic_n_attempts"]),
 
-
         #READOUT PROBE PARAMETERS
         "readout_probe_initial_num_sequences": to_int(form_data["readout_probe_initial_num_sequences"]),
         "readout_probe_specificity_blastn_search_parameters": {
@@ -754,7 +736,6 @@ def seqfish():
         },
 
         #PRIMER PARAMETERS
-
         "primer_initial_num_sequences": to_int(form_data["primer_initial_num_sequences"]),
 
         "primer_specificity_refrence_blastn_search_parameters": {
@@ -802,12 +783,7 @@ def seqfish():
         },
         "primer_Tm_chem_correction_parameters": None,
         "primer_Tm_salt_correction_parameters": None
-
-
-
-
     }
-
 
     # Write the YAML file
     with open("config_seqfish.yaml", "w") as f:
@@ -834,8 +810,6 @@ def seqfish():
     for i in a:
         print('deleted')
         os.remove(i)
-
-
 
     return jsonify({
         'stdout': result.stdout,
