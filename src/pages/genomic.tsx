@@ -1,12 +1,11 @@
 import React, {useState} from "react";
 import Navbar from "../modules/nav";
 import axios from "axios";
-import genomic_custom_form from "../forms/genomic_custom_form";
-import genomic_ncbi_form from "../forms/genomic_ncbi_form";
-import genomic_ens_form from "../forms/genomic_ens_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import form_Data_Custom from "../forms/genomic_custom_form";
+import {OverlayTrigger, Popover} from "react-bootstrap";
+import {InfoCircle} from "react-bootstrap-icons";
 const Genomic: React.FC = () => {
     const [fileReady, setFileReady] = useState(false);
 
@@ -286,8 +285,9 @@ const Genomic: React.FC = () => {
                                             </div>
                                             <div className="card-body">
                                                 <form onSubmit={handleSubmit}>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="taxon" className="form-label">Taxon</label>
+                                                    <label htmlFor="taxon" className="form-label">Taxon</label>
+
+                                                    <div className="d-flex align-items-center">
                                                         <select
                                                             className="form-select"
                                                             id="taxon"
@@ -312,9 +312,30 @@ const Genomic: React.FC = () => {
                                                             <option value="vertebrate_other">Vertebrate Other</option>
                                                             <option value="viral">Viral</option>
                                                         </select>
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataNcbi.source_params.taxon.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="species" className="form-label">Species</label>
+                                                    <label htmlFor="species" className="form-label pt-2">Species</label>
+
+                                                    <div className="d-flex align-items-center">
 
                                                         {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                             <>
@@ -898,6 +919,26 @@ const Genomic: React.FC = () => {
                                                                         californianus
                                                                     </option>
                                                                 </select>
+                                                                <OverlayTrigger
+                                                                    trigger="hover"
+                                                                    placement="top"
+                                                                    overlay={
+                                                                        <Popover id="dir_output">
+                                                                            <Popover.Body>
+                                                                                {formDataNcbi.source_params.taxon.comment}
+                                                                            </Popover.Body>
+                                                                        </Popover>
+                                                                    }
+                                                                >
+                                                                    <InfoCircle
+                                                                        style={{
+                                                                            fontSize: "1.2rem",
+                                                                            cursor: "pointer",
+                                                                            color: "#0d6efd",
+                                                                            marginLeft: "10px"
+                                                                        }}
+                                                                    />
+                                                                </OverlayTrigger>
                                                             </>
                                                         ) : formDataNcbi.source_params.taxon.value === "archaea" ? (
                                                             <>
@@ -9172,10 +9213,10 @@ const Genomic: React.FC = () => {
                                                             ) : null}
                                                     </div>
 
+                                                    <label htmlFor="annotation_release pt-2" className="form-label">Annotation
+                                                        Release</label>
+                                                    <div className="d-flex  align-items-center">
 
-                                                    <div className="mb-3">
-                                                        <label htmlFor="annotation_release" className="form-label">Annotation
-                                                            Release</label>
                                                         <input
                                                             type="number"
                                                             className="form-control"
@@ -9184,10 +9225,30 @@ const Genomic: React.FC = () => {
                                                             onChange={handleChange}
                                                             placeholder="current"
                                                         />
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataNcbi.source_params.annotation_release.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
 
 
-                                                    <h5>Genomic Regions</h5>
+                                                    <h5 className="pt-2">Genomic Regions</h5>
 
                                                     {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
                                                         <div className="col-md-4 mb-3" key={region}>
@@ -9211,27 +9272,72 @@ const Genomic: React.FC = () => {
                                                                         }))
                                                                     }
                                                                 />
-                                                                <label htmlFor={region} className="form-check-label">
-                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
-                                                                </label>
+                                                                <div className="d-flex align-items-center">
+                                                                    <label htmlFor={region} className="form-check-label">
+                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
+                                                                    </label>
+                                                                    <OverlayTrigger
+                                                                        trigger="hover"
+                                                                        placement="top"
+                                                                        overlay={
+                                                                            <Popover id={`popover-${region}`}>
+                                                                                <Popover.Body>
+                                                                                    {formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions].comment}
+                                                                                </Popover.Body>
+                                                                            </Popover>
+                                                                        }
+                                                                    >
+                                                                        <InfoCircle style={{
+                                                                            fontSize: "1.2rem",
+                                                                            cursor: "pointer",
+                                                                            color: "#0d6efd",
+                                                                            marginLeft: "10px"
+                                                                        }} />
+                                                                    </OverlayTrigger>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     ))}
                                                     {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
-                                                        <div className="mb-3">
+                                                        <div>
                                                             <label htmlFor="exon_exon_junction_block_size"
                                                                    className="form-label">
                                                                 Exon-Exon-Junction Block Size
                                                             </label>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control"
-                                                                id="exon_exon_junction_block_size"
-                                                                value={formDataNcbi.exon_exon_junction_block_size.value}
-                                                                onChange={handleChange}
-                                                                placeholder="50"
-                                                            />
+                                                            <div className="d-flex align-items-center">
+
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control"
+                                                                    id="exon_exon_junction_block_size"
+                                                                    value={formDataNcbi.exon_exon_junction_block_size.value}
+                                                                    onChange={handleChange}
+                                                                    placeholder="50"
+                                                                />
+                                                                <OverlayTrigger
+                                                                    trigger="hover"
+                                                                    placement="top"
+                                                                    overlay={
+                                                                        <Popover id="dir_output">
+                                                                            <Popover.Body>
+                                                                                {formDataNcbi.exon_exon_junction_block_size.comment}
+                                                                            </Popover.Body>
+                                                                        </Popover>
+                                                                    }
+                                                                >
+                                                                    <InfoCircle
+                                                                        style={{
+                                                                            fontSize: "1.2rem",
+                                                                            cursor: "pointer",
+                                                                            color: "#0d6efd",
+                                                                            marginLeft: "10px"
+                                                                        }}
+                                                                    />
+                                                                </OverlayTrigger>
+
+                                                            </div>
                                                         </div>
+
                                                     )}
                                                     <div className="d-flex flex-column align-items-center mt-4">
                                                         {/* Submit Button */}
@@ -9277,9 +9383,9 @@ const Genomic: React.FC = () => {
                                                 <h5>🔬 Ensembl Configuration</h5>
                                             </div>
                                             <div className="card-body">
+                                                <label htmlFor="species" className="form-label">Species</label>
                                                 <form onSubmit={handleSubmit}>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="species" className="form-label">Species</label>
+                                                    <div className="d-flex align-items-center">
                                                         <select
                                                             className="form-control"
                                                             id="species"
@@ -9896,11 +10002,31 @@ const Genomic: React.FC = () => {
                                                             </option>
 
                                                         </select>
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataEns.source_params.species.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
+                                                    <label htmlFor="annotation_release" className="form-label pt-2">Annotation
+                                                        Release</label>
+                                                    <div className="d-flex align-items-center">
 
-                                                    <div className="mb-3">
-                                                        <label htmlFor="annotation_release" className="form-label">Annotation
-                                                            Release</label>
                                                         <input
                                                             type="number"
                                                             className="form-control"
@@ -9909,10 +10035,30 @@ const Genomic: React.FC = () => {
                                                             onChange={handleChange}
                                                             placeholder="current"
                                                         />
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataEns.source_params.species.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
 
 
-                                                    <h5>Genomic Regions</h5>
+                                                    <h5 className="pt-2">Genomic Regions</h5>
 
                                                     {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
                                                         <div className="col-md-4 mb-3" key={region}>
@@ -9936,9 +10082,28 @@ const Genomic: React.FC = () => {
                                                                         }))
                                                                     }
                                                                 />
+
                                                                 <label htmlFor={region} className="form-check-label">
                                                                     {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                                                 </label>
+                                                                <OverlayTrigger
+                                                                    trigger="hover"
+                                                                    placement="top"
+                                                                    overlay={
+                                                                        <Popover id={`popover-${region}`}>
+                                                                            <Popover.Body>
+                                                                                {formDataEns.genomic_regions[region as keyof typeof formDataEns.genomic_regions].comment}
+                                                                            </Popover.Body>
+                                                                        </Popover>
+                                                                    }
+                                                                >
+                                                                    <InfoCircle style={{
+                                                                        fontSize: "1.2rem",
+                                                                        cursor: "pointer",
+                                                                        color: "#0d6efd",
+                                                                        marginLeft: "10px"
+                                                                    }} />
+                                                                </OverlayTrigger>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -9957,6 +10122,7 @@ const Genomic: React.FC = () => {
                                                                 placeholder="50"
                                                             />
                                                         </div>
+
                                                     )}
                                                     <button type="submit" className="btn btn-primary">Submit
 
@@ -9967,28 +10133,71 @@ const Genomic: React.FC = () => {
                                     )}
 
                                     {selectedSource === "custom" && (
-                                        <div className="card shadow-sm mb-4 border-warning">
+                                        <div className="card shadow-sm  border-warning">
                                             <div className="card-header ">
                                                 <h5>📂 Custom Data Upload</h5>
                                             </div>
+                                            <label htmlFor="file_sequence" className="ps-3 pt-1">Upload
+                                                Sequence File</label>
                                             <div className="card-body">
                                                 <form onSubmit={handleSubmit}>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="file_sequence" className="form-label">Upload
-                                                            Sequence File</label>
+                                                    <div className="d-flex align-items-center">
+
                                                         <input type="file" className="form-control" id="file_sequence"
                                                                name='file_sequence'
                                                                onChange={handleFileChange}/>
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataCustom.source_params.file_sequence.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="file_annotation" className="form-label">Upload
-                                                            Annotation File</label>
+                                                    <label htmlFor="file_annotation" className="form-label">Upload
+                                                        Annotation File</label>
+                                                    <div className="d-flex align-items-center">
+
                                                         <input type="file" className="form-control"
                                                                name='file_annotation'
                                                                id="file_annotation" onChange={handleFileChange}/>
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataCustom.source_params.file_annotation.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="species" className="form-label">Species</label>
+                                                    <label htmlFor="species" className="form-label">Species</label>
+
+                                                    <div className="d-flex align-items-center">
                                                         <input
                                                             type="text"
                                                             className="form-control"
@@ -9997,11 +10206,31 @@ const Genomic: React.FC = () => {
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataCustom.source_params.species.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
+                                                    <label htmlFor="annotation_release" className="form-label">Annotation
+                                                        Release</label>
+                                                    <div className="d-flex align-items-center">
 
-                                                    <div className="mb-3">
-                                                        <label htmlFor="annotation_release" className="form-label">Annotation
-                                                            Release</label>
                                                         <input
                                                             type="number"
                                                             className="form-control"
@@ -10010,10 +10239,31 @@ const Genomic: React.FC = () => {
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataCustom.source_params.annotation_release.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="genome_assembly" className="form-label"> Genome
-                                                            Assembly </label>
+                                                    <label htmlFor="genome_assembly" className="form-label"> Genome
+                                                        Assembly </label>
+                                                    <div className="d-flex align-items-center">
+
                                                         <input
                                                             type='text'
                                                             className="form-control"
@@ -10022,11 +10272,32 @@ const Genomic: React.FC = () => {
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataCustom.source_params.genome_assembly.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
-                                                    <div className="mb-3">
-                                                        <label htmlFor="files_source" className="form-label">Files
-                                                            Source
-                                                        </label>
+                                                    <label htmlFor="files_source" className="form-label">Files
+                                                        Source
+                                                    </label>
+                                                    <div className="d-flex align-items-center">
+
                                                         <input
                                                             type='text'
                                                             className="form-control"
@@ -10035,11 +10306,31 @@ const Genomic: React.FC = () => {
                                                             onChange={handleChange}
                                                             placeholder=""
                                                         />
+                                                        <OverlayTrigger
+                                                            trigger="hover"
+                                                            placement="top"
+                                                            overlay={
+                                                                <Popover id="dir_output">
+                                                                    <Popover.Body>
+                                                                        {formDataCustom.source_params.files_source.comment}
+                                                                    </Popover.Body>
+                                                                </Popover>
+                                                            }
+                                                        >
+                                                            <InfoCircle
+                                                                style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}
+                                                            />
+                                                        </OverlayTrigger>
                                                     </div>
 
 
                                                     {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
-                                                        <div className="col-md-4 mb-3" key={region}>
+                                                        <div className="col-md-4 mb-3 pt-2" key={region}>
                                                             <div className="form-check">
                                                                 <input
                                                                     type="checkbox"
@@ -10063,6 +10354,24 @@ const Genomic: React.FC = () => {
                                                                 <label htmlFor={region} className="form-check-label">
                                                                     {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                                                 </label>
+                                                                <OverlayTrigger
+                                                                    trigger="hover"
+                                                                    placement="top"
+                                                                    overlay={
+                                                                        <Popover id={`popover-${region}`}>
+                                                                            <Popover.Body>
+                                                                                {formDataCustom.genomic_regions[region as keyof typeof formDataCustom.genomic_regions].comment}
+                                                                            </Popover.Body>
+                                                                        </Popover>
+                                                                    }
+                                                                >
+                                                                    <InfoCircle style={{
+                                                                        fontSize: "1.2rem",
+                                                                        cursor: "pointer",
+                                                                        color: "#0d6efd",
+                                                                        marginLeft: "10px"
+                                                                    }}/>
+                                                                </OverlayTrigger>
                                                             </div>
                                                         </div>
                                                     ))}
