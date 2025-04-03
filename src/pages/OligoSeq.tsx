@@ -4,6 +4,7 @@ import axios from "axios";
 import {OverlayTrigger, Popover} from "react-bootstrap";
 import {InfoCircle} from "react-bootstrap-icons";
 import formDatas from "../forms/oligoseq_form";
+import oligoseq_form from "../forms/oligoseq_form";
 const OligoSeq: React.FC = () => {
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -33,7 +34,7 @@ const OligoSeq: React.FC = () => {
     };
     const areAllFilesUploaded = () => {
         return (
-            (files.file_regions !== null || formData.file_regions.length >0) &&
+            (files.file_regions !== null || formData.file_regions.value.length >0) &&
             files.files_fasta_target_probe_database.length > 0 &&
             files.files_fasta_reference_database_target_probe.length > 0
         );
@@ -71,7 +72,7 @@ const OligoSeq: React.FC = () => {
                     filePaths[key] = paths.join("\n");
                 } else {
 
-                    if (formData.file_regions.length ===0) {
+                    if (formData.file_regions.value.length ===0) {
                         // @ts-ignore
                         formDataU.append("file", files[key]);
                         // @ts-ignore
@@ -114,111 +115,14 @@ const OligoSeq: React.FC = () => {
     //         socket.disconnect(); // Clean up connection on component unmount
     //     };
     // }, []);
-    const [formData, setFormData] = useState({
-        // General Parameters
-        n_jobs: "4",
-        dir_output: "output_merfish_probe_designer",
-        write_intermediate_steps: "true",
-        top_n_sets: '3',
-
-        // Probe Sequences Generation
-        file_regions: "",
-        files_fasta_target_probe_database: ``,
-        files_fasta_reference_database_target_probe: '',
-        probe_length_min: "40",
-        probe_length_max: "45",
-        target_probe_split_region: '4',
-        target_probe_targeted_exons: '1', // also need to be string in the yaml
-        probe_isoform_consensus: "50",
-
-        // Probe Property Filters
-        probe_GC_content_min: "40",
-        probe_GC_content_opt: "50",
-        probe_GC_content_max: "60",
-        probe_Tm_min: "65",
-        probe_Tm_opt: "70",
-        probe_Tm_max: "75",
-        target_probe_secondary_structures_T: '76',
-        target_probe_secondary_structures_threshold_deltaG: '0',
-        homopolymeric_A: "6",
-        homopolymeric_T: "6",
-        homopolymeric_C: "6",
-        homopolymeric_G: "6",
-
-        target_probe_max_len_selfcomplement: '10',
-        target_probe_hybridization_probability_threshold: '0.001',
-        target_probe_GC_weight: "1",
-        target_probe_Tm_weight: "1",
-        set_size_min: "50",
-        set_size_opt: "50",
-        distance_between_probes: "0",
-        n_sets: "100",
-
-
-        // DEVELOPER PARAMETERS
-        // Target Probe Parameters
-        target_probe_hybridization_probability_alignment_method: 'blastn', // another option bowtie
-        target_probe_hybridization_probability_blastn_search_parameters_perc_identity: "80",
-        target_probe_hybridization_probability_blastn_search_parameters_strand: "minus", // this parameter is fixed, if reference is whole genome, consider using "both"
-        target_probe_hybridization_probability_blastn_search_parameters_word_size: "10",
-        target_probe_hybridization_probability_blastn_hit_parameters_coverage: '50',
-        target_probe_hybridization_probability_bowtie_search_parameters_nofw: '', //# this parameter is fixed, if reference is whole genome, consider using both strands (remove this parameter)
-        target_probe_hybridization_probability_bowtie_search_parameters_v: '3',
-
-        target_probe_cross_hybridization_alignment_method: 'blastn',
-
-
-        target_probe_cross_hybridization_blastn_search_parameters_perc_identity: "80",
-        target_probe_cross_hybridization_blastn_search_parameters_strand: "minus", // this parameter is fixed
-        target_probe_cross_hybridization_blastn_search_parameters_word_size: "7",
-
-        target_probe_cross_hybridization_blastn_search_parameters_coverage: '50',
-
-        target_probe_cross_hybridization_bowtie_search_parameters_nofw: '', //# this parameter is fixed, if reference is whole genome, consider using both strands (remove this parameter)
-        target_probe_cross_hybridization_bowtie_search_parameters_v: '3',
-
-        max_graph_size: "5000", // maximum number of oligos considered
-        pre_filter: "true", // whether pre-filtering is enabled
-        n_attempts: "100000",
-        heuristic: "true",
-        heuristic_n_attempts: "100",
-
-        Tm_probe_check: "true",
-        Tm_probe_strict: "true",
-        Tm_probe_c_seq: "null",
-        Tm_probe_shift: "0",
-        Tm_probe_nn_table: "DNA_NN4",
-        Tm_probe_tmm_table: "DNA_TMM1",
-        Tm_probe_imm_table: "DNA_IMM1",
-        DE_probe_imm_table: "DNA_DE1",
-        Tm_probe_dnac1: "5",
-        Tm_probe_dnac2: "0",
-        selfcomp: "false",
-        Tm_probe_saltcorr: "5",
-        Tm_probe_Na: "300",
-        Tm_probe_K: "0",
-        Tm_probe_Tris: "0",
-        Tm_probe_Mg: "0",
-        Tm_probe_dNTPs: "0",
-
-        target_probe_Tm_chem_correction_parameters_DMSO: "0",
-        target_probe_Tm_chem_correction_parameters_DMSOfactor: "0.75",
-        target_probe_Tm_chem_correction_parameters_fmdfactor: "0.65",
-        target_probe_Tm_chem_correction_parameters_fmdmethod: "1",
-        target_probe_Tm_chem_correction_parameters_GC: "null",
-        target_probe_Tm_chem_correction_parameters_fmd: "20",
-
-        target_probe_Tm_salt_correction_parameters: "null",
-
-        // Readout Probe Parameters
-
-    });
+    const [formData, setFormData] = useState(oligoseq_form);
     const [activeTab, setActiveTab] = useState("general");
     const [activetab2, setActivetab2] = useState("specfblastn");
 
     const renderTabContent = () => {
         switch (activeTab) {
             case "general":
+                // @ts-ignore
                 return (
                     <div>
                         <div>
@@ -236,7 +140,7 @@ const OligoSeq: React.FC = () => {
                                         className="form-control"
                                         id="n_jobs"
                                         name="n_jobs"
-                                        value={formData.n_jobs}
+                                        value={formData.n_jobs.value}
                                         onChange={handleChange}
                                         required
                                     />
@@ -245,10 +149,8 @@ const OligoSeq: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                                 <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime
-
+                                                    {formData.n_jobs.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -270,15 +172,14 @@ const OligoSeq: React.FC = () => {
                             <label htmlFor="dir_output" className="form-label">Output Directory:</label>
                             <div className="d-flex align-items-center">
                                 <input type="text" className="form-control" id="dir_output" name="dir_output"
-                                       value={formData.dir_output} onChange={handleChange} required/>
+                                       value={formData.dir_output.value} onChange={handleChange} required/>
                                 <OverlayTrigger
                                     trigger="hover"
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-n_jobs">
-                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                             <Popover.Body>
-                                                Name of the directory where the output files will be written
+                                                {formData.dir_output.comment}
                                             </Popover.Body>
                                         </Popover>
                                     }
@@ -306,7 +207,7 @@ const OligoSeq: React.FC = () => {
                                     className="form-select"
                                     id="write_intermediate_steps"
                                     name="write_intermediate_steps"
-                                    value={formData.write_intermediate_steps}
+                                    value={formData.write_intermediate_steps.value}
                                     onChange={handleChange}
                                 >
                                     <option value="true">True</option>
@@ -317,10 +218,8 @@ const OligoSeq: React.FC = () => {
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-write_intermediate_steps">
-                                            <Popover.Header as="h3">Write Intermediate Steps</Popover.Header>
                                             <Popover.Body>
-                                                if true, writes the oligo sequences after each step of the pipeline into a csv file
-                                            </Popover.Body>
+                                                {formData.write_intermediate_steps.comment}                                            </Popover.Body>
                                         </Popover>
                                     }
                                 >
@@ -339,16 +238,14 @@ const OligoSeq: React.FC = () => {
                             <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                       value={formData.top_n_sets} onChange={handleChange} required/>
+                                       value={formData.top_n_sets.value} onChange={handleChange} required/>
                                 <OverlayTrigger
                                     trigger="hover"
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-n_jobs">
-                                            <Popover.Header as="h3">Maximum Number of Sets</Popover.Header>
                                             <Popover.Body>
-                                                maximum number of sets to report in padlock_probes.yaml and "padlock_probes_order.yaml"
-                                            </Popover.Body>
+                                                {formData.top_n_sets.comment}                                            </Popover.Body>
                                         </Popover>
                                     }
                                 >
@@ -367,9 +264,9 @@ const OligoSeq: React.FC = () => {
                     </div>
                 );
             case "probe_sequences":
+                // @ts-ignore
                 return (
                     <div>
-
                         <div className="mb-4">
                             <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
@@ -386,7 +283,6 @@ const OligoSeq: React.FC = () => {
                                             id="file_regions"
                                             name="file_regions"
                                             onChange={handleFileChange}
-                                            disabled={formData.file_regions.length > 0}
                                         />
                                         <input
                                             type="text"
@@ -394,7 +290,7 @@ const OligoSeq: React.FC = () => {
                                             id="file_regions"
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
-                                            value={formData.file_regions}
+                                            value={formData.file_regions.value}
                                             onChange={handleChange}
                                         />
 
@@ -414,11 +310,8 @@ const OligoSeq: React.FC = () => {
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="popover-n_jobs">
-                                                        <Popover.Header as="h3">Target File</Popover.Header>
                                                         <Popover.Body>
-                                                            File with a list of the genes used to generate the oligos
-                                                            sequences,
-                                                            leave empty if all the genes are used.
+                                                            {formData.file_regions.comment}
                                                         </Popover.Body>
                                                     </Popover>
                                                 }
@@ -470,11 +363,8 @@ const OligoSeq: React.FC = () => {
                                             placement="top"
                                             overlay={
                                                 <Popover id="popover-n_jobs">
-                                                    <Popover.Header as="h3">Target File </Popover.Header>
                                                     <Popover.Body>
-                                                        Fasta file with sequences form which the probes should be
-                                                        generated.
-                                                        Use the genomic region generator to create fasta files
+                                                        {formData.files_fasta_target_probe_database.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -525,10 +415,8 @@ const OligoSeq: React.FC = () => {
                                             placement="top"
                                             overlay={
                                                 <Popover id="popover-n_jobs">
-                                                    <Popover.Header as="h3">Target File </Popover.Header>
                                                     <Popover.Body>
-                                                        Fasta file with sequences used as reference for the specificity
-                                                        filters. Use the genomic region generator to create fasta files.
+                                                        {formData.files_fasta_reference_database_targe_probe.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -556,15 +444,63 @@ const OligoSeq: React.FC = () => {
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
-                                <input type="number" className="form-control" id="probe_length_min"
-                                       name="probe_length_min"
-                                       value={formData.probe_length_min} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_length_min"
+                                           name="probe_length_min"
+                                           value={formData.target_probe_length_min.value} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.target_probe_length_min.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
-                                <input type="number" className="form-control" id="probe_length_max"
-                                       name="probe_length_max"
-                                       value={formData.probe_length_max} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_length_max"
+                                           name="probe_length_max"
+                                           value={formData.target_probe_length_max.value} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.target_probe_length_max.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
@@ -572,19 +508,15 @@ const OligoSeq: React.FC = () => {
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_isoform_consensus"
                                            name="probe_isoform_consensus"
-                                           value={formData.probe_isoform_consensus} onChange={handleChange} required/>
+                                           value={formData.target_probe_isoform_consensus.value} onChange={handleChange}
+                                           required/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                                 <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
-                                                    that should be stored in cache. If memory consumption of pipeline is
-                                                    too high reduce this number, if a lot of RAM is available increase
-                                                    this number to decrease runtime
-
+                                                    {formData.target_probe_isoform_consensus.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -602,71 +534,72 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
-                        <div className="row g-3">
-                            <div className="col">
-                                <label htmlFor="target_probe_targeted_exons" className="form-label">Target Probe
-                                    Exons:</label>
-                                <select className="form-control" id="target_probe_targeted_exons"
-                                        name="target_probe_targeted_exons"
-                                        value={formData.target_probe_targeted_exons} onChange={handleChange}>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-
-                                </select>
-                            </div>
-                            <div className="col">
-                                <label htmlFor="target_probe_split_region" className="form-label">Minimum Exon Junction
-                                    Coverage</label>
-                                <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="target_probe_split_region"
-                                           name="target_probe_split_region"
-                                           value={formData.target_probe_split_region} onChange={handleChange} required/>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
-                                                <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
-                                                    that should be stored in cache. If memory consumption of pipeline is
-                                                    too high reduce this number, if a lot of RAM is available increase
-                                                    this number to decrease runtime
-
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px"
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
-
-                            </div>
-
-                        </div>
-
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
                                     (%):</label>
-                                <input type="number" className="form-control" id="probe_GC_content_min"
-                                       name="probe_GC_content_min"
-                                       value={formData.probe_GC_content_min} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_GC_content_min"
+                                           name="probe_GC_content_min"
+                                           value={formData.target_probe_GC_content_min.value} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="probe_GC_content_min">
+
+                                                <Popover.Body>
+                                                    {formData.target_probe_GC_content_min.comment}
+
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
                                     (%):</label>
-                                <input type="number" className="form-control" id="probe_GC_content_opt"
-                                       name="probe_GC_content_opt"
-                                       value={formData.probe_GC_content_opt} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_GC_content_opt"
+                                           name="probe_GC_content_opt"
+                                           value={formData.target_probe_GC_content_opt.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="probe_GC_content_opt">
+                                                <Popover.Body>
+                                                    {formData.target_probe_GC_content_opt.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="probe_GC_content_max" className="form-label">Max GC Content
@@ -674,19 +607,15 @@ const OligoSeq: React.FC = () => {
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_GC_content_max"
                                            name="probe_GC_content_max"
-                                           value={formData.probe_GC_content_max} onChange={handleChange} required/>
+                                           value={formData.target_probe_GC_content_max.value}
+                                           onChange={handleChange} required/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
-                                            <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
+                                            <Popover id="popover-probe_GC_content_max">
                                                 <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
-                                                    that should be stored in cache. If memory consumption of pipeline is
-                                                    too high reduce this number, if a lot of RAM is available increase
-                                                    this number to decrease runtime
-
+                                                    {formData.target_probe_GC_content_max.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -704,89 +633,170 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
+                        <h6 className="pt-2">Minimum number of nucleotides to consider it a homopolymeric run per
+                            base </h6>
                         <div className="row g-3">
-                            <div className="col">
-                                <label htmlFor="probe_Tm_min" className="form-label">Min Tm (°C):</label>
-                                <input type="number" className="form-control" id="probe_Tm_min" name="probe_Tm_min"
-                                       value={formData.probe_Tm_min} onChange={handleChange} required/>
-                            </div>
-                            <div className="col">
-                                <label htmlFor="probe_Tm_max" className="form-label">Max Tm (°C):</label>
-                                <input type="number" className="form-control" id="probe_Tm_max" name="probe_Tm_max"
-                                       value={formData.probe_Tm_max} onChange={handleChange} required/>
-                            </div>
-                            <div className="col">
-                                <label htmlFor="probe_Tm_opt" className="form-label">Opt Tm (°C):</label>
-                                <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="probe_Tm_opt" name="probe_Tm_opt"
-                                           value={formData.probe_Tm_opt} onChange={handleChange} required/>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
-                                                <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
-                                                    that should be stored in cache. If memory consumption of pipeline is
-                                                    too high reduce this number, if a lot of RAM is available increase
-                                                    this number to decrease runtime
-
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px"
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
-
-
-                            </div>
-
-                        </div>
-                        <div className="row g-3">
-                            <h6 className="pt-2">Minimum number of nucleotides to consider it a homopolymeric run per
-                                base </h6>
                             <div className="col">
                                 <label htmlFor="homopolymeric_A" className="form-label">A:</label>
-                                <input type="number" className="form-control" id="homopolymeric_A"
-                                       name="homopolymeric_A"
-                                       value={formData.homopolymeric_A} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="homopolymeric_A"
+                                           name="homopolymeric_A"
+                                           value={formData.target_probe_homopolymeric_base_n.A.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.target_probe_homopolymeric_base_n.A.comment}
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="homopolymeric_T" className="form-label">T:</label>
-                                <input type="number" className="form-control" id="homopolymeric_T"
-                                       name="homopolymeric_T"
-                                       value={formData.homopolymeric_T} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="homopolymeric_T"
+                                           name="homopolymeric_T"
+                                           value={formData.target_probe_homopolymeric_base_n.T.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.target_probe_homopolymeric_base_n.T.comment}
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="homopolymeric_C" className="form-label">C:</label>
-                                <input type="number" className="form-control" id="homopolymeric_C"
-                                       name="homopolymeric_C"
-                                       value={formData.homopolymeric_C} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="homopolymeric_C"
+                                           name="homopolymeric_C"
+                                           value={formData.target_probe_homopolymeric_base_n.C.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.target_probe_homopolymeric_base_n.C.comment}
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="homopolymeric_G" className="form-label">G:</label>
-                                <input type="number" className="form-control" id="homopolymeric_G"
-                                       name="homopolymeric_G"
-                                       value={formData.homopolymeric_G} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="homopolymeric_G"
+                                           name="homopolymeric_G"
+                                           value={formData.target_probe_homopolymeric_base_n.G.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.target_probe_homopolymeric_base_n.G.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                         </div>
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="target_probe_T_secondary_structure" className="form-label">Secondary
                                     Structure Temperature:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_T_secondary_structure"
-                                       name="target_probe_T_secondary_structure"
-                                       value={formData.target_probe_secondary_structures_T} onChange={handleChange}/>
+                                <div className="col">
+                                    <label htmlFor="target_probe_secondary_structures_threshold_deltaG"
+                                           className="form-label">Threshold for secondary structure:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control"
+                                               id="target_probe_T_secondary_structure"
+                                               name="target_probe_T_secondary_structure"
+                                               value={formData.target_probe_secondary_structures_T.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_secondary_structures_T.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
+                                </div>
+
                             </div>
                             <div className="col">
                                 <label htmlFor="target_probe_secondary_structures_threshold_deltaG"
@@ -795,23 +805,15 @@ const OligoSeq: React.FC = () => {
                                     <input type="number" className="form-control"
                                            id="target_probe_secondary_structures_threshold_deltaG"
                                            name="target_probe_secondary_structures_threshold_deltaG"
-                                           value={formData.target_probe_secondary_structures_threshold_deltaG}
+                                           value={formData.target_probe_secondary_structures_threshold_deltaG.value}
                                            onChange={handleChange}/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                                 <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of
-                                                    regions
-                                                    that should be stored in cache. If memory consumption of
-                                                    pipeline is
-                                                    too high reduce this number, if a lot of RAM is available
-                                                    increase
-                                                    this number to decrease runtime
-
+                                                    {formData.target_probe_secondary_structures_threshold_deltaG.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -829,36 +831,24 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
+
                         <div className="row g-3">
+
                             <div className="col">
-                                <label htmlFor="target_probe_GC_weight" className="form-label">Weight of the GC
-                                    content:</label>
-                                <input type="number" className="form-control" id="target_probe_GC_weight"
-                                       name="target_probe_GC_weight"
-                                       value={formData.target_probe_GC_weight} onChange={handleChange}/>
-                            </div>
-                            <div className="col">
-                                <label htmlFor="target_probe_Tm_weight" className="form-label">Weight of the temperature
-                                    of the probe:</label>
+                                <label htmlFor="probe_GC_weight" className="form-label">GC Content Weight:</label>
+
                                 <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="target_probe_Tm_weight"
-                                           name="target_probe_Tm_weight"
-                                           value={formData.target_probe_Tm_weight} onChange={handleChange}/>
+                                    <input type="number" className="form-control" id="probe_GC_weight"
+                                           name="probe_GC_weight"
+                                           value={formData.target_probe_GC_weight.value} onChange={handleChange}
+                                           required/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                                 <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of
-                                                    regions
-                                                    that should be stored in cache. If memory consumption of
-                                                    pipeline is
-                                                    too high reduce this number, if a lot of RAM is available
-                                                    increase
-                                                    this number to decrease runtime
-
+                                                    {formData.target_probe_GC_weight.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -876,46 +866,22 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
-
                         <div className="row g-3">
 
                             <div className="col">
                                 <label htmlFor="probeset_size_min" className="form-label">Minimum Probe Set
                                     Size:</label>
-                                <input type="number" className="form-control" id="probeset_size_min"
-                                       name="probeset_size_min"
-                                       value={formData.set_size_min} onChange={handleChange} required/>
-                            </div>
-                            <div className="col">
-                                <label htmlFor="probeset_size_opt" className="form-label">Optimal Probe Set
-                                    Size:</label>
-                                <input type="number" className="form-control" id="probeset_size_opt"
-                                       name="probeset_size_opt"
-                                       value={formData.set_size_opt} onChange={handleChange} required/>
-                            </div>
-                            <div className="col">
-                                <label htmlFor="distance_between_probes" className="form-label">Distance Between
-                                    Probes:</label>
-                                <input type="number" className="form-control" id="distance_between_probes"
-                                       name="distance_between_probes"
-                                       value={formData.distance_between_probes} onChange={handleChange} required/>
-                            </div>
-                            <div className="col">
-                                <label htmlFor="n_sets" className="form-label">Maximum Number of Sets:</label>
                                 <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="n_sets" name="n_sets"
-                                           value={formData.n_sets} onChange={handleChange} required/>
+                                    <input type="number" className="form-control" id="probeset_size_min"
+                                           name="probeset_size_min"
+                                           value={formData.set_size_min.value} onChange={handleChange} required/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                                 <Popover.Body>
-                                                    Number of cores used to run the pipeline and 2*n_jobs +1 of regions
-                                                    that should be stored in cache. If memory consumption of pipeline is
-                                                    too high reduce this number, if a lot of RAM is available increase
-                                                    this number to decrease runtime
+                                                    {formData.set_size_opt.comment}
 
                                                 </Popover.Body>
                                             </Popover>
@@ -933,10 +899,102 @@ const OligoSeq: React.FC = () => {
                                 </div>
 
                             </div>
-                        </div>
+                            <div className="col">
+                                <label htmlFor="probeset_size_opt" className="form-label">Optimal Probe Set
+                                    Size:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probeset_size_opt"
+                                           name="probeset_size_opt"
+                                           value={formData.set_size_opt.value} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.set_size_opt.comment}
 
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
+                            <div className="col">
+                                <label htmlFor="distance_between_probes" className="form-label">Distance Between
+                                    Probes:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="distance_between_probes"
+                                           name="distance_between_probes"
+                                           value={formData.distance_between_target_probes.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.distance_between_target_probes.comment}
+
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
+                            <div className="col">
+                                <label htmlFor="n_sets" className="form-label">Maximum Number of Sets:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="n_sets" name="n_sets"
+                                           value={formData.n_sets.value} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+
+                                                    {formData.n_sets.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                );
+                )
+                    ;
             // Add cases for other tabs
             default:
                 return null;
@@ -952,7 +1010,7 @@ const OligoSeq: React.FC = () => {
                                    className="form-label">Alignment Method:</label>
                             <select className="form-select" id="target_probe_hybridization_probability_alignment_method"
                                     name="target_probe_hybridization_probability_alignment_method"
-                                    value={formData.target_probe_hybridization_probability_alignment_method}
+                                    value={formData.target_probe_hybridization_probability_alignment_method.value}
                                     onChange={handleChange}>
                                 <option value="blastn">BlastN</option>
                                 <option value="bowtie">Bowtie</option>
@@ -961,36 +1019,105 @@ const OligoSeq: React.FC = () => {
                         <div className="row g-3">
                             <div className="col-md-6">
                                 <label htmlFor="target_probe_specificity_blastn_search_parameters_perc_identity"
-                                       className="form-label">Percent
-                                    Identity:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_specificity_blastn_search_parameters_perc_identity"
-                                       name="target_probe_specificity_blastn_search_parameters_perc_identity"
-                                       value={formData.target_probe_hybridization_probability_blastn_search_parameters_perc_identity}
-                                       onChange={handleChange}
-                                       required/>
+                                       className="form-label">Percent Identity:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_specificity_blastn_search_parameters_perc_identity"
+                                           name="target_probe_specificity_blastn_search_parameters_perc_identity"
+                                           value={formData.target_probe_hybridization_probability_blastn_search_parameters.perc_identity.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-perc-identity">
+                                                <Popover.Header as="h3">Percent Identity</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.target_probe_hybridization_probability_blastn_search_parameters.perc_identity.comment ||
+                                                        "Minimum percentage identity for BLASTn search"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
+
                             <div className="col-md-6">
                                 <label htmlFor="target_probe_specificity_blastn_search_parameters_strand"
-                                       className="form-label">Strand: if
-                                    reference is whole genome, consider using "both"</label>
-                                <input type="text" className="form-control"
-                                       id="target_probe_specificity_blastn_search_parameters_strand"
-                                       name="specificity_strand"
-                                       value={formData.target_probe_hybridization_probability_blastn_search_parameters_strand}
-                                       onChange={handleChange}
-                                       required/>
+                                       className="form-label">Strand:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select"
+                                            id="target_probe_specificity_blastn_search_parameters_strand"
+                                            name="target_probe_specificity_blastn_search_parameters_strand"
+                                            value={formData.target_probe_hybridization_probability_blastn_search_parameters.strand.value}
+                                            onChange={handleChange}
+                                            required>
+                                        <option value="minus">Minus</option>
+                                        <option value="plus">Plus</option>
+                                        <option value="both">Both</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-strand">
+                                                <Popover.Header as="h3">Strand Selection</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.target_probe_hybridization_probability_blastn_search_parameters.strand.comment ||
+                                                        "If reference is whole genome, consider using 'both'"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
+
                             <div className="col-md-6">
                                 <label htmlFor="target_probe_specificity_blastn_search_parameters_word_size"
-                                       className="form-label">Word
-                                    Size:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_specificity_blastn_search_parameters_word_size"
-                                       name="target_probe_specificity_blastn_search_parameters_word_size"
-                                       value={formData.target_probe_hybridization_probability_blastn_search_parameters_word_size}
-                                       onChange={handleChange}
-                                       required/>
+                                       className="form-label">Word Size:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_specificity_blastn_search_parameters_word_size"
+                                           name="target_probe_specificity_blastn_search_parameters_word_size"
+                                           value={formData.target_probe_hybridization_probability_blastn_search_parameters.word_size.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-word-size">
+                                                <Popover.Header as="h3">Word Size</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.target_probe_hybridization_probability_blastn_search_parameters.word_size.comment ||
+                                                        "Word size for BLASTn search"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
@@ -999,7 +1126,7 @@ const OligoSeq: React.FC = () => {
                                 <input type="number" className="form-control"
                                        id="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
                                        name="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
-                                       value={formData.target_probe_hybridization_probability_blastn_hit_parameters_coverage}
+                                       value={formData.target_probe_hybridization_probability_blastn_hit_parameters.coverage.value}
                                        onChange={handleChange}
                                        required/>
                             </div>
@@ -1009,7 +1136,7 @@ const OligoSeq: React.FC = () => {
                                 <input type="number" className="form-control"
                                        id="target_probe_hybridization_probability_bowtie_search_parameters_v"
                                        name="target_probe_hybridization_probability_bowtie_search_parameters_v"
-                                       value={formData.target_probe_hybridization_probability_bowtie_search_parameters_v}
+                                       value={formData.target_probe_hybridization_probability_bowtie_search_parameters.v.value}
                                        onChange={handleChange}
                                        required/>
                             </div>
@@ -1019,20 +1146,15 @@ const OligoSeq: React.FC = () => {
                                     className="form-check-input"
                                     id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
                                     name="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                    checked={formData.target_probe_hybridization_probability_bowtie_search_parameters_nofw === "true"}
+                                    checked={formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.value === "true"}
                                     onChange={(e) =>
                                         setFormData((prev: any) => ({
                                             ...prev,
-                                            target_probe_hybridization_probability_bowtie_search_parameters_nofw: e.target.checked ? "true" : "false",
+                                            target_probe_hybridization_probability_bowtie_search_parameters_nofw:{value:e.target.checked ? "true" : "false",comment:formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.comment} ,
                                         }))
                                     }
                                 />
-                                <label htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                       className="form-check-label">
-                                    No forward strand: Uncheck if the reference is whole genome
-                                </label>
                             </div>
-                            //CROSS HYBRID FİLTERS
 
                         </div>
                     </div>
@@ -1045,87 +1167,260 @@ const OligoSeq: React.FC = () => {
                         <div className="mb-3">
                             <label htmlFor="target_probe_cross_hybridization_alignment_method"
                                    className="form-label">Alignment Method for cross hybridization:</label>
-                            <select className="form-select"
-                                    id="target_probe_cross_hybridization_alignment_method"
-                                    name="target_probe_cross_hybridization_alignment_method"
-                                    value={formData.target_probe_cross_hybridization_alignment_method}
-                                    onChange={handleChange}>
-                                <option value="blastn">BlastN</option>
-                                <option value="bowtie">Bowtie</option>
-                            </select>
+                            <div className="d-flex align-items-center">
+                                <select className="form-select"
+                                        id="target_probe_cross_hybridization_alignment_method"
+                                        name="target_probe_cross_hybridization_alignment_method"
+                                        value={formData.target_probe_cross_hybridization_alignment_method.value}
+                                        onChange={handleChange}>
+                                    <option value="blastn">BlastN</option>
+                                    <option value="bowtie">Bowtie</option>
+                                </select>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-alignment-method">
+                                            <Popover.Header as="h3">Alignment Method</Popover.Header>
+                                            <Popover.Body>
+                                                {formData.target_probe_cross_hybridization_alignment_method.comment ||
+                                                    "Select alignment method for cross-hybridization detection"}
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle style={{
+                                        fontSize: "1.2rem",
+                                        cursor: "pointer",
+                                        color: "#0d6efd",
+                                        marginLeft: "10px"
+                                    }}/>
+                                </OverlayTrigger>
+                            </div>
                         </div>
-                        <div className="col-md-6">
-                            <label htmlFor="target_probe_specificity_blastn_search_parameters_perc_identity"
-                                   className="form-label">Percent
-                                Identity:</label>
-                            <input type="number" className="form-control"
-                                   id="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
-                                   name="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
-                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_perc_identity}
-                                   onChange={handleChange}
-                                   required/>
+
+                        <div className="row">
+                            {/* BLASTn Parameters */}
+                            <div className="col-md-6">
+                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
+                                       className="form-label">Percent Identity:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
+                                           name="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
+                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.perc_identity.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-blastn-perc-identity">
+                                                <Popover.Body>
+                                                    {formData.target_probe_cross_hybridization_blastn_search_parameters.perc_identity.comment ||
+                                                        "Minimum percentage identity for BLASTn search"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col-md-6">
+                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_strand"
+                                       className="form-label">Strand:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select"
+                                            id="target_probe_cross_hybridization_blastn_search_parameters_strand"
+                                            name="target_probe_cross_hybridization_blastn_search_parameters_strand"
+                                            value={formData.target_probe_cross_hybridization_blastn_search_parameters.strand.value}
+                                            onChange={handleChange}
+                                            required>
+                                        <option value="minus">Minus</option>
+                                        <option value="plus">Plus</option>
+                                        <option value="both">Both</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-blastn-strand">
+                                                <Popover.Header as="h3">Strand Selection</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.target_probe_cross_hybridization_blastn_search_parameters.strand.comment ||
+                                                        "If reference is whole genome, consider using 'both'"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col-md-6">
+                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_word_size"
+                                       className="form-label">Word Size:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_cross_hybridization_blastn_search_parameters_word_size"
+                                           name="target_probe_cross_hybridization_blastn_search_parameters_word_size"
+                                           value={formData.target_probe_cross_hybridization_blastn_search_parameters.word_size.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-blastn-word-size">
+                                                <Popover.Header as="h3">Word Size</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.target_probe_cross_hybridization_blastn_search_parameters.word_size.comment ||
+                                                        "Word size for BLASTn search"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col-md-6">
+                                <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_coverage"
+                                       className="form-label">Max Target Sequences:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_cross_hybridization_blastn_search_parameters_coverage"
+                                           name="target_probe_cross_hybridization_blastn_search_parameters_coverage"
+                                           value={formData.target_probe_cross_hybridization_blastn_hit_parameters.coverage.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-blastn-coverage">
+                                                <Popover.Header as="h3">Max Target Sequences</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.target_probe_cross_hybridization_blastn_hit_parameters.coverage.comment ||
+                                                        "Maximum number of target sequences to report"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            {/* Bowtie Parameters */}
+                            <div className="col-md-6">
+                                <label htmlFor="target_probe_cross_hybridization_bowtie_search_parameters_v"
+                                       className="form-label">Allowed Mismatches:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_cross_hybridization_bowtie_search_parameters_v"
+                                           name="target_probe_cross_hybridization_bowtie_search_parameters_v"
+                                           value={formData.target_probe_cross_hybridization_bowtie_search_parameters.v.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-bowtie-mismatches">
+                                                <Popover.Header as="h3">Allowed Mismatches</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.target_probe_cross_hybridization_bowtie_search_parameters.v.comment ||
+                                                        "Number of allowed mismatches for Bowtie alignment"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
                         </div>
-                        <div className="col-md-6">
-                            <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters"
-                                   className="form-label">Strand: if
-                                reference is whole genome, consider using "both"</label>
-                            <input type="text" className="form-control"
-                                   id="target_probe_cross_hybridization_blastn_search_parameters"
-                                   name="specificity_strand"
-                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_strand}
-                                   onChange={handleChange}
-                                   required/>
-                        </div>
-                        <div className="col-md-6">
-                            <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_word_size"
-                                   className="form-label">Word
-                                Size:</label>
-                            <input type="number" className="form-control"
-                                   id="target_probe_cross_hybridization_blastn_search_parameters_word_size"
-                                   name="target_probe_cross_hybridization_blastn_search_parameterss_word_size"
-                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_word_size}
-                                   onChange={handleChange}
-                                   required/>
-                        </div>
-                        <div className="col-md-6">
-                            <label htmlFor="target_probe_cross_hybridization_blastn_search_parameters_coverage"
-                                   className="form-label">Max
-                                Target Sequences:</label>
-                            <input type="number" className="form-control"
-                                   id="target_probe_cross_hybridization_blastn_search_parameters_coverage"
-                                   name="target_probe_cross_hybridization_blastn_search_parameters_coverage"
-                                   value={formData.target_probe_cross_hybridization_blastn_search_parameters_coverage}
-                                   onChange={handleChange}
-                                   required/>
-                        </div>
-                        <div className="col-md-6">
-                            <label htmlFor="target_probe_cross_hybridization_bowtie_search_parameters_v"
-                                   className="form-label">Allowed Mismatches:</label>
-                            <input type="number" className="form-control"
-                                   id="target_probe_cross_hybridization_bowtie_search_parameters_v"
-                                   name="target_probe_cross_hybridization_bowtie_search_parameters_v"
-                                   value={formData.target_probe_cross_hybridization_bowtie_search_parameters_v}
-                                   onChange={handleChange}
-                                   required/>
-                        </div>
+                        <label
+                            htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                            className="form-check-label"
+                        >
+                            No forward strand:
+                        </label>
                         <div className="mb-3 form-check">
-                            <input
-                                type="checkbox"
-                                className="form-check-input"
-                                id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                name="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                checked={formData.target_probe_hybridization_probability_bowtie_search_parameters_nofw === "true"}
-                                onChange={(e) =>
-                                    setFormData((prev: any) => ({
-                                        ...prev,
-                                        target_probe_hybridization_probability_bowtie_search_parameters_nofw: e.target.checked ? "true" : "false",
-                                    }))
-                                }
-                            />
-                            <label htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                   className="form-check-label">
-                                No forward strand: Uncheck if the reference is whole genome
-                            </label>
+
+                            <div className="d-flex align-items-center">
+
+                                <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                    name="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                    checked={formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.value === "true"}
+                                    onChange={(e) =>
+                                        setFormData((prev: any) => ({
+                                            ...prev,
+                                            target_probe_hybridization_probability_bowtie_search_parameters: {
+                                                nofw: {
+                                                    value: e.target.checked ? "true" : "false",
+                                                    comment: prev.target_probe_hybridization_probability_bowtie_search_parameters.nofw.comment,
+                                                },
+                                            },
+                                        }))
+                                    }
+                                />
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-bowtie-mismatches">
+                                            <Popover.Header as="h3">Allowed Mismatches</Popover.Header>
+                                            <Popover.Body>
+                                                {formData.target_probe_cross_hybridization_bowtie_search_parameters.v.comment ||
+                                                    "Number of allowed mismatches for Bowtie alignment"}
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle style={{
+                                        fontSize: "1.2rem",
+                                        cursor: "pointer",
+                                        color: "#0d6efd",
+                                        marginLeft: "10px"
+                                    }}/>
+                                </OverlayTrigger>
+                            </div>
+
+
                         </div>
 
 
@@ -1139,39 +1434,112 @@ const OligoSeq: React.FC = () => {
                             <div className="col-md-6">
                                 <label htmlFor="max_graph_size" className="form-label">Max Graph
                                     Size:</label>
-                                <input type="number" className="form-control" id="max_graph_size"
-                                       name="max_graph_size"
-                                       value={formData.max_graph_size} onChange={handleChange} required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="max_graph_size"
+                                           name="max_graph_size"
+                                           value={formData.max_graph_size.value} onChange={handleChange} required/>
+                                </div>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-bowtie-mismatches">
+                                            <Popover.Body>
+                                                {formData.max_graph_size.comment}
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle style={{
+                                        fontSize: "1.2rem",
+                                        cursor: "pointer",
+                                        color: "#0d6efd",
+                                        marginLeft: "10px"
+                                    }}/>
+                                </OverlayTrigger>
                             </div>
+
                             <div className="col-md-6">
-                                <label htmlFor="n_attempts" className="form-label">Number of
-                                    Attempts:</label>
-                                <input type="number" className="form-control" id="n_attempts"
-                                       name="n_attempts"
-                                       value={formData.n_attempts} onChange={handleChange} required/>
+                                <label htmlFor="n_attempts" className="form-label">Number of Attempts:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="n_attempts"
+                                           name="n_attempts"
+                                           value={formData.n_attempts.value} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n-attempts">
+                                                <Popover.Body>
+                                                    {formData.n_attempts.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
-                            <div className="col-md-6">
-                                <label htmlFor="pre_filter" className="form-label">Pre-Filtering:</label>
-                                <select className="form-control" id="pre_filter" name="pre_filter"
-                                        value={formData.pre_filter} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
-                            </div>
+
                             <div className="col-md-6">
                                 <label htmlFor="heuristic" className="form-label">Heuristic:</label>
-                                <select className="form-control" id="heuristic" name="heuristic"
-                                        value={formData.heuristic} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-control" id="heuristic" name="heuristic"
+                                            value={formData.heuristic.value} onChange={handleChange}>
+                                        <option value="true">True</option>
+                                        <option value="false">False</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-heuristic">
+                                                <Popover.Body>
+                                                    {formData.heuristic.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
+
                             <div className="col-md-6">
-                                <label htmlFor="heuristic_n_attempts" className="form-label"> Heuristics number of
-                                    Attempts:</label>
-                                <input type="number" className="form-control" id="n_attempts"
-                                       name="heuristic_n_attempts"
-                                       value={formData.heuristic_n_attempts} onChange={handleChange} required/>
+                                <label htmlFor="heuristic_n_attempts" className="form-label">Heuristics number of Attempts:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="heuristic_n_attempts"
+                                           name="heuristic_n_attempts"
+                                           value={formData.heuristic_n_attempts.value} onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-heuristic-n-attempts">
+                                                <Popover.Body>
+                                                    {formData.heuristic_n_attempts.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
                         </div>
 
@@ -1180,180 +1548,328 @@ const OligoSeq: React.FC = () => {
             case'meltingtemp':
                 return (
                     <div>
-                        <h4>Melting Temperature Parameters</h4>
-                        {/* Target Probe Parameters */}
-                        <h5>Target Probe Parameters</h5>
-                        <div className="row g-3">
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_check" className="form-label">Check:</label>
-                                <select className="form-control" id="Tm_probe_check" name="Tm_probe_check"
-                                        value={formData.Tm_probe_check} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_strict" className="form-label">Strict:</label>
-                                <select className="form-control" id="Tm_probe_strict" name="Tm_probe_strict"
-                                        value={formData.Tm_probe_strict} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_c_seq" className="form-label">Complementary
-                                    Sequence:</label>
-                                <input type="text" className="form-control" id="Tm_probe_c_seq"
-                                       name="Tm_probe_c_seq"
-                                       value={formData.Tm_probe_c_seq} onChange={handleChange}
-                                       placeholder="null"/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_shift" className="form-label">Shift:</label>
-                                <input type="number" className="form-control" id="Tm_probe_shift"
-                                       name="Tm_probe_shift"
-                                       value={formData.Tm_probe_shift} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_nn_table" className="form-label">Nearest Neighbor
-                                    Table:</label>
-                                <input type="text" className="form-control" id="Tm_probe_nn_table"
-                                       name="Tm_probe_nn_table"
-                                       value={formData.Tm_probe_nn_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_tmm_table" className="form-label">TMM
-                                    Table:</label>
-                                <input type="text" className="form-control" id="Tm_probe_tmm_table"
-                                       name="Tm_probe_tmm_table"
-                                       value={formData.Tm_probe_tmm_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_imm_table" className="form-label">IMM
-                                    Table:</label>
-                                <input type="text" className="form-control" id="Tm_probe_imm_table"
-                                       name="Tm_probe_imm_table"
-                                       value={formData.Tm_probe_imm_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="DE_probe_imm_table" className="form-label">DE Table:</label>
-                                <input type="text" className="form-control" id="DE_probe_imm_table"
-                                       name="DE_probe_imm_table"
-                                       value={formData.DE_probe_imm_table} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_dnac1" className="form-label">DNA Concentration 1
-                                    (nM):</label>
-                                <input type="number" className="form-control" id="Tm_probe_dnac1"
-                                       name="Tm_probe_dnac1"
-                                       value={formData.Tm_probe_dnac1} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_dnac2" className="form-label">DNA Concentration 2
-                                    (nM):</label>
-                                <input type="number" className="form-control" id="Tm_probe_dnac2"
-                                       name="Tm_probe_dnac2"
-                                       value={formData.Tm_probe_dnac2} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="selfcomp" className="form-label">SelfComp:</label>
-                                <select className="form-control" id="selfcomp" name="selfcomp"
-                                        value={formData.selfcomp} onChange={handleChange}>
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_saltcorr" className="form-label">Salt
-                                    Correction:</label>
-                                <input type="number" className="form-control" id="Tm_probe_saltcorr"
-                                       name="Tm_probe_saltcorr"
-                                       value={formData.Tm_probe_saltcorr} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_Na" className="form-label">Na Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_probe_Na"
-                                       name="Tm_probe_Na"
-                                       value={formData.Tm_probe_Na} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_K" className="form-label">K Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_probe_K"
-                                       name="Tm_probe_K"
-                                       value={formData.Tm_probe_K} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_Tris" className="form-label">Tris Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_probe_Tris"
-                                       name="Tm_probe_Tris"
-                                       value={formData.Tm_probe_Tris} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_Mg" className="form-label">Mg Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_probe_Mg"
-                                       name="Tm_probe_Mg"
-                                       value={formData.Tm_probe_Mg} onChange={handleChange}/>
-                            </div>
-                            <div className="col-md-6">
-                                <label htmlFor="Tm_probe_dNTPs" className="form-label">dNTPs Concentration
-                                    (mM):</label>
-                                <input type="number" className="form-control" id="Tm_probe_dNTPs"
-                                       name="Tm_probe_dNTPs"
-                                       value={formData.Tm_probe_dNTPs} onChange={handleChange}/>
+                        <div className="mb-4">
+                            <div className="d-flex align-items-center">
+                                <h5>Melting Temperature Parameters for Detection Oligo</h5>
                             </div>
                             <div className="row g-3">
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_DMSO" className="form-label">DMSO
-                                        (%):</label>
-                                    <input type="number" className="form-control" id="Tm_probe_DMSO"
-                                           name="Tm_probe_DMSO"
-                                           value={formData.target_probe_Tm_chem_correction_parameters_DMSO} onChange={handleChange}/>
+                                    <label htmlFor="Tm_detection_nn_table" className="form-label">Nearest Neighbor
+                                        Table:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="text" className="form-control" id="Tm_detection_nn_table"
+                                               name="Tm_detection_nn_table"
+                                               value={formData.target_probe_Tm_parameters.nn_table.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-nn-table-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.nn_table.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
+
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_fmd" className="form-label">Formamide (fmd,
-                                        %):</label>
-                                    <input type="number" className="form-control" id="Tm_probe_fmd"
-                                           name="Tm_probe_fmd"
-                                           value={formData.target_probe_Tm_chem_correction_parameters_fmd} onChange={handleChange}/>
+                                    <label htmlFor="Tm_detection_tmm_table" className="form-label">TMM
+                                        Table:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="text" className="form-control" id="Tm_detection_tmm_table"
+                                               name="Tm_detection_tmm_table"
+                                               value={formData.target_probe_Tm_parameters.tmm_table.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-tmm-table-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.tmm_table.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
+
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_DMSOfactor" className="form-label">DMSO
-                                        Factor:</label>
-                                    <input type="number" className="form-control"
-                                           id="Tm_probe_DMSOfactor" name="Tm_probe_DMSOfactor"
-                                           value={formData.target_probe_Tm_chem_correction_parameters_DMSOfactor} step="0.01"
-                                           onChange={handleChange}/>
+                                    <label htmlFor="Tm_detection_imm_table" className="form-label">IMM
+                                        Table:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="text" className="form-control" id="Tm_detection_imm_table"
+                                               name="Tm_detection_imm_table"
+                                               value={formData.target_probe_Tm_parameters.imm_table.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-imm-table-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.imm_table.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
+
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_fmdfactor" className="form-label">Formamide
-                                        Factor:</label>
-                                    <input type="number" className="form-control"
-                                           id="Tm_probe_fmdfactor" name="Tm_probe_fmdfactor"
-                                           value={formData.target_probe_Tm_chem_correction_parameters_fmdfactor} step="0.01"
-                                           onChange={handleChange}/>
+                                    <label htmlFor="Tm_detection_de_table" className="form-label">DE Table:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="text" className="form-control" id="Tm_detection_de_table"
+                                               name="Tm_detection_de_table"
+                                               value={formData.target_probe_Tm_parameters.de_table.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-de-table-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.de_table.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
+
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_fmdmethod" className="form-label">Formamide
-                                        Method:</label>
-                                    <input type="number" className="form-control"
-                                           id="Tm_probe_fmdmethod" name="Tm_probe_fmdmethod"
-                                           value={formData.target_probe_Tm_chem_correction_parameters_fmdmethod} onChange={handleChange}/>
+                                    <label htmlFor="Tm_detection_dnac1" className="form-label">DNA Concentration 1
+                                        (nM):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_dnac1"
+                                               name="Tm_detection_dnac1"
+                                               value={formData.target_probe_Tm_parameters.dnac1.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-dnac1-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.dnac1.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
+
                                 <div className="col-md-6">
-                                    <label htmlFor="Tm_probe_GC" className="form-label">GC
-                                        (optional):</label>
-                                    <input type="text" className="form-control" id="Tm_probe_GC"
-                                           name="Tm_probe_GC"
-                                           value={formData.target_probe_Tm_chem_correction_parameters_GC} onChange={handleChange}
-                                           placeholder="null"/>
+                                    <label htmlFor="Tm_detection_dnac2" className="form-label">DNA Concentration 2
+                                        (nM):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_dnac2"
+                                               name="Tm_detection_dnac2"
+                                               value={formData.target_probe_Tm_parameters.dnac2.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-dnac2-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.dnac2.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_saltcorr" className="form-label">Salt
+                                        Correction:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_saltcorr"
+                                               name="Tm_detection_saltcorr"
+                                               value={formData.target_probe_Tm_parameters.saltcorr.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-saltcorr-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.saltcorr.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_Na" className="form-label">Na Concentration
+                                        (mM):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_Na"
+                                               name="Tm_detection_Na"
+                                               value={formData.target_probe_Tm_parameters.Na.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-na-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.Na.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{ fontSize: "1.2rem", cursor: "pointer", color: "#0d6efd", marginLeft: "10px" }}/>
+                                        </OverlayTrigger>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_K" className="form-label">K Concentration (mM):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_K"
+                                               name="Tm_detection_K"
+                                               value={formData.target_probe_Tm_parameters.K.value}
+                                               onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-k-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.K.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{ fontSize: "1.2rem", cursor: "pointer", color: "#0d6efd", marginLeft: "10px" }}/>
+                                        </OverlayTrigger>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_Tris" className="form-label">Tris Concentration (mM):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_Tris"
+                                               name="Tm_detection_Tris"
+                                               value={formData.target_probe_Tm_parameters.Tris.value} onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-tris-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.Tris.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{ fontSize: "1.2rem", cursor: "pointer", color: "#0d6efd", marginLeft: "10px" }}/>
+                                        </OverlayTrigger>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_Mg" className="form-label">Mg Concentration (mM):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_Mg"
+                                               name="Tm_detection_Mg"
+                                               value={formData.target_probe_Tm_parameters.Mg.value} onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-mg-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.Mg.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{ fontSize: "1.2rem", cursor: "pointer", color: "#0d6efd", marginLeft: "10px" }}/>
+                                        </OverlayTrigger>
+                                    </div>
+                                </div>
+
+                                <div className="col-md-6">
+                                    <label htmlFor="Tm_detection_dNTPs" className="form-label">dNTPs Concentration (mM):</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="Tm_detection_dNTPs"
+                                               name="Tm_detection_dNTPs"
+                                               value={formData.target_probe_Tm_parameters.dNTPs.value} onChange={handleChange}/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-dntps-detection">
+                                                    <Popover.Body>
+                                                        {formData.target_probe_Tm_parameters.dNTPs.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{ fontSize: "1.2rem", cursor: "pointer", color: "#0d6efd", marginLeft: "10px" }}/>
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
                             </div>
-
                         </div>
+
                     </div>
                 );
 

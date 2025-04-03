@@ -9342,7 +9342,7 @@ const Genomic: React.FC = () => {
                                                     <div className="d-flex flex-column align-items-center mt-4">
                                                         {/* Submit Button */}
                                                         <button onClick={handleSubmit}
-                                                                className="btn btn-success btn-lg" disabled={loading}>
+                                                                className="btn btn-primary btn-lg" disabled={loading}>
                                                             {loading ? (
                                                                 <>
                                                                     <span
@@ -10102,31 +10102,83 @@ const Genomic: React.FC = () => {
                                                                         cursor: "pointer",
                                                                         color: "#0d6efd",
                                                                         marginLeft: "10px"
-                                                                    }} />
+                                                                    }}/>
                                                                 </OverlayTrigger>
                                                             </div>
                                                         </div>
                                                     ))}
                                                     {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
-                                                        <div className="mb-3">
+                                                        <>
                                                             <label htmlFor="exon_exon_junction_block_size"
                                                                    className="form-label">
                                                                 Exon-Exon-Junction Block Size
                                                             </label>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control"
-                                                                id="exon_exon_junction_block_size"
-                                                                value={formDataEns.exon_exon_junction_block_size.value}
-                                                                onChange={handleChange}
-                                                                placeholder="50"
-                                                            />
-                                                        </div>
+                                                            <div className="d-flex align-items-center">
 
+                                                                <input
+                                                                    type="number"
+                                                                    className="form-control"
+                                                                    id="exon_exon_junction_block_size"
+                                                                    value={formDataEns.exon_exon_junction_block_size.value}
+                                                                    onChange={handleChange}
+                                                                    placeholder="50"
+                                                                />
+                                                                <OverlayTrigger
+                                                                    trigger="hover"
+                                                                    placement="top"
+                                                                    overlay={
+                                                                        <Popover id="dir_output">
+                                                                            <Popover.Body>
+                                                                                {formDataCustom.exon_exon_junction_block_size.comment}
+                                                                            </Popover.Body>
+                                                                        </Popover>
+                                                                    }
+                                                                >
+                                                                    <InfoCircle
+                                                                        style={{
+                                                                            fontSize: "1.2rem",
+                                                                            cursor: "pointer",
+                                                                            color: "#0d6efd",
+                                                                            marginLeft: "10px"
+                                                                        }}
+                                                                    />
+                                                                </OverlayTrigger>
+                                                            </div>
+                                                        </>
                                                     )}
-                                                    <button type="submit" className="btn btn-primary">Submit
+                                                    <div className="d-flex flex-column align-items-center mt-4">
+                                                        {/* Submit Button */}
+                                                        <button onClick={handleSubmit}
+                                                                className="btn btn-success btn-lg" disabled={loading}>
+                                                            {loading ? (
+                                                                <>
+                                                                    <span
+                                                                        className="spinner-border spinner-border-sm me-2"></span>
+                                                                    Processing...
+                                                                </>
+                                                            ) : (
+                                                                "Submit"
+                                                            )}
+                                                        </button>
 
-                                                    </button>
+                                                        {/* Loading Animation */}
+                                                        {loading && (
+                                                            <div className="d-flex flex-column align-items-center mt-3">
+                                                                <div className="spinner-border text-primary"
+                                                                     style={{width: "3rem", height: "3rem"}}></div>
+                                                                <p className="mt-2 text-muted">Processing file, please
+                                                                    wait...</p>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Download Button - Appears only when the file is ready */}
+                                                        {fileReady && (
+                                                            <button onClick={handleDownload}
+                                                                    className="btn btn-primary btn-lg mt-4">
+                                                                <i className="bi bi-download me-2"></i> Download File
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </form>
                                             </div>
                                         </div>
@@ -10376,11 +10428,13 @@ const Genomic: React.FC = () => {
                                                         </div>
                                                     ))}
                                                     {formDataCustom.genomic_regions.exon_exon_junction.value === "true" && (
-                                                        <div className="mb-3">
-                                                            <label htmlFor="exon_exon_junction_block_size"
-                                                                   className="form-label">
-                                                                Exon-Exon-Junction Block Size
-                                                            </label>
+                                                        <>
+                                                        <label htmlFor="exon_exon_junction_block_size"
+                                                               className="form-label">
+                                                            Exon-Exon-Junction Block Size
+                                                        </label>
+                                                        <div className="d-flex align-items-center">
+
                                                             <input
                                                                 type="number"
                                                                 className="form-control"
@@ -10389,7 +10443,26 @@ const Genomic: React.FC = () => {
                                                                 onChange={handleChange}
                                                                 placeholder="50"
                                                             />
+                                                            <OverlayTrigger
+                                                                trigger="hover"
+                                                                placement="top"
+                                                                overlay={
+                                                                    <Popover id={`popover-blocksize`}>
+                                                                        <Popover.Body>
+                                                                            {formDataCustom.exon_exon_junction_block_size.comment}
+                                                                        </Popover.Body>
+                                                                    </Popover>
+                                                                }
+                                                            >
+                                                                <InfoCircle style={{
+                                                                    fontSize: "1.2rem",
+                                                                    cursor: "pointer",
+                                                                    color: "#0d6efd",
+                                                                    marginLeft: "10px"
+                                                                }}/>
+                                                            </OverlayTrigger>
                                                         </div>
+                                                        </>
                                                     )}
                                                     <div className="container my-4">
                                                         <form onSubmit={handleSubmit} id="scrinshotForm">
@@ -10403,7 +10476,7 @@ const Genomic: React.FC = () => {
                                                             <div className="d-flex justify-content-center mt-3">
                                                                 <button
                                                                     type="submit"
-                                                                    className="btn btn-primary"
+                                                                    className="btn btn-warning"
                                                                     disabled={isSubmitting || !areAllFilesUploaded()}
                                                                 >
                                                                     {isSubmitting ? "Running..." : "Submit"}
