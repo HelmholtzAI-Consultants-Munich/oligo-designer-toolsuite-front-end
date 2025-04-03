@@ -87,7 +87,18 @@ const formDatas = {
         max_hsps: { value: "1000", comment: "" }
     },
     target_probe_specificity_blastn_hit_parameters: {
-        min_alignment_length: { value: "17", comment: "can be turned into coverage" }
+        "target_probe_specificity_blastn_search_parameters": {
+            "perc_identity": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['perc_identity']['value']),
+            "strand": form_data["target_probe_specificity_blastn_search_parameters"]['strand']['value'],
+            "word_size": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['word_size']['value']),
+            "dust": form_data["target_probe_specificity_blastn_search_parameters"]['dust']['value'],
+            "soft_masking": form_data["target_probe_specificity_blastn_search_parameters"]['soft_masking']['value'],
+            "max_target_seqs": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['max_target_seqs']['value']),
+            "max_hsps": to_int(form_data["target_probe_specificity_blastn_search_parameters"]['max_hsps']['value'])
+        },
+        "target_probe_specificity_blastn_hit_parameters": {
+            "min_alignment_length": to_int(form_data["target_probe_specificity_blastn_hit_parameters"]['min_alignment_length']['value'])
+        },: { value: "17", comment: "can be turned into coverage" }
     },
     target_probe_cross_hybridization_blastn_search_parameters: {
         perc_identity: { value: "80", comment: "the higher the percent identity is, the more significant the match" },
