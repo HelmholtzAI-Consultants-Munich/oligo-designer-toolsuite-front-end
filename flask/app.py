@@ -1183,7 +1183,7 @@ def oligoseq():
     for i in a:
         print('deleted')
         os.remove(i)
-    a=split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
+    a=split_on_newline(form_data['files_fasta_reference_database_targe_probe']['value'])
     if '\n' in a:
         a.remove('\n')
     for i in a:
