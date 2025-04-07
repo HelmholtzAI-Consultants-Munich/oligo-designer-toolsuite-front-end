@@ -772,8 +772,7 @@ const SeqFish: React.FC = () => {
                                 <label htmlFor="target_probe_T_secondary_structure" className="form-label">Secondary
                                     Structure Temperature:</label>
                                 <div className="col">
-                                    <label htmlFor="target_probe_secondary_structures_threshold_deltaG"
-                                           className="form-label">Threshold for secondary structure:</label>
+
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control"
                                                id="target_probe_T_secondary_structure"
@@ -1495,10 +1494,8 @@ const SeqFish: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-n_jobs">
-                                                <Popover.Header as="h3">Target File </Popover.Header>
                                                 <Popover.Body>
-                                                    Fasta file with sequences used as reference for the specificity
-                                                    filters. Use the genomic region generator to create fasta files.
+                                                    {formData.files_fasta_reference_database_primer.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -1739,14 +1736,37 @@ const SeqFish: React.FC = () => {
                                 <div className="col">
                                     <label htmlFor="primer_GC_content_min" className="form-label">Min GC
                                         Content:</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="primer_GC_content_min"
-                                        name="primer_GC_content_min"
-                                        value={formData.primer_GC_content_min.value}
-                                        onChange={handleChange}
-                                    />
+                                    <div className="d-flex align-items-center">
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            id="primer_GC_content_min"
+                                            name="primer_GC_content_min"
+                                            value={formData.primer_GC_content_min.value}
+                                            onChange={handleChange}
+                                        />
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Body>
+                                                        {formData.primer_GC_content_min.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+
                                 </div>
                                 <div className="col">
                                     <label htmlFor="primer_GC_content_max" className="form-label">Max GC
@@ -2496,7 +2516,6 @@ const SeqFish: React.FC = () => {
                 return (
                     <div>
 
-                        <h5>Cross-Hybridization Filters with BlastN</h5>
                         <div className="row g-3">
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_perc_identity" className="form-label">Percent
@@ -2728,7 +2747,6 @@ const SeqFish: React.FC = () => {
             case'oligosetselection':
                 return (
                     <div>
-                        <h5>Oligo Set Selection</h5>
                         <div className="row g-3">
                             <div className="col-md-6">
                                 <label htmlFor="max_graph_size" className="form-label">Max Graph
@@ -2866,43 +2884,44 @@ const SeqFish: React.FC = () => {
                     </div>
                 );
             case'readout':
-            case'readout':
                 return (
                     <div>
                         <div className="mb-4">
-                            <h5>Readout Probe Parameters</h5>
-                            <div className="mb-3">
-                                <label htmlFor="readout_probe_initial_num_sequences" className="form-label">Initial Number of Sequences:</label>
-                                <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="readout_probe_initial_num_sequences"
-                                           name="readout_probe_initial_num_sequences"
-                                           value={formData.readout_probe_initial_num_sequences.value} onChange={handleChange}
-                                           required/>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-initial-sequences">
-                                                <Popover.Body>
-                                                    {formData.readout_probe_initial_num_sequences.comment}
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px"
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
-                            </div>
 
                             <div className="row g-3">
-                                <div className="mb-3">
+
+
+                                <div className="col">
+                                    <label htmlFor="readout_probe_initial_num_sequences" className="form-label">Initial Number of Sequences:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="readout_probe_initial_num_sequences"
+                                               name="readout_probe_initial_num_sequences"
+                                               value={formData.readout_probe_initial_num_sequences.value} onChange={handleChange}
+                                               required/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-initial-sequences">
+                                                    <Popover.Body>
+                                                        {formData.readout_probe_initial_num_sequences.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+                                    </div>
+                                </div>
+
+                                <div className="col">
                                     <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="perc_identity"
@@ -2933,7 +2952,10 @@ const SeqFish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                            </div>
+                            <div className="row g-3">
+
+                                <div className="col">
                                     <label htmlFor="strand" className="form-label">Strand:</label>
                                     <div className="d-flex align-items-center">
                                         <select className="form-select" id="strand"
@@ -2967,7 +2989,7 @@ const SeqFish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                                <div className="col">
                                     <label htmlFor="word_size" className="form-label">Word Size:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="word_size"
@@ -2997,8 +3019,11 @@ const SeqFish: React.FC = () => {
                                         </OverlayTrigger>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="row g-3">
 
-                                <div className="mb-3">
+
+                                <div className="col">
                                     <label htmlFor="dust" className="form-label">Dust:</label>
                                     <div className="d-flex align-items-center">
                                         <select className="form-select" id="dust"
@@ -3032,7 +3057,7 @@ const SeqFish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                                <div className="col">
                                     <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
                                     <div className="d-flex align-items-center">
                                         <select className="form-select" id="soft_masking"
@@ -3065,8 +3090,10 @@ const SeqFish: React.FC = () => {
                                         </OverlayTrigger>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="mb-3">
+                            <div className="row g-3">
+                                <div className="col">
                                     <label htmlFor="max_target_seqs" className="form-label">Max Target
                                         Sequences:</label>
                                     <div className="d-flex align-items-center">
@@ -3098,7 +3125,7 @@ const SeqFish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                                <div className="col">
                                     <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="max_hsps"
@@ -3128,40 +3155,39 @@ const SeqFish: React.FC = () => {
                                         </OverlayTrigger>
                                     </div>
                                 </div>
-
-                                <div>
-                                    <h4>Readout Probe BLASTn Hit Parameters</h4>
-                                    <div className="mb-3">
-                                        <label htmlFor="min_alignment_length" className="form-label">Min Alignment
-                                            Length:</label>
-                                        <div className="d-flex align-items-center">
-                                            <input type="number" className="form-control" id="min_alignment_length"
-                                                   name="readout_probe.specificity.blastn_hit_parameters.min_alignment_length"
-                                                   value={formData.readout_probe_specificity_blastn_hit_parameters.min_alignment_length.value}
-                                                   onChange={handleChange} required/>
-                                            <OverlayTrigger
-                                                trigger="hover"
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="popover-min-alignment">
-                                                        <Popover.Header as="h3">Minimum Alignment
-                                                            Length</Popover.Header>
-                                                        <Popover.Body>
-                                                            {formData.readout_probe_specificity_blastn_hit_parameters.min_alignment_length.comment}
-                                                        </Popover.Body>
-                                                    </Popover>
-                                                }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px"
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
-                                        </div>
+                            </div>
+                            <div>
+                                <h5>Readout Probe BLASTn Hit Parameters</h5>
+                                <div className="mb-3">
+                                    <label htmlFor="min_alignment_length" className="form-label">Min Alignment
+                                        Length:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="number" className="form-control" id="min_alignment_length"
+                                               name="readout_probe.specificity.blastn_hit_parameters.min_alignment_length"
+                                               value={formData.readout_probe_specificity_blastn_hit_parameters.min_alignment_length.value}
+                                               onChange={handleChange} required/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-min-alignment">
+                                                    <Popover.Header as="h3">Minimum Alignment
+                                                        Length</Popover.Header>
+                                                    <Popover.Body>
+                                                        {formData.readout_probe_specificity_blastn_hit_parameters.min_alignment_length.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
                                     </div>
                                 </div>
                             </div>
@@ -3171,556 +3197,52 @@ const SeqFish: React.FC = () => {
             case 'primerpro':
                 return (
                     <div>
-                        <div className="mb-3">
-                            <label htmlFor="primer_initial_num_sequences" className="form-label">Initial Number of
-                                Sequences:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="primer_initial_num_sequences"
-                                       name="primer_initial_num_sequences"
-                                       value={formData.primer_initial_num_sequences.value} onChange={handleChange}
-                                       required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-initial-sequences">
-                                            <Popover.Body>
-                                                {formData.primer_initial_num_sequences.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="perc_identity"
-                                       name="primer_specificity_reference_blastn_search_parameters_perc_identity"
-                                       value={formData.primer_specificity_refrence_blastn_search_parameters.perc_identity.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-perc-identity">
-                                            <Popover.Header as="h3">Percentage Identity</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_search_parameters.perc_identity.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
+                        <div className="row g-3">
 
-                        <div className="mb-3">
-                            <label htmlFor="strand" className="form-label">Strand:</label>
-                            <div className="d-flex align-items-center">
-                                <select className="form-select" id="strand"
-                                        name="primer_specificity_reference_blastn_search_parameters_strand"
-                                        value={formData.primer_specificity_refrence_blastn_search_parameters.strand.value}
-                                        onChange={handleChange}>
-                                    <option value="minus">Minus</option>
-                                    <option value="plus">Plus</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-strand">
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_search_parameters.strand.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
 
-                        <div className="mb-3">
-                            <label htmlFor="word_size" className="form-label">Word Size:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="word_size"
-                                       name="primer_specificity_reference_blastn_search_parameters_word_size"
-                                       value={formData.primer_specificity_refrence_blastn_search_parameters.word_size.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-word-size">
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_search_parameters.word_size.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="dust" className="form-label">Dust:</label>
-                            <div className="d-flex align-items-center">
-                                <select className="form-select" id="dust"
-                                        name="primer_specificity_reference_blastn_search_parameters_dust"
-                                        value={formData.primer_specificity_refrence_blastn_search_parameters.dust.value}
-                                        onChange={handleChange}>
-                                    <option value="no">No</option>
-                                    <option value="yes">Yes</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-dust">
-                                            <Popover.Header as="h3">Dust Filtering</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_search_parameters.dust.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
-                            <div className="d-flex align-items-center">
-                                <select className="form-select" id="soft_masking"
-                                        name="primer_specificity_reference_blastn_search_parameters_soft_masking"
-                                        value={formData.primer_specificity_refrence_blastn_search_parameters.soft_masking.value}
-                                        onChange={handleChange}>
-                                    <option value="false">False</option>
-                                    <option value="true">True</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-soft-masking">
-                                            <Popover.Header as="h3">Soft Masking</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_search_parameters.soft_masking.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="max_target_seqs"
-                                       name="primer_specificity_reference_blastn_search_parameters_max_target_seqs"
-                                       value={formData.primer_specificity_refrence_blastn_search_parameters.max_target_seqs.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-max-target-seqs">
-                                            <Popover.Header as="h3">Maximum Target Sequences</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_search_parameters.max_target_seqs.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="max_hsps"
-                                       name="primer_specificity_reference_blastn_search_parameters_max_hsps"
-                                       value={formData.primer_specificity_refrence_blastn_search_parameters.max_hsps.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-max-hsps">
-                                            <Popover.Header as="h3">Maximum HSPs</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_search_parameters.max_hsps.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="min_alignment_length"
-                                       name="primer_specificity_reference_blastn_hit_parameters_min_alignment_length"
-                                       value={formData.primer_specificity_refrence_blastn_hit_parameters.min_alignment_length.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-min-alignment-length">
-                                            <Popover.Header as="h3">Minimum Alignment Length</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_refrence_blastn_hit_parameters.min_alignment_length.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="perc_identity"
-                                       name="primer_specificity_encoding_probes_blastn_search_parameters_perc_identity"
-                                       value={formData.primer_specificity_encoding_probes_blastn_search_parameters.perc_identity.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-enc-perc-identity">
-                                            <Popover.Header as="h3">Percentage Identity</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_encoding_probes_blastn_search_parameters.perc_identity.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="strand" className="form-label">Strand:</label>
-                            <div className="d-flex align-items-center">
-                                <select className="form-select" id="strand"
-                                        name="primer_specificity_encoding_probes_blastn_search_parameters_strand"
-                                        value={formData.primer_specificity_encoding_probes_blastn_search_parameters.strand.value}
-                                        onChange={handleChange}>
-                                    <option value="minus">Minus</option>
-                                    <option value="plus">Plus</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-enc-strand">
-                                            <Popover.Header as="h3">Strand Selection</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_encoding_probes_blastn_search_parameters.strand.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="word_size" className="form-label">Word Size:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="word_size"
-                                       name="primer_specificity_encoding_probes_blastn_search_parameters_word_size"
-                                       value={formData.primer_specificity_encoding_probes_blastn_search_parameters.word_size.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-enc-word-size">
-                                            <Popover.Header as="h3">Word Size</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_encoding_probes_blastn_search_parameters.word_size.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="dust" className="form-label">Dust:</label>
-                            <div className="d-flex align-items-center">
-                                <select className="form-select" id="dust"
-                                        name="primer_specificity_encoding_probes_blastn_search_parameters_dust"
-                                        value={formData.primer_specificity_encoding_probes_blastn_search_parameters.dust.value}
-                                        onChange={handleChange}>
-                                    <option value="no">No</option>
-                                    <option value="yes">Yes</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-enc-dust">
-                                            <Popover.Header as="h3">Dust Filtering</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_encoding_probes_blastn_search_parameters.dust.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
-                            <div className="d-flex align-items-center">
-                                <select className="form-select" id="soft_masking"
-                                        name="primer_specificity_encoding_probes_blastn_search_parameters_soft_masking"
-                                        value={formData.primer_specificity_encoding_probes_blastn_search_parameters.soft_masking.value}
-                                        onChange={handleChange}>
-                                    <option value="false">False</option>
-                                    <option value="true">True</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-enc-soft-masking">
-                                            <Popover.Header as="h3">Soft Masking</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_encoding_probes_blastn_search_parameters.soft_masking.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="max_target_seqs"
-                                       name="primer_specificity_encoding_probes_blastn_search_parameters_max_target_seqs"
-                                       value={formData.primer_specificity_encoding_probes_blastn_search_parameters.max_target_seqs.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-enc-max-target-seqs">
-                                            <Popover.Header as="h3">Maximum Target Sequences</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_encoding_probes_blastn_search_parameters.max_target_seqs.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="max_hsps"
-                                       name="primer_specificity_encoding_probes_blastn_search_parameters_max_hsps"
-                                       value={formData.primer_specificity_encoding_probes_blastn_search_parameters.max_hsps.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-enc-max-hsps">
-                                            <Popover.Header as="h3">Maximum HSPs</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_specificity_encoding_probes_blastn_search_parameters.max_hsps.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="min_alignment_length"
-                                       name="primer_specificity_encoding_probes_blastn_hit_parameters_min_alignment_length"
-                                       value={formData.primer_specificity_encoding_probes_blastn_hit_parameters.min_alignment_length.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-nn-table">
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.nn_table.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="nn_table" className="form-label">NN Table:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="text" className="form-control" id="nn_table"
-                                       name="primer_Tm_parameters_nn_table"
-                                       value={formData.primer_Tm_parameters.nn_table.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-nn-table">
-                                            <Popover.Header as="h3">NN Table Parameters</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.nn_table.comment ||
-                                                    "Nearest-neighbor thermodynamic parameters for melting temperature calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="tmm_table" className="form-label">TMM Table:</label>
-                            <div className="mb-3">
-                                <label htmlFor="nn_table" className="form-label">NN Table:</label>
+                            <div className="col">
+                                <label htmlFor="primer_initial_num_sequences" className="form-label">Initial Number of
+                                    Sequences:</label>
                                 <div className="d-flex align-items-center">
-                                    <input type="text" className="form-control" id="nn_table"
-                                           name="primer_Tm_parameters_nn_table"
-                                           value={formData.primer_Tm_parameters.nn_table.value}
+                                    <input type="number" className="form-control" id="primer_initial_num_sequences"
+                                           name="primer_initial_num_sequences"
+                                           value={formData.primer_initial_num_sequences.value} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-initial-sequences">
+                                                <Popover.Body>
+                                                    {formData.primer_initial_num_sequences.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="perc_identity"
+                                           name="primer_specificity_reference_blastn_search_parameters_perc_identity"
+                                           value={formData.primer_specificity_refrence_blastn_search_parameters.perc_identity.value}
                                            onChange={handleChange} required/>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"
                                         overlay={
-                                            <Popover id="popover-nn-table">
-                                                <Popover.Header as="h3">NN Table Parameters</Popover.Header>
+                                            <Popover id="popover-perc-identity">
+                                                <Popover.Header as="h3">Percentage Identity</Popover.Header>
                                                 <Popover.Body>
-                                                    {formData.primer_Tm_parameters.nn_table.comment}
+                                                    {formData.primer_specificity_refrence_blastn_search_parameters.perc_identity.comment}
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -3735,7 +3257,501 @@ const SeqFish: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mb-3">
+                            <div className="col">
+                                <label htmlFor="strand" className="form-label">Strand:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select" id="strand"
+                                            name="primer_specificity_reference_blastn_search_parameters_strand"
+                                            value={formData.primer_specificity_refrence_blastn_search_parameters.strand.value}
+                                            onChange={handleChange}>
+                                        <option value="minus">Minus</option>
+                                        <option value="plus">Plus</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-strand">
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_refrence_blastn_search_parameters.strand.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row g-3">
+                            <div className="col">
+                                <label htmlFor="word_size" className="form-label">Word Size:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="word_size"
+                                           name="primer_specificity_reference_blastn_search_parameters_word_size"
+                                           value={formData.primer_specificity_refrence_blastn_search_parameters.word_size.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-word-size">
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_refrence_blastn_search_parameters.word_size.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="dust" className="form-label">Dust:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select" id="dust"
+                                            name="primer_specificity_reference_blastn_search_parameters_dust"
+                                            value={formData.primer_specificity_refrence_blastn_search_parameters.dust.value}
+                                            onChange={handleChange}>
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-dust">
+                                                <Popover.Header as="h3">Dust Filtering</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_refrence_blastn_search_parameters.dust.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select" id="soft_masking"
+                                            name="primer_specificity_reference_blastn_search_parameters_soft_masking"
+                                            value={formData.primer_specificity_refrence_blastn_search_parameters.soft_masking.value}
+                                            onChange={handleChange}>
+                                        <option value="false">False</option>
+                                        <option value="true">True</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-soft-masking">
+                                                <Popover.Header as="h3">Soft Masking</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_refrence_blastn_search_parameters.soft_masking.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row g-3">
+
+
+
+                            <div className="col">
+                                <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="max_target_seqs"
+                                           name="primer_specificity_reference_blastn_search_parameters_max_target_seqs"
+                                           value={formData.primer_specificity_refrence_blastn_search_parameters.max_target_seqs.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-max-target-seqs">
+                                                <Popover.Header as="h3">Maximum Target Sequences</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_refrence_blastn_search_parameters.max_target_seqs.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="max_hsps"
+                                           name="primer_specificity_reference_blastn_search_parameters_max_hsps"
+                                           value={formData.primer_specificity_refrence_blastn_search_parameters.max_hsps.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-max-hsps">
+                                                <Popover.Header as="h3">Maximum HSPs</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_refrence_blastn_search_parameters.max_hsps.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="min_alignment_length"
+                                           name="primer_specificity_reference_blastn_hit_parameters_min_alignment_length"
+                                           value={formData.primer_specificity_refrence_blastn_hit_parameters.min_alignment_length.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-min-alignment-length">
+                                                <Popover.Header as="h3">Minimum Alignment Length</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_refrence_blastn_hit_parameters.min_alignment_length.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row g-3">
+
+                            <div className="col">
+                                <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="perc_identity"
+                                           name="primer_specificity_encoding_probes_blastn_search_parameters_perc_identity"
+                                           value={formData.primer_specificity_encoding_probes_blastn_search_parameters.perc_identity.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-enc-perc-identity">
+                                                <Popover.Header as="h3">Percentage Identity</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_encoding_probes_blastn_search_parameters.perc_identity.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="strand" className="form-label">Strand:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select" id="strand"
+                                            name="primer_specificity_encoding_probes_blastn_search_parameters_strand"
+                                            value={formData.primer_specificity_encoding_probes_blastn_search_parameters.strand.value}
+                                            onChange={handleChange}>
+                                        <option value="minus">Minus</option>
+                                        <option value="plus">Plus</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-enc-strand">
+                                                <Popover.Header as="h3">Strand Selection</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_encoding_probes_blastn_search_parameters.strand.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="word_size" className="form-label">Word Size:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="word_size"
+                                           name="primer_specificity_encoding_probes_blastn_search_parameters_word_size"
+                                           value={formData.primer_specificity_encoding_probes_blastn_search_parameters.word_size.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-enc-word-size">
+                                                <Popover.Header as="h3">Word Size</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_encoding_probes_blastn_search_parameters.word_size.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row g-3">
+
+
+                            <div className="col">
+                                <label htmlFor="dust" className="form-label">Dust:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select" id="dust"
+                                            name="primer_specificity_encoding_probes_blastn_search_parameters_dust"
+                                            value={formData.primer_specificity_encoding_probes_blastn_search_parameters.dust.value}
+                                            onChange={handleChange}>
+                                        <option value="no">No</option>
+                                        <option value="yes">Yes</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-enc-dust">
+                                                <Popover.Header as="h3">Dust Filtering</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_encoding_probes_blastn_search_parameters.dust.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
+                                <div className="d-flex align-items-center">
+                                    <select className="form-select" id="soft_masking"
+                                            name="primer_specificity_encoding_probes_blastn_search_parameters_soft_masking"
+                                            value={formData.primer_specificity_encoding_probes_blastn_search_parameters.soft_masking.value}
+                                            onChange={handleChange}>
+                                        <option value="false">False</option>
+                                        <option value="true">True</option>
+                                    </select>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-enc-soft-masking">
+                                                <Popover.Header as="h3">Soft Masking</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_encoding_probes_blastn_search_parameters.soft_masking.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="max_target_seqs"
+                                           name="primer_specificity_encoding_probes_blastn_search_parameters_max_target_seqs"
+                                           value={formData.primer_specificity_encoding_probes_blastn_search_parameters.max_target_seqs.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-enc-max-target-seqs">
+                                                <Popover.Header as="h3">Maximum Target Sequences</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_encoding_probes_blastn_search_parameters.max_target_seqs.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="row g-3">
+
+
+                            <div className="col">
+                                <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="max_hsps"
+                                           name="primer_specificity_encoding_probes_blastn_search_parameters_max_hsps"
+                                           value={formData.primer_specificity_encoding_probes_blastn_search_parameters.max_hsps.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-enc-max-hsps">
+                                                <Popover.Header as="h3">Maximum HSPs</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_specificity_encoding_probes_blastn_search_parameters.max_hsps.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="min_alignment_length"
+                                           name="primer_specificity_encoding_probes_blastn_hit_parameters_min_alignment_length"
+                                           value={formData.primer_specificity_encoding_probes_blastn_hit_parameters.min_alignment_length.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-nn-table">
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.nn_table.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
+                            <div className="col">
+                                <label htmlFor="nn_table" className="form-label">NN Table:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="text" className="form-control" id="nn_table"
+                                           name="primer_Tm_parameters_nn_table"
+                                           value={formData.primer_Tm_parameters.nn_table.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-nn-table">
+                                                <Popover.Header as="h3">NN Table Parameters</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.nn_table.comment ||
+                                                        "Nearest-neighbor thermodynamic parameters for melting temperature calculation"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row g-3">
+
+
+                            <div className="col">
                                 <label htmlFor="tmm_table" className="form-label">TMM Table:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="text" className="form-control" id="tmm_table"
@@ -3747,7 +3763,6 @@ const SeqFish: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-tmm-table">
-                                                <Popover.Header as="h3">TMM Table Parameters</Popover.Header>
                                                 <Popover.Body>
                                                     {formData.primer_Tm_parameters.tmm_table.comment}
                                                 </Popover.Body>
@@ -3764,7 +3779,7 @@ const SeqFish: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="imm_table" className="form-label">IMM Table:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="text" className="form-control" id="imm_table"
@@ -3793,7 +3808,7 @@ const SeqFish: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="de_table" className="form-label">DE Table:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="text" className="form-control" id="de_table"
@@ -3805,7 +3820,6 @@ const SeqFish: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-de-table">
-                                                <Popover.Header as="h3">DE Table Parameters</Popover.Header>
                                                 <Popover.Body>
                                                     {formData.primer_Tm_parameters.de_table.comment}
                                                 </Popover.Body>
@@ -3821,331 +3835,255 @@ const SeqFish: React.FC = () => {
                                     </OverlayTrigger>
                                 </div>
                             </div>
-                            <div className="d-flex align-items-center">
-                                <input type="text" className="form-control" id="tmm_table"
-                                       name="primer_Tm_parameters_tmm_table"
-                                       value={formData.primer_Tm_parameters.tmm_table.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-tmm-table">
-                                            <Popover.Header as="h3">TMM Table Parameters</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.tmm_table.comment ||
-                                                    "Terminal mismatch parameters for melting temperature calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
+
+
+                        </div>
+                        <div className="row g-3">
+
+
+                            <div className="col">
+                                <label htmlFor="dnac1" className="form-label">DNA Concentration 1 (dnac1):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="dnac1"
+                                           name="primer_Tm_parameters_dnac1"
+                                           value={formData.primer_Tm_parameters.dnac1.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-dnac1">
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.dnac1.comment
+                                                    }
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="dnac2" className="form-label">DNA Concentration 2 (dnac2):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="dnac2"
+                                           name="primer_Tm_parameters_dnac2"
+                                           value={formData.primer_Tm_parameters.dnac2.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-dnac2">
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.dnac2.comment
+                                                    }
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mb-3">
-                            <label htmlFor="imm_table" className="form-label">IMM Table:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="text" className="form-control" id="imm_table"
-                                       name="primer_Tm_parameters_imm_table"
-                                       value={formData.primer_Tm_parameters.imm_table.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-imm-table">
-                                            <Popover.Header as="h3">IMM Table Parameters</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.imm_table.comment ||
-                                                    "Internal mismatch parameters for melting temperature calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
+                        <div className=" row g-3">
+
+
+                            <div className="col">
+                                <label htmlFor="saltcorr" className="form-label">Salt Correction (saltcorr):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="saltcorr"
+                                           name="primer_Tm_parameters_saltcorr"
+                                           value={formData.primer_Tm_parameters.saltcorr.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-saltcorr">
+                                                <Popover.Header as="h3">Salt Correction</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.saltcorr.comment ||
+                                                        "Salt correction parameter for Tm calculation"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="Na" className="form-label">Sodium Concentration (Na):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="Na"
+                                           name="primer_Tm_parameters_Na"
+                                           value={formData.primer_Tm_parameters.Na.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-na-concentration">
+                                                <Popover.Header as="h3">Sodium Concentration</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.Na.comment ||
+                                                        "Sodium ion concentration for Tm calculation (in mM)"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                            <div className="col">
+                                <label htmlFor="K" className="form-label">Potassium Concentration (K):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="K"
+                                           name="primer_Tm_parameters_K"
+                                           value={formData.primer_Tm_parameters.K.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-k-concentration">
+                                                <Popover.Header as="h3">Potassium Concentration</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.K.comment ||
+                                                        "Potassium ion concentration for Tm calculation (in mM)"}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row g-3">
+
+                            <div className="col">
+                                <label htmlFor="Tris" className="form-label">Tris Concentration:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="Tris"
+                                           name="primer_Tm_parameters_Tris"
+                                           value={formData.primer_Tm_parameters.Tris.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-tris-concentration">
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.Tris.comment
+                                                    }
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="Mg" className="form-label">Magnesium Concentration (Mg):</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="Mg"
+                                           name="primer_Tm_parameters_Mg"
+                                           value={formData.primer_Tm_parameters.Mg.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-mg-concentration">
+                                                <Popover.Header as="h3">Magnesium Concentration</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.Mg.comment
+                                                    }
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+                            </div>
+
+                            <div className="col">
+                                <label htmlFor="dNTPs" className="form-label">dNTPs Concentration:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="dNTPs"
+                                           name="primer_Tm_parameters_dNTPs"
+                                           value={formData.primer_Tm_parameters.dNTPs.value}
+                                           onChange={handleChange} required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-dntps-concentration">
+                                                <Popover.Header as="h3">dNTPs Concentration</Popover.Header>
+                                                <Popover.Body>
+                                                    {formData.primer_Tm_parameters.dNTPs.comment
+                                                    }
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mb-3">
-                            <label htmlFor="de_table" className="form-label">DE Table:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="text" className="form-control" id="de_table"
-                                       name="primer_Tm_parameters_de_table"
-                                       value={formData.primer_Tm_parameters.de_table.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-de-table">
-                                            <Popover.Header as="h3">DE Table Parameters</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.de_table.comment ||
-                                                    "Deoxynucleotide equivalent parameters for melting temperature calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="dnac1" className="form-label">DNA Concentration 1 (dnac1):</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="dnac1"
-                                       name="primer_Tm_parameters_dnac1"
-                                       value={formData.primer_Tm_parameters.dnac1.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-dnac1">
-                                            <Popover.Header as="h3">DNA Concentration 1</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.dnac1.comment ||
-                                                    "First DNA concentration parameter for Tm calculation (in nM)"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="dnac2" className="form-label">DNA Concentration 2 (dnac2):</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="dnac2"
-                                       name="primer_Tm_parameters_dnac2"
-                                       value={formData.primer_Tm_parameters.dnac2.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-dnac2">
-                                            <Popover.Header as="h3">DNA Concentration 2</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.dnac2.comment ||
-                                                    "Second DNA concentration parameter for Tm calculation (in nM)"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="saltcorr" className="form-label">Salt Correction (saltcorr):</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="saltcorr"
-                                       name="primer_Tm_parameters_saltcorr"
-                                       value={formData.primer_Tm_parameters.saltcorr.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-saltcorr">
-                                            <Popover.Header as="h3">Salt Correction</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.saltcorr.comment ||
-                                                    "Salt correction parameter for Tm calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="Na" className="form-label">Sodium Concentration (Na):</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="Na"
-                                       name="primer_Tm_parameters_Na"
-                                       value={formData.primer_Tm_parameters.Na.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-na-concentration">
-                                            <Popover.Header as="h3">Sodium Concentration</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.Na.comment ||
-                                                    "Sodium ion concentration for Tm calculation (in mM)"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="K" className="form-label">Potassium Concentration (K):</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="K"
-                                       name="primer_Tm_parameters_K"
-                                       value={formData.primer_Tm_parameters.K.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-k-concentration">
-                                            <Popover.Header as="h3">Potassium Concentration</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.K.comment ||
-                                                    "Potassium ion concentration for Tm calculation (in mM)"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="Tris" className="form-label">Tris Concentration:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="Tris"
-                                       name="primer_Tm_parameters_Tris"
-                                       value={formData.primer_Tm_parameters.Tris.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-tris-concentration">
-                                            <Popover.Header as="h3">Tris Buffer Concentration</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.Tris.comment ||
-                                                    "Tris buffer concentration for Tm calculation (in mM)"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="Mg" className="form-label">Magnesium Concentration (Mg):</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="Mg"
-                                       name="primer_Tm_parameters_Mg"
-                                       value={formData.primer_Tm_parameters.Mg.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-mg-concentration">
-                                            <Popover.Header as="h3">Magnesium Concentration</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.Mg.comment ||
-                                                    "Magnesium ion concentration for Tm calculation (in mM)"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-
-                        <div className="mb-3">
-                            <label htmlFor="dNTPs" className="form-label">dNTPs Concentration:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="dNTPs"
-                                       name="primer_Tm_parameters_dNTPs"
-                                       value={formData.primer_Tm_parameters.dNTPs.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-dntps-concentration">
-                                            <Popover.Header as="h3">dNTPs Concentration</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.dNTPs.comment ||
-                                                    "Deoxynucleotide triphosphates concentration for Tm calculation (in mM)"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
 
                     </div>
 

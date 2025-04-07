@@ -46,21 +46,40 @@ const Genomic: React.FC = () => {
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     ) => {
-        const {name, value} = e.target;
+        const { name, value } = e.target;
+        const keys = name.split(".");
+
+        const updateFormData = (prev: any) => {
+            if (keys.length === 2) {
+                const [parent, child] = keys;
+                return {
+                    ...prev,
+                    [parent]: {
+                        ...(prev[parent] || {}),
+                        [child]: {
+                            ...(prev[parent]?.[child] || {}),
+                            value,
+                        },
+                    },
+                };
+            } else {
+                return {
+                    ...prev,
+                    [name]: {
+                        ...(prev[name] || {}),
+                        value,
+                    },
+                };
+            }
+        };
+
         if (selectedSource === 'ncbi') {
-            setFormDataNcbi({...formDataNcbi, [name]: value});
-
+            setFormDataNcbi(prev => updateFormData(prev));
+        } else if (selectedSource === 'ensembl') {
+            setFormDataEns(prev => updateFormData(prev));
+        } else if (selectedSource === 'custom') {
+            setFormDataCustom(prev => updateFormData(prev));
         }
-        if (selectedSource === 'ensembl'){
-            setFormDataEns({...formDataEns, [name]: value});
-
-        }
-        if (selectedSource === 'custom'){
-            setFormDataCustom({...formDataCustom, [name]: value});
-
-        }
-
-
     };
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -290,8 +309,8 @@ const Genomic: React.FC = () => {
                                                     <div className="d-flex align-items-center">
                                                         <select
                                                             className="form-select"
-                                                            id="taxon"
-                                                            name="taxon"
+                                                            id="source_params.taxon"
+                                                            name="source_params.taxon"
                                                             value={formDataNcbi.source_params.taxon.value}
                                                             onChange={handleChange}
                                                         >
@@ -340,8 +359,9 @@ const Genomic: React.FC = () => {
                                                         {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                             <>
                                                                 <select
+                                                                    name="source_params.species"
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -944,7 +964,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -3780,6 +3801,7 @@ const Genomic: React.FC = () => {
                                                                 <select
                                                                     className="form-control"
                                                                     id="species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -3793,7 +3815,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -5879,7 +5902,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -6723,7 +6747,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -6738,7 +6763,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -6765,7 +6791,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -7230,7 +7257,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -7417,7 +7445,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -7769,7 +7798,8 @@ const Genomic: React.FC = () => {
                                                             <>
                                                                 <select
                                                                     className="form-control"
-                                                                    id="species"
+                                                                    id="source_params.species"
+                                                                    name="source_params.species"
                                                                     value={formDataNcbi.source_params.species.value}
                                                                     onChange={handleChange}
                                                                 >
@@ -7781,8 +7811,9 @@ const Genomic: React.FC = () => {
                                                                 <>
                                                                     <select
                                                                         className="form-control"
-                                                                        id="species"
+                                                                        id="source_params.species"
                                                                         value={formDataNcbi.source_params.species.value}
+                                                                        name="source_params.species"
                                                                         onChange={handleChange}
                                                                     >
                                                                         <option value="">Select a species</option>
@@ -9200,7 +9231,8 @@ const Genomic: React.FC = () => {
                                                                 <>
                                                                     <select
                                                                         className="form-control"
-                                                                        id="species"
+                                                                        id="source_params.species"
+                                                                        name="source_params.species"
                                                                         value={formDataNcbi.source_params.species.value}
                                                                         onChange={handleChange}
                                                                     >
@@ -9220,7 +9252,8 @@ const Genomic: React.FC = () => {
                                                         <input
                                                             type="number"
                                                             className="form-control"
-                                                            id="annotation_release"
+                                                            id="source_params.annotation_release"
+                                                            name="source_params.annotation_release"
                                                             value={formDataNcbi.source_params.annotation_release.value}
                                                             onChange={handleChange}
                                                             placeholder="current"
@@ -9310,6 +9343,7 @@ const Genomic: React.FC = () => {
                                                                     type="number"
                                                                     className="form-control"
                                                                     id="exon_exon_junction_block_size"
+                                                                    name="exon_exon_junction_block_size"
                                                                     value={formDataNcbi.exon_exon_junction_block_size.value}
                                                                     onChange={handleChange}
                                                                     placeholder="50"
@@ -9388,7 +9422,8 @@ const Genomic: React.FC = () => {
                                                     <div className="d-flex align-items-center">
                                                         <select
                                                             className="form-control"
-                                                            id="species"
+                                                            id="source_params.species"
+                                                            name="source_params.species"
                                                             value={formDataEns.source_params.species.value}
                                                             onChange={handleChange}
                                                         >
@@ -10030,7 +10065,8 @@ const Genomic: React.FC = () => {
                                                         <input
                                                             type="number"
                                                             className="form-control"
-                                                            id="annotation_release"
+                                                            id="source_params.annotation_release"
+                                                            name="source_params.annotation_release"
                                                             value={formDataEns.source_params.annotation_release.value}
                                                             onChange={handleChange}
                                                             placeholder="current"
@@ -10119,6 +10155,7 @@ const Genomic: React.FC = () => {
                                                                     type="number"
                                                                     className="form-control"
                                                                     id="exon_exon_junction_block_size"
+                                                                    name="exon_exon_junction_block_size"
                                                                     value={formDataEns.exon_exon_junction_block_size.value}
                                                                     onChange={handleChange}
                                                                     placeholder="50"
@@ -10195,8 +10232,8 @@ const Genomic: React.FC = () => {
                                                 <form onSubmit={handleSubmit}>
                                                     <div className="d-flex align-items-center">
 
-                                                        <input type="file" className="form-control" id="file_sequence"
-                                                               name='file_sequence'
+                                                        <input type="file" className="form-control" id="source_params.file_sequence"
+                                                               name='source_params.file_sequence'
                                                                onChange={handleFileChange}/>
                                                         <OverlayTrigger
                                                             trigger="hover"
@@ -10224,8 +10261,8 @@ const Genomic: React.FC = () => {
                                                     <div className="d-flex align-items-center">
 
                                                         <input type="file" className="form-control"
-                                                               name='file_annotation'
-                                                               id="file_annotation" onChange={handleFileChange}/>
+                                                               name='source_params.file_annotation'
+                                                               id="source_params.file_annotation" onChange={handleFileChange}/>
                                                         <OverlayTrigger
                                                             trigger="hover"
                                                             placement="top"
@@ -10253,7 +10290,8 @@ const Genomic: React.FC = () => {
                                                         <input
                                                             type="text"
                                                             className="form-control"
-                                                            id="species"
+                                                            name="source_params.species"
+                                                            id="source_params.species"
                                                             value={formDataCustom.source_params.species.value}
                                                             onChange={handleChange}
                                                             placeholder=""
@@ -10286,7 +10324,9 @@ const Genomic: React.FC = () => {
                                                         <input
                                                             type="number"
                                                             className="form-control"
-                                                            id="annotation_release"
+                                                            id="source_params.annotation_release"
+                                                            name="source_params.annotation_release"
+
                                                             value={formDataCustom.source_params.annotation_release.value}
                                                             onChange={handleChange}
                                                             placeholder=""
@@ -10319,7 +10359,9 @@ const Genomic: React.FC = () => {
                                                         <input
                                                             type='text'
                                                             className="form-control"
-                                                            id="genome_assembly"
+                                                            id="source_params.genome_assembly"
+                                                            name="source_params.genome_assembly"
+
                                                             value={formDataCustom.source_params.genome_assembly.value}
                                                             onChange={handleChange}
                                                             placeholder=""
@@ -10353,7 +10395,9 @@ const Genomic: React.FC = () => {
                                                         <input
                                                             type='text'
                                                             className="form-control"
-                                                            id="files_source"
+                                                            id="source_params.files_source"
+                                                            name="source_params.files_source"
+
                                                             value={formDataCustom.source_params.files_source.value}
                                                             onChange={handleChange}
                                                             placeholder=""
@@ -10439,6 +10483,8 @@ const Genomic: React.FC = () => {
                                                                 type="number"
                                                                 className="form-control"
                                                                 id="exon_exon_junction_block_size"
+                                                                name="exon_exon_junction_block_size"
+
                                                                 value={formDataCustom.exon_exon_junction_block_size.value}
                                                                 onChange={handleChange}
                                                                 placeholder="50"

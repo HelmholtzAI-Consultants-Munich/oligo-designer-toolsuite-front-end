@@ -14,12 +14,12 @@ const OligoSeq: React.FC = () => {
     interface FileState {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
-        files_fasta_reference_database_target_probe: File[]; // Always an array
+        files_fasta_reference_database_targe_probe: File[]; // Always an array
     }
     const [files, setFiles] = useState<FileState>({
         file_regions: null,
         files_fasta_target_probe_database: [], // Empty array
-        files_fasta_reference_database_target_probe: [], // Empty array
+        files_fasta_reference_database_targe_probe: [], // Empty array
     });
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
@@ -31,12 +31,13 @@ const OligoSeq: React.FC = () => {
                 ? selectedFiles[0] // Single file
                 : Array.from(selectedFiles), // Multiple files (always an array)
         }));
+        console.log(files)
     };
     const areAllFilesUploaded = () => {
         return (
             (files.file_regions !== null || formData.file_regions.value.length >0) &&
             files.files_fasta_target_probe_database.length > 0 &&
-            files.files_fasta_reference_database_target_probe.length > 0
+            files.files_fasta_reference_database_targe_probe.length > 0
         );
     };
     const uploadFiles = async () => {
@@ -126,7 +127,6 @@ const OligoSeq: React.FC = () => {
                 return (
                     <div>
                         <div>
-                            <h4>General Parameters</h4>
                             <div className="mb-3">
                                 <label
                                     htmlFor="n_jobs"
@@ -268,7 +268,6 @@ const OligoSeq: React.FC = () => {
                 return (
                     <div>
                         <div className="mb-4">
-                            <h4>Target Probe Parameters</h4>
                             <div className="mb-3">
                                 <label htmlFor="file_regions" className="form-label">
                                     Target File:
@@ -290,7 +289,6 @@ const OligoSeq: React.FC = () => {
                                             id="file_regions"
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
-                                            value={formData.file_regions.value}
                                             onChange={handleChange}
                                         />
 
@@ -350,7 +348,7 @@ const OligoSeq: React.FC = () => {
                                             multiple
                                         />
                                         <label
-                                            htmlFor="file_regions"
+                                            htmlFor="files_fasta_target_probe_database"
                                             className="btn btn-outline-primary d-block me-2 w-100 "
                                             style={{cursor: 'pointer'}}
                                         >
@@ -388,7 +386,7 @@ const OligoSeq: React.FC = () => {
 
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                    <label htmlFor="files_fasta_reference_database_targe_probe" className="form-label">
                                         Fasta Probe Reference Database:
                                     </label>
                                     <div className="d-flex align-items-center w-100">
@@ -396,13 +394,13 @@ const OligoSeq: React.FC = () => {
                                         <input
                                             type="file"
                                             className="form-control visually-hidden"
-                                            id="files_fasta_reference_database_target_probe"
-                                            name="files_fasta_reference_database_target_probe"
+                                            id="files_fasta_reference_database_targe_probe"
+                                            name="files_fasta_reference_database_targe_probe"
                                             onChange={handleFileChange}
                                             multiple
                                         />
                                         <label
-                                            htmlFor="file_regions"
+                                            htmlFor="files_fasta_reference_database_targe_probe"
                                             className="btn btn-outline-primary d-block me-2 w-100 "
                                             style={{cursor: 'pointer'}}
                                         >
@@ -434,8 +432,8 @@ const OligoSeq: React.FC = () => {
                                     </div>
                                     {/* Display selected file names */}
                                     <div className="text-muted small mt-1">
-                                        {files.files_fasta_reference_database_target_probe.length > 0
-                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                        {files.files_fasta_reference_database_targe_probe.length > 0
+                                            ? `Selected: ${files.files_fasta_reference_database_targe_probe.map(f => f.name).join(', ')}`
                                             : "No files selected"}
                                     </div>
                                 </div>
@@ -446,7 +444,7 @@ const OligoSeq: React.FC = () => {
                                 <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_length_min"
-                                           name="probe_length_min"
+                                           name="target_probe_length_min"
                                            value={formData.target_probe_length_min.value} onChange={handleChange}
                                            required/>
                                     <OverlayTrigger
@@ -476,7 +474,7 @@ const OligoSeq: React.FC = () => {
                                 <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_length_max"
-                                           name="probe_length_max"
+                                           name="target_probe_length_max"
                                            value={formData.target_probe_length_max.value} onChange={handleChange}
                                            required/>
                                     <OverlayTrigger
@@ -503,11 +501,41 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                             <div className="col">
+                                <label htmlFor="probe_length_max" className="form-label">Targeted Exons:</label>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control" id="probe_length_max"
+                                           name="target_probe_targeted_exons"
+                                           value={formData.target_probe_targeted_exons.value} onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-n_jobs">
+                                                <Popover.Body>
+                                                    {formData.target_probe_targeted_exons.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle
+                                            style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}
+                                        />
+                                    </OverlayTrigger>
+                                </div>
+
+                            </div>
+                            <div className="col">
                                 <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
                                     (%):</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_isoform_consensus"
-                                           name="probe_isoform_consensus"
+                                           name="target_probe_isoform_consensus"
                                            value={formData.target_probe_isoform_consensus.value} onChange={handleChange}
                                            required/>
                                     <OverlayTrigger
@@ -540,7 +568,7 @@ const OligoSeq: React.FC = () => {
                                     (%):</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_GC_content_min"
-                                           name="probe_GC_content_min"
+                                           name="target_probe_GC_content_min"
                                            value={formData.target_probe_GC_content_min.value} onChange={handleChange}
                                            required/>
                                     <OverlayTrigger
@@ -574,7 +602,7 @@ const OligoSeq: React.FC = () => {
                                     (%):</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_GC_content_opt"
-                                           name="probe_GC_content_opt"
+                                           name="target_probe_GC_content_opt"
                                            value={formData.target_probe_GC_content_opt.value}
                                            onChange={handleChange}
                                            required/>
@@ -606,7 +634,7 @@ const OligoSeq: React.FC = () => {
                                     (%):</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_GC_content_max"
-                                           name="probe_GC_content_max"
+                                           name="target_probe_GC_content_max"
                                            value={formData.target_probe_GC_content_max.value}
                                            onChange={handleChange} required/>
                                     <OverlayTrigger
@@ -640,7 +668,7 @@ const OligoSeq: React.FC = () => {
                                 <label htmlFor="homopolymeric_A" className="form-label">A:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="homopolymeric_A"
-                                           name="homopolymeric_A"
+                                           name="target_probe_homopolymeric_base_n.A"
                                            value={formData.target_probe_homopolymeric_base_n.A.value}
                                            onChange={handleChange} required/>
                                     <OverlayTrigger
@@ -671,7 +699,7 @@ const OligoSeq: React.FC = () => {
                                 <label htmlFor="homopolymeric_T" className="form-label">T:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="homopolymeric_T"
-                                           name="homopolymeric_T"
+                                           name="target_probe_homopolymeric_base_n.T"
                                            value={formData.target_probe_homopolymeric_base_n.T.value}
                                            onChange={handleChange} required/>
                                     <OverlayTrigger
@@ -701,8 +729,8 @@ const OligoSeq: React.FC = () => {
                             <div className="col">
                                 <label htmlFor="homopolymeric_C" className="form-label">C:</label>
                                 <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="homopolymeric_C"
-                                           name="homopolymeric_C"
+                                    <input type="number" className="form-control" id="target_probe_homopolymeric_base_n.C"
+                                           name="target_probe_homopolymeric_base_n.C"
                                            value={formData.target_probe_homopolymeric_base_n.C.value}
                                            onChange={handleChange} required/>
                                     <OverlayTrigger
@@ -733,7 +761,7 @@ const OligoSeq: React.FC = () => {
                                 <label htmlFor="homopolymeric_G" className="form-label">G:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="homopolymeric_G"
-                                           name="homopolymeric_G"
+                                           name="target_probe_homopolymeric_base_n.G"
                                            value={formData.target_probe_homopolymeric_base_n.G.value}
                                            onChange={handleChange} required/>
                                     <OverlayTrigger
@@ -762,15 +790,14 @@ const OligoSeq: React.FC = () => {
                         </div>
                         <div className="row g-3">
                             <div className="col">
-                                <label htmlFor="target_probe_T_secondary_structure" className="form-label">Secondary
-                                    Structure Temperature:</label>
+
                                 <div className="col">
                                     <label htmlFor="target_probe_secondary_structures_threshold_deltaG"
                                            className="form-label">Threshold for secondary structure:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control"
                                                id="target_probe_T_secondary_structure"
-                                               name="target_probe_T_secondary_structure"
+                                               name="target_probe_secondary_structures_T"
                                                value={formData.target_probe_secondary_structures_T.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -839,7 +866,7 @@ const OligoSeq: React.FC = () => {
 
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probe_GC_weight"
-                                           name="probe_GC_weight"
+                                           name="target_probe_GC_weight"
                                            value={formData.target_probe_GC_weight.value} onChange={handleChange}
                                            required/>
                                     <OverlayTrigger
@@ -873,7 +900,7 @@ const OligoSeq: React.FC = () => {
                                     Size:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probeset_size_min"
-                                           name="probeset_size_min"
+                                           name="set_size_min"
                                            value={formData.set_size_min.value} onChange={handleChange} required/>
                                     <OverlayTrigger
                                         trigger="hover"
@@ -904,7 +931,7 @@ const OligoSeq: React.FC = () => {
                                     Size:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="probeset_size_opt"
-                                           name="probeset_size_opt"
+                                           name="set_size_opt"
                                            value={formData.set_size_opt.value} onChange={handleChange} required/>
                                     <OverlayTrigger
                                         trigger="hover"
@@ -935,7 +962,7 @@ const OligoSeq: React.FC = () => {
                                     Probes:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="distance_between_probes"
-                                           name="distance_between_probes"
+                                           name="distance_between_target_probes"
                                            value={formData.distance_between_target_probes.value}
                                            onChange={handleChange}
                                            required/>
@@ -1008,13 +1035,34 @@ const OligoSeq: React.FC = () => {
                         <div className="mb-3">
                             <label htmlFor="target_probe_hybridization_probability_alignment_method"
                                    className="form-label">Alignment Method:</label>
-                            <select className="form-select" id="target_probe_hybridization_probability_alignment_method"
-                                    name="target_probe_hybridization_probability_alignment_method"
-                                    value={formData.target_probe_hybridization_probability_alignment_method.value}
-                                    onChange={handleChange}>
-                                <option value="blastn">BlastN</option>
-                                <option value="bowtie">Bowtie</option>
-                            </select>
+                            <div className="d-flex align-items-center">
+                                <select className="form-select" id="target_probe_hybridization_probability_alignment_method"
+                                        name="target_probe_hybridization_probability_alignment_method"
+                                        value={formData.target_probe_hybridization_probability_alignment_method.value}
+                                        onChange={handleChange}>
+                                    <option value="blastn">BlastN</option>
+                                    <option value="bowtie">Bowtie</option>
+                                </select>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-perc-identity">
+                                            <Popover.Body>
+                                                {formData.target_probe_hybridization_probability_alignment_method.comment}
+                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle style={{
+                                        fontSize: "1.2rem",
+                                        cursor: "pointer",
+                                        color: "#0d6efd",
+                                        marginLeft: "10px"
+                                    }}/>
+                                </OverlayTrigger>
+                            </div>
+
                         </div>
                         <div className="row g-3">
                             <div className="col-md-6">
@@ -1022,8 +1070,8 @@ const OligoSeq: React.FC = () => {
                                        className="form-label">Percent Identity:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control"
-                                           id="target_probe_specificity_blastn_search_parameters_perc_identity"
-                                           name="target_probe_specificity_blastn_search_parameters_perc_identity"
+                                           id="target_probe_hybridization_probability_blastn_search_parameters.perc_identity"
+                                           name="target_probe_hybridization_probability_blastn_search_parameters.perc_identity"
                                            value={formData.target_probe_hybridization_probability_blastn_search_parameters.perc_identity.value}
                                            onChange={handleChange}
                                            required/>
@@ -1056,7 +1104,7 @@ const OligoSeq: React.FC = () => {
                                 <div className="d-flex align-items-center">
                                     <select className="form-select"
                                             id="target_probe_specificity_blastn_search_parameters_strand"
-                                            name="target_probe_specificity_blastn_search_parameters_strand"
+                                            name="target_probe_hybridization_probability_blastn_search_parameters.strand"
                                             value={formData.target_probe_hybridization_probability_blastn_search_parameters.strand.value}
                                             onChange={handleChange}
                                             required>
@@ -1069,10 +1117,9 @@ const OligoSeq: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-strand">
-                                                <Popover.Header as="h3">Strand Selection</Popover.Header>
                                                 <Popover.Body>
-                                                    {formData.target_probe_hybridization_probability_blastn_search_parameters.strand.comment ||
-                                                        "If reference is whole genome, consider using 'both'"}
+                                                    {formData.target_probe_hybridization_probability_blastn_search_parameters.strand.comment
+                                                        }
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -1093,7 +1140,7 @@ const OligoSeq: React.FC = () => {
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control"
                                            id="target_probe_specificity_blastn_search_parameters_word_size"
-                                           name="target_probe_specificity_blastn_search_parameters_word_size"
+                                           name="target_probe_hybridization_probability_blastn_search_parameters.word_size"
                                            value={formData.target_probe_hybridization_probability_blastn_search_parameters.word_size.value}
                                            onChange={handleChange}
                                            required/>
@@ -1102,10 +1149,9 @@ const OligoSeq: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-word-size">
-                                                <Popover.Header as="h3">Word Size</Popover.Header>
                                                 <Popover.Body>
-                                                    {formData.target_probe_hybridization_probability_blastn_search_parameters.word_size.comment ||
-                                                        "Word size for BLASTn search"}
+                                                    {formData.target_probe_hybridization_probability_blastn_search_parameters.word_size.comment
+                                                        }
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -1123,37 +1169,106 @@ const OligoSeq: React.FC = () => {
                                 <label htmlFor="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
                                        className="form-label">Max
                                     Target Sequences:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
-                                       name="target_probe_hybridization_probability_blastn_hit_parameters_coverage"
-                                       value={formData.target_probe_hybridization_probability_blastn_hit_parameters.coverage.value}
-                                       onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_hybridization_probability_blastn_hit_parameters.coverage"
+                                           name="target_probe_hybridization_probability_blastn_hit_parameters.coverage"
+                                           value={formData.target_probe_hybridization_probability_blastn_hit_parameters.coverage.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-word-size">
+                                                <Popover.Body>
+                                                    {formData.target_probe_hybridization_probability_blastn_hit_parameters.coverage.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
                             <div className="col-md-6">
                                 <label htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_v"
                                        className="form-label">Allowed Mismatches:</label>
-                                <input type="number" className="form-control"
-                                       id="target_probe_hybridization_probability_bowtie_search_parameters_v"
-                                       name="target_probe_hybridization_probability_bowtie_search_parameters_v"
-                                       value={formData.target_probe_hybridization_probability_bowtie_search_parameters.v.value}
-                                       onChange={handleChange}
-                                       required/>
+                                <div className="d-flex align-items-center">
+                                    <input type="number" className="form-control"
+                                           id="target_probe_hybridization_probability_bowtie_search_parameters.v"
+                                           name="target_probe_hybridization_probability_bowtie_search_parameters.v"
+                                           value={formData.target_probe_hybridization_probability_bowtie_search_parameters.v.value}
+                                           onChange={handleChange}
+                                           required/>
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-word-size">
+                                                <Popover.Body>
+                                                    {formData.target_probe_hybridization_probability_bowtie_search_parameters.v.comment}
+                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
+                            <label
+                                htmlFor="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                className="form-check-label"
+                            >
+                                No forward strand:
+                            </label>
                             <div className="mb-3 form-check">
-                                <input
-                                    type="checkbox"
-                                    className="form-check-input"
-                                    id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                    name="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                    checked={formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.value === "true"}
-                                    onChange={(e) =>
+
+                                <div className="d-flex align-items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="form-check-input"
+                                        id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
+                                        name="target_probe_hybridization_probability_bowtie_search_parameters.nofw"
+                                        checked={formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.value === "true"}
+                                        onChange={(e) =>
                                         setFormData((prev: any) => ({
                                             ...prev,
                                             target_probe_hybridization_probability_bowtie_search_parameters_nofw:{value:e.target.checked ? "true" : "false",comment:formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.comment} ,
                                         }))
                                     }
-                                />
+                                        />
+                                    <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                            <Popover id="popover-word-size">
+                                                <Popover.Body>
+                                                    { formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.comment}                                                </Popover.Body>
+                                            </Popover>
+                                        }
+                                    >
+                                        <InfoCircle style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}/>
+                                    </OverlayTrigger>
+                                </div>
+
                             </div>
 
                         </div>
@@ -1163,7 +1278,6 @@ const OligoSeq: React.FC = () => {
                 return (
                     <div>
 
-                        <h5>Cross-Hybridization Filters</h5>
                         <div className="mb-3">
                             <label htmlFor="target_probe_cross_hybridization_alignment_method"
                                    className="form-label">Alignment Method for cross hybridization:</label>
@@ -1181,10 +1295,9 @@ const OligoSeq: React.FC = () => {
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-alignment-method">
-                                            <Popover.Header as="h3">Alignment Method</Popover.Header>
                                             <Popover.Body>
-                                                {formData.target_probe_cross_hybridization_alignment_method.comment ||
-                                                    "Select alignment method for cross-hybridization detection"}
+                                                {formData.target_probe_cross_hybridization_alignment_method.comment
+                                                   }
                                             </Popover.Body>
                                         </Popover>
                                     }
@@ -1206,8 +1319,8 @@ const OligoSeq: React.FC = () => {
                                        className="form-label">Percent Identity:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control"
-                                           id="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
-                                           name="target_probe_cross_hybridization_blastn_search_parameters_perc_identity"
+                                           id="target_probe_cross_hybridization_blastn_search_parameters.perc_identity"
+                                           name="target_probe_cross_hybridization_blastn_search_parameters.perc_identity"
                                            value={formData.target_probe_cross_hybridization_blastn_search_parameters.perc_identity.value}
                                            onChange={handleChange}
                                            required/>
@@ -1238,8 +1351,8 @@ const OligoSeq: React.FC = () => {
                                        className="form-label">Strand:</label>
                                 <div className="d-flex align-items-center">
                                     <select className="form-select"
-                                            id="target_probe_cross_hybridization_blastn_search_parameters_strand"
-                                            name="target_probe_cross_hybridization_blastn_search_parameters_strand"
+                                            id="target_probe_cross_hybridization_blastn_search_parameters.strand"
+                                            name="target_probe_cross_hybridization_blastn_search_parameters.strand"
                                             value={formData.target_probe_cross_hybridization_blastn_search_parameters.strand.value}
                                             onChange={handleChange}
                                             required>
@@ -1252,10 +1365,9 @@ const OligoSeq: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-blastn-strand">
-                                                <Popover.Header as="h3">Strand Selection</Popover.Header>
                                                 <Popover.Body>
-                                                    {formData.target_probe_cross_hybridization_blastn_search_parameters.strand.comment ||
-                                                        "If reference is whole genome, consider using 'both'"}
+                                                    {formData.target_probe_cross_hybridization_blastn_search_parameters.strand.comment }
+
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -1275,8 +1387,8 @@ const OligoSeq: React.FC = () => {
                                        className="form-label">Word Size:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control"
-                                           id="target_probe_cross_hybridization_blastn_search_parameters_word_size"
-                                           name="target_probe_cross_hybridization_blastn_search_parameters_word_size"
+                                           id="target_probe_cross_hybridization_blastn_search_parameters.word_size"
+                                           name="target_probe_cross_hybridization_blastn_search_parameters.word_size"
                                            value={formData.target_probe_cross_hybridization_blastn_search_parameters.word_size.value}
                                            onChange={handleChange}
                                            required/>
@@ -1308,8 +1420,8 @@ const OligoSeq: React.FC = () => {
                                        className="form-label">Max Target Sequences:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control"
-                                           id="target_probe_cross_hybridization_blastn_search_parameters_coverage"
-                                           name="target_probe_cross_hybridization_blastn_search_parameters_coverage"
+                                           id="target_probe_cross_hybridization_blastn_hit_parameters.coverage"
+                                           name="target_probe_cross_hybridization_blastn_hit_parameters.coverage"
                                            value={formData.target_probe_cross_hybridization_blastn_hit_parameters.coverage.value}
                                            onChange={handleChange}
                                            required/>
@@ -1342,8 +1454,8 @@ const OligoSeq: React.FC = () => {
                                        className="form-label">Allowed Mismatches:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control"
-                                           id="target_probe_cross_hybridization_bowtie_search_parameters_v"
-                                           name="target_probe_cross_hybridization_bowtie_search_parameters_v"
+                                           id="target_probe_cross_hybridization_bowtie_search_parameters.v"
+                                           name="target_probe_cross_hybridization_bowtie_search_parameters.v"
                                            value={formData.target_probe_cross_hybridization_bowtie_search_parameters.v.value}
                                            onChange={handleChange}
                                            required/>
@@ -1352,10 +1464,9 @@ const OligoSeq: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-bowtie-mismatches">
-                                                <Popover.Header as="h3">Allowed Mismatches</Popover.Header>
                                                 <Popover.Body>
-                                                    {formData.target_probe_cross_hybridization_bowtie_search_parameters.v.comment ||
-                                                        "Number of allowed mismatches for Bowtie alignment"}
+                                                    {formData.target_probe_cross_hybridization_bowtie_search_parameters.v.comment
+                                                      }
                                                 </Popover.Body>
                                             </Popover>
                                         }
@@ -1383,16 +1494,16 @@ const OligoSeq: React.FC = () => {
                                 <input
                                     type="checkbox"
                                     className="form-check-input"
-                                    id="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                    name="target_probe_hybridization_probability_bowtie_search_parameters_nofw"
-                                    checked={formData.target_probe_hybridization_probability_bowtie_search_parameters.nofw.value === "true"}
+                                    id="target_probe_cross_hybridization_bowtie_search_parameters.nofw"
+                                    name="target_probe_cross_hybridization_bowtie_search_parameters.nofw"
+                                    checked={formData.target_probe_cross_hybridization_bowtie_search_parameters.nofw.value === "true"}
                                     onChange={(e) =>
                                         setFormData((prev: any) => ({
                                             ...prev,
-                                            target_probe_hybridization_probability_bowtie_search_parameters: {
+                                            target_probe_cross_hybridization_bowtie_search_parameters: {
                                                 nofw: {
                                                     value: e.target.checked ? "true" : "false",
-                                                    comment: prev.target_probe_hybridization_probability_bowtie_search_parameters.nofw.comment,
+                                                    comment: prev.target_probe_cross_hybridization_bowtie_search_parameters.nofw.comment,
                                                 },
                                             },
                                         }))
@@ -1403,7 +1514,6 @@ const OligoSeq: React.FC = () => {
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-bowtie-mismatches">
-                                            <Popover.Header as="h3">Allowed Mismatches</Popover.Header>
                                             <Popover.Body>
                                                 {formData.target_probe_cross_hybridization_bowtie_search_parameters.v.comment ||
                                                     "Number of allowed mismatches for Bowtie alignment"}
@@ -1428,17 +1538,15 @@ const OligoSeq: React.FC = () => {
                 );
             case'oligosetselection':
                 return (
-                    <div>
-                        <h5>Oligo Set Selection</h5>
+                    <div>                            <label htmlFor="max_graph_size" className="form-label">Max Graph
+                        Size:</label>
+
                         <div className="row g-3">
-                            <div className="col-md-6">
-                                <label htmlFor="max_graph_size" className="form-label">Max Graph
-                                    Size:</label>
+
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="max_graph_size"
                                            name="max_graph_size"
                                            value={formData.max_graph_size.value} onChange={handleChange} required/>
-                                </div>
                                 <OverlayTrigger
                                     trigger="hover"
                                     placement="top"
@@ -1549,16 +1657,14 @@ const OligoSeq: React.FC = () => {
                 return (
                     <div>
                         <div className="mb-4">
-                            <div className="d-flex align-items-center">
-                                <h5>Melting Temperature Parameters for Detection Oligo</h5>
-                            </div>
+
                             <div className="row g-3">
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_detection_nn_table" className="form-label">Nearest Neighbor
                                         Table:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="text" className="form-control" id="Tm_detection_nn_table"
-                                               name="Tm_detection_nn_table"
+                                        <input type="text" className="form-control" id="target_probe_Tm_parameters.nn_table"
+                                               name="target_probe_Tm_parameters.nn_table"
                                                value={formData.target_probe_Tm_parameters.nn_table.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1586,8 +1692,8 @@ const OligoSeq: React.FC = () => {
                                     <label htmlFor="Tm_detection_tmm_table" className="form-label">TMM
                                         Table:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="text" className="form-control" id="Tm_detection_tmm_table"
-                                               name="Tm_detection_tmm_table"
+                                        <input type="text" className="form-control" id="target_probe_Tm_parameters.tmm_table"
+                                               name="target_probe_Tm_parameters.tmm_table"
                                                value={formData.target_probe_Tm_parameters.tmm_table.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1615,8 +1721,8 @@ const OligoSeq: React.FC = () => {
                                     <label htmlFor="Tm_detection_imm_table" className="form-label">IMM
                                         Table:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="text" className="form-control" id="Tm_detection_imm_table"
-                                               name="Tm_detection_imm_table"
+                                        <input type="text" className="form-control" id="target_probe_Tm_parameters.imm_table"
+                                               name="target_probe_Tm_parameters.imm_table"
                                                value={formData.target_probe_Tm_parameters.imm_table.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1643,8 +1749,8 @@ const OligoSeq: React.FC = () => {
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_detection_de_table" className="form-label">DE Table:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="text" className="form-control" id="Tm_detection_de_table"
-                                               name="Tm_detection_de_table"
+                                        <input type="text" className="form-control" id="target_probe_Tm_parameters.de_table"
+                                               name="target_probe_Tm_parameters.de_table"
                                                value={formData.target_probe_Tm_parameters.de_table.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1672,8 +1778,8 @@ const OligoSeq: React.FC = () => {
                                     <label htmlFor="Tm_detection_dnac1" className="form-label">DNA Concentration 1
                                         (nM):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_dnac1"
-                                               name="Tm_detection_dnac1"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.dnac1"
+                                               name="target_probe_Tm_parameters.dnac1"
                                                value={formData.target_probe_Tm_parameters.dnac1.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1701,8 +1807,8 @@ const OligoSeq: React.FC = () => {
                                     <label htmlFor="Tm_detection_dnac2" className="form-label">DNA Concentration 2
                                         (nM):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_dnac2"
-                                               name="Tm_detection_dnac2"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.dnac2"
+                                               name="target_probe_Tm_parameters.dnac2"
                                                value={formData.target_probe_Tm_parameters.dnac2.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1730,8 +1836,8 @@ const OligoSeq: React.FC = () => {
                                     <label htmlFor="Tm_detection_saltcorr" className="form-label">Salt
                                         Correction:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_saltcorr"
-                                               name="Tm_detection_saltcorr"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.saltcorr"
+                                               name="target_probe_Tm_parameters.saltcorr"
                                                value={formData.target_probe_Tm_parameters.saltcorr.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1759,8 +1865,8 @@ const OligoSeq: React.FC = () => {
                                     <label htmlFor="Tm_detection_Na" className="form-label">Na Concentration
                                         (mM):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_Na"
-                                               name="Tm_detection_Na"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.Na"
+                                               name="target_probe_Tm_parameters.Na"
                                                value={formData.target_probe_Tm_parameters.Na.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1782,8 +1888,8 @@ const OligoSeq: React.FC = () => {
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_detection_K" className="form-label">K Concentration (mM):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_K"
-                                               name="Tm_detection_K"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.K"
+                                               name="target_probe_Tm_parameters.K"
                                                value={formData.target_probe_Tm_parameters.K.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
@@ -1805,8 +1911,8 @@ const OligoSeq: React.FC = () => {
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_detection_Tris" className="form-label">Tris Concentration (mM):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_Tris"
-                                               name="Tm_detection_Tris"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.Tris"
+                                               name="target_probe_Tm_parameters.Tris"
                                                value={formData.target_probe_Tm_parameters.Tris.value} onChange={handleChange}/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1827,8 +1933,8 @@ const OligoSeq: React.FC = () => {
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_detection_Mg" className="form-label">Mg Concentration (mM):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_Mg"
-                                               name="Tm_detection_Mg"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.Mg"
+                                               name="target_probe_Tm_parameters.Mg"
                                                value={formData.target_probe_Tm_parameters.Mg.value} onChange={handleChange}/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1849,8 +1955,8 @@ const OligoSeq: React.FC = () => {
                                 <div className="col-md-6">
                                     <label htmlFor="Tm_detection_dNTPs" className="form-label">dNTPs Concentration (mM):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="Tm_detection_dNTPs"
-                                               name="Tm_detection_dNTPs"
+                                        <input type="number" className="form-control" id="target_probe_Tm_parameters.dNTPs"
+                                               name="target_probe_Tm_parameters.dNTPs"
                                                value={formData.target_probe_Tm_parameters.dNTPs.value} onChange={handleChange}/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -1880,11 +1986,32 @@ const OligoSeq: React.FC = () => {
     };
 
     // Handle input changes
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-    ) => {
-        const {name, value} = e.target;
-        setFormData({...formData, [name]: value});
+    // Update the handleChange function with proper typing
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        const keys = name.split(".");
+
+        if (keys.length === 2) {
+            const [parent, child] = keys;
+            setFormData(prev => ({
+                ...prev,
+                [parent]: {
+                    ...(prev as any)[parent],
+                    [child]: {
+                        ...((prev as any)[parent]?.[child]),
+                        value
+                    }
+                }
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: {
+                    ...(prev as any)[name],
+                    value
+                }
+            }));
+        }
     };
 
     // Handle form submission
@@ -1900,19 +2027,37 @@ const OligoSeq: React.FC = () => {
         try {
             // Upload files and get their paths
             const uploadedPaths = await uploadFiles();
+            console.log(uploadedPaths,'there are the paths');
+            // Combine form data with uploaded file paths while preserving the { value, comment } structure
+            const finalFormData = { ...formData };
 
-            // Combine form data with uploaded file paths
-            const finalFormData = {
-                ...formData,
-                ...uploadedPaths,
-            };
+            for (const key in uploadedPaths) {
+                // @ts-ignore
+                if (finalFormData[key]) {
+                    // Preserve the existing comment and update the value with the uploaded path
+                    // @ts-ignore
+
+                    finalFormData[key] = {
+                        value: uploadedPaths[key], // Update the value with the uploaded path
+                        // @ts-ignore
+                        comment: finalFormData[key].comment, // Preserve the existing comment
+                    };
+                } else {
+                    // If the key doesn't exist in formData, create a new entry with an empty comment
+                    // @ts-ignore
+                    finalFormData[key] = {
+                        value: uploadedPaths[key],
+                        comment: "",
+                    };
+                }
+            }
 
             // Submit the form data
             const response = await axios.post(
                 'http://localhost:5000/api/oligoseq',
                 finalFormData,
                 {
-                    headers: { "Content-Type": "application/json" },
+                    headers: {"Content-Type": "application/json"},
                 }
             );
 

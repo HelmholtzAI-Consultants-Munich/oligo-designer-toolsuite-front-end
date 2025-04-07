@@ -1427,13 +1427,9 @@ const Merfish: React.FC = () => {
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-n_jobs">
-                                            <Popover.Header as="h3">Number of Jobs</Popover.Header>
                                             <Popover.Body>
-                                                Number of cores used to run the pipeline and 2*n_jobs +1 of regions
-                                                that should be stored in cache. If memory consumption of pipeline is
-                                                too high reduce this number, if a lot of RAM is available increase
-                                                this number to decrease runtime
 
+                                                {formData.readout_probe_set_size.comment}
                                             </Popover.Body>
                                         </Popover>
                                         }
@@ -3374,8 +3370,12 @@ const Merfish: React.FC = () => {
                 return (
                     <div>
                         <div className="mb-4">
+
                             <h5>Readout Probe Parameters</h5>
-                            <div className="mb-3">
+                            <div className="row g-3">
+
+
+                            <div className="col">
                                 <label htmlFor="readout_probe_initial_num_sequences" className="form-label">Initial Number of Sequences:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="number" className="form-control" id="readout_probe_initial_num_sequences"
@@ -3405,8 +3405,7 @@ const Merfish: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="row g-3">
-                                <div className="mb-3">
+                                <div className="col">
                                     <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="perc_identity"
@@ -3437,7 +3436,10 @@ const Merfish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                            </div>
+                            <div className="row g-3">
+
+                                <div className="col">
                                     <label htmlFor="strand" className="form-label">Strand:</label>
                                     <div className="d-flex align-items-center">
                                         <select className="form-select" id="strand"
@@ -3471,7 +3473,7 @@ const Merfish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                                <div className="col">
                                     <label htmlFor="word_size" className="form-label">Word Size:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="word_size"
@@ -3501,8 +3503,11 @@ const Merfish: React.FC = () => {
                                         </OverlayTrigger>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="row g-3">
 
-                                <div className="mb-3">
+
+                                <div className="col">
                                     <label htmlFor="dust" className="form-label">Dust:</label>
                                     <div className="d-flex align-items-center">
                                         <select className="form-select" id="dust"
@@ -3536,7 +3541,7 @@ const Merfish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                                <div className="col">
                                     <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
                                     <div className="d-flex align-items-center">
                                         <select className="form-select" id="soft_masking"
@@ -3569,8 +3574,10 @@ const Merfish: React.FC = () => {
                                         </OverlayTrigger>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="mb-3">
+                            <div className="row g-3">
+                                <div className="col">
                                     <label htmlFor="max_target_seqs" className="form-label">Max Target
                                         Sequences:</label>
                                     <div className="d-flex align-items-center">
@@ -3602,7 +3609,7 @@ const Merfish: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="mb-3">
+                                <div className="col">
                                     <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="max_hsps"
@@ -3632,7 +3639,7 @@ const Merfish: React.FC = () => {
                                         </OverlayTrigger>
                                     </div>
                                 </div>
-
+                            </div>
                                 <div>
                                     <h4>Readout Probe BLASTn Hit Parameters</h4>
                                     <div className="mb-3">
@@ -3667,7 +3674,6 @@ const Merfish: React.FC = () => {
                                             </OverlayTrigger>
                                         </div>
                                     </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -3675,7 +3681,10 @@ const Merfish: React.FC = () => {
             case 'primerpro':
                 return (
                     <div>
-                        <div className="mb-3">
+                        <div className="row g-3">
+
+
+                        <div className="col">
                             <label htmlFor="primer_initial_num_sequences" className="form-label">Initial Number of
                                 Sequences:</label>
                             <div className="d-flex align-items-center">
@@ -3703,7 +3712,7 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="perc_identity"
@@ -3732,7 +3741,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="strand" className="form-label">Strand:</label>
                             <div className="d-flex align-items-center">
                                 <select className="form-select" id="strand"
@@ -3762,8 +3771,9 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
-
-                        <div className="mb-3">
+                        </div>
+                        <div className="row g-3">
+                        <div className="col">
                             <label htmlFor="word_size" className="form-label">Word Size:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="word_size"
@@ -3791,7 +3801,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="dust" className="form-label">Dust:</label>
                             <div className="d-flex align-items-center">
                                 <select className="form-select" id="dust"
@@ -3822,7 +3832,7 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
                             <div className="d-flex align-items-center">
                                 <select className="form-select" id="soft_masking"
@@ -3853,8 +3863,12 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
+                        </div>
+                        <div className="row g-3">
 
-                        <div className="mb-3">
+
+
+                        <div className="col">
                             <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="max_target_seqs"
@@ -3883,7 +3897,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="max_hsps"
@@ -3911,7 +3925,7 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="min_alignment_length"
@@ -3939,8 +3953,10 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
+                        </div>
+                        <div className="row g-3">
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="perc_identity" className="form-label">Percentage Identity:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="perc_identity"
@@ -3969,7 +3985,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="strand" className="form-label">Strand:</label>
                             <div className="d-flex align-items-center">
                                 <select className="form-select" id="strand"
@@ -4001,7 +4017,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="word_size" className="form-label">Word Size:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="word_size"
@@ -4029,7 +4045,11 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
-                        <div className="mb-3">
+                        </div>
+                        <div className="row g-3">
+
+
+                        <div className="col">
                             <label htmlFor="dust" className="form-label">Dust:</label>
                             <div className="d-flex align-items-center">
                                 <select className="form-select" id="dust"
@@ -4061,7 +4081,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="soft_masking" className="form-label">Soft Masking:</label>
                             <div className="d-flex align-items-center">
                                 <select className="form-select" id="soft_masking"
@@ -4093,7 +4113,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="max_target_seqs" className="form-label">Max Target Sequences:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="max_target_seqs"
@@ -4121,8 +4141,12 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
+                        </div>
 
-                        <div className="mb-3">
+                        <div className="row g-3">
+
+
+                        <div className="col">
                             <label htmlFor="max_hsps" className="form-label">Max HSPs:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="max_hsps"
@@ -4150,7 +4174,7 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="min_alignment_length" className="form-label">Min Alignment Length:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="min_alignment_length"
@@ -4178,7 +4202,7 @@ const Merfish: React.FC = () => {
                             </div>
 
                         </div>
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="nn_table" className="form-label">NN Table:</label>
                             <div className="d-flex align-items-center">
                                 <input type="text" className="form-control" id="nn_table"
@@ -4207,39 +4231,11 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
+                        </div>
+                        <div className="row g-3">
 
-                        <div className="mb-3">
-                            <label htmlFor="tmm_table" className="form-label">TMM Table:</label>
-                            <div className="mb-3">
-                                <label htmlFor="nn_table" className="form-label">NN Table:</label>
-                                <div className="d-flex align-items-center">
-                                    <input type="text" className="form-control" id="nn_table"
-                                           name="primer_Tm_parameters_nn_table"
-                                           value={formData.primer_Tm_parameters.nn_table.value}
-                                           onChange={handleChange} required/>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-nn-table">
-                                                <Popover.Header as="h3">NN Table Parameters</Popover.Header>
-                                                <Popover.Body>
-                                                    {formData.primer_Tm_parameters.nn_table.comment}
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                        }}/>
-                                    </OverlayTrigger>
-                                </div>
-                            </div>
 
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="tmm_table" className="form-label">TMM Table:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="text" className="form-control" id="tmm_table"
@@ -4251,7 +4247,6 @@ const Merfish: React.FC = () => {
                                         placement="top"
                                         overlay={
                                             <Popover id="popover-tmm-table">
-                                                <Popover.Header as="h3">TMM Table Parameters</Popover.Header>
                                                 <Popover.Body>
                                                     {formData.primer_Tm_parameters.tmm_table.comment}
                                                 </Popover.Body>
@@ -4268,7 +4263,7 @@ const Merfish: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mb-3">
+                            <div className="col">
                                 <label htmlFor="imm_table" className="form-label">IMM Table:</label>
                                 <div className="d-flex align-items-center">
                                     <input type="text" className="form-control" id="imm_table"
@@ -4297,122 +4292,40 @@ const Merfish: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="mb-3">
-                                <label htmlFor="de_table" className="form-label">DE Table:</label>
-                                <div className="d-flex align-items-center">
-                                    <input type="text" className="form-control" id="de_table"
-                                           name="primer_Tm_parameters_de_table"
-                                           value={formData.primer_Tm_parameters.de_table.value}
-                                           onChange={handleChange} required/>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-de-table">
-                                                <Popover.Header as="h3">DE Table Parameters</Popover.Header>
-                                                <Popover.Body>
-                                                    {formData.primer_Tm_parameters.de_table.comment}
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                        }}/>
-                                    </OverlayTrigger>
+                            <div className="col">
+                                    <label htmlFor="de_table" className="form-label">DE Table:</label>
+                                    <div className="d-flex align-items-center">
+                                        <input type="text" className="form-control" id="de_table"
+                                               name="primer_Tm_parameters_de_table"
+                                               value={formData.primer_Tm_parameters.de_table.value}
+                                               onChange={handleChange} required/>
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-de-table">
+                                                    <Popover.Body>
+                                                        {formData.primer_Tm_parameters.de_table.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle style={{
+                                                fontSize: "1.2rem",
+                                                cursor: "pointer",
+                                                color: "#0d6efd",
+                                                marginLeft: "10px"
+                                            }}/>
+                                        </OverlayTrigger>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="d-flex align-items-center">
-                                <input type="text" className="form-control" id="tmm_table"
-                                       name="primer_Tm_parameters_tmm_table"
-                                       value={formData.primer_Tm_parameters.tmm_table.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-tmm-table">
-                                            <Popover.Header as="h3">TMM Table Parameters</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.tmm_table.comment ||
-                                                    "Terminal mismatch parameters for melting temperature calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
 
-                        <div className="mb-3">
-                            <label htmlFor="imm_table" className="form-label">IMM Table:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="text" className="form-control" id="imm_table"
-                                       name="primer_Tm_parameters_imm_table"
-                                       value={formData.primer_Tm_parameters.imm_table.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-imm-table">
-                                            <Popover.Header as="h3">IMM Table Parameters</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.imm_table.comment ||
-                                                    "Internal mismatch parameters for melting temperature calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
-                        </div>
 
-                        <div className="mb-3">
-                            <label htmlFor="de_table" className="form-label">DE Table:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="text" className="form-control" id="de_table"
-                                       name="primer_Tm_parameters_de_table"
-                                       value={formData.primer_Tm_parameters.de_table.value}
-                                       onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-de-table">
-                                            <Popover.Header as="h3">DE Table Parameters</Popover.Header>
-                                            <Popover.Body>
-                                                {formData.primer_Tm_parameters.de_table.comment ||
-                                                    "Deoxynucleotide equivalent parameters for melting temperature calculation"}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle style={{
-                                        fontSize: "1.2rem",
-                                        cursor: "pointer",
-                                        color: "#0d6efd",
-                                        marginLeft: "10px"
-                                    }}/>
-                                </OverlayTrigger>
-                            </div>
                         </div>
-                        <div className="mb-3">
+                        <div className="row g-3">
+
+
+                        <div className="col">
                             <label htmlFor="dnac1" className="form-label">DNA Concentration 1 (dnac1):</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="dnac1"
@@ -4424,10 +4337,9 @@ const Merfish: React.FC = () => {
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-dnac1">
-                                            <Popover.Header as="h3">DNA Concentration 1</Popover.Header>
                                             <Popover.Body>
-                                                {formData.primer_Tm_parameters.dnac1.comment ||
-                                                    "First DNA concentration parameter for Tm calculation (in nM)"}
+                                                {formData.primer_Tm_parameters.dnac1.comment
+                                                   }
                                             </Popover.Body>
                                         </Popover>
                                     }
@@ -4442,7 +4354,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="dnac2" className="form-label">DNA Concentration 2 (dnac2):</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="dnac2"
@@ -4454,10 +4366,9 @@ const Merfish: React.FC = () => {
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-dnac2">
-                                            <Popover.Header as="h3">DNA Concentration 2</Popover.Header>
                                             <Popover.Body>
-                                                {formData.primer_Tm_parameters.dnac2.comment ||
-                                                    "Second DNA concentration parameter for Tm calculation (in nM)"}
+                                                {formData.primer_Tm_parameters.dnac2.comment
+                                                   }
                                             </Popover.Body>
                                         </Popover>
                                     }
@@ -4471,8 +4382,12 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
+                        </div>
 
-                        <div className="mb-3">
+                        <div className=" row g-3">
+
+
+                        <div className="col">
                             <label htmlFor="saltcorr" className="form-label">Salt Correction (saltcorr):</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="saltcorr"
@@ -4502,7 +4417,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="Na" className="form-label">Sodium Concentration (Na):</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="Na"
@@ -4531,7 +4446,7 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="K" className="form-label">Potassium Concentration (K):</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="K"
@@ -4560,8 +4475,10 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
+                        </div>
+                        <div className="row g-3">
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="Tris" className="form-label">Tris Concentration:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="Tris"
@@ -4573,10 +4490,9 @@ const Merfish: React.FC = () => {
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-tris-concentration">
-                                            <Popover.Header as="h3">Tris Buffer Concentration</Popover.Header>
                                             <Popover.Body>
-                                                {formData.primer_Tm_parameters.Tris.comment ||
-                                                    "Tris buffer concentration for Tm calculation (in mM)"}
+                                                {formData.primer_Tm_parameters.Tris.comment
+                                                  }
                                             </Popover.Body>
                                         </Popover>
                                     }
@@ -4591,7 +4507,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="Mg" className="form-label">Magnesium Concentration (Mg):</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="Mg"
@@ -4605,8 +4521,8 @@ const Merfish: React.FC = () => {
                                         <Popover id="popover-mg-concentration">
                                             <Popover.Header as="h3">Magnesium Concentration</Popover.Header>
                                             <Popover.Body>
-                                                {formData.primer_Tm_parameters.Mg.comment ||
-                                                    "Magnesium ion concentration for Tm calculation (in mM)"}
+                                                {formData.primer_Tm_parameters.Mg.comment
+                                                  }
                                             </Popover.Body>
                                         </Popover>
                                     }
@@ -4621,7 +4537,7 @@ const Merfish: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mb-3">
+                        <div className="col">
                             <label htmlFor="dNTPs" className="form-label">dNTPs Concentration:</label>
                             <div className="d-flex align-items-center">
                                 <input type="number" className="form-control" id="dNTPs"
@@ -4635,8 +4551,8 @@ const Merfish: React.FC = () => {
                                         <Popover id="popover-dntps-concentration">
                                             <Popover.Header as="h3">dNTPs Concentration</Popover.Header>
                                             <Popover.Body>
-                                                {formData.primer_Tm_parameters.dNTPs.comment ||
-                                                    "Deoxynucleotide triphosphates concentration for Tm calculation (in mM)"}
+                                                {formData.primer_Tm_parameters.dNTPs.comment
+                                                   }
                                             </Popover.Body>
                                         </Popover>
                                     }
@@ -4650,6 +4566,8 @@ const Merfish: React.FC = () => {
                                 </OverlayTrigger>
                             </div>
                         </div>
+                        </div>
+
 
                     </div>
 
