@@ -283,6 +283,8 @@ const Merfish: React.FC = () => {
                                             id="file_regions"
                                             name="file_regions"
                                             onChange={handleFileChange}
+                                            disabled={formData.file_regions.value.length > 0}
+
                                         />
                                         <input
                                             type="text"
@@ -290,7 +292,6 @@ const Merfish: React.FC = () => {
                                             id="file_regions"
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
-                                            value={formData.file_regions.value}
                                             onChange={handleChange}
                                         />
 
@@ -4580,11 +4581,31 @@ const Merfish: React.FC = () => {
     };
 
     // Handle input changes
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-    ) => {
-        const {name, value} = e.target;
-        setFormData({...formData, [name]: value});
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        const keys = name.split(".");
+
+        if (keys.length === 2) {
+            const [parent, child] = keys;
+            setFormData(prev => ({
+                ...prev,
+                [parent]: {
+                    ...(prev as any)[parent],
+                    [child]: {
+                        ...((prev as any)[parent]?.[child]),
+                        value
+                    }
+                }
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: {
+                    ...(prev as any)[name],
+                    value
+                }
+            }));
+        }
     };
 
     // Handle form submission

@@ -59,6 +59,8 @@ def process_dict(d, indent=4):
     items = []
     for k, v in d.items():
         comment = extract_inline_comment(d, k)
+        if k == "file_regions":
+            v = ""
         normalized_key = normalize_key(k)
 
         if isinstance(v, CommentedMap):
