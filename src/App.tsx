@@ -14,12 +14,15 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 import Login from "./pages/login";
+import Register from "./pages/register";
 function App() {
     return (
         <Router>
             <Routes>
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
                 <Route path="/pipelines/genomic" element={<Genomic />} />
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/" element={<Pipelines />} />

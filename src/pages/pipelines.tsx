@@ -1,14 +1,26 @@
 import React from "react";
 import Navbar from "../modules/nav";
 import {Link} from "react-router-dom";
+import { useAuth } from "../modules/auth";
 
 const pipelines: React.FC = () => {
     // @ts-ignore
     // @ts-ignore
     // @ts-ignore
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const { user, loading } = useAuth();
+    if (loading) return <div>Loading...</div>;
+
+
     return (
         <div>
             <Navbar />
+            {!user && (
+                <div className="alert alert-warning text-center" role="alert">
+                    You need to <a href="/login" className="text-primary">Login</a> or{" "}
+                    <a href="/register" className="text-primary">Register</a> to access pipelines.
+                </div>
+            )}
             <div className="container mt-5">
                 <p className="lead">
                     Oligo Designer Toolsuite is an open-source framework designed to streamline the development of
