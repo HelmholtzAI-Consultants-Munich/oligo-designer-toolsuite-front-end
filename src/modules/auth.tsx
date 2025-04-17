@@ -8,17 +8,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     const checkAuth = async () => {
+        setLoading(true);
         try {
             const response = await fetch('http://localhost:5000/api/check_auth', {
                 credentials: 'include',
             });
             const data = await response.json();
-            if (data.authenticated) {
-                setUser(data.user);
-            }
+            setUser(data.authenticated ? data.user : null);
         } catch (error) {
             console.error('Auth check failed:', error);
-        }finally {
+            setUser(null);
+        } finally {
             setLoading(false);
         }
     };
@@ -27,11 +27,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         checkAuth();
     }, []);
 
-    const login = (user: User) => setUser(user);
-    const logout = () => setUser(null);
+    const logout = () => {
+        // Add your logout API call here if needed
+        setUser(null);
+    };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, loading, checkAuth, logout }}>
             {!loading && children}
         </AuthContext.Provider>
     );

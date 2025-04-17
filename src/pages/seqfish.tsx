@@ -4073,9 +4073,10 @@ const SeqFish: React.FC = () => {
 
             // Submit the form data
             const response = await axios.post(
-                'http://localhost:5000/api/oligoseq',
+                'http://localhost:5000/api/seqfish',
                 finalFormData,
                 {
+                    withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 }
             );

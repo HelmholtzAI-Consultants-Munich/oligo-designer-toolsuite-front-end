@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify,send_file
+from flask import Flask, request, jsonify, send_file, current_app
 from flask_cors import CORS
 import yaml
 from flask_pymongo import PyMongo
@@ -12,6 +12,7 @@ import shutil
 import uuid
 import tempfile
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
+from platformdirs import user_data_path
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -69,6 +70,15 @@ def register():
         "password": hashed_password
     }).inserted_id
 
+    # Convert ObjectId to string
+    user_id_str = str(user_id)
+
+    # Define the directory path
+    user_dir = os.path.join(current_app.root_path, 'user_data', user_id_str)
+
+    # Create the directory (exist_ok=True in case of race condition or retries)
+    os.makedirs(user_dir, exist_ok=True)
+
     user_doc = mongo.db.users.find_one({"_id": user_id})
     user = User(user_doc)
     login_user(user)
@@ -85,6 +95,11 @@ def check_auth():
             }
         })
     return jsonify({"authenticated": False}), 200
+@app.route("/logout", methods=["POST"])
+@login_required
+def logout():
+    logout_user()
+    return jsonify({"message": "Logged out"}), 200
 def to_bool(val):
     return True if str(val).lower() == 'true' else False
 
@@ -144,7 +159,14 @@ def run_command():
     socketio.emit("update", {"progress": 100, "status": "completed"})  # Send completion message
 @app.route('/api/scrinshot', methods=['POST'])
 def scrinshot():
-    config_path = "config.yaml"
+    user_dir=''
+    if current_user.is_authenticated:
+        print('yes authenticated')
+        user_id = str(current_user.id)
+        user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+        config_path = os.path.join(user_dir, 'config.yaml')
+    else:
+        print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
 
@@ -161,10 +183,11 @@ def scrinshot():
             print(f.read())
 
         form_data["file_regions"]['value']=file_path
-        print(form_data["file_regions"])
+
+    output_path= os.path.join(user_dir, 'output_scrinshot_probe_designer')
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
-        "dir_output": form_data["dir_output"]['value'],
+        "dir_output": output_path,
         "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]['value']),
         "top_n_sets": to_int(form_data["top_n_sets"]['value']),
         # Probe sequences generation
@@ -180,6 +203,8 @@ def scrinshot():
         "target_probe_GC_content_opt": to_int(form_data["target_probe_GC_content_opt"]['value']),
         "target_probe_GC_content_max": to_int(form_data["target_probe_GC_content_max"]['value']),
         "target_probe_Tm_min": to_int(form_data["target_probe_Tm_min"]['value']),
+        "target_probe_Tm_opt": to_int(form_data["target_probe_Tm_opt"]['value']),
+
         "target_probe_Tm_max": to_int(form_data["target_probe_Tm_max"]['value']),
         "target_probe_homopolymeric_base_n": {
             "A": to_int(form_data["target_probe_homopolymeric_base_n"]['A']['value']),
@@ -295,12 +320,14 @@ def scrinshot():
             "fmdmethod": to_int(form_data["detection_oligo_Tm_chem_correction_parameters"]['fmdmethod']['value']),
             "GC": to_null(form_data["detection_oligo_Tm_chem_correction_parameters"]['GC']['value'])
         },
-        "detection_oligo_Tm_salt_correction_parameters": None
+        "detection_oligo_Tm_salt_correction_parameters": None,
+        "target_probe_Tm_salt_correction_parameters": None,
+
     }
 
 
     # Write the YAML file
-    with open("config.yaml", "w") as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f, sort_keys=False)
 
     result = subprocess.run(
@@ -308,7 +335,6 @@ def scrinshot():
                 capture_output=True,
                 text=True
             )
-
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
         os.remove(form_data['file_regions']['value'])  # Delete the file
@@ -328,6 +354,8 @@ def scrinshot():
 
 
 
+
+
     return jsonify({
                 'stdout': result.stdout,
                 'stderr': result.stderr,
@@ -335,7 +363,14 @@ def scrinshot():
             })
 @app.route('/api/merfish', methods=['POST'])
 def merfish():
-    config_path = "config_merfish.yaml"
+    user_dir=''
+    if current_user.is_authenticated:
+        print('yes authenticated')
+        user_id = str(current_user.id)
+        user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+        config_path = os.path.join(user_dir,  "config_merfish.yaml")
+    else:
+        print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
 
@@ -352,9 +387,10 @@ def merfish():
 
         form_data["file_regions"]['value']=file_path
     # Build the nested config structure:
+    output_path= os.path.join(user_dir, 'output_merfish_probe_designer')
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
-        "dir_output": form_data["dir_output"]['value'],
+        "dir_output":output_path,
         "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]['value']),
         "top_n_sets": to_int(form_data["top_n_sets"]['value']),
         # Probe sequences generation
@@ -586,7 +622,7 @@ def merfish():
 
 
     # Write the YAML file
-    with open("config_merfish.yaml", "w") as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f, sort_keys=False)
 
     result = subprocess.run(
@@ -634,7 +670,14 @@ def merfish():
 
 @app.route('/api/seqfish', methods=['POST'])
 def seqfish():
-    config_path = "config_seqfish.yaml"
+    user_dir=''
+    if current_user.is_authenticated:
+        print('yes authenticated')
+        user_id = str(current_user.id)
+        user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+        config_path = os.path.join(user_dir,  "config_seqfish.yaml")
+    else:
+        print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
 
@@ -651,9 +694,11 @@ def seqfish():
 
         form_data["file_regions"]['value']=file_path
     # Build the nested config structure:
+    output_path= os.path.join(user_dir, 'output_seqfish_probe_designer')
+
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
-        "dir_output": form_data["dir_output"]['value'],
+        "dir_output": output_path,
         "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]['value']),
         "top_n_sets": to_int(form_data["top_n_sets"]['value']),
         # Probe sequences generation
@@ -840,7 +885,7 @@ def seqfish():
     }
 
     # Write the YAML file
-    with open("config_seqfish.yaml", "w") as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f, sort_keys=False)
 
     result = subprocess.run(
@@ -877,12 +922,23 @@ def genomic_ncbi():
 
     try:
         # Define the path for the configuration file
-        config_path = "config_genomic_ncbi.yaml"
+
+        user_dir=''
+        if current_user.is_authenticated:
+            print('yes authenticated')
+            user_id = str(current_user.id)
+            user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+            config_path = os.path.join(user_dir,  "config_genomic_ncbi.yaml")
+        else:
+            print('no not')
         config_genomic = {}
 
         # Parse JSON data from the request
         form_data = request.json
+        output_path= os.path.join(user_dir, 'output_genomic_ncbi')
 
+        # Populate the config_genomic dictionary based on the received data
+        config_genomic['dir_output'] = output_path
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = form_data['dir_output']['value']
         config_genomic['source'] = form_data['source']['value']
@@ -955,13 +1011,22 @@ def genomic_ensemble():
 
     try:
         # Define the path for the configuration file
-        config_path = "config_genomic_ensemble.yaml"
+        user_dir=''
+        if current_user.is_authenticated:
+            print('yes authenticated')
+            user_id = str(current_user.id)
+            user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+            config_path = os.path.join(user_dir,  "config_genomic_ensemble.yaml")
+        else:
+            print('no not')
         config_genomic = {}
 
         # Parse JSON data from the request
         form_data = request.json
+        output_path= os.path.join(user_dir, 'output_genomic_ensemble')
 
         # Populate the config_genomic dictionary based on the received data
+        config_genomic['dir_output'] = output_path
 
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = form_data['dir_output']['value']
@@ -1017,14 +1082,22 @@ def genomic_custom():
 
     try:
         # Define the path for the configuration file
-        config_path = "config_genomic_custom.yaml"
+        user_dir=''
+        if current_user.is_authenticated:
+            print('yes authenticated')
+            user_id = str(current_user.id)
+            user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+            config_path = os.path.join(user_dir,  "config_genomic_custom.yaml")
+        else:
+            print('no not')
         config_genomic = {}
 
         # Parse JSON data from the request
         form_data = request.json
+        output_path= os.path.join(user_dir, 'output_genomic_custom')
 
         # Populate the config_genomic dictionary based on the received data
-        config_genomic['dir_output'] = form_data['dir_output']['value']
+        config_genomic['dir_output'] = output_path
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
             'file_annotation': form_data['source_params']['file_annotation']['value'],
@@ -1095,7 +1168,14 @@ def genomic_custom():
         }), 500
 @app.route('/api/oligoseq', methods=['POST'])
 def oligoseq():
-    config_path = "config_OligoSeq.yaml"
+    user_dir=''
+    if current_user.is_authenticated:
+        print('yes authenticated')
+        user_id = str(current_user.id)
+        user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+        config_path = os.path.join(user_dir,  "config_oligoseq.yaml")
+    else:
+        print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
 
@@ -1114,9 +1194,11 @@ def oligoseq():
 
         form_data["file_regions"]=file_path
     # Build the nested config structure:
+    output_path= os.path.join(user_dir, 'output_oligoseq_probe_designer')
+
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
-        "dir_output": form_data["dir_output"]['value'],
+        "dir_output":output_path,
         "write_intermediate_steps": to_bool(form_data["write_intermediate_steps"]['value']),
         "top_n_sets": to_int(form_data["top_n_sets"]['value']),
         # Probe sequences generation

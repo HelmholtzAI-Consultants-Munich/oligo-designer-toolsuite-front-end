@@ -1,6 +1,6 @@
-import React from "react";
+import React, {useEffect} from "react";
 import Navbar from "../modules/nav";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import { useAuth } from "../modules/auth";
 
 const pipelines: React.FC = () => {
@@ -9,9 +9,12 @@ const pipelines: React.FC = () => {
     // @ts-ignore
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const { user, loading } = useAuth();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const navigate = useNavigate(); // Define useNavigate correctly
+
     if (loading) return <div>Loading...</div>;
 
-
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     return (
         <div>
             <Navbar />

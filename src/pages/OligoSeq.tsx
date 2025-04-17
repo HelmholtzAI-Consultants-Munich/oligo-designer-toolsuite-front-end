@@ -2057,6 +2057,7 @@ const OligoSeq: React.FC = () => {
                 'http://localhost:5000/api/oligoseq',
                 finalFormData,
                 {
+                    withCredentials: true,
                     headers: {"Content-Type": "application/json"},
                 }
             );

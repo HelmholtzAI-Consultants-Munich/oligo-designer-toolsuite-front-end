@@ -128,6 +128,7 @@ const Genomic: React.FC = () => {
 
             // Send the request
             const response = await axios.post('http://localhost:5000/api/genomic/' + selectedSource, finalFormData, {
+                withCredentials: true,
                 headers: { "Content-Type": "application/json" },
             });
 

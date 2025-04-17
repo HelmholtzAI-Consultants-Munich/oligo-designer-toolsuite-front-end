@@ -1,20 +1,31 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../modules/nav";
+import {useAuth} from "../modules/auth";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate(); //
+    // 👈 yönlendirme için hook
+    // @ts-ignore
+    const { checkAuth } = useAuth(); // Get checkAuth from context
 
-    const handleSubmit = async (e: { preventDefault: () => void; }) => {
+    const handleSubmit = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
         try {
             const res = await axios.post("http://localhost:5000/login", {
                 email,
                 password
-            }, { withCredentials: true }); // login session için
+            }, { withCredentials: true });
+
             console.log(res.data);
             alert("Login successful!");
+
+            await checkAuth();
+
+            navigate("/");
         } catch (err) {
             // @ts-ignore
             if (err.response && err.response.status === 401) {

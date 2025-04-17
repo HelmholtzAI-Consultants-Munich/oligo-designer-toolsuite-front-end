@@ -1,7 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
-
+import {useAuth} from "./auth";
 const Navbar: React.FC = () => {
+    const { user, logout } = useAuth(); // user state'ini al
+    const handleLogout = () => {
+        fetch("http://localhost:5000/logout", {
+            method: "POST",
+            credentials: "include"
+        }).then(() => {
+            logout();
+        });
+    };
     return (
         <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
             <div className="container">
@@ -97,6 +106,34 @@ const Navbar: React.FC = () => {
                                 Documentation
                             </a>
                         </li>
+                        {/* Auth kısmı */}
+                        {user ? (
+                            <>
+                                <li className="nav-item dropdown">
+                                    <a
+                                        className="nav-link dropdown-toggle"
+                                        href="#"
+                                        role="button"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false"
+                                    >
+                                        <i className="bi bi-gear-fill"></i> {/* Bootstrap Icons */}
+                                    </a>
+                                    <ul className="dropdown-menu-start dropdown-menu">
+                                        <li><button className="dropdown-item" onClick={handleLogout}>Logout</button></li>
+                                    </ul>
+                                </li>
+                            </>
+                        ) : (
+                            <>
+                                <li className="nav-item me-2">
+                                    <Link className="btn btn-outline-primary" to="/login">Login</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="btn btn-primary" to="/register">Register</Link>
+                                </li>
+                            </>
+                        )}
                     </ul>
                 </div>
             </div>

@@ -3088,9 +3088,9 @@
 
                 // Submit the form data
                 const response = await axios.post(
-                    'http://localhost:5000/api/oligoseq',
+                    'http://localhost:5000/api/scrinshot',
                     finalFormData,
-                    {
+                    { withCredentials: true,
                         headers: {"Content-Type": "application/json"},
                     }
                 );
