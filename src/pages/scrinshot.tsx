@@ -280,6 +280,7 @@
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
                                             onChange={handleChange}
+                                            value={formData.file_regions.value}
                                         />
 
                                         {/* Custom file input button spanning full width */}

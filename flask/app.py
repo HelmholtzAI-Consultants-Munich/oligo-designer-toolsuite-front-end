@@ -86,6 +86,53 @@ def register():
     login_user(user)
 
     return jsonify({"message": "User registered successfully"}), 201
+# Add to your Flask app.py
+@app.route('/api/runs/<run_id>/files', methods=['GET'])
+@login_required
+def get_run_files(run_id):
+    user_id = str(current_user.id)
+
+    try:
+        run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
+        if not run:
+            return jsonify({"error": "Run not found"}), 404
+
+        output_dir = run['output_path']
+        files = []
+        for fname in os.listdir(output_dir):
+            if fname.endswith(('.yml', '.yaml', '.txt', '.log')):
+                files.append({
+                    "name": fname,
+                    "type": "log" if "log" in fname else "config",
+                    "size": os.path.getsize(os.path.join(output_dir, fname))
+                })
+
+        return jsonify(files), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/runs/<run_id>/files/<filename>', methods=['GET'])
+@login_required
+def get_run_file(run_id, filename):
+    user_id = str(current_user.id)
+
+    try:
+        run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
+        if not run:
+            return jsonify({"error": "Run not found"}), 404
+
+        file_path = os.path.join(run['output_path'], filename)
+        if not os.path.exists(file_path):
+            return jsonify({"error": "File not found"}), 404
+
+        if filename.endswith(('.yml', '.yaml')):
+            return send_file(file_path, as_attachment=True)
+        elif filename.endswith(('.txt', '.log')):
+            return send_file(file_path, mimetype='text/plain')
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 @app.route('/api/check_auth', methods=['GET'])
 def check_auth():
     if current_user.is_authenticated:
@@ -159,6 +206,28 @@ def run_command():
         progress = i * 10
         socketio.emit("update", {"progress": progress, "status": "running"})  # Send progress update
     socketio.emit("update", {"progress": 100, "status": "completed"})  # Send completion message
+@app.route('/api/runs/<run_id>', methods=['DELETE'])
+@login_required
+def delete_run(run_id):
+    try:
+        user_id = str(current_user.id)
+
+        run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
+        if not run:
+            return jsonify({"error": "Run not found"}), 404
+
+        # Delete files
+        if os.path.exists(run['output_path']):
+            shutil.rmtree(run['output_path'])
+
+        # Delete from database
+        mongo.db.runs.delete_one({"_id": ObjectId(run_id)})
+
+        return jsonify({"message": "Run deleted successfully"}), 200
+
+    except Exception as e:
+        print(f"Error deleting run: {str(e)}")
+        return jsonify({"error": "Failed to delete run"}), 500
 @app.route('/api/pipelines', methods=['GET'])
 @login_required
 def get_pipeline_runs():
@@ -199,6 +268,8 @@ def scrinshot():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
+    print(form_data['file_regions'])
+
     # Build the nested config structure:
     if ".txt" not in form_data["file_regions"]['value']:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
@@ -418,11 +489,12 @@ def merfish():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
+    print(form_data['file_regions'])
     if ".txt" not in form_data["file_regions"]['value']:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
             file_path = temp_file.name
             # Write each gene on a new line
-            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
         print(f"File created: {file_path}")
         with open(file_path, "r") as f:
             print("File content:")
@@ -430,7 +502,18 @@ def merfish():
 
         form_data["file_regions"]['value']=file_path
     # Build the nested config structure:
-    output_path= os.path.join(user_dir, 'output_merfish_probe_designer')
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    output_path = os.path.join(user_dir, f'output_merfish_probe_designer_{timestamp}')
+
+    run_doc = {
+        "user_id": user_id,
+        "timestamp": timestamp,
+        "output_path": output_path,
+        "status": "started",
+        "pipeline": 'merfish'
+    }
+    run_result = mongo.db.runs.insert_one(run_doc)
+    run_id = run_result.inserted_id
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output":output_path,
@@ -482,7 +565,7 @@ def merfish():
         "readout_probe_GC_content_min": to_int(form_data["readout_probe_GC_content_min"]['value']),
         "readout_probe_GC_content_max": to_int(form_data["readout_probe_GC_content_max"]['value']),
         "readout_probe_homopolymeric_base_n": {"G":to_int(form_data["readout_probe_homopolymeric_base_n"]['G']['value']),},
-        "readout_probe_set_size": to_int(form_data["readout_probe_set_size"]),
+        "readout_probe_set_size": to_int(form_data["readout_probe_set_size"]['value']),
         "readout_probe_homogeneous_properties_weights":{
            "TmNN": to_int(form_data["readout_probe_homogeneous_properties_weights"]["TmNN"]["value"]),
             "GC_content": to_int(form_data["readout_probe_homogeneous_properties_weights"]["GC_content"]["value"]),
@@ -493,9 +576,7 @@ def merfish():
         "channels_ids": form_data["channels_ids"]['value'],
 
         #PRIMER PARAMETERS
-        "files_fasta_reference_database_primer": multiline_to_list(form_data["files_fasta_reference_database_primer"]['value']),
-        "reverse_primer_sequence": form_data["reverse_primer_sequence"]['value'],
-        "primer_length": to_int(form_data["primer_length"]['value']),
+
         "files_fasta_reference_database_primer": multiline_to_list(form_data["files_fasta_reference_database_primer"]['value']),
         "reverse_primer_sequence": form_data["reverse_primer_sequence"]['value'],
         "primer_length": to_int(form_data["primer_length"]['value']),
@@ -547,6 +628,7 @@ def merfish():
         "n_attempts": to_int(form_data["n_attempts"]['value']),
         "heuristic": to_bool(form_data["heuristic"]['value']),
         "heuristic_n_attempts": to_int(form_data["heuristic_n_attempts"]['value']),
+        "target_probe_Tm_opt": to_int(form_data["target_probe_Tm_opt"]['value']),
 
 
         # Melting Temperature Parameters
@@ -590,7 +672,6 @@ def merfish():
             "dust": form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['dust']['value'],
             "soft_masking": form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['soft_masking']['value'],
             "max_target_seqs": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['max_target_seqs']['value']),
-            "max_hsps": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['max_hsps']['value'])
         },
         "readout_probe_cross_hybridization_blastn_hit_parameters": {
             "min_alignment_length": to_int(form_data["readout_probe_cross_hybridization_blastn_hit_parameters"]['min_alignment_length']['value'])
@@ -656,8 +737,9 @@ def merfish():
             "dNTPs": to_int(form_data["primer_Tm_parameters"]['dNTPs']['value'])
         },
         "primer_Tm_chem_correction_parameters": None,
-        "primer_Tm_salt_correction_parameters": None
-
+        "primer_Tm_salt_correction_parameters": None,
+        "target_probe_Tm_chem_correction_parameters":None,
+        "target_probe_Tm_salt_correction_parameters": None,
 
 
 
@@ -673,6 +755,7 @@ def merfish():
         capture_output=True,
         text=True
     )
+    print(result)
 
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
@@ -680,7 +763,8 @@ def merfish():
     a=split_on_newline(form_data['files_fasta_target_probe_database']['value'])
     print(a,"I am A")
 
-    a.remove('\n')
+    if '\n' in a:
+        a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
@@ -703,7 +787,10 @@ def merfish():
         print('deleted')
         os.remove(i)
 
-
+    mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {"status": "completed"}}
+    )
 
     return jsonify({
         'stdout': result.stdout,
@@ -737,7 +824,18 @@ def seqfish():
 
         form_data["file_regions"]['value']=file_path
     # Build the nested config structure:
-    output_path= os.path.join(user_dir, 'output_seqfish_probe_designer')
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    output_path = os.path.join(user_dir, f'output_seqfish_probe_designer_{timestamp}')
+
+    run_doc = {
+        "user_id": user_id,
+        "timestamp": timestamp,
+        "output_path": output_path,
+        "status": "started",
+        "pipeline": 'seqfish'
+    }
+    run_result = mongo.db.runs.insert_one(run_doc)
+    run_id = run_result.inserted_id
 
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
@@ -953,6 +1051,11 @@ def seqfish():
         print('deleted')
         os.remove(i)
 
+    mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {"status": "completed"}}
+    )
+
     return jsonify({
         'stdout': result.stdout,
         'stderr': result.stderr,
@@ -978,7 +1081,18 @@ def genomic_ncbi():
 
         # Parse JSON data from the request
         form_data = request.json
-        output_path= os.path.join(user_dir, 'output_genomic_ncbi')
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        output_path = os.path.join(user_dir, f'output_genomic_ncbi_{timestamp}')
+
+        run_doc = {
+            "user_id": user_id,
+            "timestamp": timestamp,
+            "output_path": output_path,
+            "status": "started",
+            "pipeline": 'Genomic Region Generator'
+        }
+        run_result = mongo.db.runs.insert_one(run_doc)
+        run_id = run_result.inserted_id
 
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = output_path
@@ -1013,6 +1127,13 @@ def genomic_ncbi():
                 text=True
             )
 
+
+            mongo.db.runs.update_one(
+                {"_id": run_id},
+                {"$set": {"status": "completed"}}
+            )
+
+
             # Check if the process was successful
             if result.returncode != 0:
                 return jsonify({
@@ -1021,19 +1142,15 @@ def genomic_ncbi():
                     "error": result.stderr
                 }), 500
 
+            return jsonify({
+                "status": "success",
+                "message": "Genomic processing completed successfully.",
+                "output": result.stdout
+            }), 200
+
             # Get the output file path
-            output_dir = form_data['dir_output']
-            generated_file = os.path.join(output_dir, "genomic_output.fasta")  # Adjust filename if needed
 
-            # Check if the file exists
-            if not os.path.exists(generated_file):
-                return jsonify({
-                    "status": "error",
-                    "message": "Output file not found."
-                }), 500
 
-            # Return the file as a response for download
-            return send_file(generated_file, as_attachment=True)
 
         except subprocess.CalledProcessError as e:
             return jsonify({

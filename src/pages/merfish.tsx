@@ -292,6 +292,7 @@ const Merfish: React.FC = () => {
                                             id="file_regions"
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
+                                            value={formData.file_regions.value}
                                             onChange={handleChange}
                                         />
 
@@ -4570,19 +4571,36 @@ const Merfish: React.FC = () => {
         try {
             // Upload files and get their paths
             const uploadedPaths = await uploadFiles();
+            console.log(uploadedPaths,'there are the paths');
+            // Combine form data with uploaded file paths while preserving the { value, comment } structure
+            const finalFormData = { ...formData };
 
-            // Combine form data with uploaded file paths
-            const finalFormData = {
-                ...formData,
-                ...uploadedPaths,
-            };
+            for (const key in uploadedPaths) {
+                // @ts-ignore
+                if (finalFormData[key]) {
+                    // Preserve the existing comment and update the value with the uploaded path
+                    // @ts-ignore
+
+                    finalFormData[key] = {
+                        value: uploadedPaths[key], // Update the value with the uploaded path
+                        // @ts-ignore
+                        comment: finalFormData[key].comment, // Preserve the existing comment
+                    };
+                } else {
+                    // If the key doesn't exist in formData, create a new entry with an empty comment
+                    // @ts-ignore
+                    finalFormData[key] = {
+                        value: uploadedPaths[key],
+                        comment: "",
+                    };
+                }
+            }
 
             // Submit the form data
             const response = await axios.post(
                 'http://localhost:5000/api/merfish',
                 finalFormData,
-                {
-                    withCredentials: true,
+                { withCredentials: true,
                     headers: {"Content-Type": "application/json"},
                 }
             );

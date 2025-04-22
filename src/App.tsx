@@ -15,6 +15,7 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 import Login from "./pages/login";
 import Register from "./pages/register";
+import RunDetail from "./pages/rundetail";
 function App() {
     return (
         <Router>
@@ -22,7 +23,6 @@ function App() {
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-
                 <Route path="/pipelines/genomic" element={<Genomic />} />
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/" element={<Pipelines />} />
@@ -33,7 +33,7 @@ function App() {
                 <Route path="/pipelines/merfish" element={<Merfish />} />
                 <Route path="/pipelines/seqfish" element={<SeqFish />} />
                 <Route path="/pipelines/oligoSeq" element={<OligoSeq />} />
-
+                <Route path="/runs/:runId" element={<RunDetail />} />
             </Routes>
         </Router>
     );

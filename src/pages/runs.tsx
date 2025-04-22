@@ -20,6 +20,10 @@ const Runs = () => {
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
+    // Update the imports
+
+
+
     useEffect(() => {
         if (user) {
             axios.get('http://localhost:5000/api/pipelines', { withCredentials: true })
@@ -44,6 +48,20 @@ const Runs = () => {
             ).toLocaleString();
         } catch (e) {
             return timestamp;
+        }
+    };
+    // Add this handler function
+    const handleDeleteRun = async (runId: string) => {
+        if (window.confirm('Are you sure you want to delete this run? This action cannot be undone.')) {
+            try {
+                await axios.delete(`http://localhost:5000/api/runs/${runId}`, {
+                    withCredentials: true
+                });
+                setRuns(prev => prev.filter(r => r._id !== runId));
+            } catch (error) {
+                console.error('Error deleting run:', error);
+                alert('Failed to delete run');
+            }
         }
     };
 
@@ -81,23 +99,30 @@ const Runs = () => {
                                         <th>Pipeline</th>
                                         <th>Status</th>
                                         <th>Started</th>
-                                        <th>Output Path</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     {runs.map(run => (
-                                        <tr key={run._id}>
+                                        <tr
+                                            key={run._id}
+                                            onClick={() => navigate(`/runs/${run._id}`)}
+                                            style={{ cursor: 'pointer' }}
+                                            className="hover:bg-gray-100 transition-colors"
+                                        >
                                             <td>{run.pipeline}</td>
                                             <td>
-                                                    <span className={statusBadge(run.status)}>
-                                                        {run.status}
-                                                    </span>
+                                          <span className={statusBadge(run.status)}>
+                                            {run.status}
+                                          </span>
                                             </td>
                                             <td>{formatTimestamp(run.timestamp)}</td>
                                             <td>
-                                                <small className="text-muted">
-                                                    {run.output_path}
-                                                </small>
+                                                <button
+                                                    className="btn btn-sm btn-danger"
+                                                    onClick={() => handleDeleteRun(run._id)}
+                                                >
+                                                    Delete
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
