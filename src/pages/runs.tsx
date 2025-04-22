@@ -1,4 +1,4 @@
-// pipelines.tsx
+// Updated React component (src/pages/Runs.tsx)
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth";
@@ -6,11 +6,12 @@ import Navbar from "../modules/nav";
 import axios from "axios";
 
 interface PipelineRun {
-    id: string;
-    name: string;
-    status: 'running' | 'completed' | 'failed';
-    start_time: string;
-    end_time?: string;
+    _id: string;
+    pipeline: string;
+    status: 'started' | 'completed' | 'failed' | 'unknown';
+    timestamp: string;
+    output_path: string;
+    user_id: string;
 }
 
 const Runs = () => {
@@ -33,6 +34,29 @@ const Runs = () => {
         }
     }, [user]);
 
+    const formatTimestamp = (timestamp: string) => {
+        try {
+            const [date, time] = timestamp.split(" ");
+            const [year, month, day] = date.split("-");
+            const [hour, minute, second] = time.split("-");
+            return new Date(
+                `${year}-${month}-${day}T${hour}:${minute}:${second}`
+            ).toLocaleString();
+        } catch (e) {
+            return timestamp;
+        }
+    };
+
+    const statusBadge = (status: string) => {
+        const statusMap: { [key: string]: string } = {
+            started: "primary",
+            completed: "success",
+            failed: "danger",
+            unknown: "secondary"
+        };
+        return `badge bg-${statusMap[status] || 'secondary'}`;
+    };
+
     if (loading) return <div>Loading...</div>;
 
     return (
@@ -50,31 +74,42 @@ const Runs = () => {
                         {isLoading ? (
                             <div className="text-center">Loading pipeline runs...</div>
                         ) : (
-                            <div className="list-group">
-                                {runs.map(run => (
-                                    <div key={run.id} className="list-group-item">
-                                        <div className="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h5>{run.name}</h5>
+                            <div className="table-responsive">
+                                <table className="table table-hover align-middle">
+                                    <thead>
+                                    <tr>
+                                        <th>Pipeline</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Output Path</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {runs.map(run => (
+                                        <tr key={run._id}>
+                                            <td>{run.pipeline}</td>
+                                            <td>
+                                                    <span className={statusBadge(run.status)}>
+                                                        {run.status}
+                                                    </span>
+                                            </td>
+                                            <td>{formatTimestamp(run.timestamp)}</td>
+                                            <td>
                                                 <small className="text-muted">
-                                                    Started: {new Date(run.start_time).toLocaleString()}
+                                                    {run.output_path}
                                                 </small>
-                                            </div>
-                                            <div>
-                                                <span className={`badge 
-                                                    ${run.status === 'completed' ? 'bg-success' :
-                                                    run.status === 'failed' ? 'bg-danger' : 'bg-primary'}`}>
-                                                    {run.status}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {runs.length === 0 && !isLoading && (
-                                    <div className="text-center mt-4">
-                                        No pipeline runs found. Run your first pipeline!
-                                    </div>
-                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {runs.length === 0 && !isLoading && (
+                                        <tr>
+                                            <td colSpan={4} className="text-center py-4">
+                                                No pipeline runs found. Start your first analysis!
+                                            </td>
+                                        </tr>
+                                    )}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
                     </div>

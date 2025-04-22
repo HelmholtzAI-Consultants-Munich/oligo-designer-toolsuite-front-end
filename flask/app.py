@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask, request, jsonify, send_file, current_app
 from flask_cors import CORS
 import yaml
@@ -157,6 +159,32 @@ def run_command():
         progress = i * 10
         socketio.emit("update", {"progress": progress, "status": "running"})  # Send progress update
     socketio.emit("update", {"progress": 100, "status": "completed"})  # Send completion message
+@app.route('/api/pipelines', methods=['GET'])
+@login_required
+def get_pipeline_runs():
+    try:
+        user_id = str(current_user.id)
+
+        # Fetch runs for the authenticated user
+        runs = list(mongo.db.runs.find({"user_id": user_id}))
+
+        formatted_runs = []
+        for run in runs:
+            formatted = {
+                "_id": str(run["_id"]),
+                "pipeline": run.get("pipeline", "unknown"),
+                "status": run.get("status", "unknown"),
+                "timestamp": run.get("timestamp", "").replace("_", " "),
+                "output_path": run.get("output_path", ""),
+                "user_id": run.get("user_id", "unknown")
+            }
+            formatted_runs.append(formatted)
+
+        return jsonify(formatted_runs), 200
+
+    except Exception as e:
+        print(f"Error fetching pipeline runs: {str(e)}")
+        return jsonify({"error": "Failed to fetch pipeline runs"}), 500
 @app.route('/api/scrinshot', methods=['POST'])
 def scrinshot():
     user_dir=''
@@ -164,7 +192,7 @@ def scrinshot():
         print('yes authenticated')
         user_id = str(current_user.id)
         user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-        config_path = os.path.join(user_dir, 'config.yaml')
+        config_path = os.path.join(user_dir,'config.yaml')
     else:
         print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
@@ -183,8 +211,20 @@ def scrinshot():
             print(f.read())
 
         form_data["file_regions"]['value']=file_path
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    output_path = os.path.join(user_dir, f'output_scrinshot_probe_designer_{timestamp}')
 
-    output_path= os.path.join(user_dir, 'output_scrinshot_probe_designer')
+    run_doc = {
+        "user_id": user_id,
+        "timestamp": timestamp,
+        "output_path": output_path,
+        "status": "started",
+        "pipeline": 'scrinshot'
+    }
+    run_result = mongo.db.runs.insert_one(run_doc)
+    run_id = run_result.inserted_id
+
+
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output": output_path,
@@ -354,7 +394,10 @@ def scrinshot():
 
 
 
-
+    mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {"status": "completed"}}
+    )
 
     return jsonify({
                 'stdout': result.stdout,
