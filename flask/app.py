@@ -16,6 +16,7 @@ import tempfile
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from platformdirs import user_data_path
 from werkzeug.security import generate_password_hash, check_password_hash
+import traceback
 
 app = Flask(__name__)
 app.secret_key = "bi_oligo_gizemi_var"
@@ -98,6 +99,8 @@ def get_run_files(run_id):
             return jsonify({"error": "Run not found"}), 404
 
         output_dir = run['output_path']
+        if run["pipeline"]=="Genomic Region Generator":
+            output_gen= output_dir + "/annotation"
         files = []
         for fname in os.listdir(output_dir):
             if fname.endswith(('.yml', '.yaml', '.txt', '.log')):
@@ -107,9 +110,24 @@ def get_run_files(run_id):
                     "size": os.path.getsize(os.path.join(output_dir, fname))
                 })
 
+        print(files)
+
+        if run["pipeline"]=="Genomic Region Generator":
+            for fname in os.listdir(output_gen):
+                if fname.endswith(('.yml', '.yaml', '.txt', '.log','fna')):
+                    files.append({
+                        "name": fname,
+                        "type": "log" if "log" in fname else "config",
+                        "size": os.path.getsize(os.path.join(output_gen, fname))
+                    })
+
+            print(files)
+
         return jsonify(files), 200
 
     except Exception as e:
+        traceback.print_exc()
+
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/runs/<run_id>/files/<filename>', methods=['GET'])
@@ -132,6 +150,7 @@ def get_run_file(run_id, filename):
             return send_file(file_path, mimetype='text/plain')
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 @app.route('/api/check_auth', methods=['GET'])
 def check_auth():
@@ -514,6 +533,7 @@ def merfish():
     }
     run_result = mongo.db.runs.insert_one(run_doc)
     run_id = run_result.inserted_id
+    print(form_data["files_fasta_reference_database_target_probe"]['value'])
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output":output_path,
@@ -836,7 +856,7 @@ def seqfish():
     }
     run_result = mongo.db.runs.insert_one(run_doc)
     run_id = run_result.inserted_id
-
+    print(form_data["files_fasta_reference_database_targe_probe"]['value'])
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output": output_path,
@@ -845,10 +865,10 @@ def seqfish():
         # Probe sequences generation
         "file_regions": form_data["file_regions"]['value'],
         "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]['value']),
-        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]['value']),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_targe_probe"]['value']),
         "target_probe_length_min": to_int(form_data["target_probe_length_min"]['value']),
         "target_probe_length_max": to_int(form_data["target_probe_length_max"]['value']),
-        "target_probe_isoform_consensus": to_int(form_data["probe_isoform_consensus"]['value']),
+        "target_probe_isoform_consensus": to_int(form_data["target_probe_isoform_consensus"]['value']),
         "target_probe_GC_content_min": to_int(form_data["target_probe_GC_content_min"]['value']),
         "target_probe_GC_content_opt": to_int(form_data["target_probe_GC_content_opt"]['value']),
         "target_probe_GC_content_max": to_int(form_data["target_probe_GC_content_max"]['value']),
@@ -948,7 +968,6 @@ def seqfish():
 
         "max_graph_size": to_int(form_data["max_graph_size"]['value']),
         "n_attempts": to_int(form_data["n_attempts"]['value']),
-        "pre_filter": to_bool(form_data["pre_filter"]['value']),
         "heuristic": to_bool(form_data["heuristic"]['value']),
         "heuristic_n_attempts": to_int(form_data["heuristic_n_attempts"]['value']),
 
@@ -974,7 +993,6 @@ def seqfish():
             "dust": form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['dust']['value'],
             "soft_masking": form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['soft_masking']['value'],
             "max_target_seqs": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['max_target_seqs']['value']),
-            "max_hsps": to_int(form_data["readout_probe_cross_hybridization_blastn_search_parameters"]['max_hsps']['value'])
         },
         "readout_probe_cross_hybridization_blastn_hit_parameters": {
             "min_alignment_length": to_int(form_data["readout_probe_cross_hybridization_blastn_hit_parameters"]['min_alignment_length']['value'])
@@ -1044,7 +1062,7 @@ def seqfish():
     for i in a:
         print('deleted')
         os.remove(i)
-    a=split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
+    a=split_on_newline(form_data['files_fasta_reference_database_targe_probe']['value'])
     if '\n' in a:
         a.remove('\n')
     for i in a:
@@ -1096,8 +1114,6 @@ def genomic_ncbi():
 
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = output_path
-        # Populate the config_genomic dictionary based on the received data
-        config_genomic['dir_output'] = form_data['dir_output']['value']
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
             'taxon' : form_data['source_params']['taxon']['value'],
@@ -1109,8 +1125,8 @@ def genomic_ncbi():
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
             'exon_exon_junction': to_bool(form_data['genomic_regions']['exon_exon_junction']['value']),
-            'utr': to_bool(form_data['genomic_regions']['UTR']['value']),
-            'cds': to_bool(form_data['genomic_regions']['CDS']['value']),
+            'utr': to_bool(form_data['genomic_regions']['utr']['value']),
+            'cds': to_bool(form_data['genomic_regions']['cds']['value']),
             'intron': to_bool(form_data['genomic_regions']['intron']['value'])
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
@@ -1160,9 +1176,10 @@ def genomic_ncbi():
             }), 500
 
     except Exception as e:
+        traceback.print_exc()
         return jsonify({
             "status": "error",
-            "message": "An error occurred.",
+            "message": "Internal server error",
             "error": str(e)
         }), 500
 
@@ -1182,14 +1199,25 @@ def genomic_ensemble():
         config_genomic = {}
 
         # Parse JSON data from the request
-        form_data = request.json
-        output_path= os.path.join(user_dir, 'output_genomic_ensemble')
 
         # Populate the config_genomic dictionary based on the received data
+        form_data = request.json
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        output_path = os.path.join(user_dir, f'output_genomic_ensemble_{timestamp}')
+        print(output_path)
+
+        run_doc = {
+            "user_id": user_id,
+            "timestamp": timestamp,
+            "output_path": output_path,
+            "status": "started",
+            "pipeline": 'Genomic Region Generator'
+        }
+        run_result = mongo.db.runs.insert_one(run_doc)
+        run_id = run_result.inserted_id
         config_genomic['dir_output'] = output_path
 
         # Populate the config_genomic dictionary based on the received data
-        config_genomic['dir_output'] = form_data['dir_output']['value']
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
             'species' : form_data['source_params']['species']['value'],
@@ -1200,8 +1228,8 @@ def genomic_ensemble():
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
             'exon_exon_junction': to_bool(form_data['genomic_regions']['exon_exon_junction']['value']),
-            'utr': to_bool(form_data['genomic_regions']['UTR']['value']),
-            'cds': to_bool(form_data['genomic_regions']['CDS']['value']),
+            'utr': to_bool(form_data['genomic_regions']['utr']['value']),
+            'cds': to_bool(form_data['genomic_regions']['cds']['value']),
             'intron': to_bool(form_data['genomic_regions']['intron']['value'])
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
@@ -1217,6 +1245,11 @@ def genomic_ensemble():
                 capture_output=True,
                 text=True
             )
+
+            mongo.db.runs.update_one(
+                {"_id": run_id},
+                {"$set": {"status": "completed"}}
+            )
             # Return success response
             return jsonify({
                 "status": "success",
@@ -1231,6 +1264,8 @@ def genomic_ensemble():
             }), 500
 
     except Exception as e:
+        traceback.print_exc()
+
         # Handle errors
         return jsonify({
             "status": "error",
@@ -1251,10 +1286,20 @@ def genomic_custom():
         else:
             print('no not')
         config_genomic = {}
-
-        # Parse JSON data from the request
         form_data = request.json
-        output_path= os.path.join(user_dir, 'output_genomic_custom')
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        output_path = os.path.join(user_dir, f'output_genomic_custom_{timestamp}')
+        print(output_path)
+
+        run_doc = {
+            "user_id": user_id,
+            "timestamp": timestamp,
+            "output_path": output_path,
+            "status": "started",
+            "pipeline": 'Genomic Region Generator'
+        }
+        run_result = mongo.db.runs.insert_one(run_doc)
+        run_id = run_result.inserted_id
 
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = output_path
@@ -1296,6 +1341,10 @@ def genomic_custom():
             if os.path.exists(form_data['file_annotation']['value']):
                 os.remove(form_data['file_annotation']['value'])  # Delete the file# Delete the file
             # Return success response
+            mongo.db.runs.update_one(
+                {"_id": run_id},
+                {"$set": {"status": "completed"}}
+            )
             return jsonify({
                 "status": "success",
                 "message": "Genomic processing completed successfully.",
@@ -1340,7 +1389,6 @@ def oligoseq():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
-    print(form_data,'MYFORM')
 
     if ".txt" not in form_data["file_regions"]['value']:
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
@@ -1352,10 +1400,22 @@ def oligoseq():
             print("File content:")
             print(f.read())
 
-        form_data["file_regions"]=file_path
+        form_data["file_regions"]['value']=file_path
     # Build the nested config structure:
-    output_path= os.path.join(user_dir, 'output_oligoseq_probe_designer')
+    print(form_data["file_regions"]['value'])
 
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    output_path = os.path.join(user_dir, f'output_oligoseq_probe_designer_{timestamp}')
+
+    run_doc = {
+        "user_id": user_id,
+        "timestamp": timestamp,
+        "output_path": output_path,
+        "status": "started",
+        "pipeline": 'oligoseq'
+    }
+    run_result = mongo.db.runs.insert_one(run_doc)
+    run_id = run_result.inserted_id
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output":output_path,
@@ -1364,11 +1424,11 @@ def oligoseq():
         # Probe sequences generation
         "file_regions": form_data["file_regions"]['value'],
         "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]['value']),
-        "files_fasta_reference_database_targe_probe": multiline_to_list(form_data["files_fasta_reference_database_targe_probe"]['value']),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_targe_probe"]['value']),
         "target_probe_length_min": to_int(form_data["target_probe_length_min"]['value']),
         "target_probe_length_max": to_int(form_data["target_probe_length_max"]['value']),
         "target_probe_split_region": to_int(form_data["target_probe_split_region"]['value']),
-        "target_probe_targeted_exons": to_int(form_data["target_probe_targeted_exons"]['value']),
+        "target_probe_targeted_exons": int(form_data["target_probe_targeted_exons"]['value']),
         "target_probe_isoform_consensus": to_int(form_data["target_probe_isoform_consensus"]['value']),
 
         # Property filters
@@ -1467,13 +1527,14 @@ def oligoseq():
             "GC": to_null(form_data["target_probe_Tm_chem_correction_parameters"]["GC"]['value'])
         },
         "target_probe_Tm_salt_correction_parameters": None,
-
+        "target_probe_hybridization_probability_bowtie_hit_parameters" : None,
+        "target_probe_cross_hybridization_bowtie_hit_parameters": None,
 
     }
 
 
     # Write the YAML file
-    with open("config_OligoSeq.yaml", "w") as f:
+    with open(config_path, "w") as f:
         yaml.dump(config, f, sort_keys=False)
 
     result = subprocess.run(
@@ -1481,17 +1542,22 @@ def oligoseq():
         capture_output=True,
         text=True
     )
+    mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {"status": "completed"}}
+    )
 
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
         os.remove(form_data['file_regions']['value'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database']['value'])
+
     if '\n' in a:
         a.remove('\n')
     for i in a:
         print('deleted')
         os.remove(i)
-    a=split_on_newline(form_data['files_fasta_reference_database_targe_probe']['value'])
+    a=split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
     if '\n' in a:
         a.remove('\n')
     for i in a:

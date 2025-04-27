@@ -58,8 +58,10 @@ const Runs = () => {
                     withCredentials: true
                 });
                 setRuns(prev => prev.filter(r => r._id !== runId));
+                navigate('/runs');
             } catch (error) {
                 console.error('Error deleting run:', error);
+                navigate('/runs');
                 alert('Failed to delete run');
             }
         }

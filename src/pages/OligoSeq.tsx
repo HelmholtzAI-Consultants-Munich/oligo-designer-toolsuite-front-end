@@ -290,6 +290,7 @@ const OligoSeq: React.FC = () => {
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
                                             onChange={handleChange}
+                                            value={formData.file_regions.value}
                                         />
 
                                         {/* Custom file input button spanning full width */}
@@ -501,12 +502,20 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                             <div className="col">
-                                <label htmlFor="probe_length_max" className="form-label">Targeted Exons:</label>
+                                <label htmlFor="target_probe_targeted_exons" className="form-label">Targeted Exons:</label>
                                 <div className="d-flex align-items-center">
-                                    <input type="number" className="form-control" id="probe_length_max"
-                                           name="target_probe_targeted_exons"
-                                           value={formData.target_probe_targeted_exons.value} onChange={handleChange}
-                                           required/>
+                                    <select
+                                        className="form-control"
+                                        id="target_probe_targeted_exons"
+                                        name="target_probe_targeted_exons"
+                                        value={1}
+                                        onChange={handleChange}
+                                        required
+                                    >
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                    </select>
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"

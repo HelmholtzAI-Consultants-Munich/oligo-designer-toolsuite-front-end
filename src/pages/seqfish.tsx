@@ -13,14 +13,14 @@ const SeqFish: React.FC = () => {
     interface FileState {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
-        files_fasta_reference_database_target_probe: File[]; // Always an array
+        files_fasta_reference_database_targe_probe: File[]; // Always an array
         files_fasta_reference_database_readout_probe: File[]; // Always an array
         files_fasta_reference_database_primer: File[]; // Always an array
     }
     const [files, setFiles] = useState<FileState>({
         file_regions: null,
         files_fasta_target_probe_database: [], // Empty array
-        files_fasta_reference_database_target_probe: [], // Empty array
+        files_fasta_reference_database_targe_probe: [], // Empty array
         files_fasta_reference_database_readout_probe: [], // Empty array
         files_fasta_reference_database_primer: [], // Empty array
     });
@@ -39,7 +39,7 @@ const SeqFish: React.FC = () => {
         return (
             (files.file_regions !== null || formData.file_regions.value.length >0) &&
             files.files_fasta_target_probe_database.length > 0 &&
-            files.files_fasta_reference_database_target_probe.length > 0 &&
+            files.files_fasta_reference_database_targe_probe.length > 0 &&
             files.files_fasta_reference_database_readout_probe.length > 0 &&
             files.files_fasta_reference_database_primer.length > 0
 
@@ -297,6 +297,7 @@ const SeqFish: React.FC = () => {
                                             name="file_regions"
                                             placeholder="Enter genes (comma-separated)"
                                             onChange={handleChange}
+                                            value={formData.file_regions.value}
                                         />
 
                                         {/* Custom file input button spanning full width */}
@@ -439,8 +440,8 @@ const SeqFish: React.FC = () => {
                                     </div>
                                     {/* Display selected file names */}
                                     <div className="text-muted small mt-1">
-                                        {files.files_fasta_reference_database_target_probe.length > 0
-                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                        {files.files_fasta_reference_database_targe_probe.length > 0
+                                            ? `Selected: ${files.files_fasta_reference_database_targe_probe.map(f => f.name).join(', ')}`
                                             : "No files selected"}
                                     </div>
                                 </div>
@@ -4064,20 +4065,37 @@ const SeqFish: React.FC = () => {
         try {
             // Upload files and get their paths
             const uploadedPaths = await uploadFiles();
+            console.log(uploadedPaths,'there are the paths');
+            // Combine form data with uploaded file paths while preserving the { value, comment } structure
+            const finalFormData = { ...formData };
 
-            // Combine form data with uploaded file paths
-            const finalFormData = {
-                ...formData,
-                ...uploadedPaths,
-            };
+            for (const key in uploadedPaths) {
+                // @ts-ignore
+                if (finalFormData[key]) {
+                    // Preserve the existing comment and update the value with the uploaded path
+                    // @ts-ignore
+
+                    finalFormData[key] = {
+                        value: uploadedPaths[key], // Update the value with the uploaded path
+                        // @ts-ignore
+                        comment: finalFormData[key].comment, // Preserve the existing comment
+                    };
+                } else {
+                    // If the key doesn't exist in formData, create a new entry with an empty comment
+                    // @ts-ignore
+                    finalFormData[key] = {
+                        value: uploadedPaths[key],
+                        comment: "",
+                    };
+                }
+            }
 
             // Submit the form data
             const response = await axios.post(
                 'http://localhost:5000/api/seqfish',
                 finalFormData,
-                {
-                    withCredentials: true,
-                    headers: { "Content-Type": "application/json" },
+                { withCredentials: true,
+                    headers: {"Content-Type": "application/json"},
                 }
             );
 
