@@ -1542,27 +1542,27 @@ def oligoseq():
         capture_output=True,
         text=True
     )
-    mongo.db.runs.update_one(
-        {"_id": run_id},
-        {"$set": {"status": "completed"}}
-    )
 
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
         os.remove(form_data['file_regions']['value'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database']['value'])
+    if '\n' in a:
+        a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+    a=split_on_newline(form_data['files_fasta_reference_database_targe_probe']['value'])
+    if '\n' in a:
+        a.remove('\n')
+    for i in a:
+        print('deleted')
+        os.remove(i)
+    mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {"status": "completed"}}
+    )
 
-    if '\n' in a:
-        a.remove('\n')
-    for i in a:
-        print('deleted')
-        os.remove(i)
-    a=split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
-    if '\n' in a:
-        a.remove('\n')
-    for i in a:
-        print('deleted')
-        os.remove(i)
 
 
 

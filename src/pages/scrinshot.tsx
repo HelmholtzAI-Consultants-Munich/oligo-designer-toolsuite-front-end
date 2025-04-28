@@ -35,7 +35,6 @@
         };
         const areAllFilesUploaded = () => {
             return (
-                (files.file_regions !== null || formData.file_regions.value.length >0)&&
                 files.files_fasta_target_probe_database.length > 0 &&
                 files.files_fasta_reference_database_target_probe.length > 0
             );
@@ -154,33 +153,7 @@
                                 </div>
     
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="dir_output" className="form-label">Output Directory:</label>
-                                <div className="d-flex align-items-center">
-                                    <input type="text" className="form-control" id="dir_output" name="dir_output"
-                                           value={formData.dir_output.value} onChange={handleChange} required/>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="dir_output">
-                                                <Popover.Body>
-                                                    {formData.dir_output.comment}
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px"
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
-                            </div>
+
                             <div className="mb-3">
                                 <label
                                     htmlFor="write_intermediate_steps"
