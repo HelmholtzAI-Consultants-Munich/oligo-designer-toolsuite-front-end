@@ -29,6 +29,7 @@ const RunDetail = () => {
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
+
     const [parsedYamlData, setParsedYamlData] = useState<any>(null);
     const [selectedGene, setSelectedGene] = useState<string>('');
     const [selectedOligoset, setSelectedOligoset] = useState<string>('');
@@ -44,6 +45,9 @@ const RunDetail = () => {
         'Tm_arm1',
         'Tm_arm2'
     ]);
+    const closeFileView = () => {
+        setViewingFilename(null);
+    };
     const [parsedYamlFilename, setParsedYamlFilename] = useState<string | null>(null);
 
     useEffect(() => {
@@ -117,6 +121,10 @@ const RunDetail = () => {
     };
 
     const viewFileContent = (filename: string) => {
+        if (viewingFilename === filename) {
+            closeFileView();
+            return;
+        }
         axios.get(`http://localhost:5000/api/runs/${runId}/files/${filename}`, {
             withCredentials: true,
             responseType: 'text'
@@ -246,95 +254,97 @@ const RunDetail = () => {
                     {fileContent && viewingFilename && viewingFilename.endsWith('.txt') && (
                         <div className="mt-4">
                             <h4>Viewing: {viewingFilename}</h4>
+
                             <pre className="bg-light p-3 rounded mb-4" style={{ maxHeight: '500px', overflow: 'auto' }}>
                             {fileContent}
                         </pre>
                         </div>
                     )}
 
-                    {parsedYamlData && parsedYamlFilename === 'padlock_probes.yml.yml' && (
-                        <div className="card">
-                            <div className="card-body">
-                                <h4 className="card-title">Gene Analysis</h4>
-                                <div className="row mb-3">
-                                    <div className="col-md-6">
-                                        <label className="form-label">Select Gene</label>
-                                        <Select
-                                            options={geneOptions}
-                                            value={geneOptions.find(option => option.value === selectedGene)}
-                                            onChange={(newValue: SingleValue<GeneOption>) => {
-                                                setSelectedGene(newValue?.value || '');
-                                                setSelectedOligoset('');
-                                            }}
-                                            placeholder="Search or select gene..."
-                                            isSearchable
-                                            className="basic-single"
-                                            classNamePrefix="select"
-                                        />
-                                    </div>
 
-                                    {selectedGene && (
-                                        <div className="col-md-6">
-                                            <label className="form-label">Select Oligoset</label>
-                                            <select
-                                                className="form-select"
-                                                value={selectedOligoset}
-                                                onChange={(e) => setSelectedOligoset(e.target.value)}
-                                            >
-                                                <option value="">Select an Oligoset</option>
-                                                {getOligosetsForGene(selectedGene).map(oligoset => (
-                                                    <option key={oligoset} value={oligoset}>{oligoset}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
+                </div>
+            )}
+            {parsedYamlData && parsedYamlFilename === 'padlock_probes.yml.yml' && (
+                <div className="card">
+                    <div className="card-body">
+                        <h4 className="card-title">Gene Analysis</h4>
+                        <div className="row mb-3">
+                            <div className="col-md-6">
+                                <label className="form-label">Select Gene</label>
+                                <Select
+                                    options={geneOptions}
+                                    value={geneOptions.find(option => option.value === selectedGene)}
+                                    onChange={(newValue: SingleValue<GeneOption>) => {
+                                        setSelectedGene(newValue?.value || '');
+                                        setSelectedOligoset('Oligoset 1');
+                                    }}
+                                    placeholder="Search or select gene..."
+                                    isSearchable
+                                    className="basic-single"
+                                    classNamePrefix="select"
+                                />
+                            </div>
+
+                            {selectedGene && (
+                                <div className="col-md-6">
+                                    <label className="form-label">Select Oligoset</label>
+                                    <select
+                                        className="form-select"
+                                        value={selectedOligoset}
+                                        onChange={(e) => setSelectedOligoset(e.target.value)}
+                                    >
+                                        <option value="">Select an Oligoset</option>
+                                        {getOligosetsForGene(selectedGene).map(oligoset => (
+                                            <option key={oligoset} value={oligoset}>{oligoset}</option>
+                                        ))}
+                                    </select>
                                 </div>
+                            )}
+                        </div>
 
-                                {selectedOligoset && (
-                                    <div className="mt-3">
-                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                            <h5>Oligos in {selectedOligoset}</h5>
-                                            <div>
+                        {selectedOligoset && (
+                            <div className="mt-3">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <h5>Oligos in {selectedOligoset}</h5>
+                                    <div>
                                             <span className="form-text me-2">
                                                 Showing {getOligosForOligoset().length} oligos
                                             </span>
-                                                <button
-                                                    onClick={handleDownloadCSV}
-                                                    className="btn btn-sm btn-primary"
-                                                >
-                                                    Download CSV
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="table-responsive">
-                                            <table className="table table-bordered table-striped table-hover">
-                                                <thead className="table-light">
-                                                <tr>
-                                                    {tableColumns.map(column => (
-                                                        <th key={column} className="text-nowrap">
-                                                            {column.replace(/_/g, ' ')}
-                                                        </th>
-                                                    ))}
-                                                </tr>
-                                                </thead>
-                                                <tbody>
-                                                {getOligosForOligoset().map(oligo => (
-                                                    <tr key={oligo.oligo_id}>
-                                                        {tableColumns.map(column => (
-                                                            <td key={`${oligo.oligo_id}-${column}`} className="text-nowrap">
-                                                                {formatValue(oligo[column])}
-                                                            </td>
-                                                        ))}
-                                                    </tr>
-                                                ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                        <button
+                                            onClick={handleDownloadCSV}
+                                            className="btn btn-sm btn-primary"
+                                        >
+                                            Download CSV
+                                        </button>
                                     </div>
-                                )}
+                                </div>
+                                <div className="table-responsive">
+                                    <table className="table table-bordered table-striped table-hover">
+                                        <thead className="table-light">
+                                        <tr>
+                                            {tableColumns.map(column => (
+                                                <th key={column} className="text-nowrap">
+                                                    {column.replace(/_/g, ' ')}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {getOligosForOligoset().map(oligo => (
+                                            <tr key={oligo.oligo_id}>
+                                                {tableColumns.map(column => (
+                                                    <td key={`${oligo.oligo_id}-${column}`} className="text-nowrap">
+                                                        {formatValue(oligo[column])}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             )}
         </div>
