@@ -287,20 +287,23 @@ def scrinshot():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
-    print(form_data['file_regions'])
+    print(form_data['file_regions'],'is it empty')
 
     # Build the nested config structure:
-    if ".txt" not in form_data["file_regions"]['value']:
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
-            file_path = temp_file.name
-            # Write each gene on a new line
-            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
-        print(f"File created: {file_path}")
-        with open(file_path, "r") as f:
-            print("File content:")
-            print(f.read())
+    if form_data["file_regions"]['value']!='':
+        if ".txt" not in form_data["file_regions"]['value']:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+                file_path = temp_file.name
+                # Write each gene on a new line
+                temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
+            print(f"File created: {file_path}")
+            with open(file_path, "r") as f:
+                print("File content:")
+                print(f.read())
 
-        form_data["file_regions"]['value']=file_path
+            form_data["file_regions"]['value']=file_path
+    else:
+        form_data["file_regions"]['value']=None
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     output_path = os.path.join(user_dir, f'output_scrinshot_probe_designer_{timestamp}')
 
@@ -465,6 +468,8 @@ def scrinshot():
                 capture_output=True,
                 text=True
             )
+    print("STDERR:", result.stderr)
+    print("STDOUT (partial logs):", result.stdout)
     status = "completed" if result.returncode == 0 else "error"
 
     if os.path.exists(form_data['file_regions']['value']):
@@ -511,17 +516,20 @@ def merfish():
 
     form_data = request.json  # Assuming JSON is posted from React
     print(form_data['file_regions'])
-    if ".txt" not in form_data["file_regions"]['value']:
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
-            file_path = temp_file.name
-            # Write each gene on a new line
-            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
-        print(f"File created: {file_path}")
-        with open(file_path, "r") as f:
-            print("File content:")
-            print(f.read())
+    if form_data["file_regions"]['value']!='':
+        if ".txt" not in form_data["file_regions"]['value']:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+                file_path = temp_file.name
+                # Write each gene on a new line
+                temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
+            print(f"File created: {file_path}")
+            with open(file_path, "r") as f:
+                print("File content:")
+                print(f.read())
 
-        form_data["file_regions"]['value']=file_path
+            form_data["file_regions"]['value']=file_path
+    else:
+        form_data["file_regions"]['value']=None
     # Build the nested config structure:
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     output_path = os.path.join(user_dir, f'output_merfish_probe_designer_{timestamp}')
@@ -838,17 +846,20 @@ def seqfish():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
-    if ".txt" not in form_data["file_regions"]['value']:
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
-            file_path = temp_file.name
-            # Write each gene on a new line
-            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
-        print(f"File created: {file_path}")
-        with open(file_path, "r") as f:
-            print("File content:")
-            print(f.read())
+    if form_data["file_regions"]['value']!='':
+        if ".txt" not in form_data["file_regions"]['value']:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+                file_path = temp_file.name
+                # Write each gene on a new line
+                temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
+            print(f"File created: {file_path}")
+            with open(file_path, "r") as f:
+                print("File content:")
+                print(f.read())
 
-        form_data["file_regions"]['value']=file_path
+            form_data["file_regions"]['value']=file_path
+    else:
+        form_data["file_regions"]['value']=None
     # Build the nested config structure:
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     output_path = os.path.join(user_dir, f'output_seqfish_probe_designer_{timestamp}')
@@ -1402,18 +1413,21 @@ def oligoseq():
     #thread.start()
 
     form_data = request.json  # Assuming JSON is posted from React
+    print(form_data["file_regions"]['value'],'file regions')
+    if form_data["file_regions"]['value']!='':
+        if ".txt" not in form_data["file_regions"]['value']:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+                file_path = temp_file.name
+                # Write each gene on a new line
+                temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
+            print(f"File created: {file_path}")
+            with open(file_path, "r") as f:
+                print("File content:")
+                print(f.read())
 
-    if ".txt" not in form_data["file_regions"]['value']:
-        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
-            file_path = temp_file.name
-            # Write each gene on a new line
-            temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"]['value'].split(","))
-        print(f"File created: {file_path}")
-        with open(file_path, "r") as f:
-            print("File content:")
-            print(f.read())
-
-        form_data["file_regions"]['value']=file_path
+            form_data["file_regions"]['value']=file_path
+    else:
+        form_data["file_regions"]['value']=None
     # Build the nested config structure:
     print(form_data["file_regions"]['value'])
 

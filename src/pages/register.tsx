@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
 import Navbar from "../modules/nav";
+import { useNavigate } from "react-router-dom";
 
 const Register = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const navigate = useNavigate(); //
 
     const handleSubmit = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
@@ -14,7 +16,9 @@ const Register = () => {
                 password
             });
             console.log(res.data);
+            navigate("/");
             alert("Registration successful!");
+
         } catch (err: any) {
             if (err.response && err.response.status === 409) {
                 alert("Email already in use.");

@@ -282,7 +282,7 @@
                                             className="form-control"
                                             id="file_regions"
                                             name="file_regions"
-                                            placeholder="Enter genes (comma-separated)"
+                                            placeholder="Enter genes (comma-separated) or leave empty to use all the genes."
                                             onChange={handleChange}
                                             value={formData.file_regions.value}
                                         />

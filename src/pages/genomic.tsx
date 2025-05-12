@@ -9256,7 +9256,6 @@ const Genomic: React.FC = () => {
                                                             name="source_params.annotation_release"
                                                             value={formDataNcbi.source_params.annotation_release.value}
                                                             onChange={handleChange}
-                                                            placeholder="current"
                                                         />
                                                         <OverlayTrigger
                                                             trigger="hover"
