@@ -206,7 +206,6 @@ const Genomic: React.FC = () => {
                     // @ts-ignore
                     formData.append("file", files[key]);
                     // @ts-ignore
-                    console.log(files[key],key,'what it look like not array');
                     try {
                         const response = await axios.post(
                             "http://localhost:5000/api/upload",

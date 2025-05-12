@@ -465,6 +465,8 @@ def scrinshot():
                 capture_output=True,
                 text=True
             )
+    status = "completed" if result.returncode == 0 else "error"
+
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
         os.remove(form_data['file_regions']['value'])  # Delete the file
@@ -486,7 +488,7 @@ def scrinshot():
 
     mongo.db.runs.update_one(
         {"_id": run_id},
-        {"$set": {"status": "completed"}}
+        {"$set": {"status":status}}
     )
 
     return jsonify({
@@ -775,6 +777,8 @@ def merfish():
         capture_output=True,
         text=True
     )
+    status = "completed" if result.returncode == 0 else "error"
+
     print(result)
 
     if os.path.exists(form_data['file_regions']['value']):
@@ -807,9 +811,11 @@ def merfish():
         print('deleted')
         os.remove(i)
 
+
+
     mongo.db.runs.update_one(
         {"_id": run_id},
-        {"$set": {"status": "completed"}}
+        {"$set": {"status": status}}
     )
 
     return jsonify({
@@ -1052,6 +1058,7 @@ def seqfish():
         capture_output=True,
         text=True
     )
+    status = "completed" if result.returncode == 0 else "error"
 
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
@@ -1071,7 +1078,7 @@ def seqfish():
 
     mongo.db.runs.update_one(
         {"_id": run_id},
-        {"$set": {"status": "completed"}}
+        {"$set": {"status":status}}
     )
 
     return jsonify({
@@ -1142,11 +1149,13 @@ def genomic_ncbi():
                 capture_output=True,
                 text=True
             )
+            status = "completed" if result.returncode == 0 else "error"
+
 
 
             mongo.db.runs.update_one(
                 {"_id": run_id},
-                {"$set": {"status": "completed"}}
+                {"$set": {"status": status}}
             )
 
 
@@ -1245,10 +1254,12 @@ def genomic_ensemble():
                 capture_output=True,
                 text=True
             )
+            status = "completed" if result.returncode == 0 else "error"
+
 
             mongo.db.runs.update_one(
                 {"_id": run_id},
-                {"$set": {"status": "completed"}}
+                {"$set": {"status": status}}
             )
             # Return success response
             return jsonify({
@@ -1335,6 +1346,8 @@ def genomic_custom():
                 capture_output=True,
                 text=True
             )
+            status = "completed" if result.returncode == 0 else "error"
+
             if os.path.exists(form_data['file_sequence']['value']):
                 os.remove(form_data['file_sequence']['value'])
                 os.remove(form_data['file_sequence']['value']+'.fai')
@@ -1343,7 +1356,7 @@ def genomic_custom():
             # Return success response
             mongo.db.runs.update_one(
                 {"_id": run_id},
-                {"$set": {"status": "completed"}}
+                {"$set": {"status": status}}
             )
             return jsonify({
                 "status": "success",
@@ -1542,6 +1555,8 @@ def oligoseq():
         capture_output=True,
         text=True
     )
+    status = "completed" if result.returncode == 0 else "error"
+
 
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
@@ -1560,7 +1575,7 @@ def oligoseq():
         os.remove(i)
     mongo.db.runs.update_one(
         {"_id": run_id},
-        {"$set": {"status": "completed"}}
+        {"$set": {"status": status}}
     )
 
 
