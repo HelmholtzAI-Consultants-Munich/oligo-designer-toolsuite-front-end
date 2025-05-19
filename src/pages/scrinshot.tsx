@@ -151,7 +151,7 @@
             setShowDeveloperSettings(!showDeveloperSettings);
         };
 
-        const [activeTab, setActiveTab] = useState("genomic_region");
+        const [activeTab, setActiveTab] = useState("general");
         const [activetab2, setActivetab2] = useState("specfblastn");
         const renderTabContent = () => {
             switch (activeTab) {
