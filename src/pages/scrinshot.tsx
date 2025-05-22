@@ -1,7 +1,7 @@
     import React, { useState,useEffect} from 'react';
     import Navbar from "../modules/nav";
     import axios from "axios";
-    import { OverlayTrigger, Popover} from 'react-bootstrap';
+    import { OverlayTrigger, Popover,Dropdown} from 'react-bootstrap';
     import { InfoCircle } from "react-bootstrap-icons"; // Bootstrap icon
     import formDatas from "../forms/scrinshot_form";
     import form_Data_Ncbi from "../forms/genomic_ncbi_form";
@@ -9,6 +9,11 @@
 
     import form_Data_Custom from "../forms/genomic_custom_form";
     const Scrinshot: React.FC = () => {
+        const exampleGenes = [
+            "TP53, BRCA1, EGFR",
+            "MYC, KRAS, NRAS",
+            "CDKN2A, MDM2, ATM"
+        ];
         const [loading, setLoading] = useState(false);
         const [useSameReferenceForm, setUseSameReferenceForm] = useState(true);
         const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
@@ -299,10 +304,17 @@
                                             className="form-control"
                                             id="file_regions"
                                             name="file_regions"
-                                            placeholder="Enter genes (comma-separated) or leave empty to use all the genes."
+                                            list="geneExamples"
+                                            placeholder="Enter genes (comma-separated) or pick an example"
                                             onChange={handleChange}
                                             value={formData.file_regions.value}
                                         />
+
+                                        <datalist id="geneExamples">
+                                            <option value="data/genes/custom_10.txt" />
+                                            <option value="data/genes/custom_100.txt" />
+                                            <option value="data/genes/custom_200.txt" />
+                                        </datalist>
 
                                         {/* Custom file input button spanning full width */}
                                         <label
@@ -406,14 +418,14 @@
                                                 }}
                                             />
                                         </OverlayTrigger>
-    
+
                                     </div>
                                     <div className="text-muted small mt-1">
                                         {files.files_fasta_target_probe_database.length > 0
                                             ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
                                             : "No files selected"}
                                     </div>
-    
+
                                 </div>
                                 <div className="mb-3">
                                     <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
@@ -442,7 +454,7 @@
                                         >
                                             Choose File
                                         </label>
-    
+
                                         {/* Info icon with popover */}
                                         <OverlayTrigger
                                             trigger="hover"
@@ -464,7 +476,7 @@
                                                 }}
                                             />
                                         </OverlayTrigger>
-    
+
                                     </div>
                                     {/* Display selected file names */}
                                     <div className="text-muted small mt-1">
