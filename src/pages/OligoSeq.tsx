@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
 import {OverlayTrigger, Popover} from "react-bootstrap";
@@ -263,10 +263,17 @@ const OligoSeq: React.FC = () => {
                                             className="form-control"
                                             id="file_regions"
                                             name="file_regions"
-                                            placeholder="Enter genes (comma-separated)"
+                                            list="geneExamples"
+                                            placeholder="Enter genes (comma-separated) or pick an example"
                                             onChange={handleChange}
                                             value={formData.file_regions.value}
                                         />
+
+                                        <datalist id="geneExamples">
+                                            <option value="data/genes/custom_10.txt" />
+                                            <option value="data/genes/custom_100.txt" />
+                                            <option value="data/genes/custom_200.txt" />
+                                        </datalist>
 
                                         {/* Custom file input button spanning full width */}
                                         <label

@@ -9,11 +9,7 @@
 
     import form_Data_Custom from "../forms/genomic_custom_form";
     const Scrinshot: React.FC = () => {
-        const exampleGenes = [
-            "TP53, BRCA1, EGFR",
-            "MYC, KRAS, NRAS",
-            "CDKN2A, MDM2, ATM"
-        ];
+
         const [loading, setLoading] = useState(false);
         const [useSameReferenceForm, setUseSameReferenceForm] = useState(true);
         const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
