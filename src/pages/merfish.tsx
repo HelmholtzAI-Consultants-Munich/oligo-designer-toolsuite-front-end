@@ -274,9 +274,10 @@ const Merfish: React.FC = () => {
                                         />
 
                                         <datalist id="geneExamples">
-                                            <option value="data/genes/custom_10.txt" />
-                                            <option value="data/genes/custom_100.txt" />
-                                            <option value="data/genes/custom_200.txt" />
+                                            <option value="AARS1" />
+                                            <option value="ABCC1" />
+                                            <option value="BCAR1" />
+                                            <option value="LOC105376749" />
                                         </datalist>
 
                                         {/* Custom file input button spanning full width */}
