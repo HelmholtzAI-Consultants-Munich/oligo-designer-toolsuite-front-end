@@ -1,7 +1,7 @@
     import React, { useState,useEffect} from 'react';
     import Navbar from "../modules/nav";
     import axios from "axios";
-    import { OverlayTrigger, Popover,Dropdown} from 'react-bootstrap';
+    import { OverlayTrigger, Popover} from 'react-bootstrap';
     import { InfoCircle } from "react-bootstrap-icons"; // Bootstrap icon
     import formDatas from "../forms/scrinshot_form";
     import form_Data_Ncbi from "../forms/genomic_ncbi_form";
@@ -23811,13 +23811,15 @@
                     }
                 }
 
-                await axios.post('http://localhost:5000/api/scrinshot', finalFormData, {
+                const response = await axios.post('http://localhost:5000/api/scrinshot', finalFormData, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
+                const result = response.data;
+                console.log(result,'this is the result');
 
                 setStatus("running");
-                alert('Both forms submitted successfully!');
+                alert(`Your RunID is: ${result.run_id}, you can paste it to run`);
             } catch (error) {
                 console.error('Error submitting scrinshot form:', error);
                 alert('Error submitting scrinshot form. Please try again.');

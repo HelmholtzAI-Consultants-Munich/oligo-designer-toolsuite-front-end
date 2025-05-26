@@ -25,7 +25,7 @@ const Runs = () => {
 
 
     useEffect(() => {
-        if (user) {
+
             axios.get('http://localhost:5000/api/pipelines', { withCredentials: true })
                 .then(response => {
                     setRuns(response.data);
@@ -35,8 +35,8 @@ const Runs = () => {
                     console.error('Error fetching pipelines:', error);
                     setIsLoading(false);
                 });
-        }
-    }, [user]);
+
+    },[]);
 
     const formatTimestamp = (timestamp: string) => {
         try {
@@ -84,63 +84,81 @@ const Runs = () => {
             <Navbar />
             <div className="container mt-5">
                 <h2 className="mb-4">Pipeline Runs</h2>
-                {!user ? (
-                    <div className="alert alert-warning text-center">
-                        You need to <a href="/login" className="text-primary">Login</a> or{" "}
-                        <a href="/register" className="text-primary">Register</a> to access pipelines.
+                <div className="row mb-4">
+                    <div className="col-md-6">
+                        <div className="input-group">
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Enter RunID"
+                                id="runIdInput"
+                            />
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    const runId = (document.getElementById('runIdInput') as HTMLInputElement).value;
+                                    if (runId) {
+                                        navigate(`/runs/${runId}`);
+                                    } else {
+                                        alert('Please enter a RunID');
+                                    }
+                                }}
+                            >
+                                Go to Run
+                            </button>
+                        </div>
                     </div>
-                ) : (
-                    <div>
-                        {isLoading ? (
-                            <div className="text-center">Loading pipeline runs...</div>
-                        ) : (
-                            <div className="table-responsive">
-                                <table className="table table-hover align-middle">
-                                    <thead>
-                                    <tr>
-                                        <th>Pipeline</th>
-                                        <th>Status</th>
-                                        <th>Started</th>
+                </div>
+                <div>
+                    {isLoading ? (
+                        <div className="text-center">Loading pipeline runs...</div>
+                    ) : (
+                        <div className="table-responsive">
+                            <table className="table table-hover align-middle">
+                                <thead>
+                                <tr>
+                                    <th>Pipeline</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {runs.map(run => (
+                                    <tr
+                                        key={run._id}
+                                        onClick={() => navigate(`/runs/${run._id}`)}
+                                        style={{ cursor: 'pointer' }}
+                                        className="hover:bg-gray-100 transition-colors"
+                                    >
+                                        <td>{run.pipeline}</td>
+                                        <td>
+                                      <span className={statusBadge(run.status)}>
+                                        {run.status}
+                                      </span>
+                                        </td>
+                                        <td>{formatTimestamp(run.timestamp)}</td>
+                                        <td>
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                onClick={() => handleDeleteRun(run._id)}
+                                            >
+                                                Delete
+                                            </button>
+                                        </td>
                                     </tr>
-                                    </thead>
-                                    <tbody>
-                                    {runs.map(run => (
-                                        <tr
-                                            key={run._id}
-                                            onClick={() => navigate(`/runs/${run._id}`)}
-                                            style={{ cursor: 'pointer' }}
-                                            className="hover:bg-gray-100 transition-colors"
-                                        >
-                                            <td>{run.pipeline}</td>
-                                            <td>
-                                          <span className={statusBadge(run.status)}>
-                                            {run.status}
-                                          </span>
-                                            </td>
-                                            <td>{formatTimestamp(run.timestamp)}</td>
-                                            <td>
-                                                <button
-                                                    className="btn btn-sm btn-danger"
-                                                    onClick={() => handleDeleteRun(run._id)}
-                                                >
-                                                    Delete
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {runs.length === 0 && !isLoading && (
-                                        <tr>
-                                            <td colSpan={4} className="text-center py-4">
-                                                No pipeline runs found. Start your first analysis!
-                                            </td>
-                                        </tr>
-                                    )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
+                                ))}
+                                {runs.length === 0 && !isLoading && (
+                                    <tr>
+                                        <td colSpan={4} className="text-center py-4">
+                                            No pipeline runs found. Start your first analysis!
+                                        </td>
+                                    </tr>
+                                )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

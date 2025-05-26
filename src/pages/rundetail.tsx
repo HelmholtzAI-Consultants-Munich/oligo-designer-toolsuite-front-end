@@ -51,14 +51,14 @@ const RunDetail = () => {
     const [parsedYamlFilename, setParsedYamlFilename] = useState<string | null>(null);
 
     useEffect(() => {
-        if (user && runId) {
+
             axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
                 withCredentials: true
             })
                 .then(response => setFiles(response.data))
                 .catch(error => console.error('Error fetching files:', error));
-        }
-    }, [user, runId]);
+
+    }, []);
 
     // Auto-view padlock_probes.yml.yml if present and not already viewing
     useEffect(() => {

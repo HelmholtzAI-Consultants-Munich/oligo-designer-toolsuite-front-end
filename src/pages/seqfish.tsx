@@ -1,15 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
 import {OverlayTrigger, Popover} from "react-bootstrap";
 import {InfoCircle} from "react-bootstrap-icons";
 import seqfish_form from "../forms/seqfish_form";
+import form_Data_Ncbi from "../forms/genomic_ncbi_form";
+import form_Data_Ens from "../forms/genomic_ens_form";
+import form_Data_Custom from "../forms/genomic_custom_form";
 const SeqFish: React.FC = () => {
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-    const [progress, setProgress] = useState(0);
-    //const [output, setOutput] = useState("");
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formDataNcbi, setFormDataNcbi] = useState(form_Data_Ncbi);
+    const [formDataEns, setFormDataEns] = useState(form_Data_Ens);
+    const [formDataCustom, setFormDataCustom] = useState(form_Data_Custom);
+    const [formData2Ncbi, setFormData2Ncbi] = useState(form_Data_Ncbi);
+    const [formData2Ens, setFormData2Ens] = useState(form_Data_Ens);
+    const [formData2Custom, setFormData2Custom] = useState(form_Data_Custom);
+    const [generateFastaFiles, setGenerateFastaFiles] = useState(false);
+    const [useSameReferenceForm, setUseSameReferenceForm] = useState(true);
+    const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
+    const [selectedSource2, setSelectedSource2] = useState("ncbi"); // State to hold selected source
+    useEffect(() => {
+        if (useSameReferenceForm) {
+            setFormData2Ncbi(formDataNcbi);
+            setFormData2Ens(formDataEns);
+            setFormData2Custom(formDataCustom);
+        }
+    }, [formDataNcbi, formDataEns, formDataCustom, useSameReferenceForm]);
     interface FileState {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
@@ -24,6 +42,12 @@ const SeqFish: React.FC = () => {
         files_fasta_reference_database_readout_probe: [], // Empty array
         files_fasta_reference_database_primer: [], // Empty array
     });
+    const handleSourceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedSource(e.target.value);
+    };
+    const handleSourceChange2 = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSelectedSource2(e.target.value);
+    };
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
         if (!selectedFiles) return;
@@ -37,13 +61,34 @@ const SeqFish: React.FC = () => {
     };
     const areAllFilesUploaded = () => {
         return (
-            files.files_fasta_target_probe_database.length > 0 &&
+            (files.files_fasta_target_probe_database.length > 0 &&
             files.files_fasta_reference_database_targe_probe.length > 0 &&
             files.files_fasta_reference_database_readout_probe.length > 0 &&
-            files.files_fasta_reference_database_primer.length > 0
+            files.files_fasta_reference_database_primer.length > 0)
 
 
         );
+    };
+    const handleFileChangeGenomic = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, files: selectedFiles } = e.target;
+
+        if (!selectedFiles) return;
+
+        // @ts-ignore
+        setFiles((prevFiles) => {
+            // Check if the input field should support multiple files
+            if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe") {
+                // @ts-ignore
+                return {
+                };
+            } else {
+                // For single-file inputs, replace the existing file
+                return {
+                    ...prevFiles,
+                    [name]: selectedFiles[0],
+                };
+            }
+        });
     };
     const uploadFiles = async () => {
         const filePaths: { [key: string]: string } = {};

@@ -9280,17 +9280,19 @@ const Genomic: React.FC = () => {
                                                     </div>
 
 
-                                                    <h5 className="pt-2">Genomic Regions</h5>
+                                                    <h5 className="pt-2">Genomic Regionsss</h5>
 
-                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
-                                                        <div className="col-md-4 mb-3" key={region}>
-                                                            <div className="form-check">
+                                                    <div className="d-flex flex-wrap gap-3">
+                                                        {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
+                                                            <div key={region} className="d-flex align-items-center">
                                                                 <input
                                                                     type="checkbox"
-                                                                    className="form-check-input"
+                                                                    className="form-check-input me-2"
                                                                     id={region}
                                                                     name={region}
-                                                                    checked={formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions]?.value === "true"}
+                                                                    checked={
+                                                                        formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions]?.value === "true"
+                                                                    }
                                                                     onChange={(e) =>
                                                                         setFormDataNcbi((prev) => ({
                                                                             ...prev,
@@ -9304,32 +9306,31 @@ const Genomic: React.FC = () => {
                                                                         }))
                                                                     }
                                                                 />
-                                                                <div className="d-flex align-items-center">
-                                                                    <label htmlFor={region} className="form-check-label">
-                                                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
-                                                                    </label>
-                                                                    <OverlayTrigger
-                                                                        trigger="hover"
-                                                                        placement="top"
-                                                                        overlay={
-                                                                            <Popover id={`popover-${region}`}>
-                                                                                <Popover.Body>
-                                                                                    {formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions].comment}
-                                                                                </Popover.Body>
-                                                                            </Popover>
-                                                                        }
-                                                                    >
-                                                                        <InfoCircle style={{
+                                                                <label htmlFor={region} className="form-check-label me-2 mb-0">
+                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
+                                                                </label>
+                                                                <OverlayTrigger
+                                                                    trigger="hover"
+                                                                    placement="top"
+                                                                    overlay={
+                                                                        <Popover id={`popover-${region}`}>
+                                                                            <Popover.Body>
+                                                                                {formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions].comment}
+                                                                            </Popover.Body>
+                                                                        </Popover>
+                                                                    }
+                                                                >
+                                                                    <InfoCircle
+                                                                        style={{
                                                                             fontSize: "1.2rem",
                                                                             cursor: "pointer",
                                                                             color: "#0d6efd",
-                                                                            marginLeft: "10px"
-                                                                        }} />
-                                                                    </OverlayTrigger>
-                                                                </div>
+                                                                        }}
+                                                                    />
+                                                                </OverlayTrigger>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
                                                     {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
                                                         <div>
                                                             <label htmlFor="exon_exon_junction_block_size"
@@ -10095,15 +10096,17 @@ const Genomic: React.FC = () => {
 
                                                     <h5 className="pt-2">Genomic Regions</h5>
 
-                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
-                                                        <div className="col-md-4 mb-3" key={region}>
-                                                            <div className="form-check">
+                                                    <div className="d-flex flex-wrap gap-3">
+                                                        {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
+                                                            <div key={region} className="d-flex align-items-center">
                                                                 <input
                                                                     type="checkbox"
-                                                                    className="form-check-input"
+                                                                    className="form-check-input me-2"
                                                                     id={region}
                                                                     name={region}
-                                                                    checked={formDataEns.genomic_regions[region as keyof typeof formDataEns.genomic_regions]?.value === "true"} // ✅ FIXED
+                                                                    checked={
+                                                                        formDataEns.genomic_regions[region as keyof typeof formDataEns.genomic_regions]?.value === "true"
+                                                                    }
                                                                     onChange={(e) =>
                                                                         setFormDataEns((prev) => ({
                                                                             ...prev,
@@ -10117,8 +10120,7 @@ const Genomic: React.FC = () => {
                                                                         }))
                                                                     }
                                                                 />
-
-                                                                <label htmlFor={region} className="form-check-label">
+                                                                <label htmlFor={region} className="form-check-label me-2 mb-0">
                                                                     {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                                                 </label>
                                                                 <OverlayTrigger
@@ -10132,16 +10134,17 @@ const Genomic: React.FC = () => {
                                                                         </Popover>
                                                                     }
                                                                 >
-                                                                    <InfoCircle style={{
-                                                                        fontSize: "1.2rem",
-                                                                        cursor: "pointer",
-                                                                        color: "#0d6efd",
-                                                                        marginLeft: "10px"
-                                                                    }}/>
+                                                                    <InfoCircle
+                                                                        style={{
+                                                                            fontSize: "1.2rem",
+                                                                            cursor: "pointer",
+                                                                            color: "#0d6efd",
+                                                                        }}
+                                                                    />
                                                                 </OverlayTrigger>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
                                                     {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
                                                         <>
                                                             <label htmlFor="exon_exon_junction_block_size"
@@ -10165,7 +10168,7 @@ const Genomic: React.FC = () => {
                                                                     overlay={
                                                                         <Popover id="dir_output">
                                                                             <Popover.Body>
-                                                                                {formDataCustom.exon_exon_junction_block_size.comment}
+                                                                                {formDataEns.exon_exon_junction_block_size.comment}
                                                                             </Popover.Body>
                                                                         </Popover>
                                                                     }
@@ -10424,15 +10427,17 @@ const Genomic: React.FC = () => {
                                                     </div>
 
 
-                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
-                                                        <div className="col-md-4 mb-3 pt-2" key={region}>
-                                                            <div className="form-check">
+                                                    <div className="d-flex flex-wrap gap-3">
+                                                        {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
+                                                            <div key={region} className="d-flex align-items-center">
                                                                 <input
                                                                     type="checkbox"
-                                                                    className="form-check-input"
+                                                                    className="form-check-input me-2"
                                                                     id={region}
                                                                     name={region}
-                                                                    checked={formDataCustom.genomic_regions[region as keyof typeof formDataCustom.genomic_regions]?.value === "true"}
+                                                                    checked={
+                                                                        formDataCustom.genomic_regions[region as keyof typeof formDataCustom.genomic_regions]?.value === "true"
+                                                                    }
                                                                     onChange={(e) =>
                                                                         setFormDataCustom((prev) => ({
                                                                             ...prev,
@@ -10446,7 +10451,7 @@ const Genomic: React.FC = () => {
                                                                         }))
                                                                     }
                                                                 />
-                                                                <label htmlFor={region} className="form-check-label">
+                                                                <label htmlFor={region} className="form-check-label me-2 mb-0">
                                                                     {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                                                 </label>
                                                                 <OverlayTrigger
@@ -10460,16 +10465,17 @@ const Genomic: React.FC = () => {
                                                                         </Popover>
                                                                     }
                                                                 >
-                                                                    <InfoCircle style={{
-                                                                        fontSize: "1.2rem",
-                                                                        cursor: "pointer",
-                                                                        color: "#0d6efd",
-                                                                        marginLeft: "10px"
-                                                                    }}/>
+                                                                    <InfoCircle
+                                                                        style={{
+                                                                            fontSize: "1.2rem",
+                                                                            cursor: "pointer",
+                                                                            color: "#0d6efd",
+                                                                        }}
+                                                                    />
                                                                 </OverlayTrigger>
                                                             </div>
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
                                                     {formDataCustom.genomic_regions.exon_exon_junction.value === "true" && (
                                                         <>
                                                         <label htmlFor="exon_exon_junction_block_size"

@@ -59,6 +59,10 @@ const Register = () => {
                                     required
                                 />
                             </div>
+                            <div className="alert alert-warning text-center" role="alert">
+                                Your pipeline runs will be transferred to your account when you log in!
+
+                            </div>
                             <button type="submit" className="btn btn-primary w-100">Register</button>
                         </form>
                     </div>

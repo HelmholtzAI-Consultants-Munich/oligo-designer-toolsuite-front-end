@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Flask, request, jsonify, send_file, current_app
+from flask import Flask, request, jsonify, send_file, current_app,session
 from flask_cors import CORS
 import yaml
 from flask_pymongo import PyMongo
@@ -24,7 +24,13 @@ UPLOAD_FOLDER = "uploads"
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
-
+@app.before_request
+def assign_session_id():
+    if not current_user.is_authenticated and 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+        user_dir = os.path.join(current_app.root_path, 'user_data','anon', session['session_id'])
+        # Create the directory (exist_ok=True in case of race condition or retries)
+        os.makedirs(user_dir, exist_ok=True)
 class User(UserMixin):
     def __init__(self, user_doc):
         self.id = str(user_doc['_id'])
@@ -46,7 +52,38 @@ def login():
     if user_doc and check_password_hash(user_doc["password"], password):
         user = User(user_doc)
         login_user(user)
+
+        # Get the user's ID and directory
+        user_id = str(user.id)
+        user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+        os.makedirs(user_dir, exist_ok=True)  # Ensure user directory exists
+
+        # Check if the user has an anonymous session (guest runs)
+        session_id = session.get('session_id')
+        if session_id:
+            # Step 1: Update all runs with session_id to user_id
+            mongo.db.runs.update_many(
+                {"session_id": session_id},
+                {"$set": {"user_id": user_id, "session_id": None}}
+            )
+
+            # Step 2: Move files from anonymous dir to user dir
+            anonymous_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
+            if os.path.exists(anonymous_dir):
+                # Move each file individually (safer than shutil.move for directories)
+                for filename in os.listdir(anonymous_dir):
+                    src = os.path.join(anonymous_dir, filename)
+                    dest = os.path.join(user_dir, filename)
+                    shutil.move(src, dest)
+
+                # Remove the now-empty anonymous directory
+                os.rmdir(anonymous_dir)
+
+            # Step 3: Clear the session ID (user is now logged in)
+            session.pop('session_id', None)
+
         return jsonify({"message": "Logged in successfully"}), 200
+
     return jsonify({"error": "Invalid credentials"}), 401
 @app.route('/register', methods=['POST'])
 def register():
@@ -83,19 +120,25 @@ def register():
 
     return jsonify({"message": "User registered successfully"}), 201
 @app.route('/api/runs/<run_id>/files', methods=['GET'])
-@login_required
 def get_run_files(run_id):
-    user_id = str(current_user.id)
-
     try:
-        run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
+        # Check if user is authenticated or has a session
+        if current_user.is_authenticated:
+            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
+        else:
+            session_id = session.get('session_id')
+            if not session_id:
+                return jsonify({"error": "Unauthorized"}), 403
+            query = {"_id": ObjectId(run_id), "session_id": session_id}
+
+        run = mongo.db.runs.find_one(query)
         if not run:
             return jsonify({"error": "Run not found"}), 404
 
         output_dir = run['output_path']
-        if run["pipeline"]=="Genomic Region Generator":
-            output_gen= output_dir + "/annotation"
         files = []
+
+        # List files in the main output directory
         for fname in os.listdir(output_dir):
             if fname.endswith(('.yml', '.yaml', '.txt', '.log')):
                 files.append({
@@ -104,43 +147,53 @@ def get_run_files(run_id):
                     "size": os.path.getsize(os.path.join(output_dir, fname))
                 })
 
-        print(files)
-
-        if run["pipeline"]=="Genomic Region Generator":
-            for fname in os.listdir(output_gen):
-                if fname.endswith(('.yml', '.yaml', '.txt', '.log','fna')):
-                    files.append({
-                        "name": fname,
-                        "type": "log" if "log" in fname else "config",
-                        "size": os.path.getsize(os.path.join(output_gen, fname))
-                    })
-
-            print(files)
+        # Special handling for "Genomic Region Generator" pipeline
+        if run["pipeline"] == "Genomic Region Generator":
+            output_gen = os.path.join(output_dir, "annotation")
+            if os.path.exists(output_gen):
+                for fname in os.listdir(output_gen):
+                    if fname.endswith(('.yml', '.yaml', '.txt', '.log', '.fna')):
+                        files.append({
+                            "name": f"annotation/{fname}",  # Prefix subdirectory
+                            "type": "log" if "log" in fname else "config",
+                            "size": os.path.getsize(os.path.join(output_gen, fname))
+                        })
 
         return jsonify(files), 200
 
     except Exception as e:
         traceback.print_exc()
-
         return jsonify({"error": str(e)}), 500
 @app.route('/api/runs/<run_id>/files/<filename>', methods=['GET'])
-@login_required
 def get_run_file(run_id, filename):
-    user_id = str(current_user.id)
-
     try:
-        run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
+        # Check if user is authenticated or has a session
+        if current_user.is_authenticated:
+            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
+        else:
+            session_id = session.get('session_id')
+            if not session_id:
+                return jsonify({"error": "Unauthorized"}), 403
+            query = {"_id": ObjectId(run_id), "session_id": session_id}
+
+        run = mongo.db.runs.find_one(query)
         if not run:
             return jsonify({"error": "Run not found"}), 404
 
-        file_path = os.path.join(run['output_path'], filename)
+        # Handle subdirectories (e.g., "annotation/example.fna")
+        file_path = os.path.join(run['output_path'], *filename.split('/'))
         if not os.path.exists(file_path):
             return jsonify({"error": "File not found"}), 404
 
+        # Determine MIME type and send file
         if filename.endswith(('.yml', '.yaml')):
             return send_file(file_path, as_attachment=True)
         elif filename.endswith(('.txt', '.log')):
             return send_file(file_path, mimetype='text/plain')
+        elif filename.endswith('.fna'):
+            return send_file(file_path, mimetype='application/octet-stream')
+        else:
+            return jsonify({"error": "Unsupported file type"}), 400
 
     except Exception as e:
         traceback.print_exc()
@@ -212,7 +265,6 @@ def upload_file():
     file.save(file_path)
     return jsonify({"filePath": file_path}), 200
 @app.route('/api/runs/<run_id>', methods=['DELETE'])
-@login_required
 def delete_run(run_id):
     try:
         user_id = str(current_user.id)
@@ -234,13 +286,13 @@ def delete_run(run_id):
         print(f"Error deleting run: {str(e)}")
         return jsonify({"error": "Failed to delete run"}), 500
 @app.route('/api/pipelines', methods=['GET'])
-@login_required
 def get_pipeline_runs():
     try:
-        user_id = str(current_user.id)
-
-        # Fetch runs for the authenticated user
-        runs = list(mongo.db.runs.find({"user_id": user_id}))
+        if current_user.is_authenticated:
+            runs = list(mongo.db.runs.find({"user_id": str(current_user.id)}))
+        else:
+            session_id = session.get('session_id')
+            runs = list(mongo.db.runs.find({"session_id": session_id})) if session_id else []
 
         formatted_runs = []
         for run in runs:
@@ -267,7 +319,13 @@ def scrinshot():
         user_id = str(current_user.id)
         user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
         config_path = os.path.join(user_dir,'config.yaml')
+        session_id = None
+
     else:
+        user_id = None
+        session_id = session['session_id']
+        user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+        config_path = os.path.join(user_dir,'config.yaml')
         print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
@@ -286,7 +344,6 @@ def scrinshot():
             with open(file_path, "r") as f:
                 print("File content:")
                 print(f.read())
-
             form_data["file_regions"]['value']=file_path
     else:
         form_data["file_regions"]['value']=None
@@ -294,6 +351,7 @@ def scrinshot():
     output_path = os.path.join(user_dir, f'output_scrinshot_probe_designer_{timestamp}')
 
     run_doc = {
+        'session_id':session_id,
         "user_id": user_id,
         "timestamp": timestamp,
         "output_path": output_path,
@@ -483,9 +541,7 @@ def scrinshot():
     )
 
     return jsonify({
-                'stdout': result.stdout,
-                'stderr': result.stderr,
-                'returncode': result.returncode
+                "run_id": str(run_id),
             })
 @app.route('/api/merfish', methods=['POST'])
 def merfish():

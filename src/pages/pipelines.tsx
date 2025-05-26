@@ -20,8 +20,9 @@ const pipelines: React.FC = () => {
             <Navbar />
             {!user && (
                 <div className="alert alert-warning text-center" role="alert">
-                    You need to <a href="/login" className="text-primary">Login</a> or{" "}
-                    <a href="/register" className="text-primary">Register</a> to access pipelines.
+                    To keep your runs saved when you close your browser, please{" "}
+                    <a href="/login" className="text-primary">log in</a> or{" "}
+                    <a href="/register" className="text-primary">create an account</a>.
                 </div>
             )}
             <div className="container mt-5">
