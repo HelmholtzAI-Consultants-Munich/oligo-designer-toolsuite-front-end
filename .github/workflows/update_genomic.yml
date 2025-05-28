@@ -1,4 +1,4 @@
-name: Update YAML to JS
+name: Update RefSeq Species List
 
 on:
   schedule:
@@ -6,7 +6,8 @@ on:
   workflow_dispatch:  # Allows manual trigger
 
 jobs:
-  update_yaml:
+  update_refseq:
+    name: Update RefSeq Species Lists
     runs-on: ubuntu-latest
 
     steps:
@@ -19,16 +20,18 @@ jobs:
           python-version: "3.9"
 
       - name: Install dependencies
-        run: pip install pyyaml ruamel.yaml requests
+        run: pip install requests beautifulsoup4
 
-      - name: Convert YAML to JS
-        run: python src/forms/update_yaml.py
+      - name: Run RefSeq update
+        run: python src/scripts/update_genome.py
 
-      - name: Commit and push changes
+      - name: Run Ensemble Species update
+        run: python src/scripts/update_ens.py
+
+      - name: Commit and push RefSeq changes
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add .
-          git commit -m "Updated YAML to JS conversion"
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update RefSeq species lists"
           git push
-
