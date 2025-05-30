@@ -373,7 +373,7 @@
 
 
                                     <label className="form-check-label" htmlFor="generateFastaToggle">
-                                            Generate FASTA  files
+                                            Generate FASTA files
                                     </label>
                                 </div>
 
