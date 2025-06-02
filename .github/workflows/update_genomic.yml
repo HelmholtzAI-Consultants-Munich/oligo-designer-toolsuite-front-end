@@ -23,10 +23,10 @@ jobs:
         run: pip install requests beautifulsoup4
 
       - name: Run RefSeq update
-        run: python src/scripts/update_genome.py
+        run: python src/forms/update_genome.py
 
       - name: Run Ensemble Species update
-        run: python src/scripts/update_ens.py
+        run: python src/forms/update_ens.py
 
       - name: Commit and push RefSeq changes
         run: |

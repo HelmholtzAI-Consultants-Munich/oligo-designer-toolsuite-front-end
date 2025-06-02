@@ -285,6 +285,14 @@ def delete_run(run_id):
     except Exception as e:
         print(f"Error deleting run: {str(e)}")
         return jsonify({"error": "Failed to delete run"}), 500
+@app.route('/api/init_run_id', methods=['POST'])
+def init_run_id():
+    run_doc = {
+        "status": "pending",
+        "created_at": datetime.utcnow()
+    }
+    run_result = mongo.db.runs.insert_one(run_doc)
+    return jsonify({"run_id": str(run_result.inserted_id)})
 @app.route('/api/pipelines', methods=['GET'])
 def get_pipeline_runs():
     try:
