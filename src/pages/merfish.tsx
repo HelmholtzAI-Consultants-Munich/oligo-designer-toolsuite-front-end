@@ -427,6 +427,66 @@ const Merfish: React.FC = () => {
                                     </div>
                                 </div>
 
+
+
+                                <div className="mb-3">
+                                    <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                        Fasta Probe Database:
+                                    </label>
+                                    <div className="d-flex align-items-center w-100">
+                                        {/* Hidden file input */}
+                                        <input
+                                            type="file"
+                                            className="form-control visually-hidden"
+                                            id="files_fasta_target_probe_database"
+                                            name="files_fasta_target_probe_database"
+                                            onChange={handleFileChange}
+                                            multiple
+                                            disabled={generateFastaFiles}
+
+                                        />
+                                        <label
+                                            htmlFor="files_fasta_target_probe_database"
+                                            className="btn btn-outline-primary d-block me-2 w-100"
+                                            style={{
+                                                cursor: generateFastaFiles ? "not-allowed" : "pointer",
+                                                opacity: generateFastaFiles ? 0.5 : 1,
+                                                pointerEvents: generateFastaFiles ? "none" : "auto"
+                                            }}
+                                        >
+                                            Choose File
+                                        </label>
+
+                                        {/* Info icon with popover */}
+                                        <OverlayTrigger
+                                            trigger="hover"
+                                            placement="top"
+                                            overlay={
+                                                <Popover id="popover-n_jobs">
+                                                    <Popover.Body>
+                                                        {formData.files_fasta_target_probe_database.comment}
+                                                    </Popover.Body>
+                                                </Popover>
+                                            }
+                                        >
+                                            <InfoCircle
+                                                style={{
+                                                    fontSize: "1.2rem",
+                                                    cursor: "pointer",
+                                                    color: "#0d6efd",
+                                                    marginLeft: "10px"
+                                                }}
+                                            />
+                                        </OverlayTrigger>
+
+                                    </div>
+                                    <div className="text-muted small mt-1">
+                                        {files.files_fasta_target_probe_database.length > 0
+                                            ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                            : "No files selected"}
+                                    </div>
+
+                                </div>
                                 <div className="form-check form-switch mb-3">
                                     <input
                                         className="form-check-input"
@@ -1021,28 +1081,28 @@ const Merfish: React.FC = () => {
                                 )}
 
                                 <div className="mb-3">
-                                    <label htmlFor="files_fasta_target_probe_database" className="form-label">
-                                        Fasta Probe Database:
+                                    <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                        Fasta Probe Reference Database:
                                     </label>
                                     <div className="d-flex align-items-center w-100">
                                         {/* Hidden file input */}
                                         <input
                                             type="file"
                                             className="form-control visually-hidden"
-                                            id="files_fasta_target_probe_database"
-                                            name="files_fasta_target_probe_database"
+                                            id="files_fasta_reference_database_target_probe"
+                                            name="files_fasta_reference_database_target_probe"
                                             onChange={handleFileChange}
                                             multiple
-                                            disabled={generateFastaFiles}
+                                            disabled={generateFastaFiles2}
 
                                         />
                                         <label
-                                            htmlFor="files_fasta_target_probe_database"
+                                            htmlFor="files_fasta_reference_database_target_probe"
                                             className="btn btn-outline-primary d-block me-2 w-100"
                                             style={{
-                                                cursor: generateFastaFiles ? "not-allowed" : "pointer",
-                                                opacity: generateFastaFiles ? 0.5 : 1,
-                                                pointerEvents: generateFastaFiles ? "none" : "auto"
+                                                cursor: generateFastaFiles2 ? "not-allowed" : "pointer",
+                                                opacity: generateFastaFiles2 ? 0.5 : 1,
+                                                pointerEvents: generateFastaFiles2 ? "none" : "auto"
                                             }}
                                         >
                                             Choose File
@@ -1055,7 +1115,7 @@ const Merfish: React.FC = () => {
                                             overlay={
                                                 <Popover id="popover-n_jobs">
                                                     <Popover.Body>
-                                                        {formData.files_fasta_target_probe_database.comment}
+                                                        {formData.files_fasta_reference_database_targe_probe.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -1071,12 +1131,12 @@ const Merfish: React.FC = () => {
                                         </OverlayTrigger>
 
                                     </div>
+                                    {/* Display selected file names */}
                                     <div className="text-muted small mt-1">
-                                        {files.files_fasta_target_probe_database.length > 0
-                                            ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                        {files.files_fasta_reference_database_target_probe.length > 0
+                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
                                             : "No files selected"}
                                     </div>
-
                                 </div>
                                 <div className="form-check form-switch mb-3">
                                     <input
@@ -1669,64 +1729,6 @@ const Merfish: React.FC = () => {
 
                                     </>
                                 )}
-                                <div className="mb-3">
-                                    <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
-                                        Fasta Probe Reference Database:
-                                    </label>
-                                    <div className="d-flex align-items-center w-100">
-                                        {/* Hidden file input */}
-                                        <input
-                                            type="file"
-                                            className="form-control visually-hidden"
-                                            id="files_fasta_reference_database_target_probe"
-                                            name="files_fasta_reference_database_target_probe"
-                                            onChange={handleFileChange}
-                                            multiple
-                                            disabled={generateFastaFiles2}
-
-                                        />
-                                        <label
-                                            htmlFor="files_fasta_reference_database_target_probe"
-                                            className="btn btn-outline-primary d-block me-2 w-100"
-                                            style={{
-                                                cursor: generateFastaFiles2 ? "not-allowed" : "pointer",
-                                                opacity: generateFastaFiles2 ? 0.5 : 1,
-                                                pointerEvents: generateFastaFiles2 ? "none" : "auto"
-                                            }}
-                                        >
-                                            Choose File
-                                        </label>
-
-                                        {/* Info icon with popover */}
-                                        <OverlayTrigger
-                                            trigger="hover"
-                                            placement="top"
-                                            overlay={
-                                                <Popover id="popover-n_jobs">
-                                                    <Popover.Body>
-                                                        {formData.files_fasta_reference_database_targe_probe.comment}
-                                                    </Popover.Body>
-                                                </Popover>
-                                            }
-                                        >
-                                            <InfoCircle
-                                                style={{
-                                                    fontSize: "1.2rem",
-                                                    cursor: "pointer",
-                                                    color: "#0d6efd",
-                                                    marginLeft: "10px"
-                                                }}
-                                            />
-                                        </OverlayTrigger>
-
-                                    </div>
-                                    {/* Display selected file names */}
-                                    <div className="text-muted small mt-1">
-                                        {files.files_fasta_reference_database_target_probe.length > 0
-                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
-                                            : "No files selected"}
-                                    </div>
-                                </div>
                             </div>
                         </div>
                         <div className="row g-3">
