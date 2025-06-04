@@ -27,8 +27,16 @@ const SeqFish: React.FC = () => {
     const [formData2Ncbi, setFormData2Ncbi] = useState(form_Data_Ncbi);
     const [formData2Ens, setFormData2Ens] = useState(form_Data_Ens);
     const [formData2Custom, setFormData2Custom] = useState(form_Data_Custom);
+    const [formDataNcbiReadout, setFormDataNcbiReadout] = useState(form_Data_Ncbi);
+    const [formDataEnsReadout, setFormDataEnsReadout] = useState(form_Data_Ens);
+    const [formDataCustomReadout, setFormDataCustomReadout] = useState(form_Data_Custom);
+    const [formDataNcbiPrimer, setFormDataNcbiPrimer] = useState(form_Data_Ncbi);
+    const [formDataEnsPrimer, setFormDataEnsPrimer] = useState(form_Data_Ens);
+    const [formDataCustomPrimer, setFormDataCustomPrimer] = useState(form_Data_Custom);
     const [generateFastaFiles, setGenerateFastaFiles] = useState(false);
     const [generateFastaFiles2, setGenerateFastaFiles2] = useState(false);
+    const [generateFastaFilesReadout, setGenerateFastaFilesReadout] = useState(false);
+    const [generateFastaFilesPrimer, setGenerateFastaFilesPrimer] = useState(false);
     const [useSameReferenceForm, setUseSameReferenceForm] = useState(false);
     const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
     const [selectedSource2, setSelectedSource2] = useState("ncbi"); // State to hold selected source
