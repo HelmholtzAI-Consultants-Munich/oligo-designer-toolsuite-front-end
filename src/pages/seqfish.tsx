@@ -3502,8 +3502,12 @@ const SeqFish: React.FC = () => {
                                     />
                                     <label
                                         htmlFor="files_fasta_reference_database_primer"
-                                        className="btn btn-outline-primary d-block me-2 w-100"
-                                        style={{cursor: 'pointer'}}
+                                        className="btn btn-outline-primary d-block  me-2 w-100"
+                                        style={{
+                                            cursor: generateFastaFilesPrimer ? "not-allowed" : "pointer",
+                                            opacity: generateFastaFilesPrimer ? 0.5 : 1,
+                                            pointerEvents: generateFastaFilesPrimer ? "none" : "auto"
+                                        }}
                                     >
                                         Choose Files
                                     </label>
