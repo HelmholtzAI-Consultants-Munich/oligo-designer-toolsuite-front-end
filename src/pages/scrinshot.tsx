@@ -4493,6 +4493,24 @@
                 setLoading(false);
             }
         };
+        async function createRunId() {
+            try {
+                const response = await axios.post("http://localhost:5000/api/init_run_id", {}, {
+                    withCredentials: true,
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                const runId = response.data.run_id;
+                console.log("🧪 New Run ID:", runId);
+                alert(`Your RunID is: ${runId}, you can paste it to run`);
+                return runId;
+            } catch (error) {
+                console.error("❌ Failed to create run:", error);
+                return null;
+            }
+        }
         const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
             setLoading(true);
@@ -4504,6 +4522,7 @@
                 formData['files_fasta_reference_database_targe_probe']['value'] = await handleSubmitGenomicref();
 
             }
+            const runid= await createRunId();
 
             // Then: handle scrinshot
             if (!areAllFilesUploaded()) {
@@ -4534,7 +4553,7 @@
                     }
                 }
 
-                const response = await axios.post('http://localhost:5000/api/scrinshot', finalFormData, {
+                const response = await axios.post('http://localhost:5000/api/scrinshot', {formdata:finalFormData,runid:runid} ,{
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
