@@ -62,7 +62,7 @@ const RunDetail = () => {
 
     // Auto-view padlock_probes.yml.yml if present and not already viewing
     useEffect(() => {
-        if (user && runId) {
+        if (runId) {
             axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
                 withCredentials: true
             })
@@ -75,7 +75,7 @@ const RunDetail = () => {
                 })
                 .catch(error => console.error('Error fetching files:', error));
         }
-    }, [user, runId]);
+    }, [runId]);
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this run? This action cannot be undone.')) {
