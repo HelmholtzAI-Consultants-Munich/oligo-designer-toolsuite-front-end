@@ -5,6 +5,7 @@ import YAML from 'js-yaml';
 import Select, { SingleValue } from 'react-select';
 import { useAuth } from '../modules/auth';
 import Navbar from "../modules/nav";
+import * as XLSX from 'xlsx';
 
 interface RunFile {
     name: string;
@@ -229,6 +230,68 @@ const RunDetail = () => {
         document.body.removeChild(link);
     };
 
+    // Download Excel file with each gene as a separate sheet
+    const handleDownloadExcel = () => {
+        if (!parsedYamlData) return;
+
+        const workbook = XLSX.utils.book_new();
+        const headers = ['Oligoset', ...tableColumns.map(col => col.replace(/_/g, ' '))];
+
+        // Iterate through all genes and create a sheet for each
+        Object.keys(parsedYamlData).forEach(gene => {
+            const geneData: any[] = [];
+
+            // Add headers
+            geneData.push(headers);
+
+            const oligosets = getOligosetsForGene(gene);
+            oligosets.forEach(oligoset => {
+                const oligosetData = parsedYamlData[gene][oligoset];
+                const oligos = Object.entries(oligosetData)
+                    .filter(([key]) => /^Oligo \d+$/.test(key))
+                    .map(([, value]) => value)
+                    .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
+
+                // Add rows for this oligoset
+                oligos.forEach(oligo => {
+                    const row = [
+                        oligoset,
+                        ...tableColumns.map(col => formatValueForExcel(oligo[col]))
+                    ];
+                    geneData.push(row);
+                });
+            });
+
+            // Create worksheet for this gene
+            const worksheet = XLSX.utils.aoa_to_sheet(geneData);
+
+            // Sanitize sheet name (Excel has restrictions on sheet names)
+            const sanitizedGeneName = gene.replace(/[\\\/\?\*\[\]]/g, '_').substring(0, 31);
+
+            XLSX.utils.book_append_sheet(workbook, worksheet, sanitizedGeneName);
+        });
+
+        // Write file
+        XLSX.writeFile(workbook, 'all_genes_oligos.xlsx');
+    };
+
+    const formatValueForExcel = (value: any): any => {
+        // Handle deeply nested arrays
+        const flatten = (arr: any[]): any[] => {
+            return arr.reduce((acc, val) =>
+                    Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
+                []);
+        };
+
+        if (Array.isArray(value)) {
+            return flatten(value).join(', ');
+        }
+        if (typeof value === 'object' && value !== null) {
+            return JSON.stringify(value);
+        }
+        return value; // Return raw value for Excel (no string conversion)
+    };
+
     const viewFileContent = (filename: string) => {
         if (viewingFilename === filename) {
             closeFileView();
@@ -330,31 +393,33 @@ const RunDetail = () => {
 
             <h3>Run Files</h3>
             <div className="list-group mb-4">
-                {files.map(file => (
-                    <div key={file.name} className="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            {file.name}
-                            <span className="badge bg-secondary ms-2">
-                    {Math.round(file.size / 1024)} KB
-                </span>
-                        </div>
-                        <div>
-                            {file.name.endsWith('.txt') && (
-                                <button
-                                    className="btn btn-sm btn-outline-primary me-2"
-                                    onClick={() => viewFileContent(file.name)}
-                                >
-                                    View
-                                </button>
-                            )}
-                            <button
-                                className="btn btn-sm btn-outline-success"
-                                onClick={() => downloadFile(file.name)}
-                            >
-                                Download
-                            </button>
-                        </div>
+              {files
+                .filter(file => file.name.toLowerCase().includes('log'))
+                .map(file => (
+                  <div key={file.name} className="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                      {file.name}
+                      <span className="badge bg-secondary ms-2">
+                        {Math.round(file.size / 1024)} KB
+                      </span>
                     </div>
+                    <div>
+                      {file.name.endsWith('.txt') && (
+                        <button
+                          className="btn btn-sm btn-outline-primary me-2"
+                          onClick={() => viewFileContent(file.name)}
+                        >
+                          View
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-sm btn-outline-success"
+                        onClick={() => downloadFile(file.name)}
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
                 ))}
             </div>
 
@@ -380,21 +445,12 @@ const RunDetail = () => {
                             <h4 className="card-title mb-0">Gene Analysis</h4>
                             <div className="btn-group">
                                 <button
-                                    onClick={handleDownloadAllCSV}
+                                    onClick={handleDownloadExcel}
                                     className="btn btn-success"
-                                    title="Download all genes and oligosets"
+                                    title="Download Excel file with each gene as a separate sheet"
                                 >
-                                    Download All CSV
+                                    Download All Genes Excel
                                 </button>
-                                {selectedGene && (
-                                    <button
-                                        onClick={handleDownloadGeneCSV}
-                                        className="btn btn-info"
-                                        title="Download all oligosets for selected gene"
-                                    >
-                                        Download {selectedGene} CSV
-                                    </button>
-                                )}
                             </div>
                         </div>
 
