@@ -67,20 +67,6 @@ def login():
                 {"$set": {"user_id": user_id, "session_id": None}}
             )
 
-            # Step 2: Move files from anonymous dir to user dir
-            anonymous_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
-            if os.path.exists(anonymous_dir):
-                # Move each file individually (safer than shutil.move for directories)
-                for filename in os.listdir(anonymous_dir):
-                    src = os.path.join(anonymous_dir, filename)
-                    dest = os.path.join(user_dir, filename)
-                    shutil.move(src, dest)
-
-                # Remove the now-empty anonymous directory
-                os.rmdir(anonymous_dir)
-
-            # Step 3: Clear the session ID (user is now logged in)
-            session.pop('session_id', None)
 
         return jsonify({"message": "Logged in successfully"}), 200
 
