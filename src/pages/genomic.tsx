@@ -6,6 +6,7 @@ import form_Data_Ens from "../forms/genomic_ens_form";
 import form_Data_Custom from "../forms/genomic_custom_form";
 import {OverlayTrigger, Popover} from "react-bootstrap";
 import {InfoCircle} from "react-bootstrap-icons";
+import {createRunId} from "../modules/helpers";
 import {
     vertebrate_mammalianEntries,
     fungiEntries,
@@ -140,9 +141,11 @@ const Genomic: React.FC = () => {
             }
 
             console.log(finalFormData);
+            const runid= await createRunId();
+
 
             // Send the request
-            const response = await axios.post('http://localhost:5000/api/genomic/' + selectedSource, finalFormData, {
+            const response = await axios.post('http://localhost:5000/api/genomic/' + selectedSource, {formdata:finalFormData,runid:runid}, {
                 withCredentials: true,
                 headers: { "Content-Type": "application/json" },
             });

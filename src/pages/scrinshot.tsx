@@ -6,7 +6,7 @@
     import formDatas from "../forms/scrinshot_form";
     import form_Data_Ncbi from "../forms/genomic_ncbi_form";
     import form_Data_Ens from "../forms/genomic_ens_form";
-
+    import {createRunId} from "../modules/helpers";
     import form_Data_Custom from "../forms/genomic_custom_form";
     import {
         archaeaEntries,
@@ -4493,24 +4493,6 @@
                 setLoading(false);
             }
         };
-        async function createRunId() {
-            try {
-                const response = await axios.post("http://localhost:5000/api/init_run_id", {}, {
-                    withCredentials: true,
-                    headers: {
-                        "Content-Type": "application/json"
-                    }
-                });
-
-                const runId = response.data.run_id;
-                console.log("🧪 New Run ID:", runId);
-                alert(`Your RunID is: ${runId}, you can paste it to run`);
-                return runId;
-            } catch (error) {
-                console.error("❌ Failed to create run:", error);
-                return null;
-            }
-        }
         const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
             setLoading(true);
@@ -4561,7 +4543,6 @@
                 console.log(result,'this is the result');
 
                 setStatus("running");
-                alert(`Your RunID is: ${result.run_id}, you can paste it to run`);
             } catch (error) {
                 console.error('Error submitting scrinshot form:', error);
                 alert('Error submitting scrinshot form. Please try again.');

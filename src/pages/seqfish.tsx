@@ -7,6 +7,7 @@ import seqfish_form from "../forms/seqfish_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import form_Data_Custom from "../forms/genomic_custom_form";
+import {createRunId} from "../modules/helpers";
 import {
     archaeaEntries,
     fungiEntries,
@@ -6944,6 +6945,7 @@ const SeqFish: React.FC = () => {
         else{
             formData['files_fasta_reference_database_primer']['value'] = await handleSubmitGenomicPrimer();
         }
+        const runid= await createRunId();
 
 
         // Then: handle scrinshot
@@ -6975,7 +6977,7 @@ const SeqFish: React.FC = () => {
                 }
             }
 
-            const response = await axios.post('http://localhost:5000/api/seqfish', finalFormData, {
+            const response = await axios.post('http://localhost:5000/api/seqfish', {formdata:finalFormData,runid:runid} ,{
                 withCredentials: true,
                 headers: { "Content-Type": "application/json" },
             });

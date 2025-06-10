@@ -7,6 +7,7 @@ import oligoseq_form from "../forms/oligoseq_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import form_Data_Custom from "../forms/genomic_custom_form";
+import {createRunId} from "../modules/helpers";
 import {
     archaeaEntries,
     fungiEntries,
@@ -3471,6 +3472,8 @@ const OligoSeq: React.FC = () => {
             setLoading(false);
             return;
         }
+        const runid= await createRunId();
+
 
         try {
             const uploadedPaths = await uploadFiles();
@@ -3494,7 +3497,7 @@ const OligoSeq: React.FC = () => {
                 }
             }
 
-            await axios.post('http://localhost:5000/api/oligoseq', finalFormData, {
+            await axios.post('http://localhost:5000/api/oligoseq', {formdata:finalFormData,runid:runid}, {
                 withCredentials: true,
                 headers: { "Content-Type": "application/json" },
             });

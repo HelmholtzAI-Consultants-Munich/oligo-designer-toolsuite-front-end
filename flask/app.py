@@ -339,10 +339,7 @@ def scrinshot():
     #thread.start()
 
     form_data = request.json.get('formdata')
-    print(request.json,'everyythinggg')
     run_idd=request.json.get('runid')# Assuming JSON is posted from React
-    print(run_idd)
-    print(form_data['file_regions'],'is it empty')
     try:
         run_id = ObjectId(run_idd)
     except Exception as e:
@@ -569,13 +566,25 @@ def merfish():
         user_id = str(current_user.id)
         user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
         config_path = os.path.join(user_dir,  "config_merfish.yaml")
+        session_id = None
+
     else:
+        user_id = None
+        session_id = session['session_id']
+        user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+        config_path = os.path.join(user_dir,'config.yaml')
         print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
 
-    form_data = request.json  # Assuming JSON is posted from React
-    print(form_data['file_regions'])
+    form_data = request.json.get('formdata')
+    run_idd=request.json.get('runid')# Assuming JSON is posted from React
+    try:
+        run_id = ObjectId(run_idd)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Invalid run ID"}), 400
+
     if form_data["file_regions"]['value']!='':
         if ".txt" not in form_data["file_regions"]['value']:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
@@ -594,16 +603,19 @@ def merfish():
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     output_path = os.path.join(user_dir, f'output_merfish_probe_designer_{timestamp}')
 
-    run_doc = {
-        "user_id": user_id,
-        "timestamp": timestamp,
-        "output_path": output_path,
-        "status": "started",
-        "pipeline": 'merfish'
-    }
-    run_result = mongo.db.runs.insert_one(run_doc)
-    run_id = run_result.inserted_id
-    print(form_data["files_fasta_reference_database_target_probe"]['value'])
+    update_result = mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {
+            "session_id": session_id,
+            "user_id": user_id,
+            "timestamp": timestamp,
+            "output_path": output_path,
+            "status": "started",
+            "pipeline": "merfish"
+        }}
+    )
+    if update_result.matched_count == 0:
+        return jsonify({"error": "Run ID not found"}), 404
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output":output_path,
@@ -900,12 +912,26 @@ def seqfish():
         user_id = str(current_user.id)
         user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
         config_path = os.path.join(user_dir,  "config_seqfish.yaml")
+        session_id = None
+
     else:
+        user_id = None
+        session_id = session['session_id']
+        user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+        config_path = os.path.join(user_dir,'config.yaml')
         print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
 
-    form_data = request.json  # Assuming JSON is posted from React
+    form_data = request.json.get('formdata')
+    run_idd=request.json.get('runid')# Assuming JSON is posted from React
+
+    try:
+        run_id = ObjectId(run_idd)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Invalid run ID"}), 400
+
     if form_data["file_regions"]['value']!='':
         if ".txt" not in form_data["file_regions"]['value']:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
@@ -924,16 +950,19 @@ def seqfish():
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     output_path = os.path.join(user_dir, f'output_seqfish_probe_designer_{timestamp}')
 
-    run_doc = {
-        "user_id": user_id,
-        "timestamp": timestamp,
-        "output_path": output_path,
-        "status": "started",
-        "pipeline": 'seqfish'
-    }
-    run_result = mongo.db.runs.insert_one(run_doc)
-    run_id = run_result.inserted_id
-    print(form_data["files_fasta_reference_database_targe_probe"]['value'])
+    update_result = mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {
+            "session_id": session_id,
+            "user_id": user_id,
+            "timestamp": timestamp,
+            "output_path": output_path,
+            "status": "started",
+            "pipeline": "seqfish"
+        }}
+    )
+    if update_result.matched_count == 0:
+        return jsonify({"error": "Run ID not found"}), 404
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output": output_path,
@@ -1163,32 +1192,47 @@ def seqfish():
 def genomic_ncbi():
 
     try:
-        # Define the path for the configuration file
-
         user_dir=''
         if current_user.is_authenticated:
             print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
             config_path = os.path.join(user_dir,  "config_genomic_ncbi.yaml")
+            session_id = None
+
         else:
+            user_id = None
+            session_id = session['session_id']
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+            config_path = os.path.join(user_dir,'config.yaml')
             print('no not')
         config_genomic = {}
 
         # Parse JSON data from the request
-        form_data = request.json
+        form_data = request.json.get('formdata')
+        run_idd=request.json.get('runid')# Assuming JSON is posted from React
+        try:
+            run_id = ObjectId(run_idd)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": "Invalid run ID"}), 400
+
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_ncbi_{timestamp}')
 
-        run_doc = {
+        update_result = mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {
+            "session_id": session_id,
             "user_id": user_id,
             "timestamp": timestamp,
             "output_path": output_path,
             "status": "started",
-            "pipeline": 'Genomic Region Generator'
-        }
-        run_result = mongo.db.runs.insert_one(run_doc)
-        run_id = run_result.inserted_id
+            "pipeline": "genomic"
+            }}
+        )
+        if update_result.matched_count == 0:
+            return jsonify({"error": "Run ID not found"}), 404
 
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = output_path
@@ -1276,27 +1320,43 @@ def genomic_ensemble():
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
             config_path = os.path.join(user_dir,  "config_genomic_ensemble.yaml")
+            session_id = None
         else:
+            user_id = None
+            session_id = session['session_id']
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+            config_path = os.path.join(user_dir,'config.yaml')
             print('no not')
         config_genomic = {}
 
         # Parse JSON data from the request
 
         # Populate the config_genomic dictionary based on the received data
-        form_data = request.json
+        form_data = request.json.get('formdata')
+        run_idd=request.json.get('runid')# Assuming JSON is posted from React
+        try:
+            run_id = ObjectId(run_idd)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": "Invalid run ID"}), 400
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_ensemble_{timestamp}')
-        print(output_path)
 
-        run_doc = {
+        update_result = mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {
+            "session_id": session_id,
             "user_id": user_id,
             "timestamp": timestamp,
             "output_path": output_path,
             "status": "started",
-            "pipeline": 'Genomic Region Generator'
-        }
-        run_result = mongo.db.runs.insert_one(run_doc)
-        run_id = run_result.inserted_id
+            "pipeline": "genomic"
+            }}
+        )
+        if update_result.matched_count == 0:
+            return jsonify({"error": "Run ID not found"}), 404
+
+
         config_genomic['dir_output'] = output_path
 
         # Populate the config_genomic dictionary based on the received data
@@ -1369,23 +1429,38 @@ def genomic_custom():
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
             config_path = os.path.join(user_dir,  "config_genomic_custom.yaml")
+            session_id = None
+
         else:
+            user_id = None
+            session_id = session['session_id']
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+            config_path = os.path.join(user_dir,'config.yaml')
             print('no not')
         config_genomic = {}
-        form_data = request.json
+        form_data = request.json.get('formdata')
+        run_idd=request.json.get('runid')# Assuming JSON is posted from React
+        try:
+            run_id = ObjectId(run_idd)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": "Invalid run ID"}), 400
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_custom_{timestamp}')
-        print(output_path)
 
-        run_doc = {
+        update_result = mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {
+            "session_id": session_id,
             "user_id": user_id,
             "timestamp": timestamp,
             "output_path": output_path,
             "status": "started",
-            "pipeline": 'Genomic Region Generator'
-        }
-        run_result = mongo.db.runs.insert_one(run_doc)
-        run_id = run_result.inserted_id
+            "pipeline": "genomic"
+            }}
+        )
+        if update_result.matched_count == 0:
+            return jsonify({"error": "Run ID not found"}), 404
 
         # Populate the config_genomic dictionary based on the received data
         config_genomic['dir_output'] = output_path
@@ -1794,13 +1869,24 @@ def oligoseq():
         user_id = str(current_user.id)
         user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
         config_path = os.path.join(user_dir,  "config_oligoseq.yaml")
+        session_id = None
+
     else:
+        user_id = None
+        session_id = session['session_id']
+        user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+        config_path = os.path.join(user_dir,'config.yaml')
         print('no not')
     #thread = threading.Thread(target=run_command)  # Run task in a separate thread
     #thread.start()
 
-    form_data = request.json  # Assuming JSON is posted from React
-    print(form_data["file_regions"]['value'],'file regions')
+    form_data = request.json.get('formdata')
+    run_idd=request.json.get('runid')# Assuming JSON is posted from React
+    try:
+        run_id = ObjectId(run_idd)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": "Invalid run ID"}), 400
     if form_data["file_regions"]['value']!='':
         if ".txt" not in form_data["file_regions"]['value']:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
@@ -1821,15 +1907,19 @@ def oligoseq():
     timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     output_path = os.path.join(user_dir, f'output_oligoseq_probe_designer_{timestamp}')
 
-    run_doc = {
-        "user_id": user_id,
-        "timestamp": timestamp,
-        "output_path": output_path,
-        "status": "started",
-        "pipeline": 'oligoseq'
-    }
-    run_result = mongo.db.runs.insert_one(run_doc)
-    run_id = run_result.inserted_id
+    update_result = mongo.db.runs.update_one(
+        {"_id": run_id},
+        {"$set": {
+            "session_id": session_id,
+            "user_id": user_id,
+            "timestamp": timestamp,
+            "output_path": output_path,
+            "status": "started",
+            "pipeline": "merfish"
+        }}
+    )
+    if update_result.matched_count == 0:
+        return jsonify({"error": "Run ID not found"}), 404
     config = {
         "n_jobs": to_int(form_data["n_jobs"]['value']),
         "dir_output":output_path,
