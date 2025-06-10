@@ -90,16 +90,26 @@ const RunDetail = () => {
             }
         }
     };
+
+    // Download CSV for current oligoset only
     const handleDownloadCSV = () => {
         const oligos = getOligosForOligoset();
         if (oligos.length === 0) return;
 
-        // Process headers and rows
-        const headers = tableColumns.map(col => `"${col.replace(/_/g, ' ')}"`).join(',');
+        // Updated headers with Gene and Oligoset
+        const headers = ['Gene', 'Oligoset', ...tableColumns]
+            .map(col => `"${col.replace(/_/g, ' ')}"`)
+            .join(',');
+
+        // Add Gene and Oligoset to each row
         const rows = oligos.map(oligo => {
-            return tableColumns.map(col => {
-                const value = formatValue(oligo[col]);
-                // Handle commas and quotes in values
+            const rowData = [
+                selectedGene,
+                selectedOligoset,
+                ...tableColumns.map(col => formatValue(oligo[col]))
+            ];
+
+            return rowData.map(value => {
                 if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
                     return `"${value.replace(/"/g, '""')}"`;
                 }
@@ -115,6 +125,105 @@ const RunDetail = () => {
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `${selectedGene}_${selectedOligoset}_oligos.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Download CSV for all genes and oligosets
+    const handleDownloadAllCSV = () => {
+        if (!parsedYamlData) return;
+
+        const headers = ['Gene', 'Oligoset', ...tableColumns]
+            .map(col => `"${col.replace(/_/g, ' ')}"`)
+            .join(',');
+
+        const allRows: string[] = [];
+
+        // Iterate through all genes and oligosets
+        Object.keys(parsedYamlData).forEach(gene => {
+            const oligosets = getOligosetsForGene(gene);
+            oligosets.forEach(oligoset => {
+                const oligosetData = parsedYamlData[gene][oligoset];
+                const oligos = Object.entries(oligosetData)
+                    .filter(([key]) => /^Oligo \d+$/.test(key))
+                    .map(([, value]) => value)
+                    .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
+
+                // Add rows for this oligoset
+                oligos.forEach(oligo => {
+                    const rowData = [
+                        gene,
+                        oligoset,
+                        ...tableColumns.map(col => formatValue(oligo[col]))
+                    ];
+
+                    const row = rowData.map(value => {
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                            return `"${value.replace(/"/g, '""')}"`;
+                        }
+                        return value;
+                    }).join(',');
+
+                    allRows.push(row);
+                });
+            });
+        });
+
+        const csvContent = `${headers}\n${allRows.join('\n')}`;
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `all_genes_oligos.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Download CSV for selected gene (all oligosets)
+    const handleDownloadGeneCSV = () => {
+        if (!selectedGene || !parsedYamlData) return;
+
+        const headers = ['Gene', 'Oligoset', ...tableColumns]
+            .map(col => `"${col.replace(/_/g, ' ')}"`)
+            .join(',');
+
+        const geneRows: string[] = [];
+        const oligosets = getOligosetsForGene(selectedGene);
+
+        oligosets.forEach(oligoset => {
+            const oligosetData = parsedYamlData[selectedGene][oligoset];
+            const oligos = Object.entries(oligosetData)
+                .filter(([key]) => /^Oligo \d+$/.test(key))
+                .map(([, value]) => value)
+                .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
+
+            // Add rows for this oligoset
+            oligos.forEach(oligo => {
+                const rowData = [
+                    selectedGene,
+                    oligoset,
+                    ...tableColumns.map(col => formatValue(oligo[col]))
+                ];
+
+                const row = rowData.map(value => {
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                        return `"${value.replace(/"/g, '""')}"`;
+                    }
+                    return value;
+                }).join(',');
+
+                geneRows.push(row);
+            });
+        });
+
+        const csvContent = `${headers}\n${geneRows.join('\n')}`;
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${selectedGene}_all_oligosets.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -267,7 +376,28 @@ const RunDetail = () => {
             {parsedYamlData && parsedYamlFilename === 'padlock_probes.yml.yml' && (
                 <div className="card">
                     <div className="card-body">
-                        <h4 className="card-title">Gene Analysis</h4>
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h4 className="card-title mb-0">Gene Analysis</h4>
+                            <div className="btn-group">
+                                <button
+                                    onClick={handleDownloadAllCSV}
+                                    className="btn btn-success"
+                                    title="Download all genes and oligosets"
+                                >
+                                    Download All CSV
+                                </button>
+                                {selectedGene && (
+                                    <button
+                                        onClick={handleDownloadGeneCSV}
+                                        className="btn btn-info"
+                                        title="Download all oligosets for selected gene"
+                                    >
+                                        Download {selectedGene} CSV
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="row mb-3">
                             <div className="col-md-6">
                                 <label className="form-label">Select Gene</label>
@@ -314,7 +444,7 @@ const RunDetail = () => {
                                             onClick={handleDownloadCSV}
                                             className="btn btn-sm btn-primary"
                                         >
-                                            Download CSV
+                                            Download Oligoset CSV
                                         </button>
                                     </div>
                                 </div>
