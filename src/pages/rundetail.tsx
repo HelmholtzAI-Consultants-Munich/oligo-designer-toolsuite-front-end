@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import YAML from 'js-yaml';
@@ -50,33 +50,62 @@ const RunDetail = () => {
         setViewingFilename(null);
     };
     const [parsedYamlFilename, setParsedYamlFilename] = useState<string | null>(null);
+    const fetchAndParsePadlockFile = useCallback((filename: string) => {
+        axios.get(`http://localhost:5000/api/runs/${runId}/files/${filename}`, {
+            withCredentials: true,
+            responseType: 'text'
+        })
+        .then(response => {
+            try {
+                const parsed = YAML.load(response.data) as Record<string, any>;
+                setParsedYamlData(parsed);
+                setParsedYamlFilename(filename);
 
-    useEffect(() => {
+                const genes = Object.keys(parsed || {});
+                setGeneOptions(genes.map(gene => ({
+                    value: gene,
+                    label: gene
+                })));
 
-            axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
-                withCredentials: true
-            })
-                .then(response => setFiles(response.data))
-                .catch(error => console.error('Error fetching files:', error));
+                const firstGene = genes[0] || '';
+                const firstOligoset = firstGene
+                    ? Object.keys(parsed[firstGene] || {}).find(key => key.startsWith('Oligoset')) || ''
+                    : '';
 
-    }, []);
-
-    // Auto-view padlock_probes.yml.yml if present and not already viewing
+                setSelectedGene(firstGene);
+                setSelectedOligoset(firstOligoset);
+            } catch (e) {
+                console.error('Error parsing YAML:', e);
+                setParsedYamlData(null);
+                setParsedYamlFilename(null);
+            }
+        })
+        .catch(error => console.error('Error fetching padlock file content:', error));
+    }, [runId]);
     useEffect(() => {
         if (runId) {
             axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
                 withCredentials: true
             })
-                .then(response => {
-                    setFiles(response.data);
-                    const padlockFile = response.data.find((f: RunFile) => f.name === 'padlock_probes.yml.yml');
-                    if (padlockFile) {
-                        viewFileContent(padlockFile.name);
-                    }
-                })
-                .catch(error => console.error('Error fetching files:', error));
+            .then(response => {
+                setFiles(response.data);
+
+                // Process padlock file separately without affecting viewing state
+                const padlockFile = response.data.find((f: RunFile) => f.name === 'padlock_probes.yml.yml');
+                if (padlockFile) {
+                    fetchAndParsePadlockFile(padlockFile.name);
+                }
+
+                // Find and view the first log file
+                const firstLogFile = response.data.find((f: RunFile) => f.type === 'log');
+                if (firstLogFile) {
+                    // Only fetch content for log file
+                    viewFileContent(firstLogFile.name, false);
+                }
+            })
+            .catch(error => console.error('Error fetching files:', error));
         }
-    }, [runId]);
+    }, [runId, fetchAndParsePadlockFile]); // Include dependencies
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this run? This action cannot be undone.')) {
@@ -279,7 +308,7 @@ const RunDetail = () => {
         // Handle deeply nested arrays
         const flatten = (arr: any[]): any[] => {
             return arr.reduce((acc, val) =>
-                    Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
+                Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
                 []);
         };
 
@@ -292,24 +321,26 @@ const RunDetail = () => {
         return value; // Return raw value for Excel (no string conversion)
     };
 
-    const viewFileContent = (filename: string) => {
+    const viewFileContent = (filename: string, shouldParseYaml = true) => {
         if (viewingFilename === filename) {
             closeFileView();
             return;
         }
+
         axios.get(`http://localhost:5000/api/runs/${runId}/files/${filename}`, {
             withCredentials: true,
             responseType: 'text'
         })
-            .then(response => {
-                setViewingFilename(filename);
-                setFileContent(response.data);
+        .then(response => {
+            setViewingFilename(filename);
+            setFileContent(response.data);
 
-                if (filename.endsWith('.yml') || filename.endsWith('.yaml')) {
-                    try {
-                        const parsed = YAML.load(response.data) as Record<string, any>;
-                        setParsedYamlData(parsed);
-                        setParsedYamlFilename(filename);
+            // Only parse YAML if explicitly requested
+            if (shouldParseYaml && (filename.endsWith('.yml') || filename.endsWith('.yaml')) ){
+                try {
+                    const parsed = YAML.load(response.data) as Record<string, any>;
+                    setParsedYamlData(parsed);
+                    setParsedYamlFilename(filename);
 
                         const genes = Object.keys(parsed || {});
                         setGeneOptions(genes.map(gene => ({
@@ -362,7 +393,7 @@ const RunDetail = () => {
         // Handle deeply nested arrays
         const flatten = (arr: any[]): any[] => {
             return arr.reduce((acc, val) =>
-                    Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
+                Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
                 []);
         };
 
@@ -378,162 +409,162 @@ const RunDetail = () => {
     return (
         <div>
             <Navbar />
-        <div className="container mt-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <Link to="/runs" className="btn btn-outline-secondary">
-                    ← Back to Runs
-                </Link>
-                <button
-                    className="btn btn-danger"
-                    onClick={handleDelete}
-                >
-                    Delete Run
-                </button>
-            </div>
-
-            <h3>Run Files</h3>
-            <div className="list-group mb-4">
-              {files
-                .filter(file => file.name.toLowerCase().includes('log'))
-                .map(file => (
-                  <div key={file.name} className="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                      {file.name}
-                      <span className="badge bg-secondary ms-2">
-                        {Math.round(file.size / 1024)} KB
-                      </span>
-                    </div>
-                    <div>
-                      {file.name.endsWith('.txt') && (
-                        <button
-                          className="btn btn-sm btn-outline-primary me-2"
-                          onClick={() => viewFileContent(file.name)}
-                        >
-                          View
-                        </button>
-                      )}
-                      <button
-                        className="btn btn-sm btn-outline-success"
-                        onClick={() => downloadFile(file.name)}
-                      >
-                        Download
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            {fileContent && viewingFilename && (
-                <div className="mt-4">
-                    {fileContent && viewingFilename && viewingFilename.endsWith('.txt') && (
-                        <div className="mt-4">
-                            <h4>Viewing: {viewingFilename}</h4>
-
-                            <pre className="bg-light p-3 rounded mb-4" style={{ maxHeight: '500px', overflow: 'auto' }}>
-                            {fileContent}
-                        </pre>
-                        </div>
-                    )}
-
-
+            <div className="container mt-4">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <Link to="/runs" className="btn btn-outline-secondary">
+                        ← Back to Runs
+                    </Link>
+                    <button
+                        className="btn btn-danger"
+                        onClick={handleDelete}
+                    >
+                        Delete Run
+                    </button>
                 </div>
-            )}
-            {parsedYamlData && parsedYamlFilename === 'padlock_probes.yml.yml' && (
-                <div className="card">
-                    <div className="card-body">
-                        <div className="d-flex justify-content-between align-items-center mb-3">
-                            <h4 className="card-title mb-0">Gene Analysis</h4>
-                            <div className="btn-group">
-                                <button
-                                    onClick={handleDownloadExcel}
-                                    className="btn btn-success"
-                                    title="Download Excel file with each gene as a separate sheet"
-                                >
-                                    Download All Genes Excel
-                                </button>
-                            </div>
-                        </div>
 
-                        <div className="row mb-3">
-                            <div className="col-md-6">
-                                <label className="form-label">Select Gene</label>
-                                <Select
-                                    options={geneOptions}
-                                    value={geneOptions.find(option => option.value === selectedGene)}
-                                    onChange={(newValue: SingleValue<GeneOption>) => {
-                                        setSelectedGene(newValue?.value || '');
-                                        setSelectedOligoset('Oligoset 1');
-                                    }}
-                                    placeholder="Search or select gene..."
-                                    isSearchable
-                                    className="basic-single"
-                                    classNamePrefix="select"
-                                />
-                            </div>
-
-                            {selectedGene && (
-                                <div className="col-md-6">
-                                    <label className="form-label">Select Oligoset</label>
-                                    <select
-                                        className="form-select"
-                                        value={selectedOligoset}
-                                        onChange={(e) => setSelectedOligoset(e.target.value)}
-                                    >
-                                        <option value="">Select an Oligoset</option>
-                                        {getOligosetsForGene(selectedGene).map(oligoset => (
-                                            <option key={oligoset} value={oligoset}>{oligoset}</option>
-                                        ))}
-                                    </select>
+                <h3>Run Files</h3>
+                <div className="list-group mb-4">
+                    {files
+                        .filter(file => file.name.toLowerCase().includes('log'))
+                        .map(file => (
+                            <div key={file.name} className="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    {file.name}
+                                    <span className="badge bg-secondary ms-2">
+                                        {Math.round(file.size / 1024)} KB
+                                    </span>
                                 </div>
-                            )}
-                        </div>
+                                <div>
+                                    {file.name.endsWith('.txt') && (
+                                        <button
+                                            className="btn btn-sm btn-outline-primary me-2"
+                                            onClick={() => viewFileContent(file.name)}
+                                        >
+                                            View
+                                        </button>
+                                    )}
+                                    <button
+                                        className="btn btn-sm btn-outline-success"
+                                        onClick={() => downloadFile(file.name)}
+                                    >
+                                        Download
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                </div>
 
-                        {selectedOligoset && (
-                            <div className="mt-3">
-                                <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <h5>Oligos in {selectedOligoset}</h5>
-                                    <div>
+                {fileContent && viewingFilename && (
+                    <div className="mt-4">
+                        {fileContent && viewingFilename && viewingFilename.endsWith('.txt') && (
+                            <div className="mt-4">
+                                <h4>Viewing: {viewingFilename}</h4>
+
+                                <pre className="bg-light p-3 rounded mb-4" style={{ maxHeight: '500px', overflow: 'auto' }}>
+                                    {fileContent}
+                                </pre>
+                            </div>
+                        )}
+
+
+                    </div>
+                )}
+                {parsedYamlData && parsedYamlFilename === 'padlock_probes.yml.yml' && (
+                    <div className="card">
+                        <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h4 className="card-title mb-0">Gene Analysis</h4>
+                                <div className="btn-group">
+                                    <button
+                                        onClick={handleDownloadExcel}
+                                        className="btn btn-success"
+                                        title="Download Excel file with each gene as a separate sheet"
+                                    >
+                                        Download All Genes Excel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="row mb-3">
+                                <div className="col-md-6">
+                                    <label className="form-label">Select Gene</label>
+                                    <Select
+                                        options={geneOptions}
+                                        value={geneOptions.find(option => option.value === selectedGene)}
+                                        onChange={(newValue: SingleValue<GeneOption>) => {
+                                            setSelectedGene(newValue?.value || '');
+                                            setSelectedOligoset('Oligoset 1');
+                                        }}
+                                        placeholder="Search or select gene..."
+                                        isSearchable
+                                        className="basic-single"
+                                        classNamePrefix="select"
+                                    />
+                                </div>
+
+                                {selectedGene && (
+                                    <div className="col-md-6">
+                                        <label className="form-label">Select Oligoset</label>
+                                        <select
+                                            className="form-select"
+                                            value={selectedOligoset}
+                                            onChange={(e) => setSelectedOligoset(e.target.value)}
+                                        >
+                                            <option value="">Select an Oligoset</option>
+                                            {getOligosetsForGene(selectedGene).map(oligoset => (
+                                                <option key={oligoset} value={oligoset}>{oligoset}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            {selectedOligoset && (
+                                <div className="mt-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <h5>Oligos in {selectedOligoset}</h5>
+                                        <div>
                                             <span className="form-text me-2">
                                                 Showing {getOligosForOligoset().length} oligos
                                             </span>
-                                        <button
-                                            onClick={handleDownloadCSV}
-                                            className="btn btn-sm btn-primary"
-                                        >
-                                            Download Oligoset CSV
-                                        </button>
+                                            <button
+                                                onClick={handleDownloadCSV}
+                                                className="btn btn-sm btn-primary"
+                                            >
+                                                Download Oligoset CSV
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="table-responsive">
+                                        <table className="table table-bordered table-striped table-hover">
+                                            <thead className="table-light">
+                                                <tr>
+                                                    {tableColumns.map(column => (
+                                                        <th key={column} className="text-nowrap">
+                                                            {column.replace(/_/g, ' ')}
+                                                        </th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {getOligosForOligoset().map(oligo => (
+                                                    <tr key={oligo.oligo_id}>
+                                                        {tableColumns.map(column => (
+                                                            <td key={`${oligo.oligo_id}-${column}`} className="text-nowrap">
+                                                                {formatValue(oligo[column])}
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                                <div className="table-responsive">
-                                    <table className="table table-bordered table-striped table-hover">
-                                        <thead className="table-light">
-                                        <tr>
-                                            {tableColumns.map(column => (
-                                                <th key={column} className="text-nowrap">
-                                                    {column.replace(/_/g, ' ')}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {getOligosForOligoset().map(oligo => (
-                                            <tr key={oligo.oligo_id}>
-                                                {tableColumns.map(column => (
-                                                    <td key={`${oligo.oligo_id}-${column}`} className="text-nowrap">
-                                                        {formatValue(oligo[column])}
-                                                    </td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )}
+            </div>
         </div>
     );
 };
