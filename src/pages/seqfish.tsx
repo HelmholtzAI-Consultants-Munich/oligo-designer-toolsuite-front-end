@@ -23,7 +23,7 @@ const SeqFish: React.FC = () => {
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(seqfish_form);
-    const [activeTab, setActiveTab] = useState("general");
+    const [activeTab, setActiveTab] = useState("probe_sequences");
     const [activetab2, setActivetab2] = useState("specfblastn");
     const [formDataNcbi, setFormDataNcbi] = useState(form_Data_Ncbi);
     const [formDataEns, setFormDataEns] = useState(form_Data_Ens);
@@ -364,121 +364,6 @@ const SeqFish: React.FC = () => {
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case "general":
-                // @ts-ignore
-                return (
-                    <div>
-                        <div>
-                            <h4>General Parameters</h4>
-                            <div className="mb-3">
-                                <label
-                                    htmlFor="n_jobs"
-                                    className="form-label mb-2"
-                                >
-                                    Number of Jobs:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="n_jobs"
-                                        name="n_jobs"
-                                        value={formData.n_jobs.value}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-n_jobs">
-                                                <Popover.Body>
-                                                    {formData.n_jobs.comment}
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px"
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
-                            </div>
-
-                        </div>
-                        <div className="mb-3">
-                            <label
-                                htmlFor="write_intermediate_steps"
-                                className="form-label mb-2" // mb-2 ile label ile input arasında biraz boşluk bırakıyoruz
-                            >
-                                Write Intermediate Steps:
-                            </label>
-                            <div className="d-flex align-items-center">
-                                <select
-                                    className="form-select"
-                                    id="write_intermediate_steps"
-                                    name="write_intermediate_steps"
-                                    value={formData.write_intermediate_steps.value}
-                                    onChange={handleChange}
-                                >
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-write_intermediate_steps">
-                                            <Popover.Body>
-                                                {formData.write_intermediate_steps.comment}                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle
-                                        style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                        }}
-                                    />
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="top_n_sets" name="top_n_sets"
-                                       value={formData.top_n_sets.value} onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-n_jobs">
-                                            <Popover.Body>
-                                                {formData.top_n_sets.comment}                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle
-                                        style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                        }}
-                                    />
-                                </OverlayTrigger>
-                            </div>
-
-                        </div>
-                    </div>
-                );
             case "probe_sequences":
                 // @ts-ignore
                 return (
@@ -1850,6 +1735,33 @@ const SeqFish: React.FC = () => {
                                 )}
                             </div>
                         </div>
+                        <div className="mb-3">
+                            <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
+                            <div className="d-flex align-items-center">
+                                <input type="number" className="form-control" id="top_n_sets" name="top_n_sets"
+                                       value={formData.top_n_sets.value} onChange={handleChange} required/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Body>
+                                                {formData.top_n_sets.comment}                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
+
+                        </div>
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
@@ -2409,7 +2321,6 @@ const SeqFish: React.FC = () => {
                 // @ts-ignore
                 return (
                     <div className="mb-4">
-                        <h4>Readout Probe Parameters</h4>
                         <div className="mb-3">
                             <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">
                                 Fasta Probe Reference Database:
@@ -3485,7 +3396,6 @@ const SeqFish: React.FC = () => {
                 return (
                     <div>
                         <div className="mb-4">
-                            <h4>Primer Parameters</h4>
 
                             <div className="mb-3">
                                 <label htmlFor="files_fasta_reference_database_primer" className="form-label">
@@ -5119,7 +5029,6 @@ const SeqFish: React.FC = () => {
                 return (
                     <div>
 
-                        <h5>Cross-Hybridization Filters with BlastN</h5>
                         <div className="row g-3">
                             <div className="col-md-6">
                                 <label htmlFor="crosshybridization_perc_identity" className="form-label">Percent
@@ -5351,7 +5260,6 @@ const SeqFish: React.FC = () => {
             case'oligosetselection':
                 return (
                     <div>
-                        <h5>Oligo Set Selection</h5>
                         <div className="row g-3">
                             <div className="col-md-6">
                                 <label htmlFor="max_graph_size" className="form-label">Max Graph
@@ -5485,7 +5393,6 @@ const SeqFish: React.FC = () => {
                     <div>
                         <div className="mb-4">
 
-                            <h5>Readout Probe Parameters</h5>
                             <div className="row g-3">
                                 <div className="col">
                                     <label htmlFor="readout_probe_initial_num_sequences" className="form-label">Initial Number of Sequences:</label>
@@ -6999,15 +6906,6 @@ const SeqFish: React.FC = () => {
                 <form onSubmit={handleSubmit} id="scrinshotForm">
                     <h2 className="text-center mb-4">SeqFish+ Probe Designer</h2>
                     <ul className="nav nav-tabs">
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "general" ? "active" : ""}`}
-                                onClick={() => setActiveTab("general")}
-                            >
-                                General Parameters
-                            </button>
-                        </li>
                         <li className="nav-item">
                             <button
                                 type="button"

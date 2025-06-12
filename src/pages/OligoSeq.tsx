@@ -254,125 +254,11 @@ const OligoSeq: React.FC = () => {
         ...oligoseq_form,
         target_probe_targeted_exons: { value: 1, comment: "" }
     });
-    const [activeTab, setActiveTab] = useState("general");
+    const [activeTab, setActiveTab] = useState("probe_sequences");
     const [activetab2, setActivetab2] = useState("specfblastn");
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case "general":
-                // @ts-ignore
-                return (
-                    <div>
-                        <div>
-                            <div className="mb-3">
-                                <label
-                                    htmlFor="n_jobs"
-                                    className="form-label mb-2"
-                                >
-                                    Number of Jobs:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        id="n_jobs"
-                                        name="n_jobs"
-                                        value={formData.n_jobs.value}
-                                        onChange={handleChange}
-                                        required
-                                    />
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-n_jobs">
-                                                <Popover.Body>
-                                                    {formData.n_jobs.comment}
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px"
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
-                            </div>
-
-                        </div>
-                        <div className="mb-3">
-                            <label
-                                htmlFor="write_intermediate_steps"
-                                className="form-label mb-2" // mb-2 ile label ile input arasında biraz boşluk bırakıyoruz
-                            >
-                                Write Intermediate Steps:
-                            </label>
-                            <div className="d-flex align-items-center">
-                                <select
-                                    className="form-select"
-                                    id="write_intermediate_steps"
-                                    name="write_intermediate_steps"
-                                    value={formData.write_intermediate_steps.value}
-                                    onChange={handleChange}
-                                >
-                                    <option value="true">True</option>
-                                    <option value="false">False</option>
-                                </select>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-write_intermediate_steps">
-                                            <Popover.Body>
-                                                {formData.write_intermediate_steps.comment}                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle
-                                        style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                        }}
-                                    />
-                                </OverlayTrigger>
-                            </div>
-                        </div>
-                        <div className="mb-3">
-                            <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
-                            <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                       value={formData.top_n_sets.value} onChange={handleChange} required/>
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-n_jobs">
-                                            <Popover.Body>
-                                                {formData.top_n_sets.comment}                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle
-                                        style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                        }}
-                                    />
-                                </OverlayTrigger>
-                            </div>
-
-                        </div>
-                    </div>
-                );
             case "probe_sequences":
                 // @ts-ignore
                 return (
@@ -1755,6 +1641,33 @@ const OligoSeq: React.FC = () => {
                                     </>
                                 )}
                             </div>
+                        </div>
+                        <div className="mb-3">
+                            <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
+                            <div className="d-flex align-items-center">
+                                <input type="number" className="form-control" id="n_jobs" name="n_jobs"
+                                       value={formData.top_n_sets.value} onChange={handleChange} required/>
+                                <OverlayTrigger
+                                    trigger="hover"
+                                    placement="top"
+                                    overlay={
+                                        <Popover id="popover-n_jobs">
+                                            <Popover.Body>
+                                                {formData.top_n_sets.comment}                                            </Popover.Body>
+                                        </Popover>
+                                    }
+                                >
+                                    <InfoCircle
+                                        style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                        }}
+                                    />
+                                </OverlayTrigger>
+                            </div>
+
                         </div>
                         <div className="row g-3">
                             <div className="col">
@@ -3518,15 +3431,7 @@ const OligoSeq: React.FC = () => {
                 <form onSubmit={handleSubmit} id="scrinshotForm">
                     <h2 className="text-center mb-4">Oligo-Seq Designer</h2>
                     <ul className="nav nav-tabs">
-                        <li className="nav-item">
-                            <button
-                                type="button"
-                                className={`nav-link ${activeTab === "general" ? "active" : ""}`}
-                                onClick={() => setActiveTab("general")}
-                            >
-                                General Parameters
-                            </button>
-                        </li>
+
                         <li className="nav-item">
                             <button
                                 type="button"
