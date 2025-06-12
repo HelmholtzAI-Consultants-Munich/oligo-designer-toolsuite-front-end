@@ -401,7 +401,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-4">
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
@@ -589,7 +589,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-4">
                                                                         <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <input
@@ -623,47 +623,10 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
-                                                                        <div className="col-md-6">
-                                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                                                                                Exon-Exon-Junction Block Size
-                                                                            </label>
-                                                                            <div className="d-flex align-items-center">
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control"
-                                                                                    id="exon_exon_junction_block_size"
-                                                                                    name="exon_exon_junction_block_size"
-                                                                                    value={formDataNcbi.exon_exon_junction_block_size.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                    placeholder="50"
-                                                                                />
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id="dir_output">
-                                                                                            <Popover.Body>
-                                                                                                {formDataNcbi.exon_exon_junction_block_size.comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                            marginLeft: "10px"
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
+
                                                                 </div>
 
-                                                                <h5 className="pt-3">Genomic Regions</h5>
+                                                                <h6 className="pt-3">Genomic Regions</h6>
                                                                 <div className="row g-3">
                                                                     {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
                                                                         <div key={region} className="col-md-4">
@@ -712,9 +675,52 @@
                                                                                     />
                                                                                 </OverlayTrigger>
                                                                             </div>
+
                                                                         </div>
+
                                                                     ))}
+
                                                                 </div>
+                                                                {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
+                                                                        <div className="col-md-4 pt-2">
+                                                                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
+                                                                                    Block Size
+                                                                                </label>
+                                                                            <div className="d-flex align-items-center">
+
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="form-control"
+                                                                                    id="exon_exon_junction_block_size"
+                                                                                    name="exon_exon_junction_block_size"
+                                                                                    value={formDataNcbi.exon_exon_junction_block_size.value}
+                                                                                    onChange={handleChangeGenomic}
+                                                                                    placeholder="50"
+                                                                                />
+                                                                                <OverlayTrigger
+                                                                                    trigger="hover"
+                                                                                    placement="top"
+                                                                                    overlay={
+                                                                                        <Popover id="dir_output">
+                                                                                            <Popover.Body>
+                                                                                                {formDataNcbi.exon_exon_junction_block_size.comment}
+                                                                                            </Popover.Body>
+                                                                                        </Popover>
+                                                                                    }
+                                                                                >
+                                                                                    <InfoCircle
+                                                                                        style={{
+                                                                                            fontSize: "1.2rem",
+                                                                                            cursor: "pointer",
+                                                                                            color: "#0d6efd",
+                                                                                            marginLeft: "10px"
+                                                                                        }}
+                                                                                    />
+                                                                                </OverlayTrigger>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
 
 
                                                             </form>
@@ -797,44 +803,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
-                                                                        <div className="col-md-6">
-                                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                                                                                Exon-Exon-Junction Block Size
-                                                                            </label>
-                                                                            <div className="d-flex align-items-center">
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control"
-                                                                                    id="exon_exon_junction_block_size"
-                                                                                    name="exon_exon_junction_block_size"
-                                                                                    value={formDataEns.exon_exon_junction_block_size.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                    placeholder="50"
-                                                                                />
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id="dir_output">
-                                                                                            <Popover.Body>
-                                                                                                {formDataEns.exon_exon_junction_block_size.comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                            marginLeft: "10px"
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
+
                                                                 </div>
 
                                                                 <h5 className="pt-3">Genomic Regions</h5>
@@ -902,7 +871,7 @@
                                     </>
                                 )}
 
-                                <div className="mb-3">
+                                <div className="mb-3 pt-3">
                                     <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
                                         Fasta Probe Reference Database:
                                     </label>
