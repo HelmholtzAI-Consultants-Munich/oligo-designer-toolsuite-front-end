@@ -407,7 +407,7 @@
                                                                             {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                                                 <select
                                                                                     name="source_params.species"
-                                                                                    className="form-control"
+                                                                                    className="form-select"
                                                                                     id="source_params.species"
                                                                                     value={formDataNcbi.source_params.species.value}
                                                                                     onChange={handleChangeGenomic}
@@ -729,7 +729,7 @@
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
-                                                                                className="form-control"
+                                                                                className="form-select"
                                                                                 id="source_params.species"
                                                                                 name="source_params.species"
                                                                                 value={formDataEns.source_params.species.value}
@@ -1057,7 +1057,7 @@
                                                                             {formData2Ncbi.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                                                 <select
                                                                                     name="source_params.species"
-                                                                                    className="form-control"
+                                                                                    className="form-select"
                                                                                     id="source_params.species"
                                                                                     value={formData2Ncbi.source_params.species.value}
                                                                                     onChange={handleChangeGenomicReference}
@@ -1379,7 +1379,7 @@
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
-                                                                                className="form-control"
+                                                                                className="form-select"
                                                                                 id="source_params.species"
                                                                                 name="source_params.species"
                                                                                 value={formData2Ens.source_params.species.value}

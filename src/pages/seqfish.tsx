@@ -595,7 +595,7 @@ const SeqFish: React.FC = () => {
                                                                             {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                                                 <select
                                                                                     name="source_params.species"
-                                                                                    className="form-control"
+                                                                                    className="form-select"
                                                                                     id="source_params.species"
                                                                                     value={formDataNcbi.source_params.species.value}
                                                                                     onChange={handleChangeGenomic}
@@ -917,7 +917,7 @@ const SeqFish: React.FC = () => {
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
-                                                                                className="form-control"
+                                                                                className="form-select"
                                                                                 id="source_params.species"
                                                                                 name="source_params.species"
                                                                                 value={formDataEns.source_params.species.value}
@@ -1239,7 +1239,7 @@ const SeqFish: React.FC = () => {
                                                                             {formData2Ncbi.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                                                 <select
                                                                                     name="source_params.species"
-                                                                                    className="form-control"
+                                                                                    className="form-select"
                                                                                     id="source_params.species"
                                                                                     value={formData2Ncbi.source_params.species.value}
                                                                                     onChange={handleChangeGenomicReference}
@@ -1561,7 +1561,7 @@ const SeqFish: React.FC = () => {
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
-                                                                                className="form-control"
+                                                                                className="form-select"
                                                                                 id="source_params.species"
                                                                                 name="source_params.species"
                                                                                 value={formData2Ens.source_params.species.value}
@@ -2503,7 +2503,7 @@ const SeqFish: React.FC = () => {
                                                                     {formDataNcbiReadout.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                                         <select
                                                                             name="source_params.species"
-                                                                            className="form-control"
+                                                                            className="form-select"
                                                                             id="source_params.species"
                                                                             value={formDataNcbiReadout.source_params.species.value}
                                                                             onChange={handleChangeGenomicReadout}
@@ -2825,7 +2825,7 @@ const SeqFish: React.FC = () => {
                                                                 <label htmlFor="species" className="form-label">Species</label>
                                                                 <div className="d-flex align-items-center">
                                                                     <select
-                                                                        className="form-control"
+                                                                        className="form-select"
                                                                         id="source_params.species"
                                                                         name="source_params.species"
                                                                         value={formDataEnsReadout.source_params.species.value}
@@ -3571,7 +3571,7 @@ const SeqFish: React.FC = () => {
                                                                         {formDataNcbiPrimer.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                                             <select
                                                                                 name="source_params.species"
-                                                                                className="form-control"
+                                                                                className="form-select"
                                                                                 id="source_params.species"
                                                                                 value={formDataNcbiPrimer.source_params.species.value}
                                                                                 onChange={handleChangeGenomicPrimer}
@@ -3893,7 +3893,7 @@ const SeqFish: React.FC = () => {
                                                                     <label htmlFor="species" className="form-label">Species</label>
                                                                     <div className="d-flex align-items-center">
                                                                         <select
-                                                                            className="form-control"
+                                                                            className="form-select"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
                                                                             value={formDataEnsPrimer.source_params.species.value}
