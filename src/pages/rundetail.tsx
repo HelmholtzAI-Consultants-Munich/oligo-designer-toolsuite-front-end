@@ -83,29 +83,32 @@ const RunDetail = () => {
         .catch(error => console.error('Error fetching padlock file content:', error));
     }, [runId]);
     useEffect(() => {
-        if (runId) {
-            axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
-                withCredentials: true
-            })
-            .then(response => {
-                setFiles(response.data);
+    if (runId) {
+        axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
+            withCredentials: true
+        })
+        .then(response => {
+            setFiles(response.data);
 
-                // Process padlock file separately without affecting viewing state
-                const padlockFile = response.data.find((f: RunFile) => f.name === 'padlock_probes.yml.yml');
-                if (padlockFile) {
-                    fetchAndParsePadlockFile(padlockFile.name);
-                }
+            // Check if there's a YAML file
+            const yamlFile = response.data.find((f: RunFile) =>
+                f.name.endsWith('.yml') || f.name.endsWith('.yaml')
+            );
 
-                // Find and view the first log file
+            if (yamlFile) {
+                // If YAML exists, parse it but don't show any file automatically
+                fetchAndParsePadlockFile(yamlFile.name);
+            } else {
+                // If no YAML exists, find and show the first log file
                 const firstLogFile = response.data.find((f: RunFile) => f.type === 'log');
                 if (firstLogFile) {
-                    // Only fetch content for log file
                     viewFileContent(firstLogFile.name, false);
                 }
-            })
-            .catch(error => console.error('Error fetching files:', error));
-        }
-    }, [runId, fetchAndParsePadlockFile]); // Include dependencies
+            }
+        })
+        .catch(error => console.error('Error fetching files:', error));
+    }
+}, [runId, fetchAndParsePadlockFile]);
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this run? This action cannot be undone.')) {
@@ -320,6 +323,7 @@ const RunDetail = () => {
         }
         return value; // Return raw value for Excel (no string conversion)
     };
+
 
     const viewFileContent = (filename: string, shouldParseYaml = true) => {
         if (viewingFilename === filename) {
