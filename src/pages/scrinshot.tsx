@@ -965,19 +965,7 @@
                                           Generate FASTA
                                         </label>
 
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption2"
-                                          id="uploadFastaOption2"
-                                          value="upload"
-                                          autoComplete="off"
-                                          checked={fastaOption2 === "upload"}
-                                          onChange={() => setFastaOption2("upload")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption2">
-                                          Upload File
-                                        </label>
+
 
                                         <input
                                           type="radio"
@@ -991,6 +979,19 @@
                                         />
                                         <label className="btn btn-outline-primary" htmlFor="useGeneratedFastaOption2">
                                           Use Generated
+                                        </label>
+                                           <input
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption2"
+                                          id="uploadFastaOption2"
+                                          value="upload"
+                                          autoComplete="off"
+                                          checked={fastaOption2 === "upload"}
+                                          onChange={() => setFastaOption2("upload")}
+                                        />
+                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption2">
+                                          Upload File
                                         </label>
                                       </div>
                                     </div>
@@ -4477,11 +4478,19 @@
 
  
             // First: submit genomic
-            if (generateFastaFiles) {
+            if (fastaOption === 'generate') {
                 formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomic();
-                formData['files_fasta_reference_database_targe_probe']['value'] = await handleSubmitGenomicref();
+
 
             }
+            if (fastaOption2 === 'generate')
+            {
+                 formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicref();
+            }
+            else if (fastaOption2 ==='usegenerated' ){
+                 formData['files_fasta_reference_database_targe_probe']['value'] =  formData['files_fasta_target_probe_database']['value']
+            }
+
             const runid= await createRunId();
 
             // Then: handle scrinshot

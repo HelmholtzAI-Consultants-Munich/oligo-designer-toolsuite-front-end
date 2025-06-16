@@ -17,6 +17,12 @@ import {
 } from "../forms/refseqSpecies";
 import {ensemblSpecies} from "../forms/ensemblSpecies";
 const Merfish: React.FC = () => {
+    const [fastaOption, setFastaOption] = useState("upload"); // "generate" or "upload"
+    const [fastaOption2, setFastaOption2] = useState("upload"); // "generate" or "upload"
+    const [fastaOptionReadout, setFastaOptionReadout] = useState("upload"); // "generate" or "upload"
+    const [fastaOptionPrimer, setFastaOptionPrimer] = useState("upload"); // "generate" or "upload"
+
+
     const [loading, setLoading] = useState(false);
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -417,95 +423,99 @@ const Merfish: React.FC = () => {
 
 
                                 <div className="mb-3">
-                                    <label htmlFor="files_fasta_target_probe_database" className="form-label">
-                                        Fasta Probe Database:
-                                    </label>
-                                    <div className="d-flex align-items-center w-100">
-                                        {/* Hidden file input */}
+                                  <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                    Fasta Probe Database:
+                                  </label>
+                                  <div className="d-flex align-items-center w-100 gap-2">
+                                    {/* Radio buttons - left half */}
+                                    <div className="w-50">
+                                      <div className="btn-group w-100" role="group" aria-label="FASTA option">
                                         <input
-                                            type="file"
-                                            className="form-control visually-hidden"
-                                            id="files_fasta_target_probe_database"
-                                            name="files_fasta_target_probe_database"
-                                            onChange={handleFileChange}
-                                            multiple
-                                            disabled={generateFastaFiles}
-
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption"
+                                          id="generateFastaOption"
+                                          value="generate"
+                                          autoComplete="off"
+                                          checked={fastaOption === "generate"}
+                                          onChange={() => setFastaOption("generate")}
                                         />
-                                        <label
-                                            htmlFor="files_fasta_target_probe_database"
-                                            className="btn btn-outline-primary d-block me-2 w-100"
-                                            style={{
-                                                cursor: generateFastaFiles ? "not-allowed" : "pointer",
-                                                opacity: generateFastaFiles ? 0.5 : 1,
-                                                pointerEvents: generateFastaFiles ? "none" : "auto"
-                                            }}
-                                        >
-                                            Choose File
+                                        <label className="btn btn-outline-primary" htmlFor="generateFastaOption">
+                                          Generate FASTA
                                         </label>
 
-                                        {/* Info icon with popover */}
-                                        <OverlayTrigger
-                                            trigger="hover"
-                                            placement="top"
-                                            overlay={
-                                                <Popover id="popover-n_jobs">
-                                                    <Popover.Body>
-                                                        {formData.files_fasta_target_probe_database.comment}
-                                                    </Popover.Body>
-                                                </Popover>
-                                            }
-                                        >
-                                            <InfoCircle
-                                                style={{
-                                                    fontSize: "1.2rem",
-                                                    cursor: "pointer",
-                                                    color: "#0d6efd",
-                                                    marginLeft: "10px"
-                                                }}
-                                            />
-                                        </OverlayTrigger>
-
+                                        <input
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption"
+                                          id="uploadFastaOption"
+                                          value="upload"
+                                          autoComplete="off"
+                                          checked={fastaOption === "upload"}
+                                          onChange={() => setFastaOption("upload")}
+                                        />
+                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption">
+                                          Upload File
+                                        </label>
+                                      </div>
                                     </div>
-                                    <div className="text-muted small mt-1">
-                                        {files.files_fasta_target_probe_database.length > 0
-                                            ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
-                                            : "No files selected"}
+                                    {/* File input + choose button - right half */}
+                                    <div className="w-50 d-flex align-items-center">
+                                      <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="files_fasta_target_probe_database"
+                                        name="files_fasta_target_probe_database"
+                                        onChange={handleFileChange}
+                                        multiple
+                                        disabled={fastaOption !== "upload"}
+                                      />
+                                      <label
+                                        htmlFor="files_fasta_target_probe_database"
+                                        className="btn btn-outline-primary me-2 w-100"
+                                        style={{
+                                          cursor: fastaOption !== "upload" ? "not-allowed" : "pointer",
+                                          opacity: fastaOption !== "upload" ? 0.5 : 1,
+                                          pointerEvents: fastaOption !== "upload" ? "none" : "auto"
+                                        }}
+                                      >
+                                        Choose File
+                                      </label>
+                                      {/* Info icon with popover */}
+                                      <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                          <Popover id="files_fasta_target_probe_database">
+                                            <Popover.Body>
+                                              {formData.files_fasta_target_probe_database.comment}
+                                            </Popover.Body>
+                                          </Popover>
+                                        }
+                                      >
+                                        <InfoCircle
+                                          style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                          }}
+                                        />
+                                      </OverlayTrigger>
                                     </div>
-
-                                </div>
-                                <div className="form-check form-switch mb-3">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        id="generateFastaToggle"
-                                        checked={generateFastaFiles}
-                                        onChange={(e) => setGenerateFastaFiles(e.target.checked)}
-                                    />
-
-
-                                    <label className="form-check-label" htmlFor="generateFastaToggle">
-                                        Generate FASTA files
-                                    </label>
+                                  </div>
+                                  <div className="text-muted small mt-1">
+                                    {files.files_fasta_target_probe_database.length > 0
+                                      ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                      : "No files selected"}
+                                  </div>
                                 </div>
 
-                                {generateFastaFiles && (
+                                {fastaOption ==='generate' && (
 
                                     <>
                                         <div className="row mb-3">
-                                            <div className="col-auto">
-                                                <label htmlFor="source" className="form-label">Select Source</label>
-                                                <select
-                                                    className="form-select"
-                                                    id="source"
-                                                    name="source"
-                                                    value={selectedSource}
-                                                    onChange={handleSourceChange}
-                                                >
-                                                    <option value="ncbi"> NCBI</option>
-                                                    <option value="ensembl"> Ensembl</option>
-                                                </select>
-                                            </div>
+
                                         </div>
 
                                         <div className="d-flex align-items-center">
@@ -518,7 +528,20 @@ const Merfish: React.FC = () => {
                                                         <div>
                                                             <form onSubmit={handleSubmit}>
                                                                 <div className="row g-3">
-                                                                    <div className="col">
+                                                                    <div className="col-md-3">
+                                                                        <label htmlFor="source" className="form-label">Select Source</label>
+                                                                        <select
+                                                                            className="form-select"
+                                                                            id="source"
+                                                                            name="source"
+                                                                            value={selectedSource}
+                                                                            onChange={handleSourceChange}
+                                                                        >
+                                                                            <option value="ncbi"> NCBI</option>
+                                                                            <option value="ensembl"> Ensembl</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="taxon" className="form-label">Taxon</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
@@ -566,7 +589,7 @@ const Merfish: React.FC = () => {
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
@@ -754,7 +777,7 @@ const Merfish: React.FC = () => {
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <input
@@ -788,47 +811,10 @@ const Merfish: React.FC = () => {
                                                                         </div>
                                                                     </div>
 
-                                                                    {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
-                                                                        <div className="col-md-6">
-                                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                                                                                Exon-Exon-Junction Block Size
-                                                                            </label>
-                                                                            <div className="d-flex align-items-center">
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control"
-                                                                                    id="exon_exon_junction_block_size"
-                                                                                    name="exon_exon_junction_block_size"
-                                                                                    value={formDataNcbi.exon_exon_junction_block_size.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                    placeholder="50"
-                                                                                />
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id="dir_output">
-                                                                                            <Popover.Body>
-                                                                                                {formDataNcbi.exon_exon_junction_block_size.comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                            marginLeft: "10px"
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
+
                                                                 </div>
 
-                                                                <h5 className="pt-3">Genomic Regions</h5>
+                                                                <h6 className="pt-3">Genomic Regions</h6>
                                                                 <div className="row g-3">
                                                                     {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
                                                                         <div key={region} className="col-md-4">
@@ -877,9 +863,52 @@ const Merfish: React.FC = () => {
                                                                                     />
                                                                                 </OverlayTrigger>
                                                                             </div>
+
                                                                         </div>
+
                                                                     ))}
+
                                                                 </div>
+                                                                {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
+                                                                        <div className="col-md-4 pt-2">
+                                                                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
+                                                                                    Block Size
+                                                                                </label>
+                                                                            <div className="d-flex align-items-center">
+
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="form-control"
+                                                                                    id="exon_exon_junction_block_size"
+                                                                                    name="exon_exon_junction_block_size"
+                                                                                    value={formDataNcbi.exon_exon_junction_block_size.value}
+                                                                                    onChange={handleChangeGenomic}
+                                                                                    placeholder="50"
+                                                                                />
+                                                                                <OverlayTrigger
+                                                                                    trigger="hover"
+                                                                                    placement="top"
+                                                                                    overlay={
+                                                                                        <Popover id="dir_output">
+                                                                                            <Popover.Body>
+                                                                                                {formDataNcbi.exon_exon_junction_block_size.comment}
+                                                                                            </Popover.Body>
+                                                                                        </Popover>
+                                                                                    }
+                                                                                >
+                                                                                    <InfoCircle
+                                                                                        style={{
+                                                                                            fontSize: "1.2rem",
+                                                                                            cursor: "pointer",
+                                                                                            color: "#0d6efd",
+                                                                                            marginLeft: "10px"
+                                                                                        }}
+                                                                                    />
+                                                                                </OverlayTrigger>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
 
 
                                                             </form>
@@ -890,7 +919,20 @@ const Merfish: React.FC = () => {
                                                         <div>
                                                             <form onSubmit={handleSubmit}>
                                                                 <div className="row g-3">
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-4">
+                                                                        <label htmlFor="source" className="form-label">Select Source</label>
+                                                                        <select
+                                                                            className="form-select"
+                                                                            id="source"
+                                                                            name="source"
+                                                                            value={selectedSource}
+                                                                            onChange={handleSourceChange}
+                                                                        >
+                                                                            <option value="ncbi"> NCBI</option>
+                                                                            <option value="ensembl"> Ensembl</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="col-md-4">
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
@@ -927,7 +969,7 @@ const Merfish: React.FC = () => {
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-4">
                                                                         <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <input
@@ -962,44 +1004,7 @@ const Merfish: React.FC = () => {
                                                                         </div>
                                                                     </div>
 
-                                                                    {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
-                                                                        <div className="col-md-6">
-                                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                                                                                Exon-Exon-Junction Block Size
-                                                                            </label>
-                                                                            <div className="d-flex align-items-center">
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control"
-                                                                                    id="exon_exon_junction_block_size"
-                                                                                    name="exon_exon_junction_block_size"
-                                                                                    value={formDataEns.exon_exon_junction_block_size.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                    placeholder="50"
-                                                                                />
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id="dir_output">
-                                                                                            <Popover.Body>
-                                                                                                {formDataEns.exon_exon_junction_block_size.comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                            marginLeft: "10px"
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
+
                                                                 </div>
 
                                                                 <h5 className="pt-3">Genomic Regions</h5>
@@ -1054,6 +1059,45 @@ const Merfish: React.FC = () => {
                                                                         </div>
                                                                     ))}
                                                                 </div>
+                                                                {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
+                                                                        <div className="col-md-4 pt-2">
+                                                                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
+                                                                                    Block Size
+                                                                                </label>
+                                                                            <div className="d-flex align-items-center">
+
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="form-control"
+                                                                                    id="exon_exon_junction_block_size"
+                                                                                    name="exon_exon_junction_block_size"
+                                                                                    value={formDataEns.exon_exon_junction_block_size.value}
+                                                                                    onChange={handleChangeGenomic}
+                                                                                    placeholder="50"
+                                                                                />
+                                                                                <OverlayTrigger
+                                                                                    trigger="hover"
+                                                                                    placement="top"
+                                                                                    overlay={
+                                                                                        <Popover id="dir_output">
+                                                                                            <Popover.Body>
+                                                                                                {formDataEns.exon_exon_junction_block_size.comment}
+                                                                                            </Popover.Body>
+                                                                                        </Popover>
+                                                                                    }
+                                                                                >
+                                                                                    <InfoCircle
+                                                                                        style={{
+                                                                                            fontSize: "1.2rem",
+                                                                                            cursor: "pointer",
+                                                                                            color: "#0d6efd",
+                                                                                            marginLeft: "10px"
+                                                                                        }}
+                                                                                    />
+                                                                                </OverlayTrigger>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
 
                                                             </form>
                                                         </div>
@@ -1067,79 +1111,110 @@ const Merfish: React.FC = () => {
                                     </>
                                 )}
 
-                                <div className="mb-3">
-                                    <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
-                                        Fasta Probe Reference Database:
-                                    </label>
-                                    <div className="d-flex align-items-center w-100">
-                                        {/* Hidden file input */}
+                                <div className="mb-3 pt-3">
+                                  <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                    Fasta Probe Reference Database:
+                                  </label>
+                                  <div className="d-flex align-items-center w-100 gap-2">
+                                    {/* Button group: 3 options */}
+                                    <div className="w-50">
+                                      <div className="btn-group w-100" role="group" aria-label="FASTA option">
                                         <input
-                                            type="file"
-                                            className="form-control visually-hidden"
-                                            id="files_fasta_reference_database_target_probe"
-                                            name="files_fasta_reference_database_target_probe"
-                                            onChange={handleFileChange}
-                                            multiple
-                                            disabled={generateFastaFiles2}
-
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption2"
+                                          id="generateFastaOption2"
+                                          value="generate"
+                                          autoComplete="off"
+                                          checked={fastaOption2 === "generate"}
+                                          onChange={() => setFastaOption2("generate")}
                                         />
-                                        <label
-                                            htmlFor="files_fasta_reference_database_target_probe"
-                                            className="btn btn-outline-primary d-block me-2 w-100"
-                                            style={{
-                                                cursor: generateFastaFiles2 ? "not-allowed" : "pointer",
-                                                opacity: generateFastaFiles2 ? 0.5 : 1,
-                                                pointerEvents: generateFastaFiles2 ? "none" : "auto"
-                                            }}
-                                        >
-                                            Choose File
+                                        <label className="btn btn-outline-primary" htmlFor="generateFastaOption2">
+                                          Generate FASTA
                                         </label>
 
-                                        {/* Info icon with popover */}
-                                        <OverlayTrigger
-                                            trigger="hover"
-                                            placement="top"
-                                            overlay={
-                                                <Popover id="popover-n_jobs">
-                                                    <Popover.Body>
-                                                        {formData.files_fasta_reference_database_targe_probe.comment}
-                                                    </Popover.Body>
-                                                </Popover>
-                                            }
-                                        >
-                                            <InfoCircle
-                                                style={{
-                                                    fontSize: "1.2rem",
-                                                    cursor: "pointer",
-                                                    color: "#0d6efd",
-                                                    marginLeft: "10px"
-                                                }}
-                                            />
-                                        </OverlayTrigger>
 
+
+                                        <input
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption2"
+                                          id="useGeneratedFastaOption2"
+                                          value="useGenerated"
+                                          autoComplete="off"
+                                          checked={fastaOption2 === "useGenerated"}
+                                          onChange={() => setFastaOption2("useGenerated")}
+                                        />
+                                        <label className="btn btn-outline-primary" htmlFor="useGeneratedFastaOption2">
+                                          Use Generated
+                                        </label>
+                                           <input
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption2"
+                                          id="uploadFastaOption2"
+                                          value="upload"
+                                          autoComplete="off"
+                                          checked={fastaOption2 === "upload"}
+                                          onChange={() => setFastaOption2("upload")}
+                                        />
+                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption2">
+                                          Upload File
+                                        </label>
+                                      </div>
                                     </div>
-                                    {/* Display selected file names */}
-                                    <div className="text-muted small mt-1">
-                                        {files.files_fasta_reference_database_target_probe.length > 0
-                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
-                                            : "No files selected"}
+                                    {/* File upload area, only visible if "Upload File" is selected */}
+                                    <div className="w-50 d-flex align-items-center">
+                                      <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="files_fasta_reference_database_target_probe"
+                                        name="files_fasta_reference_database_target_probe"
+                                        onChange={handleFileChange}
+                                        multiple
+                                        disabled={fastaOption2 !== "upload"}
+                                      />
+                                      <label
+                                        htmlFor="files_fasta_reference_database_target_probe"
+                                        className="btn btn-outline-primary me-2 w-100"
+                                        style={{
+                                          cursor: fastaOption2 !== "upload" ? "not-allowed" : "pointer",
+                                          opacity: fastaOption2 !== "upload" ? 0.5 : 1,
+                                          pointerEvents: fastaOption2 !== "upload" ? "none" : "auto"
+                                        }}
+                                      >
+                                        Choose File
+                                      </label>
+                                      <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                          <Popover id="files_fasta_reference_database_target_probe">
+                                            <Popover.Body>
+                                              {formData.files_fasta_reference_database_targe_probe.comment}
+                                            </Popover.Body>
+                                          </Popover>
+                                        }
+                                      >
+                                        <InfoCircle
+                                          style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                          }}
+                                        />
+                                      </OverlayTrigger>
                                     </div>
+                                  </div>
+                                  {/* Display selected file names */}
+                                  <div className="text-muted small mt-1">
+                                    {files.files_fasta_reference_database_target_probe.length > 0
+                                      ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                      : "No files selected"}
+                                  </div>
                                 </div>
-                                <div className="form-check form-switch mb-3">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        id="generateFastaToggle"
-                                        checked={generateFastaFiles2}
-                                        onChange={(e) => setGenerateFastaFiles2(e.target.checked)}
-                                    />
-
-
-                                    <label className="form-check-label" htmlFor="generateFastaToggle">
-                                        Generate FASTA files for reference
-                                    </label>
-                                </div>
-                                {generateFastaFiles2 && (
+                                {fastaOption2 ==='generate' && (
 
                                     <>
                                         <div className="row mb-3">
@@ -2395,100 +2470,109 @@ const Merfish: React.FC = () => {
                 return (
                 <div className="mb-4">
                     <div className="mb-3">
-                        <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">
-                            Fasta Probe Reference Database:
-                        </label>
-                        <div className="d-flex flex-column w-100">
-                            {/* Flex container for file input and custom button */}
-                            <div className="d-flex align-items-center w-100">
-                                {/* Hidden file input */}
-                                <input
-                                    type="file"
-                                    className="form-control visually-hidden"
-                                    id="files_fasta_reference_database_readout_probe"
-                                    name="files_fasta_reference_database_readout_probe"
-                                    onChange={handleFileChange}
-                                    multiple
-                                />
-                                <label
-                                    htmlFor="files_fasta_reference_database_primer"
-                                    className="btn btn-outline-primary d-block  me-2 w-100"
-                                    style={{
-                                        cursor: generateFastaFilesPrimer ? "not-allowed" : "pointer",
-                                        opacity: generateFastaFilesPrimer ? 0.5 : 1,
-                                        pointerEvents: generateFastaFilesPrimer ? "none" : "auto"
-                                    }}
-                                >
-                                    Choose Files
-                                </label>
+                      <label htmlFor="files_fasta_reference_database_readout_probe" className="form-label">
+                        Fasta Probe Reference Database:
+                      </label>
+                      <div className="d-flex align-items-center w-100 gap-2">
+                        {/* Button group: 3 options */}
+                        <div className="w-50">
+                          <div className="btn-group w-100" role="group" aria-label="FASTA option">
+                            <input
+                              type="radio"
+                              className="btn-check"
+                              name="fastaOptionReadout"
+                              id="generateFastaOptionReadout"
+                              value="generate"
+                              autoComplete="off"
+                              checked={fastaOptionReadout === "generate"}
+                              onChange={() => setFastaOptionReadout("generate")}
+                            />
+                            <label className="btn btn-outline-primary" htmlFor="generateFastaOptionReadout">
+                              Generate FASTA
+                            </label>
 
-                                {/* Info icon with popover */}
-                                <OverlayTrigger
-                                    trigger="hover"
-                                    placement="top"
-                                    overlay={
-                                        <Popover id="popover-n_jobs">
-                                            <Popover.Body>
-                                                {formData.files_fasta_reference_database_readout_probe.comment}
-                                            </Popover.Body>
-                                        </Popover>
-                                    }
-                                >
-                                    <InfoCircle
-                                        style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                        }}
-                                    />
-                                </OverlayTrigger>
-                            </div>
+                            <input
+                              type="radio"
+                              className="btn-check"
+                              name="fastaOptionReadout"
+                              id="uploadFastaOptionReadout"
+                              value="upload"
+                              autoComplete="off"
+                              checked={fastaOptionReadout === "upload"}
+                              onChange={() => setFastaOptionReadout("upload")}
+                            />
+                            <label className="btn btn-outline-primary" htmlFor="uploadFastaOptionReadout">
+                              Upload File
+                            </label>
 
-                            {/* Display selected file name under the icon */}
-                            <div className="text-muted small mt-1">
-                                {files.files_fasta_reference_database_readout_probe.length > 0
-                                    ? `Selected: ${files.files_fasta_reference_database_readout_probe.map(f => f.name).join(', ')}`
-                                    : "No files selected"}
-                            </div>
-
+                            <input
+                              type="radio"
+                              className="btn-check"
+                              name="fastaOptionReadout"
+                              id="useGeneratedFastaOptionReadout"
+                              value="useGenerated"
+                              autoComplete="off"
+                              checked={fastaOptionReadout === "useGenerated"}
+                              onChange={() => setFastaOptionReadout("useGenerated")}
+                            />
+                            <label className="btn btn-outline-primary" htmlFor="useGeneratedFastaOptionReadout">
+                              Use Generated
+                            </label>
+                          </div>
                         </div>
-                        <div className="row mb-3">
-                            <div className="col-auto d-flex align-items-center">
-                                <div className="form-check form-switch">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        id="generateFastaToggle"
-                                        checked={generateFastaFilesPrimer}
-                                        onChange={(e) => setGenerateFastaFilesPrimer(e.target.checked)}
-                                    />
-                                    <label className="form-check-label ms-2" htmlFor="generateFastaToggle">
-                                        Generate FASTA files
-                                    </label>
-                                </div>
-                            </div>
-
-                            {generateFastaFilesPrimer && (<div className="col-auto d-flex align-items-center">
-                                    <div className="form-check form-switch">
-                                        <input
-                                            className="form-check-input"
-                                            type="checkbox"
-                                            id="sameFastaToggle2"
-                                            checked={useSameFasta2}
-                                            onChange={(e) => setUseSameFasta2(e.target.checked)}
-                                        />
-                                        <label className="form-check-label ms-2" htmlFor="sameFastaToggle">
-                                            Use same FASTA as probe DB
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-
+                        {/* File upload area, only visible if "Upload File" is selected */}
+                        <div className="w-50 d-flex align-items-center">
+                          <input
+                            type="file"
+                            className="form-control visually-hidden"
+                            id="files_fasta_reference_database_readout_probe"
+                            name="files_fasta_reference_database_readout_probe"
+                            onChange={handleFileChange}
+                            multiple
+                            disabled={fastaOptionReadout !== "upload"}
+                          />
+                          <label
+                            htmlFor="files_fasta_reference_database_readout_probe"
+                            className="btn btn-outline-primary me-2 w-100"
+                            style={{
+                              cursor: fastaOptionReadout !== "upload" ? "not-allowed" : "pointer",
+                              opacity: fastaOptionReadout !== "upload" ? 0.5 : 1,
+                              pointerEvents: fastaOptionReadout !== "upload" ? "none" : "auto"
+                            }}
+                          >
+                            Choose Files
+                          </label>
+                          {/* Info icon with popover */}
+                          <OverlayTrigger
+                            trigger="hover"
+                            placement="top"
+                            overlay={
+                              <Popover id="popover-files_fasta_reference_database_readout_probe">
+                                <Popover.Body>
+                                  {formData.files_fasta_reference_database_readout_probe.comment}
+                                </Popover.Body>
+                              </Popover>
+                            }
+                          >
+                            <InfoCircle
+                              style={{
+                                fontSize: "1.2rem",
+                                cursor: "pointer",
+                                color: "#0d6efd",
+                                marginLeft: "10px"
+                              }}
+                            />
+                          </OverlayTrigger>
                         </div>
-
-                        {generateFastaFilesPrimer && !useSameFasta2 &&(
+                      </div>
+                      {/* Display selected file names */}
+                      <div className="text-muted small mt-1">
+                        {files.files_fasta_reference_database_readout_probe.length > 0
+                          ? `Selected: ${files.files_fasta_reference_database_readout_probe.map(f => f.name).join(', ')}`
+                          : "No files selected"}
+                      </div>
+</div>
+                    {fastaOptionReadout ==='generate' && (
 
                             <>
                                 <div className="row mb-3">
@@ -2498,13 +2582,14 @@ const Merfish: React.FC = () => {
                                             className="form-select"
                                             id="source"
                                             name="source"
-                                            value={selectedSourcePrimer}
-                                            onChange={handleSourceChangePrimer}
+                                            value={selectedSourceReadout}
+                                            onChange={handleSourceChangeReadout}
                                         >
-                                            <option value="ncbi"> NCBI</option>
-                                            <option value="ensembl"> Ensembl</option>
+                                            <option value="ncbi">NCBI</option>
+                                            <option value="ensembl">Ensembl</option>
                                         </select>
                                     </div>
+
                                 </div>
 
                                 <div className="d-flex align-items-center">
@@ -2513,7 +2598,7 @@ const Merfish: React.FC = () => {
 
                                         {/* Dynamic Content */}
                                         <div >
-                                            {selectedSourcePrimer === "ncbi" && (
+                                            {selectedSourceReadout === "ncbi" && (
                                                 <div>
                                                     <form onSubmit={handleSubmit}>
                                                         <div className="row g-3">
@@ -2524,8 +2609,8 @@ const Merfish: React.FC = () => {
                                                                         className="form-select"
                                                                         id="source_params.taxon"
                                                                         name="source_params.taxon"
-                                                                        value={formDataNcbi.source_params.taxon.value}
-                                                                        onChange={handleChangeGenomicPrimer}
+                                                                        value={formDataNcbiReadout.source_params.taxon.value}
+                                                                        onChange={handleChangeGenomicReadout}
                                                                     >
                                                                         <option value="vertebrate_mammalian">Vertebrate Mammalian</option>
                                                                         <option value="archaea">Archaea</option>
@@ -2548,7 +2633,7 @@ const Merfish: React.FC = () => {
                                                                         overlay={
                                                                             <Popover id="dir_output">
                                                                                 <Popover.Body>
-                                                                                    {formDataNcbiPrimer.source_params.taxon.comment}
+                                                                                    {formDataNcbiReadout.source_params.taxon.comment}
                                                                                 </Popover.Body>
                                                                             </Popover>
                                                                         }
@@ -2568,124 +2653,124 @@ const Merfish: React.FC = () => {
                                                             <div className="col-md-6">
                                                                 <label htmlFor="species" className="form-label">Species</label>
                                                                 <div className="d-flex align-items-center">
-                                                                    {formDataNcbiPrimer.source_params.taxon.value === "vertebrate_mammalian" ? (
+                                                                    {formDataNcbiReadout.source_params.taxon.value === "vertebrate_mammalian" ? (
                                                                         <select
                                                                             name="source_params.species"
                                                                             className="form-select"
                                                                             id="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {vertebrate_mammalianEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "archaea" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "archaea" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {archaeaEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "bacteria" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "bacteria" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "fungi" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "fungi" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {fungiEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "invertebrate" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "invertebrate" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {invertebrateEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "mitochondrion" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "mitochondrion" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {mitochondrionEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "plant" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "plant" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {plantEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "plasmid" ? (
+                                                                    ) : formDataNcbi.source_params.taxon.value === "plasmid" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             {plasmidEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "plastid" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "plastid" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {plastidEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "protozoa" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "protozoa" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
                                                                             onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
@@ -2693,39 +2778,39 @@ const Merfish: React.FC = () => {
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "unknown" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "unknown" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {unknownEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "vertebrate_other" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "vertebrate_other" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
                                                                             name="source_params.species"
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                             {vertebrate_otherEntries.map((entry) => (
                                                                                 <option key={entry} value={entry}>{entry}</option>
                                                                             ))}
                                                                         </select>
-                                                                    ) : formDataNcbiPrimer.source_params.taxon.value === "viral" ? (
+                                                                    ) : formDataNcbiReadout.source_params.taxon.value === "viral" ? (
                                                                         <select
                                                                             className="form-control"
                                                                             id="source_params.species"
                                                                             name="source_params.species"
-                                                                            value={formDataNcbiPrimer.source_params.species.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.source_params.species.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                         >
                                                                             <option value="">Select a species</option>
                                                                         </select>
@@ -2736,7 +2821,7 @@ const Merfish: React.FC = () => {
                                                                         overlay={
                                                                             <Popover id="dir_output">
                                                                                 <Popover.Body>
-                                                                                    {formDataNcbiPrimer.source_params.species.comment}
+                                                                                    {formDataNcbiReadout.source_params.species.comment}
                                                                                 </Popover.Body>
                                                                             </Popover>
                                                                         }
@@ -2761,8 +2846,8 @@ const Merfish: React.FC = () => {
                                                                         className="form-control"
                                                                         id="source_params.annotation_release"
                                                                         name="source_params.annotation_release"
-                                                                        value={formDataNcbiPrimer.source_params.annotation_release.value}
-                                                                        onChange={handleChangeGenomicPrimer}
+                                                                        value={formDataNcbiReadout.source_params.annotation_release.value}
+                                                                        onChange={handleChangeGenomicReadout}
                                                                     />
                                                                     <OverlayTrigger
                                                                         trigger="hover"
@@ -2770,7 +2855,7 @@ const Merfish: React.FC = () => {
                                                                         overlay={
                                                                             <Popover id="dir_output">
                                                                                 <Popover.Body>
-                                                                                    {formDataNcbiPrimer.source_params.annotation_release.comment}
+                                                                                    {formDataNcbiReadout.source_params.annotation_release.comment}
                                                                                 </Popover.Body>
                                                                             </Popover>
                                                                         }
@@ -2787,7 +2872,7 @@ const Merfish: React.FC = () => {
                                                                 </div>
                                                             </div>
 
-                                                            {formDataNcbiPrimer.genomic_regions.exon_exon_junction.value === "true" && (
+                                                            {formDataNcbiReadout.genomic_regions.exon_exon_junction.value === "true" && (
                                                                 <div className="col-md-6">
                                                                     <label htmlFor="exon_exon_junction_block_size" className="form-label">
                                                                         Exon-Exon-Junction Block Size
@@ -2798,8 +2883,8 @@ const Merfish: React.FC = () => {
                                                                             className="form-control"
                                                                             id="exon_exon_junction_block_size"
                                                                             name="exon_exon_junction_block_size"
-                                                                            value={formDataNcbiPrimer.exon_exon_junction_block_size.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataNcbiReadout.exon_exon_junction_block_size.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                             placeholder="50"
                                                                         />
                                                                         <OverlayTrigger
@@ -2808,7 +2893,7 @@ const Merfish: React.FC = () => {
                                                                             overlay={
                                                                                 <Popover id="dir_output">
                                                                                     <Popover.Body>
-                                                                                        {formDataNcbiPrimer.exon_exon_junction_block_size.comment}
+                                                                                        {formDataNcbiReadout.exon_exon_junction_block_size.comment}
                                                                                     </Popover.Body>
                                                                                 </Popover>
                                                                             }
@@ -2838,10 +2923,10 @@ const Merfish: React.FC = () => {
                                                                             id={region}
                                                                             name={region}
                                                                             checked={
-                                                                                formDataNcbiPrimer.genomic_regions[region as keyof typeof formDataNcbiPrimer.genomic_regions]?.value === "true"
+                                                                                formDataNcbiReadout.genomic_regions[region as keyof typeof formDataNcbiReadout.genomic_regions]?.value === "true"
                                                                             }
                                                                             onChange={(e) =>
-                                                                                setFormDataNcbiPrimer((prev) => ({
+                                                                                setFormDataNcbiReadout((prev) => ({
                                                                                     ...prev,
                                                                                     genomic_regions: {
                                                                                         ...prev.genomic_regions,
@@ -2862,7 +2947,7 @@ const Merfish: React.FC = () => {
                                                                             overlay={
                                                                                 <Popover id={`popover-${region}`}>
                                                                                     <Popover.Body>
-                                                                                        {formDataNcbiPrimer.genomic_regions[region as keyof typeof formDataNcbiPrimer.genomic_regions].comment}
+                                                                                        {formDataNcbiReadout.genomic_regions[region as keyof typeof formDataNcbiReadout.genomic_regions].comment}
                                                                                     </Popover.Body>
                                                                                 </Popover>
                                                                             }
@@ -2885,7 +2970,7 @@ const Merfish: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            {selectedSourcePrimer === "ensembl" && (
+                                            {selectedSourceReadout === "ensembl" && (
                                                 <div>
                                                     <form onSubmit={handleSubmit}>
                                                         <div className="row g-3">
@@ -2896,8 +2981,8 @@ const Merfish: React.FC = () => {
                                                                         className="form-select"
                                                                         id="source_params.species"
                                                                         name="source_params.species"
-                                                                        value={formDataEnsPrimer.source_params.species.value}
-                                                                        onChange={handleChangeGenomicPrimer}
+                                                                        value={formDataEnsReadout.source_params.species.value}
+                                                                        onChange={handleChangeGenomicReadout}
                                                                     >
                                                                         {ensemblSpecies.map((entry) => (
                                                                             <option key={entry} value={entry}>{entry}</option>
@@ -2909,7 +2994,7 @@ const Merfish: React.FC = () => {
                                                                         overlay={
                                                                             <Popover id="dir_output">
                                                                                 <Popover.Body>
-                                                                                    {formDataEnsPrimer.source_params.species.comment}
+                                                                                    {formDataEnsReadout.source_params.species.comment}
                                                                                 </Popover.Body>
                                                                             </Popover>
                                                                         }
@@ -2934,8 +3019,8 @@ const Merfish: React.FC = () => {
                                                                         className="form-control"
                                                                         id="source_params.annotation_release"
                                                                         name="source_params.annotation_release"
-                                                                        value={formDataEnsPrimer.source_params.annotation_release.value}
-                                                                        onChange={handleChangeGenomicPrimer}
+                                                                        value={formDataEnsReadout.source_params.annotation_release.value}
+                                                                        onChange={handleChangeGenomicReadout}
                                                                         placeholder="current"
                                                                     />
                                                                     <OverlayTrigger
@@ -2944,7 +3029,7 @@ const Merfish: React.FC = () => {
                                                                         overlay={
                                                                             <Popover id="dir_output">
                                                                                 <Popover.Body>
-                                                                                    {formDataEnsPrimer.source_params.annotation_release.comment}
+                                                                                    {formDataEnsReadout.source_params.annotation_release.comment}
                                                                                 </Popover.Body>
                                                                             </Popover>
                                                                         }
@@ -2961,7 +3046,7 @@ const Merfish: React.FC = () => {
                                                                 </div>
                                                             </div>
 
-                                                            {formDataEnsPrimer.genomic_regions.exon_exon_junction.value === "true" && (
+                                                            {formDataEnsReadout.genomic_regions.exon_exon_junction.value === "true" && (
                                                                 <div className="col-md-6">
                                                                     <label htmlFor="exon_exon_junction_block_size" className="form-label">
                                                                         Exon-Exon-Junction Block Size
@@ -2972,8 +3057,8 @@ const Merfish: React.FC = () => {
                                                                             className="form-control"
                                                                             id="exon_exon_junction_block_size"
                                                                             name="exon_exon_junction_block_size"
-                                                                            value={formDataEnsPrimer.exon_exon_junction_block_size.value}
-                                                                            onChange={handleChangeGenomicPrimer}
+                                                                            value={formDataEnsReadout.exon_exon_junction_block_size.value}
+                                                                            onChange={handleChangeGenomicReadout}
                                                                             placeholder="50"
                                                                         />
                                                                         <OverlayTrigger
@@ -2982,7 +3067,7 @@ const Merfish: React.FC = () => {
                                                                             overlay={
                                                                                 <Popover id="dir_output">
                                                                                     <Popover.Body>
-                                                                                        {formDataEnsPrimer.exon_exon_junction_block_size.comment}
+                                                                                        {formDataEnsReadout.exon_exon_junction_block_size.comment}
                                                                                     </Popover.Body>
                                                                                 </Popover>
                                                                             }
@@ -3012,10 +3097,10 @@ const Merfish: React.FC = () => {
                                                                             id={region}
                                                                             name={region}
                                                                             checked={
-                                                                                formDataEnsPrimer.genomic_regions[region as keyof typeof formDataEnsPrimer.genomic_regions]?.value === "true"
+                                                                                formDataEnsReadout.genomic_regions[region as keyof typeof formDataEnsReadout.genomic_regions]?.value === "true"
                                                                             }
                                                                             onChange={(e) =>
-                                                                                setFormDataEnsPrimer((prev) => ({
+                                                                                setFormDataEnsReadout((prev) => ({
                                                                                     ...prev,
                                                                                     genomic_regions: {
                                                                                         ...prev.genomic_regions,
@@ -3036,7 +3121,7 @@ const Merfish: React.FC = () => {
                                                                             overlay={
                                                                                 <Popover id={`popover-${region}`}>
                                                                                     <Popover.Body>
-                                                                                        {formDataEnsPrimer.genomic_regions[region as keyof typeof formDataEnsPrimer.genomic_regions].comment}
+                                                                                        {formDataEnsReadout.genomic_regions[region as keyof typeof formDataEnsReadout.genomic_regions].comment}
                                                                                     </Popover.Body>
                                                                                 </Popover>
                                                                             }
@@ -3063,12 +3148,9 @@ const Merfish: React.FC = () => {
                                     </div>
                                 </div>
 
+
                             </>
                         )}
-
-                        {/* Display selected file names */}
-
-                    </div>
                     <div className="mb-3">
                         <label htmlFor="readout_probe_length" className="form-label">Length of readout
                             probes:</label>
