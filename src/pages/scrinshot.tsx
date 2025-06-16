@@ -17,6 +17,7 @@
     } from "../forms/refseqSpecies";
     import {ensemblSpecies} from "../forms/ensemblSpecies";
     const Scrinshot: React.FC = () => {
+        const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
 
         const [loading, setLoading] = useState(false);
         const [useSameReferenceForm, setUseSameReferenceForm] = useState(false);
@@ -252,95 +253,99 @@
 
 
                                 <div className="mb-3">
-                                    <label htmlFor="files_fasta_target_probe_database" className="form-label">
-                                        Fasta Probe Database:
-                                    </label>
-                                    <div className="d-flex align-items-center w-100">
-                                        {/* Hidden file input */}
+                                  <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                    Fasta Probe Database:
+                                  </label>
+                                  <div className="d-flex align-items-center w-100 gap-2">
+                                    {/* Radio buttons - left half */}
+                                    <div className="w-50">
+                                      <div className="btn-group w-100" role="group" aria-label="FASTA option">
                                         <input
-                                            type="file"
-                                            className="form-control visually-hidden"
-                                            id="files_fasta_target_probe_database"
-                                            name="files_fasta_target_probe_database"
-                                            onChange={handleFileChange}
-                                            multiple
-                                            disabled={generateFastaFiles}
-
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption"
+                                          id="generateFastaOption"
+                                          value="generate"
+                                          autoComplete="off"
+                                          checked={fastaOption === "generate"}
+                                          onChange={() => setFastaOption("generate")}
                                         />
-                                        <label
-                                            htmlFor="files_fasta_target_probe_database"
-                                            className="btn btn-outline-primary d-block me-2 w-100"
-                                            style={{
-                                                cursor: generateFastaFiles ? "not-allowed" : "pointer",
-                                                opacity: generateFastaFiles ? 0.5 : 1,
-                                                pointerEvents: generateFastaFiles ? "none" : "auto"
-                                            }}
-                                        >
-                                            Choose File
+                                        <label className="btn btn-outline-primary" htmlFor="generateFastaOption">
+                                          Generate FASTA
                                         </label>
 
-                                        {/* Info icon with popover */}
-                                        <OverlayTrigger
-                                            trigger="hover"
-                                            placement="top"
-                                            overlay={
-                                                <Popover id="files_fasta_target_probe_database">
-                                                    <Popover.Body>
-                                                        {formData.files_fasta_target_probe_database.comment}
-                                                    </Popover.Body>
-                                                </Popover>
-                                            }
-                                        >
-                                            <InfoCircle
-                                                style={{
-                                                    fontSize: "1.2rem",
-                                                    cursor: "pointer",
-                                                    color: "#0d6efd",
-                                                    marginLeft: "10px"
-                                                }}
-                                            />
-                                        </OverlayTrigger>
-
+                                        <input
+                                          type="radio"
+                                          className="btn-check"
+                                          name="fastaOption"
+                                          id="uploadFastaOption"
+                                          value="upload"
+                                          autoComplete="off"
+                                          checked={fastaOption === "upload"}
+                                          onChange={() => setFastaOption("upload")}
+                                        />
+                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption">
+                                          Upload File
+                                        </label>
+                                      </div>
                                     </div>
-                                    <div className="text-muted small mt-1">
-                                        {files.files_fasta_target_probe_database.length > 0
-                                            ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
-                                            : "No files selected"}
+                                    {/* File input + choose button - right half */}
+                                    <div className="w-50 d-flex align-items-center">
+                                      <input
+                                        type="file"
+                                        className="form-control visually-hidden"
+                                        id="files_fasta_target_probe_database"
+                                        name="files_fasta_target_probe_database"
+                                        onChange={handleFileChange}
+                                        multiple
+                                        disabled={fastaOption !== "upload"}
+                                      />
+                                      <label
+                                        htmlFor="files_fasta_target_probe_database"
+                                        className="btn btn-outline-primary me-2 w-100"
+                                        style={{
+                                          cursor: fastaOption !== "upload" ? "not-allowed" : "pointer",
+                                          opacity: fastaOption !== "upload" ? 0.5 : 1,
+                                          pointerEvents: fastaOption !== "upload" ? "none" : "auto"
+                                        }}
+                                      >
+                                        Choose File
+                                      </label>
+                                      {/* Info icon with popover */}
+                                      <OverlayTrigger
+                                        trigger="hover"
+                                        placement="top"
+                                        overlay={
+                                          <Popover id="files_fasta_target_probe_database">
+                                            <Popover.Body>
+                                              {formData.files_fasta_target_probe_database.comment}
+                                            </Popover.Body>
+                                          </Popover>
+                                        }
+                                      >
+                                        <InfoCircle
+                                          style={{
+                                            fontSize: "1.2rem",
+                                            cursor: "pointer",
+                                            color: "#0d6efd",
+                                            marginLeft: "10px"
+                                          }}
+                                        />
+                                      </OverlayTrigger>
                                     </div>
-
-                                </div>
-                                <div className="form-check form-switch mb-3">
-                                    <input
-                                        className="form-check-input"
-                                        type="checkbox"
-                                        id="generateFastaToggle"
-                                        checked={generateFastaFiles}
-                                        onChange={(e) => setGenerateFastaFiles(e.target.checked)}
-                                    />
-
-
-                                    <label className="form-check-label" htmlFor="generateFastaToggle">
-                                        Generate FASTA files
-                                    </label>
+                                  </div>
+                                  <div className="text-muted small mt-1">
+                                    {files.files_fasta_target_probe_database.length > 0
+                                      ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                      : "No files selected"}
+                                  </div>
                                 </div>
 
-                                {generateFastaFiles && (
+                                {fastaOption ==='generate' && (
 
                                     <>
                                         <div className="row mb-3">
-                                            <div className="col-auto">
-                                                <label htmlFor="source" className="form-label">Select Source</label>
-                                                <select
-                                                    className="form-select"
-                                                    id="source"
-                                                    name="source"
-                                                    value={selectedSource}
-                                                    onChange={handleSourceChange}
-                                                >
-                                                    <option value="ncbi"> NCBI</option>
-                                                    <option value="ensembl"> Ensembl</option>
-                                                </select>
-                                            </div>
+
                                         </div>
 
                                         <div className="d-flex align-items-center">
@@ -353,7 +358,20 @@
                                                         <div>
                                                             <form onSubmit={handleSubmit}>
                                                                 <div className="row g-3">
-                                                                    <div className="col">
+                                                                    <div className="col-md-3">
+                                                                        <label htmlFor="source" className="form-label">Select Source</label>
+                                                                        <select
+                                                                            className="form-select"
+                                                                            id="source"
+                                                                            name="source"
+                                                                            value={selectedSource}
+                                                                            onChange={handleSourceChange}
+                                                                        >
+                                                                            <option value="ncbi"> NCBI</option>
+                                                                            <option value="ensembl"> Ensembl</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="taxon" className="form-label">Taxon</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
@@ -401,7 +419,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-4">
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
@@ -589,7 +607,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-4">
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <input
@@ -731,7 +749,20 @@
                                                         <div>
                                                             <form onSubmit={handleSubmit}>
                                                                 <div className="row g-3">
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-4">
+                                                                        <label htmlFor="source" className="form-label">Select Source</label>
+                                                                        <select
+                                                                            className="form-select"
+                                                                            id="source"
+                                                                            name="source"
+                                                                            value={selectedSource}
+                                                                            onChange={handleSourceChange}
+                                                                        >
+                                                                            <option value="ncbi"> NCBI</option>
+                                                                            <option value="ensembl"> Ensembl</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="col-md-4">
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
@@ -768,7 +799,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-4">
                                                                         <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <input
@@ -858,6 +889,45 @@
                                                                         </div>
                                                                     ))}
                                                                 </div>
+                                                                {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
+                                                                        <div className="col-md-4 pt-2">
+                                                                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
+                                                                                    Block Size
+                                                                                </label>
+                                                                            <div className="d-flex align-items-center">
+
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="form-control"
+                                                                                    id="exon_exon_junction_block_size"
+                                                                                    name="exon_exon_junction_block_size"
+                                                                                    value={formDataEns.exon_exon_junction_block_size.value}
+                                                                                    onChange={handleChangeGenomic}
+                                                                                    placeholder="50"
+                                                                                />
+                                                                                <OverlayTrigger
+                                                                                    trigger="hover"
+                                                                                    placement="top"
+                                                                                    overlay={
+                                                                                        <Popover id="dir_output">
+                                                                                            <Popover.Body>
+                                                                                                {formDataEns.exon_exon_junction_block_size.comment}
+                                                                                            </Popover.Body>
+                                                                                        </Popover>
+                                                                                    }
+                                                                                >
+                                                                                    <InfoCircle
+                                                                                        style={{
+                                                                                            fontSize: "1.2rem",
+                                                                                            cursor: "pointer",
+                                                                                            color: "#0d6efd",
+                                                                                            marginLeft: "10px"
+                                                                                        }}
+                                                                                    />
+                                                                                </OverlayTrigger>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
 
                                                             </form>
                                                         </div>
