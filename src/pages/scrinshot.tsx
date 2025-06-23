@@ -976,8 +976,13 @@
                                           autoComplete="off"
                                           checked={fastaOption2 === "useGenerated"}
                                           onChange={() => setFastaOption2("useGenerated")}
+                                          disabled={fastaOption !== "generate"}  // <-- DISABLED unless "generate" is selected above
                                         />
-                                        <label className="btn btn-outline-primary" htmlFor="useGeneratedFastaOption2">
+                                        <label
+                                          className={`btn btn-outline-primary${fastaOption !== "generate" ? " disabled" : ""}`}
+                                          htmlFor="useGeneratedFastaOption2"
+                                          style={fastaOption !== "generate" ? { pointerEvents: "none", opacity: 0.5 } : {}}
+                                        >
                                           Use Generated
                                         </label>
                                            <input
@@ -4548,7 +4553,12 @@
                                 <button
                                     type="button"
                                     className={`nav-link ${activeTab === "probe_sequences" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("probe_sequences")}
+                                    onClick={() =>{
+                                        setActiveTab("probe_sequences")
+                                        setActivetab2('specfblastn')
+
+                                    }}
+
                                 >
                                     Target Probe Parameters
                                 </button>
@@ -4557,7 +4567,10 @@
                                 <button
                                     type="button"
                                     className={`nav-link ${activeTab === "detection_oligos" ? "active" : ""}`}
-                                    onClick={() => setActiveTab("detection_oligos")}
+                                    onClick={() =>{
+                                        setActivetab2('chemcorr')
+                                        setActiveTab("detection_oligos")
+                                    }}
                                 >
                                     Detection Oligo Parameters
                                 </button>
@@ -4583,45 +4596,51 @@
                                 </button>
                             </div>
 
-                            {showDeveloperSettings && (
+                            {showDeveloperSettings &&  (
                                 <>
+
                                     <ul className="nav nav-tabs mt-3">
-                                        <li className="nav-item">
-                                            <button
-                                                type="button"
-                                                className={`nav-link ${activetab2 === "specfblastn" ? "active" : ""}`}
-                                                onClick={() => setActivetab2("specfblastn")}
-                                            >
-                                                Specificity Filters BlastN
-                                            </button>
-                                        </li>
-                                        <li className="nav-item">
-                                            <button
-                                                type="button"
-                                                className={`nav-link ${activetab2 === "crossfilterblastn" ? "active" : ""}`}
-                                                onClick={() => setActivetab2("crossfilterblastn")}
-                                            >
-                                                Cross-hybrid filters BlastN
-                                            </button>
-                                        </li>
-                                        <li className="nav-item">
-                                            <button
-                                                type="button"
-                                                className={`nav-link ${activetab2 === "oligosetselection" ? "active" : ""}`}
-                                                onClick={() => setActivetab2("oligosetselection")}
-                                            >
-                                                Oligo Set Selection Parameters
-                                            </button>
-                                        </li>
-                                        <li className="nav-item">
-                                            <button
-                                                type="button"
-                                                className={`nav-link ${activetab2 === "meltingtemp" ? "active" : ""}`}
-                                                onClick={() => setActivetab2("meltingtemp")}
-                                            >
-                                                Parameters for Melting Temperature
-                                            </button>
-                                        </li>
+                                        {activeTab!='detection_oligos' && (
+                                            <>
+                                                <li className="nav-item">
+                                                    <button
+                                                        type="button"
+                                                        className={`nav-link ${activetab2 === "specfblastn" ? "active" : ""}`}
+                                                        onClick={() => setActivetab2("specfblastn")}
+                                                    >
+                                                        Specificity Filters BlastN
+                                                    </button>
+                                                </li>
+                                                <li className="nav-item">
+                                                    <button
+                                                        type="button"
+                                                        className={`nav-link ${activetab2 === "crossfilterblastn" ? "active" : ""}`}
+                                                        onClick={() => setActivetab2("crossfilterblastn")}
+                                                    >
+                                                        Cross-hybrid filters BlastN
+                                                    </button>
+                                                </li>
+                                                <li className="nav-item">
+                                                    <button
+                                                        type="button"
+                                                        className={`nav-link ${activetab2 === "oligosetselection" ? "active" : ""}`}
+                                                        onClick={() => setActivetab2("oligosetselection")}
+                                                    >
+                                                        Oligo Set Selection Parameters
+                                                    </button>
+                                                </li>
+                                                <li className="nav-item">
+                                                    <button
+                                                        type="button"
+                                                        className={`nav-link ${activetab2 === "meltingtemp" ? "active" : ""}`}
+                                                        onClick={() => setActivetab2("meltingtemp")}
+                                                    >
+                                                        Parameters for Melting Temperature
+                                                    </button>
+                                                </li>
+                                            </>
+                                         )}
+                                        {activeTab=='detection_oligos' && (
                                         <li className="nav-item">
                                             <button
                                                 type="button"
@@ -4631,6 +4650,7 @@
                                                 Detection Oligo Parameters
                                             </button>
                                         </li>
+                                            )}
                                     </ul>
 
                                     <div className="tab-content mt-4">
