@@ -284,7 +284,11 @@
                                           value="upload"
                                           autoComplete="off"
                                           checked={fastaOption === "upload"}
-                                          onChange={() => setFastaOption("upload")}
+                                          onChange={() => {
+                                              setFastaOption("upload")
+                                              setFastaOption2("upload")
+
+                                          }}
                                         />
                                         <label className="btn btn-outline-primary" htmlFor="uploadFastaOption">
                                           Upload File
@@ -345,12 +349,9 @@
 
                                 {fastaOption ==='generate' && (
 
-                                    <>
-                                        <div className="row mb-3">
+                                    <div className="border border-primary rounded p-3 mb-3 bg-white">
 
-                                        </div>
-
-                                        <div className="d-flex align-items-center">
+                                        <div className="d-flex align-items-center ">
                                             <div className="col-md-8">
                                                 {/* Source Selection */}
 
@@ -940,7 +941,7 @@
                                             </div>
                                         </div>
 
-                                    </>
+                                    </div>
                                 )}
 
                                 <div className="mb-3 pt-3">
@@ -1053,22 +1054,7 @@
                                 </div>
                                 {fastaOption2 ==='generate' && (
 
-                                    <>
-                                        <div className="row mb-3">
-                                            <div className="col-auto">
-                                                <label htmlFor="source" className="form-label">Select Source</label>
-                                                <select
-                                                    className="form-select"
-                                                    id="source"
-                                                    name="source"
-                                                    value={selectedSource2}
-                                                    onChange={handleSourceChange2}
-                                                >
-                                                    <option value="ncbi"> NCBI</option>
-                                                    <option value="ensembl"> Ensembl</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                    <div className="border border-primary rounded p-3 mb-3 bg-white">
 
                                         <div className="d-flex align-items-center">
                                             <div className="col-md-8">
@@ -1080,7 +1066,20 @@
                                                         <div>
                                                             <form onSubmit={handleSubmit}>
                                                                 <div className="row g-3">
-                                                                    <div className="col">
+                                                                     <div className="col-md-3">
+                                                                        <label htmlFor="source" className="form-label">Select Source</label>
+                                                                        <select
+                                                                            className="form-select"
+                                                                            id="source"
+                                                                            name="source"
+                                                                            value={selectedSource2}
+                                                                            onChange={handleSourceChange2}
+                                                                        >
+                                                                            <option value="ncbi"> NCBI</option>
+                                                                            <option value="ensembl"> Ensembl</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="taxon" className="form-label">Taxon</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <select
@@ -1128,7 +1127,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="species" className="form-label">Species</label>
                                                                         <div className="d-flex align-items-center">
                                                                             {formData2Ncbi.source_params.taxon.value === "vertebrate_mammalian" ? (
@@ -1316,7 +1315,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <div className="col-md-6">
+                                                                    <div className="col-md-3">
                                                                         <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                                                                         <div className="d-flex align-items-center">
                                                                             <input
@@ -1350,44 +1349,7 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    {formData2Ncbi.genomic_regions.exon_exon_junction.value === "true" && (
-                                                                        <div className="col-md-6">
-                                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label">
-                                                                                Exon-Exon-Junction Block Size
-                                                                            </label>
-                                                                            <div className="d-flex align-items-center">
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control"
-                                                                                    id="exon_exon_junction_block_size"
-                                                                                    name="exon_exon_junction_block_size"
-                                                                                    value={formData2Ncbi.exon_exon_junction_block_size.value}
-                                                                                    onChange={handleChangeGenomicReference}
-                                                                                    placeholder="50"
-                                                                                />
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id="dir_output">
-                                                                                            <Popover.Body>
-                                                                                                {formData2Ncbi.exon_exon_junction_block_size.comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                            marginLeft: "10px"
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
+
                                                                 </div>
 
                                                                 <h5 className="pt-3">Genomic Regions</h5>
@@ -1442,6 +1404,44 @@
                                                                         </div>
                                                                     ))}
                                                                 </div>
+                                                                {formData2Ncbi.genomic_regions.exon_exon_junction.value === "true" && (
+                                                                        <div className="col-md-4 pt-2">
+                                                                            <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
+                                                                              Block Size
+                                                                            </label>
+                                                                            <div className="d-flex align-items-center">
+                                                                                <input
+                                                                                    type="number"
+                                                                                    className="form-control"
+                                                                                    id="exon_exon_junction_block_size"
+                                                                                    name="exon_exon_junction_block_size"
+                                                                                    value={formData2Ncbi.exon_exon_junction_block_size.value}
+                                                                                    onChange={handleChangeGenomicReference}
+                                                                                    placeholder="50"
+                                                                                />
+                                                                                <OverlayTrigger
+                                                                                    trigger="hover"
+                                                                                    placement="top"
+                                                                                    overlay={
+                                                                                        <Popover id="dir_output">
+                                                                                            <Popover.Body>
+                                                                                                {formData2Ncbi.exon_exon_junction_block_size.comment}
+                                                                                            </Popover.Body>
+                                                                                        </Popover>
+                                                                                    }
+                                                                                >
+                                                                                    <InfoCircle
+                                                                                        style={{
+                                                                                            fontSize: "1.2rem",
+                                                                                            cursor: "pointer",
+                                                                                            color: "#0d6efd",
+                                                                                            marginLeft: "10px"
+                                                                                        }}
+                                                                                    />
+                                                                                </OverlayTrigger>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
 
 
                                                             </form>
@@ -1626,7 +1626,7 @@
                                             </div>
                                         </div>
 
-                                    </>
+                                    </div>
                                 )}
                             </div>
                             <div className="mb-3">

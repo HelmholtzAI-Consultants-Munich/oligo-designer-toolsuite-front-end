@@ -65,7 +65,7 @@ const RunDetail = () => {
                 .catch(error => console.error('Error polling log file:', error));
             };
             fetchLog();
-            pollingIntervalRef.current = setInterval(fetchLog, 5000);
+            pollingIntervalRef.current = setInterval(fetchLog, 1000);
             return () => {
                 if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
             };

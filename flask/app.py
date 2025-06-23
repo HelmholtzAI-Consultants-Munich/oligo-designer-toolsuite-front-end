@@ -325,6 +325,7 @@ def scrinshot():
     #thread.start()
 
     form_data = request.json.get('formdata')
+    print('form data', form_data)
     run_idd=request.json.get('runid')# Assuming JSON is posted from React
     try:
         run_id = ObjectId(run_idd)
