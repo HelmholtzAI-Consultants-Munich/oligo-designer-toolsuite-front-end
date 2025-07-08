@@ -103,69 +103,70 @@
         };
         const areAllFilesUploaded = () => {
             return (
-                ( generateFastaFiles ||
+                ( fastaOption==='generate' ||
                     (files.files_fasta_target_probe_database.length > 0 &&
                 files.files_fasta_reference_database_target_probe.length > 0))
             );
         };
         const uploadFiles = async () => {
-            const filePaths: { [key: string]: string } = {};
-            console.log(files,'from the event');
-            for (const key in files) {
-                // @ts-ignore
-                if (files[key]) {
-                    const formDataU = new FormData();
-                    // @ts-ignore
-                    if (Array.isArray(files[key])) {
-                        console.log(`Processing multiple files for key: ${key}`);
-                        let paths = []; // Temporary array to collect file paths
-                        // @ts-ignore
-                        for (const file of files[key]) { // Use for...of to iterate over the array
-                            console.log(file);
-                            const formDataU = new FormData();
-                            formDataU.append("file", file);
-                            // Perform upload logic here
-                            try {
-                                const response = await axios.post(
-                                    "http://localhost:5000/api/upload",
-                                    formDataU,
-                                    {
-                                        headers: { "Content-Type": "multipart/form-data" },
-                                    }
-                                );
-                                paths.push(response.data.filePath); // Append the returned file path
-                            } catch (error) {
-                                console.error(`Error uploading ${key}:`, error);
+    const filePaths: { [key: string]: string } = {};
+    console.log(files, 'from the event');
+
+    // Only include keys whose value is a non-empty array or not null
+    const filteredFiles: { [key: string]: File | File[] } = {};
+    Object.keys(files).forEach(key => {
+        const val = files[key as keyof typeof files];
+        if (Array.isArray(val)) {
+            if (val.length > 0) filteredFiles[key] = val;
+        } else if (val) {
+            filteredFiles[key] = val;
+        }
+    });
+
+    for (const key in filteredFiles) {
+        // Now use filteredFiles, not files
+        if (filteredFiles[key]) {
+            const formDataU = new FormData();
+            if (Array.isArray(filteredFiles[key])) {
+                // Multiple files
+                let paths = [];
+                for (const file of filteredFiles[key] as File[]) {
+                    formDataU.append("file", file);
+                    try {
+                        const response = await axios.post(
+                            "http://localhost:5000/api/upload",
+                            formDataU,
+                            {
+                                headers: { "Content-Type": "multipart/form-data" },
                             }
-                        }
-                        filePaths[key] = paths.join("\n");
-                    } else {
-    
-                        if (formData.file_regions.value.length ===0) {
-                            // @ts-ignore
-                            formDataU.append("file", files[key]);
-                            // @ts-ignore
-                            try {
-                                const response = await axios.post(
-                                    "http://localhost:5000/api/upload",
-                                    formDataU,
-                                    {
-                                        headers: { "Content-Type": "multipart/form-data" },
-                                    }
-                                );
-                                filePaths[key] = response.data.filePath;
-                                // Save the returned file path
-                            } catch (error) {
-                                console.error(`Error uploading ${key}:`, error);
-                            }
-                        }
-    
+                        );
+                        paths.push(response.data.filePath);
+                    } catch (error) {
+                        console.error(`Error uploading ${key}:`, error);
                     }
                 }
+                filePaths[key] = paths.join("\n");
+            } else {
+                // Single file
+                formDataU.append("file", filteredFiles[key] as File);
+                try {
+                    const response = await axios.post(
+                        "http://localhost:5000/api/upload",
+                        formDataU,
+                        {
+                            headers: { "Content-Type": "multipart/form-data" },
+                        }
+                    );
+                    filePaths[key] = response.data.filePath;
+                } catch (error) {
+                    console.error(`Error uploading ${key}:`, error);
+                }
             }
-            console.log(filePaths);
-            return filePaths;
-        };
+        }
+    }
+    console.log(filePaths);
+    return filePaths;
+};;
     
     
         const toggleDeveloperSettings = () => {
@@ -356,19 +357,7 @@
 
                                 {fastaOption === "generate" && (
                                   <form
-                                    onSubmit={async (e) => {
-                                      e.preventDefault();
-                                      // Collect and validate all fastaForms data
-                                      // Here, you might want to validate each form, for now just log it
-                                      console.log("Submitting all fastaForms:", fastaForms);
-                                      // Example API call:
-                                      // try {
-                                      //   const response = await axios.post("/api/submit-fasta-forms", { forms: fastaForms });
-                                      //   console.log(response.data);
-                                      // } catch (err) {
-                                      //   console.error("Error submitting:", err);
-                                      // }
-                                    }}
+                                    onSubmit={handleSubmit}
                                   >
                                     <div className="mb-2">
                                       <button
@@ -392,11 +381,6 @@
                                         disableRemove={fastaForms.length === 1}
                                       />
                                     ))}
-                                    <div className="mt-3">
-                                      <button type="submit" className="btn btn-primary">
-                                        Submit FASTA Generation
-                                      </button>
-                                    </div>
                                   </form>
                                 )}
 
@@ -3713,44 +3697,7 @@
                     return null;
             }
         };
-        const handleChangeGenomic = (
-            e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-        ) => {
-            const { name, value } = e.target;
-            const keys = name.split(".");
 
-            const updateFormData = (prev: any) => {
-                if (keys.length === 2) {
-                    const [parent, child] = keys;
-                    return {
-                        ...prev,
-                        [parent]: {
-                            ...(prev[parent] || {}),
-                            [child]: {
-                                ...(prev[parent]?.[child] || {}),
-                                value,
-                            },
-                        },
-                    };
-                } else {
-                    return {
-                        ...prev,
-                        [name]: {
-                            ...(prev[name] || {}),
-                            value,
-                        },
-                    };
-                }
-            };
-
-            if (selectedSource === 'ncbi') {
-                setFormDataNcbi(prev => updateFormData(prev));
-            } else if (selectedSource === 'ensembl') {
-                setFormDataEns(prev => updateFormData(prev));
-            } else if (selectedSource === 'custom') {
-                setFormDataCustom(prev => updateFormData(prev));
-            }
-        };
         const handleChangeGenomicReference = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
         ) => {
@@ -3819,7 +3766,7 @@
         };
 
         // Batch submit for multiple FASTA forms
-        const handleSubmitGenomicAll = async (e?: React.FormEvent): Promise<any[] | null> => {
+        const handleSubmitGenomicAll = async (e?: React.FormEvent): Promise<any | null> => {
             e?.preventDefault();
             setLoading(true);
             try {
@@ -3828,7 +3775,7 @@
                     setLoading(false);
                     return null;
                 }
-                const results: any[] = [];
+                let results="";
                 for (let i = 0; i < fastaForms.length; ++i) {
                     const form = fastaForms[i];
                     let payload;
@@ -3844,17 +3791,24 @@
                     }
                     try {
                         const response = await axios.post(
-                            `http://localhost:5000/api/genomic/${endpoint}`,
+                            `http://localhost:5000/api/genomic/cascaded/${endpoint}`,
                             payload,
                             {
                                 withCredentials: true,
                                 headers: { "Content-Type": "application/json" },
                             }
                         );
-                        results.push(response.data.output);
+                        console.log(response.data.output,'the ourput ')
+                        if (results === '')
+                        {
+                             results=response.data.output;
+                        }
+                        else{
+                             results=results+'\n' + response.data.output;
+                        }
+
                     } catch (error) {
                         console.error('Error submitting genomic form:', error);
-                        results.push(null);
                     }
                 }
                 // Optionally: alert('All FASTA forms submitted successfully!');
@@ -3905,7 +3859,7 @@
                 }
 
                 const response = await axios.post(
-                    `http://localhost:5000/api/genomic/${selectedSource}`,
+                    `http://localhost:5000/api/genomic/cascaded/${selectedSource}`,
                     finalFormData,
                     {
                         withCredentials: true,
@@ -3929,12 +3883,11 @@
             setLoading(true);
             // First: submit genomic (support batch FASTA forms)
             if (fastaOption === 'generate') {
-                const fastaResults = await handleSubmitGenomicAll();
-                formData['files_fasta_target_probe_database']['value'] = fastaResults;
+                formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicAll();
             }
             if (fastaOption2 === 'generate') {
                 // If need to batch for reference, similar logic can be applied here
-                formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicref();
+                formData['files_fasta_reference_database_target_probe']['value'] = await handleSubmitGenomicref();
             } else if (fastaOption2 === 'usegenerated') {
                 formData['files_fasta_reference_database_target_probe']['value'] = formData['files_fasta_target_probe_database']['value'];
             }

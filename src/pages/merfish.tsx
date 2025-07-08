@@ -7598,7 +7598,7 @@ const Merfish: React.FC = () => {
                             <button
                                 type="submit"
                                 className="btn btn-primary"
-                                disabled={isSubmitting || !areAllFilesUploaded()}
+                                disabled={isSubmitting}
                             >
                                 {isSubmitting ? "Running..." : "Submit"}
                             </button>

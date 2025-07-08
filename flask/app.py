@@ -1192,7 +1192,6 @@ def genomic_ncbi():
             session_id = session['session_id']
             user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
             config_path = os.path.join(user_dir,'config.yaml')
-            print('no not')
         config_genomic = {}
 
         # Parse JSON data from the request
@@ -1533,18 +1532,22 @@ def genomic_cascaded_ncbi():
     try:
         # Define the path for the configuration file
 
-        user_dir=''
         if current_user.is_authenticated:
             print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-            config_path = os.path.join(user_dir,  "config_genomic_ncbi.yaml")
+            config_path = os.path.join(user_dir,  "config_genomic_ensemble.yaml")
+            session_id = None
         else:
-            print('no not')
+            user_id = None
+            session_id = session['session_id']
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
+            config_path = os.path.join(user_dir,'config.yaml')
         config_genomic = {}
 
         # Parse JSON data from the request
         form_data = request.json
+        print(form_data)
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_ncbi_{timestamp}')
         output_gen= output_path + "/annotation"
@@ -1644,6 +1647,7 @@ def genomic_cascaded_ensemble():
     try:
         # Define the path for the configuration file
         user_dir=''
+        toreturn=''
         if current_user.is_authenticated:
             print('yes authenticated')
             user_id = str(current_user.id)
@@ -1709,7 +1713,7 @@ def genomic_cascaded_ensemble():
                 if fname.endswith(('fna')):
                     toreturn=os.path.join(output_gen, fname)
 
-
+            print(toreturn,'this is what I will return ')
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
