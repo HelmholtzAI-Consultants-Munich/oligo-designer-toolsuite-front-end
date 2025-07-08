@@ -16,9 +16,16 @@
         vertebrate_mammalianEntries, vertebrate_otherEntries
     } from "../forms/refseqSpecies";
     import {ensemblSpecies} from "../forms/ensemblSpecies";
+    import FastaGenerateForm from "../modules/FastaGenerateForm";
     const Scrinshot: React.FC = () => {
         const [fastaOption, setFastaOption] = useState("upload"); // "generate" or "upload"
         const [fastaOption2, setFastaOption2] = useState("upload"); // "generate" or "upload"
+        const defaultFastaForm = {
+          selectedSource: "ncbi",
+          formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),
+          formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
+        };
+        const [fastaForms, setFastaForms] = useState([{ ...defaultFastaForm }]);
 
 
         const [loading, setLoading] = useState(false);
@@ -347,601 +354,50 @@
                                   </div>
                                 </div>
 
-                                {fastaOption ==='generate' && (
-
-                                    <div className="border border-primary rounded p-3 mb-3 bg-white">
-
-                                        <div className="d-flex align-items-center ">
-                                            <div className="col-md-8">
-                                                {/* Source Selection */}
-
-                                                {/* Dynamic Content */}
-                                                <div >
-                                                    {selectedSource === "ncbi" && (
-                                                        <div>
-                                                            <form onSubmit={handleSubmit}>
-                                                                <div className="row g-3">
-                                                                    <div className="col-md-3">
-                                                                        <label htmlFor="source" className="form-label">Select Source</label>
-                                                                        <select
-                                                                            className="form-select"
-                                                                            id="source"
-                                                                            name="source"
-                                                                            value={selectedSource}
-                                                                            onChange={handleSourceChange}
-                                                                        >
-                                                                            <option value="ncbi"> NCBI</option>
-                                                                            <option value="ensembl"> Ensembl</option>
-                                                                        </select>
-                                                                    </div>
-                                                                    <div className="col-md-3">
-                                                                        <label htmlFor="taxon" className="form-label">Taxon</label>
-                                                                        <div className="d-flex align-items-center">
-                                                                            <select
-                                                                                className="form-select"
-                                                                                id="source_params.taxon"
-                                                                                name="source_params.taxon"
-                                                                                value={formDataNcbi.source_params.taxon.value}
-                                                                                onChange={handleChangeGenomic}
-                                                                            >
-                                                                                <option value="vertebrate_mammalian">Vertebrate Mammalian</option>
-                                                                                <option value="archaea">Archaea</option>
-                                                                                <option value="bacteria">Bacteria</option>
-                                                                                <option value="fungi">Fungi</option>
-                                                                                <option value="invertebrate">Invertebrate</option>
-                                                                                <option value="metagenomes">Metagenomes</option>
-                                                                                <option value="mitochondrion">Mitochondrion</option>
-                                                                                <option value="plant">Plant</option>
-                                                                                <option value="plasmid">Plasmid</option>
-                                                                                <option value="plastid">Plastid</option>
-                                                                                <option value="protozoa">Protozoa</option>
-                                                                                <option value="unknown">Unknown</option>
-                                                                                <option value="vertebrate_other">Vertebrate Other</option>
-                                                                                <option value="viral">Viral</option>
-                                                                            </select>
-                                                                            <OverlayTrigger
-                                                                                trigger="hover"
-                                                                                placement="top"
-                                                                                overlay={
-                                                                                    <Popover id="dir_output">
-                                                                                        <Popover.Body>
-                                                                                            {formDataNcbi.source_params.taxon.comment}
-                                                                                        </Popover.Body>
-                                                                                    </Popover>
-                                                                                }
-                                                                            >
-                                                                                <InfoCircle
-                                                                                    style={{
-                                                                                        fontSize: "1.2rem",
-                                                                                        cursor: "pointer",
-                                                                                        color: "#0d6efd",
-                                                                                        marginLeft: "10px"
-                                                                                    }}
-                                                                                />
-                                                                            </OverlayTrigger>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="col-md-3">
-                                                                        <label htmlFor="species" className="form-label">Species</label>
-                                                                        <div className="d-flex align-items-center">
-                                                                            {formDataNcbi.source_params.taxon.value === "vertebrate_mammalian" ? (
-                                                                                <select
-                                                                                    name="source_params.species"
-                                                                                    className="form-select"
-                                                                                    id="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {vertebrate_mammalianEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "archaea" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {archaeaEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "bacteria" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "fungi" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {fungiEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "invertebrate" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {invertebrateEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "mitochondrion" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {mitochondrionEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "plant" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {plantEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "plasmid" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    {plasmidEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "plastid" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {plastidEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "protozoa" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {protozoaEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "unknown" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {unknownEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "vertebrate_other" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    name="source_params.species"
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                    {vertebrate_otherEntries.map((entry) => (
-                                                                                        <option key={entry} value={entry}>{entry}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            ) : formDataNcbi.source_params.taxon.value === "viral" ? (
-                                                                                <select
-                                                                                    className="form-control"
-                                                                                    id="source_params.species"
-                                                                                    name="source_params.species"
-                                                                                    value={formDataNcbi.source_params.species.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                >
-                                                                                    <option value="">Select a species</option>
-                                                                                </select>
-                                                                            ) : null}
-                                                                            <OverlayTrigger
-                                                                                trigger="hover"
-                                                                                placement="top"
-                                                                                overlay={
-                                                                                    <Popover id="dir_output">
-                                                                                        <Popover.Body>
-                                                                                            {formDataNcbi.source_params.species.comment}
-                                                                                        </Popover.Body>
-                                                                                    </Popover>
-                                                                                }
-                                                                            >
-                                                                                <InfoCircle
-                                                                                    style={{
-                                                                                        fontSize: "1.2rem",
-                                                                                        cursor: "pointer",
-                                                                                        color: "#0d6efd",
-                                                                                        marginLeft: "10px"
-                                                                                    }}
-                                                                                />
-                                                                            </OverlayTrigger>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="col-md-3">
-                                                                        <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
-                                                                        <div className="d-flex align-items-center">
-                                                                            <input
-                                                                                type="number"
-                                                                                className="form-control"
-                                                                                id="source_params.annotation_release"
-                                                                                name="source_params.annotation_release"
-                                                                                value={formDataNcbi.source_params.annotation_release.value}
-                                                                                onChange={handleChangeGenomic}
-                                                                            />
-                                                                            <OverlayTrigger
-                                                                                trigger="hover"
-                                                                                placement="top"
-                                                                                overlay={
-                                                                                    <Popover id="dir_output">
-                                                                                        <Popover.Body>
-                                                                                            {formDataNcbi.source_params.annotation_release.comment}
-                                                                                        </Popover.Body>
-                                                                                    </Popover>
-                                                                                }
-                                                                            >
-                                                                                <InfoCircle
-                                                                                    style={{
-                                                                                        fontSize: "1.2rem",
-                                                                                        cursor: "pointer",
-                                                                                        color: "#0d6efd",
-                                                                                        marginLeft: "10px"
-                                                                                    }}
-                                                                                />
-                                                                            </OverlayTrigger>
-                                                                        </div>
-                                                                    </div>
-
-
-                                                                </div>
-
-                                                                <h6 className="pt-3">Genomic Regions</h6>
-                                                                <div className="row g-3">
-                                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
-                                                                        <div key={region} className="col-md-4">
-                                                                            <div className="d-flex align-items-center">
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    className="form-check-input me-2"
-                                                                                    id={region}
-                                                                                    name={region}
-                                                                                    checked={
-                                                                                        formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions]?.value === "true"
-                                                                                    }
-                                                                                    onChange={(e) =>
-                                                                                        setFormDataNcbi((prev) => ({
-                                                                                            ...prev,
-                                                                                            genomic_regions: {
-                                                                                                ...prev.genomic_regions,
-                                                                                                [region]: {
-                                                                                                    ...prev.genomic_regions[region as keyof typeof prev.genomic_regions],
-                                                                                                    value: e.target.checked ? "true" : "false",
-                                                                                                },
-                                                                                            },
-                                                                                        }))
-                                                                                    }
-                                                                                />
-                                                                                <label htmlFor={region} className="form-check-label me-2 mb-0">
-                                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
-                                                                                </label>
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id={`popover-${region}`}>
-                                                                                            <Popover.Body>
-                                                                                                {formDataNcbi.genomic_regions[region as keyof typeof formDataNcbi.genomic_regions].comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-
-                                                                        </div>
-
-                                                                    ))}
-
-                                                                </div>
-                                                                {formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
-                                                                        <div className="col-md-4 pt-2">
-                                                                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
-                                                                                    Block Size
-                                                                                </label>
-                                                                            <div className="d-flex align-items-center">
-
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control"
-                                                                                    id="exon_exon_junction_block_size"
-                                                                                    name="exon_exon_junction_block_size"
-                                                                                    value={formDataNcbi.exon_exon_junction_block_size.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                    placeholder="50"
-                                                                                />
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id="dir_output">
-                                                                                            <Popover.Body>
-                                                                                                {formDataNcbi.exon_exon_junction_block_size.comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                            marginLeft: "10px"
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-
-
-                                                            </form>
-                                                        </div>
-                                                    )}
-
-                                                    {selectedSource === "ensembl" && (
-                                                        <div>
-                                                            <form onSubmit={handleSubmit}>
-                                                                <div className="row g-3">
-                                                                    <div className="col-md-4">
-                                                                        <label htmlFor="source" className="form-label">Select Source</label>
-                                                                        <select
-                                                                            className="form-select"
-                                                                            id="source"
-                                                                            name="source"
-                                                                            value={selectedSource}
-                                                                            onChange={handleSourceChange}
-                                                                        >
-                                                                            <option value="ncbi"> NCBI</option>
-                                                                            <option value="ensembl"> Ensembl</option>
-                                                                        </select>
-                                                                    </div>
-                                                                    <div className="col-md-4">
-                                                                        <label htmlFor="species" className="form-label">Species</label>
-                                                                        <div className="d-flex align-items-center">
-                                                                            <select
-                                                                                className="form-select"
-                                                                                id="source_params.species"
-                                                                                name="source_params.species"
-                                                                                value={formDataEns.source_params.species.value}
-                                                                                onChange={handleChangeGenomic}
-                                                                            >
-                                                                                {ensemblSpecies.map((entry) => (
-                                                                                    <option key={entry} value={entry}>{entry}</option>
-                                                                                ))}
-                                                                            </select>
-                                                                            <OverlayTrigger
-                                                                                trigger="hover"
-                                                                                placement="top"
-                                                                                overlay={
-                                                                                    <Popover id="dir_output">
-                                                                                        <Popover.Body>
-                                                                                            {formDataEns.source_params.species.comment}
-                                                                                        </Popover.Body>
-                                                                                    </Popover>
-                                                                                }
-                                                                            >
-                                                                                <InfoCircle
-                                                                                    style={{
-                                                                                        fontSize: "1.2rem",
-                                                                                        cursor: "pointer",
-                                                                                        color: "#0d6efd",
-                                                                                        marginLeft: "10px"
-                                                                                    }}
-                                                                                />
-                                                                            </OverlayTrigger>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div className="col-md-4">
-                                                                        <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
-                                                                        <div className="d-flex align-items-center">
-                                                                            <input
-                                                                                type="number"
-                                                                                className="form-control"
-                                                                                id="source_params.annotation_release"
-                                                                                name="source_params.annotation_release"
-                                                                                value={formDataEns.source_params.annotation_release.value}
-                                                                                onChange={handleChangeGenomic}
-                                                                                placeholder="current"
-                                                                            />
-                                                                            <OverlayTrigger
-                                                                                trigger="hover"
-                                                                                placement="top"
-                                                                                overlay={
-                                                                                    <Popover id="dir_output">
-                                                                                        <Popover.Body>
-                                                                                            {formDataEns.source_params.annotation_release.comment}
-                                                                                        </Popover.Body>
-                                                                                    </Popover>
-                                                                                }
-                                                                            >
-                                                                                <InfoCircle
-                                                                                    style={{
-                                                                                        fontSize: "1.2rem",
-                                                                                        cursor: "pointer",
-                                                                                        color: "#0d6efd",
-                                                                                        marginLeft: "10px"
-                                                                                    }}
-                                                                                />
-                                                                            </OverlayTrigger>
-                                                                        </div>
-                                                                    </div>
-
-
-                                                                </div>
-
-                                                                <h5 className="pt-3">Genomic Regions</h5>
-                                                                <div className="row g-3">
-                                                                    {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
-                                                                        <div key={region} className="col-md-4">
-                                                                            <div className="d-flex align-items-center">
-                                                                                <input
-                                                                                    type="checkbox"
-                                                                                    className="form-check-input me-2"
-                                                                                    id={region}
-                                                                                    name={region}
-                                                                                    checked={
-                                                                                        formDataEns.genomic_regions[region as keyof typeof formDataEns.genomic_regions]?.value === "true"
-                                                                                    }
-                                                                                    onChange={(e) =>
-                                                                                        setFormDataEns((prev) => ({
-                                                                                            ...prev,
-                                                                                            genomic_regions: {
-                                                                                                ...prev.genomic_regions,
-                                                                                                [region]: {
-                                                                                                    ...prev.genomic_regions[region as keyof typeof prev.genomic_regions],
-                                                                                                    value: e.target.checked ? "true" : "false",
-                                                                                                },
-                                                                                            },
-                                                                                        }))
-                                                                                    }
-                                                                                />
-                                                                                <label htmlFor={region} className="form-check-label me-2 mb-0">
-                                                                                    {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
-                                                                                </label>
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id={`popover-${region}`}>
-                                                                                            <Popover.Body>
-                                                                                                {formDataEns.genomic_regions[region as keyof typeof formDataEns.genomic_regions].comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-                                                                {formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
-                                                                        <div className="col-md-4 pt-2">
-                                                                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
-                                                                                    Block Size
-                                                                                </label>
-                                                                            <div className="d-flex align-items-center">
-
-                                                                                <input
-                                                                                    type="number"
-                                                                                    className="form-control"
-                                                                                    id="exon_exon_junction_block_size"
-                                                                                    name="exon_exon_junction_block_size"
-                                                                                    value={formDataEns.exon_exon_junction_block_size.value}
-                                                                                    onChange={handleChangeGenomic}
-                                                                                    placeholder="50"
-                                                                                />
-                                                                                <OverlayTrigger
-                                                                                    trigger="hover"
-                                                                                    placement="top"
-                                                                                    overlay={
-                                                                                        <Popover id="dir_output">
-                                                                                            <Popover.Body>
-                                                                                                {formDataEns.exon_exon_junction_block_size.comment}
-                                                                                            </Popover.Body>
-                                                                                        </Popover>
-                                                                                    }
-                                                                                >
-                                                                                    <InfoCircle
-                                                                                        style={{
-                                                                                            fontSize: "1.2rem",
-                                                                                            cursor: "pointer",
-                                                                                            color: "#0d6efd",
-                                                                                            marginLeft: "10px"
-                                                                                        }}
-                                                                                    />
-                                                                                </OverlayTrigger>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-
-                                                            </form>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-
-                                            </div>
-                                        </div>
-
+                                {fastaOption === "generate" && (
+                                  <form
+                                    onSubmit={async (e) => {
+                                      e.preventDefault();
+                                      // Collect and validate all fastaForms data
+                                      // Here, you might want to validate each form, for now just log it
+                                      console.log("Submitting all fastaForms:", fastaForms);
+                                      // Example API call:
+                                      // try {
+                                      //   const response = await axios.post("/api/submit-fasta-forms", { forms: fastaForms });
+                                      //   console.log(response.data);
+                                      // } catch (err) {
+                                      //   console.error("Error submitting:", err);
+                                      // }
+                                    }}
+                                  >
+                                    <div className="mb-2">
+                                      <button
+                                        type="button"
+                                        className="btn btn-outline-primary"
+                                        onClick={() => setFastaForms(forms => [...forms, { ...defaultFastaForm }])}
+                                      >
+                                        + Add Species/Source
+                                      </button>
                                     </div>
+                                    {fastaForms.map((form, idx) => (
+                                      <FastaGenerateForm
+                                        key={idx}
+                                        form={form}
+                                        onChange={updatedForm =>
+                                          setFastaForms(forms => forms.map((f, i) => (i === idx ? updatedForm : f)))
+                                        }
+                                        onRemove={() =>
+                                          setFastaForms(forms => forms.length === 1 ? forms : forms.filter((_, i) => i !== idx))
+                                        }
+                                        disableRemove={fastaForms.length === 1}
+                                      />
+                                    ))}
+                                    <div className="mt-3">
+                                      <button type="submit" className="btn btn-primary">
+                                        Submit FASTA Generation
+                                      </button>
+                                    </div>
+                                  </form>
                                 )}
 
                                 <div className="mb-3 pt-3">
@@ -4362,59 +3818,50 @@
             }
         };
 
-        // Handle form submission
-        const handleSubmitGenomic = async (e?: React.FormEvent): Promise<any | null> => {
+        // Batch submit for multiple FASTA forms
+        const handleSubmitGenomicAll = async (e?: React.FormEvent): Promise<any[] | null> => {
             e?.preventDefault();
-            let finalFormData;
-
+            setLoading(true);
             try {
-                if (selectedSource === 'ncbi') {
-                    finalFormData = formDataNcbi;
-                } else if (selectedSource === 'ensembl') {
-                    finalFormData = formDataEns;
-                } else if (selectedSource === 'custom') {
-                    if (!areAllFilesUploaded()) {
-                        alert('Please upload all required files before submitting.');
-                        setLoading(false);
-                        return null;
+                if (!Array.isArray(fastaForms) || fastaForms.length === 0) {
+                    alert('No FASTA forms to submit.');
+                    setLoading(false);
+                    return null;
+                }
+                const results: any[] = [];
+                for (let i = 0; i < fastaForms.length; ++i) {
+                    const form = fastaForms[i];
+                    let payload;
+                    let endpoint;
+                    if (form.selectedSource === 'ncbi') {
+                        payload = form.formDataNcbi;
+                        endpoint = 'ncbi';
+                    } else if (form.selectedSource === 'ensembl') {
+                        payload = form.formDataEns;
+                        endpoint = 'ensembl';
+                    }  else {
+                        continue; // skip unknown
                     }
-
-                    const uploadedPaths = await uploadFiles();
-                    finalFormData = { ...formDataCustom };
-
-                    for (const key in uploadedPaths) {
-                        if (finalFormData[key]) {
-                            // @ts-ignore
-                            finalFormData[key] = {
-                                value: uploadedPaths[key],
-                                // @ts-ignore
-                                comment: finalFormData[key].comment,
-                            };
-                        } else {
-                            // @ts-ignore
-                            finalFormData[key] = {
-                                value: uploadedPaths[key],
-                                comment: "",
-                            };
-                        }
+                    try {
+                        const response = await axios.post(
+                            `http://localhost:5000/api/genomic/${endpoint}`,
+                            payload,
+                            {
+                                withCredentials: true,
+                                headers: { "Content-Type": "application/json" },
+                            }
+                        );
+                        results.push(response.data.output);
+                    } catch (error) {
+                        console.error('Error submitting genomic form:', error);
+                        results.push(null);
                     }
                 }
-
-                const response = await axios.post(
-                    `http://localhost:5000/api/genomic/${selectedSource}`,
-                    finalFormData,
-                    {
-                        withCredentials: true,
-                        headers: { "Content-Type": "application/json" },
-                    }
-                );
-
-                alert('Form submitted successfully!');
-                return response.data.output;
-
+                // Optionally: alert('All FASTA forms submitted successfully!');
+                return results;
             } catch (error) {
-                console.error('Error submitting genomic form:', error);
-                alert('Error submitting genomic form. Please try again.');
+                console.error('Error in batch FASTA submission:', error);
+                alert('Error submitting genomic forms. Please try again.');
                 return null;
             } finally {
                 setLoading(false);
@@ -4480,23 +3927,19 @@
         const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
             setLoading(true);
-
- 
-            // First: submit genomic
+            // First: submit genomic (support batch FASTA forms)
             if (fastaOption === 'generate') {
-                formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomic();
-
-
+                const fastaResults = await handleSubmitGenomicAll();
+                formData['files_fasta_target_probe_database']['value'] = fastaResults;
             }
-            if (fastaOption2 === 'generate')
-            {
-                 formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicref();
-            }
-            else if (fastaOption2 ==='usegenerated' ){
-                 formData['files_fasta_reference_database_target_probe']['value'] =  formData['files_fasta_target_probe_database']['value']
+            if (fastaOption2 === 'generate') {
+                // If need to batch for reference, similar logic can be applied here
+                formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicref();
+            } else if (fastaOption2 === 'usegenerated') {
+                formData['files_fasta_reference_database_target_probe']['value'] = formData['files_fasta_target_probe_database']['value'];
             }
 
-            const runid= await createRunId();
+            const runid = await createRunId();
 
             // Then: handle scrinshot
             if (!areAllFilesUploaded()) {
@@ -4527,12 +3970,12 @@
                     }
                 }
 
-                const response = await axios.post('http://localhost:5000/api/scrinshot', {formdata:finalFormData,runid:runid} ,{
+                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: finalFormData, runid: runid }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
                 const result = response.data;
-                console.log(result,'this is the result');
+                console.log(result, 'this is the result');
 
                 setStatus("running");
             } catch (error) {
