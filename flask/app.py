@@ -958,7 +958,7 @@ def seqfish():
         # Probe sequences generation
         "file_regions": form_data["file_regions"]['value'],
         "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]['value']),
-        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_targe_probe"]['value']),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_tprobe"]['value']),
         "target_probe_length_min": to_int(form_data["target_probe_length_min"]['value']),
         "target_probe_length_max": to_int(form_data["target_probe_length_max"]['value']),
         "target_probe_isoform_consensus": to_int(form_data["target_probe_isoform_consensus"]['value']),
@@ -1156,7 +1156,7 @@ def seqfish():
     for i in a:
         print('deleted')
         os.remove(i)
-    a=split_on_newline(form_data['files_fasta_reference_database_targe_probe']['value'])
+    a=split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
     if '\n' in a:
         a.remove('\n')
     for i in a:
@@ -1915,7 +1915,7 @@ def oligoseq():
         # Probe sequences generation
         "file_regions": form_data["file_regions"]['value'],
         "files_fasta_target_probe_database": multiline_to_list(form_data["files_fasta_target_probe_database"]['value']),
-        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_targe_probe"]['value']),
+        "files_fasta_reference_database_target_probe": multiline_to_list(form_data["files_fasta_reference_database_target_probe"]['value']),
         "target_probe_length_min": to_int(form_data["target_probe_length_min"]['value']),
         "target_probe_length_max": to_int(form_data["target_probe_length_max"]['value']),
         "target_probe_split_region": to_int(form_data["target_probe_split_region"]['value']),

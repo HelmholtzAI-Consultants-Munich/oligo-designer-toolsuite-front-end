@@ -1119,7 +1119,7 @@ const SeqFish: React.FC = () => {
                                             overlay={
                                                 <Popover id="popover-n_jobs">
                                                     <Popover.Body>
-                                                        {formData.files_fasta_reference_database_targe_probe.comment}
+                                                        {formData.files_fasta_reference_database_target_probe.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -6834,7 +6834,7 @@ const SeqFish: React.FC = () => {
         // First: submit genomic
         if (generateFastaFiles) {
             formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomic();
-            formData['files_fasta_reference_database_targe_probe']['value'] = await handleSubmitGenomicref();
+            formData['files_fasta_reference_database_target_probe']['value'] = await handleSubmitGenomicref();
 
         }
         if (useSameFasta){

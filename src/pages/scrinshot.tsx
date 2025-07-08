@@ -1029,7 +1029,7 @@
                                         overlay={
                                           <Popover id="files_fasta_reference_database_target_probe">
                                             <Popover.Body>
-                                              {formData.files_fasta_reference_database_targe_probe.comment}
+                                              {formData.files_fasta_reference_database_target_probe.comment}
                                             </Popover.Body>
                                           </Popover>
                                         }
@@ -4493,7 +4493,7 @@
                  formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicref();
             }
             else if (fastaOption2 ==='usegenerated' ){
-                 formData['files_fasta_reference_database_targe_probe']['value'] =  formData['files_fasta_target_probe_database']['value']
+                 formData['files_fasta_reference_database_target_probe']['value'] =  formData['files_fasta_target_probe_database']['value']
             }
 
             const runid= await createRunId();
