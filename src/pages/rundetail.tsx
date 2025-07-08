@@ -26,6 +26,7 @@ interface GeneOption {
 const RunDetail = () => {
     const { runId } = useParams();
     const { user } = useAuth();
+    const [hasLogFile, setHasLogFile] = useState<boolean>(false);
     const navigate = useNavigate();
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
@@ -55,6 +56,37 @@ const RunDetail = () => {
 
     // --- POLLING EFFECT: fetch log file every 5s if open ---
     useEffect(() => {
+         if (!hasLogFile) {
+    const pollLogFile = () => {
+      axios.get(`http://localhost:5000/api/runs/${runId}/files`, { withCredentials: true })
+        .then(response => {
+          // Find log file in response
+          const logFile = response.data.find(
+            (f: RunFile) => f.type === 'log' || f.name.toLowerCase().endsWith('.log')
+          );
+          const fnaFile = response.data.find(
+  (f: RunFile) =>
+    f.name.toLowerCase().endsWith('.fna') ||
+    f.name.toLowerCase().endsWith('.fasta')
+);
+
+    if (fnaFile) {
+      // Stop viewing the log file and show table (i.e. parsedYamlData or other)
+      closeFileView(); // <-- This closes the log view and clears interval
+      setFiles(response.data); // Still update file list
+      setHasLogFile(false);    // Optionally reset if you want to allow re-polling
+    } else if (logFile) {
+      setHasLogFile(true);
+      setFiles(response.data);
+      viewFileContent(logFile.name, false);
+    }
+        })
+        .catch(() => { /* handle error if needed */ });
+    };
+    pollLogFile(); // Initial poll
+    const interval = setInterval(pollLogFile, 1000);
+    return () => clearInterval(interval);
+  }
         if (viewingFilename && isLogFile(viewingFilename)) {
             const fetchLog = () => {
                 axios.get(`http://localhost:5000/api/runs/${runId}/files/${viewingFilename}`, {
@@ -74,7 +106,7 @@ const RunDetail = () => {
         return () => {
             if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         };
-    }, [viewingFilename, runId]);
+    }, [viewingFilename, runId,hasLogFile]);
     // ----------------------
 
     const closeFileView = () => {
@@ -414,6 +446,7 @@ const RunDetail = () => {
     return (
         <div>
             <Navbar />
+
             <div className="container mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <Link to="/runs" className="btn btn-outline-secondary">
@@ -458,6 +491,11 @@ const RunDetail = () => {
                             </div>
                         ))}
                 </div>
+                {!hasLogFile && (
+                <div className="alert alert-info">
+                    Waiting for log file... <span className="spinner-border spinner-border-sm ms-2" />
+                  </div>
+                )}
 
                 {fileContent && viewingFilename && (
                     <div className="mt-4">
