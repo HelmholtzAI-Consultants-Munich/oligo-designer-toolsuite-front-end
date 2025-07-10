@@ -52,33 +52,6 @@
             files_fasta_target_probe_database: [], // Empty array
             files_fasta_reference_database_target_probe: [], // Empty array
         });
-        const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-            setSelectedSource(e.target.value);
-        };
-        const handleSourceChange2 = (e: React.ChangeEvent<HTMLSelectElement>) => {
-            setSelectedSource2(e.target.value);
-        };
-        const handleFileChangeGenomic = (e: React.ChangeEvent<HTMLInputElement>) => {
-            const { name, files: selectedFiles } = e.target;
-
-            if (!selectedFiles) return;
-
-            // @ts-ignore
-            setFiles((prevFiles) => {
-                // Check if the input field should support multiple files
-                if (name === "files_fasta_target_probe_database" || name === "files_fasta_reference_database_target_probe") {
-                    // @ts-ignore
-                    return {
-                    };
-                } else {
-                    // For single-file inputs, replace the existing file
-                    return {
-                        ...prevFiles,
-                        [name]: selectedFiles[0],
-                    };
-                }
-            });
-        };
     
         const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             const { name, files: selectedFiles } = e.target;
@@ -3225,63 +3198,7 @@
                 setLoadingFn?.(false);
             }
         };
-        const handleSubmitGenomicref = async (e?: React.FormEvent): Promise<any | null> => {
-            e?.preventDefault();
-            let finalFormData;
 
-            try {
-                if (selectedSource === 'ncbi') {
-                    finalFormData = formData2Ncbi;
-                } else if (selectedSource === 'ensembl') {
-                    finalFormData = formData2Ens;
-                } else if (selectedSource === 'custom') {
-                    if (!areAllFilesUploaded()) {
-                        alert('Please upload all required files before submitting.');
-                        setLoading(false);
-                        return null;
-                    }
-
-                    const uploadedPaths = await uploadFiles();
-                    finalFormData = { ...formData2Custom };
-
-                    for (const key in uploadedPaths) {
-                        if (finalFormData[key]) {
-                            // @ts-ignore
-                            finalFormData[key] = {
-                                value: uploadedPaths[key],
-                                // @ts-ignore
-                                comment: finalFormData[key].comment,
-                            };
-                        } else {
-                            // @ts-ignore
-                            finalFormData[key] = {
-                                value: uploadedPaths[key],
-                                comment: "",
-                            };
-                        }
-                    }
-                }
-
-                const response = await axios.post(
-                    `http://localhost:5000/api/genomic/cascaded/${selectedSource}`,
-                    finalFormData,
-                    {
-                        withCredentials: true,
-                        headers: { "Content-Type": "application/json" },
-                    }
-                );
-
-                alert('Form submitted successfully!');
-                return response.data.output;
-
-            } catch (error) {
-                console.error('Error submitting genomic form:', error);
-                alert('Error submitting genomic form. Please try again.');
-                return null;
-            } finally {
-                setLoading(false);
-            }
-        };
         const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
             setLoading(true);
@@ -3402,7 +3319,7 @@
                                 <>
 
                                     <ul className="nav nav-tabs mt-3">
-                                        {activeTab!='detection_oligos' && (
+                                        {activeTab!=='detection_oligos' && (
                                             <>
                                                 <li className="nav-item">
                                                     <button
@@ -3442,7 +3359,7 @@
                                                 </li>
                                             </>
                                          )}
-                                        {activeTab=='detection_oligos' && (
+                                        {activeTab==='detection_oligos' && (
                                         <li className="nav-item">
                                             <button
                                                 type="button"
