@@ -3208,7 +3208,7 @@
                 formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicAll(fastaForms,setLoading);
             }
             if (fastaOption2 === 'generate') {
-                // If need to batch for reference, similar logic can be applied here
+                // f need to batch for reference, similar logic can be applied here
                 // @ts-ignore
                 formData['files_fasta_reference_database_target_probe']['value'] = await handleSubmitGenomicAll(fastaFormsReference,setLoading);
             } else if (fastaOption2 === 'usegenerated') {
