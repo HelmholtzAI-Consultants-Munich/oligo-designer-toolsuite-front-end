@@ -27,31 +27,9 @@ const Merfish: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-    const [progress, setProgress] = useState(0);
     //const [output, setOutput] = useState("");
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [formDataNcbi, setFormDataNcbi] = useState(form_Data_Ncbi);
-    const [formDataEns, setFormDataEns] = useState(form_Data_Ens);
-    const [formDataCustom, setFormDataCustom] = useState(form_Data_Custom);
-    const [formData2Ncbi, setFormData2Ncbi] = useState(form_Data_Ncbi);
-    const [formData2Ens, setFormData2Ens] = useState(form_Data_Ens);
-    const [formData2Custom, setFormData2Custom] = useState(form_Data_Custom);
-    const [formDataNcbiReadout, setFormDataNcbiReadout] = useState(form_Data_Ncbi);
-    const [formDataEnsReadout, setFormDataEnsReadout] = useState(form_Data_Ens);
-    const [formDataCustomReadout, setFormDataCustomReadout] = useState(form_Data_Custom);
-    const [formDataNcbiPrimer, setFormDataNcbiPrimer] = useState(form_Data_Ncbi);
-    const [formDataEnsPrimer, setFormDataEnsPrimer] = useState(form_Data_Ens);
-    const [formDataCustomPrimer, setFormDataCustomPrimer] = useState(form_Data_Custom);
-
-    const [useSameReferenceForm, setUseSameReferenceForm] = useState(false);
-    const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
-    const [selectedSource2, setSelectedSource2] = useState("ncbi"); // State to hold selected source
-    const [selectedSourceReadout, setSelectedSourceReadout] = useState("ncbi"); // State to hold selected source
-    const [selectedSourcePrimer, setSelectedSourcePrimer] = useState("ncbi");
-    const [useSameFasta, setUseSameFasta] = useState(true);
-    const [useSameFasta2, setUseSameFasta2] = useState(true);
-
     interface FileState {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
@@ -153,18 +131,6 @@ const Merfish: React.FC = () => {
     const toggleDeveloperSettings = () => {
         setShowDeveloperSettings(!showDeveloperSettings);
     };
-    useEffect(() => {
-        if (useSameFasta) {
-            setFormDataNcbiReadout(formDataNcbi);
-            setFormDataEnsReadout(formDataEns);
-            setFormDataCustomReadout(formDataCustom);
-        }
-        if (useSameFasta2) {
-            setFormDataNcbiPrimer(formDataNcbi);
-            setFormDataEnsPrimer(formDataEns);
-            setFormDataCustomPrimer(formDataCustom);
-        }
-    }, [formDataNcbi, formDataEns, formDataCustom, useSameReferenceForm,useSameFasta]);
     const [formData, setFormData] = useState(merfish_form);
     const [activeTab, setActiveTab] = useState("probe_sequences");
     const [activetab2, setActivetab2] = useState("specfblastn");

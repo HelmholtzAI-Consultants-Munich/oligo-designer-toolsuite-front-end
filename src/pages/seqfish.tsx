@@ -6,7 +6,6 @@ import {InfoCircle} from "react-bootstrap-icons";
 import seqfish_form from "../forms/seqfish_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
-import form_Data_Custom from "../forms/genomic_custom_form";
 import {createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
 
