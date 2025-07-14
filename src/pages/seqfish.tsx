@@ -4408,7 +4408,11 @@ const SeqFish: React.FC = () => {
                             <button
                                 type="button"
                                 className={`nav-link ${activeTab === "probe_sequences" ? "active" : ""}`}
-                                onClick={() => setActiveTab("probe_sequences")}
+                                onClick={() =>{
+                                        setActiveTab("probe_sequences")
+                                        setActivetab2('specfblastn')
+
+                                    }}
                             >
                                 Target Probe Parameters
                             </button>
@@ -4418,7 +4422,10 @@ const SeqFish: React.FC = () => {
                             <button
                                 type="button"
                                 className={`nav-link ${activeTab === "readout" ? "active" : ""}`}
-                                onClick={() => setActiveTab("readout")}
+                                onClick={() =>{
+                                        setActivetab2('readout')
+                                        setActiveTab("readout")
+                                    }}
                             >
                                 Readout Probe Parameters
                             </button>
@@ -4427,7 +4434,10 @@ const SeqFish: React.FC = () => {
                             <button
                                 type="button"
                                 className={`nav-link ${activeTab === "primer_parameters" ? "active" : ""}`}
-                                onClick={() => setActiveTab("primer_parameters")}
+                                onClick={() =>{
+                                        setActivetab2('primerpro')
+                                        setActiveTab("primer_parameters")
+                                    }}
                             >
                                 Primer Parameters
                             </button>
@@ -4456,6 +4466,8 @@ const SeqFish: React.FC = () => {
                         {showDeveloperSettings && (
                             <>
                                 <ul className="nav nav-tabs mt-3">
+                                     {activeTab==='probe_sequences' && (
+                                         <>
                                     <li className="nav-item">
                                         <button
                                             type="button"
@@ -4483,6 +4495,10 @@ const SeqFish: React.FC = () => {
                                             Oligo Set Selection Parameters
                                         </button>
                                     </li>
+                                        </>
+    )}
+                                      {activeTab==='readout' && (
+                                        <>
                                     <li className="nav-item">
                                         <button
                                             type="button"
@@ -4492,6 +4508,10 @@ const SeqFish: React.FC = () => {
                                             Readout Parameters
                                         </button>
                                     </li>
+                                      </>
+    )}
+                                    {activeTab==='primer_parameters' && (
+                                        <>
                                     <li className="nav-item">
                                         <button
                                             type="button"
@@ -4501,6 +4521,8 @@ const SeqFish: React.FC = () => {
                                             Primer Parameters
                                         </button>
                                     </li>
+                                        </>
+    )}
                                 </ul>
 
                                 <div className="tab-content mt-4">

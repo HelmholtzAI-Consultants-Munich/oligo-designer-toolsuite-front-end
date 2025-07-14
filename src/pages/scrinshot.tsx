@@ -19,29 +19,11 @@
         };
         const [fastaForms, setFastaForms] = useState([{ ...defaultFastaForm }]);
         const [fastaFormsReference, setFastaFormsReference] = useState([{ ...defaultFastaForm }]);
-
-
         const [loading, setLoading] = useState(false);
-        const [useSameReferenceForm, setUseSameReferenceForm] = useState(false);
-        const [selectedSource, setSelectedSource] = useState("ncbi"); // State to hold selected source
-        const [selectedSource2, setSelectedSource2] = useState("ncbi"); // State to hold selected source
         const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
         const [status, setStatus] = useState("idle");
         const [isSubmitting, setIsSubmitting] = useState(false);
         const [formData, setFormData] = useState(formDatas);
-        const [formDataNcbi, setFormDataNcbi] = useState(form_Data_Ncbi);
-        const [formDataEns, setFormDataEns] = useState(form_Data_Ens);
-        const [formDataCustom, setFormDataCustom] = useState(form_Data_Custom);
-        const [formData2Ncbi, setFormData2Ncbi] = useState(form_Data_Ncbi);
-        const [formData2Ens, setFormData2Ens] = useState(form_Data_Ens);
-        const [formData2Custom, setFormData2Custom] = useState(form_Data_Custom);
-        useEffect(() => {
-            if (useSameReferenceForm) {
-                setFormData2Ncbi(formDataNcbi);
-                setFormData2Ens(formDataEns);
-                setFormData2Custom(formDataCustom);
-            }
-        }, [formDataNcbi, formDataEns, formDataCustom, useSameReferenceForm]);
         interface FileState {
             file_regions: File | null;
             files_fasta_target_probe_database: File[]; // Always an array
@@ -140,12 +122,6 @@
         const [activetab2, setActivetab2] = useState("specfblastn");
         const renderTabContent = () => {
             switch (activeTab) {
-                case "general":
-                    return (
-                        <div>
-
-                        </div>
-                    );
                 case "probe_sequences":
                     return (
                         <div className="mb-4">

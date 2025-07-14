@@ -6,7 +6,6 @@ import {InfoCircle} from "react-bootstrap-icons";
 import merfish_form from "../forms/merfish_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
-import form_Data_Custom from "../forms/genomic_custom_form";
 import {createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
 const Merfish: React.FC = () => {
@@ -4910,7 +4909,11 @@ const Merfish: React.FC = () => {
                             <button
                                 type="button"
                                 className={`nav-link ${activeTab === "probe_sequences" ? "active" : ""}`}
-                                onClick={() => setActiveTab("probe_sequences")}
+                                onClick={() =>{
+                                        setActiveTab("probe_sequences")
+                                        setActivetab2('specfblastn')
+
+                                    }}
                             >
                                 Target Probe Parameters
                             </button>
@@ -4920,7 +4923,10 @@ const Merfish: React.FC = () => {
                             <button
                                 type="button"
                                 className={`nav-link ${activeTab === "readout" ? "active" : ""}`}
-                                onClick={() => setActiveTab("readout")}
+                                 onClick={() =>{
+                                        setActivetab2('readout')
+                                        setActiveTab("readout")
+                                    }}
                             >
                                 Readout Probe Parameters
                             </button>
@@ -4929,7 +4935,10 @@ const Merfish: React.FC = () => {
                             <button
                                 type="button"
                                 className={`nav-link ${activeTab === "primer_parameters" ? "active" : ""}`}
-                                onClick={() => setActiveTab("primer_parameters")}
+                                onClick={() =>{
+                                        setActivetab2('primerpro')
+                                        setActiveTab("primer_parameters")
+                                    }}
                             >
                                 Primer Parameters
                             </button>
@@ -4958,6 +4967,8 @@ const Merfish: React.FC = () => {
                         {showDeveloperSettings && (
                             <>
                                 <ul className="nav nav-tabs mt-3">
+                                    {activeTab==='probe_sequences' && (
+                                         <>
                                     <li className="nav-item">
                                         <button
                                             type="button"
@@ -4994,6 +5005,10 @@ const Merfish: React.FC = () => {
                                             Parameters for Melting Temperature
                                         </button>
                                     </li>
+                                                                                                 </>
+    )}
+                                    {activeTab==='readout' && (
+                                        <>
                                     <li className="nav-item">
                                         <button
                                             type="button"
@@ -5003,6 +5018,10 @@ const Merfish: React.FC = () => {
                                             Readout Parameters
                                         </button>
                                     </li>
+                                     </>
+    )}
+                                    {activeTab==='primer_parameters' && (
+                                        <>
                                     <li className="nav-item">
                                         <button
                                             type="button"
@@ -5012,6 +5031,8 @@ const Merfish: React.FC = () => {
                                             Primer Parameters
                                         </button>
                                     </li>
+                                         </>
+    )}
                                 </ul>
 
                                 <div className="tab-content mt-4">

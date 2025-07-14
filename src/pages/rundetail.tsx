@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import YAML from 'js-yaml';
@@ -26,7 +26,6 @@ interface GeneOption {
 const RunDetail = () => {
     const { runId } = useParams();
     const { user } = useAuth();
-    const [hasLogFile, setHasLogFile] = useState<boolean>(false);
     const navigate = useNavigate();
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
@@ -47,75 +46,16 @@ const RunDetail = () => {
         'Tm_arm1',
         'Tm_arm2'
     ]);
-    const [parsedYamlFilename, setParsedYamlFilename] = useState<string | null>(null);
-
-    // --- POLLING LOGIC ---
-    const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-    const isLogFile = (filename: string) =>
-        filename.toLowerCase().endsWith('.log') || filename.toLowerCase().includes('log');
-
-    // --- POLLING EFFECT: fetch log file every 5s if open ---
-    useEffect(() => {
-         if (!hasLogFile) {
-    const pollLogFile = () => {
-      axios.get(`http://localhost:5000/api/runs/${runId}/files`, { withCredentials: true })
-        .then(response => {
-          // Find log file in response
-          const logFile = response.data.find(
-            (f: RunFile) => f.type === 'log' || f.name.toLowerCase().endsWith('.log')
-          );
-          const fnaFile = response.data.find(
-  (f: RunFile) =>
-    f.name.toLowerCase().endsWith('.fna') ||
-    f.name.toLowerCase().endsWith('.fasta')
-);
-
-    if (fnaFile) {
-      // Stop viewing the log file and show table (i.e. parsedYamlData or other)
-      closeFileView(); // <-- This closes the log view and clears interval
-      setFiles(response.data); // Still update file list
-      setHasLogFile(false);    // Optionally reset if you want to allow re-polling
-    } else if (logFile) {
-      setHasLogFile(true);
-      setFiles(response.data);
-      viewFileContent(logFile.name, false);
-    }
-        })
-        .catch(() => { /* handle error if needed */ });
-    };
-    pollLogFile(); // Initial poll
-    const interval = setInterval(pollLogFile, 1000);
-    return () => clearInterval(interval);
-  }
-        if (viewingFilename && isLogFile(viewingFilename)) {
-            const fetchLog = () => {
-                axios.get(`http://localhost:5000/api/runs/${runId}/files/${viewingFilename}`, {
-                    withCredentials: true,
-                    responseType: 'text'
-                })
-                .then(response => setFileContent(response.data))
-                .catch(error => console.error('Error polling log file:', error));
-            };
-            fetchLog();
-            pollingIntervalRef.current = setInterval(fetchLog, 1000);
-            return () => {
-                if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-            };
-        }
-        // Cleanup interval if not viewing log file
-        return () => {
-            if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
-        };
-    }, [viewingFilename, runId,hasLogFile]);
-    // ----------------------
-
     const closeFileView = () => {
         setViewingFilename(null);
-        if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-        }
     };
-
+    const [parsedYamlFilename, setParsedYamlFilename] = useState<string | null>(null);
+    // --- Polling/log state variables ---
+    const [hasYamlFile, setHasYamlFile] = useState(false);
+    const [hasLogFile, setHasLogFile] = useState(false);
+    const [logFilename, setLogFilename] = useState<string | null>(null);
+    const [logContent, setLogContent] = useState<string | null>(null);
+    const [polling, setPolling] = useState(true);
     const fetchAndParsePadlockFile = useCallback((filename: string) => {
         axios.get(`http://localhost:5000/api/runs/${runId}/files/${filename}`, {
             withCredentials: true,
@@ -148,31 +88,57 @@ const RunDetail = () => {
         })
         .catch(error => console.error('Error fetching padlock file content:', error));
     }, [runId]);
-
+    // Poll for files & log/YAML status
     useEffect(() => {
-        if (runId) {
-            axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
-                withCredentials: true
-            })
-            .then(response => {
+        if (!runId) return;
+        let interval: NodeJS.Timeout;
+
+        const poll = async () => {
+            try {
+                const response = await axios.get(`http://localhost:5000/api/runs/${runId}/files`, {
+                    withCredentials: true
+                });
                 setFiles(response.data);
 
+                // YAML check
                 const yamlFile = response.data.find((f: RunFile) =>
                     f.name.endsWith('.yml') || f.name.endsWith('.yaml')
                 );
+                setHasYamlFile(!!yamlFile);
 
+                // Log check
+                const firstLog = response.data.find((f: RunFile) => f.type === 'log');
+                setHasLogFile(!!firstLog);
+                setLogFilename(firstLog?.name || null);
+
+                // If YAML present, stop polling!
                 if (yamlFile) {
+                    setPolling(false);
+                    if (interval) clearInterval(interval);
+                    // Fetch and parse YAML as before
                     fetchAndParsePadlockFile(yamlFile.name);
-                } else {
-                    const firstLogFile = response.data.find((f: RunFile) => f.type === 'log');
-                    if (firstLogFile) {
-                        viewFileContent(firstLogFile.name, false);
-                    }
+                } else if (firstLog) {
+                    // If log file is present, get its content
+                    const logResp = await axios.get(
+                        `http://localhost:5000/api/runs/${runId}/files/${firstLog.name}`,
+                        { withCredentials: true, responseType: 'text' }
+                    );
+                    setLogContent(logResp.data);
                 }
-            })
-            .catch(error => console.error('Error fetching files:', error));
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        if (polling) {
+            interval = setInterval(poll, 1000);
+            poll(); // initial
         }
-    }, [runId, fetchAndParsePadlockFile]);
+
+        return () => {
+            if (interval) clearInterval(interval);
+        };
+    }, [runId, polling, fetchAndParsePadlockFile]);
 
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to delete this run? This action cannot be undone.')) {
@@ -188,14 +154,17 @@ const RunDetail = () => {
         }
     };
 
+    // Download CSV for current oligoset only
     const handleDownloadCSV = () => {
         const oligos = getOligosForOligoset();
         if (oligos.length === 0) return;
 
+        // Updated headers with Gene and Oligoset
         const headers = ['Gene', 'Oligoset', ...tableColumns]
             .map(col => `"${col.replace(/_/g, ' ')}"`)
             .join(',');
 
+        // Add Gene and Oligoset to each row
         const rows = oligos.map(oligo => {
             const rowData = [
                 selectedGene,
@@ -211,7 +180,10 @@ const RunDetail = () => {
             }).join(',');
         }).join('\n');
 
+        // Create CSV content
         const csvContent = `${headers}\n${rows}`;
+
+        // Trigger download
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -221,6 +193,7 @@ const RunDetail = () => {
         document.body.removeChild(link);
     };
 
+    // Download CSV for all genes and oligosets
     const handleDownloadAllCSV = () => {
         if (!parsedYamlData) return;
 
@@ -229,6 +202,8 @@ const RunDetail = () => {
             .join(',');
 
         const allRows: string[] = [];
+
+        // Iterate through all genes and oligosets
         Object.keys(parsedYamlData).forEach(gene => {
             const oligosets = getOligosetsForGene(gene);
             oligosets.forEach(oligoset => {
@@ -238,6 +213,7 @@ const RunDetail = () => {
                     .map(([, value]) => value)
                     .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
 
+                // Add rows for this oligoset
                 oligos.forEach(oligo => {
                     const rowData = [
                         gene,
@@ -258,6 +234,7 @@ const RunDetail = () => {
         });
 
         const csvContent = `${headers}\n${allRows.join('\n')}`;
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -267,6 +244,7 @@ const RunDetail = () => {
         document.body.removeChild(link);
     };
 
+    // Download CSV for selected gene (all oligosets)
     const handleDownloadGeneCSV = () => {
         if (!selectedGene || !parsedYamlData) return;
 
@@ -284,6 +262,7 @@ const RunDetail = () => {
                 .map(([, value]) => value)
                 .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
 
+            // Add rows for this oligoset
             oligos.forEach(oligo => {
                 const rowData = [
                     selectedGene,
@@ -303,6 +282,7 @@ const RunDetail = () => {
         });
 
         const csvContent = `${headers}\n${geneRows.join('\n')}`;
+
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
@@ -312,14 +292,18 @@ const RunDetail = () => {
         document.body.removeChild(link);
     };
 
+    // Download Excel file with each gene as a separate sheet
     const handleDownloadExcel = () => {
         if (!parsedYamlData) return;
 
         const workbook = XLSX.utils.book_new();
         const headers = ['Oligoset', ...tableColumns.map(col => col.replace(/_/g, ' '))];
 
+        // Iterate through all genes and create a sheet for each
         Object.keys(parsedYamlData).forEach(gene => {
             const geneData: any[] = [];
+
+            // Add headers
             geneData.push(headers);
 
             const oligosets = getOligosetsForGene(gene);
@@ -330,6 +314,7 @@ const RunDetail = () => {
                     .map(([, value]) => value)
                     .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
 
+                // Add rows for this oligoset
                 oligos.forEach(oligo => {
                     const row = [
                         oligoset,
@@ -339,15 +324,21 @@ const RunDetail = () => {
                 });
             });
 
+            // Create worksheet for this gene
             const worksheet = XLSX.utils.aoa_to_sheet(geneData);
+
+            // Sanitize sheet name (Excel has restrictions on sheet names)
             const sanitizedGeneName = gene.replace(/[\\\/\?\*\[\]]/g, '_').substring(0, 31);
+
             XLSX.utils.book_append_sheet(workbook, worksheet, sanitizedGeneName);
         });
 
+        // Write file
         XLSX.writeFile(workbook, 'all_genes_oligos.xlsx');
     };
 
     const formatValueForExcel = (value: any): any => {
+        // Handle deeply nested arrays
         const flatten = (arr: any[]): any[] => {
             return arr.reduce((acc, val) =>
                 Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
@@ -360,8 +351,9 @@ const RunDetail = () => {
         if (typeof value === 'object' && value !== null) {
             return JSON.stringify(value);
         }
-        return value;
+        return value; // Return raw value for Excel (no string conversion)
     };
+
 
     const viewFileContent = (filename: string, shouldParseYaml = true) => {
         if (viewingFilename === filename) {
@@ -377,33 +369,35 @@ const RunDetail = () => {
             setViewingFilename(filename);
             setFileContent(response.data);
 
+            // Only parse YAML if explicitly requested
             if (shouldParseYaml && (filename.endsWith('.yml') || filename.endsWith('.yaml')) ){
                 try {
                     const parsed = YAML.load(response.data) as Record<string, any>;
                     setParsedYamlData(parsed);
                     setParsedYamlFilename(filename);
 
-                    const genes = Object.keys(parsed || {});
-                    setGeneOptions(genes.map(gene => ({
-                        value: gene,
-                        label: gene
-                    })));
+                        const genes = Object.keys(parsed || {});
+                        setGeneOptions(genes.map(gene => ({
+                            value: gene,
+                            label: gene
+                        })));
 
-                    const firstGene = genes[0] || '';
-                    const firstOligoset = firstGene
-                        ? Object.keys(parsed[firstGene] || {}).find(key => key.startsWith('Oligoset')) || ''
-                        : '';
+                        const firstGene = genes[0] || '';
+                        // @ts-ignore
+                        const firstOligoset = firstGene
+                            ? Object.keys(parsed[firstGene] || {}).find(key => key.startsWith('Oligoset')) || ''
+                            : '';
 
-                    setSelectedGene(firstGene);
-                    setSelectedOligoset(firstOligoset);
-                } catch (e) {
-                    console.error('Error parsing YAML:', e);
-                    setParsedYamlData(null);
-                    setParsedYamlFilename(null);
+                        setSelectedGene(firstGene);
+                        setSelectedOligoset(firstOligoset);
+                    } catch (e) {
+                        console.error('Error parsing YAML:', e);
+                        setParsedYamlData(null);
+                        setParsedYamlFilename(null);
+                    }
                 }
-            }
-        })
-        .catch(error => console.error('Error fetching file content:', error));
+            })
+            .catch(error => console.error('Error fetching file content:', error));
     };
 
     const downloadFile = (filename: string) => {
@@ -420,14 +414,17 @@ const RunDetail = () => {
 
     const getOligosForOligoset = (): Oligo[] => {
         if (!selectedGene || !selectedOligoset || !parsedYamlData) return [];
+
         const oligoset = parsedYamlData[selectedGene][selectedOligoset];
+
         return Object.entries(oligoset)
-            .filter(([key]) => /^Oligo \d+$/.test(key))
+            .filter(([key]) => /^Oligo \d+$/.test(key)) // Strict match for "Oligo X"
             .map(([, value]) => value)
             .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
     };
 
     const formatValue = (value: any): string => {
+        // Handle deeply nested arrays
         const flatten = (arr: any[]): any[] => {
             return arr.reduce((acc, val) =>
                 Array.isArray(val) ? acc.concat(flatten(val)) : acc.concat(val),
@@ -446,7 +443,6 @@ const RunDetail = () => {
     return (
         <div>
             <Navbar />
-
             <div className="container mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <Link to="/runs" className="btn btn-outline-secondary">
@@ -491,18 +487,13 @@ const RunDetail = () => {
                             </div>
                         ))}
                 </div>
-                {!hasLogFile && (
-                <div className="alert alert-info">
-                    Waiting for log file... <span className="spinner-border spinner-border-sm ms-2" />
-                  </div>
-                )}
 
                 {fileContent && viewingFilename && (
                     <div className="mt-4">
                         {fileContent && viewingFilename && viewingFilename.endsWith('.txt') && (
                             <div className="mt-4">
                                 <h4>Viewing: {viewingFilename}</h4>
-                                <button className="btn btn-sm btn-secondary mb-3" onClick={closeFileView}>Close</button>
+
                                 <pre className="bg-light p-3 rounded mb-4" style={{ maxHeight: '500px', overflow: 'auto' }}>
                                     {fileContent}
                                 </pre>
@@ -511,6 +502,26 @@ const RunDetail = () => {
                     </div>
                 )}
 
+                {/* Polling/waiting for YAML/log */}
+                {!hasYamlFile && (
+                    <>
+                        {!hasLogFile && (
+                            <div className="alert alert-info">
+                                Waiting for log file... <span className="spinner-border spinner-border-sm ms-2" />
+                            </div>
+                        )}
+                        {hasLogFile && logContent && (
+                            <div className="mt-4">
+                                <h4>Live Log</h4>
+                                <pre className="bg-light p-3 rounded mb-4" style={{ maxHeight: '500px', overflow: 'auto' }}>
+                                    {logContent}
+                                </pre>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* YAML/table logic remains unchanged below */}
                 {parsedYamlData && parsedYamlFilename === 'padlock_probes.yml.yml' && (
                     <div className="card">
                         <div className="card-body">
