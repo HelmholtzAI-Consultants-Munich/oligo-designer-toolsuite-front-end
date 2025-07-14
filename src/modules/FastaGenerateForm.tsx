@@ -451,7 +451,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                         onChange={handleNcbiChange}
                                     />
                                     <label htmlFor={region} className="form-check-label me-2 mb-0">
-                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
+                                      {["utr", "cds"].includes(region)
+                                        ? region.toUpperCase()
+                                        : region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                     </label>
                                     <OverlayTrigger
                                         trigger="hover"
@@ -630,7 +632,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                         onChange={handleEnsChange}
                                     />
                                     <label htmlFor={region} className="form-check-label me-2 mb-0">
-                                        {region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
+                                      {["utr", "cds"].includes(region)
+                                        ? region.toUpperCase()
+                                        : region.charAt(0).toUpperCase() + region.slice(1).replace(/_/g, "-")}
                                     </label>
                                     <OverlayTrigger
                                         trigger="hover"
