@@ -18,6 +18,13 @@ interface Oligo {
     [key: string]: any;
 }
 
+// Helper to extract all unique columns from an array of oligos
+function getAllOligoColumns(oligos: Oligo[]): string[] {
+    const columns = new Set<string>();
+    oligos.forEach(o => Object.keys(o).forEach(k => columns.add(k)));
+    return Array.from(columns);
+}
+
 interface GeneOption {
     value: string;
     label: string;
@@ -159,8 +166,9 @@ const RunDetail = () => {
         const oligos = getOligosForOligoset();
         if (oligos.length === 0) return;
 
+        const allColumns = getAllOligoColumns(oligos);
         // Updated headers with Gene and Oligoset
-        const headers = ['Gene', 'Oligoset', ...tableColumns]
+        const headers = ['Gene', 'Oligoset', ...allColumns]
             .map(col => `"${col.replace(/_/g, ' ')}"`)
             .join(',');
 
@@ -169,7 +177,7 @@ const RunDetail = () => {
             const rowData = [
                 selectedGene,
                 selectedOligoset,
-                ...tableColumns.map(col => formatValue(oligo[col]))
+                ...allColumns.map(col => formatValue(oligo[col]))
             ];
 
             return rowData.map(value => {
@@ -197,13 +205,8 @@ const RunDetail = () => {
     const handleDownloadAllCSV = () => {
         if (!parsedYamlData) return;
 
-        const headers = ['Gene', 'Oligoset', ...tableColumns]
-            .map(col => `"${col.replace(/_/g, ' ')}"`)
-            .join(',');
-
-        const allRows: string[] = [];
-
-        // Iterate through all genes and oligosets
+        // Gather all oligos
+        const allOligos: { gene: string; oligoset: string; oligo: Oligo }[] = [];
         Object.keys(parsedYamlData).forEach(gene => {
             const oligosets = getOligosetsForGene(gene);
             oligosets.forEach(oligoset => {
@@ -212,25 +215,31 @@ const RunDetail = () => {
                     .filter(([key]) => /^Oligo \d+$/.test(key))
                     .map(([, value]) => value)
                     .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
-
-                // Add rows for this oligoset
                 oligos.forEach(oligo => {
-                    const rowData = [
-                        gene,
-                        oligoset,
-                        ...tableColumns.map(col => formatValue(oligo[col]))
-                    ];
-
-                    const row = rowData.map(value => {
-                        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-                            return `"${value.replace(/"/g, '""')}"`;
-                        }
-                        return value;
-                    }).join(',');
-
-                    allRows.push(row);
+                    allOligos.push({ gene, oligoset, oligo });
                 });
             });
+        });
+
+        const allColumns = getAllOligoColumns(allOligos.map(item => item.oligo));
+        const headers = ['Gene', 'Oligoset', ...allColumns]
+            .map(col => `"${col.replace(/_/g, ' ')}"`)
+            .join(',');
+
+        const allRows: string[] = [];
+        allOligos.forEach(item => {
+            const rowData = [
+                item.gene,
+                item.oligoset,
+                ...allColumns.map(col => formatValue(item.oligo[col]))
+            ];
+            const row = rowData.map(value => {
+                if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                    return `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            }).join(',');
+            allRows.push(row);
         });
 
         const csvContent = `${headers}\n${allRows.join('\n')}`;
@@ -248,37 +257,39 @@ const RunDetail = () => {
     const handleDownloadGeneCSV = () => {
         if (!selectedGene || !parsedYamlData) return;
 
-        const headers = ['Gene', 'Oligoset', ...tableColumns]
-            .map(col => `"${col.replace(/_/g, ' ')}"`)
-            .join(',');
-
-        const geneRows: string[] = [];
+        // Gather all oligos for the selected gene
+        const geneOligos: { oligoset: string; oligo: Oligo }[] = [];
         const oligosets = getOligosetsForGene(selectedGene);
-
         oligosets.forEach(oligoset => {
             const oligosetData = parsedYamlData[selectedGene][oligoset];
             const oligos = Object.entries(oligosetData)
                 .filter(([key]) => /^Oligo \d+$/.test(key))
                 .map(([, value]) => value)
                 .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
-
-            // Add rows for this oligoset
             oligos.forEach(oligo => {
-                const rowData = [
-                    selectedGene,
-                    oligoset,
-                    ...tableColumns.map(col => formatValue(oligo[col]))
-                ];
-
-                const row = rowData.map(value => {
-                    if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-                        return `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value;
-                }).join(',');
-
-                geneRows.push(row);
+                geneOligos.push({ oligoset, oligo });
             });
+        });
+
+        const allColumns = getAllOligoColumns(geneOligos.map(item => item.oligo));
+        const headers = ['Gene', 'Oligoset', ...allColumns]
+            .map(col => `"${col.replace(/_/g, ' ')}"`)
+            .join(',');
+
+        const geneRows: string[] = [];
+        geneOligos.forEach(item => {
+            const rowData = [
+                selectedGene,
+                item.oligoset,
+                ...allColumns.map(col => formatValue(item.oligo[col]))
+            ];
+            const row = rowData.map(value => {
+                if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+                    return `"${value.replace(/"/g, '""')}"`;
+                }
+                return value;
+            }).join(',');
+            geneRows.push(row);
         });
 
         const csvContent = `${headers}\n${geneRows.join('\n')}`;
@@ -297,15 +308,11 @@ const RunDetail = () => {
         if (!parsedYamlData) return;
 
         const workbook = XLSX.utils.book_new();
-        const headers = ['Oligoset', ...tableColumns.map(col => col.replace(/_/g, ' '))];
 
         // Iterate through all genes and create a sheet for each
         Object.keys(parsedYamlData).forEach(gene => {
-            const geneData: any[] = [];
-
-            // Add headers
-            geneData.push(headers);
-
+            // Gather all oligos for this gene
+            const geneOligos: { oligoset: string; oligo: Oligo }[] = [];
             const oligosets = getOligosetsForGene(gene);
             oligosets.forEach(oligoset => {
                 const oligosetData = parsedYamlData[gene][oligoset];
@@ -313,15 +320,22 @@ const RunDetail = () => {
                     .filter(([key]) => /^Oligo \d+$/.test(key))
                     .map(([, value]) => value)
                     .filter(oligo => typeof oligo === 'object' && oligo !== null) as Oligo[];
-
-                // Add rows for this oligoset
                 oligos.forEach(oligo => {
-                    const row = [
-                        oligoset,
-                        ...tableColumns.map(col => formatValueForExcel(oligo[col]))
-                    ];
-                    geneData.push(row);
+                    geneOligos.push({ oligoset, oligo });
                 });
+            });
+
+            const allColumns = getAllOligoColumns(geneOligos.map(item => item.oligo));
+            const headers = ['Oligoset', ...allColumns.map(col => col.replace(/_/g, ' '))];
+
+            const geneData: any[] = [];
+            geneData.push(headers);
+            geneOligos.forEach(item => {
+                const row = [
+                    item.oligoset,
+                    ...allColumns.map(col => formatValueForExcel(item.oligo[col]))
+                ];
+                geneData.push(row);
             });
 
             // Create worksheet for this gene
