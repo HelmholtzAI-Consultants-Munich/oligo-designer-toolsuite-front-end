@@ -80,7 +80,9 @@ def yaml_to_js(yaml_text):
     # Set both fields to empty string if they exist
     for fasta_key in [
         "files_fasta_target_probe_database",
-        "files_fasta_reference_database_target_probe"
+        "files_fasta_reference_database_target_probe",
+        'files_fasta_reference_database_primer',
+        'files_fasta_reference_database_readout_probe'
     ]:
         if fasta_key in data:
             data[fasta_key] = ""
