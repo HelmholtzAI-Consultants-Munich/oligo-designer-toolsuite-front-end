@@ -30,7 +30,7 @@ const formDatas = {
     set_size_opt: { value: "50", comment: "optimal size of probe sets" },
     distance_between_target_probes: { value: "0", comment: "how much overlap should be allowed between oligos, e.g. if oligos can overlpap x bases choose -x, if oligos can be next to one another choose 0, if oligos should be x bases apart choose x" },
     n_sets: { value: "100", comment: "maximum number of sets to generate" },
-    files_fasta_reference_database_readout_probe: { value: ["data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna, data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"], comment: "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
+    files_fasta_reference_database_readout_probe: { value: "", comment: "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
     readout_probe_length: { value: "20", comment: "length of readout probes" },
     readout_probe_base_probabilities: {
         A: { value: "0.25", comment: "" },
@@ -52,7 +52,7 @@ const formDatas = {
     min_hamming_dist: { value: "4", comment: "minimum distance between two valid barcodes" },
     hamming_weight: { value: "4", comment: "number of bits containing one in each barcode" },
     channels_ids: { value: ["Alexa488, Cy3b, Alexa647"], comment: "names of fluorescent channels" },
-    files_fasta_reference_database_primer: { value: ["data/genomic_regions/exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna, data/genomic_regions/exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"], comment: "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
+    files_fasta_reference_database_primer: { value: "", comment: "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest" },
     reverse_primer_sequence: { value: "CCCTATAGTGAGTCGTATTA", comment: "defaults to reverse complement of 20 nt T7 promoter sequence, change if different sequence desired" },
     primer_length: { value: "20", comment: "length of forward primer" },
     primer_base_probabilities: {
