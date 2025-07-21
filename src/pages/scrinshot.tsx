@@ -10,15 +10,15 @@
     import form_Data_Custom from "../forms/genomic_custom_form";
     import FastaGenerateForm from "../modules/FastaGenerateForm";
     const Scrinshot: React.FC = () => {
-        const [fastaOption, setFastaOption] = useState("upload"); // "generate" or "upload"
-        const [fastaOption2, setFastaOption2] = useState("upload"); // "generate" or "upload"
+        const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
+        const [fastaOption2, setFastaOption2] = useState("generate"); // "generate" or "upload"
         const defaultFastaForm = {
           selectedSource: "ncbi",
           formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),
           formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
         };
-        const [fastaForms, setFastaForms] = useState([{ ...defaultFastaForm }]);
-        const [fastaFormsReference, setFastaFormsReference] = useState([{ ...defaultFastaForm }]);
+        const [fastaForms, setFastaForms] = useState<Array<typeof defaultFastaForm>>([]);
+        const [fastaFormsReference, setFastaFormsReference] =useState<Array<typeof defaultFastaForm>>([]);
         const [loading, setLoading] = useState(false);
         const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
         const [status, setStatus] = useState("idle");
@@ -111,7 +111,7 @@
     }
     console.log(filePaths);
     return filePaths;
-};;
+};
     
     
         const toggleDeveloperSettings = () => {
@@ -201,46 +201,20 @@
                                 </div>
 
 
-                                <div className="mb-3">
+                                <div className="mb-3 pt-3">
                                   <label htmlFor="files_fasta_target_probe_database" className="form-label">
                                     Probe Database:
                                   </label>
                                   <div className="d-flex align-items-center w-100 gap-2">
                                     {/* Radio buttons - left half */}
                                     <div className="w-50">
-                                      <div className="btn-group w-100" role="group" aria-label="FASTA option">
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption"
-                                          id="generateFastaOption"
-                                          value="generate"
-                                          autoComplete="off"
-                                          checked={fastaOption === "generate"}
-                                          onChange={() => setFastaOption("generate")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="generateFastaOption">
-                                          Generate FASTA
-                                        </label>
-
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption"
-                                          id="uploadFastaOption"
-                                          value="upload"
-                                          autoComplete="off"
-                                          checked={fastaOption === "upload"}
-                                          onChange={() => {
-                                              setFastaOption("upload")
-                                              setFastaOption2("upload")
-
-                                          }}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption">
-                                          Upload Fasta File
-                                        </label>
-                                      </div>
+                                      <button
+                                        type="button"
+                                        className="btn btn-outline-primary w-100"
+                                        onClick={() => setFastaForms(forms => [...forms, { ...defaultFastaForm }])}
+                                      >
+                                        Generate FASTA+
+                                      </button>
                                     </div>
                                     {/* File input + choose button - right half */}
                                     <div className="w-50 d-flex align-items-center">
@@ -256,11 +230,6 @@
                                       <label
                                         htmlFor="files_fasta_target_probe_database"
                                         className="btn btn-outline-primary me-2 w-100"
-                                        style={{
-                                          cursor: fastaOption !== "upload" ? "not-allowed" : "pointer",
-                                          opacity: fastaOption !== "upload" ? 0.5 : 1,
-                                          pointerEvents: fastaOption !== "upload" ? "none" : "auto"
-                                        }}
                                       >
                                         Choose File
                                       </label>
@@ -298,15 +267,7 @@
                                   <form
                                     onSubmit={handleSubmit}
                                   >
-                                    <div className="mb-2">
-                                      <button
-                                        type="button"
-                                        className="btn btn-outline-primary"
-                                        onClick={() => setFastaForms(forms => [...forms, { ...defaultFastaForm }])}
-                                      >
-                                        + Add Species/Source
-                                      </button>
-                                    </div>
+
                                     {fastaForms.map((form, idx) => (
                                       <FastaGenerateForm
                                         key={idx}
@@ -315,9 +276,9 @@
                                           setFastaForms(forms => forms.map((f, i) => (i === idx ? updatedForm : f)))
                                         }
                                         onRemove={() =>
-                                          setFastaForms(forms => forms.length === 1 ? forms : forms.filter((_, i) => i !== idx))
+                                          setFastaForms(forms => forms.length === 0 ? forms : forms.filter((_, i) => i !== idx))
                                         }
-                                        disableRemove={fastaForms.length === 1}
+                                        disableRemove={fastaForms.length === 0}
                                       />
                                     ))}
                                   </form>
@@ -329,39 +290,14 @@
                                   </label>
                                   <div className="d-flex align-items-center w-100 gap-2">
                                     {/* Button group: 3 options */}
-                                    <div className="w-50">
-                                      <div className="btn-group w-100" role="group" aria-label="FASTA option">
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption2"
-                                          id="generateFastaOption2"
-                                          value="generate"
-                                          autoComplete="off"
-                                          checked={fastaOption2 === "generate"}
-                                          onChange={() => setFastaOption2("generate")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="generateFastaOption2">
-                                          Generate FASTA
-                                        </label>
-
-
-
-
-                                           <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption2"
-                                          id="uploadFastaOption2"
-                                          value="upload"
-                                          autoComplete="off"
-                                          checked={fastaOption2 === "upload"}
-                                          onChange={() => setFastaOption2("upload")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption2">
-                                          Upload Fasta File
-                                        </label>
-                                      </div>
+                                   <div className="w-50">
+                                      <button
+                                        type="button"
+                                        className="btn btn-outline-primary w-100"
+                                        onClick={() => setFastaFormsReference(forms => [...forms, { ...defaultFastaForm }])}
+                                      >
+                                        Generate FASTA+
+                                      </button>
                                     </div>
                                     {/* File upload area, only visible if "Upload File" is selected */}
                                     <div className="w-50 d-flex align-items-center">
@@ -377,11 +313,6 @@
                                       <label
                                         htmlFor="files_fasta_reference_database_target_probe"
                                         className="btn btn-outline-primary me-2 w-100"
-                                        style={{
-                                          cursor: fastaOption2 !== "upload" ? "not-allowed" : "pointer",
-                                          opacity: fastaOption2 !== "upload" ? 0.5 : 1,
-                                          pointerEvents: fastaOption2 !== "upload" ? "none" : "auto"
-                                        }}
                                       >
                                         Choose File
                                       </label>
@@ -419,15 +350,6 @@
                                     <form
                                     onSubmit={handleSubmit}
                                   >
-                                    <div className="mb-2">
-                                      <button
-                                        type="button"
-                                        className="btn btn-outline-primary"
-                                        onClick={() => setFastaFormsReference(forms => [...forms, { ...defaultFastaForm }])}
-                                      >
-                                        + Add Species/Source
-                                      </button>
-                                    </div>
                                     {fastaFormsReference.map((form, idx) => (
                                       <FastaGenerateForm
                                         key={idx}
@@ -436,9 +358,9 @@
                                           setFastaFormsReference(forms => forms.map((f, i) => (i === idx ? updatedForm : f)))
                                         }
                                         onRemove={() =>
-                                          setFastaFormsReference(forms => forms.length === 1 ? forms : forms.filter((_, i) => i !== idx))
+                                          setFastaFormsReference(forms => forms.length === 0 ? forms : forms.filter((_, i) => i !== idx))
                                         }
-                                        disableRemove={fastaFormsReference.length === 1}
+                                        disableRemove={fastaFormsReference.length === 0}
                                       />
                                     ))}
                                   </form>
