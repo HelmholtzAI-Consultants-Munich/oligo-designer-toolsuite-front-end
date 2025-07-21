@@ -225,7 +225,6 @@
                                         name="files_fasta_target_probe_database"
                                         onChange={handleFileChange}
                                         multiple
-                                        disabled={fastaOption !== "upload"}
                                       />
                                       <label
                                         htmlFor="files_fasta_target_probe_database"
@@ -308,7 +307,6 @@
                                         name="files_fasta_reference_database_target_probe"
                                         onChange={handleFileChange}
                                         multiple
-                                        disabled={fastaOption2 !== "upload"}
                                       />
                                       <label
                                         htmlFor="files_fasta_reference_database_target_probe"
@@ -3029,15 +3027,11 @@
             forms: typeof fastaForms,           // Accept forms as argument
             setLoadingFn?: (val: boolean) => void,
             e?: React.FormEvent
-        ): Promise<string | null> => {
+        ): Promise<string> => {
             e?.preventDefault();
             setLoadingFn?.(true);
             try {
-                if (!Array.isArray(forms) || forms.length === 0) {
-                    alert('No FASTA forms to submit.');
-                    setLoadingFn?.(false);
-                    return null;
-                }
+
                 let results = "";
                 for (let i = 0; i < forms.length; ++i) {
                     const form = forms[i];
@@ -3074,7 +3068,7 @@
             } catch (error) {
                 console.error('Error in batch FASTA submission:', error);
                 alert('Error submitting genomic forms. Please try again.');
-                return null;
+                return 'error';
             } finally {
                 setLoadingFn?.(false);
             }
@@ -3083,22 +3077,43 @@
         const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
             setLoading(true);
-            // First: submit genomic (support batch FASTA forms)
-            if (fastaOption === 'generate') {
-                // @ts-ignore
-                formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicAll(fastaForms,setLoading);
+
+            // ---- FASTA target probe database ----
+            let generatedTargetPaths = '';
+            if (fastaForms.length > 0) {
+                generatedTargetPaths = await handleSubmitGenomicAll(fastaForms, setLoading);
             }
-            if (fastaOption2 === 'generate') {
-                // f need to batch for reference, similar logic can be applied here
-                // @ts-ignore
-                formData['files_fasta_reference_database_target_probe']['value'] = await handleSubmitGenomicAll(fastaFormsReference,setLoading);
-            } else if (fastaOption2 === 'usegenerated') {
-                formData['files_fasta_reference_database_target_probe']['value'] = formData['files_fasta_target_probe_database']['value'];
+            const uploadedPaths = await uploadFiles();
+            let uploadedTargetFastaPath = '';
+            if (uploadedPaths['files_fasta_target_probe_database']) {
+                uploadedTargetFastaPath = uploadedPaths['files_fasta_target_probe_database'];
+            }
+            const mergedTargetValue = [generatedTargetPaths, uploadedTargetFastaPath]
+                .filter(v => v && v.length > 0)
+                .join('\n');
+            if (mergedTargetValue.length > 0) {
+                formData['files_fasta_target_probe_database']['value'] = mergedTargetValue;
+            }
+
+            // ---- FASTA reference probe database ----
+            let generatedReferencePaths = '';
+            if (fastaFormsReference.length > 0) {
+                generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference, setLoading);
+            }
+            let uploadedReferenceFastaPath = '';
+            if (uploadedPaths['files_fasta_reference_database_target_probe']) {
+                uploadedReferenceFastaPath = uploadedPaths['files_fasta_reference_database_target_probe'];
+            }
+            const mergedReferenceValue = [generatedReferencePaths, uploadedReferenceFastaPath]
+                .filter(v => v && v.length > 0)
+                .join('\n');
+            if (mergedReferenceValue.length > 0) {
+                formData['files_fasta_reference_database_target_probe']['value'] = mergedReferenceValue;
             }
 
             const runid = await createRunId();
 
-            // Then: handle scrinshot
+            // Then: handle scrinshot (upload other files and submit form)
             if (!areAllFilesUploaded()) {
                 alert('Please upload all required files before submitting.');
                 setLoading(false);
@@ -3106,7 +3121,6 @@
             }
 
             try {
-                const uploadedPaths = await uploadFiles();
                 const finalFormData = { ...formData };
 
                 for (const key in uploadedPaths) {

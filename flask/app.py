@@ -1595,16 +1595,20 @@ def genomic_cascaded_ncbi():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
 
-            for fname in os.listdir(output_gen):
-                if fname.endswith(('fna')):
-                    toreturn=os.path.join(output_gen, fname)
-
+            fna_files = [
+            os.path.join(output_gen, fname)
+            for fname in os.listdir(output_gen)
+            if fname.endswith('.fna')
+            ]
+            fna_string = "\n".join(fna_files)
 
 
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
+            # Return success response
+
 
 
             # Check if the process was successful
@@ -1618,7 +1622,7 @@ def genomic_cascaded_ncbi():
             return jsonify({
                 "status": "success",
                 "message": "Genomic processing completed successfully.",
-                "output": toreturn
+                "output": fna_string
             }), 200
 
             # Get the output file path
@@ -1708,9 +1712,13 @@ def genomic_cascaded_ensemble():
             status = "completed" if result.returncode == 0 else "error"
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
-            for fname in os.listdir(output_gen):
-                if fname.endswith(('fna')):
-                    toreturn=os.path.join(output_gen, fname)
+            fna_files = [
+            os.path.join(output_gen, fname)
+            for fname in os.listdir(output_gen)
+            if fname.endswith('.fna')
+            ]
+            fna_string = "\n".join(fna_files)
+
 
             print(toreturn,'this is what I will return ')
             mongo.db.runs.update_one(
@@ -1721,7 +1729,7 @@ def genomic_cascaded_ensemble():
             return jsonify({
                 "status": "success",
                 "message": "Genomic processing completed successfully.",
-                "output": toreturn
+                "output": fna_string
             }), 200
         except subprocess.CalledProcessError as e:
             return jsonify({
@@ -1818,13 +1826,16 @@ def genomic_cascaded_custom():
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
-            for fname in os.listdir(output_gen):
-                if fname.endswith(('fna')):
-                    toreturn=os.path.join(output_gen, fname)
+            fna_files = [
+            os.path.join(output_gen, fname)
+            for fname in os.listdir(output_gen)
+            if fname.endswith('.fna')
+            ]
+            fna_string = "\n".join(fna_files)
             return jsonify({
                 "status": "success",
                 "message": "Genomic processing completed successfully.",
-                "output": toreturn
+                "output": fna_string
             }), 200
 
         except subprocess.CalledProcessError as e:
