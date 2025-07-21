@@ -28,6 +28,9 @@ jobs:
       - name: Run Ensemble Species update
         run: python src/forms/update_ens.py
 
+      - name: Run Ensemble Species update
+        run: python src/forms/update_anno_release.py
+
       - name: Commit and push RefSeq changes
         run: |
           git config --global user.name "GitHub Actions"

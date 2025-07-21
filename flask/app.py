@@ -12,6 +12,8 @@ import tempfile
 from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 import traceback
+import hashlib
+import json
 
 app = Flask(__name__)
 app.secret_key = "bi_oligo_gizemi_var"
@@ -184,6 +186,7 @@ def get_run_file(run_id, filename):
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
 @app.route('/api/check_auth', methods=['GET'])
 def check_auth():
     if current_user.is_authenticated:
