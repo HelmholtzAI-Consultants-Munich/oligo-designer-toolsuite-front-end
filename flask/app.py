@@ -321,8 +321,7 @@ def scrinshot():
         user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
         config_path = os.path.join(user_dir,'config.yaml')
         print('no not')
-    #thread = threading.Thread(target=run_command)  # Run task in a separate thread
-    #thread.start()
+
 
     form_data = request.json.get('formdata')
     print('form data', form_data)

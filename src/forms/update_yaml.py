@@ -76,6 +76,15 @@ def yaml_to_js(yaml_text):
     yaml = YAML()
     yaml.preserve_quotes = True
     data = yaml.load(clean_yaml_text(yaml_text))
+
+    # Set both fields to empty string if they exist
+    for fasta_key in [
+        "files_fasta_target_probe_database",
+        "files_fasta_reference_database_target_probe"
+    ]:
+        if fasta_key in data:
+            data[fasta_key] = ""
+
     return process_dict(data)
 
 github_raw_url = "https://raw.githubusercontent.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite/refs/heads/main/data/configs/oligo_seq_probe_designer.yaml"
