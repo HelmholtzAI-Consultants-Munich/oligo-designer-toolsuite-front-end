@@ -46,13 +46,7 @@ const Navbar: React.FC = () => {
                             >
                                 Pipelines
                             </a>
-
                             <ul className="dropdown-menu">
-                                <li>
-                                    <Link className="dropdown-item" to="/pipelines/genomic">
-                                        Genomic Region Generator
-                                    </Link>
-                                </li>
                                 <li>
                                     <Link className="dropdown-item" to="/pipelines/scrinshot">
                                         Scrinshot Probe

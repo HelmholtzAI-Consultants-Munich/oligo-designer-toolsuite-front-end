@@ -203,7 +203,7 @@
 
                                 <div className="mb-3">
                                   <label htmlFor="files_fasta_target_probe_database" className="form-label">
-                                    Fasta Probe Database:
+                                    Probe Database:
                                   </label>
                                   <div className="d-flex align-items-center w-100 gap-2">
                                     {/* Radio buttons - left half */}
@@ -238,7 +238,7 @@
                                           }}
                                         />
                                         <label className="btn btn-outline-primary" htmlFor="uploadFastaOption">
-                                          Upload File
+                                          Upload Fasta File
                                         </label>
                                       </div>
                                     </div>
@@ -325,7 +325,7 @@
 
                                 <div className="mb-3 pt-3">
                                   <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
-                                    Fasta Probe Reference Database:
+                                    Probe Reference Database:
                                   </label>
                                   <div className="d-flex align-items-center w-100 gap-2">
                                     {/* Button group: 3 options */}
@@ -347,24 +347,7 @@
 
 
 
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption2"
-                                          id="useGeneratedFastaOption2"
-                                          value="useGenerated"
-                                          autoComplete="off"
-                                          checked={fastaOption2 === "useGenerated"}
-                                          onChange={() => setFastaOption2("useGenerated")}
-                                          disabled={fastaOption !== "generate"}  // <-- DISABLED unless "generate" is selected above
-                                        />
-                                        <label
-                                          className={`btn btn-outline-primary${fastaOption !== "generate" ? " disabled" : ""}`}
-                                          htmlFor="useGeneratedFastaOption2"
-                                          style={fastaOption !== "generate" ? { pointerEvents: "none", opacity: 0.5 } : {}}
-                                        >
-                                          Use Generated
-                                        </label>
+
                                            <input
                                           type="radio"
                                           className="btn-check"
@@ -376,7 +359,7 @@
                                           onChange={() => setFastaOption2("upload")}
                                         />
                                         <label className="btn btn-outline-primary" htmlFor="uploadFastaOption2">
-                                          Upload File
+                                          Upload Fasta File
                                         </label>
                                       </div>
                                     </div>
