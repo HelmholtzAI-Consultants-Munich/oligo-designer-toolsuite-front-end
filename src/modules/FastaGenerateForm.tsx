@@ -7,6 +7,7 @@ import {
   vertebrate_otherEntries
 } from "../forms/refseqSpecies";
 import { ensemblSpecies } from "../forms/ensemblSpecies";
+import {ncbiAnnotationReleases} from "../forms/ncbiAnnotationReleases";
 
 interface FastaGenerateFormProps {
   form: {
@@ -401,14 +402,18 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                         <div className="col-md-3">
                             <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                             <div className="d-flex align-items-center">
-                                <input
-                                    type="number"
-                                    className="form-control"
+                                <select
+                                    className="form-select"
                                     id="source_params.annotation_release"
                                     name="source_params.annotation_release"
                                     value={form.formDataNcbi.source_params.annotation_release.value}
                                     onChange={handleNcbiChange}
-                                />
+                                >
+                                    <option value="">Select a release</option>
+                                    {ncbiAnnotationReleases.map((release) => (
+                                        <option key={release} value={release}>{release}</option>
+                                    ))}
+                                </select>
                                 <OverlayTrigger
                                     trigger="hover"
                                     placement="top"
@@ -581,15 +586,18 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                         <div className="col-md-4">
                             <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                             <div className="d-flex align-items-center">
-                                <input
-                                    type="number"
-                                    className="form-control"
+                                <select
+                                    className="form-select"
                                     id="source_params.annotation_release"
                                     name="source_params.annotation_release"
                                     value={form.formDataEns.source_params.annotation_release.value}
                                     onChange={handleEnsChange}
-                                    placeholder="current"
-                                />
+                                >
+                                    <option value="">Select a release</option>
+                                    {ncbiAnnotationReleases.map((release) => (
+                                        <option key={release} value={release}>{release}</option>
+                                    ))}
+                                </select>
                                 <OverlayTrigger
                                     trigger="hover"
                                     placement="top"
