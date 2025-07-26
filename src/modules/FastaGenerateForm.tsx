@@ -1,3 +1,10 @@
+/**
+ * FastaGenerateForm.tsx
+ *
+ * This component renders a form to generate FASTA files from NCBI or Ensembl sources.
+ * It allows users to select the data source, species, taxon, annotation release, genomic regions, and additional options.
+ * The form is controlled via props and notifies parent components of changes.
+ */
 import React from 'react';
 import { OverlayTrigger, Popover } from 'react-bootstrap';
 import { InfoCircle } from "react-bootstrap-icons";
@@ -9,6 +16,7 @@ import {
 import { ensemblSpecies } from "../forms/ensemblSpecies";
 import {ncbiAnnotationReleases} from "../forms/ncbiAnnotationReleases";
 
+// Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
   form: {
     selectedSource: string;
@@ -20,13 +28,19 @@ interface FastaGenerateFormProps {
   disableRemove?: boolean;
 }
 
+/**
+ * FastaGenerateForm
+ *
+ * Renders a dynamic form for FASTA file generation, switching between NCBI and Ensembl options.
+ * Handles all controlled input changes and notifies parent components of updates.
+ */
 const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
   form,
   onChange,
   onRemove,
   disableRemove
 }) => {
-  // Handlers for controlled fields
+  // Handles changes to the source selector (NCBI/Ensembl)
   const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSource = e.target.value;
     onChange({
@@ -35,7 +49,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     });
   };
 
-  // For NCBI
+  // Handles changes to NCBI-specific form fields and checkboxes
   const handleNcbiChange = (e: React.ChangeEvent<any>) => {
     const { name, value, type, checked } = e.target;
     // Checkboxes for genomic regions
@@ -89,7 +103,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     }
   };
 
-  // For Ensembl
+  // Handles changes to Ensembl-specific form fields and checkboxes
   const handleEnsChange = (e: React.ChangeEvent<any>) => {
     const { name, value, type, checked } = e.target;
     if (name in form.formDataEns.genomic_regions) {
@@ -149,6 +163,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
           <div>
             {form.selectedSource === "ncbi" && (
               <div>
+                {/* Source selector */}
                     <div className="row g-3">
                         <div className="col-md-3">
                             <label htmlFor="source" className="form-label">Select Source</label>
@@ -163,6 +178,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                 <option value="ensembl"> Ensembl</option>
                             </select>
                         </div>
+                        {/* Taxon selector */}
                         <div className="col-md-3">
                             <label htmlFor="taxon" className="form-label">Taxon</label>
                             <div className="d-flex align-items-center">
@@ -211,6 +227,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                             </div>
                         </div>
 
+                        {/* Species selector */}
                         <div className="col-md-3">
                             <label htmlFor="species" className="form-label">Species</label>
                             <div className="d-flex align-items-center">
@@ -399,6 +416,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                             </div>
                         </div>
 
+                        {/* Annotation release selector */}
                         <div className="col-md-3">
                             <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                             <div className="d-flex align-items-center">
@@ -440,6 +458,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
 
                     </div>
 
+                    {/* Genomic regions checkboxes */}
                     <h6 className="pt-3">Genomic Regions</h6>
                     <div className="row g-3">
                         {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
@@ -486,6 +505,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                         ))}
 
                     </div>
+                    {/* Block size input for exon-exon junctions */}
                     {form.formDataNcbi.genomic_regions.exon_exon_junction.value === "true" && (
                         <div className="col-md-4 pt-2">
                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">
@@ -532,6 +552,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
           )}
           {form.selectedSource === "ensembl" && (
             <div>
+                {/* Source selector */}
                     <div className="row g-3">
                         <div className="col-md-4">
                             <label htmlFor="source" className="form-label">Select Source</label>
@@ -546,6 +567,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                 <option value="ensembl"> Ensembl</option>
                             </select>
                         </div>
+                        {/* Species selector */}
                         <div className="col-md-4">
                             <label htmlFor="species" className="form-label">Species</label>
                             <div className="d-flex align-items-center">
@@ -583,6 +605,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                             </div>
                         </div>
 
+                        {/* Annotation release selector */}
                         <div className="col-md-4">
                             <label htmlFor="annotation_release" className="form-label">Annotation Release</label>
                             <div className="d-flex align-items-center">
@@ -624,6 +647,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
 
                     </div>
 
+                    {/* Genomic regions checkboxes */}
                     <h5 className="pt-3">Genomic Regions</h5>
                     <div className="row g-3">
                         {["gene", "intergenic", "exon", "utr", "cds", "intron", "exon_exon_junction"].map((region) => (
@@ -667,6 +691,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                             </div>
                         ))}
                     </div>
+                    {/* Block size input for exon-exon junctions */}
                     {form.formDataEns.genomic_regions.exon_exon_junction.value === "true" && (
                         <div className="col-md-4 pt-2">
                             <label htmlFor="exon_exon_junction_block_size" className="form-label me-2 mb-0">

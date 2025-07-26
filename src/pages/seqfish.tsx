@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from "../modules/nav";
+import React, { useState } from 'react';
 import axios from "axios";
-import {OverlayTrigger, Popover} from "react-bootstrap";
-import {InfoCircle} from "react-bootstrap-icons";
+import { OverlayTrigger, Popover } from "react-bootstrap";
+import { InfoCircle } from "react-bootstrap-icons";
+
+import Navbar from "../modules/nav";
+import FastaGenerateForm from "../modules/FastaGenerateForm";
 import seqfish_form from "../forms/seqfish_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
-import {createRunId} from "../modules/helpers";
-import FastaGenerateForm from "../modules/FastaGenerateForm";
+import { createRunId } from "../modules/helpers";
 
 const SeqFish: React.FC = () => {
     const defaultFastaForm = {
-          selectedSource: "ncbi",
-          formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),
-          formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
-        };
+        selectedSource: "ncbi",
+        formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),
+        formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
+    };
+
     const [fastaOption, setFastaOption] = useState("upload"); // "generate" or "upload"
-    const [fastaOption2, setFastaOption2] = useState("upload"); // "generate" or "upload"
-    const [fastaOptionReadout, setFastaOptionReadout] = useState("upload"); // "generate" or "upload"
-    const [fastaOptionPrimer, setFastaOptionPrimer] = useState("upload"); // "generate" or "upload"
+    const [fastaOption2, setFastaOption2] = useState("upload");
+    const [fastaOptionReadout, setFastaOptionReadout] = useState("upload");
+    const [fastaOptionPrimer, setFastaOptionPrimer] = useState("upload");
     const [fastaForms, setFastaForms] = useState([{ ...defaultFastaForm }]);
     const [fastaFormsReference, setFastaFormsReference] = useState([{ ...defaultFastaForm }]);
     const [fastaFormsReadout, setFastaFormsReadout] = useState([{ ...defaultFastaForm }]);
@@ -30,20 +32,29 @@ const SeqFish: React.FC = () => {
     const [formData, setFormData] = useState(seqfish_form);
     const [activeTab, setActiveTab] = useState("probe_sequences");
     const [activetab2, setActivetab2] = useState("specfblastn");
+
     interface FileState {
         file_regions: File | null;
-        files_fasta_target_probe_database: File[]; // Always an array
-        files_fasta_reference_database_target_probe: File[]; // Always an array
-        files_fasta_reference_database_readout_probe: File[]; // Always an array
-        files_fasta_reference_database_primer: File[]; // Always an array
+        files_fasta_target_probe_database: File[];
+        files_fasta_reference_database_target_probe: File[];
+        files_fasta_reference_database_readout_probe: File[];
+        files_fasta_reference_database_primer: File[];
     }
+
     const [files, setFiles] = useState<FileState>({
         file_regions: null,
-        files_fasta_target_probe_database: [], // Empty array
-        files_fasta_reference_database_target_probe: [], // Empty array
-        files_fasta_reference_database_readout_probe: [], // Empty array
-        files_fasta_reference_database_primer: [], // Empty array
+        files_fasta_target_probe_database: [],
+        files_fasta_reference_database_target_probe: [],
+        files_fasta_reference_database_readout_probe: [],
+        files_fasta_reference_database_primer: [],
     });
+
+    // Handles file input changes: updates the `files` state with selected files for a given input.
+    // Parameters:
+    //   e: React.ChangeEvent<HTMLInputElement> - the file input change event.
+    // Logic:
+    //   - For single file input ('file_regions'), stores the first file.
+    //   - For multi-file inputs, stores all selected files as an array.
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
         if (!selectedFiles) return;
@@ -51,37 +62,41 @@ const SeqFish: React.FC = () => {
         setFiles((prevFiles) => ({
             ...prevFiles,
             [name]: name === 'file_regions'
-                ? selectedFiles[0] // Single file
-                : Array.from(selectedFiles), // Multiple files (always an array)
+                ? selectedFiles[0]
+                : Array.from(selectedFiles),
         }));
     };
+
+    // Checks if all required file inputs have at least one file uploaded.
+    // Returns true if all FASTA-related file arrays have files, false otherwise.
     const areAllFilesUploaded = () => {
         return (
-            (files.files_fasta_target_probe_database.length > 0 &&
+            files.files_fasta_target_probe_database.length > 0 &&
             files.files_fasta_reference_database_target_probe.length > 0 &&
             files.files_fasta_reference_database_readout_probe.length > 0 &&
-            files.files_fasta_reference_database_primer.length > 0)
-
-
+            files.files_fasta_reference_database_primer.length > 0
         );
     };
+
+    // Asynchronously uploads all selected files to the server and collects their file paths.
+    // For each file (or array of files) in the files state:
+    //   - Uploads the file(s) via axios POST to /api/upload.
+    //   - Collects and returns an object mapping file keys to their uploaded server file paths.
     const uploadFiles = async () => {
         const filePaths: { [key: string]: string } = {};
-        console.log(files,'from the event');
+        console.log(files, 'from the event');
         for (const key in files) {
             // @ts-ignore
             if (files[key]) {
-                const formDataU = new FormData();
                 // @ts-ignore
                 if (Array.isArray(files[key])) {
                     console.log(`Processing multiple files for key: ${key}`);
-                    let paths = []; // Temporary array to collect file paths
+                    const paths: string[] = [];
                     // @ts-ignore
-                    for (const file of files[key]) { // Use for...of to iterate over the array
+                    for (const file of files[key]) {
                         console.log(file);
                         const formDataU = new FormData();
                         formDataU.append("file", file);
-                        // Perform upload logic here
                         try {
                             const response = await axios.post(
                                 "http://localhost:5000/api/upload",
@@ -90,19 +105,19 @@ const SeqFish: React.FC = () => {
                                     headers: { "Content-Type": "multipart/form-data" },
                                 }
                             );
-                            paths.push(response.data.filePath); // Append the returned file path
+                            paths.push(response.data.filePath);
                         } catch (error) {
                             console.error(`Error uploading ${key}:`, error);
                         }
                     }
                     filePaths[key] = paths.join("\n");
                 } else {
-
-                    if (formData.file_regions.value.length ===0) {
+                    if (formData.file_regions.value.length === 0) {
+                        const formDataU = new FormData();
                         // @ts-ignore
                         formDataU.append("file", files[key]);
                         // @ts-ignore
-                        console.log(files[key],key,'what it look like not array');
+                        console.log(files[key], key, 'what it look like not array');
                         try {
                             const response = await axios.post(
                                 "http://localhost:5000/api/upload",
@@ -112,12 +127,10 @@ const SeqFish: React.FC = () => {
                                 }
                             );
                             filePaths[key] = response.data.filePath;
-                            // Save the returned file path
                         } catch (error) {
                             console.error(`Error uploading ${key}:`, error);
                         }
                     }
-
                 }
             }
         }
@@ -125,27 +138,15 @@ const SeqFish: React.FC = () => {
         return filePaths;
     };
 
-
+    // Toggles the visibility of the developer settings panel by updating the state.
     const toggleDeveloperSettings = () => {
         setShowDeveloperSettings(!showDeveloperSettings);
     };
-    // useEffect(() => {
-    //     const socket = io("http://localhost:5000"); // Connect to Flask-SocketIO
-    //     socket.on("update", (data) => {
-    //         setProgress(data.progress);
-    //         setStatus(data.status);
-    //
-    //     });
-    //
-    //     return () => {
-    //         socket.disconnect(); // Clean up connection on component unmount
-    //     };
-    // }, []);
-
+    // Returns the content for the currently active tab.
+    // Uses a switch statement to render tab-specific JSX for 'probe_sequences' or 'readout'.
     const renderTabContent = () => {
         switch (activeTab) {
             case "probe_sequences":
-                // @ts-ignore
                 return (
                     <div>
                         <div className="mb-4">
@@ -154,9 +155,7 @@ const SeqFish: React.FC = () => {
                                     Target File:
                                 </label>
                                 <div className="d-flex flex-column w-100">
-                                    {/* Flex container for file input and custom button */}
                                     <div className="d-flex align-items-center w-100">
-                                        {/* Hidden file input */}
                                         <input
                                             type="file"
                                             className="form-control visually-hidden"
@@ -182,16 +181,14 @@ const SeqFish: React.FC = () => {
                                             <option value="LOC105376749" />
                                         </datalist>
 
-                                        {/* Custom file input button spanning full width */}
                                         <label
                                             htmlFor="file_regions"
-                                            className="btn btn-outline-primary d-block me-2 w-100 "
-                                            style={{cursor: 'pointer'}}
+                                            className="btn btn-outline-primary d-block me-2 w-100"
+                                            style={{ cursor: 'pointer' }}
                                         >
                                             Choose File
                                         </label>
 
-                                        {/* Info icon with popover */}
                                         <div className="d-flex align-items-center ms-2">
                                             <OverlayTrigger
                                                 trigger="hover"
@@ -206,7 +203,7 @@ const SeqFish: React.FC = () => {
                                             >
                                                 <InfoCircle
                                                     style={{
-                                                        fontSize: "1.2rem", // Adjust as needed
+                                                        fontSize: "1.2rem",
                                                         cursor: "pointer",
                                                         color: "#0d6efd",
                                                     }}
@@ -215,7 +212,6 @@ const SeqFish: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* Display selected file name under the icon */}
                                     <div className="text-muted small mt-1">
                                         {files.file_regions
                                             ? `Selected: ${files.file_regions.name}`
@@ -224,6 +220,7 @@ const SeqFish: React.FC = () => {
                                 </div>
 
 
+                                {/* --- Fasta Probe Database --- */}
 
                                 <div className="mb-3">
                                   <label htmlFor="files_fasta_target_probe_database" className="form-label">
@@ -488,7 +485,8 @@ const SeqFish: React.FC = () => {
                                     overlay={
                                         <Popover id="popover-n_jobs">
                                             <Popover.Body>
-                                                {formData.top_n_sets.comment}                                            </Popover.Body>
+                                                {formData.top_n_sets.comment}
+                                            </Popover.Body>
                                         </Popover>
                                     }
                                 >
@@ -1060,7 +1058,6 @@ const SeqFish: React.FC = () => {
                     ;
 
             case 'readout':
-                // @ts-ignore
                 return (
                     <div className="mb-4">
                         <div className="mb-3">
@@ -1161,12 +1158,12 @@ const SeqFish: React.FC = () => {
                         </div>
                       </div>
                       {/* Display selected file names */}
-                      <div className="text-muted small mt-1">
-                        {files.files_fasta_reference_database_readout_probe.length > 0
-                          ? `Selected: ${files.files_fasta_reference_database_readout_probe.map(f => f.name).join(', ')}`
-                          : "No files selected"}
-                      </div>
-</div>
+                          <div className="text-muted small mt-1">
+                            {files.files_fasta_reference_database_readout_probe.length > 0
+                              ? `Selected: ${files.files_fasta_reference_database_readout_probe.map(f => f.name).join(', ')}`
+                              : "No files selected"}
+                          </div>
+                        </div>
                     {fastaOptionReadout ==='generate' && (
 
                            <form
