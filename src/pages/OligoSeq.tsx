@@ -6,7 +6,6 @@ import {InfoCircle} from "react-bootstrap-icons";
 import oligoseq_form from "../forms/oligoseq_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
-import form_Data_Custom from "../forms/genomic_custom_form";
 import {createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
 
@@ -17,10 +16,10 @@ const OligoSeq: React.FC = () => {
           formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),
           formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
         };
-    const [fastaForms, setFastaForms] = useState([{ ...defaultFastaForm }]);
-    const [fastaFormsReference, setFastaFormsReference] = useState([{ ...defaultFastaForm }]);
-    const [fastaOption, setFastaOption] = useState("upload"); // "generate" or "upload"
-    const [fastaOption2, setFastaOption2] = useState("upload"); // "generate" or "upload"
+    const [fastaForms, setFastaForms] = useState<Array<typeof defaultFastaForm>>([]);
+    const [fastaFormsReference, setFastaFormsReference] = useState<Array<typeof defaultFastaForm>>([]);
+    const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
+    const [fastaOption2, setFastaOption2] = useState("generate"); // "generate" or "upload"
     const [loading, setLoading] = useState(false);
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
     const [status, setStatus] = useState("idle");
@@ -119,18 +118,6 @@ const OligoSeq: React.FC = () => {
     const toggleDeveloperSettings = () => {
         setShowDeveloperSettings(!showDeveloperSettings);
     };
-    // useEffect(() => {
-    //     const socket = io("http://localhost:5000"); // Connect to Flask-SocketIO
-    //     socket.on("update", (data) => {
-    //         setProgress(data.progress);
-    //         setStatus(data.status);
-    //
-    //     });
-    //
-    //     return () => {
-    //         socket.disconnect(); // Clean up connection on component unmount
-    //     };
-    // }, []);
     const [formData, setFormData] = useState({
         ...oligoseq_form,
         target_probe_targeted_exons: { value: 1, comment: "" }
@@ -220,271 +207,209 @@ const OligoSeq: React.FC = () => {
                                 </div>
 
 
-                                <div className="mb-3">
-                                  <label htmlFor="files_fasta_target_probe_database" className="form-label">
-                                    Fasta Probe Database:
-                                  </label>
-                                  <div className="d-flex align-items-center w-100 gap-2">
-                                    {/* Radio buttons - left half */}
-                                    <div className="w-50">
-                                      <div className="btn-group w-100" role="group" aria-label="FASTA option">
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption"
-                                          id="generateFastaOption"
-                                          value="generate"
-                                          autoComplete="off"
-                                          checked={fastaOption === "generate"}
-                                          onChange={() => setFastaOption("generate")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="generateFastaOption">
-                                          Generate FASTA
-                                        </label>
-
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption"
-                                          id="uploadFastaOption"
-                                          value="upload"
-                                          autoComplete="off"
-                                          checked={fastaOption === "upload"}
-                                          onChange={() => setFastaOption("upload")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption">
-                                          Upload File
-                                        </label>
-                                      </div>
+                                {/* === Probe Database Section === */}
+                                {/*
+                                    Probe Database block: allows user to generate or upload probe FASTA files.
+                                    Includes: add-form button, file input, info popover, file display, dynamic form rendering.
+                                */}
+                                <div className="mb-3 pt-3">
+                                    <label htmlFor="files_fasta_target_probe_database" className="form-label">
+                                        Probe Database:
+                                    </label>
+                                    <div className="d-flex align-items-center w-100 gap-2">
+                                        {/* Add-form button */}
+                                        <div className="w-50">
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-primary w-100"
+                                                onClick={() => setFastaForms(forms => [...forms, { ...defaultFastaForm }])}
+                                            >
+                                                Generate FASTA+
+                                            </button>
+                                        </div>
+                                        {/* File input, label, info popover */}
+                                        <div className="w-50 d-flex align-items-center">
+                                            {/* File input (hidden) */}
+                                            <input
+                                                type="file"
+                                                className="form-control visually-hidden"
+                                                id="files_fasta_target_probe_database"
+                                                name="files_fasta_target_probe_database"
+                                                onChange={handleFileChange}
+                                                multiple
+                                            />
+                                            {/* File input button */}
+                                            <label
+                                                htmlFor="files_fasta_target_probe_database"
+                                                className="btn btn-outline-primary me-2 w-100"
+                                            >
+                                                Choose File
+                                            </label>
+                                            {/* Info popover */}
+                                            <OverlayTrigger
+                                                trigger="hover"
+                                                placement="top"
+                                                overlay={
+                                                    <Popover id="files_fasta_target_probe_database">
+                                                        <Popover.Body>
+                                                            {formData.files_fasta_target_probe_database.comment}
+                                                        </Popover.Body>
+                                                    </Popover>
+                                                }
+                                            >
+                                                <InfoCircle
+                                                    style={{
+                                                        fontSize: "1.2rem",
+                                                        cursor: "pointer",
+                                                        color: "#0d6efd",
+                                                        marginLeft: "10px"
+                                                    }}
+                                                />
+                                            </OverlayTrigger>
+                                        </div>
                                     </div>
-                                    {/* File input + choose button - right half */}
-                                    <div className="w-50 d-flex align-items-center">
-                                      <input
-                                        type="file"
-                                        className="form-control visually-hidden"
-                                        id="files_fasta_target_probe_database"
-                                        name="files_fasta_target_probe_database"
-                                        onChange={handleFileChange}
-                                        multiple
-                                        disabled={fastaOption !== "upload"}
-                                      />
-                                      <label
-                                        htmlFor="files_fasta_target_probe_database"
-                                        className="btn btn-outline-primary me-2 w-100"
-                                        style={{
-                                          cursor: fastaOption !== "upload" ? "not-allowed" : "pointer",
-                                          opacity: fastaOption !== "upload" ? 0.5 : 1,
-                                          pointerEvents: fastaOption !== "upload" ? "none" : "auto"
-                                        }}
-                                      >
-                                        Choose File
-                                      </label>
-                                      {/* Info icon with popover */}
-                                      <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                          <Popover id="files_fasta_target_probe_database">
-                                            <Popover.Body>
-                                              {formData.files_fasta_target_probe_database.comment}
-                                            </Popover.Body>
-                                          </Popover>
-                                        }
-                                      >
-                                        <InfoCircle
-                                          style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                          }}
-                                        />
-                                      </OverlayTrigger>
+                                    {/* File display */}
+                                    <div className="text-muted small mt-1">
+                                        {files.files_fasta_target_probe_database.length > 0
+                                            ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
+                                            : "No files selected"}
                                     </div>
-                                  </div>
-                                  <div className="text-muted small mt-1">
-                                    {files.files_fasta_target_probe_database.length > 0
-                                      ? `Selected: ${files.files_fasta_target_probe_database.map(f => f.name).join(', ')}`
-                                      : "No files selected"}
-                                  </div>
                                 </div>
-
+                                {/* Dynamic form rendering for Probe Database */}
                                 {fastaOption === "generate" && (
-                                  <form
-                                    onSubmit={handleSubmit}
-                                  >
-                                    <div className="mb-2">
-                                      <button
-                                        type="button"
-                                        className="btn btn-outline-primary"
-                                        onClick={() => setFastaForms(forms => [...forms, { ...defaultFastaForm }])}
-                                      >
-                                        + Add Species/Source
-                                      </button>
-                                    </div>
-                                    {fastaForms.map((form, idx) => (
-                                      <FastaGenerateForm
-                                        key={idx}
-                                        form={form}
-                                        onChange={updatedForm =>
-                                          setFastaForms(forms => forms.map((f, i) => (i === idx ? updatedForm : f)))
-                                        }
-                                        onRemove={() =>
-                                          setFastaForms(forms => forms.length === 1 ? forms : forms.filter((_, i) => i !== idx))
-                                        }
-                                        disableRemove={fastaForms.length === 1}
-                                      />
-                                    ))}
-                                  </form>
+                                    <form onSubmit={handleSubmit}>
+                                        {fastaForms.map((form, idx) => (
+                                            <FastaGenerateForm
+                                                key={idx}
+                                                form={form}
+                                                onChange={updatedForm =>
+                                                    setFastaForms(forms => forms.map((f, i) => (i === idx ? updatedForm : f)))
+                                                }
+                                                onRemove={() =>
+                                                    setFastaForms(forms =>
+                                                        forms.length === 0 ? forms : forms.filter((_, i) => i !== idx)
+                                                    )
+                                                }
+                                                disableRemove={fastaForms.length === 0}
+                                            />
+                                        ))}
+                                    </form>
                                 )}
 
-
+                                {/* === Probe Reference Database Section === */}
+                                {/*
+                                    Probe Reference Database block: allows user to generate or upload reference FASTA files.
+                                    Includes: add-form button, file input, info popover, file display, dynamic form rendering.
+                                */}
                                 <div className="mb-3 pt-3">
-                                  <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
-                                    Fasta Probe Reference Database:
-                                  </label>
-                                  <div className="d-flex align-items-center w-100 gap-2">
-                                    {/* Button group: 3 options */}
-                                    <div className="w-50">
-                                      <div className="btn-group w-100" role="group" aria-label="FASTA option">
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption2"
-                                          id="generateFastaOption2"
-                                          value="generate"
-                                          autoComplete="off"
-                                          checked={fastaOption2 === "generate"}
-                                          onChange={() => setFastaOption2("generate")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="generateFastaOption2">
-                                          Generate FASTA
-                                        </label>
-
-
-
-                                        <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption2"
-                                          id="useGeneratedFastaOption2"
-                                          value="useGenerated"
-                                          autoComplete="off"
-                                          checked={fastaOption2 === "useGenerated"}
-                                          onChange={() => setFastaOption2("useGenerated")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="useGeneratedFastaOption2">
-                                          Use Generated
-                                        </label>
-                                           <input
-                                          type="radio"
-                                          className="btn-check"
-                                          name="fastaOption2"
-                                          id="uploadFastaOption2"
-                                          value="upload"
-                                          autoComplete="off"
-                                          checked={fastaOption2 === "upload"}
-                                          onChange={() => setFastaOption2("upload")}
-                                        />
-                                        <label className="btn btn-outline-primary" htmlFor="uploadFastaOption2">
-                                          Upload File
-                                        </label>
-                                      </div>
+                                    <label htmlFor="files_fasta_reference_database_target_probe" className="form-label">
+                                        Probe Reference Database:
+                                    </label>
+                                    <div className="d-flex align-items-center w-100 gap-2">
+                                        {/* Add-form button */}
+                                        <div className="w-50">
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-primary w-100"
+                                                onClick={() => setFastaFormsReference(forms => [...forms, { ...defaultFastaForm }])}
+                                            >
+                                                Generate FASTA+
+                                            </button>
+                                        </div>
+                                        {/* File input, label, info popover */}
+                                        <div className="w-50 d-flex align-items-center">
+                                            {/* File input (hidden) */}
+                                            <input
+                                                type="file"
+                                                className="form-control visually-hidden"
+                                                id="files_fasta_reference_database_target_probe"
+                                                name="files_fasta_reference_database_target_probe"
+                                                onChange={handleFileChange}
+                                                multiple
+                                            />
+                                            {/* File input button */}
+                                            <label
+                                                htmlFor="files_fasta_reference_database_target_probe"
+                                                className="btn btn-outline-primary me-2 w-100"
+                                            >
+                                                Choose File
+                                            </label>
+                                            {/* Info popover */}
+                                            <OverlayTrigger
+                                                trigger="hover"
+                                                placement="top"
+                                                overlay={
+                                                    <Popover id="files_fasta_reference_database_target_probe">
+                                                        <Popover.Body>
+                                                            {formData.files_fasta_reference_database_target_probe.comment}
+                                                        </Popover.Body>
+                                                    </Popover>
+                                                }
+                                            >
+                                                <InfoCircle
+                                                    style={{
+                                                        fontSize: "1.2rem",
+                                                        cursor: "pointer",
+                                                        color: "#0d6efd",
+                                                        marginLeft: "10px"
+                                                    }}
+                                                />
+                                            </OverlayTrigger>
+                                        </div>
                                     </div>
-                                    {/* File upload area, only visible if "Upload File" is selected */}
-                                    <div className="w-50 d-flex align-items-center">
-                                      <input
-                                        type="file"
-                                        className="form-control visually-hidden"
-                                        id="files_fasta_reference_database_target_probe"
-                                        name="files_fasta_reference_database_target_probe"
-                                        onChange={handleFileChange}
-                                        multiple
-                                        disabled={fastaOption2 !== "upload"}
-                                      />
-                                      <label
-                                        htmlFor="files_fasta_reference_database_target_probe"
-                                        className="btn btn-outline-primary me-2 w-100"
-                                        style={{
-                                          cursor: fastaOption2 !== "upload" ? "not-allowed" : "pointer",
-                                          opacity: fastaOption2 !== "upload" ? 0.5 : 1,
-                                          pointerEvents: fastaOption2 !== "upload" ? "none" : "auto"
-                                        }}
-                                      >
-                                        Choose File
-                                      </label>
-                                      <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                          <Popover id="files_fasta_reference_database_target_probe">
-                                            <Popover.Body>
-                                              {formData.files_fasta_reference_database_target_probe.comment}
-                                            </Popover.Body>
-                                          </Popover>
+                                    {/* File display */}
+                                    <div className="text-muted small mt-1">
+                                        {files.files_fasta_reference_database_target_probe.length > 0
+                                            ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
+                                            : "No files selected"
                                         }
-                                      >
-                                        <InfoCircle
-                                          style={{
-                                            fontSize: "1.2rem",
-                                            cursor: "pointer",
-                                            color: "#0d6efd",
-                                            marginLeft: "10px"
-                                          }}
-                                        />
-                                      </OverlayTrigger>
                                     </div>
-                                  </div>
-                                  {/* Display selected file names */}
-                                  <div className="text-muted small mt-1">
-                                    {files.files_fasta_reference_database_target_probe.length > 0
-                                      ? `Selected: ${files.files_fasta_reference_database_target_probe.map(f => f.name).join(', ')}`
-                                      : "No files selected"}
-                                  </div>
                                 </div>
-                                {fastaOption2 ==='generate' && (
-
-                                    <form
-                                    onSubmit={handleSubmit}
-                                  >
-                                    <div className="mb-2">
-                                      <button
-                                        type="button"
-                                        className="btn btn-outline-primary"
-                                        onClick={() => setFastaFormsReference(forms => [...forms, { ...defaultFastaForm }])}
-                                      >
-                                        + Add Species/Source
-                                      </button>
-                                    </div>
-                                    {fastaFormsReference.map((form, idx) => (
-                                      <FastaGenerateForm
-                                        key={idx}
-                                        form={form}
-                                        onChange={updatedForm =>
-                                          setFastaFormsReference(forms => forms.map((f, i) => (i === idx ? updatedForm : f)))
-                                        }
-                                        onRemove={() =>
-                                          setFastaFormsReference(forms => forms.length === 1 ? forms : forms.filter((_, i) => i !== idx))
-                                        }
-                                        disableRemove={fastaFormsReference.length === 1}
-                                      />
-                                    ))}
-                                  </form>
+                                {/* Dynamic form rendering for Probe Reference Database */}
+                                {fastaOption2 === 'generate' && (
+                                    <form onSubmit={handleSubmit}>
+                                        {fastaFormsReference.map((form, idx) => (
+                                            <FastaGenerateForm
+                                                key={idx}
+                                                form={form}
+                                                onChange={updatedForm =>
+                                                    setFastaFormsReference(forms => forms.map((f, i) => (i === idx ? updatedForm : f)))
+                                                }
+                                                onRemove={() =>
+                                                    setFastaFormsReference(forms =>
+                                                        forms.length === 0 ? forms : forms.filter((_, i) => i !== idx)
+                                                    )
+                                                }
+                                                disableRemove={fastaFormsReference.length === 0}
+                                            />
+                                        ))}
+                                    </form>
                                 )}
                             </div>
                         </div>
+                        {/* Maximum Number of Sets input + info popover */}
                         <div className="mb-3">
-                            <label htmlFor="top_n_sets" className="form-label">Maximum Number of Sets:</label>
+                            <label htmlFor="top_n_sets" className="form-label">
+                                Maximum Number of Sets:
+                            </label>
                             <div className="d-flex align-items-center">
-                                <input type="number" className="form-control" id="n_jobs" name="n_jobs"
-                                       value={formData.top_n_sets.value} onChange={handleChange} required/>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    id="n_jobs"
+                                    name="n_jobs"
+                                    value={formData.top_n_sets.value}
+                                    onChange={handleChange}
+                                    required
+                                />
                                 <OverlayTrigger
                                     trigger="hover"
                                     placement="top"
                                     overlay={
                                         <Popover id="popover-n_jobs">
                                             <Popover.Body>
-                                                {formData.top_n_sets.comment}                                            </Popover.Body>
+                                                {formData.top_n_sets.comment}
+                                            </Popover.Body>
                                         </Popover>
                                     }
                                 >
@@ -498,8 +423,8 @@ const OligoSeq: React.FC = () => {
                                     />
                                 </OverlayTrigger>
                             </div>
-
                         </div>
+                        {/* Min/Max Probe Length, Targeted Exons, Isoform Consensus */}
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="probe_length_min" className="form-label">Min Probe Length:</label>
@@ -631,6 +556,7 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
+                        {/* Min/Optimal/Max GC Content */}
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
@@ -730,8 +656,10 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
-                        <h6 className="pt-2">Minimum number of nucleotides to consider it a homopolymeric run per
-                            base </h6>
+                        {/* Homopolymeric run thresholds per base */}
+                        <h6 className="pt-2">
+                            Minimum number of nucleotides to consider it a homopolymeric run per base
+                        </h6>
                         <div className="row g-3">
                             <div className="col">
                                 <label htmlFor="homopolymeric_A" className="form-label">A:</label>
@@ -857,6 +785,7 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
+                        {/* Secondary structure thresholds */}
                         <div className="row g-3">
                             <div className="col">
 
@@ -928,6 +857,7 @@ const OligoSeq: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* GC Content Weight */}
                         <div className="row g-3">
 
                             <div className="col">
@@ -962,6 +892,7 @@ const OligoSeq: React.FC = () => {
 
                             </div>
                         </div>
+                        {/* Probe Set Size and Distance */}
                         <div className="row g-3">
 
                             <div className="col">
@@ -2087,15 +2018,11 @@ const OligoSeq: React.FC = () => {
             forms: typeof fastaForms,           // Accept forms as argument
             setLoadingFn?: (val: boolean) => void,
             e?: React.FormEvent
-        ): Promise<string | null> => {
+        ): Promise<string> => {
             e?.preventDefault();
             setLoadingFn?.(true);
             try {
-                if (!Array.isArray(forms) || forms.length === 0) {
-                    alert('No FASTA forms to submit.');
-                    setLoadingFn?.(false);
-                    return null;
-                }
+
                 let results = "";
                 for (let i = 0; i < forms.length; ++i) {
                     const form = forms[i];
@@ -2132,7 +2059,7 @@ const OligoSeq: React.FC = () => {
             } catch (error) {
                 console.error('Error in batch FASTA submission:', error);
                 alert('Error submitting genomic forms. Please try again.');
-                return null;
+                return 'error';
             } finally {
                 setLoadingFn?.(false);
             }
@@ -2141,68 +2068,87 @@ const OligoSeq: React.FC = () => {
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        const runid= await createRunId();
+            e.preventDefault();
+            setLoading(true);
 
-        // First: submit genomic
-        if (fastaOption === 'generate') {
-                // @ts-ignore
-                formData['files_fasta_target_probe_database']['value'] = await handleSubmitGenomicAll(fastaForms,setLoading);
+            // ---- FASTA target probe database ----
+            let generatedTargetPaths = '';
+            if (fastaForms.length > 0) {
+                generatedTargetPaths = await handleSubmitGenomicAll(fastaForms, setLoading);
             }
-       if (fastaOption2 === 'generate') {
-                // f need to batch for reference, similar logic can be applied here
-                // @ts-ignore
-                formData['files_fasta_reference_database_target_probe']['value'] = await handleSubmitGenomicAll(fastaFormsReference,setLoading);
-        }
-       else if (fastaOption2 === 'usegenerated') {
-            formData['files_fasta_reference_database_target_probe']['value'] = formData['files_fasta_target_probe_database']['value'];
-        }
-
-        // Then: handle scrinshot
-        if (!areAllFilesUploaded()) {
-            alert('Please upload all required files before submitting.');
-            setLoading(false);
-            return;
-        }
-
-
-        try {
             const uploadedPaths = await uploadFiles();
-            const finalFormData = { ...formData };
-
-            for (const key in uploadedPaths) {
-                // @ts-ignore
-                if (finalFormData[key]) {
-                    // @ts-ignore
-                    finalFormData[key] = {
-                        value: uploadedPaths[key],
-                        // @ts-ignore
-                        comment: finalFormData[key].comment,
-                    };
-                } else {
-                    // @ts-ignore
-                    finalFormData[key] = {
-                        value: uploadedPaths[key],
-                        comment: "",
-                    };
-                }
+            let uploadedTargetFastaPath = '';
+            if (uploadedPaths['files_fasta_target_probe_database']) {
+                uploadedTargetFastaPath = uploadedPaths['files_fasta_target_probe_database'];
+            }
+            const mergedTargetValue = [generatedTargetPaths, uploadedTargetFastaPath]
+                .filter(v => v && v.length > 0)
+                .join('\n');
+            if (mergedTargetValue.length > 0) {
+                formData['files_fasta_target_probe_database']['value'] = mergedTargetValue;
             }
 
-            await axios.post('http://localhost:5000/api/oligoseq', {formdata:finalFormData,runid:runid}, {
-                withCredentials: true,
-                headers: { "Content-Type": "application/json" },
-            });
+            // ---- FASTA reference probe database ----
+            let generatedReferencePaths = '';
+            if (fastaFormsReference.length > 0) {
+                generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference, setLoading);
+            }
+            let uploadedReferenceFastaPath = '';
+            if (uploadedPaths['files_fasta_reference_database_target_probe']) {
+                uploadedReferenceFastaPath = uploadedPaths['files_fasta_reference_database_target_probe'];
+            }
+            const mergedReferenceValue = [generatedReferencePaths, uploadedReferenceFastaPath]
+                .filter(v => v && v.length > 0)
+                .join('\n');
+            if (mergedReferenceValue.length > 0) {
+                formData['files_fasta_reference_database_target_probe']['value'] = mergedReferenceValue;
+            }
 
-            setStatus("running");
-            alert('Both forms submitted successfully!');
-        } catch (error) {
-            console.error('Error submitting scrinshot form:', error);
-            alert('Error submitting scrinshot form. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
+            const runid = await createRunId();
+
+            // Then: handle scrinshot (upload other files and submit form)
+            if (!areAllFilesUploaded()) {
+                alert('Please upload all required files before submitting.');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const finalFormData = { ...formData };
+
+                for (const key in uploadedPaths) {
+                    // @ts-ignore
+                    if (finalFormData[key]) {
+                        // @ts-ignore
+                        finalFormData[key] = {
+                            value: uploadedPaths[key],
+                            // @ts-ignore
+                            comment: finalFormData[key].comment,
+                        };
+                    } else {
+                        // @ts-ignore
+                        finalFormData[key] = {
+                            value: uploadedPaths[key],
+                            comment: "",
+                        };
+                    }
+                }
+
+                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: finalFormData, runid: runid }, {
+                    withCredentials: true,
+                    headers: { "Content-Type": "application/json" },
+                });
+                const result = response.data;
+                console.log(result, 'this is the result');
+
+                setStatus("running");
+            } catch (error) {
+                console.error('Error submitting scrinshot form:', error);
+                alert('Error submitting scrinshot form. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        };
     return (
         <div>
             <Navbar/>

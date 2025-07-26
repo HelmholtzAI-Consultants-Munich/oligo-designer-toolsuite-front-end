@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from "axios";
-import { OverlayTrigger, Popover } from 'react-bootstrap';
+import { OverlayTrigger, Popover,Spinner } from 'react-bootstrap';
 import { InfoCircle } from "react-bootstrap-icons";
 
 import Navbar from "../modules/nav";
@@ -3152,6 +3152,20 @@ import form_Data_Ens from "../forms/genomic_ens_form";
         };
         return (<div>
                 <Navbar/>
+                {loading && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      top: 0, left: 0, width: '100vw', height: '100vh',
+                      background: 'rgba(255,255,255,0.7)', zIndex: 9999,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}
+                  >
+                    <Spinner animation="border" role="status" style={{ width: 80, height: 80 }}>
+                      <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                  </div>
+                )}
                 <div className="container my-4">
                     <form onSubmit={handleSubmit} id="scrinshotForm">
                         <h2 className="text-center mb-4">Scrinshot Probe Designer</h2>
