@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
 import {OverlayTrigger, Popover} from "react-bootstrap";
@@ -11,8 +11,7 @@ import FastaGenerateForm from "../modules/FastaGenerateForm";
 const Merfish: React.FC = () => {
     const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
     const [fastaOption2, setFastaOption2] = useState("generate"); // "generate" or "upload"
-    const [fastaOptionReadout, setFastaOptionReadout] = useState("generate"); // "generate" or "upload"
-    const [fastaOptionPrimer, setFastaOptionPrimer] = useState("generate"); // "generate" or "upload"
+
     const defaultFastaForm = {
           selectedSource: "ncbi",
           formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),

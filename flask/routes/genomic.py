@@ -1,3 +1,10 @@
+"""
+Genomic endpoints for region generation and processing.
+
+Cascaded endpoints (under `/api/genomic/cascaded/`) are designed to be used as intermediate steps in pipeline workflows:
+they generate genomic regions and pass the locations of created files/directories to downstream processes.
+Other endpoints are standalone: they run the full pipeline and return the output directly to the user.
+"""
 from flask import Blueprint, request, jsonify, current_app, session
 from flask_login import current_user
 from bson import ObjectId
@@ -6,67 +13,67 @@ import subprocess
 from datetime import datetime
 import yaml
 import traceback
-
 from extensions import mongo
 from .helpers import to_bool, to_int
 
 genomic_bp = Blueprint('genomic', __name__)
 
-# ---- Genomic endpoints ----
-
 @genomic_bp.route('/api/genomic/ncbi', methods=['POST'])
 def genomic_ncbi():
+    """
+    Standalone endpoint: Generate genomic regions from NCBI source and run the full pipeline.
+    """
     try:
-        user_dir=''
+        user_dir = ''
+        # Handle authentication/session to determine user directory
         if current_user.is_authenticated:
-            print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-            config_path = os.path.join(user_dir,  "config_genomic_ncbi.yaml")
+            config_path = os.path.join(user_dir, "config_genomic_ncbi.yaml")
             session_id = None
-
         else:
             user_id = None
             session_id = session['session_id']
-            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
-            config_path = os.path.join(user_dir,'config.yaml')
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
+            config_path = os.path.join(user_dir, 'config.yaml')
         config_genomic = {}
 
         # Parse JSON data from the request
         form_data = request.json.get('formdata')
-        run_idd=request.json.get('runid')# Assuming JSON is posted from React
+        run_idd = request.json.get('runid')  # Run ID from React
         try:
             run_id = ObjectId(run_idd)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             return jsonify({"error": "Invalid run ID"}), 400
 
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_ncbi_{timestamp}')
 
+        # Update run document in MongoDB
         update_result = mongo.db.runs.update_one(
-        {"_id": run_id},
-        {"$set": {
-            "session_id": session_id,
-            "user_id": user_id,
-            "timestamp": timestamp,
-            "output_path": output_path,
-            "status": "started",
-            "pipeline": "genomic"
+            {"_id": run_id},
+            {"$set": {
+                "session_id": session_id,
+                "user_id": user_id,
+                "timestamp": timestamp,
+                "output_path": output_path,
+                "status": "started",
+                "pipeline": "genomic"
             }}
         )
         if update_result.matched_count == 0:
             return jsonify({"error": "Run ID not found"}), 404
 
-        # Populate the config_genomic dictionary based on the received data
+        # Build config for the pipeline
         config_genomic['dir_output'] = output_path
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
-            'taxon' : form_data['source_params']['taxon']['value'],
-            'species' : form_data['source_params']['species']['value'],
+            'taxon': form_data['source_params']['taxon']['value'],
+            'species': form_data['source_params']['species']['value'],
             'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
         }
-        config_genomic['genomic_regions'] =  {
+        config_genomic['genomic_regions'] = {
             'gene': to_bool(form_data['genomic_regions']['gene']['value']),
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
@@ -77,12 +84,12 @@ def genomic_ncbi():
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
 
-        # Write the dictionary to a YAML file
+        # Write config to YAML file
         with open(config_path, 'w') as yaml_file:
             yaml.dump(config_genomic, yaml_file)
 
         try:
-            # Run the genomic region generator
+            # Run external genomic region generator
             result = subprocess.run(
                 ['genomic_region_generator', '-c', config_path],
                 capture_output=True,
@@ -92,15 +99,13 @@ def genomic_ncbi():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
 
-
-
+            # Update run status in MongoDB
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
 
-
-            # Check if the process was successful
+            # Check for errors from subprocess
             if result.returncode != 0:
                 return jsonify({
                     "status": "error",
@@ -113,18 +118,12 @@ def genomic_ncbi():
                 "message": "Genomic processing completed successfully.",
                 "output": result.stdout
             }), 200
-
-            # Get the output file path
-
-
-
         except subprocess.CalledProcessError as e:
             return jsonify({
                 "status": "error",
                 "message": "An error occurred during genomic processing.",
                 "error": e.stderr
             }), 500
-
     except Exception as e:
         traceback.print_exc()
         return jsonify({
@@ -135,60 +134,57 @@ def genomic_ncbi():
 
 @genomic_bp.route('/api/genomic/ensembl', methods=['POST'])
 def genomic_ensemble():
+    """
+    Standalone endpoint: Generate genomic regions from Ensembl source and run the full pipeline.
+    """
     try:
-        # Define the path for the configuration file
-        user_dir=''
+        user_dir = ''
+        # Handle authentication/session to determine user directory
         if current_user.is_authenticated:
-            print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-            config_path = os.path.join(user_dir,  "config_genomic_ensemble.yaml")
+            config_path = os.path.join(user_dir, "config_genomic_ensemble.yaml")
             session_id = None
         else:
             user_id = None
             session_id = session['session_id']
-            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
-            config_path = os.path.join(user_dir,'config.yaml')
-            print('no not')
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
+            config_path = os.path.join(user_dir, 'config.yaml')
         config_genomic = {}
 
         # Parse JSON data from the request
-
-        # Populate the config_genomic dictionary based on the received data
         form_data = request.json.get('formdata')
-        run_idd=request.json.get('runid')# Assuming JSON is posted from React
+        run_idd = request.json.get('runid')
         try:
             run_id = ObjectId(run_idd)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             return jsonify({"error": "Invalid run ID"}), 400
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_ensemble_{timestamp}')
 
+        # Update run document in MongoDB
         update_result = mongo.db.runs.update_one(
-        {"_id": run_id},
-        {"$set": {
-            "session_id": session_id,
-            "user_id": user_id,
-            "timestamp": timestamp,
-            "output_path": output_path,
-            "status": "started",
-            "pipeline": "genomic"
+            {"_id": run_id},
+            {"$set": {
+                "session_id": session_id,
+                "user_id": user_id,
+                "timestamp": timestamp,
+                "output_path": output_path,
+                "status": "started",
+                "pipeline": "genomic"
             }}
         )
         if update_result.matched_count == 0:
             return jsonify({"error": "Run ID not found"}), 404
 
-
         config_genomic['dir_output'] = output_path
-
-        # Populate the config_genomic dictionary based on the received data
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
-            'species' : form_data['source_params']['species']['value'],
+            'species': form_data['source_params']['species']['value'],
             'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
         }
-        config_genomic['genomic_regions'] =  {
+        config_genomic['genomic_regions'] = {
             'gene': to_bool(form_data['genomic_regions']['gene']['value']),
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
@@ -199,14 +195,14 @@ def genomic_ensemble():
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
 
-        # Write the dictionary to a YAML file
+        # Write config to YAML file
         with open(config_path, 'w') as yaml_file:
             yaml.dump(config_genomic, yaml_file)
 
-        # If you need to run a subprocess based on this configuration, do so here
         try:
+            # Run external genomic region generator
             result = subprocess.run(
-                ['genomic_region_generator','-c', config_path],
+                ['genomic_region_generator', '-c', config_path],
                 capture_output=True,
                 text=True
             )
@@ -214,12 +210,11 @@ def genomic_ensemble():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
 
-
+            # Update run status in MongoDB
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
-            # Return success response
             return jsonify({
                 "status": "success",
                 "message": "Genomic processing completed successfully.",
@@ -231,11 +226,8 @@ def genomic_ensemble():
                 "message": "An error occurred during genomic processing.",
                 "error": e.stderr
             }), 500
-
     except Exception as e:
         traceback.print_exc()
-
-        # Handle errors
         return jsonify({
             "status": "error",
             "message": "An error occurred.",
@@ -244,59 +236,60 @@ def genomic_ensemble():
 
 @genomic_bp.route('/api/genomic/custom', methods=['POST'])
 def genomic_custom():
+    """
+    Standalone endpoint: Generate genomic regions from custom user-provided files and run the full pipeline.
+    """
     try:
-        # Define the path for the configuration file
-        user_dir=''
+        user_dir = ''
+        # Handle authentication/session to determine user directory
         if current_user.is_authenticated:
-            print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-            config_path = os.path.join(user_dir,  "config_genomic_custom.yaml")
+            config_path = os.path.join(user_dir, "config_genomic_custom.yaml")
             session_id = None
-
         else:
             user_id = None
             session_id = session['session_id']
-            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
-            config_path = os.path.join(user_dir,'config.yaml')
-            print('no not')
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
+            config_path = os.path.join(user_dir, 'config.yaml')
         config_genomic = {}
         form_data = request.json.get('formdata')
-        run_idd=request.json.get('runid')# Assuming JSON is posted from React
+        run_idd = request.json.get('runid')
         try:
             run_id = ObjectId(run_idd)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             return jsonify({"error": "Invalid run ID"}), 400
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_custom_{timestamp}')
 
+        # Update run document in MongoDB
         update_result = mongo.db.runs.update_one(
-        {"_id": run_id},
-        {"$set": {
-            "session_id": session_id,
-            "user_id": user_id,
-            "timestamp": timestamp,
-            "output_path": output_path,
-            "status": "started",
-            "pipeline": "genomic"
+            {"_id": run_id},
+            {"$set": {
+                "session_id": session_id,
+                "user_id": user_id,
+                "timestamp": timestamp,
+                "output_path": output_path,
+                "status": "started",
+                "pipeline": "genomic"
             }}
         )
         if update_result.matched_count == 0:
             return jsonify({"error": "Run ID not found"}), 404
 
-        # Populate the config_genomic dictionary based on the received data
+        # Build config for the pipeline
         config_genomic['dir_output'] = output_path
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
             'file_annotation': form_data['source_params']['file_annotation']['value'],
             'file_sequence': form_data['source_params']['file_sequence']['value'],
             'file_source': form_data['source_params']['file_source']['value'],
-            'species' : form_data['source_params']['species']['value'],
+            'species': form_data['source_params']['species']['value'],
             'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
             'genome_assembly': form_data['source_params']['genome_assembly']['value'],
         }
-        config_genomic['genomic_regions'] =  {
+        config_genomic['genomic_regions'] = {
             'gene': to_bool(form_data['genomic_regions']['gene']['value']),
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
@@ -307,13 +300,12 @@ def genomic_custom():
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
 
-        # Write the dictionary to a YAML file
+        # Write config to YAML file
         with open(config_path, 'w') as yaml_file:
             yaml.dump(config_genomic, yaml_file)
 
-        # If you need to run a subprocess based on this configuration, do so here
         try:
-            print('try to run ')
+            # Run external genomic region generator in conda env
             result = subprocess.run(
                 ['conda', 'run', '-n', 'odt', 'genomic_region_generator', '-c', config_path],
                 capture_output=True,
@@ -323,12 +315,13 @@ def genomic_custom():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
 
+            # Clean up uploaded files after processing
             if os.path.exists(form_data['file_sequence']['value']):
                 os.remove(form_data['file_sequence']['value'])
-                os.remove(form_data['file_sequence']['value']+'.fai')
+                os.remove(form_data['file_sequence']['value'] + '.fai')
             if os.path.exists(form_data['file_annotation']['value']):
-                os.remove(form_data['file_annotation']['value'])  # Delete the file# Delete the file
-            # Return success response
+                os.remove(form_data['file_annotation']['value'])
+            # Update run status in MongoDB
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
@@ -338,12 +331,11 @@ def genomic_custom():
                 "message": "Genomic processing completed successfully.",
                 "output": result.stdout
             }), 200
-
         except subprocess.CalledProcessError as e:
-            print('subprocess failed')
+            # Cleanup on error
             if os.path.exists(form_data['file_sequence']['value']):
                 os.remove(form_data['file_sequence']['value'])
-                os.remove(form_data['file_sequence']['value']+'.fai')
+                os.remove(form_data['file_sequence']['value'] + '.fai')
             if os.path.exists(form_data['file_annotation']['value']):
                 os.remove(form_data['file_annotation']['value'])
             return jsonify({
@@ -351,11 +343,7 @@ def genomic_custom():
                 "message": "An error occurred during genomic processing.",
                 "error": e.stderr
             }), 500
-
-
     except Exception as e:
-        print('error without the subprocess')
-
         # Handle errors
         return jsonify({
             "status": "error",
@@ -366,29 +354,30 @@ def genomic_custom():
 @genomic_bp.route('/api/genomic/cascaded/ncbi', methods=['POST'])
 def genomic_cascaded_ncbi():
 
+    """
+    Cascaded endpoint: Generate genomic regions from NCBI and return annotation file locations for downstream steps.
+    """
     try:
-        # Define the path for the configuration file
-
+        # Handle authentication/session to determine user directory
         if current_user.is_authenticated:
-            print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-            config_path = os.path.join(user_dir,  "config_genomic_ensemble.yaml")
+            config_path = os.path.join(user_dir, "config_genomic_ensemble.yaml")
             session_id = None
         else:
             user_id = None
             session_id = session['session_id']
-            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon',session_id)
-            config_path = os.path.join(user_dir,'config.yaml')
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
+            config_path = os.path.join(user_dir, 'config.yaml')
         config_genomic = {}
 
         # Parse JSON data from the request
         form_data = request.json
-        print(form_data)
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_ncbi_{timestamp}')
-        output_gen= output_path + "/annotation"
+        output_gen = output_path + "/annotation"
 
+        # Insert run document in MongoDB
         run_doc = {
             "user_id": user_id,
             "timestamp": timestamp,
@@ -399,15 +388,15 @@ def genomic_cascaded_ncbi():
         run_result = mongo.db.runs.insert_one(run_doc)
         run_id = run_result.inserted_id
 
-        # Populate the config_genomic dictionary based on the received data
+        # Build config for the pipeline
         config_genomic['dir_output'] = output_path
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
-            'taxon' : form_data['source_params']['taxon']['value'],
-            'species' : form_data['source_params']['species']['value'],
+            'taxon': form_data['source_params']['taxon']['value'],
+            'species': form_data['source_params']['species']['value'],
             'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
         }
-        config_genomic['genomic_regions'] =  {
+        config_genomic['genomic_regions'] = {
             'gene': to_bool(form_data['genomic_regions']['gene']['value']),
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
@@ -418,12 +407,12 @@ def genomic_cascaded_ncbi():
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
 
-        # Write the dictionary to a YAML file
+        # Write config to YAML file
         with open(config_path, 'w') as yaml_file:
             yaml.dump(config_genomic, yaml_file)
 
         try:
-            # Run the genomic region generator
+            # Run external genomic region generator
             result = subprocess.run(
                 ['genomic_region_generator', '-c', config_path],
                 capture_output=True,
@@ -433,23 +422,20 @@ def genomic_cascaded_ncbi():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
 
+            # Gather .fna files to pass to downstream process
             fna_files = [
-            os.path.join(output_gen, fname)
-            for fname in os.listdir(output_gen)
-            if fname.endswith('.fna')
+                os.path.join(output_gen, fname)
+                for fname in os.listdir(output_gen)
+                if fname.endswith('.fna')
             ]
             fna_string = "\n".join(fna_files)
 
-
+            # Update run status in MongoDB
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
-            # Return success response
 
-
-
-            # Check if the process was successful
             if result.returncode != 0:
                 return jsonify({
                     "status": "error",
@@ -462,18 +448,12 @@ def genomic_cascaded_ncbi():
                 "message": "Genomic processing completed successfully.",
                 "output": fna_string
             }), 200
-
-            # Get the output file path
-
-
-
         except subprocess.CalledProcessError as e:
             return jsonify({
                 "status": "error",
                 "message": "An error occurred during genomic processing.",
                 "error": e.stderr
             }), 500
-
     except Exception as e:
         traceback.print_exc()
         return jsonify({
@@ -485,29 +465,25 @@ def genomic_cascaded_ncbi():
 @genomic_bp.route('/api/genomic/cascaded/ensembl', methods=['POST'])
 def genomic_cascaded_ensemble():
 
+    """
+    Cascaded endpoint: Generate genomic regions from Ensembl and return annotation file locations for downstream steps.
+    """
     try:
-        # Define the path for the configuration file
-        user_dir=''
-        toreturn=''
+        user_dir = ''
         if current_user.is_authenticated:
-            print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-            config_path = os.path.join(user_dir,  "config_genomic_ensemble.yaml")
+            config_path = os.path.join(user_dir, "config_genomic_ensemble.yaml")
         else:
-            print('no not')
+            user_id = None
         config_genomic = {}
-
         # Parse JSON data from the request
-
-        # Populate the config_genomic dictionary based on the received data
         form_data = request.json
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_ensemble_{timestamp}')
-        output_gen= output_path + "/annotation"
+        output_gen = output_path + "/annotation"
 
-        print(output_path)
-
+        # Insert run document in MongoDB
         run_doc = {
             "user_id": user_id,
             "timestamp": timestamp,
@@ -518,14 +494,12 @@ def genomic_cascaded_ensemble():
         run_result = mongo.db.runs.insert_one(run_doc)
         run_id = run_result.inserted_id
         config_genomic['dir_output'] = output_path
-
-        # Populate the config_genomic dictionary based on the received data
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
-            'species' : form_data['source_params']['species']['value'],
+            'species': form_data['source_params']['species']['value'],
             'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
         }
-        config_genomic['genomic_regions'] =  {
+        config_genomic['genomic_regions'] = {
             'gene': to_bool(form_data['genomic_regions']['gene']['value']),
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
@@ -536,34 +510,32 @@ def genomic_cascaded_ensemble():
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
 
-        # Write the dictionary to a YAML file
+        # Write config to YAML file
         with open(config_path, 'w') as yaml_file:
             yaml.dump(config_genomic, yaml_file)
 
-        # If you need to run a subprocess based on this configuration, do so here
         try:
+            # Run external genomic region generator
             result = subprocess.run(
-                ['genomic_region_generator','-c', config_path],
+                ['genomic_region_generator', '-c', config_path],
                 capture_output=True,
                 text=True
             )
             status = "completed" if result.returncode == 0 else "error"
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
+            # Gather .fna files for downstream process
             fna_files = [
-            os.path.join(output_gen, fname)
-            for fname in os.listdir(output_gen)
-            if fname.endswith('.fna')
+                os.path.join(output_gen, fname)
+                for fname in os.listdir(output_gen)
+                if fname.endswith('.fna')
             ]
             fna_string = "\n".join(fna_files)
 
-
-            print(toreturn,'this is what I will return ')
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
-            # Return success response
             return jsonify({
                 "status": "success",
                 "message": "Genomic processing completed successfully.",
@@ -575,11 +547,8 @@ def genomic_cascaded_ensemble():
                 "message": "An error occurred during genomic processing.",
                 "error": e.stderr
             }), 500
-
     except Exception as e:
         traceback.print_exc()
-
-        # Handle errors
         return jsonify({
             "status": "error",
             "message": "An error occurred.",
@@ -589,22 +558,24 @@ def genomic_cascaded_ensemble():
 @genomic_bp.route('/api/genomic/cascaded/custom', methods=['POST'])
 def genomic_cascaded_custom():
 
+    """
+    Cascaded endpoint: Generate genomic regions from custom files and return annotation file locations for downstream steps.
+    """
     try:
-        # Define the path for the configuration file
-        user_dir=''
+        user_dir = ''
         if current_user.is_authenticated:
-            print('yes authenticated')
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
-            config_path = os.path.join(user_dir,  "config_genomic_custom.yaml")
+            config_path = os.path.join(user_dir, "config_genomic_custom.yaml")
         else:
-            print('no not')
+            user_id = None
         config_genomic = {}
         form_data = request.json
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_genomic_custom_{timestamp}')
-        print(output_path)
+        output_gen = output_path + "/annotation"
 
+        # Insert run document in MongoDB
         run_doc = {
             "user_id": user_id,
             "timestamp": timestamp,
@@ -614,21 +585,19 @@ def genomic_cascaded_custom():
         }
         run_result = mongo.db.runs.insert_one(run_doc)
         run_id = run_result.inserted_id
-        output_gen= output_path + "/annotation"
 
-
-    # Populate the config_genomic dictionary based on the received data
+        # Build config for the pipeline
         config_genomic['dir_output'] = output_path
         config_genomic['source'] = form_data['source']['value']
         config_genomic['source_params'] = {
             'file_annotation': form_data['source_params']['file_annotation']['value'],
             'file_sequence': form_data['source_params']['file_sequence']['value'],
             'file_source': form_data['source_params']['file_source']['value'],
-            'species' : form_data['source_params']['species']['value'],
+            'species': form_data['source_params']['species']['value'],
             'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
             'genome_assembly': form_data['source_params']['genome_assembly']['value'],
         }
-        config_genomic['genomic_regions'] =  {
+        config_genomic['genomic_regions'] = {
             'gene': to_bool(form_data['genomic_regions']['gene']['value']),
             'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
             'exon': to_bool(form_data['genomic_regions']['exon']['value']),
@@ -639,13 +608,12 @@ def genomic_cascaded_custom():
         }
         config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
 
-        # Write the dictionary to a YAML file
+        # Write config to YAML file
         with open(config_path, 'w') as yaml_file:
             yaml.dump(config_genomic, yaml_file)
 
-        # If you need to run a subprocess based on this configuration, do so here
         try:
-            print('try to run ')
+            # Run external genomic region generator in conda env
             result = subprocess.run(
                 ['conda', 'run', '-n', 'odt', 'genomic_region_generator', '-c', config_path],
                 capture_output=True,
@@ -655,20 +623,22 @@ def genomic_cascaded_custom():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
 
+            # Clean up uploaded files after processing
             if os.path.exists(form_data['file_sequence']['value']):
                 os.remove(form_data['file_sequence']['value'])
-                os.remove(form_data['file_sequence']['value']+'.fai')
+                os.remove(form_data['file_sequence']['value'] + '.fai')
             if os.path.exists(form_data['file_annotation']['value']):
-                os.remove(form_data['file_annotation']['value'])  # Delete the file# Delete the file
-            # Return success response
+                os.remove(form_data['file_annotation']['value'])
+            # Update run status in MongoDB
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
+            # Gather .fna files for downstream process
             fna_files = [
-            os.path.join(output_gen, fname)
-            for fname in os.listdir(output_gen)
-            if fname.endswith('.fna')
+                os.path.join(output_gen, fname)
+                for fname in os.listdir(output_gen)
+                if fname.endswith('.fna')
             ]
             fna_string = "\n".join(fna_files)
             return jsonify({
@@ -676,12 +646,11 @@ def genomic_cascaded_custom():
                 "message": "Genomic processing completed successfully.",
                 "output": fna_string
             }), 200
-
         except subprocess.CalledProcessError as e:
-            print('subprocess failed')
+            # Cleanup on error
             if os.path.exists(form_data['file_sequence']['value']):
                 os.remove(form_data['file_sequence']['value'])
-                os.remove(form_data['file_sequence']['value']+'.fai')
+                os.remove(form_data['file_sequence']['value'] + '.fai')
             if os.path.exists(form_data['file_annotation']['value']):
                 os.remove(form_data['file_annotation']['value'])
             return jsonify({
@@ -689,13 +658,7 @@ def genomic_cascaded_custom():
                 "message": "An error occurred during genomic processing.",
                 "error": e.stderr
             }), 500
-
-
-
     except Exception as e:
-        print('error without the subprocess')
-
-        # Handle errors
         return jsonify({
             "status": "error",
             "message": "An error occurred.",

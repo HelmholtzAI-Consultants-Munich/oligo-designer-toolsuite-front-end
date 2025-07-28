@@ -236,9 +236,10 @@ def scrinshot():
     status = "completed" if result.returncode == 0 else "error"
 
     # Clean up temporary files if they exist
-    if os.path.exists(form_data['file_regions']['value']):
-        print('deleted')
-        os.remove(form_data['file_regions']['value'])  # Delete the file
+    if form_data['file_regions']['value']:
+        if os.path.exists(form_data['file_regions']['value']):
+            print('deleted')
+            os.remove(form_data['file_regions']['value'])  # Delete the file
     a=split_on_newline(form_data['files_fasta_target_probe_database']['value'])
 
     if '\n' in a:

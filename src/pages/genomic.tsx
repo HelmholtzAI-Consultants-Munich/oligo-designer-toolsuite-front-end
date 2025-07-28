@@ -1,3 +1,8 @@
+/**
+ * THIS PAGE IS NOT IN USE ANYMORE SINCE GENOMIC IS INTEGRATED
+ * INTO ALL THE PIPELINES
+ *
+ */
 import React, {useState} from "react";
 import Navbar from "../modules/nav";
 import axios from "axios";
