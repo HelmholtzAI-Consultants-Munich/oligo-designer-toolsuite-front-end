@@ -8,6 +8,7 @@ import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import {createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
+import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 const Merfish: React.FC = () => {
     const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
     const [fastaOption2, setFastaOption2] = useState("generate"); // "generate" or "upload"
@@ -4881,6 +4882,8 @@ const Merfish: React.FC = () => {
                     </div>
 
                 </form>
+                <RunLocallyInfoBox />
+
             </div>
         </div>
     );

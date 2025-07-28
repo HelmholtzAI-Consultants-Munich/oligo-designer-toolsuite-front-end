@@ -9,6 +9,7 @@ import seqfish_form from "../forms/seqfish_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import { createRunId } from "../modules/helpers";
+import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 
 const SeqFish: React.FC = () => {
     const defaultFastaForm = {
@@ -4371,6 +4372,7 @@ const SeqFish: React.FC = () => {
                     </div>
 
                 </form>
+                <RunLocallyInfoBox />
             </div>
         </div>
     );

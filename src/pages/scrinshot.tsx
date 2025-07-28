@@ -9,6 +9,7 @@ import { createRunId } from "../modules/helpers";
 import formDatas from "../forms/scrinshot_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
+import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 
     const Scrinshot: React.FC = () => {
     // ====== State Declarations ======
@@ -3284,6 +3285,7 @@ import form_Data_Ens from "../forms/genomic_ens_form";
                         </div>
 
                     </form>
+                    <RunLocallyInfoBox />
                 </div>
             </div>
         );

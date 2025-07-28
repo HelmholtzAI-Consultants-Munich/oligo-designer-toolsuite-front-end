@@ -1,4 +1,4 @@
-import React, { useState,useEffect} from 'react';
+import React, { useState} from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
 import {OverlayTrigger, Popover} from "react-bootstrap";
@@ -8,6 +8,7 @@ import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import {createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
+import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 
 
 const OligoSeq: React.FC = () => {
@@ -2252,7 +2253,7 @@ const OligoSeq: React.FC = () => {
                     </div>
 
                 </form>
-
+                <RunLocallyInfoBox />
             </div>
         </div>
     );

@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import {useAuth} from "./auth";
 const Navbar: React.FC = () => {
-    const { user, logout } = useAuth(); // user state'ini al
+    const { user, logout } = useAuth();
     const handleLogout = () => {
         fetch("http://localhost:5000/logout", {
             method: "POST",
@@ -74,33 +74,19 @@ const Navbar: React.FC = () => {
                                 Runs
                             </Link>
                         </li>
-                        {/* Uncomment this line if you want to include Custom Pipelines */}
-                        {/* <li className="nav-item me-3">
-                            <Link className="nav-link" to="/custom-pipelines">
-                                Custom Pipelines
-                            </Link>
-                        </li> */}
-                        <li className="nav-item me-3">
-                            <Link className="nav-link" to="/contacts">
-                                Contacts
-                            </Link>
-                        </li>
+
+
                         <li className="nav-item me-3">
                             <Link className="nav-link" to="/faq">
                                 FAQ
                             </Link>
                         </li>
                         <li className="nav-item me-3">
-                            <a
-                                className="nav-link"
-                                href="https://oligo-designer-toolsuite.readthedocs.io/en/latest/index.html"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                            >
-                                Documentation
-                            </a>
+                            <Link className="nav-link" to="/contacts">
+                                Contacts
+                            </Link>
                         </li>
-                        {/* Auth kısmı */}
+                        {/* Auth  */}
                         {user ? (
                             <>
                                 <li className="nav-item dropdown">
