@@ -19,14 +19,66 @@ merfish_bp = Blueprint('merfish', __name__)
 @merfish_bp.route('/api/merfish', methods=['POST'])
 def merfish():
     """
-    Handle POST requests for the MERFISH probe designer pipeline.
-    - Determines user/session context and creates appropriate user directories.
-    - Processes input form data, creates any necessary temporary files.
-    - Assembles configuration for the pipeline and writes to YAML.
-    - Runs the merfish_probe_designer subprocess.
-    - Cleans up temporary files.
-    - Updates the run status in the database.
-    - Returns the subprocess output and status.
+    Handles the Merfish probe designer requests by preparing user inputs, managing temporary files,
+    invoking the external probe designer tool, cleaning up resources, and updating run status in MongoDB.
+
+    This function is triggered via a POST request from the frontend, typically with user-provided form data
+    and a run ID. It orchestrates the workflow for running the Merfish probe designer pipeline as follows:
+
+    - Loads and validates user/session context.
+    - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
+    - Prepares input files as needed (e.g., writes gene list as a temp file).
+    - Builds the configuration dictionary for the probe designer pipeline based on the submitted form.
+    - Writes this configuration as a YAML file to the user's directory.
+    - Launches the external `merfish_probe_designer` process as a subprocess, passing the YAML config.
+    - Cleans up any temporary files created during input preparation.
+    - Updates the run status in MongoDB to reflect completion or errors.
+    - Returns the run ID as a JSON response.
+
+    :returns: JSON response containing the run ID.
+    :rtype: flask.Response
+
+    :request json formdata: The form data submitted from the frontend React application.
+    :type formdata: dict
+
+    :request json runid: The ID of the run document in MongoDB, as a string.
+    :type runid: str
+
+    :context user_dir: The user's data directory. For authenticated users, this is based on user ID;
+        for anonymous sessions, it is based on a session ID.
+    :type user_dir: str
+
+    :context config_path: The path where the YAML configuration file will be written.
+    :type config_path: str
+
+    :context session_id: The session ID, used for anonymous users.
+    :type session_id: str
+
+    :context run_id: The MongoDB ObjectId for the run document.
+    :type run_id: ObjectId
+
+    :context output_path: The directory where output files from the probe designer will be stored.
+    :type output_path: str
+
+    :context config: The configuration dictionary assembled from user inputs.
+    :type config: dict
+
+    :raises: Returns HTTP 400 if the provided run ID is invalid.
+    :raises: Returns HTTP 404 if the run ID is not found in the database.
+
+    Workflow steps:
+      1. Determine user or session context and prepare the working directory.
+      2. Parse and validate form data and run ID.
+      3. Create a temporary regions file if needed, and update form data accordingly.
+      4. Update the database with the initial run status ('started').
+      5. Build the config dictionary from form data and write to YAML.
+      6. Invoke the external Scrinshot probe designer subprocess.
+      7. Clean up any temporary files created.
+      8. Update the run status in MongoDB based on subprocess completion.
+      9. Return the run ID as confirmation.
+
+    For more information on the input parameters and configuration options, refer to the Merfish documentation.
+
     """
     # Determine user directory and session/user ID logic
     user_dir = ''

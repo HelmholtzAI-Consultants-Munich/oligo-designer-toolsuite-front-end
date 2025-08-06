@@ -1,3 +1,20 @@
+"""
+Pipeline Management Endpoints for Bioinformatics Web Application
+
+This module handles all pipeline run CRUD operations, including initialization, deletion,
+listing runs and files, and secure download of output files. Endpoints enforce user or session-level
+authorization to protect user data.
+
+Features:
+    - Run initialization (database entry)
+    - Run deletion with file system cleanup
+    - Listing of all runs for authenticated or session users
+    - Listing of output files for a given run
+    - Secure file download with mimetype detection and subdirectory support
+
+:requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, shutil, datetime, traceback
+"""
+
 import os
 import shutil
 import traceback
@@ -11,7 +28,22 @@ pipelines_bp = Blueprint('pipelines', __name__)
 
 @pipelines_bp.route('/api/runs/<run_id>', methods=['DELETE'])
 def delete_run(run_id):
-    """Delete a run and its files for the authenticated user."""
+    """
+    Delete a pipeline run and its associated output files.
+
+    Only allows deletion if the run belongs to the current authenticated user.
+    Removes output files/folders from disk and deletes the corresponding database entry.
+
+    :param run_id: The ObjectId string of the run to delete.
+    :type run_id: str
+    :returns: JSON message with success or error.
+    :rtype: flask.Response
+
+    Workflow:
+        1. Fetch run from DB for current user.
+        2. Remove output directory from disk if it exists.
+        3. Delete run from DB.
+    """
     try:
         user_id = str(current_user.id)
         run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
@@ -32,7 +64,14 @@ def delete_run(run_id):
 
 @pipelines_bp.route('/api/init_run_id', methods=['POST'])
 def init_run_id():
-    """Initialize a new run in the database."""
+    """
+    Initialize a new pipeline run in the database.
+
+    Sets initial status to "pending" and records creation timestamp.
+
+    :returns: JSON object with new run_id.
+    :rtype: flask.Response
+    """
     run_doc = {
         "status": "pending",
         "created_at": datetime.utcnow()
@@ -42,7 +81,19 @@ def init_run_id():
 
 @pipelines_bp.route('/api/pipelines', methods=['GET'])
 def get_pipeline_runs():
-    """List all pipeline runs for the current user or session."""
+    """
+    List all pipeline runs for the current user or anonymous session.
+
+    Authenticated users see their runs; anonymous users see runs for their session_id.
+
+    :returns: List of run documents, formatted for the frontend.
+    :rtype: flask.Response
+
+    Workflow:
+        1. Check if user is authenticated.
+        2. Query DB for runs by user_id or session_id.
+        3. Format and return run info for each run.
+    """
     try:
         if current_user.is_authenticated:
             runs = list(mongo.db.runs.find({"user_id": str(current_user.id)}))
@@ -69,7 +120,24 @@ def get_pipeline_runs():
 
 @pipelines_bp.route('/api/runs/<run_id>/files/<path:filename>', methods=['GET'])
 def get_run_file(run_id, filename):
-    """Download a file for a specific run (with annotation/ subdir support)."""
+    """
+    Download a file for a specific pipeline run.
+
+    Checks user/session authorization for the run. Supports nested files (e.g., annotation/ subdirectory).
+    Detects mimetype for common bioinformatics file types.
+
+    :param run_id: The ObjectId string of the run.
+    :type run_id: str
+    :param filename: The (possibly nested) file path relative to the run's output directory.
+    :type filename: str
+    :returns: File stream or JSON error.
+    :rtype: flask.Response
+
+    Workflow:
+        1. Fetch run for user/session.
+        2. Resolve the requested file path (with subdir support).
+        3. Serve file with correct mimetype, or return error.
+    """
     try:
         # Auth or session check
         if current_user.is_authenticated:
@@ -105,7 +173,21 @@ def get_run_file(run_id, filename):
 
 @pipelines_bp.route('/api/runs/<run_id>/files', methods=['GET'])
 def get_run_files(run_id):
-    """List all files for a specific run."""
+    """
+    List all output files for a specific pipeline run.
+
+    Handles both main output directory and special annotation subdirectory for Genomic Region Generator pipeline.
+
+    :param run_id: The ObjectId string of the run.
+    :type run_id: str
+    :returns: List of file metadata dictionaries (name, type, size).
+    :rtype: flask.Response
+
+    Workflow:
+        1. Auth/session check for run.
+        2. List files in run output directory.
+        3. If pipeline is Genomic Region Generator, include files from annotation subdir.
+    """
     try:
         # Auth or session check
         if current_user.is_authenticated:

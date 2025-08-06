@@ -9,32 +9,54 @@ upload_bp = Blueprint('upload', __name__)
 @upload_bp.route('/api/upload', methods=['POST'])
 def upload_file():
     """
-    Handle file upload requests.
+    Handles file upload requests via POST, storing files with unique names in the server's upload directory.
 
-    Expects a 'file' in request.files.
-    Saves the uploaded file to the configured UPLOAD_FOLDER with a unique filename.
-    Returns the file path (server-side) in the response.
+    This endpoint receives a file from the frontend (in `request.files`), saves it to the server's
+    designated upload folder with a UUID-prefixed filename to prevent collisions, and returns the server-side
+    path of the saved file as a JSON response.
+
+    :returns: JSON object with the file path where the uploaded file is saved on the server.
+    :rtype: flask.Response
+
+    :request.files file: The file sent by the client as part of the form data, under the 'file' field.
+    :type file: werkzeug.datastructures.FileStorage
+
+    :raises: Returns HTTP 400 if no file is included in the request or no file is selected by the user.
+
+    Workflow steps:
+      1. Checks that a file was provided in the request under the key 'file'.
+      2. Validates that a file was actually selected (filename is not empty).
+      3. Generates a unique filename using a UUID prefix to avoid name collisions.
+      4. Builds the full path for storing the file in the configured uploads directory.
+      5. Saves the uploaded file to disk.
+      6. Responds with a JSON object containing the server-side file path.
+
+    Example request (using curl):
+        curl -F "file=@example.txt" http://localhost:5000/api/upload
+
+    Example response:
+        {
+            "filePath": "/absolute/server/path/to/uploads/3f52e1d123f84cd7afc3_example.txt"
+        }
     """
-    print(request.files)  # Debug: log incoming files
-
-    # Check if the request includes a file
+    # Step 1: Check if the request includes a file under the 'file' key
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
 
     file = request.files['file']
 
-    # Check if the user actually selected a file
+    # Step 2: Check if the user actually selected a file (filename should not be empty)
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    # Generate a unique filename to avoid collisions
+    # Step 3: Generate a unique filename by prefixing with a UUID
     unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
 
-    # Build the full path in the uploads directory
+    # Step 4: Build the full path in the uploads directory (from Flask app config)
     file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], unique_filename)
 
-    # Save the file to disk
+    # Step 5: Save the file to disk
     file.save(file_path)
 
-    # Respond with the path where the file is saved (server-side)
+    # Step 6: Respond with the server-side path where the file is stored
     return jsonify({"filePath": file_path}), 200

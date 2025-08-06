@@ -21,7 +21,25 @@ genomic_bp = Blueprint('genomic', __name__)
 @genomic_bp.route('/api/genomic/ncbi', methods=['POST'])
 def genomic_ncbi():
     """
-    Standalone endpoint: Generate genomic regions from NCBI source and run the full pipeline.
+    Standalone endpoint: Generate genomic regions from NCBI and run the full pipeline.
+
+    :input:
+        :param formdata: Dictionary of region extraction parameters and NCBI source info.
+        :type formdata: dict
+        :param runid: MongoDB run document ID.
+        :type runid: str
+
+    :output:
+        :returns: JSON with status, message, output logs, and error details if any.
+        :rtype: flask.Response
+
+    Workflow:
+        1. Parse and validate input.
+        2. Set up user/session-specific working directory.
+        3. Update MongoDB run document.
+        4. Build YAML config for NCBI region extraction.
+        5. Run genomic region generator.
+        6. Update MongoDB status and return result/logs.
     """
     try:
         user_dir = ''
@@ -135,7 +153,25 @@ def genomic_ncbi():
 @genomic_bp.route('/api/genomic/ensembl', methods=['POST'])
 def genomic_ensemble():
     """
-    Standalone endpoint: Generate genomic regions from Ensembl source and run the full pipeline.
+    Standalone endpoint: Generate genomic regions from Ensembl and run the full pipeline.
+
+    :input:
+        :param formdata: Dictionary of region extraction parameters and Ensembl source info.
+        :type formdata: dict
+        :param runid: MongoDB run document ID.
+        :type runid: str
+
+    :output:
+        :returns: JSON with status, message, output logs, and error details if any.
+        :rtype: flask.Response
+
+    Workflow:
+        1. Parse and validate input.
+        2. Set up user/session-specific working directory.
+        3. Update MongoDB run document.
+        4. Build YAML config for Ensembl region extraction.
+        5. Run genomic region generator.
+        6. Update MongoDB status and return result/logs.
     """
     try:
         user_dir = ''
@@ -238,6 +274,25 @@ def genomic_ensemble():
 def genomic_custom():
     """
     Standalone endpoint: Generate genomic regions from custom user-provided files and run the full pipeline.
+
+    :input:
+        :param formdata: Dictionary of region extraction parameters and file paths.
+        :type formdata: dict
+        :param runid: MongoDB run document ID.
+        :type runid: str
+
+    :output:
+        :returns: JSON with status, message, output logs, and error details if any.
+        :rtype: flask.Response
+
+    Workflow:
+        1. Parse and validate input.
+        2. Set up user/session-specific working directory.
+        3. Update MongoDB run document.
+        4. Build YAML config for custom file region extraction.
+        5. Run genomic region generator in conda environment.
+        6. Clean up uploaded files.
+        7. Update MongoDB status and return result/logs.
     """
     try:
         user_dir = ''
@@ -353,9 +408,25 @@ def genomic_custom():
 
 @genomic_bp.route('/api/genomic/cascaded/ncbi', methods=['POST'])
 def genomic_cascaded_ncbi():
-
     """
-    Cascaded endpoint: Generate genomic regions from NCBI and return annotation file locations for downstream steps.
+    Cascaded endpoint: Generate genomic regions from NCBI for downstream pipeline steps.
+
+    :input:
+        :param formdata: Dictionary of region extraction parameters and NCBI source info.
+        :type formdata: dict
+
+    :output:
+        :returns: JSON with status, message, and annotation file paths (for .fna files).
+        :rtype: flask.Response
+
+    Workflow:
+        1. Parse and validate input.
+        2. Set up user/session-specific working directory.
+        3. Insert new MongoDB run document.
+        4. Build YAML config for NCBI region extraction.
+        5. Run genomic region generator.
+        6. Gather annotation output file paths for downstream steps.
+        7. Update MongoDB status and return result.
     """
     try:
         # Handle authentication/session to determine user directory
@@ -464,9 +535,25 @@ def genomic_cascaded_ncbi():
 
 @genomic_bp.route('/api/genomic/cascaded/ensembl', methods=['POST'])
 def genomic_cascaded_ensemble():
-
     """
-    Cascaded endpoint: Generate genomic regions from Ensembl and return annotation file locations for downstream steps.
+    Cascaded endpoint: Generate genomic regions from Ensembl for downstream pipeline steps.
+
+    :input:
+        :param formdata: Dictionary of region extraction parameters and Ensembl source info.
+        :type formdata: dict
+
+    :output:
+        :returns: JSON with status, message, and annotation file paths (for .fna files).
+        :rtype: flask.Response
+
+    Workflow:
+        1. Parse and validate input.
+        2. Set up user/session-specific working directory.
+        3. Insert new MongoDB run document.
+        4. Build YAML config for Ensembl region extraction.
+        5. Run genomic region generator.
+        6. Gather annotation output file paths for downstream steps.
+        7. Update MongoDB status and return result.
     """
     try:
         user_dir = ''
@@ -557,9 +644,26 @@ def genomic_cascaded_ensemble():
 
 @genomic_bp.route('/api/genomic/cascaded/custom', methods=['POST'])
 def genomic_cascaded_custom():
-
     """
-    Cascaded endpoint: Generate genomic regions from custom files and return annotation file locations for downstream steps.
+    Cascaded endpoint: Generate genomic regions from custom files for downstream pipeline steps.
+
+    :input:
+        :param formdata: Dictionary of region extraction parameters and file paths.
+        :type formdata: dict
+
+    :output:
+        :returns: JSON with status, message, and annotation file paths (for .fna files).
+        :rtype: flask.Response
+
+    Workflow:
+        1. Parse and validate input.
+        2. Set up user/session-specific working directory.
+        3. Insert new MongoDB run document.
+        4. Build YAML config for custom file region extraction.
+        5. Run genomic region generator in conda environment.
+        6. Clean up uploaded files.
+        7. Gather annotation output file paths for downstream steps.
+        8. Update MongoDB status and return result.
     """
     try:
         user_dir = ''

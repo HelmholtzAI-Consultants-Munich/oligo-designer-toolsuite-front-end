@@ -1,3 +1,19 @@
+"""
+Authentication and User Management Blueprint for Flask Application.
+
+This module provides all authentication-related endpoints and helpers, including user registration,
+login, logout, authentication status checking, and management of anonymous sessions for guest users.
+
+Main features:
+    - User registration with password hashing
+    - Secure login with session and data migration
+    - Logout endpoint
+    - Auth status check endpoint for frontend
+    - Anonymous session tracking and data directory creation for unauthenticated users
+
+:requires: Flask, Flask-Login, Werkzeug security, MongoDB (via extensions.mongo)
+"""
+
 from flask import Blueprint, request, jsonify, session, current_app
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, current_user, login_required
@@ -13,7 +29,13 @@ auth_bp = Blueprint('auth', __name__)
 # ---- User Loader and User Class ----
 class User(UserMixin):
     """
-    User class for Flask-Login that wraps a user document from MongoDB.
+    Flask-Login User class wrapper for MongoDB user documents.
+
+    :param user_doc: The MongoDB user document.
+    :type user_doc: dict
+
+    :ivar id: User ID, as a string (ObjectId).
+    :ivar email: User's email address.
     """
     def __init__(self, user_doc):
         self.id = str(user_doc['_id'])
@@ -21,7 +43,14 @@ class User(UserMixin):
 
 def init_login_manager(app):
     """
-    Initialize the Flask-Login LoginManager with the app and define the user loader.
+    Initialize Flask-Login's LoginManager and user loader.
+
+    :param app: The Flask application instance.
+    :type app: flask.Flask
+    :returns: The initialized LoginManager object.
+    :rtype: flask_login.LoginManager
+
+    The user_loader loads a user from the database using their ObjectId.
     """
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -40,9 +69,29 @@ def init_login_manager(app):
 @auth_bp.route('/register', methods=['POST'])
 def register():
     """
-    Handle user registration by accepting email and password,
-    creating a new user in the database, initializing user data directory,
-    and logging the user in.
+    Register a new user.
+
+    Accepts email and password from the frontend, checks if the user exists, hashes the password,
+    creates a new user document in MongoDB, makes a user-specific data directory, and logs the user in.
+
+    :request json email: Email address for registration.
+    :type email: str
+    :request json password: Password (plain text, will be hashed).
+    :type password: str
+
+    :returns: JSON message for success or error.
+    :rtype: flask.Response
+
+    :raises: HTTP 400 if email or password missing; 409 if user already exists.
+
+    Workflow:
+      1. Parse and validate input.
+      2. Check if email is already registered.
+      3. Hash password.
+      4. Insert new user into MongoDB.
+      5. Create a user-specific data directory.
+      6. Log the new user in.
+      7. Respond with success or error.
     """
     data = request.get_json()
     email = data.get("email")
@@ -81,9 +130,28 @@ def register():
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """
-    Authenticate user by email and password, log them in,
-    create user data directory, and migrate any anonymous session runs
-    to the authenticated user.
+    Authenticate user and log them in.
+
+    Checks email and password against MongoDB, logs in if valid, ensures user data directory exists,
+    and migrates any anonymous runs/data to the new user account.
+
+    :request json email: User's email.
+    :type email: str
+    :request json password: User's password.
+    :type password: str
+
+    :returns: JSON message for success or error.
+    :rtype: flask.Response
+
+    :raises: HTTP 401 if credentials are invalid.
+
+    Workflow:
+      1. Find user by email.
+      2. Verify password.
+      3. Log user in.
+      4. Ensure data directory exists.
+      5. If anonymous session, migrate runs/data to user and clear session_id.
+      6. Respond with success or error.
     """
     data = request.get_json()
     email = data.get("email")
@@ -118,7 +186,12 @@ def login():
 @auth_bp.route('/api/check_auth', methods=['GET'])
 def check_auth():
     """
-    Check if the current user is authenticated and return user info if so.
+    Check if current user is authenticated.
+
+    Returns user info if authenticated, otherwise just `authenticated: False`.
+
+    :returns: JSON containing authentication status and user info (if authenticated).
+    :rtype: flask.Response
     """
     if current_user.is_authenticated:
         return jsonify({
@@ -136,6 +209,9 @@ def check_auth():
 def logout():
     """
     Log out the current authenticated user.
+
+    :returns: JSON message confirming logout.
+    :rtype: flask.Response
     """
     logout_user()
     return jsonify({"message": "Logged out"}), 200
@@ -146,6 +222,11 @@ def assign_session_id():
     """
     Assign a unique session_id to anonymous users for tracking their runs
     and data before they log in or register.
+
+    If the current user is not authenticated and session does not have a 'session_id',
+    assigns a new UUID as session_id and creates a directory for anonymous user data.
+
+    :modifies session: Adds 'session_id' to Flask session for anonymous user tracking.
     """
     if not current_user.is_authenticated and 'session_id' not in session:
         session['session_id'] = str(uuid.uuid4())
