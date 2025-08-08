@@ -4,11 +4,58 @@ layout: default
 nav_order: 1
 parent: Pipelines
 ---
-### File
-`src/pages/merfish.tsx`
 
-### Highlights
-- FASTA input: generate/upload
-- Switch data sources: NCBI / Ensembl
-- Developer settings toggle
-- Submits job and navigates to **Run Detail**
+# MERFISH
+
+The MERFISH pipeline page is designed for probe design workflows using three main parameter tabs — **Target Probe Parameters**, **Readout Probe Parameters**, and **Primer Parameters** — plus an optional **Developer Settings** section. Users can either generate required FASTA files directly from NCBI/Ensembl or upload their own, then submit the job to the backend.
+
+## How it works
+
+1. **Select inputs**  
+   - **Targets**: Provide a `.txt` file with one gene per line, or type a comma-separated gene list directly in the UI. If you type them, the backend will create a temporary file for you.  
+   - **FASTA groups** (four required):
+     - Target probe database
+     - Reference database for target probes
+     - Reference database for readout probes
+     - Reference database for primers  
+     Each group allows either **Generate FASTA+** (from NCBI/Ensembl) or **Choose File** (upload). Multiple files/outputs are stored as newline-separated paths.
+
+2. **Adjust parameters** for the selected tab:
+   - **Target Probe Parameters**: probe length/Tm bounds, GC content, homopolymer limits, isoform settings, set size, distance between probes, number of sets, and related weights.
+   - **Readout Probe Parameters**: readout length, base probabilities, GC bounds, homopolymer limits, set size, Tm and GC weights, barcode bits/Hamming distance/channel IDs.
+   - **Primer Parameters**: primer sequence, length, GC bounds and clamp constraints, homopolymer limits, complement/self-complement limits, Tm bounds, and Tm calculation parameters.
+
+3. **Developer Settings** (optional)  
+   Shows advanced tabs relevant to the current section:
+   - In **Target Probe**: specificity and cross-hybridization filters, set selection weights, melting temperature parameters.
+   - In **Readout**: advanced readout parameters.
+   - In **Primer**: advanced primer parameters.
+
+4. **Generate or upload FASTA files**  
+   - **Generate FASTA+** calls `/api/genomic/cascaded/{ncbi|ensembl}` to build the file and store the returned path.
+   - **Upload** sends the file to `/api/upload` and stores the returned path.
+   - The app concatenates multiple files or generated outputs using newline separators.
+   - Submission is only enabled when all four FASTA groups have at least one file path.
+
+5. **Submit the job**  
+   - The app creates a `runid` using `createRunId()` and packages the form data, replacing any file fields with the newline-joined paths.
+   - Sends `{ formdata, runid }` to the backend (currently pointing at `/api/scrinshot`, should be `/api/merfish`).
+
+## Backend processing (`POST /api/merfish`)
+
+1. Parses `formdata` and `runid`. If the gene list is provided as text, writes a temp `.txt` file and updates the form data.
+2. Updates the run record in the database with status `started`, timestamp, pipeline type, and output path.
+3. Writes the form data to a YAML config file in the run’s workspace directory.
+4. Executes the MERFISH probe designer CLI tool with the generated config.
+5. On completion:
+   - Removes temporary input files.
+   - Updates the run status to `completed` or `error`.
+   - Returns stdout, stderr, and the return code to the frontend.
+
+## Important notes
+
+- All four FASTA groups must be provided before submission.
+- Generated and uploaded files can be mixed in the same group; they are joined and later split again on the backend.
+- Cookies and CORS: all API requests use `withCredentials: true`, so backend CORS must allow the frontend origin and credentials.
+- The submission endpoint in the frontend should be corrected from `/api/scrinshot` to `/api/merfish` to match the backend.
+- Developer Settings are context-sensitive and change with the main tab to keep the UI focused.
