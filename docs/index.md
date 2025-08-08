@@ -1,5 +1,16 @@
-# Oligo Designer Toolsuite Documentation
+---
+layout: home
+title: Oligo Designer Toolsuite
+nav_order: 1
+---
 
-Welcome to the documentation for the Oligo Designer Toolsuite web frontend!
+# Oligo Designer Toolsuite — Frontend Docs
 
-## Table of Contents
+This site documents the **React** frontend for Oligo Designer Toolsuite.
+
+- **Pipelines UI** for MERFISH, SeqFISH, Scrinshot, Genomic
+- **Run management**: submit, list, inspect outputs
+- **Auth** with session cookies
+- **Bootstrap**-based UI
+
+Use the navigation links to get started.

@@ -1,0 +1,23 @@
+title: Oligo Designer Toolsuite — Docs
+description: Frontend documentation for the Oligo Designer Toolsuite
+theme: minima
+# Set to true if your repo is username.github.io or a project page under /<repo>
+# baseurl: "" 
+# url: ""
+markdown: kramdown
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+nav:
+  - text: Home
+    url: /
+  - text: Getting Started
+    url: /getting-started.html
+  - text: Pipelines
+    url: /pipelines.html
+  - text: Runs & Results
+    url: /runs.html
+  - text: Auth
+    url: /auth.html
+  - text: Troubleshooting
+    url: /troubleshooting.html
