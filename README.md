@@ -1,46 +1,114 @@
-# Getting Started with Create React App
+<div align="center">
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Oligo Designer Toolsuite – Web Frontend
 
-## Available Scripts
+_A lightweight, user-friendly interface for custom oligo design pipelines_
 
-In the project directory, you can run:
+[![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Stars](https://img.shields.io/github/stars/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite?logo=GitHub&color=yellow)](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/stargazers)
 
-### `npm start`
+</div>
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+---
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+This repository contains the **frontend web application** for the [Oligo Designer Toolsuite](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite):  
+A modular, open-source platform for running custom oligo design pipelines (such as SeqFISH+, Scrinshot, Oligo-Seq, and MERFISH) on your own server or in the cloud.
 
-### `npm test`
+Deploying this frontend allows **multiple users to access, configure, and run oligo design pipelines via a browser**. The frontend talks to the backend REST API (Python Flask) where all core logic and computation happens.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+**Features:**
+- Modern React + TypeScript web app
+- Multi-user support with authentication
+- Uploads your sequence data and parameters
+- Visualizes pipeline progress and results
+- Integrates seamlessly with the backend to provide a full-featured design platform for:
+  - SeqFISH+
+  - Scrinshot
+  - Oligo-Seq
+  - MERFISH
 
-### `npm run build`
+---
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## How does it work?
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+This web app connects to the [Oligo Designer Toolsuite backend](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) (Flask Python API).
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- The **backend** runs the actual pipelines and manages all scientific computation and files.
+- The **frontend** provides a clean, multi-user web interface for running and managing jobs, tracking progress, and visualizing results.
 
-### `npm run eject`
+### **You must deploy both the frontend and backend to make the system available to users.**
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+---
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Quickstart
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### 1. Install the backend first
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Before running the frontend, follow the [backend installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) and ensure the API is available on your server.
 
-## Learn More
+### 2. Install frontend dependencies
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Clone this repo and install dependencies:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
+cd oligo-designer-frontend
+npm install
+conda odt update -f environment.yml --prune
+```
+
+You can also set up additional environment variables as needed for authentication, proxy, etc.
+
+### 4. Run the frontend (For MacOS and Linux)
+
+```bash
+./start.sh
+```
+
+### 4. Run the frontend (For Windows)
+
+```bash
+.\start.bat
+```
+
+The app will open at [http://localhost:3000](http://localhost:3000).
+
+## Supported Pipelines
+
+The following pipelines are available through the web interface:
+
+- **SeqFISH+ Probe Designer**
+- **Scrinshot Probe Designer**
+- **Oligo-Seq Probe Designer**
+- **MERFISH Probe Designer**
+- **Genomic Region Generator** (as a submodule)
+
+See the [backend documentation](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for details.
+
+---
+
+## For Developers
+
+- This project uses [Create React App](https://github.com/facebook/create-react-app) (see [maintenance notice below](#maintenance)).
+- Written in TypeScript + React.
+- State management with Context + Hooks.
+
+---
+
+
+## License
+
+Released under the [MIT License](https://opensource.org/licenses/MIT).
+
+---
+
+**Questions? Bugs?**  
+Please open an [issue](https://github.com/YOUR_ORG/oligo-designer-frontend/issues) or contact the main Oligo Designer Toolsuite team (see backend repo for details).
+
+---
+
+## Citation
+
+If you use this platform, please cite the main [Oligo Designer Toolsuite](https://doi.org/10.5281/zenodo.7823048) as described in the backend [README](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite#how-to-cite).
+
+---

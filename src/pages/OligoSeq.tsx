@@ -2236,11 +2236,6 @@ const OligoSeq: React.FC = () => {
                     </div>
 
                     <div className="container my-4">
-                        {!areAllFilesUploaded() && (
-                            <div className="alert alert-warning mt-3">
-                                Please upload all required files before submitting.
-                            </div>
-                        )}
                         <div className="d-flex justify-content-center mt-3">
                             <button
                                 type="submit"
