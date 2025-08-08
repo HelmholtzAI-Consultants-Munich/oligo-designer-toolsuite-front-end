@@ -11,56 +11,33 @@ This app lets multiple users run advanced oligo design pipelines (SeqFISH+, Scri
 
 ---
 
-## Requirements
+### 1. Install the backend first
 
-- Node.js 18+
-- npm (or pnpm)
-- [Conda](https://docs.conda.io/en/latest/) (Anaconda or Miniconda, for backend dependencies)
-- The [Oligo Designer Toolsuite backend](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) running on your server (see backend instructions)
-
----
-
-## Quickstart
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
-cd oligo-designer-toolsuite-front-end
-```
+Before running the frontend, follow the [backend installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) and ensure the oligo designer is available on your server.
 
 ### 2. Install frontend dependencies
 
+Clone this repo and install dependencies:
+
 ```bash
+git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
+cd oligo-designer-frontend
 npm install
+conda odt update -f environment.yml --prune
 ```
 
-### 3. Install backend Python environment (with conda)
+You can also set up additional environment variables as needed for authentication, proxy, etc.
 
-```bash
-conda env create -f environment.yml
-conda activate odt
-```
-To update the environment after changes:
-```bash
-conda env update -f environment.yml --prune
-```
-
----
-
-
-### 5. Start the application
-
-#### **On Linux and MacOS**
+### 3. Run the frontend (For MacOS and Linux)
 
 ```bash
 ./start.sh
 ```
 
-#### **On Windows**
+### 3. Run the frontend (For Windows)
 
-```cmd
-start.bat
+```bash
+.\start.bat
 ```
 
 The app will open at [http://localhost:3000](http://localhost:3000).
