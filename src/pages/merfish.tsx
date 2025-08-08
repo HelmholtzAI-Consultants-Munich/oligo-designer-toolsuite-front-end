@@ -1,14 +1,15 @@
 import React, {useState} from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
-import {OverlayTrigger, Popover} from "react-bootstrap";
-import {InfoCircle} from "react-bootstrap-icons";
+import {Collapse, OverlayTrigger, Popover} from "react-bootstrap";
+import {ChevronDown, ChevronUp, InfoCircle} from "react-bootstrap-icons";
 import merfish_form from "../forms/merfish_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import {createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
+import merfishImage from '../images/pipeline_merfish_probes.webp';
 const Merfish: React.FC = () => {
     const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
     const [fastaOption2, setFastaOption2] = useState("generate"); // "generate" or "upload"
@@ -22,6 +23,7 @@ const Merfish: React.FC = () => {
     const [fastaFormsReference, setFastaFormsReference] = useState<Array<typeof defaultFastaForm>>([]);
     const [fastaFormsReadout, setFastaFormsReadout] =  useState<Array<typeof defaultFastaForm>>([]);
     const [fastaFormsPrimer, setFastaFormsPrimer] =  useState<Array<typeof defaultFastaForm>>([]);
+    const [expanded, setExpanded] = useState(false);
 
 
     const [loading, setLoading] = useState(false);
@@ -4725,7 +4727,37 @@ const Merfish: React.FC = () => {
             <Navbar/>
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
-                    <h2 className="text-center mb-4">Merfish Probe Designer</h2>
+                    <div className="mb-3">
+                            <div className="d-flex justify-content-center align-items-center">
+                                <h2 className="mb-0">Merfish Probe Designer</h2>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-link p-0 ms-2"
+                                    onClick={() => setExpanded(!expanded)}
+                                    aria-expanded={expanded}
+                                    style={{ textDecoration: "none" }}
+                                >
+                                    {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </button>
+                            </div>
+
+                            <Collapse in={expanded}>
+                                <div className="text-center mt-2">
+                                    <p className="text-muted">
+                                        MERFISH (Multiplexed Error-Robust Fluorescence In Situ Hybridization) probes are short DNA oligonucleotides designed to label specific RNA molecules in cells. They incorporate unique “barcodes” that enable simultaneous imaging and identification of hundreds of different transcripts, all within a single sample. This highly multiplexed approach provides detailed, spatially resolved gene expression information at the single-cell level.
+
+A MERFISH encoding probe is a fluorescent probe that contains a 30-nt targeting sequence which directs their binding to the specific RNA, two 20-nt barcode sequences, which are read out by fluorescent secondary readout probes, single A-nucleotide spacers between readout and gene-specific regions, and two 20-nt PCR primer binding sites. The specific readout sequences contained by an encoding probe are determined by the binary barcode assigned to that RNA.
+
+                                    </p>
+                                    <img
+                                      src={merfishImage}
+                                      alt="MERFISH Pipeline"
+                                      className="img-fluid my-3"
+                                    />
+                                </div>
+                            </Collapse>
+                        </div>
                     <ul className="nav nav-tabs">
                         <li className="nav-item">
                             <button

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from "axios";
-import { OverlayTrigger, Popover } from "react-bootstrap";
-import { InfoCircle } from "react-bootstrap-icons";
+import {Collapse, OverlayTrigger, Popover} from "react-bootstrap";
+import {ChevronDown, ChevronUp, InfoCircle} from "react-bootstrap-icons";
 
 import Navbar from "../modules/nav";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
@@ -10,6 +10,7 @@ import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import { createRunId } from "../modules/helpers";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
+import seqfishImage from "../images/pipeline_seqfishplus_probes.webp";
 
 const SeqFish: React.FC = () => {
     const defaultFastaForm = {
@@ -33,6 +34,7 @@ const SeqFish: React.FC = () => {
     const [formData, setFormData] = useState(seqfish_form);
     const [activeTab, setActiveTab] = useState("probe_sequences");
     const [activetab2, setActivetab2] = useState("specfblastn");
+    const [expanded, setExpanded] = useState(false);
 
     interface FileState {
         file_regions: File | null;
@@ -4224,7 +4226,36 @@ const SeqFish: React.FC = () => {
             <Navbar/>
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
-                    <h2 className="text-center mb-4">SeqFish+ Probe Designer</h2>
+                    <div className="mb-3">
+                            <div className="d-flex justify-content-center align-items-center">
+                                <h2 className="mb-0">Seqfish+ Probe Designer</h2>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-link p-0 ms-2"
+                                    onClick={() => setExpanded(!expanded)}
+                                    aria-expanded={expanded}
+                                    style={{ textDecoration: "none" }}
+                                >
+                                    {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </button>
+                            </div>
+
+                            <Collapse in={expanded}>
+                                <div className="text-center mt-2">
+                                    <p className="text-muted">
+                                    SeqFISH+ (sequential fluorescence in situ hybridization) probes are short DNA oligonucleotides designed for multiplexed single-molecule FISH. In seqFISH+, multiple rounds of hybridization and imaging are performed sequentially, enabling detailed visualization and quantification of hundreds of RNA targets in a single sample. This technique preserves the spatial context of gene expression while providing high-throughput and single-cell resolution.
+
+A SeqFISH+ probe is a flourescent probe that contains a 28-nt gene-specific sequence complementary to the mRNA, four 15-nt barcode sequences, which are read out by fluorescent secondary readout probes, single T-nucleotide spacers between readout and gene-specific regions, and two 20-nt PCR primer binding sites. The specific readout sequences contained by an encoding probe are determined by the binary barcode assigned to that RNA.
+                                    </p>
+                                    <img
+                                      src={seqfishImage}
+                                      alt="Seqfish+ Pipeline"
+                                      className="img-fluid my-3"
+                                    />
+                                </div>
+                            </Collapse>
+                        </div>
                     <ul className="nav nav-tabs">
                         <li className="nav-item">
                             <button

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import axios from "axios";
-import { OverlayTrigger, Popover,Spinner } from 'react-bootstrap';
-import { InfoCircle } from "react-bootstrap-icons";
-
+import { OverlayTrigger, Popover,Collapse} from 'react-bootstrap';
+import { InfoCircle, ChevronDown, ChevronUp } from "react-bootstrap-icons";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../modules/nav";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
 import { createRunId } from "../modules/helpers";
@@ -10,7 +10,7 @@ import formDatas from "../forms/scrinshot_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
-
+import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
     const Scrinshot: React.FC = () => {
     // ====== State Declarations ======
     const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
@@ -27,6 +27,10 @@ import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(formDatas);
+    const navigate = useNavigate();
+    const [expanded, setExpanded] = useState(false);
+
+
 
     interface FileState {
         file_regions: File | null;
@@ -1368,7 +1372,7 @@ import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
                     return null;
             }
         };
-        const renderTabContent2 = () => {
+    const renderTabContent2 = () => {
             switch (activetab2) {
                 case "specfblastn":
                     return (
@@ -3154,8 +3158,41 @@ import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
         return (<div>
                 <Navbar/>
                 <div className="container my-4">
+
+                    {/* Moved Info button outside the form to avoid navigation issues */}
+
                     <form onSubmit={handleSubmit} id="scrinshotForm">
-                        <h2 className="text-center mb-4">Scrinshot Probe Designer</h2>
+                        <div className="mb-3">
+                            <div className="d-flex justify-content-center align-items-center">
+                                <h2 className="mb-0">Scrinshot Probe Designer</h2>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-link p-0 ms-2"
+                                    onClick={() => setExpanded(!expanded)}
+                                    aria-expanded={expanded}
+                                    style={{ textDecoration: "none" }}
+                                >
+                                    {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </button>
+                            </div>
+
+                            <Collapse in={expanded}>
+                                <div className="text-center mt-2">
+                                    <p className="text-muted">
+                                        Padlock probes are short single-stranded oligos designed to bind a target sequence at both their 5′ and 3′ ends. Once hybridized, the probe’s ends are ligated to form a circular molecule that can then be amplified or visualized in situ. Scrinshot (Single-Cell RNA In-Situ Hybridization and Sequencing On Tissue) uses these padlock probes to detect and quantify specific RNA transcripts at single-cell resolution, enabling highly multiplexed and spatially resolved gene expression analysis.
+                                        Padlock probes contain two variable gene-specific 5’- and 3’- arms and a stable backbone sequence of 53 nucleotides (nt) which is subdivided in four parts. Circularized padlock probe is hybridized to the complementary sequence of the corresponding mRNA
+                                    </p>
+                                    <img
+                                      src={scrinshotImage}
+                                      alt="Scrinshot Pipeline"
+                                      className="img-fluid my-3"
+                                    />
+                                </div>
+                            </Collapse>
+                        </div>
+
+
                         <ul className="nav nav-tabs">
 
                             <li className="nav-item">

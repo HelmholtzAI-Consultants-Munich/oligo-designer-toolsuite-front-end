@@ -1,14 +1,15 @@
 import React, { useState} from 'react';
 import Navbar from "../modules/nav";
 import axios from "axios";
-import {OverlayTrigger, Popover} from "react-bootstrap";
-import {InfoCircle} from "react-bootstrap-icons";
+import {Collapse, OverlayTrigger, Popover} from "react-bootstrap";
+import {ChevronDown, ChevronUp, InfoCircle} from "react-bootstrap-icons";
 import oligoseq_form from "../forms/oligoseq_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import {createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
+import seqfishImage from "../images/pipeline_seqfishplus_probes.webp";
 
 
 const OligoSeq: React.FC = () => {
@@ -26,6 +27,7 @@ const OligoSeq: React.FC = () => {
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [generateFastaFiles, setGenerateFastaFiles] = useState(false);
+    const [expanded, setExpanded] = useState(false);
     interface FileState {
         file_regions: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
@@ -2155,7 +2157,29 @@ const OligoSeq: React.FC = () => {
             <Navbar/>
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
-                    <h2 className="text-center mb-4">Oligo-Seq Designer</h2>
+                     <div className="mb-3">
+                            <div className="d-flex justify-content-center align-items-center">
+                                <h2 className="mb-0">OligoSeq Probe Designer</h2>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-link p-0 ms-2"
+                                    onClick={() => setExpanded(!expanded)}
+                                    aria-expanded={expanded}
+                                    style={{ textDecoration: "none" }}
+                                >
+                                    {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </button>
+                            </div>
+
+                            <Collapse in={expanded}>
+                                <div className="text-center mt-2">
+                                    <p className="text-muted">
+                                        An oligo-seq probe is an oligo hybridization probe, which is optimized for probe-based targeted sequencing to measure RNA expression.
+                                    </p>
+                                </div>
+                            </Collapse>
+                        </div>
                     <ul className="nav nav-tabs">
 
                         <li className="nav-item">
