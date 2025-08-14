@@ -288,24 +288,14 @@ def scrinshot():
     print("STDOUT (partial logs):", result.stdout)
     status = "completed" if result.returncode == 0 else "error"
 
-    # Clean up temporary files if they exist
+    # Clean up file_regions temp file safely
     if form_data['file_regions']['value']:
-        if os.path.exists(form_data['file_regions']['value']):
-            print('deleted')
-            os.remove(form_data['file_regions']['value'])  # Delete the file
-    a=split_on_newline(form_data['files_fasta_target_probe_database']['value'])
-
-    if '\n' in a:
-        a.remove('\n')
-    for i in a:
-        print('deleted')
-        os.remove(i)
-    a=split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
-    if '\n' in a:
-        a.remove('\n')
-    for i in a:
-        print('deleted')
-        os.remove(i)
+        temp_path = form_data['file_regions']['value'].strip()
+        if os.path.exists(temp_path):
+            print('deleted temp file_regions:', temp_path)
+            os.remove(temp_path)
+        else:
+            print('file_regions not found, skipped:', temp_path)
 
     # Update run status in database
     mongo.db.runs.update_one(
