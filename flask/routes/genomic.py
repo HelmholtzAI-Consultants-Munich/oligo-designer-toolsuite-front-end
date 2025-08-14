@@ -493,13 +493,18 @@ def genomic_cascaded_ncbi():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
 
-            # Gather .fna files to pass to downstream process
-            fna_files = [
-                os.path.join(output_gen, fname)
-                for fname in os.listdir(output_gen)
-                if fname.endswith('.fna')
-            ]
+            # Gather .fna files to pass to downstream process, filtering for GCF/GCA
+            fna_files = []
+            skipped_files = []
+            for fname in os.listdir(output_gen):
+                if fname.endswith('.fna'):
+                    if 'GCF' in fname or 'GCA' in fname:
+                        skipped_files.append(fname)
+                    else:
+                        fna_files.append(os.path.join(output_gen, fname))
+
             fna_string = "\n".join(fna_files)
+            print("Skipped files (no GCF/GCA):", skipped_files)
 
             # Update run status in MongoDB
             mongo.db.runs.update_one(
