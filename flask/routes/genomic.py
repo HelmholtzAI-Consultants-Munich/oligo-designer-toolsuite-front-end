@@ -450,6 +450,7 @@ def genomic_cascaded_ncbi():
 
         # Insert run document in MongoDB
         run_doc = {
+            "session_id": session_id,
             "user_id": user_id,
             "timestamp": timestamp,
             "output_path": output_path,
@@ -561,13 +562,16 @@ def genomic_cascaded_ensemble():
         7. Update MongoDB status and return result.
     """
     try:
-        user_dir = ''
         if current_user.is_authenticated:
             user_id = str(current_user.id)
             user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
             config_path = os.path.join(user_dir, "config_genomic_ensemble.yaml")
+            session_id = None
         else:
             user_id = None
+            session_id = session['session_id']
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
+            config_path = os.path.join(user_dir, 'config.yaml')
         config_genomic = {}
         # Parse JSON data from the request
         form_data = request.json
@@ -577,6 +581,7 @@ def genomic_cascaded_ensemble():
 
         # Insert run document in MongoDB
         run_doc = {
+            "session_id": session_id,
             "user_id": user_id,
             "timestamp": timestamp,
             "output_path": output_path,

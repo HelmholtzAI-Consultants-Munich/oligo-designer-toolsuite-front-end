@@ -27,7 +27,7 @@ CTTGGCGGGGGACTctgagggaggagctggggaCGGCGACCCTAGGAGAGtTCTTTGGGGTGACTTTCAAGATGGACTCT
 >AARS1::source=NCBI;species=Homo_sapiens;annotation_release=110;genome_assembly=GRCh38;regiontype=exonexonjunction;gene_id=AARS1;transcript_id=NM_001605.3,exon_number=3__JUNC__2;transcript_id=XM_047433666.1,exon_number=3__JUNC__2;number_total_transcripts=2::16:70277105-70277154(-);16:70282620-70282669(-)(-)
 TCCCATTGGATGACCCCACTTTGCTCTTTGCCAATGCAGGCATGAACCAGTTTAAACCCATTTTCCTGAACACAATTGACCCATCTCACCCCATGGCAAA
 >AARS1::source=NCBI;species=Homo_sapiens;annotation_release=110;genome_assembly=GRCh38;regiontype=exonexonjunction;gene_id=AARS1;transcript_id=NM_001605.3,exon_number=4__JUNC__3;transcript_id=XM_047433666.1,exon_number=4__JUNC__3;number_total_transcripts=2::16:70276582-70276631(-);16:70276966-70277015(-)(-)
-ACACCTTCTTCGAGATGCTGGGCTCTTGGTCTTTTGGAGATTACTTTAAGGAATTGGCATGTAAGATGGCTCTGGAACTCCTCACCCAAGAGTTTGGCAT
+ACACCTTCTTCGAGATGCTGGGCTCTTGGTCTTTGGAGATTACTTTAAGGAATTGGCATGTAAGATGGCTCTGGAACTCCTCACCCAAGAGTTTGGCAT
 >AARS1::source=NCBI;species=Homo_sapiens;annotation_release=110;genome_assembly=GRCh38;regiontype=exonexonjunction;gene_id=AARS1;transcript_id=NM_001605.3,exon_number=5__JUNC__4;transcript_id=XM_047433666.1,exon_number=5__JUNC__4;number_total_transcripts=2::16:70271923-70271972(-);16:70276486-70276535(-)(-)
 GCTGGCTTAGAAGCAGATCTGGAATGCAAACAGATCTGGCAAAATTTGGGGCTGGATGACACCAAAATCCTCCCAGGCAACATGAAGGATAACTTCTGGG
 >AARS1::source=NCBI;species=Homo_sapiens;annotation_release=110;genome_assembly=GRCh38;regiontype=exonexonjunction;gene_id=AARS1;transcript_id=NM_001605.3,exon_number=6__JUNC__5;transcript_id=XM_047433666.1,exon_number=6__JUNC__5;number_total_transcripts=2::16:70270291-70270340(-);16:70271781-70271830(-)(-)
