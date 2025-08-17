@@ -1,0 +1,108 @@
+n_jobs: 1
+dir_output: /Users/yarkineren/WebstormProjects/untitled/flask/user_data/testuser123/output_scrinshot_probe_designer_2025-08-17_10-27-48
+write_intermediate_steps: false
+top_n_sets: 3
+file_regions: /var/folders/b8/ckhxj97x2svcv7j3zv11bj2r0000gn/T/tmp3zdpwhy7.txt
+files_fasta_target_probe_database:
+- target1.fna
+- target2.fna
+files_fasta_reference_database_target_probe:
+- ref1.fna
+- ref2.fna
+target_probe_length_min: 20
+target_probe_length_max: 40
+target_probe_isoform_consensus: 1
+target_probe_GC_content_min: 30
+target_probe_GC_content_opt: 50
+target_probe_GC_content_max: 70
+target_probe_Tm_min: 60
+target_probe_Tm_opt: 65
+target_probe_Tm_max: 75
+target_probe_homopolymeric_base_n:
+  A: 3
+  T: 3
+  C: 3
+  G: 3
+target_probe_padlock_arm_Tm_dif_max: 10
+target_probe_padlock_arm_length_min: 15
+target_probe_padlock_arm_Tm_min: 55
+target_probe_padlock_arm_Tm_max: 70
+detection_oligo_min_thymines: 2
+detection_oligo_length_min: 15
+detection_oligo_length_max: 25
+target_probe_ligation_region_size: 8
+target_probe_isoform_weight: 1
+target_probe_GC_weight: 1
+target_probe_Tm_weight: 1
+set_size_min: 10
+set_size_opt: 15
+distance_between_target_probes: 5
+n_sets: 1
+detection_oligo_U_distance: 2
+detection_oligo_Tm_opt: 62
+target_probe_specificity_blastn_search_parameters:
+  perc_identity: 85
+  strand: both
+  word_size: 11
+  dust: 'yes'
+  soft_masking: 'true'
+  max_target_seqs: 500
+  max_hsps: 10
+target_probe_specificity_blastn_hit_parameters:
+  coverage: 80
+target_probe_cross_hybridization_blastn_search_parameters:
+  perc_identity: 85
+  strand: both
+  word_size: 11
+  dust: 'yes'
+  soft_masking: 'true'
+  max_target_seqs: 500
+target_probe_cross_hybridization_blastn_hit_parameters:
+  coverage: 80
+max_graph_size: 1000
+n_attempts: 3
+heuristic: false
+heuristic_n_attempts: 2
+target_probe_Tm_parameters:
+  nn_table: DNA_NN1
+  tmm_table: DNA_TMM1
+  imm_table: DNA_IMM1
+  de_table: DNA_DE1
+  dnac1: 50
+  dnac2: 50
+  saltcorr: 1
+  Na: 50
+  K: 50
+  Tris: 10
+  Mg: 1
+  dNTPs: '0.2'
+target_probe_Tm_chem_correction_parameters:
+  DMSO: 5
+  fmd: 2
+  DMSOfactor: 0.75
+  fmdfactor: 1.1
+  fmdmethod: 1
+  GC: null
+target_probe_Tm_salt_correction_param_probe: null
+detection_oligo_Tm_parameters:
+  nn_table: DNA_NN1
+  tmm_table: DNA_TMM1
+  imm_table: DNA_IMM1
+  de_table: DNA_DE1
+  dnac1: 50
+  dnac2: 50
+  saltcorr: 1
+  Na: 50
+  K: 50
+  Tris: 10
+  Mg: 1
+  dNTPs: '0.2'
+detection_oligo_Tm_chem_correction_parameters:
+  DMSO: 5
+  fmd: 2
+  DMSOfactor: 0.75
+  fmdfactor: 1.1
+  fmdmethod: 1
+  GC: null
+detection_oligo_Tm_salt_correction_parameters: null
+target_probe_Tm_salt_correction_parameters: null

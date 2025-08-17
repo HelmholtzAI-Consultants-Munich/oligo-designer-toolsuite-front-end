@@ -413,8 +413,8 @@ def merfish():
         if '\n' in files_list:
             files_list.remove('\n')
         for fname in files_list:
-            print('deleted')
-            os.remove(fname)
+            if os.path.exists(fname):
+                os.remove(fname)
 
     ##############################
     # DB Update
@@ -429,7 +429,5 @@ def merfish():
     # Response
     ##############################
     return jsonify({
-        'stdout': result.stdout,
-        'stderr': result.stderr,
-        'returncode': result.returncode
+        "run_id": str(run_id),
     })

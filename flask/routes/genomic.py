@@ -497,15 +497,18 @@ def genomic_cascaded_ncbi():
             # Gather .fna files to pass to downstream process, filtering for GCF/GCA
             fna_files = []
             skipped_files = []
-            for fname in os.listdir(output_gen):
-                if fname.endswith('.fna'):
-                    if 'GCF' in fname or 'GCA' in fname:
-                        skipped_files.append(fname)
-                    else:
-                        fna_files.append(os.path.join(output_gen, fname))
+            if os.path.exists(output_gen):
+                for fname in os.listdir(output_gen):
+                    if fname.endswith('.fna'):
+                        if 'GCF' in fname or 'GCA' in fname:
+                            skipped_files.append(fname)
+                        else:
+                            fna_files.append(os.path.join(output_gen, fname))
 
-            fna_string = "\n".join(fna_files)
-            print("Skipped files (no GCF/GCA):", skipped_files)
+                fna_string = "\n".join(fna_files)
+                print("Skipped files (no GCF/GCA):", skipped_files)
+            else:
+                fna_string = ""
 
             # Update run status in MongoDB
             mongo.db.runs.update_one(
@@ -622,12 +625,20 @@ def genomic_cascaded_ensemble():
             print("STDERR:", result.stderr)
             print("STDOUT (partial logs):", result.stdout)
             # Gather .fna files for downstream process
-            fna_files = [
-                os.path.join(output_gen, fname)
-                for fname in os.listdir(output_gen)
-                if fname.endswith('.fna')
-            ]
-            fna_string = "\n".join(fna_files)
+            fna_files = []
+            skipped_files = []
+            if os.path.exists(output_gen):
+                for fname in os.listdir(output_gen):
+                    if fname.endswith('.fna'):
+                        if 'GCF' in fname or 'GCA' in fname:
+                            skipped_files.append(fname)
+                        else:
+                            fna_files.append(os.path.join(output_gen, fname))
+
+                fna_string = "\n".join(fna_files)
+                print("Skipped files (no GCF/GCA):", skipped_files)
+            else:
+                fna_string = ""
 
             mongo.db.runs.update_one(
                 {"_id": run_id},

@@ -2,8 +2,8 @@ const form_Data_Custom= {
     dir_output: { value: "output_genomic_region_generator_custom", comment: "name of the directory where the output files will be written" },
     source: { value: "custom", comment: "required: indicate that own annotation should be used" },
     source_params: {
-        file_annotation: { value: "data/annotations/custom_GCF_000001405.40_GRCh38.p14_genomic_chr16.gtf", comment: "required: GTF file with gene annotation" },
-        file_sequence: { value: "data/annotations/custom_GCF_000001405.40_GRCh38.p14_genomic_chr16.fna", comment: "required: FASTA file with genome sequence" },
+        file_annotation: { value: "data/annotation/custom_GCF_000001405.40_GRCh38.p14_genomic_chr16.gtf", comment: "required: GTF file with gene annotation" },
+        file_sequence: { value: "data/annotation/custom_GCF_000001405.40_GRCh38.p14_genomic_chr16.fna", comment: "required: FASTA file with genome sequence" },
         files_source: { value: "NCBI", comment: "optional: original source of the genomic files" },
         species: { value: "Homo_sapiens", comment: "optional: species of provided annotation, leave empty if unknown" },
         annotation_release: { value: "110", comment: "optional: release number of provided annotation, leave empty if unknown" },

@@ -257,15 +257,17 @@ def oligoseq():
         a.remove('\n')
     for i in a:
         print('deleted')
-        os.remove(i)
+        if os.path.exists(i):
+            os.remove(i)
 
     # Delete uploaded fasta files (reference database target probe)
-    a = split_on_newline(form_data['files_fasta_reference_database_targe_probe']['value'])
+    a = split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
     if '\n' in a:
         a.remove('\n')
     for i in a:
         print('deleted')
-        os.remove(i)
+        if os.path.exists(i):
+            os.remove(i)
 
     # 10. Update DB run status
     mongo.db.runs.update_one(
@@ -275,7 +277,5 @@ def oligoseq():
 
     # 11. Return result from subprocess
     return jsonify({
-        'stdout': result.stdout,
-        'stderr': result.stderr,
-        'returncode': result.returncode
+        "run_id": str(run_id),
     })

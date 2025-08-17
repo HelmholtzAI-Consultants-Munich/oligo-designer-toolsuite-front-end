@@ -15,3 +15,4 @@ def register_blueprints(app):
     app.register_blueprint(merfish_bp)
     app.register_blueprint(seqfish_bp)
     app.register_blueprint(genomic_bp)
+    app.register_blueprint(oligoseq_bp)
