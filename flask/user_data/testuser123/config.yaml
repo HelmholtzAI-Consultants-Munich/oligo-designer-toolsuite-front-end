@@ -1,8 +1,8 @@
 n_jobs: 1
-dir_output: /Users/yarkineren/WebstormProjects/untitled/flask/user_data/testuser123/output_scrinshot_probe_designer_2025-08-17_13-42-00
+dir_output: /Users/yarkineren/WebstormProjects/untitled/flask/user_data/testuser123/output_scrinshot_probe_designer_2025-08-18_11-01-26
 write_intermediate_steps: false
 top_n_sets: 3
-file_regions: /var/folders/b8/ckhxj97x2svcv7j3zv11bj2r0000gn/T/tmp9agziqyn.txt
+file_regions: /var/folders/b8/ckhxj97x2svcv7j3zv11bj2r0000gn/T/tmppyc0b3js.txt
 files_fasta_target_probe_database:
 - target1.fna
 - target2.fna
