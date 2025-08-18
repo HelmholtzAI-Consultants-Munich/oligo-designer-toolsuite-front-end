@@ -1,4 +1,4 @@
-name: Run Tests and Coverage with pip
+name: Run Backend Tests
 
 on:
   push:
