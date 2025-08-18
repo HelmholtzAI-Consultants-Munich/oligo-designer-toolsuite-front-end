@@ -6,8 +6,7 @@ _A lightweight, user-friendly interface for custom oligo design pipelines_
 
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Stars](https://img.shields.io/github/stars/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite?logo=GitHub&color=yellow)](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/stargazers)
-
-</div>
+![Backend Tests](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/actions/workflows/backend_tests.yml/badge.svg)</div>
 
 ---
 
