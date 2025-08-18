@@ -41,19 +41,21 @@ This web app connects to the [Oligo Designer Toolsuite backend](https://github.c
 
 ## Quickstart
 
-### 1. Install the backend first
+### 1. Install the Oligo Designer Command line interface first
 
-Before running the frontend, follow the [backend installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) and ensure the API is available on your server.
+Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend. 
 
 ### 2. Install frontend dependencies
 
 Clone this repo and install dependencies:
+"odt" is the name of conda environment that is created in the first step of the installation.
+Please do not install with the requirements.txt; It is for testing purposes.
 
 ```bash
 git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
 cd oligo-designer-frontend
 npm install
-conda odt update -f environment.yml --prune
+conda odt update -f environment.yml 
 ```
 
 You can also set up additional environment variables as needed for authentication, proxy, etc.
@@ -82,15 +84,15 @@ The following pipelines are available through the web interface:
 - **MERFISH Probe Designer**
 - **Genomic Region Generator** (as a submodule)
 
-See the [backend documentation](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for details.
+See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for details.
 
 ---
 
 ## For Developers
 
 - This project uses [Create React App](https://github.com/facebook/create-react-app) (see [maintenance notice below](#maintenance)).
-- Written in TypeScript + React.
-- State management with Context + Hooks.
+- Written in TypeScript + React for frontend.
+- Written in Python + Flask for backend.
 
 ---
 
@@ -102,7 +104,7 @@ Released under the [MIT License](https://opensource.org/licenses/MIT).
 ---
 
 **Questions? Bugs?**  
-Please open an [issue](https://github.com/YOUR_ORG/oligo-designer-frontend/issues) or contact the main Oligo Designer Toolsuite team (see backend repo for details).
+Please open an [issue](https://github.com/YOUR_ORG/oligo-designer-frontend/issues)
 
 ---
 
