@@ -6,9 +6,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from unittest.mock import patch, MagicMock
 from bson import ObjectId
 from flask_login import logout_user
-import pytest
 from app import create_app
 from extensions import mongo
+from werkzeug.security import generate_password_hash
+
 
 @pytest.fixture
 def client(monkeypatch):
@@ -16,7 +17,6 @@ def client(monkeypatch):
     app.config['TESTING'] = True
     app.secret_key = 'test-key'
 
-    # Patch current_user globally to avoid 'NoneType' errors in auth.py
     class AnonymousUser:
         is_authenticated = False
 
@@ -25,39 +25,26 @@ def client(monkeypatch):
     with app.test_client() as client:
         with app.app_context():
             yield client
+
+
 @pytest.fixture
 def dummy_user():
     return {
         "_id": ObjectId(),
         "email": "test@example.com",
-        "password": "hashedpassword"
+        "password": generate_password_hash("mypassword")
     }
 
 
 def test_register_success(client, dummy_user):
-    email = "newuser12@example.com"
-    with patch("extensions.mongo.db.users.find_one", return_value=None), \
-         patch("extensions.mongo.db.users.insert_one", return_value=MagicMock(inserted_id=dummy_user["_id"])), \
-         patch("os.makedirs"), \
-         patch("flask_login.login_user"):
-        response = client.post("/register", json={"email": email, "password": "mypassword"})
-        assert response.status_code == 201
-        assert response.get_json()["message"] == "User registered successfully"
-        mongo.db.users.delete_one({"email": email})
+    mongo.db.users.delete_many({"email": dummy_user["email"]})
+    response = client.post("/register", json={"email": dummy_user["email"], "password": "mypassword"})
+    assert response.status_code == 201
+    assert response.get_json()["message"] == "User registered successfully"
 
 
-
-def test_register_existing_user(client, monkeypatch, dummy_user):
+def test_register_existing_user(client, dummy_user):
     mongo.db.users.insert_one(dummy_user)
-    def mock_find_one(query):
-        if query.get("email") == dummy_user["email"]:
-            return dummy_user
-        if query.get("_id") == dummy_user["_id"]:
-            return dummy_user
-        return None
-
-    monkeypatch.setattr("extensions.mongo.db.users.find_one", mock_find_one)
-
     response = client.post("/register", json={"email": dummy_user["email"], "password": "mypassword"})
     assert response.status_code == 409
     assert "error" in response.get_json()
@@ -70,7 +57,16 @@ def test_register_missing_fields(client):
 
 
 def test_login_success(client, monkeypatch, dummy_user):
-    monkeypatch.setattr("extensions.mongo.db.users.find_one", lambda q: dummy_user)
+    mongo.db.users.insert_one(dummy_user)
+
+    def mock_find_one(query):
+        if query.get("email") == dummy_user["email"]:
+            return dummy_user
+        if query.get("_id") == dummy_user["_id"]:
+            return dummy_user
+        return None
+
+    monkeypatch.setattr("extensions.mongo.db.users.find_one", mock_find_one)
     monkeypatch.setattr("werkzeug.security.check_password_hash", lambda hashed, plain: True)
     monkeypatch.setattr("flask_login.login_user", lambda user: None)
 
@@ -78,7 +74,6 @@ def test_login_success(client, monkeypatch, dummy_user):
         response = client.post("/login", json={"email": dummy_user["email"], "password": "mypassword"})
         assert response.status_code == 200
         assert response.get_json()["message"] == "Logged in successfully"
-    mongo.db.users.delete_one({"email": dummy_user["email"]})
 
 
 def test_login_invalid_credentials(client, monkeypatch):
@@ -115,12 +110,10 @@ def test_logout(client, monkeypatch):
     monkeypatch.setattr("flask_login.logout_user", lambda: None)
     monkeypatch.setattr("flask_login.utils._get_user", lambda: type("User", (), {"is_authenticated": True})())
 
-    # Mock authentication requirement
     client.post("/login", json={"email": "fake", "password": "fake"})
     with client.session_transaction() as sess:
         sess["_user_id"] = "123"
 
     response = client.post("/logout")
-
     assert response.status_code == 200
     assert response.get_json()["message"] == "Logged out"
