@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@playwright/test": "^1.55.0",
     "@types/bootstrap": "^5.2.10",
     "@types/js-yaml": "^4.0.9",
     "@types/react-router-dom": "^5.3.3"
