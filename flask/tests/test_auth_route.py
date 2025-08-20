@@ -11,10 +11,17 @@ from app import create_app
 from extensions import mongo
 
 @pytest.fixture
-def client():
+def client(monkeypatch):
     app = create_app()
     app.config['TESTING'] = True
     app.secret_key = 'test-key'
+
+    # Patch current_user globally to avoid 'NoneType' errors in auth.py
+    class AnonymousUser:
+        is_authenticated = False
+
+    monkeypatch.setattr("flask_login.utils._get_user", lambda: AnonymousUser())
+
     with app.test_client() as client:
         with app.app_context():
             yield client
@@ -27,19 +34,12 @@ def dummy_user():
     }
 
 
-def test_register_success(client, monkeypatch, dummy_user):
-    def insert_one_mock(user_data):
-        return MagicMock(inserted_id=dummy_user["_id"])
-
-    def find_one_mock(query):
-        return None if query["email"] != dummy_user["email"] else dummy_user
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: None)
-    monkeypatch.setattr("extensions.mongo.db.users.find_one", find_one_mock)
-    monkeypatch.setattr("extensions.mongo.db.users.insert_one", insert_one_mock)
-
-    with patch("os.makedirs"), patch("flask_login.login_user"):
-        response = client.post("/register", json={"email": dummy_user["email"], "password": "mypassword"})
+def test_register_success(client, dummy_user):
+    with patch("extensions.mongo.db.users.find_one", return_value=None), \
+         patch("extensions.mongo.db.users.insert_one", return_value=MagicMock(inserted_id=dummy_user["_id"])), \
+         patch("os.makedirs"), \
+         patch("flask_login.login_user"):
+        response = client.post("/register", json={"email": "newuser@example.com", "password": "mypassword"})
         assert response.status_code == 201
         assert response.get_json()["message"] == "User registered successfully"
 
@@ -101,6 +101,7 @@ def test_check_auth_logged_in(client, monkeypatch, dummy_user):
 
 def test_logout(client, monkeypatch):
     monkeypatch.setattr("flask_login.logout_user", lambda: None)
+    monkeypatch.setattr("flask_login.utils._get_user", lambda: type("User", (), {"is_authenticated": True})())
 
     # Mock authentication requirement
     client.post("/login", json={"email": "fake", "password": "fake"})
