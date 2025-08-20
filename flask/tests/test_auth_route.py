@@ -35,13 +35,17 @@ def dummy_user():
 
 
 def test_register_success(client, dummy_user):
+    email = "newuser12@example.com"
     with patch("extensions.mongo.db.users.find_one", return_value=None), \
          patch("extensions.mongo.db.users.insert_one", return_value=MagicMock(inserted_id=dummy_user["_id"])), \
          patch("os.makedirs"), \
          patch("flask_login.login_user"):
-        response = client.post("/register", json={"email": "newuser@example.com", "password": "mypassword"})
+        response = client.post("/register", json={"email": email, "password": "mypassword"})
         assert response.status_code == 201
         assert response.get_json()["message"] == "User registered successfully"
+
+    # Clean up if not fully mocked (optional)
+    mongo.db.users.delete_one({"email": email})
 
 
 def test_register_existing_user(client, monkeypatch, dummy_user):
