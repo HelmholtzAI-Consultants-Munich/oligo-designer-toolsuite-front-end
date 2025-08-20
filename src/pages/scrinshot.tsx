@@ -165,7 +165,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                         id="file_regions"
                                         name="file_regions"
                                         onChange={handleFileChange}
-                                        disabled={formData.file_regions.value.length > 0}
+                                        disabled={isSubmitting || loading || formData.file_regions.value.length > 0}
                                     />
                                     <input
                                         type="text"
@@ -245,6 +245,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             id="files_fasta_target_probe_database"
                                             name="files_fasta_target_probe_database"
                                             onChange={handleFileChange}
+                                            disabled={isSubmitting || loading}
                                             multiple
                                         />
                                         <label
@@ -326,6 +327,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             id="files_fasta_reference_database_target_probe"
                                             name="files_fasta_reference_database_target_probe"
                                             onChange={handleFileChange}
+                                            disabled={isSubmitting || loading}
                                             multiple
                                         />
                                         <label
@@ -3074,8 +3076,10 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
         };
 
         const handleSubmit = async (e: React.FormEvent) => {
-            e.preventDefault();
-            setLoading(true);
+            if (e) e.preventDefault();
+            if (isSubmitting) return;          // prevent double-clicks
+            setIsSubmitting(true);
+            setStatus('submitting');
 
             // ---- FASTA target probe database ----
             let generatedTargetPaths = '';
@@ -3310,14 +3314,23 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                     Please upload all required files before submitting.
                                 </div>
                             )}
-                            <div className="d-flex justify-content-center mt-3">
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary"
-                                    disabled={isSubmitting || !areAllFilesUploaded()}
-                                >
-                                    {isSubmitting ? "Running..." : "Submit"}
-                                </button>
+                           <div className="d-flex justify-content-center mt-4">
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleSubmit}
+                                disabled={isSubmitting || loading}
+                                aria-busy={isSubmitting}
+                              >
+                                {isSubmitting ? (
+                                  <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  'Submit'
+                                )}
+                              </button>
                             </div>
                         </div>
 

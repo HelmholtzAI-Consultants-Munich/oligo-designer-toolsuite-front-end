@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Scrinshot Page', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000/scrinshot'); // Adjust if your route is different
+    await page.goto('http://localhost:3000/pipelines/scrinshot'); // Adjust if your route is different
   });
 
   test('should render required file inputs', async ({ page }) => {
