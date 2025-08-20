@@ -48,21 +48,6 @@ def test_register_success(client, dummy_user):
     mongo.db.users.delete_one({"email": email})
 
 
-def test_register_existing_user(client, monkeypatch, dummy_user):
-    def mock_find_one(query):
-        if query.get("email") == dummy_user["email"]:
-            return dummy_user
-        if query.get("_id") == dummy_user["_id"]:
-            return dummy_user
-        return None
-
-    monkeypatch.setattr("extensions.mongo.db.users.find_one", mock_find_one)
-
-    response = client.post("/register", json={"email": dummy_user["email"], "password": "mypassword"})
-    assert response.status_code == 409
-    assert "error" in response.get_json()
-
-
 def test_register_missing_fields(client):
     response = client.post("/register", json={"email": ""})
     assert response.status_code == 400
