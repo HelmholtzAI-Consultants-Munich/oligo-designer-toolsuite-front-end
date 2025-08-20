@@ -49,7 +49,12 @@ def test_register_success(client, dummy_user):
 
 
 def test_register_existing_user(client, monkeypatch, dummy_user):
-    monkeypatch.setattr("extensions.mongo.db.users.find_one", lambda q: dummy_user)
+    def mock_find_one(query):
+        if query.get("email") == dummy_user["email"]:
+            return dummy_user  # simulate existing user
+        return None  # any other find_one (like _id after insert) returns None
+
+    monkeypatch.setattr("extensions.mongo.db.users.find_one", mock_find_one)
 
     response = client.post("/register", json={"email": dummy_user["email"], "password": "mypassword"})
     assert response.status_code == 409
