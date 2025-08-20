@@ -44,8 +44,21 @@ def test_register_success(client, dummy_user):
         assert response.status_code == 201
         assert response.get_json()["message"] == "User registered successfully"
 
-    # Clean up if not fully mocked (optional)
-    mongo.db.users.delete_one({"email": email})
+
+
+def test_register_existing_user(client, monkeypatch, dummy_user):
+    def mock_find_one(query):
+        if query.get("email") == dummy_user["email"]:
+            return dummy_user
+        if query.get("_id") == dummy_user["_id"]:
+            return dummy_user
+        return None
+
+    monkeypatch.setattr("extensions.mongo.db.users.find_one", mock_find_one)
+
+    response = client.post("/register", json={"email": dummy_user["email"], "password": "mypassword"})
+    assert response.status_code == 409
+    assert "error" in response.get_json()
 
 
 def test_register_missing_fields(client):
@@ -105,5 +118,6 @@ def test_logout(client, monkeypatch):
         sess["_user_id"] = "123"
 
     response = client.post("/logout")
+    
     assert response.status_code == 200
     assert response.get_json()["message"] == "Logged out"
