@@ -51,8 +51,10 @@ def test_register_success(client, dummy_user):
 def test_register_existing_user(client, monkeypatch, dummy_user):
     def mock_find_one(query):
         if query.get("email") == dummy_user["email"]:
-            return dummy_user  # simulate existing user
-        return None  # any other find_one (like _id after insert) returns None
+            return dummy_user
+        if query.get("_id") == dummy_user["_id"]:
+            return dummy_user
+        return None
 
     monkeypatch.setattr("extensions.mongo.db.users.find_one", mock_find_one)
 
