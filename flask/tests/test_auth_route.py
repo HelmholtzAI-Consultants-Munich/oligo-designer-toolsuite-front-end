@@ -43,10 +43,12 @@ def test_register_success(client, dummy_user):
         response = client.post("/register", json={"email": email, "password": "mypassword"})
         assert response.status_code == 201
         assert response.get_json()["message"] == "User registered successfully"
+        mongo.db.users.delete_one({"email": email})
 
 
 
 def test_register_existing_user(client, monkeypatch, dummy_user):
+    mongo.db.users.insert_one(dummy_user)
     def mock_find_one(query):
         if query.get("email") == dummy_user["email"]:
             return dummy_user
@@ -76,6 +78,7 @@ def test_login_success(client, monkeypatch, dummy_user):
         response = client.post("/login", json={"email": dummy_user["email"], "password": "mypassword"})
         assert response.status_code == 200
         assert response.get_json()["message"] == "Logged in successfully"
+    mongo.db.users.delete_one({"email": dummy_user["email"]})
 
 
 def test_login_invalid_credentials(client, monkeypatch):
@@ -118,6 +121,6 @@ def test_logout(client, monkeypatch):
         sess["_user_id"] = "123"
 
     response = client.post("/logout")
-    
+
     assert response.status_code == 200
     assert response.get_json()["message"] == "Logged out"
