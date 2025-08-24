@@ -2138,7 +2138,7 @@ const OligoSeq: React.FC = () => {
                     }
                 }
 
-                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: finalFormData, runid: runid }, {
+                const response = await axios.post('http://localhost:5000/api/oligoseq', { formdata: finalFormData, runid: runid }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });

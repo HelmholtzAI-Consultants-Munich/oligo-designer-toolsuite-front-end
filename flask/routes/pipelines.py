@@ -45,8 +45,13 @@ def delete_run(run_id):
         3. Delete run from DB.
     """
     try:
-        user_id = str(current_user.id)
-        run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
+        if current_user.is_authenticated:
+            user_id = str(current_user.id)
+            run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
+
+        else:
+            session_id = session.get('session_id')
+            run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "session_id": session_id})
         if not run:
             return jsonify({"error": "Run not found"}), 404
 
