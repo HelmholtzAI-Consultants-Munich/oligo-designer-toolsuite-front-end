@@ -74,10 +74,10 @@ const SeqFish: React.FC = () => {
     // Returns true if all FASTA-related file arrays have files, false otherwise.
     const areAllFilesUploaded = () => {
         return (
-            files.files_fasta_target_probe_database.length > 0 &&
-            files.files_fasta_reference_database_target_probe.length > 0 &&
-            files.files_fasta_reference_database_readout_probe.length > 0 &&
-            files.files_fasta_reference_database_primer.length > 0
+            ( (files.file_regions !== null || formData.file_regions.value.length > 0) &&
+                (files.files_fasta_target_probe_database.length > 0 || fastaForms.length > 0 ) &&
+                (files.files_fasta_reference_database_target_probe.length > 0 || fastaFormsReference.length > 0  )
+            )
         );
     };
 
@@ -4386,16 +4386,30 @@ A SeqFISH+ probe is a flourescent probe that contains a 28-nt gene-specific sequ
                     </div>
 
                     <div className="container my-4">
-                        <div className="d-flex justify-content-center mt-3">
-                            <button
-                                type="submit"
+                            {!areAllFilesUploaded() && (
+                                <div className="alert alert-warning mt-3">
+                                    Please upload all required files or fill the values before submitting.
+                                </div>
+                            )}
+                           <div className="d-flex justify-content-center mt-4">
+                              <button
+                                type="button"
                                 className="btn btn-primary"
-                                disabled={isSubmitting || !areAllFilesUploaded()}
-                            >
-                                {isSubmitting ? "Running..." : "Submit"}
-                            </button>
+                                onClick={handleSubmit}
+                                disabled={isSubmitting || loading || !areAllFilesUploaded()}
+                                aria-busy={isSubmitting}
+                              >
+                                {isSubmitting ? (
+                                  <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Submitting...
+                                  </>
+                                ) : (
+                                  'Submit'
+                                )}
+                              </button>
+                            </div>
                         </div>
-                    </div>
 
                 </form>
                 <RunLocallyInfoBox />

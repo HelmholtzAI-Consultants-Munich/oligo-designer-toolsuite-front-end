@@ -70,10 +70,9 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
      */
     const areAllFilesUploaded = () => {
         return (
-            (fastaOption === 'generate') ||
-            (
-                files.files_fasta_target_probe_database.length > 0 &&
-                files.files_fasta_reference_database_target_probe.length > 0
+            ( (files.file_regions !== null || formData.file_regions.value.length > 0) &&
+                (files.files_fasta_target_probe_database.length > 0 || fastaForms.length > 0 ) &&
+                (files.files_fasta_reference_database_target_probe.length > 0 || fastaFormsReference.length > 0  )
             )
         );
     };
@@ -3311,7 +3310,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                         <div className="container my-4">
                             {!areAllFilesUploaded() && (
                                 <div className="alert alert-warning mt-3">
-                                    Please upload all required files before submitting.
+                                    Please upload all required files or fill the values before submitting.
                                 </div>
                             )}
                            <div className="d-flex justify-content-center mt-4">
@@ -3319,7 +3318,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                 type="button"
                                 className="btn btn-primary"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || loading}
+                                disabled={isSubmitting || loading || !areAllFilesUploaded()}
                                 aria-busy={isSubmitting}
                               >
                                 {isSubmitting ? (
