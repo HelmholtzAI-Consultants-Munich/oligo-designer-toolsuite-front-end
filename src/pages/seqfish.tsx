@@ -77,6 +77,10 @@ const SeqFish: React.FC = () => {
             ( (files.file_regions !== null || formData.file_regions.value.length > 0) &&
                 (files.files_fasta_target_probe_database.length > 0 || fastaForms.length > 0 ) &&
                 (files.files_fasta_reference_database_target_probe.length > 0 || fastaFormsReference.length > 0  )
+                 &&
+                (files.files_fasta_reference_database_readout_probe.length > 0 || fastaFormsReadout.length > 0  )
+                 &&
+                (files.files_fasta_reference_database_primer.length > 0 || fastaFormsPrimer.length > 0  )
             )
         );
     };
