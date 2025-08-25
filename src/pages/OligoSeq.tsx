@@ -2081,6 +2081,10 @@ const OligoSeq: React.FC = () => {
                 generatedTargetPaths = await handleSubmitGenomicAll(fastaForms, setLoading);
             }
             const uploadedPaths = await uploadFiles();
+            if (uploadedPaths['file_regions']){
+                formData['file_regions']['value']=uploadedPaths['file_regions']
+            }
+
             let uploadedTargetFastaPath = '';
             if (uploadedPaths['files_fasta_target_probe_database']) {
                 uploadedTargetFastaPath = uploadedPaths['files_fasta_target_probe_database'];
@@ -2118,27 +2122,8 @@ const OligoSeq: React.FC = () => {
             }
 
             try {
-                const finalFormData = { ...formData };
 
-                for (const key in uploadedPaths) {
-                    // @ts-ignore
-                    if (finalFormData[key]) {
-                        // @ts-ignore
-                        finalFormData[key] = {
-                            value: uploadedPaths[key],
-                            // @ts-ignore
-                            comment: finalFormData[key].comment,
-                        };
-                    } else {
-                        // @ts-ignore
-                        finalFormData[key] = {
-                            value: uploadedPaths[key],
-                            comment: "",
-                        };
-                    }
-                }
-
-                const response = await axios.post('http://localhost:5000/api/oligoseq', { formdata: finalFormData, runid: runid }, {
+                const response = await axios.post('http://localhost:5000/api/oligoseq', { formdata: formData, runid: runid }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });

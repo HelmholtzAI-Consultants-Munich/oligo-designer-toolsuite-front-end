@@ -33,12 +33,12 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
 
 
     interface FileState {
-        file_regions: File | null;
+        file_regions_file: File | null;
         files_fasta_target_probe_database: File[];
         files_fasta_reference_database_target_probe: File[];
     }
     const [files, setFiles] = useState<FileState>({
-        file_regions: null,
+        file_regions_file: null,
         files_fasta_target_probe_database: [],
         files_fasta_reference_database_target_probe: [],
     });
@@ -58,7 +58,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
         if (!selectedFiles) return;
         setFiles((prevFiles) => ({
             ...prevFiles,
-            [name]: name === 'file_regions'
+            [name]: name === 'file_regions_file'
                 ? selectedFiles[0]
                 : Array.from(selectedFiles),
         }));
@@ -70,7 +70,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
      */
     const areAllFilesUploaded = () => {
         return (
-            ( (files.file_regions !== null || formData.file_regions.value.length > 0) &&
+            ( (files.file_regions_file !== null || formData.file_regions.value.length > 0) &&
                 (files.files_fasta_target_probe_database.length > 0 || fastaForms.length > 0 ) &&
                 (files.files_fasta_reference_database_target_probe.length > 0 || fastaFormsReference.length > 0  )
             )
@@ -161,8 +161,8 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                     <input
                                         type="file"
                                         className="form-control visually-hidden"
-                                        id="file_regions"
-                                        name="file_regions"
+                                        id="file_regions_file"
+                                        name="file_regions_file"
                                         onChange={handleFileChange}
                                         disabled={isSubmitting || loading || formData.file_regions.value.length > 0}
                                     />
@@ -183,7 +183,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                     </datalist>
                                     {/* Custom file input button spanning full width */}
                                     <label
-                                        htmlFor="file_regions"
+                                        htmlFor="file_regions_file"
                                         className="btn btn-outline-primary d-block me-2 w-100"
                                         style={{ cursor: 'pointer' }}
                                     >
@@ -214,8 +214,8 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                 </div>
                                 {/* Display selected file name under the icon */}
                                 <div className="text-muted small mt-1">
-                                    {files.file_regions
-                                        ? `Selected: ${files.file_regions.name}`
+                                    {files.file_regions_file
+                                        ? `Selected: ${files.file_regions_file.name}`
                                         : "No file selected"
                                     }
                                 </div>
@@ -441,7 +441,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
@@ -470,7 +470,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
@@ -502,10 +502,10 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                             </div>
-    
+
                             <div className="row g-3">
                                 <div className="col">
                                     <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
@@ -538,7 +538,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col">
                                     <label htmlFor="probe_GC_content_opt" className="form-label">Optimal GC Content
@@ -601,7 +601,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                             </div>
                             <div className="row g-3">
@@ -694,12 +694,12 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
-    
+
+
                                 </div>
-    
+
                             </div>
-    
+
                             <h6 className="pt-2">Homopolymeric run per
                                 base </h6>
                             <div className="row g-3">
@@ -824,10 +824,10 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                             </div>
-    
+
                             <div className="mb-3">
                                 <label htmlFor="arm_Tm_dif_max" className="form-label">Max Tm Difference Between
                                     Arms:</label>
@@ -856,7 +856,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                         />
                                     </OverlayTrigger>
                                 </div>
-    
+
                             </div>
                             <div className="row g-3">
 
@@ -948,9 +948,9 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
-    
+
                             </div>
                             <div className="mb-3">
                                 <label htmlFor="ligation_region_size" className="form-label">Litigation Region
@@ -980,7 +980,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                         />
                                     </OverlayTrigger>
                                 </div>
-    
+
                             </div>
                             <div className="row g-3">
                                 <div className="col">
@@ -1071,7 +1071,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                                 />
                                             </OverlayTrigger>
                                         </div>
-    
+
 
                             </div>
                             <div className="row g-3">
@@ -1298,7 +1298,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                             </div>
                             <div className="row g-3">
@@ -1363,7 +1363,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                             </div>
                         </div>
@@ -1440,7 +1440,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="specificity_word_size" className="form-label">Word
@@ -1503,7 +1503,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="specificity_soft_masking" className="form-label">Soft
@@ -1567,7 +1567,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="specificity_max_hsps" className="form-label">Max
@@ -1631,7 +1631,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                             </div>
                         </div>
@@ -1639,7 +1639,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                 case 'crossfilterblastn':
                     return (
                         <div>
-    
+
                             <div className="row g-3">
                                 <div className="col-md-6">
                                     <label htmlFor="crosshybridization_perc_identity" className="form-label">Percent
@@ -1703,7 +1703,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="crosshybridization_word_size" className="form-label">Word
@@ -1767,7 +1767,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="crosshybridization_soft_masking" className="form-label">Soft
@@ -1831,7 +1831,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="crosshybridization_coverage"
@@ -1862,10 +1862,10 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                             </div>
-    
+
                         </div>
                     );
                 case'oligosetselection':
@@ -1931,7 +1931,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="heuristic" className="form-label">Heuristic:</label>
@@ -1962,7 +1962,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             />
                                         </OverlayTrigger>
                                     </div>
-    
+
                                 </div>
                                 <div className="col-md-6">
                                     <label htmlFor="heuristic_n_attempts" className="form-label"> Heuristics number of
@@ -3086,6 +3086,9 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                 generatedTargetPaths = await handleSubmitGenomicAll(fastaForms, setLoading);
             }
             const uploadedPaths = await uploadFiles();
+            if (uploadedPaths['file_regions_file']){
+                formData['file_regions']['value']=uploadedPaths['file_regions_file']
+            }
             let uploadedTargetFastaPath = '';
             if (uploadedPaths['files_fasta_target_probe_database']) {
                 uploadedTargetFastaPath = uploadedPaths['files_fasta_target_probe_database'];
@@ -3123,27 +3126,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
             }
 
             try {
-                const finalFormData = { ...formData };
-
-                for (const key in uploadedPaths) {
-                    // @ts-ignore
-                    if (finalFormData[key]) {
-                        // @ts-ignore
-                        finalFormData[key] = {
-                            value: uploadedPaths[key],
-                            // @ts-ignore
-                            comment: finalFormData[key].comment,
-                        };
-                    } else {
-                        // @ts-ignore
-                        finalFormData[key] = {
-                            value: uploadedPaths[key],
-                            comment: "",
-                        };
-                    }
-                }
-
-                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: finalFormData, runid: runid }, {
+                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: runid }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
@@ -3154,8 +3137,10 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
             } catch (error) {
                 console.error('Error submitting scrinshot form:', error);
                 alert('Error submitting scrinshot form. Please try again.');
+                setIsSubmitting(false);
             } finally {
                 setLoading(false);
+                setIsSubmitting(false);
             }
         };
         return (<div>
