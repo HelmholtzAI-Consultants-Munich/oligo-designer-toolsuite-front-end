@@ -129,8 +129,6 @@ dependencies:
       - mygene==3.2.2
       - networkx==3.4.2
       - numpy==1.26.4
-      - oligo-designer-toolsuite==1.0.2.dev25
-      - oligo-designer-toolsuite-ai-filters==0.0.4
       - packaging==25.0
       - pandas==2.3.1
       - parso==0.8.4
