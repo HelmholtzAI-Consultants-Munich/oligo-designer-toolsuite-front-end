@@ -25,7 +25,10 @@ jobs:
       - name: 🧾 Checkout Repo
         uses: actions/checkout@v4
 
-
+      - name: 📥 Clone Oligo Designer Toolsuite
+        run: |
+          git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite odt_repo
+          cd odt_repo
 
       - name: 🧬 Set Up Conda Environment, Bio Tools, and Backend
         uses: conda-incubator/setup-miniconda@v3
@@ -33,23 +36,29 @@ jobs:
           miniconda-version: "latest"
           auto-update-conda: true
           activate-environment: odt
-          environment-file: environment.yml
           python-version: 3.11
 
-      - name: 📥 Clone Oligo Designer Toolsuite
-        run: |
-          git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite odt_repo
-          cd odt_repo
-
       - name: 🔬 Install Bio Tools and ODT Repo
-        shell: bash
         run: |
+          source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
+          conda config --add channels bioconda
+          conda config --add channels conda-forge
+          conda update --all
+          conda install -n test-env -y "blast>=2.15.0"
+          conda install -n test-env -y "bedtools>=2.30"
+          conda install -n test-env -y "bowtie>=1.3.1"
+          conda install -n test-env -y "bowtie2>=2.5"    
           pip install -e .
           cd ..
 
+      - name: 🧪 Set Up ODT Environment from Repo
+        run: |
+          pip install -r environment.yml
+
       - name: 📦 Install Frontend Dependencies
         run: |
+          cd frontend
           npm ci
 
       - name: 🚀 Start Full App (Frontend + Backend)
