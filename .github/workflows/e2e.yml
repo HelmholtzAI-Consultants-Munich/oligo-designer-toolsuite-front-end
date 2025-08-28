@@ -1,0 +1,68 @@
+name: E2E Test for Scrinshot
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: 🧪 Playwright E2E Test
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:6
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: 🧾 Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set Up Conda with environment.yml
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          activate-environment: odt
+          environment-file: environment.yml
+
+      - name: ✅ Activate Conda and Install Backend App
+        run: |
+          conda activate odt
+          pip install -e .
+
+      - name: 📦 Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: 🎭 Install Playwright
+        run: |
+          npx playwright install --with-deps
+
+      - name: 🚀 Start Flask + React App
+        run: |
+          nohup bash -c "cd frontend && npm run dev" > frontend.log 2>&1 &
+          nohup bash -c "python app.py" > backend.log 2>&1 &
+          sleep 20
+
+      - name: 🧪 Run E2E Tests
+        run: |
+          npx playwright test e2e/scrinshot.e2e.ts
+
+      - name: 📤 Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: |
+            frontend/frontend.log
+            backend/backend.log
