@@ -57,7 +57,7 @@ jobs:
         run: |
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
-          pip install -r environment.yml
+          pip install -r requirements.txt
 
       - name: 📦 Install Frontend Dependencies
         run: |
