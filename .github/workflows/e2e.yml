@@ -1,10 +1,8 @@
 name: E2E Test for Scrinshot
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  schedule:
+    - cron: '0 2 1 * *'  # Run at 2:00 AM on the 1st of every month (UTC)
   workflow_dispatch:
 
 jobs:
@@ -27,32 +25,47 @@ jobs:
       - name: 🧾 Checkout Repo
         uses: actions/checkout@v4
 
-      - name: 🐍 Set Up Conda with environment.yml
+      - name: 📥 Clone Oligo Designer Toolsuite
+        run: |
+          git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite odt_repo
+          cd odt_repo
+
+      - name: 🧬 Set Up Conda Environment, Bio Tools, and Backend
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           activate-environment: odt
           environment-file: environment.yml
+          channels: bioconda,conda-forge
+          python-version: 3.11
 
-      - name: ✅ Activate Conda and Install Backend App
+      - name: 🔬 Install Bio Tools and ODT Repo
         run: |
           conda activate odt
+          conda install "blast>=2.15.0" "bedtools>=2.30" "bowtie>=1.3.1" "bowtie2>=2.5" -y
+          cd odt_repo
           pip install -e .
+          cd ..
+
+      - name: 🧪 Set Up ODT Environment from Repo
+        run: |
+          conda activate odt
+          pip install -r environment.yml
 
       - name: 📦 Install Frontend Dependencies
         run: |
           cd frontend
           npm ci
 
+      - name: 🚀 Start Full App (Frontend + Backend)
+        run: |
+          chmod +x start.sh
+          ./start.sh
+          sleep 30
+
       - name: 🎭 Install Playwright
         run: |
           npx playwright install --with-deps
-
-      - name: 🚀 Start Flask + React App
-        run: |
-          nohup bash -c "cd frontend && npm run dev" > frontend.log 2>&1 &
-          nohup bash -c "python app.py" > backend.log 2>&1 &
-          sleep 20
 
       - name: 🧪 Run E2E Tests
         run: |
