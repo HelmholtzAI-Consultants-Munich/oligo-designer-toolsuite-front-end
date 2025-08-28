@@ -55,7 +55,9 @@ jobs:
 
       - name: 🧪 Set Up ODT Environment from Repo
         run: |
-          pip install -r environment.yml
+          source $(conda info --base)/etc/profile.d/conda.sh
+          conda activate odt
+          conda env update --name odt --file environment.yml
 
       - name: 📦 Install Frontend Dependencies
         run: |
