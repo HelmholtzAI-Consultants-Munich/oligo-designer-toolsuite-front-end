@@ -65,8 +65,9 @@ jobs:
 
       - name: 🚀 Start Full App (Frontend + Backend)
         run: |
+          conda activate odt
           chmod +x start.sh
-          ./start.sh
+          ./start.sh &
           sleep 30
 
       - name: 🎭 Install Playwright
