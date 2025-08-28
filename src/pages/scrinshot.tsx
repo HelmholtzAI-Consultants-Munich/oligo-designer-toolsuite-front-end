@@ -417,7 +417,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                 <div className="col">
                                     <label htmlFor="probe_length_min.value" className="form-label">Min Probe Length:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="probe_length_min.value"
+                                        <input type="number" className="form-control" id="target_probe_length_min"
                                                name="target_probe_length_min"
                                                value={formData.target_probe_length_min.value} onChange={handleChange} required/>
                                         <OverlayTrigger
@@ -446,7 +446,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                 <div className="col">
                                     <label htmlFor="probe_length_max" className="form-label">Max Probe Length:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="probe_length_max"
+                                        <input type="number" className="form-control" id="target_probe_length_max"
                                                name="target_probe_length_max"
                                                value={formData.target_probe_length_max.value} onChange={handleChange} required/>
                                         <OverlayTrigger
@@ -476,7 +476,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                     <label htmlFor="probe_isoform_consensus" className="form-label">Isoform Consensus
                                         (%):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="probe_isoform_consensus"
+                                        <input type="number" className="form-control" id="target_probe_isoform_consensus"
                                                name="target_probe_isoform_consensus"
                                                value={formData.target_probe_isoform_consensus.value} onChange={handleChange} required/>
                                         <OverlayTrigger
@@ -511,7 +511,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                     <label htmlFor="probe_GC_content_min" className="form-label">Min GC Content
                                         (%):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="probe_GC_content_min"
+                                        <input type="number" className="form-control" id="target_probe_GC_content_min"
                                                name="target_probe_GC_content_min"
                                                value={formData.target_probe_GC_content_min.value} onChange={handleChange} required/>
                                         <OverlayTrigger
@@ -545,8 +545,8 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                         (%):</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="probe_GC_content_opt"
-                                               name="target_probe_GC_content_min"
-                                               value={formData.target_probe_GC_content_min.value}
+                                               name="target_probe_GC_content_opt"
+                                               value={formData.target_probe_GC_content_opt.value}
                                                onChange={handleChange}
                                                required/>
                                         <OverlayTrigger
@@ -555,7 +555,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             overlay={
                                                 <Popover id="probe_GC_content_opt">
                                                     <Popover.Body>
-                                                        {formData.target_probe_GC_content_min.comment}
+                                                        {formData.target_probe_GC_content_opt.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -608,7 +608,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                 <div className="col">
                                     <label htmlFor="probe_Tm_min" className="form-label">Min Tm (°C):</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="probe_Tm_min"
+                                        <input type="number" className="form-control" id="target_probe_Tm_min"
                                                name="target_probe_Tm_min"
                                                value={formData.target_probe_Tm_min.value} onChange={handleChange}
                                                required/>
@@ -924,8 +924,8 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                 <div className="col">
                                     <label htmlFor="arm_Tm_max" className="form-label">Max Arm Tm:</label>
                                     <div className="d-flex align-items-center">
-                                        <input type="number" className="form-control" id="arm_Tm_max" name="target_probe_padlock_arm_Tm_dif_max"
-                                               value={formData.target_probe_padlock_arm_Tm_dif_max.value}
+                                        <input type="number" className="form-control" id="arm_Tm_max" name="target_probe_padlock_arm_Tm_max"
+                                               value={formData.target_probe_padlock_arm_Tm_max.value}
                                                onChange={handleChange}/>
                                         <OverlayTrigger
                                             trigger="hover"
@@ -933,7 +933,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                             overlay={
                                                 <Popover id="popover-n_jobs">
                                                     <Popover.Body>
-                                                        {formData.target_probe_padlock_arm_Tm_dif_max.comment}
+                                                        {formData.target_probe_padlock_arm_Tm_max.comment}
                                                     </Popover.Body>
                                                 </Popover>
                                             }
@@ -1447,7 +1447,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                         Size:</label>
                                     <div className="d-flex align-items-center">
                                         <input type="number" className="form-control" id="target_probe_specificity_blastn_search_parameters.word_size."
-                                               name="target_probe_specificity_blastn_search_parameters.word_size."
+                                               name="target_probe_specificity_blastn_search_parameters.word_size"
                                                value={formData.target_probe_specificity_blastn_search_parameters.word_size.value}
                                                onChange={handleChange}
                                                required/>
@@ -3005,7 +3005,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                     ...prev,
                     [parent]: {
                         ...(prev as any)[parent],
-                        [child]: {
+                         [child]: {
                             ...((prev as any)[parent]?.[child]),
                             value
                         }
@@ -3139,6 +3139,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                 alert('Error submitting scrinshot form. Please try again.');
                 setIsSubmitting(false);
             } finally {
+                alert(`✅ Pipeline is successfully finished`);
                 setLoading(false);
                 setIsSubmitting(false);
             }
