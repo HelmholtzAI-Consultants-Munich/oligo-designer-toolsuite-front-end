@@ -65,6 +65,7 @@ jobs:
 
       - name: 🚀 Start Full App (Frontend + Backend)
         run: |
+          source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
           chmod +x start.sh
           ./start.sh &
