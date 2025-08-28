@@ -61,7 +61,6 @@ jobs:
 
       - name: 📦 Install Frontend Dependencies
         run: |
-          cd frontend
           npm ci
 
       - name: 🚀 Start Full App (Frontend + Backend)
@@ -76,7 +75,7 @@ jobs:
 
       - name: 🧪 Run E2E Tests
         run: |
-          npx playwright test e2e/scrinshot.e2e.ts
+          npx playwright test tests/scrinshot.e2e.ts
 
       - name: 📤 Upload logs on failure
         if: failure()
