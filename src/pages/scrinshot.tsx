@@ -3139,7 +3139,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                 alert('Error submitting scrinshot form. Please try again.');
                 setIsSubmitting(false);
             } finally {
-                alert(`✅ Pipeline is successfully finished`);
+                alert(`Pipeline is successfully finished`);
                 setLoading(false);
                 setIsSubmitting(false);
             }

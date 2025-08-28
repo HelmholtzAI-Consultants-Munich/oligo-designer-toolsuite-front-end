@@ -19,10 +19,9 @@ export async function createRunId() {
         // Try to copy it to clipboard
         try {
             await navigator.clipboard.writeText(runId);
-            alert(`✅ RunID copied to clipboard:\n${runId}`);
+            alert(`RunID copied to clipboard:\n${runId}`);
         } catch (copyErr) {
             console.warn("📋 Clipboard copy failed, falling back to alert.");
-            alert(`Your RunID is: ${runId} (copy it manually)`);
         }
 
         return runId;
