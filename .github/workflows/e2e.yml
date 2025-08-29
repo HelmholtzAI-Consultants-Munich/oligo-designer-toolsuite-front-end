@@ -80,6 +80,7 @@ jobs:
           npx playwright test tests/scrinshotE2E.spec.ts
           npx playwright test tests/oligoseqE2E.spec.ts
           npx playwright test tests/merfishE2E.spec.ts
+          npx playwright test tests/seqfishE2E.spec.ts
 
       - name: 📤 Upload logs on failure
         if: failure()
