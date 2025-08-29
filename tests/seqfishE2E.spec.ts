@@ -3,10 +3,10 @@ import path from 'path';
 
 test.use({ browserName: 'chromium' });
 
-test('E2E: submit Merfish form with gene and FASTA files', async ({ page }) => {
+test('E2E: submit seqfish form with gene and FASTA files', async ({ page }) => {
   test.setTimeout(300_000); // ⏱️ Set test-wide timeout to 10 minutes
   // 1. Go to oligoseq page
-  await page.goto('http://localhost:3000/pipelines/merfish');
+  await page.goto('http://localhost:3000/pipelines/seqfish');
 
   // 2. Fill in the gene input
   const geneInput = page.locator('input[name="file_regions"]');
