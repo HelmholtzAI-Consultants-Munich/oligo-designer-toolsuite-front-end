@@ -1,4 +1,4 @@
-name: E2E Test for Scrinshot
+name: E2E Test for all Pipelines
 
 on:
   schedule:
