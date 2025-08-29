@@ -31,7 +31,7 @@ const Merfish: React.FC = () => {
     const [status, setStatus] = useState("idle");
     const [isSubmitting, setIsSubmitting] = useState(false);
     interface FileState {
-        file_regions: File | null;
+        file_regions_file: File | null;
         files_fasta_target_probe_database: File[]; // Always an array
         files_fasta_reference_database_target_probe: File[]; // Always an array
         files_fasta_reference_database_readout_probe: File[]; // Always an array
@@ -40,7 +40,7 @@ const Merfish: React.FC = () => {
 
 // In your component
     const [files, setFiles] = useState<FileState>({
-        file_regions: null,
+        file_regions_file: null,
         files_fasta_target_probe_database: [], // Empty array
         files_fasta_reference_database_target_probe: [], // Empty array
         files_fasta_reference_database_readout_probe: [], // Empty array
@@ -59,7 +59,7 @@ const Merfish: React.FC = () => {
     };
     const areAllFilesUploaded = () => {
         return (
-            ( (files.file_regions !== null || formData.file_regions.value.length > 0) &&
+            ( (files.file_regions_file !== null || formData.file_regions.value.length > 0) &&
                 (files.files_fasta_target_probe_database.length > 0 || fastaForms.length > 0 ) &&
                 (files.files_fasta_reference_database_target_probe.length > 0 || fastaFormsReference.length > 0  )
                  &&
@@ -156,10 +156,10 @@ const Merfish: React.FC = () => {
                                         <input
                                             type="file"
                                             className="form-control visually-hidden"
-                                            id="file_regions"
-                                            name="file_regions"
+                                            id="file_regions_file"
+                                            name="file_regions_file"
                                             onChange={handleFileChange}
-                                            disabled={formData.file_regions.value.length > 0}
+                                            disabled={isSubmitting || loading || formData.file_regions.value.length > 0}
 
                                         />
                                         <input
@@ -182,7 +182,7 @@ const Merfish: React.FC = () => {
 
                                         {/* Custom file input button spanning full width */}
                                         <label
-                                            htmlFor="file_regions"
+                                            htmlFor="file_regions_file"
                                             className="btn btn-outline-primary d-block me-2 w-100 "
                                             style={{cursor: 'pointer'}}
                                         >
@@ -215,8 +215,8 @@ const Merfish: React.FC = () => {
 
                                     {/* Display selected file name under the icon */}
                                     <div className="text-muted small mt-1">
-                                        {files.file_regions
-                                            ? `Selected: ${files.file_regions.name}`
+                                        {files.file_regions_file
+                                            ? `Selected: ${files.file_regions_file.name}`
                                             : "No file selected"}
                                     </div>
                                 </div>
@@ -4611,8 +4611,10 @@ const Merfish: React.FC = () => {
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
-            e.preventDefault();
-            setLoading(true);
+            if (e) e.preventDefault();
+            if (isSubmitting) return;          // prevent double-clicks
+            setIsSubmitting(true);
+            setStatus('submitting');
 
             // ---- FASTA target probe database ----
             let generatedTargetPaths = '';
@@ -4620,6 +4622,10 @@ const Merfish: React.FC = () => {
                 generatedTargetPaths = await handleSubmitGenomicAll(fastaForms, setLoading);
             }
             const uploadedPaths = await uploadFiles();
+
+            if (uploadedPaths['file_regions_file']){
+                formData['file_regions']['value']=uploadedPaths['file_regions_file']
+            }
             let uploadedTargetFastaPath = '';
             if (uploadedPaths['files_fasta_target_probe_database']) {
                 uploadedTargetFastaPath = uploadedPaths['files_fasta_target_probe_database'];
@@ -4689,27 +4695,8 @@ const Merfish: React.FC = () => {
             }
 
             try {
-                const finalFormData = { ...formData };
 
-                for (const key in uploadedPaths) {
-                    // @ts-ignore
-                    if (finalFormData[key]) {
-                        // @ts-ignore
-                        finalFormData[key] = {
-                            value: uploadedPaths[key],
-                            // @ts-ignore
-                            comment: finalFormData[key].comment,
-                        };
-                    } else {
-                        // @ts-ignore
-                        finalFormData[key] = {
-                            value: uploadedPaths[key],
-                            comment: "",
-                        };
-                    }
-                }
-
-                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: finalFormData, runid: runid }, {
+                const response = await axios.post('http://localhost:5000/api/merfish', { formdata: formData, runid: runid }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
@@ -4720,8 +4707,11 @@ const Merfish: React.FC = () => {
             } catch (error) {
                 console.error('Error submitting scrinshot form:', error);
                 alert('Error submitting scrinshot form. Please try again.');
+                setIsSubmitting(false);
             } finally {
+                alert(`Pipeline is successfully finished`);
                 setLoading(false);
+                setIsSubmitting(false);
             }
         };
 
