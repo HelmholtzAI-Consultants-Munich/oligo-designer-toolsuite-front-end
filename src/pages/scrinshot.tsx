@@ -230,6 +230,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                                 <div className="d-flex align-items-center w-100 gap-2">
                                     <div className="w-50">
                                         <button
+                                            id="generate-fasta-button"
                                             type="button"
                                             className="btn btn-outline-primary w-100"
                                             onClick={() => setFastaForms(forms => [...forms, { ...defaultFastaForm }])}

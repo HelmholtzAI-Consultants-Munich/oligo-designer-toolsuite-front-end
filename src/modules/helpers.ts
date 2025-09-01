@@ -21,12 +21,12 @@ export async function createRunId() {
             await navigator.clipboard.writeText(runId);
             alert(`RunID copied to clipboard:\n${runId}`);
         } catch (copyErr) {
-            console.warn("📋 Clipboard copy failed, falling back to alert.");
+            console.warn("Clipboard copy failed, falling back to alert.");
         }
 
         return runId;
     } catch (error) {
-        console.error("❌ Failed to create run:", error);
+        console.error("Failed to create run:", error);
         return null;
     }
 }
