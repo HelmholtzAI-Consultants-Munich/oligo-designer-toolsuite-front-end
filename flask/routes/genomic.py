@@ -14,7 +14,7 @@ from datetime import datetime
 import yaml
 import traceback
 from extensions import mongo
-from .helpers import to_bool, to_int
+from .helpers import to_bool, to_int, generate_single_region_forms, get_form_cache_key_ncbi
 
 genomic_bp = Blueprint('genomic', __name__)
 
@@ -71,56 +71,62 @@ def genomic_cascaded_ncbi():
         }
         run_result = mongo.db.runs.insert_one(run_doc)
         run_id = run_result.inserted_id
+        single_region_forms = generate_single_region_forms(form_data)
 
-        # Build config for the pipeline
-        config_genomic['dir_output'] = output_path
-        config_genomic['source'] = form_data['source']['value']
-        config_genomic['source_params'] = {
-            'taxon': form_data['source_params']['taxon']['value'],
-            'species': form_data['source_params']['species']['value'],
-            'annotation_release': to_int(form_data['source_params']['annotation_release']['value']),
-        }
-        config_genomic['genomic_regions'] = {
-            'gene': to_bool(form_data['genomic_regions']['gene']['value']),
-            'intergenic': to_bool(form_data['genomic_regions']['intergenic']['value']),
-            'exon': to_bool(form_data['genomic_regions']['exon']['value']),
-            'exon_exon_junction': to_bool(form_data['genomic_regions']['exon_exon_junction']['value']),
-            'utr': to_bool(form_data['genomic_regions']['utr']['value']),
-            'cds': to_bool(form_data['genomic_regions']['cds']['value']),
-            'intron': to_bool(form_data['genomic_regions']['intron']['value'])
-        }
-        config_genomic['exon_exon_junction_block_size'] = to_int(form_data['exon_exon_junction_block_size']['value'])
+        all_fna_files = []
+        cached_skips = []
+        cache_dir= os.path.join(current_app.root_path, 'cache')
+        for single_form in single_region_forms:
+            cache_key = get_form_cache_key_ncbi(single_form)
+            output_path = os.path.join(cache_dir, f"cached_genomic_{cache_key}")
+            output_gen = os.path.join(output_path, "annotation")
 
-        # Write config to YAML file
-        with open(config_path, 'w') as yaml_file:
-            yaml.dump(config_genomic, yaml_file)
+            # Check if cached output already exists
+            if os.path.exists(output_gen) and any(fname.endswith('.fna') for fname in os.listdir(output_gen)):
+                # Cached hit, reuse
+                for fname in os.listdir(output_gen):
+                    if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
+                        all_fna_files.append(os.path.join(output_gen, fname))
+                cached_skips.append(cache_key)
+                continue
 
-        try:
-            # Run external genomic region generator
+            # Not cached — generate YAML and run pipeline
+            config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
+            config_genomic = {
+                "dir_output": output_path,
+                "source": single_form['source']['value'],
+                "source_params": {
+                    'taxon': single_form['source_params']['taxons']['value'],
+                    "species": single_form['source_params']['species']['value'],
+                    "annotation_release": to_int(single_form['source_params']['annotation_release']['value']),
+                },
+                "genomic_regions": {
+                    key: to_bool(val['value'])
+                    for key, val in single_form['genomic_regions'].items()
+                },
+                "exon_exon_junction_block_size": to_int(single_form['exon_exon_junction_block_size']['value'])
+            }
+
+            with open(config_path, 'w') as yaml_file:
+                yaml.dump(config_genomic, yaml_file)
+
             result = subprocess.run(
                 ['genomic_region_generator', '-c', config_path],
                 capture_output=True,
                 text=True
             )
             status = "completed" if result.returncode == 0 else "error"
-            print("STDERR:", result.stderr)
-            print("STDOUT (partial logs):", result.stdout)
 
-            # Gather .fna files to pass to downstream process, filtering for GCF/GCA
-            fna_files = []
-            skipped_files = []
+
+            if result.returncode != 0:
+                raise RuntimeError(f"Pipeline failed: {result.stderr}")
+
+            # Collect output .fna files (ignore GCF/GCA)
             if os.path.exists(output_gen):
                 for fname in os.listdir(output_gen):
-                    if fname.endswith('.fna'):
-                        if 'GCF' in fname or 'GCA' in fname:
-                            skipped_files.append(fname)
-                        else:
-                            fna_files.append(os.path.join(output_gen, fname))
+                    if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
+                        all_fna_files.append(os.path.join(output_gen, fname))
 
-                fna_string = "\n".join(fna_files)
-                print("Skipped files (no GCF/GCA):", skipped_files)
-            else:
-                fna_string = ""
 
             # Update run status in MongoDB
             mongo.db.runs.update_one(
@@ -135,17 +141,12 @@ def genomic_cascaded_ncbi():
                     "error": result.stderr
                 }), 500
 
-            return jsonify({
-                "status": "success",
-                "message": "Genomic processing completed successfully.",
-                "output": fna_string
-            }), 200
-        except subprocess.CalledProcessError as e:
-            return jsonify({
-                "status": "error",
-                "message": "An error occurred during genomic processing.",
-                "error": e.stderr
-            }), 500
+        return jsonify({
+            "status": "success",
+            "message": f"Genomic processing completed successfully. {len(cached_skips)} used from cache.",
+            "output": all_fna_files,
+            "cached": cached_skips
+        }), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({
