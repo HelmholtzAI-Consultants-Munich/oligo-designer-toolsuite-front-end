@@ -62,13 +62,13 @@ conda odt update -f environment.yml
 
 You can also set up additional environment variables as needed for authentication, proxy, etc.
 
-### 4. Run the frontend (For MacOS and Linux)
+### 3. Run the frontend (For MacOS and Linux)
 
 ```bash
 ./start.sh
 ```
 
-### 4. Run the frontend (For Windows)
+### 3. Run the frontend (For Windows)
 
 ```bash
 .\start.bat
