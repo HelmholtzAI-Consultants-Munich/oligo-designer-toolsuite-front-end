@@ -1,5 +1,5 @@
 """
-Pipeline Management Endpoints for Bioinformatics Web Application
+Pipeline Management Endpoints
 
 This module handles all pipeline run CRUD operations, including initialization, deletion,
 listing runs and files, and secure download of output files. Endpoints enforce user or session-level
