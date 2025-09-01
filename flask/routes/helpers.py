@@ -3,11 +3,10 @@ from typing import Dict, List
 import hashlib
 import json
 
-def get_form_cache_key_ncbi(form: dict) -> str:
+def get_form_cache_key(form: dict) -> str:
     relevant_part = {
         "source": form.get("source"),
         "source_params": form.get("source_params"),
-        "taxon": form.get("taxon"),
         "genomic_regions": form.get("genomic_regions"),
     }
     serialized = json.dumps(relevant_part, sort_keys=True)
