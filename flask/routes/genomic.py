@@ -96,7 +96,7 @@ def genomic_cascaded_ncbi():
                 "dir_output": output_path,
                 "source": single_form['source']['value'],
                 "source_params": {
-                    'taxon': single_form['source_params']['taxons']['value'],
+                    'taxon': single_form['source_params']['taxon']['value'],
                     "species": single_form['source_params']['species']['value'],
                     "annotation_release": to_int(single_form['source_params']['annotation_release']['value']),
                 },
@@ -225,7 +225,7 @@ def genomic_cascaded_ensemble():
                 "dir_output": output_path,
                 "source": single_form['source']['value'],
                 "source_params": {
-                    "species": single_form['source_params']['species']['value'],
+                        "species": single_form['source_params']['species']['value'],
                     "annotation_release": to_int(single_form['source_params']['annotation_release']['value']),
                 },
                 "genomic_regions": {
