@@ -133,6 +133,8 @@ def genomic_cascaded_ncbi():
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
+            if os.path.exists(config_path):
+                os.remove(config_path)
 
             if result.returncode != 0:
                 return jsonify({
@@ -257,6 +259,8 @@ def genomic_cascaded_ensemble():
                 {"_id": run_id},
                 {"$set": {"status": status}}
             )
+            if os.path.exists(config_path):
+                os.remove(config_path)
 
         return jsonify({
             "status": "success",
