@@ -5,7 +5,7 @@ CACHE_DIRS = [
     "flask/user_data/anon",
     "flask/cache",
 ]
-DAYS_THRESHOLD = 10
+DAYS_THRESHOLD = 3
 
 EXCLUDE_DIRS = [
     "cached_genomic_be6cdeb4f6937e2b559ee9942070b31c2cb613f3cb20365a80cd046acd12fa91",

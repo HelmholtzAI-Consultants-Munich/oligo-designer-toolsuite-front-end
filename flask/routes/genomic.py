@@ -276,3 +276,126 @@ def genomic_cascaded_ensemble():
             "message": "An error occurred.",
             "error": str(e)
         }), 500
+
+@genomic_bp.route('/api/genomic/cascaded/custom', methods=['POST'])
+def genomic_cascaded_custom():
+    """
+    Cascaded endpoint: Generate genomic regions from Ensembl for downstream pipeline steps.
+
+    :input:
+        :param formdata: Dictionary of region extraction parameters and Ensembl source info.
+        :type formdata: dict
+
+    :output:
+        :returns: JSON with status, message, and annotation file paths (for .fna files).
+        :rtype: flask.Response
+
+    Workflow:
+        1. Parse and validate input.
+        2. Set up user/session-specific working directory.
+        3. Insert new MongoDB run document.
+        4. Build YAML config for Ensembl region extraction.
+        5. Run genomic region generator.
+        6. Gather annotation output file paths for downstream steps.
+        7. Update MongoDB status and return result.
+    """
+    try:
+        if current_user.is_authenticated:
+            user_id = str(current_user.id)
+            user_dir = os.path.join(current_app.root_path, 'user_data', user_id)
+            session_id = None
+        else:
+            user_id = None
+            session_id = session['session_id']
+            user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
+
+        form_data = request.json
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        genomic_type = form_data['source']['value']
+        run_output_path = os.path.join(user_dir, f'output_genomic_{genomic_type}_{timestamp}')
+
+        annotation_release = form_data['source_params']['annotation_release']['value']
+
+        run_doc = {
+            "session_id": session_id,
+            "user_id": user_id,
+            "timestamp": timestamp,
+            "output_path": run_output_path,
+            "status": "started",
+            "pipeline": 'Genomic Region Generator'
+        }
+        run_result = mongo.db.runs.insert_one(run_doc)
+        run_id = run_result.inserted_id
+
+        single_region_forms = generate_single_region_forms(form_data)
+
+        all_fna_files = []
+        cached_skips = []
+        cache_dir = os.path.join(current_app.root_path, 'cache')
+
+        for single_form in single_region_forms:
+            cache_key = get_form_cache_key(single_form)
+            output_path = os.path.join(cache_dir, f"cached_genomic_{cache_key}")
+            output_gen = os.path.join(output_path, "annotation")
+
+            if os.path.exists(output_gen) and any(fname.endswith('.fna') for fname in os.listdir(output_gen)):
+                for fname in os.listdir(output_gen):
+                    if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
+                        all_fna_files.append(os.path.join(output_gen, fname))
+                cached_skips.append(cache_key)
+                continue
+
+            config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
+            config_genomic = {
+                "dir_output": output_path,
+                "source": single_form['source']['value'],
+                "source_params": {
+                        "species": single_form['source_params']['species']['value'],
+                    "annotation_release": to_int(single_form['source_params']['annotation_release']['value']),
+                },
+                "genomic_regions": {
+                    key: to_bool(val['value'])
+                    for key, val in single_form['genomic_regions'].items()
+                },
+                "exon_exon_junction_block_size": to_int(single_form['exon_exon_junction_block_size']['value'])
+            }
+
+            with open(config_path, 'w') as yaml_file:
+                yaml.dump(config_genomic, yaml_file)
+
+            result = subprocess.run(
+                ['genomic_region_generator', '-c', config_path],
+                capture_output=True,
+                text=True
+            )
+            status = "completed" if result.returncode == 0 else "error"
+
+            if result.returncode != 0:
+                raise RuntimeError(f"Pipeline failed: {result.stderr}")
+
+            if os.path.exists(output_gen):
+                for fname in os.listdir(output_gen):
+                    if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
+                        all_fna_files.append(os.path.join(output_gen, fname))
+
+            mongo.db.runs.update_one(
+                {"_id": run_id},
+                {"$set": {"status": status}}
+            )
+            if os.path.exists(config_path):
+                os.remove(config_path)
+
+        return jsonify({
+            "status": "success",
+            "message": f"Genomic processing completed successfully. {len(cached_skips)} used from cache.",
+            "output": all_fna_files,
+            "cached": cached_skips
+        }), 200
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "message": "An error occurred.",
+            "error": str(e)
+        }), 500
