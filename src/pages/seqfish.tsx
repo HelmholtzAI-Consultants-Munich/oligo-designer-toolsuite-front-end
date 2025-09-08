@@ -162,7 +162,7 @@ const SeqFish: React.FC = () => {
                                     Target File:
                                 </label>
                                 <div className="d-flex flex-column w-100">
-                                    <div className="d-flex align-items-center w-100">
+                                    <div className="d-flex align-items-center w-100 gap-2">
                                         <input
                                             type="file"
                                             className="form-control visually-hidden"
@@ -170,33 +170,34 @@ const SeqFish: React.FC = () => {
                                             name="file_regions_file"
                                             onChange={handleFileChange}
                                         />
-                                        <input
-                                            type="text"
-                                            className="form-control"
-                                            id="file_regions"
-                                            name="file_regions"
-                                            list="geneExamples"
-                                            placeholder="Enter genes (comma-separated) or pick an example"
-                                            onChange={handleChange}
-                                            value={formData.file_regions.value}
-                                        />
+                                        <div className="w-50">
+                                            <input
+                                                type="text"
+                                                className="form-control"
+                                                id="file_regions"
+                                                name="file_regions"
+                                                list="geneExamples"
+                                                placeholder="Enter genes (comma-separated) or pick an example"
+                                                onChange={handleChange}
+                                                value={formData.file_regions.value}
+                                            />
 
-                                        <datalist id="geneExamples">
-                                            <option value="AARS1" />
-                                            <option value="ABCC1" />
-                                            <option value="BCAR1" />
-                                            <option value="LOC105376749" />
-                                        </datalist>
+                                            <datalist id="geneExamples">
+                                                <option value="AARS1" />
+                                                <option value="ABCC1" />
+                                                <option value="BCAR1" />
+                                                <option value="LOC105376749" />
+                                            </datalist>
+                                        </div>
+                                        <div className="w-50 d-flex align-items-center">
+                                            <label
+                                                htmlFor="file_regions"
+                                                className="btn btn-outline-primary me-2 w-100"
+                                                style={{ cursor: 'pointer' }}
+                                            >
+                                                Choose File
+                                            </label>
 
-                                        <label
-                                            htmlFor="file_regions"
-                                            className="btn btn-outline-primary d-block me-2 w-100"
-                                            style={{ cursor: 'pointer' }}
-                                        >
-                                            Choose File
-                                        </label>
-
-                                        <div className="d-flex align-items-center ms-2">
                                             <OverlayTrigger
                                                 trigger="hover"
                                                 placement="top"
@@ -213,6 +214,7 @@ const SeqFish: React.FC = () => {
                                                         fontSize: "1.2rem",
                                                         cursor: "pointer",
                                                         color: "#0d6efd",
+                                                        marginLeft: "10px"
                                                     }}
                                                 />
                                             </OverlayTrigger>
