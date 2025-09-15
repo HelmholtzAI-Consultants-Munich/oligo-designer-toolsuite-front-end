@@ -7,80 +7,46 @@ parent: Pipelines
 
 # OligoSeq
 
-The OligoSeq pipeline designs target probes for sequencing-based detection.  
-It supports generating or uploading FASTA sequences for both the **Target Probe Database** and **Reference Database for Target Probes**, and provides extensive probe property and developer settings.
+The OligoSeq pipeline is designed for sequencing-based probe design workflows.  
+It supports two main FASTA groups, a comprehensive set of probe property parameters, and an optional **Developer Settings** section. Users can either generate FASTA files directly from NCBI/Ensembl or upload their own, then submit the job to the backend.
 
----
+## How it works
 
-## Workflow
+1. **Select inputs**  
+   - **Targets**: Provide a `.txt` file with one gene per line, or type a comma-separated gene list directly in the UI. If you type them, the backend will create a temporary file for you.  
+   - **FASTA groups** (two required):
+     - Target probe database
+     - Reference database for target probes  
+     Each group allows either **Generate FASTA+** (from NCBI/Ensembl) or **Choose File** (upload). Multiple files/outputs are stored as newline-separated paths.
 
-1. **Provide target genes**  
-   - Enter as a comma-separated list or upload a `.txt` file (one gene per line).  
-   - If typed, the backend generates a temporary `.txt` file and updates the `file_regions` field.
+2. **Adjust parameters** for OligoSeq:
+   - **Basic settings**: number of jobs, output directory, write intermediate steps, top N sets to keep.  
+   - **Target Probe Parameters**: probe length min/max, region split size, targeted exons, isoform consensus, GC content (min/opt/max), melting temperature bounds (min/opt/max), secondary structure limits, homopolymer run limits (A/T/C/G), self-complementarity, hybridization thresholds, set size min/opt, distance between probes, number of sets, and weights for GC and Tm.  
+   - **Melting Temperature Parameters**: thermodynamic tables (NN/TMM/IMM/ΔS), strand concentrations, salt correction type, ion concentrations, dNTP levels, and chemical correction parameters for DMSO/formamide.
 
-2. **Prepare FASTA sources** (two required groups)  
-   - **Target Probe Database**  
-   - **Reference Database for Target Probes**  
-   For each group:
-     - **Generate FASTA+** — queries NCBI/Ensembl and stores generated file paths.  
-     - **Choose File** — upload one or more `.fasta` or `.fa` files.  
-   Multiple files are newline-joined before submission.
+3. **Developer Settings** (optional)  
+   Provides advanced configuration:
+   - Alignment methods (BLASTN/Bowtie) for specificity and cross-hybridization checks.  
+   - Search and hit parameters (percent identity, strand, word size, coverage, max hits, etc.).  
+   - Graph search constraints (max graph size, attempts) and heuristic toggles.
 
-3. **Set parameters**  
-   - **Basic settings**:  
-     - Number of jobs, output directory, write intermediate steps, top N sets to keep.  
-   - **Target probe properties**:  
-     - Length min/max, region split size, targeted exons, isoform consensus.  
-     - GC content (min/opt/max), melting temperature (min/opt/max), secondary structure limits (Tm, ΔG).  
-     - Homopolymer run limits (A/T/C/G), self-complement max length, hybridization probability threshold.  
-     - Weights for GC and Tm in selection, set size min/opt, distance between probes, number of sets.
-   - **Developer parameters**:  
-     - Alignment methods (BLASTN/Bowtie) for hybridization probability and cross-hybridization.  
-     - Search and hit parameters for each method (percent identity, strand, word size, coverage, etc.).  
-     - Graph search limits (max graph size, attempts) and heuristic toggles.  
-   - **Melting temperature parameters**:  
-     - Thermodynamic tables (NN/TMM/IMM/ΔS), strand concentrations, salt correction type, ion concentrations, dNTP levels.  
-     - Chemical correction parameters for DMSO and formamide.
+4. **Generate or Upload FASTA Files**  
+   - **Generate (FASTA+)**: Calls `/api/genomic/cascaded/{ncbi|ensembl}` to build the FASTA file, then stores the returned path.  
+   - **Upload**: Sends the file to `/api/upload` and stores the returned path.  
+   - The app concatenates multiple uploaded or generated files using newline separators.  
+   - Submission is only enabled once both FASTA groups contain at least one valid file path.  
+   - A **caching mechanism** ensures identical FASTA files are reused across runs to improve efficiency.  
+   - **Unused or stale files** in the cache are automatically cleaned up by a scheduled cron job to conserve storage.  
 
-4. **Submit**  
-   - Calls `createRunId()` to register a new run in MongoDB.  
-   - Injects newline-joined FASTA file paths and parameter values into the form payload.  
-   - Sends `{ formdata, runid }` via `POST /api/oligoseq` to the backend.
-
----
+5. **Submit the job**  
+   - The app creates a `runid` using `createRunId()` and packages the form data, replacing any file fields with the newline-joined paths.  
+   - Sends `{ formdata, runid }` to the backend via `POST /api/oligoseq`.
 
 ## Backend processing (`POST /api/oligoseq`)
 
-1. **User/session context**  
-   - Authenticated users store configs in `user_data/<user_id>`.  
-   - Anonymous sessions store in `user_data/anon/<session_id>`.
-
-2. **Input handling**  
-   - Gene list text is converted into a `.txt` file if needed.  
-   - Output directory is timestamped; MongoDB run record is updated to `started`.
-
-3. **YAML config creation**  
-   - Combines all form values into a structured dictionary, matching probe designer CLI requirements.  
-   - Saves to `config_oligoseq.yaml` in the user/session directory.
-
-4. **Pipeline execution**  
-   - Runs:  
-     ```bash
-     oligo_seq_probe_designer -c config_oligoseq.yaml
-     ```  
-   - Marks status `completed` if `returncode == 0`, else `error`.
-
-5. **Cleanup**  
-   - Deletes temporary gene list file.  
-   - Removes any uploaded/generated FASTA files for both database groups.  
-   - Updates MongoDB run status with final result.
-
----
-
-## Key points
-
-- Both FASTA groups are required before submission is enabled.  
-- Multiple files per group are supported and stored as newline-joined paths in the payload.  
-- Extensive developer options make OligoSeq suitable for advanced experimental setups.  
-- All API calls are credential-aware — ensure backend CORS is configured to allow credentials.  
-- Once submitted, runs appear in the **Runs** list and can be inspected in detail.
+1. Parses `formdata` and `runid`. If the gene list is provided as text, writes a temp `.txt` file and updates the form data.  
+2. Updates the run record in the database with status `started`, timestamp, pipeline type, and output path.  
+3. Writes the form data to a YAML config file in the run’s workspace directory (`config_oligoseq.yaml`).  
+4. Executes the OligoSeq probe designer CLI tool with the generated config:
+   ```bash
+   oligo_seq_probe_designer -c config_oligoseq.yaml

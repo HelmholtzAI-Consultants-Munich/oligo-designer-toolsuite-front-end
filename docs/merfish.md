@@ -30,12 +30,16 @@ The MERFISH pipeline page is designed for probe design workflows using three mai
    - In **Target Probe**: specificity and cross-hybridization filters, set selection weights, melting temperature parameters.
    - In **Readout**: advanced readout parameters.
    - In **Primer**: advanced primer parameters.
+   
 
-4. **Generate or upload FASTA files**  
-   - **Generate FASTA+** calls `/api/genomic/cascaded/{ncbi|ensembl}` to build the file and store the returned path.
-   - **Upload** sends the file to `/api/upload` and stores the returned path.
-   - The app concatenates multiple files or generated outputs using newline separators.
-   - Submission is only enabled when all four FASTA groups have at least one file path.
+ 4. **Generate or Upload FASTA Files**
+
+- **Generate (FASTA+)**: Calls `/api/genomic/cascaded/{ncbi|ensembl}` to build the FASTA file, then stores the returned path.  
+- **Upload**: Sends the file to `/api/upload` and stores the returned path.  
+- The app concatenates multiple uploaded or generated files using newline separators.  
+- Submission is only enabled once all four FASTA groups contain at least one valid file path.  
+- A **caching mechanism** ensures identical FASTA files are reused across runs to improve efficiency.  
+- **Unused or stale files** in the cache are automatically cleaned up by a scheduled cron job to conserve storage.  
 
 5. **Submit the job**  
    - The app creates a `runid` using `createRunId()` and packages the form data, replacing any file fields with the newline-joined paths.

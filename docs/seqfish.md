@@ -7,74 +7,58 @@ parent: Pipelines
 
 # SeqFISH
 
-The SeqFISH pipeline page supports the design of target probes, readout probes, and primers for sequential FISH experiments.  
-It requires multiple FASTA inputs, each of which can be generated from NCBI/Ensembl or uploaded manually.  
-The interface is organized into three parameter tabs plus optional developer settings.
+The SeqFISH pipeline page is designed for sequential FISH probe design workflows using three main parameter tabs — **Target Probe Parameters**, **Readout Probe Parameters**, and **Primer Parameters** — plus an optional **Developer Settings** section. Users can either generate required FASTA files directly from NCBI/Ensembl or upload their own, then submit the job to the backend.
 
----
+## How it works
 
-## Workflow
+1. **Select inputs**  
+   - **Targets**: Provide a `.txt` file with one gene per line, or type a comma-separated gene list directly in the UI. If you type them, the backend will create a temporary file for you.  
+   - **FASTA groups** (four required):
+     - Target probe database  
+     - Reference database for target probes  
+     - Reference database for readout probes  
+     - Reference database for primers  
+     Each group allows either **Generate FASTA+** (from NCBI/Ensembl) or **Choose File** (upload). Multiple files/outputs are stored as newline-separated paths.
 
-1. **Provide target genes**  
-   - Enter a comma-separated list directly in the input field, or upload a `.txt` file with one gene per line.  
-   - If typed, the backend writes a temporary `.txt` file before starting the run.
+2. **Adjust parameters** for the selected tab:
+   - **Target Probe Parameters**: probe length min/max, isoform consensus, GC content (min/opt/max), secondary structure thresholds (Tm, ΔG), homopolymer limits, UTR weights, set size min/opt, distance between probes, number of sets.  
+   - **Readout Probe Parameters**: reference FASTA, base probabilities, probe length, GC bounds, G-homopolymer limits, barcode rounds, pseudocolors, channel IDs.  
+   - **Primer Parameters**: reference FASTA, reverse primer sequence, primer length, base probabilities, GC bounds, GC clamp limits, homopolymer limits, self-complement limits, Tm min/max, and secondary structure thresholds.
 
-2. **Prepare FASTA sources** (required groups)  
-   - **Target Probe Database**  
-   - **Reference Database for Target Probes**  
-   - **Reference Database for Readout Probes**  
-   - **Reference Database for Primers**  
-   Each group supports:
-     - **Generate FASTA+** — triggers a genomic retrieval request (NCBI or Ensembl) and stores the returned file path.  
-     - **Choose File** — upload one or more files.  
-   Multiple files/outputs are stored as a newline-separated list of paths.
+3. **Developer Settings** (optional)  
+   Shows advanced tabs relevant to the current section:
+   - In **Target Probe**: specificity and cross-hybridization filters, BLASTN parameters, melting temperature settings.  
+   - In **Readout**: advanced readout configuration.  
+   - In **Primer**: advanced primer BLASTN and Tm options.  
 
-3. **Configure parameters**
-   - **Target Probe Parameters**: length min/max, isoform consensus, GC content (min/opt/max), secondary structure thresholds (Tm, ΔG), homopolymer limits, GC/UTR weights, set size min/opt, distance between probes, number of sets.
-   - **Readout Probe Parameters**: reference FASTA, base probabilities, probe length, GC bounds, G homopolymer limits, barcode rounds, pseudocolors, channel IDs.
-   - **Primer Parameters**: reference FASTA, reverse primer sequence, primer length, base probabilities, GC bounds, GC clamp limits, homopolymer limits, self-complement limits, Tm min/max, secondary structure thresholds.
-   - **Developer Settings**:  
-     - BLASTN specificity and cross-hybridization parameters for target, readout, and primers.  
-     - Tm calculation settings (nearest neighbor, ionic/chemical corrections).  
-     - Heuristic search settings (max graph size, number of attempts).
+4. **Generate or Upload FASTA Files**  
+   - **Generate (FASTA+)**: Calls `/api/genomic/cascaded/{ncbi|ensembl}` to build the FASTA file, then stores the returned path.  
+   - **Upload**: Sends the file to `/api/upload` and stores the returned path.  
+   - The app concatenates multiple uploaded or generated files using newline separators.  
+   - Submission is only enabled once all four FASTA groups contain at least one valid file path.  
+   - A **caching mechanism** ensures identical FASTA files are reused across runs to improve efficiency.  
+   - **Unused or stale files** in the cache are automatically cleaned up by a scheduled cron job to conserve storage.  
 
-4. **Submit**  
-   - Generates a `runid` with `createRunId()`.  
-   - Injects all generated/uploaded FASTA paths (newline-joined) into the payload.  
-   - Sends `{ formdata, runid }` via `POST /api/seqfish` to the backend.
-
----
+5. **Submit the job**  
+   - The app creates a `runid` using `createRunId()` and packages the form data, replacing any file fields with the newline-joined paths.  
+   - Sends `{ formdata, runid }` to the backend via `POST /api/seqfish`.
 
 ## Backend processing (`POST /api/seqfish`)
 
-1. **Setup**
-   - Resolve user/session directory and config file path.
-   - Parse `formdata` and validate `runid` against the database.
+1. Parses `formdata` and `runid`. If the gene list is provided as text, writes a temp `.txt` file and updates the form data.  
+2. Updates the run record in the database with status `started`, timestamp, pipeline type, and output path.  
+3. Writes the form data to a YAML config file in the run’s workspace directory.  
+4. Executes the SeqFISH probe designer CLI tool with the generated config.  
+5. On completion:  
+   - Removes temporary input files.  
+   - Updates the run status to `completed` or `error`.  
+   - Returns stdout, stderr, and the return code to the frontend.
 
-2. **Pre-process inputs**
-   - If gene list is text, write a temp `.txt` file and update `file_regions`.
-   - Create timestamped output directory and mark run as `started` in MongoDB.
+## Important notes
 
-3. **Build YAML config**
-   - Includes all target, readout, and primer parameters.
-   - Lists all FASTA paths from uploads or generated files.
-   - Encodes developer BLASTN and Tm parameters.
-   - Saves config to the user/session directory.
-
-4. **Run pipeline**
-   - Executes: `seqfish_probe_designer -c <config.yaml>`.
-   - On success, marks run as `completed`; on error, marks as `error`.
-
-5. **Cleanup**
-   - Removes temporary files created during preprocessing.
-   - Updates run record with final status and output path.
-
----
-
-## Key points
-
-- Four FASTA groups are required before submission.
-- Generated and uploaded files can be mixed in the same group.
-- All API calls use `withCredentials: true`; backend CORS must allow credentials.
-- Developer Settings give fine-grained control over BLASTN filters and thermodynamic calculations.
-- After submission, runs appear in the **Runs** list with links to detail views.
+- All four FASTA groups must be provided before submission.  
+- Generated and uploaded files can be mixed in the same group; they are joined and later split again on the backend.  
+- A caching mechanism avoids regenerating identical FASTA files, while unused files are automatically removed via cron job cleanup.  
+- All API requests use `withCredentials: true`, so backend CORS must allow the frontend origin and credentials.  
+- Developer Settings are context-sensitive and change with the main tab to keep the UI focused.  
+- Once submitted, runs appear in the **Runs** list and can be inspected in detail.
