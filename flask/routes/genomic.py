@@ -36,7 +36,7 @@ def genomic_cascaded_ncbi():
         2. Set up user/session-specific working directory.
         3. Insert new MongoDB run document.
         4. Build YAML config for NCBI region extraction.
-        5. Run genomic region generator.
+        5. Run genomic region generator. Used cached files if available
         6. Gather annotation output file paths for downstream steps.
         7. Update MongoDB status and return result.
     """
@@ -71,12 +71,12 @@ def genomic_cascaded_ncbi():
         }
         run_result = mongo.db.runs.insert_one(run_doc)
         run_id = run_result.inserted_id
-        single_region_forms = generate_single_region_forms(form_data)
+        single_region_forms = generate_single_region_forms(form_data) #creates a list of forms with only one region set to true
 
         all_fna_files = []
         cached_skips = []
         cache_dir= os.path.join(current_app.root_path, 'cache')
-        for single_form in single_region_forms:
+        for single_form in single_region_forms: #iterates over the list of forms with only one region set to true
             cache_key = get_form_cache_key(single_form)
             output_path = os.path.join(cache_dir, f"cached_genomic_{cache_key}")
             output_gen = os.path.join(output_path, "annotation")
@@ -175,7 +175,7 @@ def genomic_cascaded_ensemble():
         2. Set up user/session-specific working directory.
         3. Insert new MongoDB run document.
         4. Build YAML config for Ensembl region extraction.
-        5. Run genomic region generator.
+        5. Run genomic region generator. Used cached files if available
         6. Gather annotation output file paths for downstream steps.
         7. Update MongoDB status and return result.
     """
