@@ -91,6 +91,8 @@ def genomic_cascaded_ncbi():
                 continue
 
             # Not cached — generate YAML and run pipeline
+            # Ensure cache directory exists
+            os.makedirs(cache_dir, exist_ok=True)
             config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
             config_genomic = {
                 "dir_output": output_path,
@@ -222,6 +224,8 @@ def genomic_cascaded_ensemble():
                 cached_skips.append(cache_key)
                 continue
 
+            # Ensure cache directory exists
+            os.makedirs(cache_dir, exist_ok=True)
             config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
             config_genomic = {
                 "dir_output": output_path,
@@ -345,6 +349,8 @@ def genomic_cascaded_custom():
                 cached_skips.append(cache_key)
                 continue
 
+            # Ensure cache directory exists
+            os.makedirs(cache_dir, exist_ok=True)
             config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
             config_genomic = {
                 "dir_output": output_path,
