@@ -1,5 +1,5 @@
 
-# Genomic Region Caching — `caching_fasta.md`
+# Caching Fastas
 
 ## Overview
 
