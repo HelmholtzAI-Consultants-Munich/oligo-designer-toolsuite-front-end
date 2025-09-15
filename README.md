@@ -1,6 +1,6 @@
 <div align="center">
 
-# Oligo Designer Toolsuite – Web Frontend
+# Oligo Designer Toolsuite – Web Application
 
 _A lightweight, user-friendly interface for custom oligo design pipelines_
 
