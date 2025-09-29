@@ -15,6 +15,7 @@ import yaml
 import traceback
 from extensions import mongo
 from .helpers import to_bool, to_int, generate_single_region_forms, get_form_cache_key
+from .cache_helpers import _prepare_ncbi_cached_assets
 
 genomic_bp = Blueprint('genomic', __name__)
 
@@ -342,6 +343,9 @@ def genomic_cascaded_custom():
             output_path = os.path.join(cache_dir, f"cached_genomic_{cache_key}")
             output_gen = os.path.join(output_path, "annotation")
 
+            # ---------------------------------------------
+            # First-line cache: region FASTAs already built?
+            # ---------------------------------------------
             if os.path.exists(output_gen) and any(fname.endswith('.fna') for fname in os.listdir(output_gen)):
                 for fname in os.listdir(output_gen):
                     if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
@@ -349,15 +353,41 @@ def genomic_cascaded_custom():
                 cached_skips.append(cache_key)
                 continue
 
-            # Ensure cache directory exists
+            # ---------------------------------------------
+            # Second-line cache: MD5-verified raw NCBI files
+            # We'll always run the pipeline in "custom" mode
+            # using the cached, decompressed .gtf/.fna paths
+            # ---------------------------------------------
             os.makedirs(cache_dir, exist_ok=True)
+
+            # Extract params; taxon may be absent in some custom forms — default to H_sapiens for NCBI layout
+            source_params = single_form.get('source_params', {})
+            taxon = (source_params.get('taxon', {}) or {}).get('value') or 'H_sapiens'
+            species = (source_params.get('species', {}) or {}).get('value')
+            ann_rel = (source_params.get('annotation_release', {}) or {}).get('value')
+
+            if not species or ann_rel is None:
+                raise RuntimeError("Custom genomic endpoint requires 'species' and 'annotation_release' in source_params.")
+
+            # Prepare or refresh raw cache (downloads only if missing or MD5 mismatch)
+            ncbi_cache = _prepare_ncbi_cached_assets(cache_dir, taxon, species, ann_rel)
+            annotation_file = ncbi_cache["annotation_file"]
+            sequence_file   = ncbi_cache["sequence_file"]
+            resolved_rel    = ncbi_cache["annotation_release"]
+            genome_assembly = ncbi_cache["genome_assembly"]
+
+            # Build custom config pointing to cached decompressed files (BASIC PARAMETERS spec)
             config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
             config_genomic = {
                 "dir_output": output_path,
-                "source": single_form['source']['value'],
+                "source": "custom",
                 "source_params": {
-                        "species": single_form['source_params']['species']['value'],
-                    "annotation_release": to_int(single_form['source_params']['annotation_release']['value']),
+                    "file_annotation": annotation_file,   # required: GTF
+                    "file_sequence":   sequence_file,     # required: FASTA
+                    "files_source": "NCBI",               # optional: original source
+                    "species": species,                   # optional
+                    "annotation_release": to_int(resolved_rel) if str(resolved_rel).isdigit() else resolved_rel,
+                    "genome_assembly": genome_assembly,   # optional
                 },
                 "genomic_regions": {
                     key: to_bool(val['value'])
@@ -379,11 +409,13 @@ def genomic_cascaded_custom():
             if result.returncode != 0:
                 raise RuntimeError(f"Pipeline failed: {result.stderr}")
 
+            # Collect output .fna files (ignore raw genome)
             if os.path.exists(output_gen):
                 for fname in os.listdir(output_gen):
                     if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
                         all_fna_files.append(os.path.join(output_gen, fname))
 
+            # Update run status in MongoDB and clean temp config
             mongo.db.runs.update_one(
                 {"_id": run_id},
                 {"$set": {"status": status}}

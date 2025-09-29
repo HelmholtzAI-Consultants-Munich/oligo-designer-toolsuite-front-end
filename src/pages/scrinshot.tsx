@@ -3043,7 +3043,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                     let endpoint;
                     if (form.selectedSource === 'ncbi') {
                         payload = form.formDataNcbi;
-                        endpoint = 'ncbi';
+                        endpoint = 'custom';
                     } else if (form.selectedSource === 'ensembl') {
                         payload = form.formDataEns;
                         endpoint = 'ensembl';

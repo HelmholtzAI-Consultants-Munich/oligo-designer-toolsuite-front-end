@@ -301,20 +301,6 @@ def scrinshot():
     if os.path.exists(form_data['file_regions']['value']):
         print('deleted')
         os.remove(form_data['file_regions']['value'])
-    a = split_on_newline(form_data['files_fasta_target_probe_database']['value'])
-    if '\n' in a:
-        a.remove('\n')
-    for i in a:
-        print('deleted')
-        if os.path.exists(i):
-            os.remove(i)
-    a = split_on_newline(form_data['files_fasta_reference_database_target_probe']['value'])
-    if '\n' in a:
-        a.remove('\n')
-    for i in a:
-        print('deleted')
-        if os.path.exists(i):
-            os.remove(i)
 
     # Update run status in database
     mongo.db.runs.update_one(
