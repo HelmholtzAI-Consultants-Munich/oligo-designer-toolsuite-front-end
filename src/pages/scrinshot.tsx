@@ -3046,7 +3046,7 @@ import scrinshotImage from '../images/pipeline_scrinshot_probes.webp'
                         endpoint = 'custom';
                     } else if (form.selectedSource === 'ensembl') {
                         payload = form.formDataEns;
-                        endpoint = 'ensembl';
+                        endpoint = 'custom';
                     } else {
                         continue; // skip unknown
                     }

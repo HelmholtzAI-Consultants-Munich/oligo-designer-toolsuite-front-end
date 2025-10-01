@@ -4050,10 +4050,10 @@ const SeqFish: React.FC = () => {
                     let endpoint;
                     if (form.selectedSource === 'ncbi') {
                         payload = form.formDataNcbi;
-                        endpoint = 'ncbi';
+                        endpoint = 'custom ';
                     } else if (form.selectedSource === 'ensembl') {
                         payload = form.formDataEns;
-                        endpoint = 'ensembl';
+                        endpoint = 'custom';
                     } else {
                         continue; // skip unknown
                     }
