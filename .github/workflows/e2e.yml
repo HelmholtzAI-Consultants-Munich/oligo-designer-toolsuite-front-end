@@ -5,6 +5,9 @@ on:
     - cron: '0 2 1 * *'  # Run at 2:00 AM on the 1st of every month (UTC)
   workflow_dispatch:
 
+env:
+  PIP_CACHE_DIR: ~/.cache/pip
+
 jobs:
   e2e:
     name: 🧪 Playwright E2E Test
@@ -22,6 +25,12 @@ jobs:
           --health-retries=5
 
     steps:
+      - name: 🧹 Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          sudo apt-get clean
+          df -h
+
       - name: 🧾 Checkout Repo
         uses: actions/checkout@v4
 
@@ -37,6 +46,14 @@ jobs:
           auto-update-conda: true
           activate-environment: odt
           python-version: 3.11
+
+      - name: 📦 Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: 🔬 Install Bio Tools and ODT Repo
         run: |
