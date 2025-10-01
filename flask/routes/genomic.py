@@ -285,10 +285,10 @@ def genomic_cascaded_ensemble():
 @genomic_bp.route('/api/genomic/cascaded/custom', methods=['POST'])
 def genomic_cascaded_custom():
     """
-    Cascaded endpoint: Generate genomic regions from Ensembl for downstream pipeline steps.
+    Cascaded endpoint: Generate genomic regions using a two-level caching mechanism for downstream pipeline steps.
 
     :input:
-        :param formdata: Dictionary of region extraction parameters and Ensembl source info.
+        :param formdata: Dictionary of region extraction parameters and Ensembl or NCBI source info.
         :type formdata: dict
 
     :output:
@@ -297,12 +297,14 @@ def genomic_cascaded_custom():
 
     Workflow:
         1. Parse and validate input.
-        2. Set up user/session-specific working directory.
+        2. Prepare user/session-specific working directory.
         3. Insert new MongoDB run document.
-        4. Build YAML config for Ensembl region extraction.
-        5. Run genomic region generator.
-        6. Gather annotation output file paths for downstream steps.
-        7. Update MongoDB status and return result.
+        4. First-level cache check: look for already built region FASTAs under cache/cached_genomic_*.
+        5. If cache miss, perform second-level cache: fetch or reuse raw .gtf.gz and .fna.gz from NCBI or Ensembl, verify MD5, decompress, and reuse.
+        6. Build a custom YAML config pointing to the cached decompressed files.
+        7. Run genomic region generator in "custom" mode.
+        8. Collect output region FASTAs.
+        9. Update MongoDB status and return result.
     """
     try:
         if current_user.is_authenticated:

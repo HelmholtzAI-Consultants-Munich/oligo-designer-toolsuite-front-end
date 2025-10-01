@@ -213,17 +213,18 @@ def _ensembl_release_dirs(release):
     else:
         return (f"pub/release-{release}/gtf", f"pub/release-{release}/fasta", False)
 
-def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir, species):
+def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir):
     """
-    List remote directories to choose one GTF and one DNA FASTA file.
-    Prefer primary_assembly FASTA; fallback to toplevel.
+    Given fully-qualified remote directories for GTF and DNA FASTA
+    (e.g., 'pub/current_gtf/homo_sapiens' and 'pub/current_fasta/homo_sapiens/dna'),
+    choose one .gtf.gz and one .fa.gz. Prefer primary_assembly for FASTA; fallback to toplevel.
     Returns (gtf_filename, fasta_filename, assembly_name).
     """
     with FTP(ftp_host) as ftp:
         ftp.login()
 
-        # GTF: pub/.../gtf/<species>/
-        ftp.cwd(f"{gtf_dir}/{species}")
+        # GTF directory (already includes species)
+        ftp.cwd(gtf_dir)
         gtf_listing = ftp.nlst()
         gtf_gz = None
         for name in sorted(gtf_listing):
@@ -231,29 +232,33 @@ def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir, species):
                 gtf_gz = name
                 break
         if not gtf_gz:
-            raise RuntimeError(f"No .gtf.gz found in {gtf_dir}/{species}")
+            raise RuntimeError(f"No .gtf.gz found in {gtf_dir}")
 
         # Try to parse assembly from GTF filename: e.g., Homo_sapiens.GRCh38.110.gtf.gz
         asm_match = re.match(r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.", gtf_gz)
         assembly_from_gtf = asm_match.group(1) if asm_match else None
 
-        # FASTA: pub/.../fasta/<species>/dna/
-        ftp.cwd(f"{fasta_dir}/{species}/dna")
-        fa_listing = ftp.nlst()
+        # FASTA directory (already includes species + dna)
+        ftp.cwd(fasta_dir)
+        fa_listing = sorted(ftp.nlst())
+
         fasta_gz = None
-        # Prefer primary_assembly
-        for name in sorted(fa_listing):
-            if name.endswith(".dna.primary_assembly.fa.gz"):
-                fasta_gz = name
-                break
-        # Fallback to toplevel
-        if not fasta_gz:
-            for name in sorted(fa_listing):
-                if name.endswith(".dna.toplevel.fa.gz"):
+        preferred_orders = [
+            ".dna_sm.primary_assembly.fa.gz",
+            ".dna.primary_assembly.fa.gz",
+            ".dna_sm.toplevel.fa.gz",
+            ".dna.toplevel.fa.gz",
+        ]
+        for suffix in preferred_orders:
+            for name in fa_listing:
+                if name.endswith(suffix):
                     fasta_gz = name
                     break
+            if fasta_gz:
+                break
+
         if not fasta_gz:
-            raise RuntimeError(f"No FASTA (.dna.primary_assembly.fa.gz or .dna.toplevel.fa.gz) in {fasta_dir}/{species}/dna")
+            raise RuntimeError(f"No suitable DNA FASTA found in {fasta_dir} (tried primary_assembly and toplevel, with dna_sm and dna).")
 
         # Try to parse assembly from FASTA filename: Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
         asm_match_fa = re.match(r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.dna\.", fasta_gz)
@@ -283,7 +288,7 @@ def _prepare_ensembl_cached_assets(cache_root, species, release):
     """
     MD5-aware cache for Ensembl GTF/FASTA.
     - Resolves 'current' vs numeric release to the right directories.
-    - Selects one .gtf.gz and one DNA FASTA (.primary_assembly preferred).
+    - Selects one .gtf.gz and one DNA FASTA (prefers dna_sm.primary_assembly, then primary_assembly, then toplevel).
     - Attempts to fetch .md5 sidecar for each for MD5 verification.
       If .md5 is not available, downloads without MD5 verification (Ensembl sometimes only provides CHECKSUMS in cksum format).
     - Gunzips once into 'decompressed' and returns local paths and metadata.
@@ -296,7 +301,7 @@ def _prepare_ensembl_cached_assets(cache_root, species, release):
     fasta_dir = f"{fasta_root}/{species}/dna"
 
     # Pick filenames and assembly
-    gtf_gz, fasta_gz, assembly = _ensembl_pick_files(host, gtf_root, fasta_root, species)
+    gtf_gz, fasta_gz, assembly = _ensembl_pick_files(host, gtf_dir, fasta_dir)
 
     # Build cache directories
     # Use 'current' literally if current; else use the numeric/label release
@@ -334,17 +339,17 @@ def _prepare_ensembl_cached_assets(cache_root, species, release):
     fasta_gz_local = os.path.join(raw, fasta_gz)
     fasta_md5_local = fasta_gz_local + ".md5"
     fasta_md5_expected = None
-    if _ftp_try_get(host, f"{fasta_root}/{species}/dna", fasta_gz + ".md5", fasta_md5_local):
+    if _ftp_try_get(host, fasta_dir, fasta_gz + ".md5", fasta_md5_local):
         try:
             fasta_md5_expected = _read_single_line_md5(fasta_md5_local)
         except Exception:
             fasta_md5_expected = None
 
     if fasta_md5_expected:
-        _ensure_file_with_md5(host, f"{fasta_root}/{species}/dna", fasta_gz, fasta_md5_expected, fasta_gz_local)
+        _ensure_file_with_md5(host, fasta_dir, fasta_gz, fasta_md5_expected, fasta_gz_local)
     else:
         if not os.path.exists(fasta_gz_local):
-            _ftp_get(host, f"{fasta_root}/{species}/dna", fasta_gz, fasta_gz_local)
+            _ftp_get(host, fasta_dir, fasta_gz, fasta_gz_local)
 
     # Gunzip
     fasta_plain = os.path.join(dec, os.path.splitext(os.path.splitext(fasta_gz)[0])[0] + ".fa")
