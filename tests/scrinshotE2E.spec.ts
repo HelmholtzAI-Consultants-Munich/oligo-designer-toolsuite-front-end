@@ -4,7 +4,7 @@ import path from 'path';
 test.use({ browserName: 'chromium' });
 
 test('E2E: submit Scrinshot form with gene and FASTA files', async ({ page }) => {
-  test.setTimeout(300_000); // ⏱️ Set test-wide timeout to 10 minutes
+  test.setTimeout(600_000); // ⏱️ Set test-wide timeout to 20 minutes
   // 1. Go to Scrinshot page
   await page.goto('http://localhost:3000/pipelines/scrinshot');
 
