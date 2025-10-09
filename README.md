@@ -26,6 +26,7 @@ Deploying this frontend allows **multiple users to access, configure, and run ol
   - Scrinshot
   - Oligo-Seq
   - MERFISH
+  - Genomic Region Generator
 
 ---
 
@@ -105,7 +106,7 @@ Released under the [MIT License](https://opensource.org/licenses/MIT).
 ---
 
 **Questions? Bugs?**  
-Please open an [issue](https://github.com/YOUR_ORG/oligo-designer-frontend/issues)
+Please open an [issue](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
 
 ---
 
