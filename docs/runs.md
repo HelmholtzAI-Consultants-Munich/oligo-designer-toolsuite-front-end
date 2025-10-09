@@ -1,3 +1,9 @@
+---
+title: Runs Management
+layout: default
+nav_order: 5
+---
+
 # Runs Management
 
 The **Runs** section allows you to view and manage all your pipeline executions.  

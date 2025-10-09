@@ -1,3 +1,9 @@
+---
+title: Tests
+layout: default
+nav_order: 6
+---
+
 # Tests
 
 This document explains the test strategy for this software. There are **two** layers:

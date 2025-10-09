@@ -1,3 +1,9 @@
+---
+title: Caching FASTA Files
+layout: default
+nav_order: 4
+---
+
 # Caching Fastas
 
 ## Overview

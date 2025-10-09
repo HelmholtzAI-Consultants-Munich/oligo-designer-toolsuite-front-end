@@ -1,7 +1,7 @@
 ---
 title: Automated Updates
 layout: default
-nav_order: 9
+nav_order: 8
 ---
 
 # Automated Updates with GitHub Actions

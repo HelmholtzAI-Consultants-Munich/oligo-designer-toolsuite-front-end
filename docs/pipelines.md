@@ -17,14 +17,17 @@ All pipelines share a consistent workflow: **prepare inputs → configure parame
 - **MERFISH** — *src/pages/merfish.tsx*  
   Multiplexed Error-Robust Fluorescence In Situ Hybridization pipeline for designing target probes, readout probes, and primers.
   
-- **SeqFISH** — *src/pages/seqfish.tsx*  
-  Sequential FISH probe designer for multi-round hybridization experiments.
-
 - **Scrinshot** — *src/pages/scrinshot.tsx*  
   Spatial transcriptomics probe designer with configurable target, readout, and primer parameters.
 
+- **SeqFISH** — *src/pages/seqfish.tsx*  
+  Sequential FISH probe designer for multi-round hybridization experiments.
+
 - **OligoSeq** — *src/pages/oligoseq.tsx*  
   Sequencing-based probe designer optimized for NGS detection.
+
+- **Genomic Region Generator** — *src/modules/FastaGenerateForm.tsx*  
+  Extracts specific genomic regions (genes, exons, introns, UTRs, etc.) from NCBI or Ensembl reference genomes for use in downstream pipelines.
 
 ---
 
@@ -66,6 +69,7 @@ Each pipeline page provides:
 ---
 For detailed parameter explanations and backend processing steps, see the dedicated pages for:
 - [MERFISH](merfish.md)
-- [SeqFISH](seqfish.md)
 - [Scrinshot](scrinshot.md)
+- [SeqFISH](seqfish.md)
 - [OligoSeq](oligoseq.md)
+- [Genomic Region Generator](genomic-region-generator.md)
