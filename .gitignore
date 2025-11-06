@@ -103,6 +103,8 @@ cover/
 # Flask stuff:
 instance/
 .webassets-cache
+user_data/
+uploads/
 
 # Ruff stuff:
 .ruff_cache/
