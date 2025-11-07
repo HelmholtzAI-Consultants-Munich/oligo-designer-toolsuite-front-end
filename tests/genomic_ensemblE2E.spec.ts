@@ -5,6 +5,41 @@ test.use({ browserName: 'chromium' });
 
 test('E2E: Test genomic nbci through Scrinshot pipeline', async ({ page }) => {
   test.setTimeout(300_000); // ⏱️ Set test-wide timeout to 10 minutes
+  const mockFnaPath = path.resolve(
+    __dirname,
+    'mock_data/utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna'
+  );
+  const jsonHeaders = { 'content-type': 'application/json' };
+
+  await page.route('**/api/genomic/cascaded/**', async route => {
+    await route.fulfill({
+      status: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({
+        status: 'success',
+        message: 'Mocked genomic response',
+        output: [mockFnaPath],
+        cached: []
+      })
+    });
+  });
+
+  await page.route('**/api/upload', async route => {
+    await route.fulfill({
+      status: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({ filePath: mockFnaPath })
+    });
+  });
+
+  await page.route('**/api/scrinshot', async route => {
+    await route.fulfill({
+      status: 200,
+      headers: jsonHeaders,
+      body: JSON.stringify({ status: 'success', message: 'Mocked scrinshot run', runId: 'mock-run-id' })
+    });
+  });
+
   // 1. Go to Scrinshot page
   await page.goto('http://localhost:3000/pipelines/scrinshot');
 
