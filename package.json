@@ -34,7 +34,9 @@
     "overrides": [
       {
         "files": [
+          "*.css",
           "*.json",
+          "*.md",
           "*.yaml",
           "*.yml"
         ],
