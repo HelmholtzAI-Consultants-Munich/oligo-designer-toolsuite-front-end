@@ -1,0 +1,7 @@
+# Ignore artifacts:
+dist
+
+# Ignore configuration
+**/*.json
+**/*.yaml
+**/*.yml

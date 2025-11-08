@@ -2,6 +2,7 @@
   "name": "untitled",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "axios": "^1.13.2",
@@ -22,13 +23,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint src",
     "preview": "vite preview",
-    "test": "vitest"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+    "test": "vitest src",
+    "check": "prettier . --check",
+    "format": "prettier . --write"
   },
   "browserslist": {
     "production": [
@@ -51,16 +48,17 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/bootstrap": "^5.2.10",
     "@types/jest": "^27.5.2",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.19.0",
     "@types/react": "^18.3.26",
     "@types/react-dom": "^18.3.7",
-    "@types/js-yaml": "^4.0.9",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^5.1.0",
-    "eslint": "^8.57.1",
+    "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3",
     "vite": "^7.2.1",
