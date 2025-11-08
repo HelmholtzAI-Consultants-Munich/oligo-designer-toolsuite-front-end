@@ -23,9 +23,26 @@
     "build": "tsc -b && vite build",
     "lint": "eslint src",
     "preview": "vite preview",
-    "test": "vitest src",
-    "check": "prettier . --check",
-    "format": "prettier . --write"
+    "test": "vitest run --exclude 'tests/**'",
+    "test:watch": "vitest --exclude 'tests/**'",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
+  },
+  "prettier": {
+    "tabWidth": 4,
+    "trailingComma": "es5",
+    "overrides": [
+      {
+        "files": [
+          "*.json",
+          "*.yaml",
+          "*.yml"
+        ],
+        "options": {
+          "tabWidth": 2
+        }
+      }
+    ]
   },
   "browserslist": {
     "production": [
@@ -58,6 +75,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jsdom": "^27.1.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3",
