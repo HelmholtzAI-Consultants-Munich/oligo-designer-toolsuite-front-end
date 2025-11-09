@@ -101,16 +101,21 @@ coverage.xml
 cover/
 
 # Flask stuff:
-instance/
+flask/instance/
+flask/uploads/
 .webassets-cache
-user_data/
-uploads/
-# keep testing directories
-# todo: separate test data from user data
-!user_data/testuser123
-user_data/testuser123/**
-!user_data/anon/anon-session-123
-user_data/anon/anon-session-123/**
+
+# Flask User Data
+#  This keeps only the empty testing data directories.
+#  todo: separate test data from user data -> ignore all user data
+flask/user_data/**
+
+!flask/user_data/testuser123/
+!flask/user_data/testuser123/.keep
+
+!flask/user_data/anon/
+!flask/user_data/anon/anon-session-123/
+!flask/user_data/anon/anon-session-123/.keep
 
 # Ruff stuff:
 .ruff_cache/
