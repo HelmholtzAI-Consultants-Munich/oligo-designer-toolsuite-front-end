@@ -105,6 +105,12 @@ instance/
 .webassets-cache
 user_data/
 uploads/
+# keep testing directories
+# todo: separate test data from user data
+!user_data/testuser123
+user_data/testuser123/**
+!user_data/anon/anon-session-123
+user_data/anon/anon-session-123/**
 
 # Ruff stuff:
 .ruff_cache/
