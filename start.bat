@@ -1,6 +1,6 @@
 @echo off
 REM Start frontend (in the background)
-start "frontend" cmd /c npm start
+start "frontend" cmd /c npm run dev
 
 REM Change to backend directory and start backend (in new window)
 cd flask

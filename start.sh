@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start frontend (in the background)
-npm start &
+npm run dev &
 FRONTEND_PID=$!
 # Start backend (in foreground)
 cd flask
