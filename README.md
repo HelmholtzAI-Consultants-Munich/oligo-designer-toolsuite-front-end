@@ -57,7 +57,7 @@ Please do not install with the requirements.txt; It is for testing purposes.
 git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
 cd oligo-designer-frontend
 npm install
-conda odt update -f environment.yml 
+conda env update -n odt -f environment.yml --prune
 ```
 
 You can also set up additional environment variables as needed for authentication, proxy, etc.

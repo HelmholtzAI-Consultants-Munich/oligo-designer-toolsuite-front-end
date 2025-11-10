@@ -4,167 +4,51 @@ channels:
   - bioconda
   - defaults
 dependencies:
+  # Core runtime
+  - python=3.11
+  - pip=24.3.1
+  - setuptools
+  - wheel
+
+  # Genomic CLI toolchain
   - bedtools=2.31.1
   - blast=2.16.0
   - bowtie=1.3.1
   - bowtie2=2.5.4
-  - bzip2=1.0.8
-  - c-ares=1.34.3
-  - ca-certificates=2025.1.31
-  - curl=8.10.1 
   - entrez-direct=22.4
-  - gettext=0.22.5
-  - gettext-tools=0.22.5
-  - icu
-  - krb5=1.21.3
-  - libasprintf=0.22.5
-  - libasprintf-devel=0.22.5
-  - libcurl=8.10.1
-  - libcxx=19.1.4
-  - libedit=3.1.20191231
-  - libev=4.33
-  - libffi=3.4.4
-  - libgettextpo=0.22.5
-  - libgettextpo-devel=0.22.5
-  - libhwloc
-  - libiconv
-  - libidn2=2.3.7
-  - libintl=0.22.5  # [osx]
-  - libintl-devel=0.22.5  # [osx]
-  - libnghttp2=1.64.0
-  - libsqlite=3.49.1
-  - libssh2=1.11.1
-  - libunistring=0.9.10
-  - libxml2
-  - libzlib
-  - llvm-openmp=19.1.4
   - ncbi-vdb=3.1.1
-  - ncurses=6.5
-  - openssl>=3.5.4
-  - perl=5.32.1
-  - perl-archive-tar=2.40
-  - perl-carp=1.50
-  - perl-common-sense=3.75
-  - perl-compress-raw-bzip2=2.201
-  - perl-compress-raw-zlib=2.202
-  - perl-encode=3.21
-  - perl-exporter=5.74
-  - perl-exporter-tiny=1.002002
-  - perl-extutils-makemaker=7.70
-  - perl-io-compress=2.201
-  - perl-io-zlib=1.14
-  - perl-json=4.10
-  - perl-json-xs=4.03
-  - perl-list-moreutils=0.430
-  - perl-list-moreutils-xs=0.430
-  - perl-parent=0.242
-  - perl-pathtools=3.75
-  - perl-scalar-list-utils=1.68
-  - perl-storable=3.15
-  - perl-types-serialiser=1.01
-  - pip=24.3.1
-  - python=3.11
-  - readline=8.2
   - rpsbproc=0.5.0
-  - setuptools=75.6.0
-  - sqlite=3.49.1
-  - tbb=2022.0.0
-  - tk=8.6.13
+  - curl=8.10.1
   - wget=1.21.4
-  - wheel=0.45.1
-  - xz
-  - zlib
-  - zstd=1.5.6
+
+  # Python packages installed via pip
   - pip:
-      - anyio==4.9.0
-      - argparse==1.4.0
-      - asttokens==3.0.0
+      # Backend & API stack
+      - Authlib==1.3.1
+      - python-dotenv==1.0.1
+      - Flask==3.1.1
+      - flask-cors==6.0.1
+      - Flask-Login==0.6.3
+      - Flask-PyMongo==3.0.1
+      - pymongo==4.13.2
+      - requests==2.32.4
+      - PyYAML==6.0.2
+
+      # Genomic analysis libraries (Scrinshot & related pipelines)
       - bio==1.8.0
       - biopython==1.85
-      - biothings-client==0.4.1
-      - blinker==1.9.0
-      - certifi==2025.7.14
-      - charset-normalizer==3.4.2
-      - click==8.2.1
-      - comm==0.2.3
-      - contourpy==1.3.2
-      - coverage==7.10.4
-      - cycler==0.12.1
-      - datetime==5.5
-      - decorator==5.2.1
-      - dnspython==2.7.0
-      - effidict==0.0.9
-      - exceptiongroup==1.3.0
-      - executing==2.2.0
-      - filelock==3.18.0
-      - flask==3.1.1
-      - flask-cors==6.0.1
-      - flask-login==0.6.3
-      - flask-pymongo==3.0.1
-      - fonttools==4.59.0
-      - fsspec==2025.7.0
       - gprofiler-official==1.0.0
-      - h11==0.16.0
-      - httpcore==1.0.9
-      - httpx==0.28.1
-      - idna==3.10
-      - iniconfig==2.1.0
-      - ipython==8.37.0
-      - ipywidgets==8.1.7
-      - iteration-utilities==0.13.0
-      - itsdangerous==2.2.0
-      - jedi==0.19.2
-      - jinja2==3.1.6
-      - joblib==1.5.1
-      - joblib-progress==1.0.6
-      - jupyterlab-widgets==3.0.15
-      - kiwisolver==1.4.8
-      - markdown-it-py==3.0.0
-      - markupsafe==3.0.2
       - matplotlib==3.10.3
-      - matplotlib-inline==0.1.7
-      - mdurl==0.1.2
-      - mpmath==1.3.0
-      - mygene==3.2.2
       - networkx==3.4.2
       - numpy==1.26.4
-      - packaging==25.0
       - pandas==2.3.1
-      - parso==0.8.4
-      - pexpect==4.9.0
-      - pillow==11.3.0
-      - platformdirs==4.3.8
-      - pluggy==1.6.0
-      - pooch==1.8.2
-      - prompt-toolkit==3.0.51
-      - ptyprocess==0.7.0
-      - pure-eval==0.2.3
-      - pygments==2.19.2
-      - pymongo==4.13.2
-      - pyparsing==3.2.3
-      - pytest==8.4.1
-      - pytest-cov==6.2.1
-      - pytest-mock==3.14.1
-      - python-dateutil==2.9.0.post0
-      - pytz==2025.2
-      - pyyaml==6.0.2
-      - requests==2.32.4
-      - rich==14.1.0
       - scipy==1.15.3
       - seaborn==0.13.2
       - seqfold==0.7.18
-      - six==1.17.0
-      - sniffio==1.3.1
-      - stack-data==0.6.3
-      - sympy==1.14.0
-      - tomli==2.2.1
       - torch==2.2.2
-      - tqdm==4.67.1
-      - traitlets==5.14.3
-      - typing-extensions==4.14.1
-      - tzdata==2025.2
-      - urllib3==2.5.0
-      - wcwidth==0.2.13
-      - werkzeug==3.1.3
-      - widgetsnbextension==4.0.14
-      - zope-interface==7.2
+
+      # Testing & QA
+      - coverage==7.10.4
+      - pytest==8.4.1
+      - pytest-cov==6.2.1
+      - pytest-mock==3.14.1
