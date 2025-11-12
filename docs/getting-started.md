@@ -13,16 +13,19 @@ This app lets multiple users run advanced oligo design pipelines (SeqFISH+, Scri
 
 ### 1. Install the Oligo Designer Command line interface first
 
-Before running the Web Application, follow the [backend installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) and ensure the oligo designer is available on your server.
+Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend. 
 
 ### 2. Install frontend dependencies
 
-Clone this repo and install dependencies: "odt" is the name of conda environment that is created in the first step of the installation. Please do not install with the requirements.txt; It is for testing purposes.
+Clone this repo and install dependencies:
+"odt" is the name of conda environment that is created in the first step of the installation.
+Please do not install with the requirements.txt; It is for testing purposes.
+
 ```bash
 git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
 cd oligo-designer-frontend
 npm install
-conda env update -n odt -f environment.yml --prune
+conda env update -n odt -f flask/environment.yml --prune
 ```
 
 You can also set up additional environment variables as needed for authentication, proxy, etc.
@@ -41,11 +44,9 @@ You can also set up additional environment variables as needed for authenticatio
 
 The app will open at [http://localhost:3000](http://localhost:3000).
 
----
-
 ## Supported Pipelines
 
-You can use the following pipelines through the web interface:
+The following pipelines are available through the web interface:
 
 - **SeqFISH+ Probe Designer**
 - **Scrinshot Probe Designer**
@@ -53,7 +54,7 @@ You can use the following pipelines through the web interface:
 - **MERFISH Probe Designer**
 - **Genomic Region Generator** (as a submodule)
 
-See the [backend documentation](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for pipeline details and scientific background.
+See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for details.
 
 ---
 
