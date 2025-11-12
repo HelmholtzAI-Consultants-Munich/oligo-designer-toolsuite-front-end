@@ -6,7 +6,7 @@ nav_order: 2
 
 # Getting Started
 
-Welcome! This guide will help you set up and run the Oligo Designer Toolsuite **Web application** on your machine.  
+Welcome! This guide will help you set up and run Oligo Designer Toolsuite **Cloud** on your machine.  
 This app lets multiple users run advanced oligo design pipelines (SeqFISH+, Scrinshot, Oligo-Seq, MERFISH, etc.) via a web browser.
 
 ---
@@ -26,7 +26,7 @@ See [Using Docker]({% link using-docker.md %}) for details on using Docker for t
 
 ### 1. Install the Oligo Designer Command line interface first
 
-Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend. 
+Before running the web application, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial to execute the pipelines with ODT Cloud
 
 ### 2. Install frontend dependencies
 
