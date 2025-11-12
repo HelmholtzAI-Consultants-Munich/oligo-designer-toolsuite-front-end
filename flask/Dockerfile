@@ -7,17 +7,9 @@ RUN micromamba install -y -n base -f /tmp/env.yml && \
     micromamba clean --all --yes
 
 # --- Install oligo-designer-toolsuite ---
-#  Installing odt locally requires git to infer the package version.
-#  (see https://github.com/pypa/setuptools-scm)
-USER root
-RUN apk add --no-cache git
-USER $MAMBA_USER
-
-ADD --chown=$MAMBA_USER:$MAMBA_USER --keep-git-dir https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git /tmp/odt
-
 # activate conda environment to use pip during build
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
-RUN pip install --no-cache-dir odt/
+RUN pip install --no-cache-dir git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git
 
 # --- Install Flask server ---
 WORKDIR /app
