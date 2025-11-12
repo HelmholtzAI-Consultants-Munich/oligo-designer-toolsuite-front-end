@@ -15,6 +15,7 @@ dist-ssr
 *.local
 
 # Misc
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -111,11 +112,11 @@ flask/uploads/
 flask/user_data/**
 
 !flask/user_data/testuser123/
-!flask/user_data/testuser123/.keep
+!flask/user_data/testuser123/.gitkeep
 
 !flask/user_data/anon/
 !flask/user_data/anon/anon-session-123/
-!flask/user_data/anon/anon-session-123/.keep
+!flask/user_data/anon/anon-session-123/.gitkeep
 
 # Ruff stuff:
 .ruff_cache/
