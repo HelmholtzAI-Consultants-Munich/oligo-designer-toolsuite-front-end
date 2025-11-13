@@ -26,9 +26,18 @@ This document explains the test strategy for this software. There are **two** la
 
 ### Running locally
 ```bash
+# note: start database first
 pytest -q
 # with coverage:
-pytest --maxfail=1 --disable-warnings --cov=backend --cov-report=term-missing
+pytest --maxfail=1 --disable-warnings --cov=flask --cov-report=term-missing
+```
+
+or if using Docker:
+```bash
+docker compose up mongodb -d
+docker compose run --rm odt-server -- pytest --disable-warnings -q
+# with coverage:
+docker compose run --rm -w /tmp odt-server -- pytest -disable-warnings --cov=/app --cov-report=term-missing /app
 ```
 
 ### Fixtures & notes
