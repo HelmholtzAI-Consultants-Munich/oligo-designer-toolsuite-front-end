@@ -35,9 +35,9 @@ pytest --maxfail=1 --disable-warnings --cov=flask --cov-report=term-missing
 or if using Docker:
 ```bash
 docker compose up mongodb -d
-docker compose run --rm odt-server -- pytest --disable-warnings -q
+docker compose run --rm odt-server -- pytest -q
 # with coverage:
-docker compose run --rm -w /tmp odt-server -- pytest -disable-warnings --cov=/app --cov-report=term-missing /app
+docker compose run --rm odt-server -- pytest --cov=. --cov-report=term-missing
 ```
 
 ### Fixtures & notes
