@@ -11,3 +11,10 @@ services:
       - 5000:5000
     environment:
       MONGO_URI: mongodb://mongodb:27017/oligo_db
+    volumes:
+      # bind mount source for development 
+      - ./flask:/app:ro
+      # volume mount data for write permission
+      - /app/cache
+      - /app/uploads
+      - /app/user_data
