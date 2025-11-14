@@ -16,8 +16,9 @@ def client():
         with app.app_context():
             yield client
 
-def test_genomic_cascaded_ncbi(client, monkeypatch):
-    dummy_form = {
+@pytest.fixture
+def dummy_form_ncbi():
+    return {
         "source": {"value": "NCBI"},
         "source_params": {
             "taxon": {"value": "9606"},
@@ -35,6 +36,29 @@ def test_genomic_cascaded_ncbi(client, monkeypatch):
         },
         "exon_exon_junction_block_size": {"value": "75"}
     }
+
+@pytest.fixture
+def dummy_form_ensembl():
+    return {
+        "source": {"value": "Ensembl"},
+        "source_params": {
+            "species": {"value": "Mus_musculus"},
+            "annotation_release": {"value": "110"}
+        },
+        "genomic_regions": {
+            "gene": {"value": "true"},
+            "intergenic": {"value": "false"},
+            "exon": {"value": "true"},
+            "exon_exon_junction": {"value": "false"},
+            "utr": {"value": "false"},
+            "cds": {"value": "false"},
+            "intron": {"value": "false"}
+        },
+        "exon_exon_junction_block_size": {"value": "75"}
+    }
+
+def test_genomic_cascaded_ncbi(client, monkeypatch, dummy_form_ncbi):
+    dummy_form = dummy_form_ncbi
 
     class DummyUser:
         is_authenticated = True
@@ -53,25 +77,8 @@ def test_genomic_cascaded_ncbi(client, monkeypatch):
         assert "message" in data
         assert "output" in data
 
-def test_genomic_cascaded_ncbi_unauthenticated(client):
-    dummy_form = {
-        "source": {"value": "NCBI"},
-        "source_params": {
-            "taxon": {"value": "9606"},
-            "species": {"value": "Homo_sapiens"},
-            "annotation_release": {"value": "110"}
-        },
-        "genomic_regions": {
-            "gene": {"value": "true"},
-            "intergenic": {"value": "false"},
-            "exon": {"value": "true"},
-            "exon_exon_junction": {"value": "false"},
-            "utr": {"value": "false"},
-            "cds": {"value": "false"},
-            "intron": {"value": "false"}
-        },
-        "exon_exon_junction_block_size": {"value": "75"}
-    }
+def test_genomic_cascaded_ncbi_unauthenticated(client, dummy_form_ncbi):
+    dummy_form = dummy_form_ncbi
 
     with patch("subprocess.run") as mock_run:
         mock_run.return_value.returncode = 0
@@ -85,24 +92,8 @@ def test_genomic_cascaded_ncbi_unauthenticated(client):
         assert "message" in data
         assert "output" in data
 
-def test_genomic_single_ensembl(client, monkeypatch):
-    dummy_form = {
-        "source": {"value": "Ensembl"},
-        "source_params": {
-            "species": {"value": "Mus_musculus"},
-            "annotation_release": {"value": "110"}
-        },
-        "genomic_regions": {
-            "gene": {"value": "true"},
-            "intergenic": {"value": "false"},
-            "exon": {"value": "true"},
-            "exon_exon_junction": {"value": "false"},
-            "utr": {"value": "false"},
-            "cds": {"value": "false"},
-            "intron": {"value": "false"}
-        },
-        "exon_exon_junction_block_size": {"value": "75"}
-    }
+def test_genomic_single_ensembl(client, monkeypatch, dummy_form_ensembl):
+    dummy_form = dummy_form_ensembl
 
     class DummyUser:
         is_authenticated = True
@@ -121,24 +112,8 @@ def test_genomic_single_ensembl(client, monkeypatch):
         assert "message" in data
         assert "output" in data
 
-def test_genomic_single_ensembl_unauthenticated(client):
-    dummy_form = {
-        "source": {"value": "Ensembl"},
-        "source_params": {
-            "species": {"value": "Mus_musculus"},
-            "annotation_release": {"value": "110"}
-        },
-        "genomic_regions": {
-            "gene": {"value": "true"},
-            "intergenic": {"value": "false"},
-            "exon": {"value": "true"},
-            "exon_exon_junction": {"value": "false"},
-            "utr": {"value": "false"},
-            "cds": {"value": "false"},
-            "intron": {"value": "false"}
-        },
-        "exon_exon_junction_block_size": {"value": "75"}
-    }
+def test_genomic_single_ensembl_unauthenticated(client, dummy_form_ensembl):
+    dummy_form = dummy_form_ensembl
 
     with patch("subprocess.run") as mock_run:
         mock_run.return_value.returncode = 0
