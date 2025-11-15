@@ -16,3 +16,25 @@ services:
         - action: sync
           path: ./flask
           target: /app
+
+  odt-web:
+    image: node:22
+    container_name: odt-web
+    user: node
+    working_dir: /home/node/app
+    command: [npm, start]
+    ports:
+      - 3000:3000
+    volumes:
+      - ./:/home/node/app
+
+  odt-tests:
+    image: odt-tests
+    build: ./tests
+    container_name: odt-tests
+    network_mode: host # this should be removed once the URL is configurable
+    environment:
+      PLAYWRIGHT_HTML_OUTPUT_DIR: /home/node/tests/playwright-report
+    volumes:
+      - ./tests:/home/node/tests
+    profiles: [tests] # don't run unless specified
