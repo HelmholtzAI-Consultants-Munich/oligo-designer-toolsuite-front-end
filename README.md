@@ -105,9 +105,14 @@ See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.
 
 ## For Developers
 
-- This project uses [Create React App](https://github.com/facebook/create-react-app) (see [maintenance notice below](#maintenance)).
 - Written in TypeScript + React for frontend.
+  - npm for environment setup
+  - Vite as build tool
+  - Vitest as testing framework
+  - Playwright for integration tests
 - Written in Python + Flask for backend.
+  - Conda for environment setup
+  - MongoDB as database
 
 ---
 
