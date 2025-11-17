@@ -11,6 +11,19 @@ This app lets multiple users run advanced oligo design pipelines (SeqFISH+, Scri
 
 ---
 
+## Quickstart (using Docker)
+
+This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. Note that user data is not preserved across restarts with the provided configuration.
+
+To launch the frontend, backend and database, run:
+```bash
+docker compose watch
+```
+
+See [Using Docker]({% link using-docker.md %}) for details on using Docker for this project.
+
+## Manual Installation
+
 ### 1. Install the Oligo Designer Command line interface first
 
 Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend. 

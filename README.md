@@ -41,7 +41,18 @@ This web app connects to the [Oligo Designer Toolsuite backend](https://github.c
 
 ---
 
-## Quickstart
+## Quickstart (using Docker)
+
+This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. Note that user data is not preserved across restarts with the provided configuration.
+
+To launch the frontend, backend and database, run:
+```bash
+docker compose watch
+```
+
+See [Using Docker](docs/using-docker.md) for details on using Docker for this project.
+
+## Manual Installation
 
 ### 1. Install the Oligo Designer Command line interface first
 
