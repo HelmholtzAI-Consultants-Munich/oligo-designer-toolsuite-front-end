@@ -25,10 +25,12 @@ def client(monkeypatch):
         with app.app_context():
             yield client
 
+@pytest.fixture()
+def run_id():
+    return ObjectId()
 
 @pytest.fixture
-def dummy_run(tmp_path):
-    run_id = ObjectId()
+def output_path(tmp_path, run_id):
     output_path = tmp_path / "run_output"
     output_path.mkdir()
     (output_path / "log.txt").write_text("log content")
@@ -43,7 +45,7 @@ def dummy_run(tmp_path):
         "output_path": str(output_path)
     })
 
-    return str(run_id), str(output_path)
+    return str(output_path)
 
 
 def test_init_run_id(client):
@@ -72,9 +74,7 @@ def test_get_pipeline_runs_authenticated(client, monkeypatch):
     assert isinstance(response.get_json(), list)
 
 
-def test_get_run_files(client, monkeypatch, dummy_run):
-    run_id, output_path = dummy_run
-
+def test_get_run_files(client, monkeypatch, run_id, output_path):
     class DummyUser:
         is_authenticated = True
         id = "dummy_user"
@@ -88,9 +88,7 @@ def test_get_run_files(client, monkeypatch, dummy_run):
     assert any("config.yaml" in file["name"] for file in data)
 
 
-def test_get_run_file_success(client, monkeypatch, dummy_run):
-    run_id, output_path = dummy_run
-
+def test_get_run_file_success(client, monkeypatch, run_id, output_path):
     class DummyUser:
         is_authenticated = True
         id = "dummy_user"
@@ -102,9 +100,7 @@ def test_get_run_file_success(client, monkeypatch, dummy_run):
     assert response.data == b"log content"
 
 
-def test_delete_run_success(client, monkeypatch, dummy_run):
-    run_id, output_path = dummy_run
-
+def test_delete_run_success(client, monkeypatch, run_id, output_path):
     class DummyUser:
         is_authenticated = True
         id = "dummy_user"
@@ -116,9 +112,7 @@ def test_delete_run_success(client, monkeypatch, dummy_run):
     assert not os.path.exists(output_path)
 
 
-def test_get_run_file_not_found(client, monkeypatch, dummy_run):
-    run_id, _ = dummy_run
-
+def test_get_run_file_not_found(client, monkeypatch, run_id):
     class DummyUser:
         is_authenticated = True
         id = "dummy_user"
