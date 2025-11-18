@@ -1,12 +1,10 @@
 import React, { useState } from "react";
 import Navbar from "../modules/nav";
-import axios from "axios";
 import { Collapse, OverlayTrigger, Popover } from "react-bootstrap";
 import { ChevronDown, ChevronUp, InfoCircle } from "react-bootstrap-icons";
 import merfish_form from "../forms/merfish_form";
 import { FastaForm, FileState } from "../components/types";
-import { copyToClipboard, createRunId } from "../modules/helpers";
-import { allFilesUploaded, uploadFiles } from "../components/helpers";
+import { allFilesUploaded, handleSubmit } from "../components/helpers";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import merfishImage from "../images/pipeline_merfish_probes.webp";
 import TargetFile from "../components/targetFile";
@@ -30,7 +28,6 @@ const Merfish: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
 
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-  // SIMON
   const [formData, setFormData] = useState(merfish_form);
 
   const [files, setFiles] = useState<FileState>({
@@ -49,16 +46,19 @@ const Merfish: React.FC = () => {
     useState("specfblastn");
 
   const [runId, setRunId] = useState<string | null>(null);
-  const [runStatus, setRunStatus] = useState<"idle" | "submitting" | "running">("idle");
+  // TODO type aus status machen
+  const [runStatus, setRunStatus] = useState<"idle" | "submitting" | "running">(
+    "idle"
+  );
   const [idCopySuccess, setIdCopySuccess] = useState<boolean>(false);
   const [modal, setModal] = useState<{
-      show: boolean;
-      title: string;
-      body: string;
+    show: boolean;
+    title: string;
+    body: string;
   }>({
-      show: false,
-      title: "",
-      body: ""
+    show: false,
+    title: "",
+    body: "",
   });
 
   const renderTabContent = () => {
@@ -66,43 +66,43 @@ const Merfish: React.FC = () => {
       case "probe_sequences":
         return (
           <div className="mb-4">
-            <TargetFile setFormData={setFormData} formData={formData} />
-            <FileSelection
-              formData={formData}
-              id="file_regions"
-              setFiles={setFiles}
-              files={files}
-            />
-            <FastaGeneration
-              name="Probe Database"
-              id="files_fasta_target_probe_database"
-              setFastaForms={setFastaForms}
-              fastaForms={fastaForms}
-            />
-            <FileSelection
-              formData={formData}
-              id="files_fasta_target_probe_database"
-              setFiles={setFiles}
-              files={files}
-            />
-            <div className="mb-3 pt-3">
-              <div className="d-flex align-items-center w-100 gap-2">
-                <FastaGeneration
-                  name="Probe Reference Database"
-                  id="files_fasta_reference_database_target_probe"
-                  setFastaForms={setFastaFormsReference}
-                  fastaForms={fastaFormsReference}
-                />
-                <FileSelection
-                  formData={formData}
-                  id="files_fasta_reference_database_target_probe"
-                  setFiles={setFiles}
-                  files={files}
-                />
-              </div>
+            <div className="d-flex align-items-end gap-3 mb-3">
+              <TargetFile setFormData={setFormData} formData={formData} />
+              <FileSelection
+                formData={formData}
+                id="file_regions"
+                setFiles={setFiles}
+                files={files}
+              />
             </div>
-
-            {/* ab hier erin */}
+            <div className="d-flex align-items-end gap-3 mb-3">
+              <FastaGeneration
+                name="Probe Database"
+                id="files_fasta_target_probe_database"
+                setFastaForms={setFastaForms}
+                fastaForms={fastaForms}
+              />
+              <FileSelection
+                formData={formData}
+                id="files_fasta_target_probe_database"
+                setFiles={setFiles}
+                files={files}
+              />
+            </div>
+            <div className="d-flex align-items-end gap-3 mb-3">
+              <FastaGeneration
+                name="Probe Reference Database"
+                id="files_fasta_reference_database_target_probe"
+                setFastaForms={setFastaFormsReference}
+                fastaForms={fastaFormsReference}
+              />
+              <FileSelection
+                formData={formData}
+                id="files_fasta_reference_database_target_probe"
+                setFiles={setFiles}
+                files={files}
+              />
+            </div>
             <div className="mb-3">
               <label htmlFor="top_n_sets" className="form-label">
                 Maximum Number of Sets:
@@ -890,21 +890,19 @@ const Merfish: React.FC = () => {
       case "readout":
         return (
           <div className="mb-4">
-            <FastaGeneration
-              name="Probe Readout Database:"
-              id="files_fasta_reference_database_readout_probe"
-              setFastaForms={setFastaFormsReadout}
-              fastaForms={fastaFormsReadout}
-            />
-            <div className="mb-3">
-              <div className="d-flex align-items-center w-100 gap-2">
-                <FileSelection
-                  formData={formData}
-                  id="files_fasta_reference_database_readout_probe"
-                  setFiles={setFiles}
-                  files={files}
-                />
-              </div>
+            <div className="d-flex align-items-end gap-3 mb-3">
+              <FastaGeneration
+                name="Probe Readout Database:"
+                id="files_fasta_reference_database_readout_probe"
+                setFastaForms={setFastaFormsReadout}
+                fastaForms={fastaFormsReadout}
+              />
+              <FileSelection
+                formData={formData}
+                id="files_fasta_reference_database_readout_probe"
+                setFiles={setFiles}
+                files={files}
+              />
             </div>
             <div className="mb-3">
               <label htmlFor="readout_probe_length" className="form-label">
@@ -1504,21 +1502,19 @@ const Merfish: React.FC = () => {
         return (
           <div>
             <div className="mb-4">
-              <FastaGeneration
-                name="Probe Primer Reference Database:"
-                id="files_fasta_reference_database_primer"
-                setFastaForms={setFastaFormsPrimer}
-                fastaForms={fastaFormsPrimer}
-              />
-              <div className="mb-3">
-                <div className="d-flex align-items-center w-100 gap-2">
-                  <FileSelection
-                    formData={formData}
-                    id="files_fasta_reference_database_primer"
-                    setFiles={setFiles}
-                    files={files}
-                  />
-                </div>
+              <div className="d-flex align-items-end gap-3 mb-3">
+                <FastaGeneration
+                  name="Probe Primer Reference Database:"
+                  id="files_fasta_reference_database_primer"
+                  setFastaForms={setFastaFormsPrimer}
+                  fastaForms={fastaFormsPrimer}
+                />
+                <FileSelection
+                  formData={formData}
+                  id="files_fasta_reference_database_primer"
+                  setFiles={setFiles}
+                  files={files}
+                />
               </div>
               <div className="row g-3">
                 <div className="col">
@@ -5299,254 +5295,51 @@ const Merfish: React.FC = () => {
     }
   };
 
-  //SIMON
-  const handleSubmitGenomicAll = async (
-    forms: typeof fastaForms, // Accept forms as argument
-    e?: React.FormEvent
-  ): Promise<string> => {
-    e?.preventDefault();
-    try {
-      let results = "";
-      for (let i = 0; i < forms.length; ++i) {
-        const form = forms[i];
-        let payload;
-        let endpoint;
-        if (form.selectedSource === "ncbi") {
-          payload = form.formDataNcbi;
-          endpoint = "custom ";
-        } else if (form.selectedSource === "ensembl") {
-          payload = form.formDataEns;
-          endpoint = "custom";
-        } else {
-          continue; // skip unknown
-        }
-        try {
-          const response = await axios.post(
-            `http://localhost:5000/api/genomic/cascaded/${endpoint}`,
-            payload,
-            {
-              withCredentials: true,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-          if (results === "") {
-            results = response.data.output;
-          } else {
-            results += "\n" + response.data.output;
-          }
-        } catch (error) {
-          console.error("Error submitting genomic form:", error);
-          return "error";
-        }
-      }
-      return results;
-    } catch (error) {
-      console.error("Error in batch FASTA submission:", error);
-      return "error";
-    }
-  };
-
-  // SIMON
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (runStatus === "submitting" || runStatus === "running") return; // prevent double-clicks
-    setRunStatus("submitting");
-    setRunId(null);
-
-    // ---- FASTA target probe database ----
-    let generatedTargetPaths = "";
-    if (fastaForms.length > 0) {
-      generatedTargetPaths = await handleSubmitGenomicAll(fastaForms);
-    }
-    if (generatedTargetPaths === 'error') {
-        setModal({
-            show: true,
-            title: "Pipeline Failed",
-            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
-        });
-        setRunStatus("idle");
-        return;
-    }
-    const uploadedPaths = await uploadFiles(files, formData);
-
-    if (uploadedPaths["file_regions_file"]) {
-      formData["file_regions"]["value"] = uploadedPaths["file_regions_file"];
-    }
-    let uploadedTargetFastaPath = "";
-    if (uploadedPaths["files_fasta_target_probe_database"]) {
-      uploadedTargetFastaPath =
-        uploadedPaths["files_fasta_target_probe_database"];
-    }
-    const mergedTargetValue = [generatedTargetPaths, uploadedTargetFastaPath]
-      .filter((v) => v && v.length > 0)
-      .join("\n");
-    if (mergedTargetValue.length > 0) {
-      formData["files_fasta_target_probe_database"]["value"] =
-        mergedTargetValue;
-    }
-
-    // ---- FASTA reference probe database ----
-    let generatedReferencePaths = "";
-    if (fastaFormsReference.length > 0) {
-      generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference);
-    }
-    if (generatedReferencePaths === 'error') {
-        setModal({
-            show: true,
-            title: "Pipeline Failed",
-            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
-        });
-        setRunStatus("idle");
-        return;
-    }
-    let uploadedReferenceFastaPath = "";
-    if (uploadedPaths["files_fasta_reference_database_target_probe"]) {
-      uploadedReferenceFastaPath =
-        uploadedPaths["files_fasta_reference_database_target_probe"];
-    }
-    const mergedReferenceValue = [
-      generatedReferencePaths,
-      uploadedReferenceFastaPath,
-    ]
-      .filter((v) => v && v.length > 0)
-      .join("\n");
-    if (mergedReferenceValue.length > 0) {
-      formData["files_fasta_reference_database_target_probe"]["value"] =
-        mergedReferenceValue;
-    }
-
-    // ---- FASTA primer probe database ----
-    let generatedPrimerPaths = "";
-    if (fastaFormsPrimer && fastaFormsPrimer.length > 0) {
-      generatedPrimerPaths = await handleSubmitGenomicAll(fastaFormsPrimer);
-    }
-    if (generatedPrimerPaths === 'error') {
-        setModal({
-            show: true,
-            title: "Pipeline Failed",
-            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
-        });
-        setRunStatus("idle");
-        return;
-    }
-    let uploadedPrimerFastaPath = "";
-    if (uploadedPaths["files_fasta_reference_database_primer"]) {
-      uploadedPrimerFastaPath =
-        uploadedPaths["files_fasta_reference_database_primer"];
-    }
-    const mergedPrimerValue = [generatedPrimerPaths, uploadedPrimerFastaPath]
-      .filter((v) => v && v.length > 0)
-      .join("\n");
-    if (mergedPrimerValue.length > 0) {
-      formData["files_fasta_reference_database_primer"]["value"] =
-        mergedPrimerValue;
-    }
-
-    // ---- FASTA readout probe database ----
-    let generatedReadoutPaths = "";
-    if (fastaFormsReadout && fastaFormsReadout.length > 0) {
-      generatedReadoutPaths = await handleSubmitGenomicAll(fastaFormsReadout);
-    }
-    if (generatedReadoutPaths === 'error') {
-        setModal({
-            show: true,
-            title: "Pipeline Failed",
-            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
-        });
-        setRunStatus("idle");
-        return;
-    }
-    let uploadedReadoutFastaPath = "";
-    if (uploadedPaths["files_fasta_reference_database_readout_probe"]) {
-      uploadedReadoutFastaPath =
-        uploadedPaths["files_fasta_reference_database_readout_probe"];
-    }
-    const mergedReadoutValue = [generatedReadoutPaths, uploadedReadoutFastaPath]
-      .filter((v) => v && v.length > 0)
-      .join("\n");
-    if (mergedReadoutValue.length > 0) {
-      formData["files_fasta_reference_database_readout_probe"]["value"] =
-        mergedReadoutValue;
-    }
-
-    // Then: handle scrinshot (upload other files and submit form)
-    if (
-      !allFilesUploaded(
-        files,
-        formData,
-        fastaForms,
-        fastaFormsReference,
-        fastaFormsReadout,
-        fastaFormsPrimer
-      )
-    ) {
-      setModal({
-          show: true,
-          title: "Pipeline Failed",
-          body: `Please upload all required files before submitting.`
-      });
-      setRunStatus("idle");
-      return;
-    }
-
-    const newId = await createRunId();
-    if (newId) {
-        // setRunId does not immediately update runId due to React state batching
-        // so we use newId directly in the submission
-        setRunId(newId);
-        setIdCopySuccess(await copyToClipboard(newId));
-    } else {
-        setModal({
-            show: true,
-            title: "Pipeline Failed",
-            body: `The pipeline has failed to create a new run.`
-        });
-        setRunStatus("idle");
-        return;
-    }
-    
-    try {
-        setRunStatus("running");
-        const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: newId }, {
-            withCredentials: true,
-            headers: { "Content-Type": "application/json" },
-        });
-        const result = response.data;
-        console.log(result, 'this is the result');
-
-        setModal({
-            show: true,
-            title: "Pipeline Finished",
-            body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`
-        });
-    } catch (error) {
-        console.error('Error submitting scrinshot form:', error);
-        setModal({
-            show: true,
-            title: "Pipeline Failed",
-            body: `The pipeline has failed during processing. Your run ID is: ${newId}.`
-        });
-    } finally {
-        setRunStatus("idle");
-    }
-  };
-
   const closeModal = () => {
-      setModal({ ...modal, show: false });
-  }
+    setModal({ ...modal, show: false });
+  };
 
   return (
     <div>
       <Navbar />
 
-      {(runId ?
-          <RunLinkModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} runId={runId} /> :
-          <InfoModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} />
+      {runId ? (
+        <RunLinkModal
+          show={modal.show}
+          close={closeModal}
+          title={modal.title}
+          body={modal.body}
+          runId={runId}
+        />
+      ) : (
+        <InfoModal
+          show={modal.show}
+          close={closeModal}
+          title={modal.title}
+          body={modal.body}
+        />
       )}
 
       <div className="container my-4">
-        <form onSubmit={handleSubmit} id="scrinshotForm">
+        <form
+          onSubmit={(e) =>
+            handleSubmit(
+              e,
+              runStatus,
+              setRunStatus,
+              setRunId,
+              fastaForms,
+              setModal,
+              files,
+              formData,
+              fastaFormsPrimer,
+              fastaFormsReadout,
+              fastaFormsReference,
+              setIdCopySuccess
+            )
+          }
+          id="merfishForm"
+        >
           <div className="mb-3">
             <div className="d-flex justify-content-center align-items-center">
               <h2 className="mb-0">Merfish Probe Designer</h2>
@@ -5767,13 +5560,12 @@ const Merfish: React.FC = () => {
               </div>
             )}
             {runId && (
-                <RunIdAlert runId={runId} idCopySuccess={idCopySuccess} />
+              <RunIdAlert runId={runId} idCopySuccess={idCopySuccess} />
             )}
             <div className="d-flex justify-content-center mt-4">
               <button
-                type="button"
+                type="submit"
                 className="btn btn-primary"
-                onClick={handleSubmit}
                 disabled={
                   runStatus === "submitting" ||
                   runStatus === "running" ||
@@ -5786,23 +5578,31 @@ const Merfish: React.FC = () => {
                     fastaFormsPrimer
                   )
                 }
-                aria-busy={runStatus === "submitting" || runStatus === "running"}
+                aria-busy={
+                  runStatus === "submitting" || runStatus === "running"
+                }
               >
                 {runStatus === "submitting" && (
-                    <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Submitting...
-                    </>
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Submitting...
+                  </>
                 )}
                 {runStatus === "running" && (
-                    <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        Running...
-                    </>
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Running...
+                  </>
                 )}
-                {runStatus === "idle" && (
-                    'Submit'
-                )}
+                {runStatus === "idle" && "Submit"}
               </button>
             </div>
           </div>
