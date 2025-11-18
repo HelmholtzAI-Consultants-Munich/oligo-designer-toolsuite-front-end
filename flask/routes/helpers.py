@@ -39,7 +39,7 @@ def to_bool(val):
 def to_int(val):
     try:
         return int(val)
-    except ValueError:
+    except:
         return val
 
 def to_null(val):
