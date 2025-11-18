@@ -2,24 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
-from bson import ObjectId
-from unittest.mock import patch
-from app import create_app
 from extensions import mongo
-
-@pytest.fixture
-def client():
-    app = create_app()
-    app.config['TESTING'] = True
-    app.secret_key = 'test-key'
-    with app.test_client() as client:
-        with app.app_context():
-            yield client
-
-@pytest.fixture
-def run_id():
-    # Insert dummy run
-    return mongo.db.runs.insert_one({"status": "created"}).inserted_id
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -112,40 +95,24 @@ def dummy_form(run_id):
         "runid": str(run_id)
     }
 
-def test_oligoseq_authenticated(client, monkeypatch, run_id, dummy_form):
-    # Simulate an authenticated user
-    class DummyUser:
-        is_authenticated = True
-        id = "testuser123"
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
+def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
+    response = client.post("/api/oligoseq", json=dummy_form)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["run_id"] == str(run_id)
 
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "success"
-        mock_run.return_value.stderr = ""
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "completed"
 
-        response = client.post("/api/oligoseq", json=dummy_form)
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["run_id"] == str(run_id)
-
-        # Confirm Mongo updated status
-        updated = mongo.db.runs.find_one({"_id": run_id})
-        assert updated["status"] == "completed"
-
-def test_oligoseq_unauthenticated(client, run_id, dummy_form):
+def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run):
     # Simulate an anonymous user (no monkeypatch needed)
+    response = client.post("/api/oligoseq", json=dummy_form)
+    client
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["run_id"] == str(run_id)
 
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "success"
-        mock_run.return_value.stderr = ""
-
-        response = client.post("/api/oligoseq", json=dummy_form)
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["run_id"] == str(run_id)
-
-        # Confirm Mongo updated status
-        updated = mongo.db.runs.find_one({"_id": run_id})
-        assert updated["status"] == "completed"
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "completed"

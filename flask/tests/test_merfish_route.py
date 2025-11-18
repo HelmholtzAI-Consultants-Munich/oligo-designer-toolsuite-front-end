@@ -2,24 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
-from bson import ObjectId
-from unittest.mock import patch
-from app import create_app
 from extensions import mongo
-
-@pytest.fixture
-def client():
-    app = create_app()
-    app.config['TESTING'] = True
-    app.secret_key = 'test-key'
-    with app.test_client() as client:
-        with app.app_context():
-            yield client
-
-@pytest.fixture
-def run_id():
-    # Insert dummy run
-    return mongo.db.runs.insert_one({"status": "created"}).inserted_id
 
 @pytest.fixture
 def dummy_form_base(run_id):
@@ -186,43 +169,27 @@ def dummy_form_authenticated(dummy_form_base):
     return dummy_form
 
 
-def test_merfish_authenticated(client, monkeypatch, run_id, dummy_form_authenticated):
-    # Simulate an authenticated user
-    class DummyUser:
-        is_authenticated = True
-        id = "testuser123"
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
+def test_merfish_authenticated(client, run_id, dummy_form_authenticated, mock_run, authenticated_user):
+    response = client.post("/api/merfish", json=dummy_form_authenticated)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["run_id"] == str(run_id)
 
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "success"
-        mock_run.return_value.stderr = ""
-
-        response = client.post("/api/merfish", json=dummy_form_authenticated)
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["run_id"] == str(run_id)
-
-        # Confirm Mongo updated status
-        updated = mongo.db.runs.find_one({"_id": run_id})
-        assert updated["status"] == "completed"
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "completed"
 
 
 # Test unauthenticated user flow for /api/merfish
-def test_merfish_unauthenticated(client, monkeypatch, run_id, dummy_form_unauthenticated):
+def test_merfish_unauthenticated(client, run_id, dummy_form_unauthenticated, mock_run):
     # Simulate an anonymous user with session
     with client.session_transaction() as sess:
         sess['session_id'] = 'anon-session-123'
 
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "success"
-        mock_run.return_value.stderr = ""
+    response = client.post("/api/merfish", json=dummy_form_unauthenticated)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["run_id"] == str(run_id)
 
-        response = client.post("/api/merfish", json=dummy_form_unauthenticated)
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["run_id"] == str(run_id)
-
-        updated = mongo.db.runs.find_one({"_id": run_id})
-        assert updated["status"] == "completed"
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "completed"

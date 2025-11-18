@@ -2,24 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
-from bson import ObjectId
-from unittest.mock import patch
-from app import create_app
 from extensions import mongo
-
-@pytest.fixture
-def client():
-    app = create_app()
-    app.config['TESTING'] = True
-    app.secret_key = 'test-key'
-    with app.test_client() as client:
-        with app.app_context():
-            yield client
-
-@pytest.fixture
-def run_id():
-    # Insert dummy run
-    return mongo.db.runs.insert_one({"status": "created"}).inserted_id
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -139,50 +122,29 @@ def dummy_form(run_id):
         "runid": str(run_id)
     }
 
-def test_scrinshot_authenticated(client, monkeypatch, dummy_form, run_id):
-    # Simulate an authenticated user
-    class DummyUser:
-        is_authenticated = True
-        id = "testuser123"
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
-    
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "success"
-        mock_run.return_value.stderr = ""
+def test_scrinshot_authenticated(client, dummy_form, run_id, mock_run, authenticated_user):
+    response = client.post("/api/scrinshot", json=dummy_form)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["run_id"] == str(run_id)
 
-        response = client.post("/api/scrinshot", json=dummy_form)
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["run_id"] == str(run_id)
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "completed"
 
-        # Confirm Mongo updated status
-        updated = mongo.db.runs.find_one({"_id": run_id})
-        assert updated["status"] == "completed"
+def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run):
+    response = client.post("/api/scrinshot", json=dummy_form)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["run_id"] == str(run_id)
 
-def test_scrinshot_unauthenticated(client, dummy_form, run_id):
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "success"
-        mock_run.return_value.stderr = ""
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "completed"
 
-        response = client.post("/api/scrinshot", json=dummy_form)
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["run_id"] == str(run_id)
-
-        # Confirm Mongo updated status
-        updated = mongo.db.runs.find_one({"_id": run_id})
-        assert updated["status"] == "completed"
-
-def test_invalid_session(client, dummy_form):
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value.returncode = 0
-        mock_run.return_value.stdout = "success"
-        mock_run.return_value.stderr = ""
-
-        with client.session_transaction() as session:
-            session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
-           
-        response = client.post(f"/api/scrinshot", json=dummy_form)
-        assert response.status_code == 404
+def test_invalid_session(client, dummy_form, mock_run):
+    with client.session_transaction() as session:
+        session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
+        
+    response = client.post(f"/api/scrinshot", json=dummy_form)
+    assert response.status_code == 404
