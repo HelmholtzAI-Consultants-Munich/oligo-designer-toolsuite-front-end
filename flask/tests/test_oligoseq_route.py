@@ -108,7 +108,6 @@ def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authentica
 def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run):
     # Simulate an anonymous user (no monkeypatch needed)
     response = client.post("/api/oligoseq", json=dummy_form)
-    client
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
