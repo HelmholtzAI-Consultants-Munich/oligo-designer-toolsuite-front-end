@@ -5,13 +5,16 @@ import { Collapse, OverlayTrigger, Popover } from "react-bootstrap";
 import { ChevronDown, ChevronUp, InfoCircle } from "react-bootstrap-icons";
 import merfish_form from "../forms/merfish_form";
 import { FastaForm, FileState } from "../components/types";
-import { createRunId } from "../modules/helpers";
+import { copyToClipboard, createRunId } from "../modules/helpers";
 import { allFilesUploaded, uploadFiles } from "../components/helpers";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import merfishImage from "../images/pipeline_merfish_probes.webp";
 import TargetFile from "../components/targetFile";
 import FileSelection from "../components/fileSelection";
 import FastaGeneration from "../components/fastaGeneration";
+import { RunLinkModal } from "../components/modal/RunLinkModal";
+import { InfoModal } from "../components/modal/InfoModal";
+import { RunIdAlert } from "../components/alert/RunIdAlert";
 
 const Merfish: React.FC = () => {
   const [fastaForms, setFastaForms] = useState<Array<FastaForm>>([]);
@@ -26,11 +29,8 @@ const Merfish: React.FC = () => {
   );
   const [expanded, setExpanded] = useState(false);
 
-  const [loading, setLoading] = useState(false);
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
   // SIMON
-  const [status, setStatus] = useState("idle");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(merfish_form);
 
   const [files, setFiles] = useState<FileState>({
@@ -47,6 +47,19 @@ const Merfish: React.FC = () => {
   const [activeTab, setActiveTab] = useState("probe_sequences");
   const [activeTabDevSettings, setActiveTabDevSettings] =
     useState("specfblastn");
+
+  const [runId, setRunId] = useState<string | null>(null);
+  const [runStatus, setRunStatus] = useState<"idle" | "submitting" | "running">("idle");
+  const [idCopySuccess, setIdCopySuccess] = useState<boolean>(false);
+  const [modal, setModal] = useState<{
+      show: boolean;
+      title: string;
+      body: string;
+  }>({
+      show: false,
+      title: "",
+      body: ""
+  });
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -5289,11 +5302,9 @@ const Merfish: React.FC = () => {
   //SIMON
   const handleSubmitGenomicAll = async (
     forms: typeof fastaForms, // Accept forms as argument
-    setLoadingFn?: (val: boolean) => void,
     e?: React.FormEvent
   ): Promise<string> => {
     e?.preventDefault();
-    setLoadingFn?.(true);
     try {
       let results = "";
       for (let i = 0; i < forms.length; ++i) {
@@ -5325,15 +5336,13 @@ const Merfish: React.FC = () => {
           }
         } catch (error) {
           console.error("Error submitting genomic form:", error);
+          return "error";
         }
       }
       return results;
     } catch (error) {
       console.error("Error in batch FASTA submission:", error);
-      alert("Error submitting genomic forms. Please try again.");
       return "error";
-    } finally {
-      setLoadingFn?.(false);
     }
   };
 
@@ -5341,17 +5350,23 @@ const Merfish: React.FC = () => {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (isSubmitting) return; // prevent double-clicks
-    setIsSubmitting(true);
-    setStatus("submitting");
+    if (runStatus === "submitting" || runStatus === "running") return; // prevent double-clicks
+    setRunStatus("submitting");
+    setRunId(null);
 
     // ---- FASTA target probe database ----
     let generatedTargetPaths = "";
     if (fastaForms.length > 0) {
-      generatedTargetPaths = await handleSubmitGenomicAll(
-        fastaForms,
-        setLoading
-      );
+      generatedTargetPaths = await handleSubmitGenomicAll(fastaForms);
+    }
+    if (generatedTargetPaths === 'error') {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+        });
+        setRunStatus("idle");
+        return;
     }
     const uploadedPaths = await uploadFiles(files, formData);
 
@@ -5374,10 +5389,16 @@ const Merfish: React.FC = () => {
     // ---- FASTA reference probe database ----
     let generatedReferencePaths = "";
     if (fastaFormsReference.length > 0) {
-      generatedReferencePaths = await handleSubmitGenomicAll(
-        fastaFormsReference,
-        setLoading
-      );
+      generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference);
+    }
+    if (generatedReferencePaths === 'error') {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+        });
+        setRunStatus("idle");
+        return;
     }
     let uploadedReferenceFastaPath = "";
     if (uploadedPaths["files_fasta_reference_database_target_probe"]) {
@@ -5398,10 +5419,16 @@ const Merfish: React.FC = () => {
     // ---- FASTA primer probe database ----
     let generatedPrimerPaths = "";
     if (fastaFormsPrimer && fastaFormsPrimer.length > 0) {
-      generatedPrimerPaths = await handleSubmitGenomicAll(
-        fastaFormsPrimer,
-        setLoading
-      );
+      generatedPrimerPaths = await handleSubmitGenomicAll(fastaFormsPrimer);
+    }
+    if (generatedPrimerPaths === 'error') {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+        });
+        setRunStatus("idle");
+        return;
     }
     let uploadedPrimerFastaPath = "";
     if (uploadedPaths["files_fasta_reference_database_primer"]) {
@@ -5419,10 +5446,16 @@ const Merfish: React.FC = () => {
     // ---- FASTA readout probe database ----
     let generatedReadoutPaths = "";
     if (fastaFormsReadout && fastaFormsReadout.length > 0) {
-      generatedReadoutPaths = await handleSubmitGenomicAll(
-        fastaFormsReadout,
-        setLoading
-      );
+      generatedReadoutPaths = await handleSubmitGenomicAll(fastaFormsReadout);
+    }
+    if (generatedReadoutPaths === 'error') {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+        });
+        setRunStatus("idle");
+        return;
     }
     let uploadedReadoutFastaPath = "";
     if (uploadedPaths["files_fasta_reference_database_readout_probe"]) {
@@ -5437,8 +5470,6 @@ const Merfish: React.FC = () => {
         mergedReadoutValue;
     }
 
-    const runid = await createRunId();
-
     // Then: handle scrinshot (upload other files and submit form)
     if (
       !allFilesUploaded(
@@ -5450,38 +5481,70 @@ const Merfish: React.FC = () => {
         fastaFormsPrimer
       )
     ) {
-      alert("Please upload all required files before submitting.");
-      setLoading(false);
+      setModal({
+          show: true,
+          title: "Pipeline Failed",
+          body: `Please upload all required files before submitting.`
+      });
+      setRunStatus("idle");
       return;
     }
 
+    const newId = await createRunId();
+    if (newId) {
+        // setRunId does not immediately update runId due to React state batching
+        // so we use newId directly in the submission
+        setRunId(newId);
+        setIdCopySuccess(await copyToClipboard(newId));
+    } else {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `The pipeline has failed to create a new run.`
+        });
+        setRunStatus("idle");
+        return;
+    }
+    
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/merfish",
-        { formdata: formData, runid: runid },
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-      const result = response.data;
-      console.log(result, "this is the result");
+        setRunStatus("running");
+        const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: newId }, {
+            withCredentials: true,
+            headers: { "Content-Type": "application/json" },
+        });
+        const result = response.data;
+        console.log(result, 'this is the result');
 
-      setStatus("running");
+        setModal({
+            show: true,
+            title: "Pipeline Finished",
+            body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`
+        });
     } catch (error) {
-      console.error("Error submitting scrinshot form:", error);
-      alert("Error submitting scrinshot form. Please try again.");
-      setIsSubmitting(false);
+        console.error('Error submitting scrinshot form:', error);
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `The pipeline has failed during processing. Your run ID is: ${newId}.`
+        });
     } finally {
-      alert(`Pipeline is successfully finished`);
-      setLoading(false);
-      setIsSubmitting(false);
+        setRunStatus("idle");
     }
   };
+
+  const closeModal = () => {
+      setModal({ ...modal, show: false });
+  }
 
   return (
     <div>
       <Navbar />
+
+      {(runId ?
+          <RunLinkModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} runId={runId} /> :
+          <InfoModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} />
+      )}
+
       <div className="container my-4">
         <form onSubmit={handleSubmit} id="scrinshotForm">
           <div className="mb-3">
@@ -5703,14 +5766,17 @@ const Merfish: React.FC = () => {
                 submitting.
               </div>
             )}
+            {runId && (
+                <RunIdAlert runId={runId} idCopySuccess={idCopySuccess} />
+            )}
             <div className="d-flex justify-content-center mt-4">
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={handleSubmit}
                 disabled={
-                  isSubmitting ||
-                  loading ||
+                  runStatus === "submitting" ||
+                  runStatus === "running" ||
                   !allFilesUploaded(
                     files,
                     formData,
@@ -5720,19 +5786,22 @@ const Merfish: React.FC = () => {
                     fastaFormsPrimer
                   )
                 }
-                aria-busy={isSubmitting}
+                aria-busy={runStatus === "submitting" || runStatus === "running"}
               >
-                {isSubmitting ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit"
+                {runStatus === "submitting" && (
+                    <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Submitting...
+                    </>
+                )}
+                {runStatus === "running" && (
+                    <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Running...
+                    </>
+                )}
+                {runStatus === "idle" && (
+                    'Submit'
                 )}
               </button>
             </div>
