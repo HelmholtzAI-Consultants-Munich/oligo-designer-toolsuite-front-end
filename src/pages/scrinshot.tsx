@@ -2,15 +2,17 @@ import React, { useState } from "react";
 import axios from "axios";
 import { OverlayTrigger, Popover, Collapse } from "react-bootstrap";
 import { InfoCircle, ChevronDown, ChevronUp } from "react-bootstrap-icons";
-import { useNavigate } from "react-router-dom";
 import Navbar from "../modules/nav";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
-import { createRunId } from "../modules/helpers";
+import { copyToClipboard, createRunId } from "../modules/helpers";
 import scrinshot_form from "../forms/scrinshot_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import scrinshotImage from "../images/pipeline_scrinshot_probes.webp";
+import { RunLinkModal } from "../components/modal/RunLinkModal";
+import { InfoModal } from "../components/modal/InfoModal";
+import { RunIdAlert } from "../components/alert/RunIdAlert";
 const Scrinshot: React.FC = () => {
   // ====== State Declarations ======
   const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
@@ -26,13 +28,21 @@ const Scrinshot: React.FC = () => {
   const [fastaFormsReference, setFastaFormsReference] = useState<
     Array<typeof defaultFastaForm>
   >([]);
-  const [loading, setLoading] = useState(false);
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-  const [status, setStatus] = useState("idle");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(scrinshot_form);
-  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [runStatus, setRunStatus] = useState<"idle" | "submitting" | "running">("idle");
+  const [idCopySuccess, setIdCopySuccess] = useState<boolean>(false);
+  const [modal, setModal] = useState<{
+      show: boolean;
+      title: string;
+      body: string;
+  }>({
+      show: false,
+      title: "",
+      body: ""
+  });
 
   interface FileState {
     file_regions_file: File | null;
@@ -169,8 +179,8 @@ const Scrinshot: React.FC = () => {
                     name="file_regions_file"
                     onChange={handleFileChange}
                     disabled={
-                      isSubmitting ||
-                      loading ||
+                      runStatus === "submitting" ||
+                      runStatus === "running" ||
                       formData.file_regions.value.length > 0
                     }
                   />
@@ -262,7 +272,7 @@ const Scrinshot: React.FC = () => {
                       id="files_fasta_target_probe_database"
                       name="files_fasta_target_probe_database"
                       onChange={handleFileChange}
-                      disabled={isSubmitting || loading}
+                      disabled={runStatus === "submitting" || runStatus === "running"}
                       multiple
                     />
                     <label
@@ -357,7 +367,7 @@ const Scrinshot: React.FC = () => {
                       id="files_fasta_reference_database_target_probe"
                       name="files_fasta_reference_database_target_probe"
                       onChange={handleFileChange}
-                      disabled={isSubmitting || loading}
+                      disabled={runStatus === "submitting" || runStatus === "running"}
                       multiple
                     />
                     <label
@@ -3921,11 +3931,9 @@ const Scrinshot: React.FC = () => {
   // Batch submit for multiple FASTA forms
   const handleSubmitGenomicAll = async (
     forms: typeof fastaForms, // Accept forms as argument
-    setLoadingFn?: (val: boolean) => void,
     e?: React.FormEvent
   ): Promise<string> => {
     e?.preventDefault();
-    setLoadingFn?.(true);
     try {
       let results = "";
       for (let i = 0; i < forms.length; ++i) {
@@ -3957,31 +3965,35 @@ const Scrinshot: React.FC = () => {
           }
         } catch (error) {
           console.error("Error submitting genomic form:", error);
+          return "error";
         }
       }
       return results;
     } catch (error) {
       console.error("Error in batch FASTA submission:", error);
-      alert("Error submitting genomic forms. Please try again.");
       return "error";
-    } finally {
-      setLoadingFn?.(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (isSubmitting) return; // prevent double-clicks
-    setIsSubmitting(true);
-    setStatus("submitting");
+    if (runStatus === "submitting" || runStatus === "running") return; // prevent double-clicks
+    setRunStatus("submitting");
+    setRunId(null);
 
     // ---- FASTA target probe database ----
     let generatedTargetPaths = "";
     if (fastaForms.length > 0) {
-      generatedTargetPaths = await handleSubmitGenomicAll(
-        fastaForms,
-        setLoading
-      );
+      generatedTargetPaths = await handleSubmitGenomicAll(fastaForms);
+    }
+    if (generatedTargetPaths === 'error') {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+        });
+        setRunStatus("idle");
+        return;
     }
     const uploadedPaths = await uploadFiles();
     if (uploadedPaths["file_regions_file"]) {
@@ -4003,10 +4015,16 @@ const Scrinshot: React.FC = () => {
     // ---- FASTA reference probe database ----
     let generatedReferencePaths = "";
     if (fastaFormsReference.length > 0) {
-      generatedReferencePaths = await handleSubmitGenomicAll(
-        fastaFormsReference,
-        setLoading
-      );
+      generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference);
+    }
+    if (generatedReferencePaths === 'error') {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+        });
+        setRunStatus("idle");
+        return;
     }
     let uploadedReferenceFastaPath = "";
     if (uploadedPaths["files_fasta_reference_database_target_probe"]) {
@@ -4024,41 +4042,72 @@ const Scrinshot: React.FC = () => {
         mergedReferenceValue;
     }
 
-    const runid = await createRunId();
-
     // Then: handle scrinshot (upload other files and submit form)
     if (!areAllFilesUploaded()) {
-      alert("Please upload all required files before submitting.");
-      setLoading(false);
-      return;
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `Please upload all required files before submitting.`
+        });
+        setRunStatus("idle");
+        return;
     }
 
+    const newId = await createRunId();
+    if (newId) {
+        // setRunId does not immediately update runId due to React state batching
+        // so we use newId directly in the submission
+        setRunId(newId);
+        setIdCopySuccess(await copyToClipboard(newId));
+    } else {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `The pipeline has failed to create a new run.`
+        });
+        setRunStatus("idle");
+        return;
+    }
+    
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/scrinshot",
-        { formdata: formData, runid: runid },
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-      const result = response.data;
-      console.log(result, "this is the result");
+        setRunStatus("running");
+        const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: newId }, {
+            withCredentials: true,
+            headers: { "Content-Type": "application/json" },
+        });
+        const result = response.data;
+        console.log(result, 'this is the result');
 
-      setStatus("running");
+        setModal({
+            show: true,
+            title: "Pipeline Finished",
+            body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`
+        });
     } catch (error) {
-      console.error("Error submitting scrinshot form:", error);
-      alert("Error submitting scrinshot form. Please try again.");
-      setIsSubmitting(false);
+        console.error('Error submitting scrinshot form:', error);
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `The pipeline has failed during processing. Your run ID is: ${newId}.`
+        });
     } finally {
-      alert(`Pipeline is successfully finished`);
-      setLoading(false);
-      setIsSubmitting(false);
+        setRunStatus("idle");
     }
   };
+
+  const closeModal = () => {
+      setModal({ ...modal, show: false });
+  }
+
   return (
     <div>
       <Navbar />
+
+      {(runId ?
+          <RunLinkModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} runId={runId} /> :
+          <InfoModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} />
+      )}
+
       <div className="container my-4">
         {/* Moved Info button outside the form to avoid navigation issues */}
 
@@ -4227,25 +4276,31 @@ const Scrinshot: React.FC = () => {
                 submitting.
               </div>
             )}
+            {runId && (
+                <RunIdAlert runId={runId} idCopySuccess={idCopySuccess} />
+            )}
             <div className="d-flex justify-content-center mt-4">
               <button
                 type="button"
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={isSubmitting || loading || !areAllFilesUploaded()}
-                aria-busy={isSubmitting}
+                disabled={runStatus === "submitting" || runStatus === "running" || !areAllFilesUploaded()}
+                aria-busy={runStatus === "submitting" || runStatus === "running"}
               >
-                {isSubmitting ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit"
+                {runStatus === "submitting" && (
+                    <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Submitting...
+                    </>
+                )}
+                {runStatus === "running" && (
+                    <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Running...
+                    </>
+                )}
+                {runStatus === "idle" && (
+                    'Submit'
                 )}
               </button>
             </div>
