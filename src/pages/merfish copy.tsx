@@ -4,92 +4,424 @@ import axios from "axios";
 import { Collapse, OverlayTrigger, Popover } from "react-bootstrap";
 import { ChevronDown, ChevronUp, InfoCircle } from "react-bootstrap-icons";
 import merfish_form from "../forms/merfish_form";
-import { FastaForm, FileState } from "../components/types";
+import form_Data_Ncbi from "../forms/genomic_ncbi_form";
+import form_Data_Ens from "../forms/genomic_ens_form";
 import { createRunId } from "../modules/helpers";
-import { allFilesUploaded, uploadFiles } from "../components/helpers";
+import FastaGenerateForm from "../modules/FastaGenerateForm";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import merfishImage from "../images/pipeline_merfish_probes.webp";
 import TargetFile from "../components/targetFile";
-import FileSelection from "../components/fileSelection";
-import FastaGeneration from "../components/fastaGeneration";
-
 const Merfish: React.FC = () => {
-  const [fastaForms, setFastaForms] = useState<Array<FastaForm>>([]);
+  const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
+  const [fastaOption2, setFastaOption2] = useState("generate"); // "generate" or "upload"
+
+  const defaultFastaForm = {
+    selectedSource: "ncbi",
+    formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),
+    formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
+  };
+  const [fastaForms, setFastaForms] = useState<Array<typeof defaultFastaForm>>(
+    []
+  );
   const [fastaFormsReference, setFastaFormsReference] = useState<
-    Array<FastaForm>
+    Array<typeof defaultFastaForm>
   >([]);
-  const [fastaFormsReadout, setFastaFormsReadout] = useState<Array<FastaForm>>(
-    []
-  );
-  const [fastaFormsPrimer, setFastaFormsPrimer] = useState<Array<FastaForm>>(
-    []
-  );
+  const [fastaFormsReadout, setFastaFormsReadout] = useState<
+    Array<typeof defaultFastaForm>
+  >([]);
+  const [fastaFormsPrimer, setFastaFormsPrimer] = useState<
+    Array<typeof defaultFastaForm>
+  >([]);
   const [expanded, setExpanded] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-  // SIMON
   const [status, setStatus] = useState("idle");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState(merfish_form);
 
+  interface FileState {
+    file_regions_file: File | null;
+    files_fasta_target_probe_database: File[]; // Always an array
+    files_fasta_reference_database_target_probe: File[]; // Always an array
+    files_fasta_reference_database_readout_probe: File[]; // Always an array
+    files_fasta_reference_database_primer: File[]; // Always an array
+  }
+
+  // In your component
   const [files, setFiles] = useState<FileState>({
     file_regions_file: null,
-    files_fasta_target_probe_database: [],
-    files_fasta_reference_database_target_probe: [],
-    files_fasta_reference_database_readout_probe: [],
-    files_fasta_reference_database_primer: [],
+    files_fasta_target_probe_database: [], // Empty array
+    files_fasta_reference_database_target_probe: [], // Empty array
+    files_fasta_reference_database_readout_probe: [], // Empty array
+    files_fasta_reference_database_primer: [], // Empty array
   });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, files: selectedFiles } = e.target;
+    if (!selectedFiles) return;
+
+    setFiles((prevFiles) => ({
+      ...prevFiles,
+      [name]:
+        name === "file_regions"
+          ? selectedFiles[0] // Single file
+          : Array.from(selectedFiles), // Multiple files (always an array)
+    }));
+  };
+  const areAllFilesUploaded = () => {
+    return (
+      (files.file_regions_file !== null ||
+        formData.file_regions.value.length > 0) &&
+      (files.files_fasta_target_probe_database.length > 0 ||
+        fastaForms.length > 0) &&
+      (files.files_fasta_reference_database_target_probe.length > 0 ||
+        fastaFormsReference.length > 0) &&
+      (files.files_fasta_reference_database_readout_probe.length > 0 ||
+        fastaFormsReadout.length > 0) &&
+      (files.files_fasta_reference_database_primer.length > 0 ||
+        fastaFormsPrimer.length > 0)
+    );
+  };
+  const uploadFiles = async () => {
+    const filePaths: { [key: string]: string } = {};
+    console.log(files, "from the event");
+    for (const key in files) {
+      // @ts-ignore
+      if (files[key]) {
+        const formDataU = new FormData();
+        // @ts-ignore
+        if (Array.isArray(files[key])) {
+          console.log(`Processing multiple files for key: ${key}`);
+          let paths = []; // Temporary array to collect file paths
+          // @ts-ignore
+          for (const file of files[key]) {
+            // Use for...of to iterate over the array
+            console.log(file);
+            const formDataU = new FormData();
+            formDataU.append("file", file);
+            // Perform upload logic here
+            try {
+              const response = await axios.post(
+                "http://localhost:5000/api/upload",
+                formDataU,
+                {
+                  headers: { "Content-Type": "multipart/form-data" },
+                }
+              );
+              paths.push(response.data.filePath); // Append the returned file path
+            } catch (error) {
+              console.error(`Error uploading ${key}:`, error);
+            }
+          }
+          filePaths[key] = paths.join("\n");
+        } else {
+          if (formData.file_regions.value.length === 0) {
+            // @ts-ignore
+            formDataU.append("file", files[key]);
+            // @ts-ignore
+            console.log(files[key], key, "what it look like not array");
+            try {
+              const response = await axios.post(
+                "http://localhost:5000/api/upload",
+                formDataU,
+                {
+                  headers: { "Content-Type": "multipart/form-data" },
+                }
+              );
+              filePaths[key] = response.data.filePath;
+              // Save the returned file path
+            } catch (error) {
+              console.error(`Error uploading ${key}:`, error);
+            }
+          }
+        }
+      }
+    }
+    console.log(filePaths);
+    return filePaths;
+  };
 
   const toggleDeveloperSettings = () => {
     setShowDeveloperSettings(!showDeveloperSettings);
   };
   const [activeTab, setActiveTab] = useState("probe_sequences");
-  const [activeTabDevSettings, setActiveTabDevSettings] =
-    useState("specfblastn");
+  const [activetab2, setActivetab2] = useState("specfblastn");
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "probe_sequences":
         return (
-          <div className="mb-4">
-            <TargetFile setFormData={setFormData} formData={formData} />
-            <FileSelection
-              formData={formData}
-              id="file_regions"
-              setFiles={setFiles}
-              files={files}
-            />
-            <FastaGeneration
-              name="Probe Database"
-              id="files_fasta_target_probe_database"
-              setFastaForms={setFastaForms}
-              fastaForms={fastaForms}
-            />
-            <FileSelection
-              formData={formData}
-              id="files_fasta_target_probe_database"
-              setFiles={setFiles}
-              files={files}
-            />
-            <div className="mb-3 pt-3">
-              <div className="d-flex align-items-center w-100 gap-2">
-                <FastaGeneration
-                  name="Probe Reference Database"
-                  id="files_fasta_reference_database_target_probe"
-                  setFastaForms={setFastaFormsReference}
-                  fastaForms={fastaFormsReference}
-                />
-                <FileSelection
-                  formData={formData}
-                  id="files_fasta_reference_database_target_probe"
-                  setFiles={setFiles}
-                  files={files}
-                />
+          <div>
+            <div className="mb-4">
+              <div className="mb-3">
+                <label htmlFor="file_regions" className="form-label">
+                  Target File:
+                </label>
+                <div className="d-flex flex-column w-100">
+                  <div className="d-flex align-items-center w-100 gap-2">
+                    <input
+                      type="file"
+                      className="form-control visually-hidden"
+                      id="file_regions_file"
+                      name="file_regions_file"
+                      onChange={handleFileChange}
+                    />
+                    <div className="w-50">
+                      <input
+                        type="text"
+                        className="form-control"
+                        id="file_regions"
+                        name="file_regions"
+                        list="geneExamples"
+                        placeholder="Enter genes (comma-separated) or pick an example"
+                        onChange={handleChange}
+                        value={formData.file_regions.value}
+                      />
+
+                      <datalist id="geneExamples">
+                        <option value="AARS1" />
+                        <option value="ABCC1" />
+                        <option value="BCAR1" />
+                        <option value="LOC105376749" />
+                      </datalist>
+                    </div>
+                    <div className="w-50 d-flex align-items-center">
+                      {/* Custom file input button spanning full width */}
+                      <label
+                        htmlFor="file_regions_file"
+                        className="btn btn-outline-primary me-2 w-100"
+                        style={{ cursor: "pointer" }}
+                      >
+                        Choose File
+                      </label>
+
+                      {/* Info icon with popover */}
+                      <OverlayTrigger
+                        trigger="hover"
+                        placement="top"
+                        overlay={
+                          <Popover id="popover-n_jobs">
+                            <Popover.Body>
+                              {formData.file_regions.comment}
+                            </Popover.Body>
+                          </Popover>
+                        }
+                      >
+                        <InfoCircle
+                          style={{
+                            fontSize: "1.2rem",
+                            cursor: "pointer",
+                            color: "#0d6efd",
+                            marginLeft: "10px",
+                          }}
+                        />
+                      </OverlayTrigger>
+                    </div>
+                  </div>
+
+                  {/* Display selected file name under the icon */}
+                  <div className="text-muted small mt-1">
+                    {files.file_regions_file
+                      ? `Selected: ${files.file_regions_file.name}`
+                      : "No file selected"}
+                  </div>
+                </div>
+
+                <div className="mb-3 pt-3">
+                  <label
+                    htmlFor="files_fasta_target_probe_database"
+                    className="form-label"
+                  >
+                    Probe Database:
+                  </label>
+                  <div className="d-flex align-items-center w-100 gap-2">
+                    <div className="w-50">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary w-100"
+                        onClick={() =>
+                          setFastaForms((forms) => [
+                            ...forms,
+                            { ...defaultFastaForm },
+                          ])
+                        }
+                      >
+                        Generate FASTA+
+                      </button>
+                    </div>
+                    <div className="w-50 d-flex align-items-center">
+                      <input
+                        type="file"
+                        className="form-control visually-hidden"
+                        id="files_fasta_target_probe_database"
+                        name="files_fasta_target_probe_database"
+                        onChange={handleFileChange}
+                        multiple
+                      />
+                      <label
+                        htmlFor="files_fasta_target_probe_database"
+                        className="btn btn-outline-primary me-2 w-100"
+                      >
+                        Choose File
+                      </label>
+                      <OverlayTrigger
+                        trigger="hover"
+                        placement="top"
+                        overlay={
+                          <Popover id="files_fasta_target_probe_database">
+                            <Popover.Body>
+                              {
+                                formData.files_fasta_target_probe_database
+                                  .comment
+                              }
+                            </Popover.Body>
+                          </Popover>
+                        }
+                      >
+                        <InfoCircle
+                          style={{
+                            fontSize: "1.2rem",
+                            cursor: "pointer",
+                            color: "#0d6efd",
+                            marginLeft: "10px",
+                          }}
+                        />
+                      </OverlayTrigger>
+                    </div>
+                  </div>
+                  <div className="text-muted small mt-1">
+                    {files.files_fasta_target_probe_database.length > 0
+                      ? `Selected: ${files.files_fasta_target_probe_database
+                          .map((f) => f.name)
+                          .join(", ")}`
+                      : "No files selected"}
+                  </div>
+                </div>
+
+                {fastaOption === "generate" && (
+                  <form onSubmit={handleSubmit}>
+                    {fastaForms.map((form, idx) => (
+                      <FastaGenerateForm
+                        key={idx}
+                        form={form}
+                        onChange={(updatedForm) =>
+                          setFastaForms((forms) =>
+                            forms.map((f, i) => (i === idx ? updatedForm : f))
+                          )
+                        }
+                        onRemove={() =>
+                          setFastaForms((forms) =>
+                            forms.length === 0
+                              ? forms
+                              : forms.filter((_, i) => i !== idx)
+                          )
+                        }
+                        disableRemove={fastaForms.length === 0}
+                      />
+                    ))}
+                  </form>
+                )}
+
+                {/* Probe Reference Database input group */}
+                <div className="mb-3 pt-3">
+                  <label
+                    htmlFor="files_fasta_reference_database_target_probe"
+                    className="form-label"
+                  >
+                    Probe Reference Database:
+                  </label>
+                  <div className="d-flex align-items-center w-100 gap-2">
+                    <div className="w-50">
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary w-100"
+                        onClick={() =>
+                          setFastaFormsReference((forms) => [
+                            ...forms,
+                            { ...defaultFastaForm },
+                          ])
+                        }
+                      >
+                        Generate FASTA+
+                      </button>
+                    </div>
+                    <div className="w-50 d-flex align-items-center">
+                      <input
+                        type="file"
+                        className="form-control visually-hidden"
+                        id="files_fasta_reference_database_target_probe"
+                        name="files_fasta_reference_database_target_probe"
+                        onChange={handleFileChange}
+                        multiple
+                      />
+                      <label
+                        htmlFor="files_fasta_reference_database_target_probe"
+                        className="btn btn-outline-primary me-2 w-100"
+                      >
+                        Choose File
+                      </label>
+                      <OverlayTrigger
+                        trigger="hover"
+                        placement="top"
+                        overlay={
+                          <Popover id="files_fasta_reference_database_target_probe">
+                            <Popover.Body>
+                              {
+                                formData
+                                  .files_fasta_reference_database_target_probe
+                                  .comment
+                              }
+                            </Popover.Body>
+                          </Popover>
+                        }
+                      >
+                        <InfoCircle
+                          style={{
+                            fontSize: "1.2rem",
+                            cursor: "pointer",
+                            color: "#0d6efd",
+                            marginLeft: "10px",
+                          }}
+                        />
+                      </OverlayTrigger>
+                    </div>
+                  </div>
+                  <div className="text-muted small mt-1">
+                    {files.files_fasta_reference_database_target_probe.length >
+                    0
+                      ? `Selected: ${files.files_fasta_reference_database_target_probe
+                          .map((f) => f.name)
+                          .join(", ")}`
+                      : "No files selected"}
+                  </div>
+                </div>
+                {/* FASTA generation form for Probe Reference Database */}
+                {fastaOption2 === "generate" && (
+                  <form onSubmit={handleSubmit}>
+                    {fastaFormsReference.map((form, idx) => (
+                      <FastaGenerateForm
+                        key={idx}
+                        form={form}
+                        onChange={(updatedForm) =>
+                          setFastaFormsReference((forms) =>
+                            forms.map((f, i) => (i === idx ? updatedForm : f))
+                          )
+                        }
+                        onRemove={() =>
+                          setFastaFormsReference((forms) =>
+                            forms.length === 0
+                              ? forms
+                              : forms.filter((_, i) => i !== idx)
+                          )
+                        }
+                        disableRemove={fastaFormsReference.length === 0}
+                      />
+                    ))}
+                  </form>
+                )}
               </div>
             </div>
-
-            {/* ab hier erin */}
+            bis hier
             <div className="mb-3">
               <label htmlFor="top_n_sets" className="form-label">
                 Maximum Number of Sets:
@@ -877,21 +1209,98 @@ const Merfish: React.FC = () => {
       case "readout":
         return (
           <div className="mb-4">
-            <FastaGeneration
-              name="Probe Readout Database:"
-              id="files_fasta_reference_database_readout_probe"
-              setFastaForms={setFastaFormsReadout}
-              fastaForms={fastaFormsReadout}
-            />
             <div className="mb-3">
+              <label
+                htmlFor="files_fasta_reference_database_readout_probe"
+                className="form-label"
+              >
+                Probe Readout Database:
+              </label>
               <div className="d-flex align-items-center w-100 gap-2">
-                <FileSelection
-                  formData={formData}
-                  id="files_fasta_reference_database_readout_probe"
-                  setFiles={setFiles}
-                  files={files}
-                />
+                <div className="w-50">
+                  <button
+                    type="button"
+                    className="btn btn-outline-primary w-100"
+                    onClick={() =>
+                      setFastaFormsReadout((forms) => [
+                        ...forms,
+                        { ...defaultFastaForm },
+                      ])
+                    }
+                  >
+                    Generate FASTA+
+                  </button>
+                </div>
+                <div className="w-50 d-flex align-items-center">
+                  <input
+                    type="file"
+                    className="form-control visually-hidden"
+                    id="files_fasta_reference_database_readout_probe"
+                    name="files_fasta_reference_database_readout_probe"
+                    onChange={handleFileChange}
+                    multiple
+                  />
+                  <label
+                    htmlFor="files_fasta_reference_database_readout_probe"
+                    className="btn btn-outline-primary me-2 w-100"
+                  >
+                    Choose File
+                  </label>
+                  <OverlayTrigger
+                    trigger="hover"
+                    placement="top"
+                    overlay={
+                      <Popover id="popover-files_fasta_reference_database_readout_probe">
+                        <Popover.Body>
+                          {
+                            formData
+                              .files_fasta_reference_database_readout_probe
+                              .comment
+                          }
+                        </Popover.Body>
+                      </Popover>
+                    }
+                  >
+                    <InfoCircle
+                      style={{
+                        fontSize: "1.2rem",
+                        cursor: "pointer",
+                        color: "#0d6efd",
+                        marginLeft: "10px",
+                      }}
+                    />
+                  </OverlayTrigger>
+                </div>
               </div>
+              <div className="text-muted small mt-1">
+                {files.files_fasta_reference_database_readout_probe &&
+                files.files_fasta_reference_database_readout_probe.length > 0
+                  ? `Selected: ${files.files_fasta_reference_database_readout_probe
+                      .map((f) => f.name)
+                      .join(", ")}`
+                  : "No files selected"}
+              </div>
+              <form onSubmit={handleSubmit}>
+                {fastaFormsReadout.map((form, idx) => (
+                  <FastaGenerateForm
+                    key={idx}
+                    form={form}
+                    onChange={(updatedForm) =>
+                      setFastaFormsReadout((forms) =>
+                        forms.map((f, i) => (i === idx ? updatedForm : f))
+                      )
+                    }
+                    onRemove={() =>
+                      setFastaFormsReadout((forms) =>
+                        forms.length === 0
+                          ? forms
+                          : forms.filter((_, i) => i !== idx)
+                      )
+                    }
+                    disableRemove={fastaFormsReadout.length === 0}
+                  />
+                ))}
+              </form>
             </div>
             <div className="mb-3">
               <label htmlFor="readout_probe_length" className="form-label">
@@ -1491,21 +1900,101 @@ const Merfish: React.FC = () => {
         return (
           <div>
             <div className="mb-4">
-              <FastaGeneration
-                name="Probe Primer Reference Database:"
-                id="files_fasta_reference_database_primer"
-                setFastaForms={setFastaFormsPrimer}
-                fastaForms={fastaFormsPrimer}
-              />
               <div className="mb-3">
+                <label
+                  htmlFor="files_fasta_reference_database_primer"
+                  className="form-label"
+                >
+                  Probe Primer Reference Database:
+                </label>
                 <div className="d-flex align-items-center w-100 gap-2">
-                  <FileSelection
-                    formData={formData}
-                    id="files_fasta_reference_database_primer"
-                    setFiles={setFiles}
-                    files={files}
-                  />
+                  {/* Left: Generate FASTA+ button */}
+                  <div className="w-50">
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary w-100"
+                      onClick={() =>
+                        setFastaFormsPrimer((forms) => [
+                          ...forms,
+                          { ...defaultFastaForm },
+                        ])
+                      }
+                    >
+                      Generate FASTA+
+                    </button>
+                  </div>
+                  {/* Right: File input, always enabled */}
+                  <div className="w-50 d-flex align-items-center">
+                    <input
+                      type="file"
+                      className="form-control visually-hidden"
+                      id="files_fasta_reference_database_primer"
+                      name="files_fasta_reference_database_primer"
+                      onChange={handleFileChange}
+                      multiple
+                    />
+                    <label
+                      htmlFor="files_fasta_reference_database_primer"
+                      className="btn btn-outline-primary me-2 w-100"
+                    >
+                      Choose File
+                    </label>
+                    {/* Info icon with popover */}
+                    <OverlayTrigger
+                      trigger="hover"
+                      placement="top"
+                      overlay={
+                        <Popover id="popover-files_fasta_reference_database_primer">
+                          <Popover.Body>
+                            {
+                              formData.files_fasta_reference_database_primer
+                                .comment
+                            }
+                          </Popover.Body>
+                        </Popover>
+                      }
+                    >
+                      <InfoCircle
+                        style={{
+                          fontSize: "1.2rem",
+                          cursor: "pointer",
+                          color: "#0d6efd",
+                          marginLeft: "10px",
+                        }}
+                      />
+                    </OverlayTrigger>
+                  </div>
                 </div>
+                {/* Display selected file names */}
+                <div className="text-muted small mt-1">
+                  {files.files_fasta_reference_database_primer.length > 0
+                    ? `Selected: ${files.files_fasta_reference_database_primer
+                        .map((f) => f.name)
+                        .join(", ")}`
+                    : "No files selected"}
+                </div>
+                {/* FASTA generation forms */}
+                <form onSubmit={handleSubmit}>
+                  {fastaFormsPrimer.map((form, idx) => (
+                    <FastaGenerateForm
+                      key={idx}
+                      form={form}
+                      onChange={(updatedForm) =>
+                        setFastaFormsPrimer((forms) =>
+                          forms.map((f, i) => (i === idx ? updatedForm : f))
+                        )
+                      }
+                      onRemove={() =>
+                        setFastaFormsPrimer((forms) =>
+                          forms.length === 0
+                            ? forms
+                            : forms.filter((_, i) => i !== idx)
+                        )
+                      }
+                      disableRemove={fastaFormsPrimer.length === 0}
+                    />
+                  ))}
+                </form>
               </div>
               <div className="row g-3">
                 <div className="col">
@@ -2290,13 +2779,13 @@ const Merfish: React.FC = () => {
             </div>
           </div>
         );
-
+      // Add cases for other tabs
       default:
         return null;
     }
   };
-  const renderTabContentDevSettings = () => {
-    switch (activeTabDevSettings) {
+  const renderTabContent2 = () => {
+    switch (activetab2) {
       case "specfblastn":
         return (
           <div>
@@ -5251,6 +5740,7 @@ const Merfish: React.FC = () => {
           </div>
         );
 
+      // Add cases for other tabs
       default:
         return null;
     }
@@ -5286,7 +5776,6 @@ const Merfish: React.FC = () => {
     }
   };
 
-  //SIMON
   const handleSubmitGenomicAll = async (
     forms: typeof fastaForms, // Accept forms as argument
     setLoadingFn?: (val: boolean) => void,
@@ -5337,7 +5826,6 @@ const Merfish: React.FC = () => {
     }
   };
 
-  // SIMON
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -5353,7 +5841,7 @@ const Merfish: React.FC = () => {
         setLoading
       );
     }
-    const uploadedPaths = await uploadFiles(files, formData);
+    const uploadedPaths = await uploadFiles();
 
     if (uploadedPaths["file_regions_file"]) {
       formData["file_regions"]["value"] = uploadedPaths["file_regions_file"];
@@ -5440,16 +5928,7 @@ const Merfish: React.FC = () => {
     const runid = await createRunId();
 
     // Then: handle scrinshot (upload other files and submit form)
-    if (
-      !allFilesUploaded(
-        files,
-        formData,
-        fastaForms,
-        fastaFormsReference,
-        fastaFormsReadout,
-        fastaFormsPrimer
-      )
-    ) {
+    if (!areAllFilesUploaded()) {
       alert("Please upload all required files before submitting.");
       setLoading(false);
       return;
@@ -5536,7 +6015,7 @@ const Merfish: React.FC = () => {
                 }`}
                 onClick={() => {
                   setActiveTab("probe_sequences");
-                  setActiveTabDevSettings("specfblastn");
+                  setActivetab2("specfblastn");
                 }}
               >
                 Target Probe Parameters
@@ -5550,7 +6029,7 @@ const Merfish: React.FC = () => {
                   activeTab === "readout" ? "active" : ""
                 }`}
                 onClick={() => {
-                  setActiveTabDevSettings("readout");
+                  setActivetab2("readout");
                   setActiveTab("readout");
                 }}
               >
@@ -5564,7 +6043,7 @@ const Merfish: React.FC = () => {
                   activeTab === "primer_parameters" ? "active" : ""
                 }`}
                 onClick={() => {
-                  setActiveTabDevSettings("primerpro");
+                  setActivetab2("primerpro");
                   setActiveTab("primer_parameters");
                 }}
               >
@@ -5596,11 +6075,9 @@ const Merfish: React.FC = () => {
                         <button
                           type="button"
                           className={`nav-link ${
-                            activeTabDevSettings === "specfblastn"
-                              ? "active"
-                              : ""
+                            activetab2 === "specfblastn" ? "active" : ""
                           }`}
-                          onClick={() => setActiveTabDevSettings("specfblastn")}
+                          onClick={() => setActivetab2("specfblastn")}
                         >
                           Specificity Filters BlastN
                         </button>
@@ -5609,13 +6086,9 @@ const Merfish: React.FC = () => {
                         <button
                           type="button"
                           className={`nav-link ${
-                            activeTabDevSettings === "crossfilterblastn"
-                              ? "active"
-                              : ""
+                            activetab2 === "crossfilterblastn" ? "active" : ""
                           }`}
-                          onClick={() =>
-                            setActiveTabDevSettings("crossfilterblastn")
-                          }
+                          onClick={() => setActivetab2("crossfilterblastn")}
                         >
                           Cross-hybrid filters BlastN
                         </button>
@@ -5624,13 +6097,9 @@ const Merfish: React.FC = () => {
                         <button
                           type="button"
                           className={`nav-link ${
-                            activeTabDevSettings === "oligosetselection"
-                              ? "active"
-                              : ""
+                            activetab2 === "oligosetselection" ? "active" : ""
                           }`}
-                          onClick={() =>
-                            setActiveTabDevSettings("oligosetselection")
-                          }
+                          onClick={() => setActivetab2("oligosetselection")}
                         >
                           Oligo Set Selection Parameters
                         </button>
@@ -5639,11 +6108,9 @@ const Merfish: React.FC = () => {
                         <button
                           type="button"
                           className={`nav-link ${
-                            activeTabDevSettings === "meltingtemp"
-                              ? "active"
-                              : ""
+                            activetab2 === "meltingtemp" ? "active" : ""
                           }`}
-                          onClick={() => setActiveTabDevSettings("meltingtemp")}
+                          onClick={() => setActivetab2("meltingtemp")}
                         >
                           Parameters for Melting Temperature
                         </button>
@@ -5656,9 +6123,9 @@ const Merfish: React.FC = () => {
                         <button
                           type="button"
                           className={`nav-link ${
-                            activeTabDevSettings === "readout" ? "active" : ""
+                            activetab2 === "readout" ? "active" : ""
                           }`}
-                          onClick={() => setActiveTabDevSettings("readout")}
+                          onClick={() => setActivetab2("readout")}
                         >
                           Readout Parameters
                         </button>
@@ -5671,9 +6138,9 @@ const Merfish: React.FC = () => {
                         <button
                           type="button"
                           className={`nav-link ${
-                            activeTabDevSettings === "primerpro" ? "active" : ""
+                            activetab2 === "primerpro" ? "active" : ""
                           }`}
-                          onClick={() => setActiveTabDevSettings("primerpro")}
+                          onClick={() => setActivetab2("primerpro")}
                         >
                           Primer Parameters
                         </button>
@@ -5682,22 +6149,13 @@ const Merfish: React.FC = () => {
                   )}
                 </ul>
 
-                <div className="tab-content mt-4">
-                  {renderTabContentDevSettings()}
-                </div>
+                <div className="tab-content mt-4">{renderTabContent2()}</div>
               </>
             )}
           </div>
 
           <div className="container my-4">
-            {!allFilesUploaded(
-              files,
-              formData,
-              fastaForms,
-              fastaFormsReference,
-              fastaFormsReadout,
-              fastaFormsPrimer
-            ) && (
+            {!areAllFilesUploaded() && (
               <div className="alert alert-warning mt-3">
                 Please upload all required files or fill the values before
                 submitting.
@@ -5708,18 +6166,7 @@ const Merfish: React.FC = () => {
                 type="button"
                 className="btn btn-primary"
                 onClick={handleSubmit}
-                disabled={
-                  isSubmitting ||
-                  loading ||
-                  !allFilesUploaded(
-                    files,
-                    formData,
-                    fastaForms,
-                    fastaFormsReference,
-                    fastaFormsReadout,
-                    fastaFormsPrimer
-                  )
-                }
+                disabled={isSubmitting || loading || !areAllFilesUploaded()}
                 aria-busy={isSubmitting}
               >
                 {isSubmitting ? (
