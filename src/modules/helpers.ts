@@ -16,17 +16,18 @@ export async function createRunId() {
         const runId = response.data.run_id;
         console.log("🧪 New Run ID:", runId);
 
-        // Try to copy it to clipboard
-        try {
-            await navigator.clipboard.writeText(runId);
-            alert(`RunID copied to clipboard:\n${runId}`);
-        } catch (copyErr) {
-            console.warn("Clipboard copy failed, falling back to alert.");
-        }
-
         return runId;
     } catch (error) {
         console.error("Failed to create run:", error);
         return null;
+    }
+}
+
+export async function copyToClipboard(text: string) {
+    try {
+        await navigator.clipboard.writeText(text);
+        return true;
+    } catch (error) {
+        return false;
     }
 }
