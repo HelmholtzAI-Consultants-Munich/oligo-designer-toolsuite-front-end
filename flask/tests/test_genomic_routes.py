@@ -51,7 +51,7 @@ def test_genomic_cascaded_ncbi(client, dummy_form_ncbi, mock_run, authenticated_
     assert "message" in data
     assert "output" in data
 
-def test_genomic_cascaded_ncbi_unauthenticated(client, dummy_form_ncbi, mock_run):
+def test_genomic_cascaded_ncbi_unauthenticated(client, dummy_form_ncbi, mock_run, session_user):
     dummy_form = dummy_form_ncbi
 
     response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
@@ -71,7 +71,7 @@ def test_genomic_single_ensembl(client, dummy_form_ensembl, mock_run,authenticat
     assert "message" in data
     assert "output" in data
 
-def test_genomic_single_ensembl_unauthenticated(client, dummy_form_ensembl, mock_run):
+def test_genomic_single_ensembl_unauthenticated(client, dummy_form_ensembl, mock_run, session_user):
     dummy_form = dummy_form_ensembl
 
     response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)

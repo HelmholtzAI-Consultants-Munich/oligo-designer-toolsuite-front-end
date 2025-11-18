@@ -105,7 +105,7 @@ def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authentica
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
 
-def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run):
+def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
     # Simulate an anonymous user (no monkeypatch needed)
     response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200

@@ -138,7 +138,7 @@ def test_seqfish_authenticated(client, run_id, dummy_form, mock_run, authenticat
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
 
-def test_seqfish_unauthenticated(client, run_id, dummy_form, mock_run):
+def test_seqfish_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
     response = client.post("/api/seqfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()

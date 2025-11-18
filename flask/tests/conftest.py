@@ -38,3 +38,9 @@ def authenticated_user(monkeypatch):
         is_authenticated = True
         id = "testuser123"
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
+
+@pytest.fixture()
+def session_user(client):
+    # Simulate an anonymous user with session
+    with client.session_transaction() as sess:
+        sess['session_id'] = 'anon-session-123'

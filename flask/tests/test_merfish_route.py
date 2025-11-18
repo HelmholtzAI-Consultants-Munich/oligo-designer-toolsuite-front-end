@@ -159,11 +159,7 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_run, authenticat
 
 
 # Test unauthenticated user flow for /api/merfish
-def test_merfish_unauthenticated(client, run_id, dummy_form, mock_run):
-    # Simulate an anonymous user with session
-    with client.session_transaction() as sess:
-        sess['session_id'] = 'anon-session-123'
-
+def test_merfish_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
     response = client.post("/api/merfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
