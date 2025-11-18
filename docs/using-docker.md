@@ -8,11 +8,13 @@ nav_order: 9
 
 ODT Cloud can be run and deployed using Docker containers. The provided configuration should only be used for development. For production deployment, please get in touch with us.
 
+**Warning: Due to a known bug in ODT Cloud, you always have to start a new browser session (e.g. via new private window) to access the application when using Docker.**
+
 ---
 
 ## Quickstart
 
-This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. Note that user data is not preserved across restarts with the provided configuration.
+This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**  
 
 To launch the frontend, backend and database, run:
 ```bash
@@ -50,6 +52,29 @@ To run an arbitrary command in the container, use:
 ```bash
 docker compose run --rm odt-web <command>
 ```
+
+## Running the Database
+
+The Docker Compose file configures a prebuild MongoDB container tagged `odt-db`. By default, the container is accessible on localhost.
+
+To start just the database, run:
+```bash
+docker compose up odt-db -d
+```
+
+To limit access to the Docker containers, comment out the lines configuring port forwarding in `docker-compose.yml`:
+```yaml
+#...
+  odt-db:
+    image: mongo:8
+    container_name: odt-db
+    # Comment out these lines to restrict database access from localhost
+    ports:
+      - 27017:27017
+#...
+```
+
+
 
 ## Building and Running the Playwright Tests
 
