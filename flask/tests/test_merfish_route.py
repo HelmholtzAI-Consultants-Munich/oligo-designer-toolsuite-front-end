@@ -5,16 +5,16 @@ import pytest
 from extensions import mongo
 
 @pytest.fixture
-def dummy_form_base(run_id):
+def dummy_form(run_id):
     # Full dummy form data for merfish API
     return {
         "formdata": {
             "n_jobs": {"value": "1"},
             "write_intermediate_steps": {"value": "false"},
             "top_n_sets": {"value": "3"},
-            "file_regions": {"value": ""},
-            "files_fasta_target_probe_database": {"value": ""},
-            "files_fasta_reference_database_target_probe": {"value": ""},
+            "file_regions": {"value": "Gene1,Gene2"},
+            "files_fasta_target_probe_database": {"value": "target1.fna"},
+            "files_fasta_reference_database_target_probe": {"value": "ref1.fna"},
             "target_probe_length_min": {"value": "20"},
             "target_probe_length_max": {"value": "40"},
             "target_probe_isoform_consensus": {"value": "1"},
@@ -36,7 +36,7 @@ def dummy_form_base(run_id):
             "set_size_opt": {"value": "15"},
             "distance_between_target_probes": {"value": "5"},
             "n_sets": {"value": "1"},
-            "files_fasta_reference_database_readout_probe": {"value": ""},
+            "files_fasta_reference_database_readout_probe": {"value": "readout1.fna"},
             "readout_probe_base_probabilities": {
                 "A": {"value": "25"}, "T": {"value": "25"}, "C": {"value": "25"}, "G": {"value": "25"}
             },
@@ -52,7 +52,7 @@ def dummy_form_base(run_id):
             "min_hamming_dist": {"value": "4"},
             "hamming_weight": {"value": "4"},
             "channels_ids": {"value": "0,1,2,3"},
-            "files_fasta_reference_database_primer": {"value": ""},
+            "files_fasta_reference_database_primer": {"value": "primer1.fna"},
             "reverse_primer_sequence": {"value": "ACTGACTGACTG"},
             "primer_length": {"value": "20"},
             "primer_GC_content_min": {"value": "30"},
@@ -147,30 +147,8 @@ def dummy_form_base(run_id):
         "runid": str(run_id)
     }
 
-@pytest.fixture
-def dummy_form_unauthenticated(dummy_form_base):
-    dummy_form = dummy_form_base 
-    print(dummy_form)
-    dummy_form["formdata"]["file_regions"]["value"] = "Gene1,Gene2"
-    dummy_form["formdata"]["files_fasta_target_probe_database"]["value"] = "target1.fna"
-    dummy_form["formdata"]["files_fasta_reference_database_target_probe"]["value"] = "ref1.fna"
-    dummy_form["formdata"]["files_fasta_reference_database_readout_probe"]["value"] = "readout1.fna"
-    dummy_form["formdata"]["files_fasta_reference_database_primer"]["value"] = "primer1.fna"
-    return dummy_form
-
-@pytest.fixture
-def dummy_form_authenticated(dummy_form_base):
-    dummy_form = dummy_form_base
-    dummy_form["formdata"]["file_regions"]["value"] = "dummy_region.fna"
-    dummy_form["formdata"]["files_fasta_target_probe_database"]["value"] = "target1.fna\ntarget2.fna"
-    dummy_form["formdata"]["files_fasta_reference_database_target_probe"]["value"] = "ref1.fna\nref2.fna"
-    dummy_form["formdata"]["files_fasta_reference_database_readout_probe"]["value"] = "readout1.fna\nreadout2.fna"
-    dummy_form["formdata"]["files_fasta_reference_database_primer"]["value"] = "readout1.fna\nreadout2.fna"
-    return dummy_form
-
-
-def test_merfish_authenticated(client, run_id, dummy_form_authenticated, mock_run, authenticated_user):
-    response = client.post("/api/merfish", json=dummy_form_authenticated)
+def test_merfish_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
+    response = client.post("/api/merfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
@@ -181,12 +159,12 @@ def test_merfish_authenticated(client, run_id, dummy_form_authenticated, mock_ru
 
 
 # Test unauthenticated user flow for /api/merfish
-def test_merfish_unauthenticated(client, run_id, dummy_form_unauthenticated, mock_run):
+def test_merfish_unauthenticated(client, run_id, dummy_form, mock_run):
     # Simulate an anonymous user with session
     with client.session_transaction() as sess:
         sess['session_id'] = 'anon-session-123'
 
-    response = client.post("/api/merfish", json=dummy_form_unauthenticated)
+    response = client.post("/api/merfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
