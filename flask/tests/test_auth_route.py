@@ -92,6 +92,7 @@ def test_check_auth_logged_in(client, monkeypatch, dummy_user):
         is_authenticated = True
         id = str(dummy_user["_id"])
         email = dummy_user["email"]
+        name= ""
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyCurrentUser())
 
