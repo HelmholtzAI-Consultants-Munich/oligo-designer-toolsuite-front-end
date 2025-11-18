@@ -174,3 +174,15 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id):
         # Confirm Mongo updated status
         updated = mongo.db.runs.find_one({"_id": run_id})
         assert updated["status"] == "completed"
+
+def test_invalid_session(client, dummy_form):
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "success"
+        mock_run.return_value.stderr = ""
+
+        with client.session_transaction() as session:
+            session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
+           
+        response = client.post(f"/api/scrinshot", json=dummy_form)
+        assert response.status_code == 404

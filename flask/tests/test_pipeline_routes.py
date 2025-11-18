@@ -121,3 +121,26 @@ def test_get_run_file_not_found(client, monkeypatch, run_id):
 
     response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
     assert response.status_code == 404
+
+def test_runid_null(client):
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value.returncode = 0
+        mock_run.return_value.stdout = "success"
+        mock_run.return_value.stderr = ""
+
+        form = {
+            "runid": 0
+        }
+
+        response = client.post("/api/scrinshot", json=form)
+        assert response.status_code == 400
+
+def test_get_files_valid_runid_unused(client, run_id):
+        response = client.get(f"/api/runs/{run_id}/files")
+        assert response.status_code == 404
+
+def test_get_files_invalid_runid(client):
+        run_id = "hallo"
+
+        response = client.get(f"/api/runs/{run_id}/files")
+        assert response.status_code == 404
