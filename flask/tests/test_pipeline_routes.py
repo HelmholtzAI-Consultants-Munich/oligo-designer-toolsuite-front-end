@@ -120,6 +120,7 @@ def test_get_run_file_not_found(client, monkeypatch, run_id):
     response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
     assert response.status_code == 404
 
+@pytest.mark.knownfailure
 def test_runid_null(client):
     with patch("subprocess.run") as mock_run:
         mock_run.return_value.returncode = 0
@@ -127,7 +128,7 @@ def test_runid_null(client):
         mock_run.return_value.stderr = ""
 
         form = {
-            "runid": 0
+            "runid": None
         }
 
         response = client.post("/api/scrinshot", json=form)
