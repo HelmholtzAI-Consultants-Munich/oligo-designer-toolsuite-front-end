@@ -1,7 +1,10 @@
 services:
-  mongodb:
+  odt-db:
     image: mongo:8
-    container_name: odt-mongodb
+    container_name: odt-db
+    # Comment out these lines to restrict database access to containers
+    ports:
+      - 27017:27017
   
   odt-server:
     image: odt-server
@@ -10,7 +13,7 @@ services:
     ports:
       - 5000:5000
     environment:
-      MONGO_URI: mongodb://mongodb:27017/oligo_db
+      MONGO_URI: mongodb://odt-db:27017/oligo_db
     develop:
       watch:
         - action: sync
