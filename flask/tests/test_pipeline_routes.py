@@ -1,8 +1,6 @@
 import os
-import tempfile
-import shutil
 from bson import ObjectId
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
