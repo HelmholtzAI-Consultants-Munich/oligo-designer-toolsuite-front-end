@@ -15,29 +15,23 @@ const FastaGeneration: React.FC<Props> = ({
   fastaForms,
 }) => {
   return (
-    <p>
-      <div className="mb-3 pt-3">
-        <label htmlFor={id} className="form-label">
-          {name}
-        </label>
-        <div className="d-flex align-items-center w-100 gap-2">
-          <div className="w-50">
-            <button
-              type="button"
-              className="btn btn-outline-primary w-100"
-              onClick={() =>
-                setFastaForms((forms: FastaForm[]) => [
-                  ...forms,
-                  { ...defaultFastaForm },
-                ])
-              }
-            >
-              Generate FASTA+
-            </button>
-          </div>
-        </div>
-      </div>
-      {/* SIMON */}
+    <div className="flex-grow-1">
+      <label htmlFor={id} className="form-label">
+        {name}
+      </label>
+      <button
+        type="button"
+        className="btn btn-outline-primary w-100"
+        onClick={() =>
+          setFastaForms((forms: FastaForm[]) => [
+            ...forms,
+            { ...defaultFastaForm },
+          ])
+        }
+      >
+        Generate FASTA+
+      </button>
+      {/* TODO handleSubmit einfügen */}
       <form onSubmit={() => {}}>
         {fastaForms.map((form, idx) => (
           <FastaGenerateForm
@@ -57,7 +51,7 @@ const FastaGeneration: React.FC<Props> = ({
           />
         ))}
       </form>
-    </p>
+    </div>
   );
 };
 export default FastaGeneration;

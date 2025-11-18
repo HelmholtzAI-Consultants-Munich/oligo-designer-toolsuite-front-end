@@ -1,4 +1,5 @@
-import { FileState, formData } from "./types";
+import { FastaForm, FileState, formData } from "./types";
+import { copyToClipboard, createRunId } from "../modules/helpers";
 import axios from "axios";
 export const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -109,134 +110,209 @@ export const uploadFiles = async (files: any, formData: any) => {
     return filePaths;
 };
 
-// Handle form submission
-// export const handleSubmit = async (e: React.FormEvent) => {
-//     if (e) e.preventDefault();
-//     if (isSubmitting) return; // prevent double-clicks
-//     setIsSubmitting(true);
-//     setStatus("submitting");
+export const handleSubmitGenomicAll = async (
+    forms: FastaForm[], // Accept forms as argument
+    e?: React.FormEvent
+): Promise<string> => {
+    e?.preventDefault();
+    try {
+        let results = "";
+        for (let i = 0; i < forms.length; ++i) {
+            const form = forms[i];
+            let payload;
+            let endpoint;
+            if (form.selectedSource === "ncbi") {
+                payload = form.formDataNcbi;
+                endpoint = "custom ";
+            } else if (form.selectedSource === "ensembl") {
+                payload = form.formDataEns;
+                endpoint = "custom";
+            } else {
+                continue; // skip unknown
+            }
+            try {
+                const response = await axios.post(
+                    `http://localhost:5000/api/genomic/cascaded/${endpoint}`,
+                    payload,
+                    {
+                        withCredentials: true,
+                        headers: { "Content-Type": "application/json" },
+                    }
+                );
+                if (results === "") {
+                    results = response.data.output;
+                } else {
+                    results += "\n" + response.data.output;
+                }
+            } catch (error) {
+                console.error("Error submitting genomic form:", error);
+                return "error";
+            }
+        }
+        return results;
+    } catch (error) {
+        console.error("Error in batch FASTA submission:", error);
+        return "error";
+    }
+};
 
-//     // ---- FASTA target probe database ----
-//     let generatedTargetPaths = "";
-//     if (fastaForms.length > 0) {
-//         generatedTargetPaths = await handleSubmitGenomicAll(
-//             fastaForms,
-//             setLoading
-//         );
-//     }
-//     const uploadedPaths = await uploadFiles();
+async function processFastaGroup({
+    forms,
+    uploadedPaths,
+    uploadKey,
+    formData,
+    formDataKey,
+    setModal,
+    setRunStatus
+}: {
+    forms: FastaForm[];
+    uploadedPaths: Record<string, string>;
+    uploadKey: string;
+    formData: any;
+    formDataKey: string;
+    setModal: any;
+    setRunStatus: any;
+}) {
+    let generated = "";
+    if (forms && forms.length > 0) {
+        generated = await handleSubmitGenomicAll(forms);
+        if (generated === "error") {
+            setModal({
+                show: true,
+                title: "Pipeline Failed",
+                body: "An error occurred while submitting FASTA data.",
+            });
+            setRunStatus("idle");
+            return null;
+        }
+    }
+    const uploaded = uploadedPaths[uploadKey] ?? "";
+    const merged = [generated, uploaded].filter(Boolean).join("\n");
 
-//     if (uploadedPaths["file_regions_file"]) {
-//         formData["file_regions"]["value"] = uploadedPaths["file_regions_file"];
-//     }
-//     let uploadedTargetFastaPath = "";
-//     if (uploadedPaths["files_fasta_target_probe_database"]) {
-//         uploadedTargetFastaPath =
-//             uploadedPaths["files_fasta_target_probe_database"];
-//     }
-//     const mergedTargetValue = [generatedTargetPaths, uploadedTargetFastaPath]
-//         .filter((v) => v && v.length > 0)
-//         .join("\n");
-//     if (mergedTargetValue.length > 0) {
-//         formData["files_fasta_target_probe_database"]["value"] =
-//             mergedTargetValue;
-//     }
+    if (merged) {
+        formData[formDataKey]["value"] = merged;
+    }
 
-//     // ---- FASTA reference probe database ----
-//     let generatedReferencePaths = "";
-//     if (fastaFormsReference.length > 0) {
-//         generatedReferencePaths = await handleSubmitGenomicAll(
-//             fastaFormsReference,
-//             setLoading
-//         );
-//     }
-//     let uploadedReferenceFastaPath = "";
-//     if (uploadedPaths["files_fasta_reference_database_target_probe"]) {
-//         uploadedReferenceFastaPath =
-//             uploadedPaths["files_fasta_reference_database_target_probe"];
-//     }
-//     const mergedReferenceValue = [
-//         generatedReferencePaths,
-//         uploadedReferenceFastaPath,
-//     ]
-//         .filter((v) => v && v.length > 0)
-//         .join("\n");
-//     if (mergedReferenceValue.length > 0) {
-//         formData["files_fasta_reference_database_target_probe"]["value"] =
-//             mergedReferenceValue;
-//     }
+    return merged;
+}
 
-//     // ---- FASTA primer probe database ----
-//     let generatedPrimerPaths = "";
-//     if (fastaFormsPrimer && fastaFormsPrimer.length > 0) {
-//         generatedPrimerPaths = await handleSubmitGenomicAll(
-//             fastaFormsPrimer,
-//             setLoading
-//         );
-//     }
-//     let uploadedPrimerFastaPath = "";
-//     if (uploadedPaths["files_fasta_reference_database_primer"]) {
-//         uploadedPrimerFastaPath =
-//             uploadedPaths["files_fasta_reference_database_primer"];
-//     }
-//     const mergedPrimerValue = [generatedPrimerPaths, uploadedPrimerFastaPath]
-//         .filter((v) => v && v.length > 0)
-//         .join("\n");
-//     if (mergedPrimerValue.length > 0) {
-//         formData["files_fasta_reference_database_primer"]["value"] =
-//             mergedPrimerValue;
-//     }
+export const handleSubmit = async (
+    e: React.FormEvent,
+    runStatus: "idle" | "submitting" | "running",
+    setRunStatus: React.Dispatch<React.SetStateAction<typeof runStatus>>,
+    setRunId: React.Dispatch<React.SetStateAction<string | null>>,
+    fastaForms: FastaForm[],
+    setModal: React.Dispatch<React.SetStateAction<{
+        show: boolean;
+        title: string;
+        body: string;
+    }>>,
+    files: FileState,
+    formData: any,
+    fastaFormsPrimer: FastaForm[],
+    fastaFormsReadout: FastaForm[],
+    fastaFormsReference: FastaForm[],
+    setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>,
+) => {
+    if (e) e.preventDefault();
 
-//     // ---- FASTA readout probe database ----
-//     let generatedReadoutPaths = "";
-//     if (fastaFormsReadout && fastaFormsReadout.length > 0) {
-//         generatedReadoutPaths = await handleSubmitGenomicAll(
-//             fastaFormsReadout,
-//             setLoading
-//         );
-//     }
-//     let uploadedReadoutFastaPath = "";
-//     if (uploadedPaths["files_fasta_reference_database_readout_probe"]) {
-//         uploadedReadoutFastaPath =
-//             uploadedPaths["files_fasta_reference_database_readout_probe"];
-//     }
-//     const mergedReadoutValue = [generatedReadoutPaths, uploadedReadoutFastaPath]
-//         .filter((v) => v && v.length > 0)
-//         .join("\n");
-//     if (mergedReadoutValue.length > 0) {
-//         formData["files_fasta_reference_database_readout_probe"]["value"] =
-//             mergedReadoutValue;
-//     }
+    if (runStatus !== "idle") return;
 
-//     const runid = await createRunId();
+    setRunStatus("submitting");
+    setRunId(null);
+    const uploadedPaths = await uploadFiles(files, formData);
+    const groups = [
+        {
+            forms: fastaForms,
+            uploadKey: "files_fasta_target_probe_database",
+            formDataKey: "files_fasta_target_probe_database",
+        },
+        {
+            forms: fastaFormsReference,
+            uploadKey: "files_fasta_reference_database_target_probe",
+            formDataKey: "files_fasta_reference_database_target_probe",
+        },
+        {
+            forms: fastaFormsPrimer,
+            uploadKey: "files_fasta_reference_database_primer",
+            formDataKey: "files_fasta_reference_database_primer",
+        },
+        {
+            forms: fastaFormsReadout,
+            uploadKey: "files_fasta_reference_database_readout_probe",
+            formDataKey: "files_fasta_reference_database_readout_probe",
+        },
+    ];
 
-//     // Then: handle scrinshot (upload other files and submit form)
-//     if (!areAllFilesUploaded()) {
-//         alert("Please upload all required files before submitting.");
-//         setLoading(false);
-//         return;
-//     }
+    for (const group of groups) {
+        const ok = await processFastaGroup({
+            ...group,
+            uploadedPaths,
+            formData,
+            setModal,
+            setRunStatus
+        });
 
-//     try {
-//         const response = await axios.post(
-//             "http://localhost:5000/api/merfish",
-//             { formdata: formData, runid: runid },
-//             {
-//                 withCredentials: true,
-//                 headers: { "Content-Type": "application/json" },
-//             }
-//         );
-//         const result = response.data;
-//         console.log(result, "this is the result");
+        if (ok === null) return;
+    }
 
-//         setStatus("running");
-//     } catch (error) {
-//         console.error("Error submitting scrinshot form:", error);
-//         alert("Error submitting scrinshot form. Please try again.");
-//         setIsSubmitting(false);
-//     } finally {
-//         alert(`Pipeline is successfully finished`);
-//         setLoading(false);
-//         setIsSubmitting(false);
-//     }
-// };
+    if (
+        !allFilesUploaded(
+            files,
+            formData,
+            fastaForms,
+            fastaFormsReference,
+            fastaFormsReadout,
+            fastaFormsPrimer
+        )
+    ) {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `Please upload all required files before submitting.`,
+        });
+        setRunStatus("idle");
+        return;
+    }
+
+    const newId = await createRunId();
+    if (!newId) {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `The pipeline has failed to create a new run.`,
+        });
+        setRunStatus("idle");
+        return;
+    }
+
+    setRunId(newId);
+    setIdCopySuccess(await copyToClipboard(newId));
+
+    try {
+        setRunStatus("running");
+
+        const response = await axios.post(
+            "http://localhost:5000/api/scrinshot",
+            { formdata: formData, runid: newId },
+            {
+                withCredentials: true,
+                headers: { "Content-Type": "application/json" },
+            }
+        );
+
+        setModal({
+            show: true,
+            title: "Pipeline Finished",
+            body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`,
+        });
+    } catch (error) {
+        setModal({
+            show: true,
+            title: "Pipeline Failed",
+            body: `The pipeline has failed during processing. Your run ID is: ${newId}.`,
+        });
+    } finally {
+        setRunStatus("idle");
+    }
+};

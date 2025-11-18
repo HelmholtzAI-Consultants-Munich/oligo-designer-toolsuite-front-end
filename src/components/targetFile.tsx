@@ -8,33 +8,26 @@ type Props = {
 
 const TargetFile: React.FC<Props> = ({ setFormData, formData }) => {
   return (
-    <div className="mb-3">
-      <label htmlFor="file_regions" className="form-label">
+    <div className="flex-grow-1">
+      <label htmlFor="file_regions_input" className="form-label">
         Target File:
       </label>
-      <div className="d-flex flex-column w-100">
-        <div className="d-flex align-items-center w-100 gap-2">
-          <div className="w-50">
-            <input
-              type="text"
-              className="form-control"
-              id="file_regions_input"
-              name="file_regions_input"
-              list="geneExamples"
-              placeholder="Enter genes (comma-separated) or pick an example"
-              onChange={(e) => handleChange(e, setFormData)}
-              value={formData.file_regions.value}
-            />
-
-            <datalist id="geneExamples">
-              <option value="AARS1" />
-              <option value="ABCC1" />
-              <option value="BCAR1" />
-              <option value="LOC105376749" />
-            </datalist>
-          </div>
-        </div>
-      </div>
+      <input
+        type="text"
+        className="form-control"
+        id="file_regions_input"
+        name="file_regions"
+        list="geneExamples"
+        placeholder="Enter genes (comma-separated) or pick an example"
+        onChange={(e) => handleChange(e, setFormData)}
+        value={formData.file_regions.value}
+      />
+      <datalist id="geneExamples">
+        <option value="AARS1" />
+        <option value="ABCC1" />
+        <option value="BCAR1" />
+        <option value="LOC105376749" />
+      </datalist>
     </div>
   );
 };

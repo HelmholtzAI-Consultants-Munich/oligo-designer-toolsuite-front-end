@@ -13,8 +13,8 @@ const FileSelection: React.FC<Props> = ({ formData, id, setFiles, files }) => {
   let multiple = id === "files_region" ? true : false;
 
   return (
-    <>
-      <div className="w-50 d-flex align-items-center">
+    <div className="flex-grow-1">
+      <div className=" d-flex align-items-center">
         <input
           type="file"
           className="form-control visually-hidden"
@@ -25,7 +25,7 @@ const FileSelection: React.FC<Props> = ({ formData, id, setFiles, files }) => {
         />
         <label
           htmlFor={id}
-          className="btn btn-outline-primary me-2 w-100"
+          className="btn btn-outline-primary me-2 flex-grow-1"
           style={{ cursor: "pointer" }}
         >
           Choose File
@@ -58,7 +58,7 @@ const FileSelection: React.FC<Props> = ({ formData, id, setFiles, files }) => {
           ? `Selected: ${files[id].map((f: File) => f.name).join(", ")}`
           : "No files selected"}
       </div>
-    </>
+    </div>
   );
 };
 export default FileSelection;
