@@ -1,11 +1,9 @@
 import pytest
-from flask import session
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from bson import ObjectId
-from flask_login import logout_user
 from app import create_app
 from extensions import mongo
 from werkzeug.security import generate_password_hash
