@@ -132,7 +132,7 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_run, authentic
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
 
-def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run):
+def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run, session_user):
     response = client.post("/api/scrinshot", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()

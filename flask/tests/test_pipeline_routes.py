@@ -7,6 +7,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from app import create_app
 from extensions import mongo
 
+@pytest.fixture(autouse=True)
+def mock_make_dir():
+    with patch("os.makedirs"):
+        yield
 
 @pytest.fixture
 def client(monkeypatch):

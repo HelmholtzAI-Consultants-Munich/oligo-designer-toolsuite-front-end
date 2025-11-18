@@ -8,6 +8,10 @@ from app import create_app
 from extensions import mongo
 from werkzeug.security import generate_password_hash
 
+@pytest.fixture(autouse=True)
+def mock_make_dir():
+    with patch("os.makedirs"):
+        yield
 
 @pytest.fixture
 def client(monkeypatch):
