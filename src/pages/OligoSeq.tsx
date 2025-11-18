@@ -6,10 +6,13 @@ import {ChevronDown, ChevronUp, InfoCircle} from "react-bootstrap-icons";
 import oligoseq_form from "../forms/oligoseq_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
-import {createRunId} from "../modules/helpers";
+import {copyToClipboard, createRunId} from "../modules/helpers";
 import FastaGenerateForm from "../modules/FastaGenerateForm";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import seqfishImage from "../images/pipeline_seqfishplus_probes.webp";
+import { RunLinkModal } from '../components/modal/RunLinkModal';
+import { InfoModal } from '../components/modal/InfoModal';
+import { RunIdAlert } from '../components/alert/RunIdAlert';
 
 
 const OligoSeq: React.FC = () => {
@@ -22,10 +25,7 @@ const OligoSeq: React.FC = () => {
     const [fastaFormsReference, setFastaFormsReference] = useState<Array<typeof defaultFastaForm>>([]);
     const [fastaOption, setFastaOption] = useState("generate"); // "generate" or "upload"
     const [fastaOption2, setFastaOption2] = useState("generate"); // "generate" or "upload"
-    const [loading, setLoading] = useState(false);
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-    const [status, setStatus] = useState("idle");
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [generateFastaFiles, setGenerateFastaFiles] = useState(false);
     const [expanded, setExpanded] = useState(false);
     interface FileState {
@@ -38,6 +38,20 @@ const OligoSeq: React.FC = () => {
         files_fasta_target_probe_database: [], // Empty array
         files_fasta_reference_database_target_probe: [], // Empty array
     });
+
+    const [runId, setRunId] = useState<string | null>(null);
+    const [runStatus, setRunStatus] = useState<"idle" | "submitting" | "running">("idle");
+    const [idCopySuccess, setIdCopySuccess] = useState<boolean>(false);
+    const [modal, setModal] = useState<{
+        show: boolean;
+        title: string;
+        body: string;
+    }>({
+        show: false,
+        title: "",
+        body: ""
+    });
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, files: selectedFiles } = e.target;
         if (!selectedFiles) return;
@@ -2022,13 +2036,10 @@ const OligoSeq: React.FC = () => {
     };
     const handleSubmitGenomicAll = async (
             forms: typeof fastaForms,           // Accept forms as argument
-            setLoadingFn?: (val: boolean) => void,
             e?: React.FormEvent
         ): Promise<string> => {
             e?.preventDefault();
-            setLoadingFn?.(true);
             try {
-
                 let results = "";
                 for (let i = 0; i < forms.length; ++i) {
                     const form = forms[i];
@@ -2059,15 +2070,13 @@ const OligoSeq: React.FC = () => {
                         }
                     } catch (error) {
                         console.error('Error submitting genomic form:', error);
+                        return 'error';
                     }
                 }
                 return results;
             } catch (error) {
                 console.error('Error in batch FASTA submission:', error);
-                alert('Error submitting genomic forms. Please try again.');
                 return 'error';
-            } finally {
-                setLoadingFn?.(false);
             }
         };
 
@@ -2075,12 +2084,23 @@ const OligoSeq: React.FC = () => {
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
-            setLoading(true);
+            if (runStatus === "submitting" || runStatus === "running") return; // prevent double-clicks
+            setRunStatus("submitting");
+            setRunId(null);
 
             // ---- FASTA target probe database ----
             let generatedTargetPaths = '';
             if (fastaForms.length > 0) {
-                generatedTargetPaths = await handleSubmitGenomicAll(fastaForms, setLoading);
+                generatedTargetPaths = await handleSubmitGenomicAll(fastaForms);
+            }
+            if (generatedTargetPaths === 'error') {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+                });
+                setRunStatus("idle");
+                return;
             }
             const uploadedPaths = await uploadFiles();
             if (uploadedPaths['file_regions_file']){
@@ -2101,7 +2121,16 @@ const OligoSeq: React.FC = () => {
             // ---- FASTA reference probe database ----
             let generatedReferencePaths = '';
             if (fastaFormsReference.length > 0) {
-                generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference, setLoading);
+                generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference);
+            }
+            if (generatedReferencePaths === 'error') {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+                });
+                setRunStatus("idle");
+                return;
             }
             let uploadedReferenceFastaPath = '';
             if (uploadedPaths['files_fasta_reference_database_target_probe']) {
@@ -2114,37 +2143,72 @@ const OligoSeq: React.FC = () => {
                 formData['files_fasta_reference_database_target_probe']['value'] = mergedReferenceValue;
             }
 
-            const runid = await createRunId();
-
             // Then: handle scrinshot (upload other files and submit form)
             if (!areAllFilesUploaded()) {
-                alert('Please upload all required files before submitting.');
-                setLoading(false);
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `Please upload all required files before submitting.`
+                });
+                setRunStatus("idle");
+                return;
+            }
+
+            const newId = await createRunId();
+            if (newId) {
+                // setRunId does not immediately update runId due to React state batching
+                // so we use newId directly in the submission
+                setRunId(newId);
+                setIdCopySuccess(await copyToClipboard(newId));
+            } else {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `The pipeline has failed to create a new run.`
+                });
+                setRunStatus("idle");
                 return;
             }
 
             try {
-
-                const response = await axios.post('http://localhost:5000/api/oligoseq', { formdata: formData, runid: runid }, {
+                setRunStatus("running");
+                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: newId }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
                 const result = response.data;
                 console.log(result, 'this is the result');
 
-                setStatus("running");
+                setModal({
+                    show: true,
+                    title: "Pipeline Finished",
+                    body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`
+                });
             } catch (error) {
                 console.error('Error submitting scrinshot form:', error);
-                alert('Error submitting scrinshot form. Please try again.');
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `The pipeline has failed during processing. Your run ID is: ${newId}.`
+                });
             } finally {
-                alert(`Pipeline is successfully finished`);
-                setIsSubmitting(false);
-                setLoading(false);
+                setRunStatus("idle");
             }
         };
+
+    const closeModal = () => {
+        setModal({ ...modal, show: false });
+    }
+
     return (
         <div>
             <Navbar/>
+
+            {(runId ?
+                <RunLinkModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} runId={runId} /> :
+                <InfoModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} />
+            )}
+
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
                      <div className="mb-3">
@@ -2255,21 +2319,31 @@ const OligoSeq: React.FC = () => {
                                     Please upload all required files or fill the values before submitting.
                                 </div>
                             )}
+                            {runId && (
+                                <RunIdAlert runId={runId} idCopySuccess={idCopySuccess} />
+                            )}
                            <div className="d-flex justify-content-center mt-4">
                               <button
                                 type="button"
                                 className="btn btn-primary"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || loading || !areAllFilesUploaded()}
-                                aria-busy={isSubmitting}
+                                disabled={runStatus === "submitting" || runStatus === "running" || !areAllFilesUploaded()}
+                                aria-busy={runStatus === "submitting" || runStatus === "running"}
                               >
-                                {isSubmitting ? (
-                                  <>
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Submitting...
-                                  </>
-                                ) : (
-                                  'Submit'
+                                {runStatus === "submitting" && (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Submitting...
+                                    </>
+                                )}
+                                {runStatus === "running" && (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Running...
+                                    </>
+                                )}
+                                {runStatus === "idle" && (
+                                    'Submit'
                                 )}
                               </button>
                             </div>

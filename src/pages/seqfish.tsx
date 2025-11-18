@@ -8,9 +8,11 @@ import FastaGenerateForm from "../modules/FastaGenerateForm";
 import seqfish_form from "../forms/seqfish_form";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
-import { createRunId } from "../modules/helpers";
+import { copyToClipboard, createRunId } from "../modules/helpers";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import seqfishImage from "../images/pipeline_seqfishplus_probes.webp";
+import { RunLinkModal } from '../components/modal/RunLinkModal';
+import { InfoModal } from '../components/modal/InfoModal';
 
 const SeqFish: React.FC = () => {
     const defaultFastaForm = {
@@ -27,14 +29,23 @@ const SeqFish: React.FC = () => {
     const [fastaFormsReference, setFastaFormsReference] = useState<Array<typeof defaultFastaForm>>([]);
     const [fastaFormsReadout, setFastaFormsReadout] =useState<Array<typeof defaultFastaForm>>([]);
     const [fastaFormsPrimer, setFastaFormsPrimer] =useState<Array<typeof defaultFastaForm>>([]);
-    const [loading, setLoading] = useState(false);
     const [showDeveloperSettings, setShowDeveloperSettings] = useState(false);
-    const [status, setStatus] = useState("idle");
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState(seqfish_form);
     const [activeTab, setActiveTab] = useState("probe_sequences");
     const [activetab2, setActivetab2] = useState("specfblastn");
     const [expanded, setExpanded] = useState(false);
+    const [runId, setRunId] = useState<string | null>(null);
+    const [runStatus, setRunStatus] = useState<"idle" | "submitting" | "running">("idle");
+    const [idCopySuccess, setIdCopySuccess] = useState<boolean>(false);
+    const [modal, setModal] = useState<{
+        show: boolean;
+        title: string;
+        body: string;
+    }>({
+        show: false,
+        title: "",
+        body: ""
+    });
 
     interface FileState {
         file_regions_file: File | null;
@@ -4036,13 +4047,10 @@ const SeqFish: React.FC = () => {
     };
      const handleSubmitGenomicAll = async (
             forms: typeof fastaForms,           // Accept forms as argument
-            setLoadingFn?: (val: boolean) => void,
             e?: React.FormEvent
         ): Promise<string> => {
             e?.preventDefault();
-            setLoadingFn?.(true);
             try {
-
                 let results = "";
                 for (let i = 0; i < forms.length; ++i) {
                     const form = forms[i];
@@ -4073,15 +4081,13 @@ const SeqFish: React.FC = () => {
                         }
                     } catch (error) {
                         console.error('Error submitting genomic form:', error);
+                        return 'error';
                     }
                 }
                 return results;
             } catch (error) {
                 console.error('Error in batch FASTA submission:', error);
-                alert('Error submitting genomic forms. Please try again.');
                 return 'error';
-            } finally {
-                setLoadingFn?.(false);
             }
         };
 
@@ -4116,14 +4122,23 @@ const SeqFish: React.FC = () => {
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
             if (e) e.preventDefault();
-            if (isSubmitting) return;          // prevent double-clicks
-            setIsSubmitting(true);
-            setStatus('submitting');
+            if (runStatus === "submitting" || runStatus === "running") return; // prevent double-clicks
+            setRunStatus("submitting");
+            setRunId(null);
 
             // ---- FASTA target probe database ----
             let generatedTargetPaths = '';
             if (fastaForms.length > 0) {
-                generatedTargetPaths = await handleSubmitGenomicAll(fastaForms, setLoading);
+                generatedTargetPaths = await handleSubmitGenomicAll(fastaForms);
+            }
+            if (generatedTargetPaths === 'error') {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+                });
+                setRunStatus("idle");
+                return;
             }
             const uploadedPaths = await uploadFiles();
             if (uploadedPaths['file_regions_file']){
@@ -4143,7 +4158,16 @@ const SeqFish: React.FC = () => {
             // ---- FASTA reference probe database ----
             let generatedReferencePaths = '';
             if (fastaFormsReference.length > 0) {
-                generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference, setLoading);
+                generatedReferencePaths = await handleSubmitGenomicAll(fastaFormsReference);
+            }
+            if (generatedReferencePaths === 'error') {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+                });
+                setRunStatus("idle");
+                return;
             }
             let uploadedReferenceFastaPath = '';
             if (uploadedPaths['files_fasta_reference_database_target_probe']) {
@@ -4159,7 +4183,16 @@ const SeqFish: React.FC = () => {
             // ---- FASTA primer probe database ----
             let generatedPrimerPaths = '';
             if (fastaFormsPrimer && fastaFormsPrimer.length > 0) {
-                generatedPrimerPaths = await handleSubmitGenomicAll(fastaFormsPrimer, setLoading);
+                generatedPrimerPaths = await handleSubmitGenomicAll(fastaFormsPrimer);
+            }
+            if (generatedPrimerPaths === 'error') {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+                });
+                setRunStatus("idle");
+                return;
             }
             let uploadedPrimerFastaPath = '';
             if (uploadedPaths['files_fasta_reference_database_primer']) {
@@ -4175,7 +4208,16 @@ const SeqFish: React.FC = () => {
             // ---- FASTA readout probe database ----
             let generatedReadoutPaths = '';
             if (fastaFormsReadout && fastaFormsReadout.length > 0) {
-                generatedReadoutPaths = await handleSubmitGenomicAll(fastaFormsReadout, setLoading);
+                generatedReadoutPaths = await handleSubmitGenomicAll(fastaFormsReadout);
+            }
+            if (generatedReadoutPaths === 'error') {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `An error occurred while submitting the genomic forms (FASTA). Please try again.`
+                });
+                setRunStatus("idle");
+                return;
             }
             let uploadedReadoutFastaPath = '';
             if (uploadedPaths['files_fasta_reference_database_readout_probe']) {
@@ -4188,37 +4230,71 @@ const SeqFish: React.FC = () => {
                 formData['files_fasta_reference_database_readout_probe']['value'] = mergedReadoutValue;
             }
 
-            const runid = await createRunId();
-
             // Then: handle scrinshot (upload other files and submit form)
             if (!areAllFilesUploaded()) {
-                alert('Please upload all required files before submitting.');
-                setLoading(false);
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `Please upload all required files before submitting.`
+                });
+                setRunStatus("idle");
+                return;
+            }
+
+            const newId = await createRunId();
+            if (newId) {
+                // setRunId does not immediately update runId due to React state batching
+                // so we use newId directly in the submission
+                setRunId(newId);
+                setIdCopySuccess(await copyToClipboard(newId));
+            } else {
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `The pipeline has failed to create a new run.`
+                });
+                setRunStatus("idle");
                 return;
             }
 
             try {
-
-                const response = await axios.post('http://localhost:5000/api/seqfish', { formdata: formData, runid: runid }, {
+                setRunStatus("running");
+                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: newId }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
                 const result = response.data;
                 console.log(result, 'this is the result');
 
-                setStatus("running");
+                setModal({
+                    show: true,
+                    title: "Pipeline Finished",
+                    body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`
+                });
             } catch (error) {
                 console.error('Error submitting scrinshot form:', error);
-                alert('Error submitting scrinshot form. Please try again.');
-                setIsSubmitting(false);
+                setModal({
+                    show: true,
+                    title: "Pipeline Failed",
+                    body: `The pipeline has failed during processing. Your run ID is: ${newId}.`
+                });
             } finally {
-                alert(`Pipeline is successfully finished`);
-                setLoading(false);
-                setIsSubmitting(false);
+                setRunStatus("idle");
             }
         };
+
+    const closeModal = () => {
+        setModal({ ...modal, show: false });
+    }
+
     return (<div>
             <Navbar/>
+
+            {(runId ?
+                <RunLinkModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} runId={runId} /> :
+                <InfoModal show={modal.show} close={closeModal} title={modal.title} body={modal.body} />
+            )}
+
             <div className="container my-4">
                 <form onSubmit={handleSubmit} id="scrinshotForm">
                     <div className="mb-3">
@@ -4391,16 +4467,23 @@ A SeqFISH+ probe is a flourescent probe that contains a 28-nt gene-specific sequ
                                 type="button"
                                 className="btn btn-primary"
                                 onClick={handleSubmit}
-                                disabled={isSubmitting || loading || !areAllFilesUploaded()}
-                                aria-busy={isSubmitting}
+                                disabled={runStatus === "submitting" || runStatus === "running" || !areAllFilesUploaded()}
+                                aria-busy={runStatus === "submitting" || runStatus === "running"}
                               >
-                                {isSubmitting ? (
-                                  <>
-                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Submitting...
-                                  </>
-                                ) : (
-                                  'Submit'
+                                {runStatus === "submitting" && (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Submitting...
+                                    </>
+                                )}
+                                {runStatus === "running" && (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Running...
+                                    </>
+                                )}
+                                {runStatus === "idle" && (
+                                    'Submit'
                                 )}
                               </button>
                             </div>
