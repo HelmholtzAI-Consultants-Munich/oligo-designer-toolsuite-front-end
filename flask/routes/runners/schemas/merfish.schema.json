@@ -1,0 +1,307 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "odt:merfish",
+    "type": "object",
+    "properties": {
+        "n_jobs": { "type": "integer" },
+        "write_intermediate_steps": { "type": "boolean" },
+        "top_n_sets": { "type": "integer" },
+
+        "file_regions": { "type": "string" },
+        "files_fasta_target_probe_database": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "files_fasta_reference_database_target_probe": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "target_probe_length_min": { "type": "integer" },
+        "target_probe_length_max": { "type": "integer" },
+        "target_probe_isoform_consensus": { "type": "integer" },
+        "target_probe_GC_content_min": { "type": "integer" },
+        "target_probe_GC_content_opt": { "type": "integer" },
+        "target_probe_GC_content_max": { "type": "integer" },
+        "target_probe_homopolymeric_base_n": {
+            "type": "object",
+            "properties": {
+                "A": {"type": "integer"},
+                "T": {"type": "integer"},
+                "C": {"type": "integer"},
+                "G": {"type": "integer"}
+            }
+        },
+        "target_probe_GC_weight": { "type": "integer" },
+        "set_size_min": { "type": "integer" },
+        "set_size_opt": { "type": "integer" },
+        "distance_between_target_probes": { "type": "integer" },
+        "n_sets": { "type": "integer" },
+
+        "max_graph_size": { "type": "integer" },
+        "n_attempts": { "type": "integer" },
+        "heuristic": { "type": "boolean" },
+        "heuristic_n_attempts": { "type": "integer" },
+
+
+
+        "target_probe_Tm_min": { "type": "integer" },
+        "target_probe_Tm_opt": { "type": "integer" },
+        "target_probe_Tm_max": { "type": "integer" },
+        "target_probe_T_secondary_structure": { "type": "integer" },
+        "target_probe_secondary_structures_threshold_deltaG": { "type": "integer" },
+        "target_probe_isoform_weight": { "type": "integer" },
+        "target_probe_Tm_weight": { "type": "integer" },
+
+        "files_fasta_reference_database_readout_probe": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "readout_probe_base_probabilities": {
+            "type": "object",
+            "properties": {
+                "A": {"type": "number"},
+                "T": {"type": "number"},
+                "C": {"type": "number"},
+                "G": {"type": "number"}
+            }
+        },
+        "readout_probe_length": { "type": "integer" },
+        "readout_probe_GC_content_min": { "type": "integer" },
+        "readout_probe_GC_content_max": { "type": "integer" },
+        "readout_probe_homopolymeric_base_n": {
+            "type": "object",
+            "properties": {
+                "G": {"type": "integer"}
+            }
+        },
+        "readout_probe_set_size": { "type": "integer" },
+        "readout_probe_homogeneous_properties_weights": {
+            "type": "object",
+            "properties": {
+                "TmNN": {"type": "integer"},
+                "GC_content": {"type": "integer"}
+            }
+        },
+        "n_bits": { "type": "integer" },
+        "min_hamming_dist": { "type": "integer" },
+        "hamming_weight": { "type": "integer" },
+        "channels_ids": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+
+        "files_fasta_reference_database_primer": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "reverse_primer_sequence": { "type": "string" },
+        "primer_length": { "type": "integer" },
+        "primer_base_probabilities" : {
+            "type": "object",
+            "properties": {
+                "A": {"type": "number"},
+                "T": {"type": "number"},
+                "C": {"type": "number"},
+                "G": {"type": "number"}
+            }
+        },
+        "primer_GC_content_min": { "type": "integer" },
+        "primer_GC_content_max": { "type": "integer" },
+        "primer_number_GC_GCclamp": { "type": "integer" },
+        "primer_number_three_prime_base_GCclamp": { "type": "integer" },
+        "primer_homopolymeric_base_n": {
+            "type": "object",
+            "properties": {
+                "A": {"type": "integer"},
+                "T": {"type": "integer"},
+                "C": {"type": "integer"},
+                "G": {"type": "integer"}
+            }
+        },
+        "primer_max_len_selfcomplement": { "type": "integer" },
+        "primer_max_len_complement_reverse_primer": { "type": "integer" },
+        "primer_Tm_min": { "type": "integer" },
+        "primer_Tm_max": { "type": "integer" },
+        "primer_T_secondary_structure": { "type": "integer" },
+        "primer_secondary_structures_threshold_deltaG": { "type": "integer" },
+
+        "target_probe_specificity_blastn_search_parameters": {
+            "type": "object",
+            "properties": {
+                "perc_identity": {"type": "integer"},
+                "strand": {"type": "string"},
+                "word_size": {"type": "integer"},
+                "dust": {"type": "string"},
+                "soft_masking": {"type": "string"},
+                "max_target_seqs": {"type": "integer"},
+                "max_hsps": {"type": "integer"}
+            }
+        },
+        "target_probe_specificity_blastn_hit_parameters": {
+            "type": "object",
+            "properties": {
+                "min_alignment_length": {"type": "integer"}
+            }
+        },
+        "target_probe_cross_hybridization_blastn_search_parameters": {
+            "type": "object",
+            "properties": {
+                "perc_identity": {"type": "integer"},
+                "strand": {"type": "string"},
+                "word_size": {"type": "integer"},
+                "dust": {"type": "string"},
+                "soft_masking": {"type": "string"},
+                "max_target_seqs": {"type": "integer"}
+            }
+        },
+        "target_probe_cross_hybridization_blastn_hit_parameters": {
+            "type": "object",
+            "properties": {
+                "min_alignment_length": {"type": "integer"}
+            }
+        },
+        "target_probe_Tm_parameters": {
+            "type": "object",
+            "properties": {
+                "nn_table": { "type": "string" },
+                "tmm_table": { "type": "string" },
+                "imm_table": { "type": "string" },
+                "de_table": { "type": "string" },
+                "dnac1": { "type": "integer" },
+                "dnac2": { "type": "integer" },
+                "saltcorr": { "type": "integer" },
+                "Na": { "type": "integer" },
+                "K": { "type": "integer" },
+                "Tris": { "type": "integer" },
+                "Mg": { "type": "integer" },
+                "dNTPs": { "type": "integer" }
+            }
+        },
+        "target_probe_Tm_chem_correction_parameters": { "type": "null" },
+        "target_probe_Tm_salt_correction_parameters": { "type": "null" },
+
+        "readout_probe_initial_num_sequences": { "type": "integer" },
+        "readout_probe_specificity_blastn_search_parameters": {
+            "type": "object",
+            "properties": {
+                "perc_identity": {"type": "integer"},
+                "strand": {"type": "string"},
+                "word_size": {"type": "integer"},
+                "dust": {"type": "string"},
+                "soft_masking": {"type": "string"},
+                "max_target_seqs": {"type": "integer"},
+                "max_hsps": {"type": "integer"}
+            }
+        },
+        "readout_probe_specificity_blastn_hit_parameters": {
+            "type": "object",
+            "properties": {
+                "min_alignment_length": {"type": "integer"}
+            }
+        },
+        "readout_probe_cross_hybridization_blastn_search_parameters": {
+            "type": "object",
+            "properties": {
+                "perc_identity": {"type": "integer"},
+                "strand": {"type": "string"},
+                "word_size": {"type": "integer"},
+                "dust": {"type": "string"},
+                "soft_masking": {"type": "string"},
+                "max_target_seqs": {"type": "integer"}
+            }
+        },
+        "readout_probe_cross_hybridization_blastn_hit_parameters": {
+            "type": "object",
+            "properties": {
+                "min_alignment_length": {"type": "integer"}
+            }
+        },
+        "readout_probe_Tm_parameters": {
+            "type": "object",
+            "properties": {
+                "nn_table": { "type": "string" },
+                "tmm_table": { "type": "string" },
+                "imm_table": { "type": "string" },
+                "de_table": { "type": "string" },
+                "dnac1": { "type": "integer" },
+                "dnac2": { "type": "integer" },
+                "saltcorr": { "type": "integer" },
+                "Na": { "type": "integer" },
+                "K": { "type": "integer" },
+                "Tris": { "type": "integer" },
+                "Mg": { "type": "integer" },
+                "dNTPs": { "type": "integer" }
+            }
+        },
+        "readout_probe_Tm_chem_correction_parameters": { "type": "null" },
+        "readout_probe_Tm_salt_correction_parameters": { "type": "null" },
+        "readout_probe_n_combinations": { "type": "integer" },
+
+        "primer_initial_num_sequences": { "type": "integer" },
+        "primer_specificity_refrence_blastn_search_parameters": {
+            "type": "object",
+            "properties": {
+                "perc_identity": {"type": "integer"},
+                "strand": {"type": "string"},
+                "word_size": {"type": "integer"},
+                "dust": {"type": "string"},
+                "soft_masking": {"type": "string"},
+                "max_target_seqs": {"type": "integer"},
+                "max_hsps": {"type": "integer"}
+            }
+        },
+        "primer_specificity_refrence_blastn_hit_parameters": {
+            "type": "object",
+            "properties": {
+                "min_alignment_length": {"type": "integer"}
+            }
+        },
+        "primer_specificity_encoding_probes_blastn_search_parameters": {
+            "type": "object",
+            "properties": {
+                "perc_identity": {"type": "integer"},
+                "strand": {"type": "string"},
+                "word_size": {"type": "integer"},
+                "dust": {"type": "string"},
+                "soft_masking": {"type": "string"},
+                "max_target_seqs": {"type": "integer"},
+                "max_hsps": {"type": "integer"}
+            }
+        },
+        "primer_specificity_encoding_probes_blastn_hit_parameters": {
+            "type": "object",
+            "properties": {
+                "min_alignment_length": {"type": "integer"}
+            }
+        },
+        "primer_Tm_parameters": {
+            "type": "object",
+            "properties": {
+                "nn_table": { "type": "string" },
+                "tmm_table": { "type": "string" },
+                "imm_table": { "type": "string" },
+                "de_table": { "type": "string" },
+                "dnac1": { "type": "integer" },
+                "dnac2": { "type": "integer" },
+                "saltcorr": { "type": "integer" },
+                "Na": { "type": "integer" },
+                "K": { "type": "integer" },
+                "Tris": { "type": "integer" },
+                "Mg": { "type": "integer" },
+                "dNTPs": { "type": "integer" }
+            }
+        },
+        "primer_Tm_chem_correction_parameters": { "type": "null" },
+        "primer_Tm_salt_correction_parameters": { "type": "null" }
+    }
+}
