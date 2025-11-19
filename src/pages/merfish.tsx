@@ -7,7 +7,7 @@ import { FastaForm, FileState } from "../components/types";
 import { allFilesUploaded, handleSubmit } from "../components/helpers";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import merfishImage from "../images/pipeline_merfish_probes.webp";
-//import TargetFile from "../components/targetFile";
+import TargetFile from "../components/targetFile";
 import {NumberInput, NumberInputAlt} from "../components/numberInput";
 import { TextInput,TextInputAlt } from "../components/textInput";
 import FileSelection from "../components/fileSelection";

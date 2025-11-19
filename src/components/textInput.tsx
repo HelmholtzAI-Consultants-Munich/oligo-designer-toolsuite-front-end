@@ -1,7 +1,7 @@
 import React from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
-import { handleChange } from "./fileHelpers";
+import { handleChange } from "./helpers";
 
 interface TextInputProps {
     label: string;
