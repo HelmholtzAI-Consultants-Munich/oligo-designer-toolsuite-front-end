@@ -91,12 +91,7 @@
         "n_bits": { "type": "integer" },
         "min_hamming_dist": { "type": "integer" },
         "hamming_weight": { "type": "integer" },
-        "channels_ids": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
+        "channels_ids": { "type": "string" },
 
         "files_fasta_reference_database_primer": {
             "type": "array",

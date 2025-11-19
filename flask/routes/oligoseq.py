@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from .runners.oligoseq_runner import OligoSeqRunner
+from .runners.runner_factory import get_runner
 from flask_login import current_user
 
 # Blueprint for OligoSeq endpoints
@@ -10,5 +10,5 @@ def oligoseq():
     form_data = request.json.get('formdata') # Form data from React
     run_id_string = request.json.get('runid') # Run ID from React
 
-    runner = OligoSeqRunner()
+    runner = get_runner("oligoseq")
     return runner.run(current_user, form_data, run_id_string)
