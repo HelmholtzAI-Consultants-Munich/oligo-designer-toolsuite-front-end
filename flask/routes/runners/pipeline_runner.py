@@ -100,7 +100,11 @@ class PipelineRunner:
             return jsonify({"error": "Run ID not found"}), 404
 
         # Build Config and Write to YAML
-        self.populate_config_file(form_data, context)
+        try:
+            self.populate_config_file(form_data, context)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 400
 
         # Subprocess Call
         status = self.call_subprocess(context["config_path"])
@@ -194,7 +198,7 @@ class PipelineRunner:
                             deep_set(config, write_path, value)
                         else:
                             # type not supported
-                            pass
+                            raise Exception("Unsupported array type in config schema encountered")
                     case 'string':
                         value = deep_get(form_data, read_path + ['value'])
                         deep_set(config, write_path, value)
@@ -206,7 +210,7 @@ class PipelineRunner:
                         deep_set(config, write_path, value)
                     case _:
                         # type not supported
-                        pass
+                        raise Exception("Unsupported config schema type encountered")
         
         traverse_object(self.schema, [])
                         
@@ -221,6 +225,8 @@ class PipelineRunner:
             capture_output=True,
             text=True
         )
+        print("STDERR:", result.stderr)
+        print("STDOUT (partial logs):", result.stdout)
         return "completed" if result.returncode == 0 else "failed"
 
     def update_run_in_DB(self, run_id: ObjectId, data: dict):
@@ -241,9 +247,13 @@ class PipelineRunner:
     
     def cleanup_temp_files(self, form_data: dict) -> None:
         # Remove temp file for file_regions if it was created
-        if form_data['file_regions']['value'] and os.path.exists(form_data['file_regions']['value']):
-            print('deleted')
-            os.remove(form_data['file_regions']['value'])
+        if form_data['file_regions']['value']:
+            temp_path = form_data['file_regions']['value'].strip()
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+                print('deleted temp file_regions:', temp_path)
+            else:
+                print('file_regions not found, skipped:', temp_path)
 
         # Remove temp files for fasta inputs
         fasta_fields = [

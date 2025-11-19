@@ -78,12 +78,7 @@
         },
         "n_barcode_rounds": { "type": "integer" },
         "n_pseudocolors": { "type": "integer" },
-        "channels_ids": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
+        "channels_ids": { "type": "string" },
 
         "files_fasta_reference_database_primer": {
             "type": "array",
