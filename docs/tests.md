@@ -32,6 +32,8 @@ This document explains the test strategy for this software. There are **two** la
 pytest -q
 # with coverage:
 pytest --maxfail=1 --disable-warnings --cov=flask --cov-report=term-missing
+# exclude known failures
+pytest -m "not knownfailure"
 ```
 
 or if using Docker:
