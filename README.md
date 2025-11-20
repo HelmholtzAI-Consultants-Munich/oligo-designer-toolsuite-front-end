@@ -49,6 +49,7 @@ This project provides a single `docker-compose.yml` file to deploy containers lo
 
 To launch the frontend, backend and database, run:
 ```bash
+npm i
 docker compose watch
 ```
 

@@ -18,6 +18,7 @@ This project provides a single `docker-compose.yml` file to deploy containers lo
 
 To launch the frontend, backend and database, run:
 ```bash
+npm i
 docker compose watch
 ```
 
@@ -46,7 +47,7 @@ docker compose run -d --build odt-server
 
 ## Running the Node Frontend
 
-The Docker Compose file configures a prebuilt Node container and gives it access to the entire working directory with a bind mount. By default, starting the container executes `npm start`. The container is tagged `odt-web`. 
+The Docker Compose file configures a prebuilt Node container and gives it access to the entire working directory with a bind mount. By default, starting the container executes `npm run dev -- --host`. The container is tagged `odt-web`. 
 
 To run an arbitrary command in the container, use:
 ```bash

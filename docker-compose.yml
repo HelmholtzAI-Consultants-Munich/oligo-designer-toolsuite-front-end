@@ -25,7 +25,7 @@ services:
     container_name: odt-web
     user: node
     working_dir: /home/node/app
-    command: [npm, start]
+    command: [npm, run, dev, "--", "--host"]
     ports:
       - 3000:3000
     volumes:
