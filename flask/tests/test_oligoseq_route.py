@@ -39,7 +39,7 @@ def dummy_form(run_id):
             "set_size_opt": {"value": "15"},
             "distance_between_target_probes": {"value": "5"},
             "n_sets": {"value": "1"},
-            "target_probe_hybridization_probability_alignment_method": "bowtie",
+            "target_probe_hybridization_probability_alignment_method": {"value": "bowtie"},
             "target_probe_hybridization_probability_blastn_search_parameters": {
                 "perc_identity": {"value": "85"},
                 "strand": {"value": "both"},

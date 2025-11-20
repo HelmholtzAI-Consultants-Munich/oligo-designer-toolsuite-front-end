@@ -142,6 +142,12 @@ def dummy_form(run_id):
                 "dnac1": {"value": "50"}, "dnac2": {"value": "50"}, "saltcorr": {"value": "1"},
                 "Na": {"value": "50"}, "K": {"value": "50"}, "Tris": {"value": "10"},
                 "Mg": {"value": "1"}, "dNTPs": {"value": "0.2"}
+            },
+            "primer_base_probabilities": {
+                "A": {"value": 0.25},
+                "T": {"value": 0.25},
+                "C": {"value": 0.25},
+                "G": {"value": 0.25},
             }
         },
         "runid": str(run_id)
