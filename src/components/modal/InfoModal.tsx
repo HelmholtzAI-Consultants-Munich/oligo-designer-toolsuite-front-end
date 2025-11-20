@@ -6,10 +6,10 @@ export function InfoModal({
     title,
     body,
 }: {
-    show: boolean,
-    close: () => void,
-    title: string,
-    body: string,
+    show: boolean;
+    close: () => void;
+    title: string;
+    body: string;
 }) {
     return (
         <ModalComponent
@@ -19,8 +19,8 @@ export function InfoModal({
             body={body}
             primaryAction={{
                 title: "Close",
-                callback: close
+                callback: close,
             }}
         />
-    )
+    );
 }

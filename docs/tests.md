@@ -8,7 +8,7 @@ nav_order: 6
 
 This document explains the test strategy for this software. There are **two** layers:
 
-1. **Backend unit & API tests** using **Pytest** for the Flask backend.  
+1. **Backend unit & API tests** using **Pytest** for the Flask backend.
 2. **End-to-end (E2E) tests** using **Playwright**, executed in **GitHub Actions** against the hosted app, to validate full pipelines.
 
 ---
@@ -18,6 +18,7 @@ This document explains the test strategy for this software. There are **two** la
 **Goal:** Verify every Flask API endpoint and backend logic in isolation (fast, deterministic).
 
 ### Scope
+
 - Status codes, JSON schema, and error handling of **all API endpoints**.
 - Auth/session flows (login, logout, protected routes).
 - Validation of complex pipeline payloads (e.g., Scrinshot, MERFISH, SeqFISH).
@@ -25,6 +26,7 @@ This document explains the test strategy for this software. There are **two** la
 - DB interactions (mock MongoDB in unit tests).
 
 ### Running locally
+
 ```bash
 # note: start database first
 pytest -q
@@ -33,6 +35,7 @@ pytest --maxfail=1 --disable-warnings --cov=flask --cov-report=term-missing
 ```
 
 or if using Docker:
+
 ```bash
 docker compose up odt-db -d
 docker compose run --rm --build odt-server pytest -q
@@ -41,10 +44,12 @@ docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-miss
 ```
 
 ### Fixtures & notes
+
 - **Never** execute real long-running pipelines in unit tests; **mock** them and assert:
   - request validation
   - scheduling trigger
   - persisted records / status initialization
+
 ---
 
 ## 2) End-to-End (E2E) Tests (Playwright)
@@ -52,20 +57,23 @@ docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-miss
 **Goal:** Prove a real user can run a pipeline from the UI to a **successful terminal state** on the deployed app.
 
 ### Scope
+
 - Navigate to pipelines page, fill required fields, and **submit**.
 - Optionally capture/display **Run ID** if shown (useful for debugging).
 - **Pass criteria:** Visible terminal success signal (e.g., banner “Pipeline finished successfully”, or status badge **COMPLETED**).
 - Smoke checks for key pages (render without severe console errors).
 
 ### Running locally
+
 ```bash
 # in the frontend root
 npx playwright test
 # test with ui:
-npx playwright test --ui  
+npx playwright test --ui
 ```
 
 or if using Docker:
+
 ```bash
 # run all tests:
 docker compose run --rm odt-tests
@@ -74,6 +82,7 @@ docker compose run --rm odt-tests test tests/scrinshot.spec.ts --reporter=html
 # inspect the test results:
 docker compose run --rm odt-tests show-report
 ```
+
 ---
 
 ## Continuous Integration (GitHub Actions)

@@ -2,7 +2,7 @@ name: E2E Test for all Pipelines
 
 on:
   schedule:
-    - cron: '0 2 1 * *'  # Run at 2:00 AM on the 1st of every month (UTC)
+    - cron: "0 2 1 * *" # Run at 2:00 AM on the 1st of every month (UTC)
   workflow_dispatch:
 
 env:

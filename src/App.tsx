@@ -1,5 +1,5 @@
-import React from 'react';
-import './App.css';
+import React from "react";
+import "./App.css";
 import FAQ from "./pages/faq";
 import Contacts from "./pages/contacs";
 import Pipelines from "./pages/pipelines";
@@ -7,7 +7,7 @@ import Scrinshot from "./pages/scrinshot";
 import Runs from "./pages/runs";
 import Genomic from "./pages/genomic";
 import Merfish from "./pages/merfish";
-import  SeqFish from "./pages/seqfish";
+import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/OligoSeq";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";

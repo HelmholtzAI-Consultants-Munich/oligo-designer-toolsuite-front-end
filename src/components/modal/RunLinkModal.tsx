@@ -8,11 +8,11 @@ export function RunLinkModal({
     title,
     body,
 }: {
-    show: boolean,
-    close: () => void,
-    runId: string,
-    title: string,
-    body: string
+    show: boolean;
+    close: () => void;
+    runId: string;
+    title: string;
+    body: string;
 }) {
     const navigate = useNavigate();
 
@@ -26,12 +26,12 @@ export function RunLinkModal({
                 title: "Show Run",
                 callback: () => {
                     navigate(`/runs/${runId}`);
-                }
+                },
             }}
             secondaryAction={{
                 title: "Close",
-                callback: close
+                callback: close,
             }}
         />
-    )
+    );
 }

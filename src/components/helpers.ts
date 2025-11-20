@@ -31,7 +31,10 @@ export const handleChange = (
     }
 };
 
-export const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setFiles: React.Dispatch<React.SetStateAction<FileState>>) => {
+export const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setFiles: React.Dispatch<React.SetStateAction<FileState>>
+) => {
     const { name, files: selectedFiles } = e.target;
     if (!selectedFiles) return;
 
@@ -44,7 +47,14 @@ export const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setFile
     }));
 };
 
-export const allFilesUploaded = (files: any, formData: formData, fastaForms: any, fastaFormsReference: any, fastaFormsReadout: any, fastaFormsPrimer: any) => {
+export const allFilesUploaded = (
+    files: any,
+    formData: formData,
+    fastaForms: any,
+    fastaFormsReference: any,
+    fastaFormsReadout: any,
+    fastaFormsPrimer: any
+) => {
     return (
         (files.file_regions_file !== null ||
             formData.file_regions.value.length > 0) &&
@@ -68,7 +78,7 @@ export const uploadFiles = async (files: any, formData: any) => {
             const formDataU = new FormData();
             // @ts-ignore
             if (Array.isArray(files[key])) {
-                let paths = [];
+                const paths = [];
                 // @ts-ignore
                 for (const file of files[key]) {
                     const formDataU = new FormData();
@@ -78,7 +88,9 @@ export const uploadFiles = async (files: any, formData: any) => {
                             "http://localhost:5000/api/upload",
                             formDataU,
                             {
-                                headers: { "Content-Type": "multipart/form-data" },
+                                headers: {
+                                    "Content-Type": "multipart/form-data",
+                                },
                             }
                         );
                         paths.push(response.data.filePath);
@@ -96,7 +108,9 @@ export const uploadFiles = async (files: any, formData: any) => {
                             "http://localhost:5000/api/upload",
                             formDataU,
                             {
-                                headers: { "Content-Type": "multipart/form-data" },
+                                headers: {
+                                    "Content-Type": "multipart/form-data",
+                                },
                             }
                         );
                         filePaths[key] = response.data.filePath;
@@ -163,7 +177,7 @@ async function processFastaGroup({
     formData,
     formDataKey,
     setModal,
-    setRunStatus
+    setRunStatus,
 }: {
     forms: FastaForm[];
     uploadedPaths: Record<string, string>;
@@ -202,17 +216,19 @@ export const handleSubmit = async (
     setRunStatus: React.Dispatch<React.SetStateAction<typeof runStatus>>,
     setRunId: React.Dispatch<React.SetStateAction<string | null>>,
     fastaForms: FastaForm[],
-    setModal: React.Dispatch<React.SetStateAction<{
-        show: boolean;
-        title: string;
-        body: string;
-    }>>,
+    setModal: React.Dispatch<
+        React.SetStateAction<{
+            show: boolean;
+            title: string;
+            body: string;
+        }>
+    >,
     files: FileState,
     formData: any,
     fastaFormsPrimer: FastaForm[],
     fastaFormsReadout: FastaForm[],
     fastaFormsReference: FastaForm[],
-    setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>,
+    setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     if (e) e.preventDefault();
 
@@ -250,7 +266,7 @@ export const handleSubmit = async (
             uploadedPaths,
             formData,
             setModal,
-            setRunStatus
+            setRunStatus,
         });
 
         if (ok === null) return;

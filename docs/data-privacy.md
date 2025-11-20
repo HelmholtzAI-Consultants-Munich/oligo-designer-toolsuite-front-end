@@ -37,4 +37,3 @@ For questions or concerns regarding data privacy, please contact:
 For more information about Helmholtz AAI's privacy practices, please visit:
 
 [https://hifis.net/doc/helmholtz-aai/policies/](https://hifis.net/doc/helmholtz-aai/policies/)
-

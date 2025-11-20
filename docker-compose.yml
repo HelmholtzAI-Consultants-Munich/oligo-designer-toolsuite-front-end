@@ -5,7 +5,7 @@ services:
     # Comment out these lines to restrict database access to containers
     ports:
       - 27017:27017
-  
+
   odt-server:
     image: odt-server
     build: ./flask

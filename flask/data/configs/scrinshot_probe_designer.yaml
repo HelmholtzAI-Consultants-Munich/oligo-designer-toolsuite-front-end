@@ -45,7 +45,6 @@ set_size_opt: 5 # optimal size of probe sets
 distance_between_target_probes: 0 # how much overlap should be allowed between oligos, e.g. if oligos can overlpap x bases choose -x, if oligos can be next to one another choose 0, if oligos should be x bases apart choose x
 n_sets: 100 # maximum number of sets to generate
 
-
 ### Detection Oligo Parameters
 ### -----------------------------------------------
 detection_oligo_min_thymines: 2 # minimal number of Thymines in detection oligo.
@@ -53,7 +52,6 @@ detection_oligo_length_min: 15 # minimum length of detection probe
 detection_oligo_length_max: 40 # maximum length of detection probe
 detection_oligo_U_distance: 5 # preferred minimal distance between U(racils)
 detection_oligo_Tm_opt: 56 # optimal melting temperature of detection probe
-
 
 ############################
 ### DEVELOPER PARAMETERS ###

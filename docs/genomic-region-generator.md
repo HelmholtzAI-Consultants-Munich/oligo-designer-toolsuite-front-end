@@ -12,11 +12,11 @@ It supports flexible region selection, automatic file retrieval, and efficient c
 
 ## How it works
 
-1. **Select data source**  
+1. **Select data source**
    - Choose between **NCBI** or **Ensembl** as your genome annotation source.
    - Each source provides access to curated reference genomes and annotations for various species.
 
-2. **Configure source parameters**  
+2. **Configure source parameters**
    - **For NCBI**:
      - **Taxon**: Select the taxonomic group (e.g., Vertebrate Mammalian, Archaea, Bacteria, Fungi, Invertebrate, Plant, etc.)
      - **Species**: Choose a specific species from the selected taxon
@@ -36,13 +36,13 @@ It supports flexible region selection, automatic file retrieval, and efficient c
    - **Exon-Exon Junction**: Splice junction sequences
      - If selected, specify the **Block Size** (number of nucleotides to include from each flanking exon)
 
-4. **Generate FASTA files**  
+4. **Generate FASTA files**
    - When you click **Generate FASTA+**, the form data is sent to `/api/genomic/cascaded/custom`.
    - The backend processes your request using a two-level caching mechanism (see [Caching FASTA Files](caching_fasta.md) for details).
    - Multiple region selections are handled in a single request, with each region combination cached independently.
    - The system returns paths to generated FASTA files, which can be used directly in downstream pipelines (OligoSeq, MERFISH, seqFISH+, Scrinshot).
 
-5. **Caching mechanism**  
+5. **Caching mechanism**
    - **First-level cache**: Checks if the exact region FASTA files have already been generated with the same parameters.
    - **Second-level cache**: Reuses downloaded and decompressed genome annotation (.gtf) and sequence (.fna) files from NCBI or Ensembl.
    - Cached files are stored in `flask/cache/` with unique identifiers based on form parameters.
@@ -66,13 +66,14 @@ It supports flexible region selection, automatic file retrieval, and efficient c
    Looks for pre-existing region FASTA files in `cache/cached_genomic_{hash}/annotation/`.  
    If found, returns cached file paths immediately.
 
-6. **Second-level cache (if needed)**  
+6. **Second-level cache (if needed)**
    - **For NCBI**: Calls `_prepare_ncbi_cached_assets()` to fetch or reuse compressed genome files (.gtf.gz, .fna.gz), verify MD5 checksums, and decompress.
    - **For Ensembl**: Calls `_prepare_ensembl_cached_assets()` for similar processing with Ensembl FTP structure.
    - Stores decompressed files in `cache/ncbi/` or equivalent for reuse across runs.
 
 7. **Build custom YAML config**  
    Creates a configuration file specifying:
+
    ```yaml
    dir_output: cache/cached_genomic_{hash}
    source: custom
@@ -93,6 +94,7 @@ It supports flexible region selection, automatic file retrieval, and efficient c
 
 8. **Execute pipeline**  
    Runs the genomic region generator CLI tool in "custom" mode:
+
    ```bash
    genomic_region_generator -c config_genomic_{hash}.yaml
    ```
@@ -130,4 +132,3 @@ The component is reusable across multiple pipelines (OligoSeq, MERFISH, seqFISH+
 2. **Custom sequence extraction**: Extract specific genomic features for analysis
 3. **Multi-species workflows**: Process annotations from different organisms in parallel
 4. **Version-controlled analyses**: Use specific annotation releases for reproducible research
-

@@ -1,141 +1,145 @@
 {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "odt:oligoseq",
-    "type": "object",
-    "properties": {
-        "n_jobs": { "type": "integer" },
-        "write_intermediate_steps": { "type": "boolean" },
-        "top_n_sets": { "type": "integer" },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "odt:oligoseq",
+  "type": "object",
+  "properties": {
+    "n_jobs": { "type": "integer" },
+    "write_intermediate_steps": { "type": "boolean" },
+    "top_n_sets": { "type": "integer" },
 
-        "file_regions": { "type": "string" },
-        "files_fasta_target_probe_database": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
-        "files_fasta_reference_database_target_probe": {
-            "type": "array",
-            "items": {
-                "type": "string"
-            }
-        },
-        "target_probe_length_min": { "type": "integer" },
-        "target_probe_length_max": { "type": "integer" },
-        "target_probe_isoform_consensus": { "type": "integer" },
-        "target_probe_GC_content_min": { "type": "integer" },
-        "target_probe_GC_content_opt": { "type": "integer" },
-        "target_probe_GC_content_max": { "type": "integer" },
-        "target_probe_homopolymeric_base_n": {
-            "type": "object",
-            "properties": {
-                "A": {"type": "integer"},
-                "T": {"type": "integer"},
-                "C": {"type": "integer"},
-                "G": {"type": "integer"}
-            }
-        },
-        "target_probe_GC_weight": { "type": "integer" },
-        "set_size_min": { "type": "integer" },
-        "set_size_opt": { "type": "integer" },
-        "distance_between_target_probes": { "type": "integer" },
-        "n_sets": { "type": "integer" },
+    "file_regions": { "type": "string" },
+    "files_fasta_target_probe_database": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "files_fasta_reference_database_target_probe": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "target_probe_length_min": { "type": "integer" },
+    "target_probe_length_max": { "type": "integer" },
+    "target_probe_isoform_consensus": { "type": "integer" },
+    "target_probe_GC_content_min": { "type": "integer" },
+    "target_probe_GC_content_opt": { "type": "integer" },
+    "target_probe_GC_content_max": { "type": "integer" },
+    "target_probe_homopolymeric_base_n": {
+      "type": "object",
+      "properties": {
+        "A": { "type": "integer" },
+        "T": { "type": "integer" },
+        "C": { "type": "integer" },
+        "G": { "type": "integer" }
+      }
+    },
+    "target_probe_GC_weight": { "type": "integer" },
+    "set_size_min": { "type": "integer" },
+    "set_size_opt": { "type": "integer" },
+    "distance_between_target_probes": { "type": "integer" },
+    "n_sets": { "type": "integer" },
 
-        "max_graph_size": { "type": "integer" },
-        "n_attempts": { "type": "integer" },
-        "heuristic": { "type": "boolean" },
-        "heuristic_n_attempts": { "type": "integer" },
+    "max_graph_size": { "type": "integer" },
+    "n_attempts": { "type": "integer" },
+    "heuristic": { "type": "boolean" },
+    "heuristic_n_attempts": { "type": "integer" },
 
+    "target_probe_split_region": { "type": "integer" },
+    "target_probe_targeted_exons": {
+      "type": "integer"
+    },
+    "target_probe_Tm_min": { "type": "integer" },
+    "target_probe_Tm_opt": { "type": "integer" },
+    "target_probe_Tm_max": { "type": "integer" },
+    "target_probe_secondary_structures_T": { "type": "integer" },
+    "target_probe_secondary_structures_threshold_deltaG": { "type": "integer" },
+    "target_probe_max_len_selfcomplement": { "type": "integer" },
+    "target_probe_hybridization_probability_threshold": { "type": "number" },
+    "target_probe_Tm_weight": { "type": "integer" },
 
+    "target_probe_hybridization_probability_alignment_method": {
+      "type": "string"
+    },
+    "target_probe_hybridization_probability_blastn_search_parameters": {
+      "type": "object",
+      "properties": {
+        "perc_identity": { "type": "integer" },
+        "strand": { "type": "string" },
+        "word_size": { "type": "integer" }
+      }
+    },
+    "target_probe_hybridization_probability_blastn_hit_parameters": {
+      "type": "object",
+      "properties": {
+        "coverage": { "type": "integer" }
+      }
+    },
+    "target_probe_hybridization_probability_bowtie_search_parameters": {
+      "type": "object",
+      "properties": {
+        "-v": { "type": "integer" },
+        "--nofw": { "type": "boolean" }
+      }
+    },
+    "target_probe_hybridization_probability_bowtie_hit_parameters": {
+      "type": "null"
+    },
+    "target_probe_cross_hybridization_alignment_method": { "type": "string" },
+    "target_probe_cross_hybridization_blastn_search_parameters": {
+      "type": "object",
+      "properties": {
+        "perc_identity": { "type": "integer" },
+        "strand": { "type": "string" },
+        "word_size": { "type": "integer" }
+      }
+    },
+    "target_probe_cross_hybridization_blastn_hit_parameters": {
+      "type": "object",
+      "properties": {
+        "coverage": { "type": "integer" }
+      }
+    },
+    "target_probe_cross_hybridization_bowtie_search_parameters": {
+      "type": "object",
+      "properties": {
+        "-v": { "type": "integer" },
+        "--nofw": { "type": "boolean" }
+      }
+    },
+    "target_probe_cross_hybridization_bowtie_hit_parameters": {
+      "type": "null"
+    },
 
-        "target_probe_split_region": { "type": "integer" },
-        "target_probe_targeted_exons": {
-            "type": "integer"
-        },
-        "target_probe_Tm_min": { "type": "integer" },
-        "target_probe_Tm_opt": { "type": "integer" },
-        "target_probe_Tm_max": { "type": "integer" },
-        "target_probe_secondary_structures_T": { "type": "integer" },
-        "target_probe_secondary_structures_threshold_deltaG": { "type": "integer" },
-        "target_probe_max_len_selfcomplement": { "type": "integer" },
-        "target_probe_hybridization_probability_threshold": { "type": "number" },
-        "target_probe_Tm_weight": { "type": "integer" },
-
-        "target_probe_hybridization_probability_alignment_method": { "type": "string" },
-        "target_probe_hybridization_probability_blastn_search_parameters": {
-            "type": "object",
-            "properties": {
-                "perc_identity": {"type": "integer"},
-                "strand": {"type": "string"},
-                "word_size": {"type": "integer"}
-            }
-        },
-        "target_probe_hybridization_probability_blastn_hit_parameters": {
-            "type": "object",
-            "properties": {
-                "coverage": {"type": "integer"}
-            }
-        },
-        "target_probe_hybridization_probability_bowtie_search_parameters": {
-            "type": "object",
-            "properties": {
-                "-v": {"type": "integer"},
-                "--nofw": {"type": "boolean"}
-            }
-        },
-        "target_probe_hybridization_probability_bowtie_hit_parameters": { "type": "null" },
-        "target_probe_cross_hybridization_alignment_method": { "type": "string" },
-        "target_probe_cross_hybridization_blastn_search_parameters": {
-            "type": "object",
-            "properties": {
-                "perc_identity": {"type": "integer"},
-                "strand": {"type": "string"},
-                "word_size": {"type": "integer"}
-            }
-        },
-        "target_probe_cross_hybridization_blastn_hit_parameters": {
-            "type": "object",
-            "properties": {
-                "coverage": {"type": "integer"}
-            }
-        },
-        "target_probe_cross_hybridization_bowtie_search_parameters": {
-            "type": "object",
-            "properties": {
-                "-v": {"type": "integer"},
-                "--nofw": {"type": "boolean"}
-            }
-        },
-        "target_probe_cross_hybridization_bowtie_hit_parameters": { "type": "null" },
-
-        "target_probe_Tm_parameters": {
-            "type": "object",
-            "properties": {
-                "nn_table": { "type": "string" },
-                "tmm_table": { "type": "string" },
-                "imm_table": { "type": "string" },
-                "de_table": { "type": "string" },
-                "dnac1": { "type": "integer" },
-                "dnac2": { "type": "integer" },
-                "saltcorr": { "type": "integer" },
-                "Na": { "type": "integer" },
-                "K": { "type": "integer" },
-                "Tris": { "type": "integer" },
-                "Mg": { "type": "integer" },
-                "dNTPs": { "type": "integer" }
-            }
-        },
-        "target_probe_Tm_chem_correction_parameters": {
-            "type": "object",
-            "properties": {
-                "DMSO": {"type": "integer"},
-                "fmd": {"type": "integer"},
-                "DMSOfactor": {"type": "number"},
-                "fmdfactor": {"type": "number"},
-                "fmdmethod": {"type": "integer"},
-                "GC": {"type": ["integer", "null"] }
-            }
-        },
-        "target_probe_Tm_salt_correction_parameters": { "type": "null" }
-    }
+    "target_probe_Tm_parameters": {
+      "type": "object",
+      "properties": {
+        "nn_table": { "type": "string" },
+        "tmm_table": { "type": "string" },
+        "imm_table": { "type": "string" },
+        "de_table": { "type": "string" },
+        "dnac1": { "type": "integer" },
+        "dnac2": { "type": "integer" },
+        "saltcorr": { "type": "integer" },
+        "Na": { "type": "integer" },
+        "K": { "type": "integer" },
+        "Tris": { "type": "integer" },
+        "Mg": { "type": "integer" },
+        "dNTPs": { "type": "integer" }
+      }
+    },
+    "target_probe_Tm_chem_correction_parameters": {
+      "type": "object",
+      "properties": {
+        "DMSO": { "type": "integer" },
+        "fmd": { "type": "integer" },
+        "DMSOfactor": { "type": "number" },
+        "fmdfactor": { "type": "number" },
+        "fmdmethod": { "type": "integer" },
+        "GC": { "type": ["integer", "null"] }
+      }
+    },
+    "target_probe_Tm_salt_correction_parameters": { "type": "null" }
+  }
 }

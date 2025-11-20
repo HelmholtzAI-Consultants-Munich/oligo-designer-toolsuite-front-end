@@ -94,6 +94,7 @@ Both workflows can be triggered manually through the GitHub Actions interface:
 ## Monitoring and Troubleshooting
 
 ### Success Indicators:
+
 - Workflows complete without errors
 - Generated TypeScript files are committed and pushed
 - Commit messages include "Updated Refseq species list" or "Updated YAML to JS conversion"
@@ -105,6 +106,7 @@ Both workflows can be triggered manually through the GitHub Actions interface:
 3. **Permission issues** - Verify GitHub Actions has write access to the repository
 
 ### Logs:
+
 Check the workflow logs in the GitHub Actions interface for detailed execution information and any error messages.
 
 ## Benefits

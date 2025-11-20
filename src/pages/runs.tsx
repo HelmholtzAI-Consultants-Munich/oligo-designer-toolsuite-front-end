@@ -8,7 +8,7 @@ import axios from "axios";
 interface PipelineRun {
     _id: string;
     pipeline: string;
-    status: 'started' | 'completed' | 'failed' | 'unknown';
+    status: "started" | "completed" | "failed" | "unknown";
     timestamp: string;
     output_path: string;
     user_id: string;
@@ -22,21 +22,20 @@ const Runs = () => {
 
     // Update the imports
 
-
-
     useEffect(() => {
-
-            axios.get('http://localhost:5000/api/pipelines', { withCredentials: true })
-                .then(response => {
-                    setRuns(response.data);
-                    setIsLoading(false);
-                })
-                .catch(error => {
-                    console.error('Error fetching pipelines:', error);
-                    setIsLoading(false);
-                });
-
-    },[]);
+        axios
+            .get("http://localhost:5000/api/pipelines", {
+                withCredentials: true,
+            })
+            .then((response) => {
+                setRuns(response.data);
+                setIsLoading(false);
+            })
+            .catch((error) => {
+                console.error("Error fetching pipelines:", error);
+                setIsLoading(false);
+            });
+    }, []);
 
     const formatTimestamp = (timestamp: string) => {
         try {
@@ -52,17 +51,21 @@ const Runs = () => {
     };
     // Add this handler function
     const handleDeleteRun = async (runId: string) => {
-        if (window.confirm('Are you sure you want to delete this run? This action cannot be undone.')) {
+        if (
+            window.confirm(
+                "Are you sure you want to delete this run? This action cannot be undone."
+            )
+        ) {
             try {
                 await axios.delete(`http://localhost:5000/api/runs/${runId}`, {
-                    withCredentials: true
+                    withCredentials: true,
                 });
-                setRuns(prev => prev.filter(r => r._id !== runId));
-                navigate('/runs');
+                setRuns((prev) => prev.filter((r) => r._id !== runId));
+                navigate("/runs");
             } catch (error) {
-                console.error('Error deleting run:', error);
-                navigate('/runs');
-                alert('Failed to delete run');
+                console.error("Error deleting run:", error);
+                navigate("/runs");
+                alert("Failed to delete run");
             }
         }
     };
@@ -72,9 +75,9 @@ const Runs = () => {
             started: "primary",
             completed: "success",
             failed: "danger",
-            unknown: "secondary"
+            unknown: "secondary",
         };
-        return `badge bg-${statusMap[status] || 'secondary'}`;
+        return `badge bg-${statusMap[status] || "secondary"}`;
     };
 
     if (loading) return <div>Loading...</div>;
@@ -96,11 +99,15 @@ const Runs = () => {
                             <button
                                 className="btn btn-primary"
                                 onClick={() => {
-                                    const runId = (document.getElementById('runIdInput') as HTMLInputElement).value;
+                                    const runId = (
+                                        document.getElementById(
+                                            "runIdInput"
+                                        ) as HTMLInputElement
+                                    ).value;
                                     if (runId) {
                                         navigate(`/runs/${runId}`);
                                     } else {
-                                        alert('Please enter a RunID');
+                                        alert("Please enter a RunID");
                                     }
                                 }}
                             >
@@ -111,49 +118,65 @@ const Runs = () => {
                 </div>
                 <div>
                     {isLoading ? (
-                        <div className="text-center">Loading pipeline runs...</div>
+                        <div className="text-center">
+                            Loading pipeline runs...
+                        </div>
                     ) : (
                         <div className="table-responsive">
                             <table className="table table-hover align-middle">
                                 <thead>
-                                <tr>
-                                    <th>Pipeline</th>
-                                    <th>Status</th>
-                                    <th>Started</th>
-                                </tr>
+                                    <tr>
+                                        <th>Pipeline</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
-                                {runs.map(run => (
-                                    <tr
-                                        key={run._id}
-                                        onClick={() => navigate(`/runs/${run._id}`)}
-                                        style={{ cursor: 'pointer' }}
-                                        className="hover:bg-gray-100 transition-colors"
-                                    >
-                                        <td>{run.pipeline}</td>
-                                        <td>
-                                      <span className={statusBadge(run.status)}>
-                                        {run.status}
-                                      </span>
-                                        </td>
-                                        <td>{formatTimestamp(run.timestamp)}</td>
-                                        <td>
-                                            <button
-                                                className="btn btn-sm btn-danger"
-                                                onClick={() => handleDeleteRun(run._id)}
+                                    {runs.map((run) => (
+                                        <tr
+                                            key={run._id}
+                                            onClick={() =>
+                                                navigate(`/runs/${run._id}`)
+                                            }
+                                            style={{ cursor: "pointer" }}
+                                            className="hover:bg-gray-100 transition-colors"
+                                        >
+                                            <td>{run.pipeline}</td>
+                                            <td>
+                                                <span
+                                                    className={statusBadge(
+                                                        run.status
+                                                    )}
+                                                >
+                                                    {run.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {formatTimestamp(run.timestamp)}
+                                            </td>
+                                            <td>
+                                                <button
+                                                    className="btn btn-sm btn-danger"
+                                                    onClick={() =>
+                                                        handleDeleteRun(run._id)
+                                                    }
+                                                >
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {runs.length === 0 && !isLoading && (
+                                        <tr>
+                                            <td
+                                                colSpan={4}
+                                                className="text-center py-4"
                                             >
-                                                Delete
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {runs.length === 0 && !isLoading && (
-                                    <tr>
-                                        <td colSpan={4} className="text-center py-4">
-                                            No pipeline runs found. Start your first analysis!
-                                        </td>
-                                    </tr>
-                                )}
+                                                No pipeline runs found. Start
+                                                your first analysis!
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

@@ -7,9 +7,5 @@ export function AlertComponent({
     variant: string;
     children: React.ReactNode;
 }) {
-    return (
-        <Alert variant={variant}>
-            {children}
-        </Alert>
-    );
+    return <Alert variant={variant}>{children}</Alert>;
 }

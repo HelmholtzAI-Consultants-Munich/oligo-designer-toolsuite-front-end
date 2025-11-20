@@ -8,7 +8,6 @@ _A lightweight, user-friendly interface for custom oligo design pipelines_
 ![Backend Tests](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/actions/workflows/backend_tests.yml/badge.svg)
 ![E2E Tests](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/actions/workflows/e2e.yml/badge.svg)</div>
 
-
 ---
 
 This repository contains the **frontend web application** for the [Oligo Designer Toolsuite](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite):  
@@ -17,6 +16,7 @@ A modular, open-source platform for running custom oligo design pipelines (such 
 Deploying this frontend allows **multiple users to access, configure, and run oligo design pipelines via a browser**. The frontend talks to the backend REST API (Python Flask) where all core logic and computation happens.
 
 **Features:**
+
 - Modern React + TypeScript web app
 - Multi-user support with authentication
 - Uploads your sequence data and parameters
@@ -48,6 +48,7 @@ This project provides a single `docker-compose.yml` file to deploy containers lo
 **Warning: Due to a known bug in ODT Cloud, you always have to start a new browser session (e.g. via new private window) to access the application when using Docker.**
 
 To launch the frontend, backend and database, run:
+
 ```bash
 npm i
 docker compose watch
@@ -59,7 +60,7 @@ See [Using Docker](docs/using-docker.md) for details on using Docker for this pr
 
 ### 1. Install the Oligo Designer Command line interface first
 
-Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend. 
+Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend.
 
 ### 2. Install frontend dependencies
 
@@ -116,7 +117,6 @@ See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.
   - MongoDB as database
 
 ---
-
 
 ## License
 

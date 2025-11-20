@@ -11,14 +11,14 @@ The MERFISH pipeline page is designed for probe design workflows using three mai
 
 ## How it works
 
-1. **Select inputs**  
-   - **Targets**: Provide a `.txt` file with one gene per line, or type a comma-separated gene list directly in the UI. If you type them, the backend will create a temporary file for you.  
+1. **Select inputs**
+   - **Targets**: Provide a `.txt` file with one gene per line, or type a comma-separated gene list directly in the UI. If you type them, the backend will create a temporary file for you.
    - **FASTA groups** (four required):
      - Target probe database
      - Reference database for target probes
      - Reference database for readout probes
      - Reference database for primers  
-     Each group allows either **Generate FASTA+** (from NCBI/Ensembl) or **Choose File** (upload). Multiple files/outputs are stored as newline-separated paths.
+       Each group allows either **Generate FASTA+** (from NCBI/Ensembl) or **Choose File** (upload). Multiple files/outputs are stored as newline-separated paths.
 
 2. **Adjust parameters** for the selected tab:
    - **Target Probe Parameters**: probe length/Tm bounds, GC content, homopolymer limits, isoform settings, set size, distance between probes, number of sets, and related weights.
@@ -30,18 +30,17 @@ The MERFISH pipeline page is designed for probe design workflows using three mai
    - In **Target Probe**: specificity and cross-hybridization filters, set selection weights, melting temperature parameters.
    - In **Readout**: advanced readout parameters.
    - In **Primer**: advanced primer parameters.
-   
 
- 4. **Generate or Upload FASTA Files**
+4. **Generate or Upload FASTA Files**
 
-- **Generate (FASTA+)**: Calls `/api/genomic/cascaded/{ncbi|ensembl}` to build the FASTA file, then stores the returned path.  
-- **Upload**: Sends the file to `/api/upload` and stores the returned path.  
-- The app concatenates multiple uploaded or generated files using newline separators.  
-- Submission is only enabled once all four FASTA groups contain at least one valid file path.  
-- A **caching mechanism** ensures identical FASTA files are reused across runs to improve efficiency.  
-- **Unused or stale files** in the cache are automatically cleaned up by a scheduled cron job to conserve storage.  
+- **Generate (FASTA+)**: Calls `/api/genomic/cascaded/{ncbi|ensembl}` to build the FASTA file, then stores the returned path.
+- **Upload**: Sends the file to `/api/upload` and stores the returned path.
+- The app concatenates multiple uploaded or generated files using newline separators.
+- Submission is only enabled once all four FASTA groups contain at least one valid file path.
+- A **caching mechanism** ensures identical FASTA files are reused across runs to improve efficiency.
+- **Unused or stale files** in the cache are automatically cleaned up by a scheduled cron job to conserve storage.
 
-5. **Submit the job**  
+5. **Submit the job**
    - The app creates a `runid` using `createRunId()` and packages the form data, replacing any file fields with the newline-joined paths.
    - Sends `{ formdata, runid }` to the backend (currently pointing at `/api/scrinshot`, should be `/api/merfish`).
 
