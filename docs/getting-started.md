@@ -13,10 +13,13 @@ This app lets multiple users run advanced oligo design pipelines (SeqFISH+, Scri
 
 ## Quickstart (using Docker)
 
-This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. Note that user data is not preserved across restarts with the provided configuration.
+This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
+
+**Warning: Due to a known bug in ODT Cloud, you always have to start a new browser session (e.g. via new private window) to access the application when using Docker.**
 
 To launch the frontend, backend and database, run:
 ```bash
+npm i
 docker compose watch
 ```
 
