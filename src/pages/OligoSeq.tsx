@@ -2172,7 +2172,7 @@ const OligoSeq: React.FC = () => {
 
             try {
                 setRunStatus("running");
-                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: newId }, {
+                const response = await axios.post('http://localhost:5000/api/oligoseq', { formdata: formData, runid: newId }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
@@ -2185,7 +2185,7 @@ const OligoSeq: React.FC = () => {
                     body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`
                 });
             } catch (error) {
-                console.error('Error submitting scrinshot form:', error);
+                console.error('Error submitting oligoseq form:', error);
                 setModal({
                     show: true,
                     title: "Pipeline Failed",

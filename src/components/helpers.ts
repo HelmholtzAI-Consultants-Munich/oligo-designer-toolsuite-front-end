@@ -293,7 +293,7 @@ export const handleSubmit = async (
         setRunStatus("running");
 
         const response = await axios.post(
-            "http://localhost:5000/api/scrinshot",
+            "http://localhost:5000/api/merfish",
             { formdata: formData, runid: newId },
             {
                 withCredentials: true,
