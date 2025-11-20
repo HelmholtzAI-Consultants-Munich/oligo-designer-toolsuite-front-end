@@ -10,7 +10,7 @@ import merfishImage from "../images/pipeline_merfish_probes.webp";
 import TargetFile from "../components/targetFile";
 import { NumberInput, NumberInputAlt } from "../components/numberInput";
 import { TextInput, TextInputAlt } from "../components/textInput";
-import {SelectInput, SelectInputAlt} from "../components/selectInput"
+import { SelectInput, SelectInputAlt } from "../components/selectInput";
 import FileSelection from "../components/fileSelection";
 import FastaGeneration from "../components/fastaGeneration";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
@@ -114,6 +114,7 @@ const Merfish: React.FC = () => {
                                 label="Maximum Number of Sets"
                                 fieldID="top_n_sets"
                                 formData={formData}
+                                setFormData={setFormData}
                             />
                         </div>
 
@@ -123,6 +124,7 @@ const Merfish: React.FC = () => {
                                     label="Min Probe Length:"
                                     fieldID="target_probe_length_min"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -131,6 +133,7 @@ const Merfish: React.FC = () => {
                                     label="Max Probe Length:"
                                     fieldID="target_probe_length_max"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -139,6 +142,7 @@ const Merfish: React.FC = () => {
                                     label="Isoform Consensus (%):"
                                     fieldID="target_probe_isoform_consensus"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -149,6 +153,7 @@ const Merfish: React.FC = () => {
                                     label="Min GC Content (%):"
                                     fieldID="target_probe_GC_content_min"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -157,6 +162,7 @@ const Merfish: React.FC = () => {
                                     label="Optimal GC Content (%):"
                                     fieldID="target_probe_GC_content_opt"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -165,6 +171,7 @@ const Merfish: React.FC = () => {
                                     label="Max GC Content (%):"
                                     fieldID="target_probe_GC_content_max"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -175,6 +182,7 @@ const Merfish: React.FC = () => {
                                     label="Min Tm(°C):"
                                     fieldID="target_probe_Tm_min"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -183,6 +191,7 @@ const Merfish: React.FC = () => {
                                     label="Max Tm(°C):"
                                     fieldID="target_probe_Tm_max"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -191,6 +200,7 @@ const Merfish: React.FC = () => {
                                     label="Opt Tm(°C):"
                                     fieldID="target_probe_Tm_opt"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -207,6 +217,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_homopolymeric_base_n"
                                     subID="A"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                             <div className="col">
@@ -215,6 +226,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_homopolymeric_base_n"
                                     subID="T"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                             <div className="col">
@@ -223,6 +235,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_homopolymeric_base_n"
                                     subID="C"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                             <div className="col">
@@ -231,6 +244,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_homopolymeric_base_n"
                                     subID="G"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -240,6 +254,7 @@ const Merfish: React.FC = () => {
                                 label="Probe Isoform Weight:"
                                 fieldID="target_probe_isoform_weight"
                                 formData={formData}
+                                setFormData={setFormData}
                             />
                         </div>
 
@@ -248,6 +263,7 @@ const Merfish: React.FC = () => {
                                 label="GC Content Weight:"
                                 fieldID="target_probe_GC_weight"
                                 formData={formData}
+                                setFormData={setFormData}
                             />
                         </div>
 
@@ -256,6 +272,7 @@ const Merfish: React.FC = () => {
                                 label="Tm Weight:"
                                 fieldID="target_probe_Tm_weight"
                                 formData={formData}
+                                setFormData={setFormData}
                             />
                         </div>
 
@@ -265,6 +282,7 @@ const Merfish: React.FC = () => {
                                     label="Minimum Probe Set Size:"
                                     fieldID="set_size_min"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -273,6 +291,7 @@ const Merfish: React.FC = () => {
                                     label="Optimal Probe Set Size:"
                                     fieldID="set_size_opt"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -281,6 +300,7 @@ const Merfish: React.FC = () => {
                                     label="Distance Between Probes:"
                                     fieldID="distance_between_target_probes"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -289,6 +309,7 @@ const Merfish: React.FC = () => {
                                     label="Maximum Number of Sets:"
                                     fieldID="n_sets"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -317,6 +338,7 @@ const Merfish: React.FC = () => {
                                 label="Length of readout probes:"
                                 fieldID="readout_probe_length"
                                 formData={formData}
+                                setFormData={setFormData}
                             />
                         </div>
 
@@ -327,6 +349,7 @@ const Merfish: React.FC = () => {
                                     fieldID="readout_probe_base_probabilities"
                                     subID="A"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -336,6 +359,7 @@ const Merfish: React.FC = () => {
                                     fieldID="readout_probe_base_probabilities"
                                     subID="T"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -345,6 +369,7 @@ const Merfish: React.FC = () => {
                                     fieldID="readout_probe_base_probabilities"
                                     subID="C"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -354,6 +379,7 @@ const Merfish: React.FC = () => {
                                     fieldID="readout_probe_base_probabilities"
                                     subID="G"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -363,6 +389,7 @@ const Merfish: React.FC = () => {
                                     label="Minimum GC content:"
                                     fieldID="readout_probe_GC_content_min"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -371,6 +398,7 @@ const Merfish: React.FC = () => {
                                     label="Maximum GC content:"
                                     fieldID="readout_probe_GC_content_max"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -381,6 +409,7 @@ const Merfish: React.FC = () => {
                                 fieldID="readout_probe_homopolymeric_base_n"
                                 subID="G"
                                 formData={formData}
+                                setFormData={setFormData}
                             />
                         </div>
 
@@ -389,6 +418,7 @@ const Merfish: React.FC = () => {
                                 label="Total number of readout probes:"
                                 fieldID="readout_probe_set_size"
                                 formData={formData}
+                                setFormData={setFormData}
                             />
                         </div>
 
@@ -399,6 +429,7 @@ const Merfish: React.FC = () => {
                                     fieldID="readout_probe_homogeneous_properties_weights"
                                     subID="TmNN"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -408,6 +439,7 @@ const Merfish: React.FC = () => {
                                     fieldID="readout_probe_homogeneous_properties_weights"
                                     subID="GC_content"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -417,6 +449,7 @@ const Merfish: React.FC = () => {
                                     label="Number of Bits:"
                                     fieldID="n_bits"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -425,6 +458,7 @@ const Merfish: React.FC = () => {
                                     label="Minimum Hamming Distance:"
                                     fieldID="min_hamming_dist"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -433,6 +467,7 @@ const Merfish: React.FC = () => {
                                     label="Hamming Weight:"
                                     fieldID="hamming_weight"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -441,6 +476,7 @@ const Merfish: React.FC = () => {
                                     label="Channel IDs:"
                                     fieldID="channels_ids"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -471,6 +507,7 @@ const Merfish: React.FC = () => {
                                         label="Reverse Primer Sequence:"
                                         fieldID="reverse_primer_sequence"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -479,6 +516,7 @@ const Merfish: React.FC = () => {
                                         label="Primer Length:"
                                         fieldID="primer_length"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -489,6 +527,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_base_probabilities"
                                         subID="A"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -498,6 +537,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_base_probabilities"
                                         subID="T"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -507,6 +547,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_base_probabilities"
                                         subID="C"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -516,6 +557,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_base_probabilities"
                                         subID="G"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -526,6 +568,7 @@ const Merfish: React.FC = () => {
                                         label="Min GC Content:"
                                         fieldID="primer_GC_content_min"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -534,6 +577,7 @@ const Merfish: React.FC = () => {
                                         label="Max GC Content:"
                                         fieldID="primer_GC_content_max"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -544,6 +588,7 @@ const Merfish: React.FC = () => {
                                         label="GC Clamp (GC Count):"
                                         fieldID="primer_number_GC_GCclamp"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -552,6 +597,7 @@ const Merfish: React.FC = () => {
                                         label="3' Base GC Clamp Count:"
                                         fieldID="primer_number_three_prime_base_GCclamp"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -563,6 +609,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_homopolymeric_base_n"
                                         subID="A"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -572,6 +619,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_homopolymeric_base_n"
                                         subID="T"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -581,6 +629,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_homopolymeric_base_n"
                                         subID="C"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -590,6 +639,7 @@ const Merfish: React.FC = () => {
                                         fieldID="primer_homopolymeric_base_n"
                                         subID="G"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -600,6 +650,7 @@ const Merfish: React.FC = () => {
                                         label="Max Self-Complementary Length:"
                                         fieldID="primer_max_len_selfcomplement"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -608,6 +659,7 @@ const Merfish: React.FC = () => {
                                         label="Max Complement Reverse Primer Length:"
                                         fieldID="primer_max_len_complement_reverse_primer"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -616,6 +668,7 @@ const Merfish: React.FC = () => {
                                         label="Min Primer Tm (°C):"
                                         fieldID="primer_Tm_min"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -624,6 +677,7 @@ const Merfish: React.FC = () => {
                                         label="Max Primer Tm (°C):"
                                         fieldID="primer_Tm_max"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -634,6 +688,7 @@ const Merfish: React.FC = () => {
                                     label="Secondary Structure Temperature (°C):"
                                     fieldID="primer_T_secondary_structure"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -642,6 +697,7 @@ const Merfish: React.FC = () => {
                                     label="Threshold Delta G:"
                                     fieldID="primer_secondary_structures_threshold_deltaG"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -663,20 +719,21 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_specificity_blastn_search_parameters"
                                     subID="perc_identity"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col-md-6">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Strand:"
                                     fieldID="target_probe_specificity_blastn_search_parameters"
-                                    subID= "strand"
-                                    options= {[
+                                    subID="strand"
+                                    options={[
                                         { value: "minus", label: "Minus" },
-                                        { value: "plus", label: "Plus" }
-                                      ]}
+                                        { value: "plus", label: "Plus" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -686,34 +743,35 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_specificity_blastn_search_parameters"
                                     subID="word_size"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col-md-6">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Dust:"
                                     fieldID="target_probe_specificity_blastn_search_parameters"
-                                    subID= "dust"
-                                    options= {[
+                                    subID="dust"
+                                    options={[
                                         { value: "no", label: "No" },
-                                        { value: "yes", label: "Yes" }
-                                      ]}
+                                        { value: "yes", label: "Yes" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col-md-6">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Soft Masking:"
                                     fieldID="target_probe_specificity_blastn_search_parameters"
-                                    subID= "soft_masking"
-                                    options= {[
+                                    subID="soft_masking"
+                                    options={[
                                         { value: "false", label: "False" },
-                                        { value: "true", label: "True" }
-                                      ]}
+                                        { value: "true", label: "True" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -723,6 +781,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_specificity_blastn_search_parameters"
                                     subID="max_target_seqs"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -732,6 +791,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_specificity_blastn_search_parameters"
                                     subID="max_hsps"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -741,6 +801,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_cross_hybridization_blastn_hit_parameters"
                                     subID="min_alignment_length"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -756,20 +817,21 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
                                     subID="perc_identity"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col-md-6">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Strand:"
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
-                                    subID= "strand"
-                                    options= {[
+                                    subID="strand"
+                                    options={[
                                         { value: "minus", label: "Minus" },
-                                        { value: "plus", label: "Plus" }
-                                      ]}
+                                        { value: "plus", label: "Plus" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -779,6 +841,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
                                     subID="word_size"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -786,27 +849,27 @@ const Merfish: React.FC = () => {
                                 <SelectInputAlt
                                     label="Dust:"
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
-                                    subID= "dust"
-                                    options= {[
+                                    subID="dust"
+                                    options={[
                                         { value: "no", label: "No" },
-                                        { value: "yes", label: "Yes" }
-                                      ]}
+                                        { value: "yes", label: "Yes" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col-md-6">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Soft Masking:"
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
-                                    subID= "soft_masking"
-                                    options= {[
+                                    subID="soft_masking"
+                                    options={[
                                         { value: "false", label: "False" },
-                                        { value: "true", label: "True" }
-                                      ]}
+                                        { value: "true", label: "True" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -816,6 +879,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
                                     subID="max_target_seqs"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -825,6 +889,7 @@ const Merfish: React.FC = () => {
                                     fieldID="target_probe_cross_hybridization_blastn_hit_parameters"
                                     subID="min_alignment_length"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -839,6 +904,7 @@ const Merfish: React.FC = () => {
                                     label="Max Graph Size:"
                                     fieldID="max_graph_size"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -847,20 +913,21 @@ const Merfish: React.FC = () => {
                                     label="Number of Attempts:"
                                     fieldID="n_attempts"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col-md-6">
-                            <SelectInput
-                                label="Heuristic:"
-                                fieldID="heuristic"
-                                options= {[
-                                    { value: "true", label: "True" },
-                                    { value: "false", label: "False" }
-                                ]}
-                                formData={formData}
-                                setFormData={setFormData} 
-                            />
+                                <SelectInput
+                                    label="Heuristic:"
+                                    fieldID="heuristic"
+                                    options={[
+                                        { value: "true", label: "True" },
+                                        { value: "false", label: "False" },
+                                    ]}
+                                    formData={formData}
+                                    setFormData={setFormData}
+                                />
                             </div>
 
                             <div className="col-md-6">
@@ -868,6 +935,7 @@ const Merfish: React.FC = () => {
                                     label="Heuristics number of Attempts:"
                                     fieldID="heuristic_n_attempts"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -884,6 +952,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="nn_table"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -893,6 +962,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="tmm_table"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -902,6 +972,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="imm_table"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -911,6 +982,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="de_table"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -920,6 +992,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="dnac1"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -929,6 +1002,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="dnac2"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -938,6 +1012,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="saltcorr"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -947,6 +1022,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="Na"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -956,6 +1032,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="K"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -965,6 +1042,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="Tris"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -974,6 +1052,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="Mg"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -983,6 +1062,7 @@ const Merfish: React.FC = () => {
                                         fieldID="target_probe_Tm_parameters"
                                         subID="dNTPs"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -999,6 +1079,7 @@ const Merfish: React.FC = () => {
                                         label="Initial Number of Sequences:"
                                         fieldID="readout_probe_initial_num_sequences"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -1008,21 +1089,22 @@ const Merfish: React.FC = () => {
                                         fieldID="readout_probe_specificity_blastn_search_parameters"
                                         subID="perc_identity"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
                             <div className="row g-3">
                                 <div className="col">
-                                     <SelectInputAlt
+                                    <SelectInputAlt
                                         label="Strand:"
                                         fieldID="readout_probe_specificity_blastn_search_parameters"
-                                        subID= "strand"
-                                        options= {[
+                                        subID="strand"
+                                        options={[
                                             { value: "minus", label: "Minus" },
-                                            { value: "plus", label: "Plus" }
-                                          ]}
+                                            { value: "plus", label: "Plus" },
+                                        ]}
                                         formData={formData}
-                                        setFormData={setFormData} 
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -1032,6 +1114,7 @@ const Merfish: React.FC = () => {
                                         fieldID="readout_probe_specificity_blastn_search_parameters"
                                         subID="word_size"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -1040,13 +1123,13 @@ const Merfish: React.FC = () => {
                                     <SelectInputAlt
                                         label="Dust:"
                                         fieldID="readout_probe_specificity_blastn_search_parameters"
-                                        subID= "dust"
-                                        options= {[
+                                        subID="dust"
+                                        options={[
                                             { value: "no", label: "No" },
-                                            { value: "yes", label: "Yes" }
+                                            { value: "yes", label: "Yes" },
                                         ]}
                                         formData={formData}
-                                        setFormData={setFormData} 
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -1054,13 +1137,13 @@ const Merfish: React.FC = () => {
                                     <SelectInputAlt
                                         label="Soft Masking:"
                                         fieldID="readout_probe_specificity_blastn_search_parameters"
-                                        subID= "soft_masking"
-                                        options= {[
+                                        subID="soft_masking"
+                                        options={[
                                             { value: "false", label: "False" },
-                                            { value: "true", label: "True" }
-                                          ]}
+                                            { value: "true", label: "True" },
+                                        ]}
                                         formData={formData}
-                                        setFormData={setFormData} 
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -1072,6 +1155,7 @@ const Merfish: React.FC = () => {
                                         fieldID="readout_probe_specificity_blastn_search_parameters"
                                         subID="max_target_seqs"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
 
@@ -1081,6 +1165,7 @@ const Merfish: React.FC = () => {
                                         fieldID="readout_probe_specificity_blastn_search_parameters"
                                         subID="max_hsps"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -1093,6 +1178,7 @@ const Merfish: React.FC = () => {
                                         fieldID="readout_probe_specificity_blastn_hit_parameters"
                                         subID="min_alignment_length"
                                         formData={formData}
+                                        setFormData={setFormData}
                                     />
                                 </div>
                             </div>
@@ -1108,6 +1194,7 @@ const Merfish: React.FC = () => {
                                     label="Initial Number of Sequences:"
                                     fieldID="primer_initial_num_sequences"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1117,20 +1204,21 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_refrence_blastn_search_parameters"
                                     subID="perc_identity"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Strand:"
                                     fieldID="primer_specificity_refrence_blastn_search_parameters"
-                                    subID= "strand"
-                                    options= {[
+                                    subID="strand"
+                                    options={[
                                         { value: "minus", label: "Minus" },
-                                        { value: "plus", label: "Plus" }
-                                      ]}
+                                        { value: "plus", label: "Plus" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1141,33 +1229,34 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_refrence_blastn_search_parameters"
                                     subID="word_size"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Dust:"
                                     fieldID="primer_specificity_refrence_blastn_search_parameters"
-                                    subID= "dust"
-                                    options= {[
+                                    subID="dust"
+                                    options={[
                                         { value: "no", label: "No" },
-                                        { value: "yes", label: "Yes" }
-                                      ]}
+                                        { value: "yes", label: "Yes" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
                             <div className="col">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Soft Masking:"
                                     fieldID="primer_specificity_refrence_blastn_search_parameters"
-                                    subID= "soft_masking"
-                                    options= {[
+                                    subID="soft_masking"
+                                    options={[
                                         { value: "false", label: "False" },
-                                        { value: "true", label: "True" }
-                                      ]}
+                                        { value: "true", label: "True" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1178,6 +1267,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_refrence_blastn_search_parameters"
                                     subID="max_target_seqs"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1187,6 +1277,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_refrence_blastn_search_parameters"
                                     subID="max_hsps"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1196,6 +1287,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_refrence_blastn_hit_parameters"
                                     subID="min_alignment_length"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1206,20 +1298,21 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
                                     subID="perc_identity"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Strand:"
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
-                                    subID= "strand"
-                                    options= {[
+                                    subID="strand"
+                                    options={[
                                         { value: "minus", label: "Minus" },
-                                        { value: "plus", label: "Plus" }
-                                      ]}
+                                        { value: "plus", label: "Plus" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1229,6 +1322,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
                                     subID="word_size"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1237,27 +1331,27 @@ const Merfish: React.FC = () => {
                                 <SelectInputAlt
                                     label="Dust:"
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
-                                    subID= "dust"
-                                    options= {[
+                                    subID="dust"
+                                    options={[
                                         { value: "no", label: "No" },
-                                        { value: "yes", label: "Yes" }
-                                      ]}
+                                        { value: "yes", label: "Yes" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
                             <div className="col">
-                                 <SelectInputAlt
+                                <SelectInputAlt
                                     label="Soft Masking:"
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
-                                    subID= "soft_masking"
-                                    options= {[
+                                    subID="soft_masking"
+                                    options={[
                                         { value: "false", label: "False" },
-                                        { value: "true", label: "True" }
-                                      ]}
+                                        { value: "true", label: "True" },
+                                    ]}
                                     formData={formData}
-                                    setFormData={setFormData} 
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1267,6 +1361,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
                                     subID="max_target_seqs"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1278,6 +1373,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
                                     subID="max_hsps"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1287,6 +1383,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_specificity_encoding_probes_blastn_hit_parameters"
                                     subID="min_alignment_length"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1296,6 +1393,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="nn_table"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1306,6 +1404,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="tmm_table"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1315,6 +1414,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="imm_table"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1324,6 +1424,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="de_table"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1334,6 +1435,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="dnac1"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1343,6 +1445,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="dnac2"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1354,6 +1457,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="saltcorr"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1363,6 +1467,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="Na"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1372,6 +1477,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="K"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>
@@ -1382,6 +1488,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="Tris"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1391,6 +1498,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="Mg"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
 
@@ -1400,6 +1508,7 @@ const Merfish: React.FC = () => {
                                     fieldID="primer_Tm_parameters"
                                     subID="dNTPs"
                                     formData={formData}
+                                    setFormData={setFormData}
                                 />
                             </div>
                         </div>

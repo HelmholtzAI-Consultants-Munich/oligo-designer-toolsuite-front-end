@@ -7,7 +7,6 @@ import merfish from "../images/merfish.jpg";
 import seqfish from "../images/seqfish.jpg";
 import oligoseq from "../images/oligoseq.jpg";
 
-
 const pipelines: React.FC = () => {
     // @ts-ignore
     // @ts-ignore
@@ -54,26 +53,29 @@ const pipelines: React.FC = () => {
                             description:
                                 "Spatial gene expression analysis using scrinshot technology.",
                             link: "/pipelines/scrinshot",
-                            img: scrinshot 
+                            img: scrinshot,
                         },
                         {
                             title: "Merfish Probe",
                             link: "/pipelines/merfish",
                             description:
                                 "Highly multiplexed imaging for spatially resolved transcriptomics.",
-                            img: merfish                        },
+                            img: merfish,
+                        },
                         {
                             title: "SeqFish+ Probe",
                             link: "/pipelines/seqfish",
                             description:
                                 "Sequential imaging for probing complex spatial transcriptomes.",
-                            img: seqfish                        },
+                            img: seqfish,
+                        },
                         {
                             title: "Oligo-Seq Probe",
                             link: "/pipelines/OligoSeq",
                             description:
                                 "High-throughput sequencing tailored for spatial transcriptomics.",
-                            img: oligoseq                        },
+                            img: oligoseq,
+                        },
                     ].map((pipeline, index) => (
                         <div className="col-md-3" key={index}>
                             <div className="card border-0 shadow-sm h-100">

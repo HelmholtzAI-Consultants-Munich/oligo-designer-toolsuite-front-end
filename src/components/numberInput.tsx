@@ -2,11 +2,13 @@ import React from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
 import { handleChange } from "./helpers";
+import type { formData } from "./types";
 
 interface NumberInputProps {
     label: string;
     fieldID: string;
     formData: any;
+    setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 interface NumberInputAltProps {
@@ -14,12 +16,14 @@ interface NumberInputAltProps {
     fieldID: string;
     subID: string;
     formData: any;
+    setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 export const NumberInput: React.FC<NumberInputProps> = ({
     label, //display Name
     fieldID, //internal identifier
     formData,
+    setFormData,
 }) => {
     return (
         <>
@@ -33,7 +37,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
                     id={fieldID}
                     name={fieldID}
                     value={formData[fieldID].value}
-                    onChange={(e) => handleChange(e, formData)}
+                    onChange={(e) => handleChange(e, setFormData)}
                     required
                 />
                 <OverlayTrigger
@@ -66,6 +70,7 @@ export const NumberInputAlt: React.FC<NumberInputAltProps> = ({
     fieldID, //internal identifier
     subID, //subname of the internal Id
     formData,
+    setFormData,
 }) => {
     return (
         <>
@@ -79,7 +84,7 @@ export const NumberInputAlt: React.FC<NumberInputAltProps> = ({
                     id={`${fieldID}.${subID}`}
                     name={`${fieldID}.${subID}`}
                     value={formData[fieldID][subID].value}
-                    onChange={(e) => handleChange(e, formData)}
+                    onChange={(e) => handleChange(e, setFormData)}
                     required
                 />
                 <OverlayTrigger
