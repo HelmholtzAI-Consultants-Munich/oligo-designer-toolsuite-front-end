@@ -9,6 +9,10 @@ dependencies:
   - pip=24.3.1
   - git # required by setuptools-scm for local odt install
 
+  # Build tools for C extensions
+  - gcc_linux-aarch64
+  - gxx_linux-aarch64
+
   # Genomic CLI toolchain
   - bedtools=2.31.1
   - blast=2.16.0
