@@ -6,7 +6,6 @@
   margin-top: 0; /* Optional: Adjust dropdown position */
 }
 
-
 .App {
   text-align: center;
 }
@@ -46,7 +45,9 @@
   }
 }
 .img-hover img {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .img-hover img:hover {

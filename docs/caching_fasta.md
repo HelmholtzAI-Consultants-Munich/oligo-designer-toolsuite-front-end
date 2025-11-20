@@ -53,7 +53,6 @@ The caching system employs a two-level cache strategy to optimize both performan
   All Level 2 downloads are **verified for integrity**: NCBI files are checked against the `md5checksums.txt` provided in the FTP directory, while Ensembl files are checked against their `.md5` sidecar files. Only files passing verification are used or cached.
 
   Both NCBI and Ensembl directory structures are deterministic, mirroring the official FTP layouts for ease of traceability and reproducibility. Example layouts:
-
   - **NCBI Cache Example:**
 
     ```

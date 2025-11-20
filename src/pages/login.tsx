@@ -53,11 +53,17 @@ const Login = () => {
                         <h2 className="text-center mb-4">Login</h2>
                         <div className="card shadow-sm mb-4">
                             <div className="card-body">
-                                <h5 className="card-title">Login with Helmholtz AAI</h5>
+                                <h5 className="card-title">
+                                    Login with Helmholtz AAI
+                                </h5>
                                 <p className="card-text">
-                                    Recommended for Helmholtz users. You will be redirected to the Helmholtz AAI login page.
+                                    Recommended for Helmholtz users. You will be
+                                    redirected to the Helmholtz AAI login page.
                                 </p>
-                                <button className="btn btn-primary w-100" onClick={redirectToHelmholtz}>
+                                <button
+                                    className="btn btn-primary w-100"
+                                    onClick={redirectToHelmholtz}
+                                >
                                     Continue with Helmholtz AAI
                                 </button>
                             </div>
@@ -65,13 +71,19 @@ const Login = () => {
 
                         <div className="card shadow-sm">
                             <div className="card-body">
-                                <h5 className="card-title">Legacy Email Login</h5>
+                                <h5 className="card-title">
+                                    Legacy Email Login
+                                </h5>
                                 <p className="card-text text-muted">
-                                    Use this option only if you have a local account with email/password.
+                                    Use this option only if you have a local
+                                    account with email/password.
                                 </p>
                                 <form onSubmit={handleSubmit}>
                                     <div className="mb-3">
-                                        <label htmlFor="email" className="form-label">
+                                        <label
+                                            htmlFor="email"
+                                            className="form-label"
+                                        >
                                             Email address
                                         </label>
                                         <input
@@ -79,12 +91,17 @@ const Login = () => {
                                             className="form-control"
                                             id="email"
                                             value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
+                                            onChange={(e) =>
+                                                setEmail(e.target.value)
+                                            }
                                             required
                                         />
                                     </div>
                                     <div className="mb-3">
-                                        <label htmlFor="password" className="form-label">
+                                        <label
+                                            htmlFor="password"
+                                            className="form-label"
+                                        >
                                             Password
                                         </label>
                                         <input
@@ -92,11 +109,16 @@ const Login = () => {
                                             className="form-control"
                                             id="password"
                                             value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
+                                            onChange={(e) =>
+                                                setPassword(e.target.value)
+                                            }
                                             required
                                         />
                                     </div>
-                                    <button type="submit" className="btn btn-secondary w-100">
+                                    <button
+                                        type="submit"
+                                        className="btn btn-secondary w-100"
+                                    >
                                         Login with Email
                                     </button>
                                 </form>

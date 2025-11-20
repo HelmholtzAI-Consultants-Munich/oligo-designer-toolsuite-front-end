@@ -22,11 +22,12 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "preview": "vite preview",
     "test": "vitest run --exclude 'tests/**'",
     "test:watch": "vitest --exclude 'tests/**'",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check"
+    "format": "prettier . --check",
+    "format:fix": "prettier . --write"
   },
   "prettier": {
     "tabWidth": 4,

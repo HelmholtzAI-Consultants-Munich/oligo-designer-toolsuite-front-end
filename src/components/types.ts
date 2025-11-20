@@ -34,4 +34,3 @@ export type formDataKey = string;
 // | "files_fasta_reference_database_readout_probe"
 
 //export type formDataKey = keyof typeof merfish_form | keyof typeof seqfish_form | keyof typeof oligoseq_form | keyof typeof scrinshot_form;
-

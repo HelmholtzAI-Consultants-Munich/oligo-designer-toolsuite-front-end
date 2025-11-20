@@ -99,7 +99,7 @@ n_sets: 100 # maximum number of sets to generate
 ### -----------------------------------------------
 channels_ids: # names of fluorescent channels
   - Alexa488
-  - Cy3b 
+  - Cy3b
   - Alexa647
 n_barcode_rounds: 4 # number of barcoding rounds
 n_pseudocolors: 20 # number of pseudocolors
@@ -201,23 +201,23 @@ n_attempts: 10000 # number of attempts to find the optimal set of oligos
 # parameters for melting temperature -> for more information on parameters, see: https://biopython.org/docs/1.75/api/Bio.SeqUtils.MeltingTemp.html#Bio.SeqUtils.MeltingTemp.Tm_NN
 ## primer
 Tm_parameters_primer:
-    check: true #default
-    strict: true #default
-    c_seq: null #default
-    shift: 0 #default
-    nn_table: DNA_NN4 #S antaLucia (2004) taken from Moffitt (2016)
-    tmm_table: DNA_TMM1 #default
-    imm_table: DNA_IMM1 #default
-    de_table: DNA_DE1 #default
-    dnac1: 500 #[nM] taken from https://github.com/ZhuangLab/MERFISH_analysis
-    dnac2: 25 #[nM] default
-    selfcomp: false #default
-    saltcorr: 5 # correction for deltaS, taken from https://github.com/ZhuangLab/MERFISH_analysis
-    Na: 300 #[mM] 0.3M, taken from https://github.com/ZhuangLab/MERFISH_analysis
-    K: 0 #[mM] default
-    Tris: 0 #[mM] default
-    Mg: 0 #[mM] default
-    dNTPs: 0 #[mM] default
+  check: true #default
+  strict: true #default
+  c_seq: null #default
+  shift: 0 #default
+  nn_table: DNA_NN4 #S antaLucia (2004) taken from Moffitt (2016)
+  tmm_table: DNA_TMM1 #default
+  imm_table: DNA_IMM1 #default
+  de_table: DNA_DE1 #default
+  dnac1: 500 #[nM] taken from https://github.com/ZhuangLab/MERFISH_analysis
+  dnac2: 25 #[nM] default
+  selfcomp: false #default
+  saltcorr: 5 # correction for deltaS, taken from https://github.com/ZhuangLab/MERFISH_analysis
+  Na: 300 #[mM] 0.3M, taken from https://github.com/ZhuangLab/MERFISH_analysis
+  K: 0 #[mM] default
+  Tris: 0 #[mM] default
+  Mg: 0 #[mM] default
+  dNTPs: 0 #[mM] default
 
 Tm_chem_correction_param_primer: null # if chem correction desired, please add parameters below
 

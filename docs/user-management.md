@@ -26,4 +26,3 @@ The Oligo Designer Toolsuite provides a comprehensive user management system tha
 ---
 
 For detailed information about authentication workflows, see [Authentication](auth.md).
-

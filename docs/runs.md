@@ -9,14 +9,14 @@ nav_order: 5
 The **Runs** section allows you to view and manage all your pipeline executions.  
 You can access your runs in two main ways:
 
-1. **By Run ID**  
-   - Enter a specific `RunID` into the input field.  
-   - Click **Go to Run** to view detailed information about that specific run.  
+1. **By Run ID**
+   - Enter a specific `RunID` into the input field.
+   - Click **Go to Run** to view detailed information about that specific run.
    - This is useful if you already know the exact ID of the run you want to inspect.
 
-2. **By Session or Account**  
-   - When you run a pipeline without being logged in, the system associates it with your **browser session**.  
-   - If you later **register or log in**, all session-based runs will be automatically **transferred to your account**.  
+2. **By Session or Account**
+   - When you run a pipeline without being logged in, the system associates it with your **browser session**.
+   - If you later **register or log in**, all session-based runs will be automatically **transferred to your account**.
    - Once runs are linked to your account, you can always access them in the **Runs** page without needing the Run ID.
 
 ---

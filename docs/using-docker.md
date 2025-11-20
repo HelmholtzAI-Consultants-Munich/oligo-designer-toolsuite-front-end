@@ -14,20 +14,23 @@ ODT Cloud can be run and deployed using Docker containers. The provided configur
 
 ## Quickstart
 
-This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**  
+This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
 
 To launch the frontend, backend and database, run:
+
 ```bash
 npm i
 docker compose watch
 ```
 
 and when you're finished:
+
 ```bash
 docker compose down
 ```
 
 To view the logs, use:
+
 ```bash
 docker logs -f odt-web # or odt-server
 ```
@@ -39,6 +42,7 @@ docker logs -f odt-web # or odt-server
 The Dockerfile located at `flask/Dockerfile` is used to build the backend using a minimal conda environment. In the Docker Compose file, the resulting container is tagged `odt-server`.
 
 To force rebuilding the container, use:
+
 ```bash
 docker compose build odt-server
 # or if you want to start it too:
@@ -47,9 +51,10 @@ docker compose run -d --build odt-server
 
 ## Running the Node Frontend
 
-The Docker Compose file configures a prebuilt Node container and gives it access to the entire working directory with a bind mount. By default, starting the container executes `npm run dev -- --host`. The container is tagged `odt-web`. 
+The Docker Compose file configures a prebuilt Node container and gives it access to the entire working directory with a bind mount. By default, starting the container executes `npm run dev -- --host`. The container is tagged `odt-web`.
 
 To run an arbitrary command in the container, use:
+
 ```bash
 docker compose run --rm odt-web <command>
 ```
@@ -59,29 +64,30 @@ docker compose run --rm odt-web <command>
 The Docker Compose file configures a prebuild MongoDB container tagged `odt-db`. By default, the container is accessible on localhost.
 
 To start just the database, run:
+
 ```bash
 docker compose up odt-db -d
 ```
 
 To limit access to the Docker containers, comment out the lines configuring port forwarding in `docker-compose.yml`:
+
 ```yaml
 #...
-  odt-db:
-    image: mongo:8
-    container_name: odt-db
-    # Comment out these lines to restrict database access from localhost
-    ports:
-      - 27017:27017
+odt-db:
+  image: mongo:8
+  container_name: odt-db
+  # Comment out these lines to restrict database access from localhost
+  ports:
+    - 27017:27017
 #...
 ```
-
-
 
 ## Building and Running the Playwright Tests
 
 The Dockerfile located at `tests/Dockerfile` is used to build the Playwright testing environment, including all necessary browsers. In the Docker Compose file, the resulting container is tagged `odt-tests`. **It is not executed by default.**
 
 To force rebuilding the container, use:
+
 ```bash
 docker compose build odt-tests
 # or if you want to run all tests too:
@@ -102,6 +108,7 @@ Note that you might need to force a sync by slightly changing a file to avoid wo
 With this setup, hot code reloading can't be disabled for the frontend, but it can for the backend.
 
 To launch the frontend, backend and database, run:
+
 ```bash
 docker compose watch
 # or without hot code reloading for the backend:

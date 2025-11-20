@@ -1,12 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {useAuth} from "./auth";
+import { useAuth } from "./auth";
 const Navbar: React.FC = () => {
     const { user, logout } = useAuth();
     const handleLogout = () => {
         fetch("http://localhost:5000/logout", {
             method: "POST",
-            credentials: "include"
+            credentials: "include",
         }).then(() => {
             logout();
         });
@@ -15,7 +15,12 @@ const Navbar: React.FC = () => {
         <nav className="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
             <div className="container">
                 <Link className="navbar-brand d-flex align-items-center" to="/">
-                    <img src="/ODT_logo 1.svg" alt="Oligo Designer Toolsuite" width="40" height="40" />
+                    <img
+                        src="/ODT_logo 1.svg"
+                        alt="Oligo Designer Toolsuite"
+                        width="40"
+                        height="40"
+                    />
                     <span className="ms-2">Oligo Designer Toolsuite</span>
                 </Link>
                 <button
@@ -29,7 +34,10 @@ const Navbar: React.FC = () => {
                 >
                     <span className="navbar-toggler-icon"></span>
                 </button>
-                <div className="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <div
+                    className="collapse navbar-collapse justify-content-end"
+                    id="navbarNav"
+                >
                     <ul className="navbar-nav">
                         <li className="nav-item me-3">
                             <Link className="nav-link" to="/">
@@ -48,22 +56,34 @@ const Navbar: React.FC = () => {
                             </a>
                             <ul className="dropdown-menu">
                                 <li>
-                                    <Link className="dropdown-item" to="/pipelines/scrinshot">
+                                    <Link
+                                        className="dropdown-item"
+                                        to="/pipelines/scrinshot"
+                                    >
                                         Scrinshot Probe
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link className="dropdown-item" to="/pipelines/merfish">
+                                    <Link
+                                        className="dropdown-item"
+                                        to="/pipelines/merfish"
+                                    >
                                         Merfish Probe
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link className="dropdown-item" to="/pipelines/seqfish">
+                                    <Link
+                                        className="dropdown-item"
+                                        to="/pipelines/seqfish"
+                                    >
                                         SeqFish+ Probe
                                     </Link>
                                 </li>
                                 <li>
-                                    <Link className="dropdown-item" to="/pipelines/OligoSeq">
+                                    <Link
+                                        className="dropdown-item"
+                                        to="/pipelines/OligoSeq"
+                                    >
                                         Oligo-Seq Probe
                                     </Link>
                                 </li>
@@ -74,7 +94,6 @@ const Navbar: React.FC = () => {
                                 Runs
                             </Link>
                         </li>
-
 
                         <li className="nav-item me-3">
                             <Link className="nav-link" to="/faq">
@@ -97,20 +116,38 @@ const Navbar: React.FC = () => {
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                     >
-                                        <i className="bi bi-gear-fill"></i> {/* Bootstrap Icons */}
+                                        <i className="bi bi-gear-fill"></i>{" "}
+                                        {/* Bootstrap Icons */}
                                     </a>
                                     <ul className="dropdown-menu-start dropdown-menu">
-                                        <li><button className="dropdown-item" onClick={handleLogout}>Logout</button></li>
+                                        <li>
+                                            <button
+                                                className="dropdown-item"
+                                                onClick={handleLogout}
+                                            >
+                                                Logout
+                                            </button>
+                                        </li>
                                     </ul>
                                 </li>
                             </>
                         ) : (
                             <>
                                 <li className="nav-item me-2">
-                                    <Link className="btn btn-outline-primary" to="/login">Login</Link>
+                                    <Link
+                                        className="btn btn-outline-primary"
+                                        to="/login"
+                                    >
+                                        Login
+                                    </Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className="btn btn-primary" to="/register">Register</Link>
+                                    <Link
+                                        className="btn btn-primary"
+                                        to="/register"
+                                    >
+                                        Register
+                                    </Link>
                                 </li>
                             </>
                         )}

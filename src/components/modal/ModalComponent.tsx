@@ -1,25 +1,25 @@
-import { Button, Modal } from "react-bootstrap"
+import { Button, Modal } from "react-bootstrap";
 
-export function ModalComponent({ 
+export function ModalComponent({
     show,
     close,
     title,
     body,
     primaryAction,
-    secondaryAction
+    secondaryAction,
 }: {
-    show: boolean,
-    close: () => void,
-    title: string,
-    body: string,
+    show: boolean;
+    close: () => void;
+    title: string;
+    body: string;
     primaryAction: {
-        title: string,
-        callback: () => void,
-    }
+        title: string;
+        callback: () => void;
+    };
     secondaryAction?: {
-        title: string,
-        callback: () => void,
-    }
+        title: string;
+        callback: () => void;
+    };
 }) {
     return (
         <Modal show={show} onHide={close}>
@@ -29,7 +29,10 @@ export function ModalComponent({
             <Modal.Body>{body}</Modal.Body>
             <Modal.Footer>
                 {secondaryAction && (
-                    <Button variant="secondary" onClick={secondaryAction.callback}>
+                    <Button
+                        variant="secondary"
+                        onClick={secondaryAction.callback}
+                    >
                         {secondaryAction.title}
                     </Button>
                 )}
@@ -38,5 +41,5 @@ export function ModalComponent({
                 </Button>
             </Modal.Footer>
         </Modal>
-    )
+    );
 }

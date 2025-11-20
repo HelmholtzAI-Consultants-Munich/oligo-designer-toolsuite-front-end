@@ -2,8 +2,8 @@ name: Run Backend Tests
 
 on:
   schedule:
-    - cron: '0 2 1 * *'  # At 2:00 AM on the 1st day of every month (UTC)
-  workflow_dispatch:  # Allow manual runs from GitHub UI
+    - cron: "0 2 1 * *" # At 2:00 AM on the 1st day of every month (UTC)
+  workflow_dispatch: # Allow manual runs from GitHub UI
 
 jobs:
   test:

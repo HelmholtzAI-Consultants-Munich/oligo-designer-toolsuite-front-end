@@ -18,6 +18,7 @@ This project provides a single `docker-compose.yml` file to deploy containers lo
 **Warning: Due to a known bug in ODT Cloud, you always have to start a new browser session (e.g. via new private window) to access the application when using Docker.**
 
 To launch the frontend, backend and database, run:
+
 ```bash
 npm i
 docker compose watch
