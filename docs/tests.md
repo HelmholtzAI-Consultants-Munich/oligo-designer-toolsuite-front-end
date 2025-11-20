@@ -43,6 +43,8 @@ docker compose up odt-db -d
 docker compose run --rm --build odt-server pytest -q
 # with coverage:
 docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-missing
+# exclude known failures
+docker compose run --rm --build odt-server pytest -m "not knownfailure"
 ```
 
 ### Fixtures & notes
