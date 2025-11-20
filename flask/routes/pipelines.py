@@ -20,7 +20,7 @@ import shutil
 import traceback
 from datetime import datetime
 from bson import ObjectId
-from flask import Blueprint, jsonify,send_file, session
+from flask import Blueprint, jsonify, send_file, request
 from flask_login import current_user
 from extensions import mongo
 
@@ -50,7 +50,9 @@ def delete_run(run_id):
             run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
 
         else:
-            session_id = session.get('session_id')
+            session_id = request.cookies.get('anonymous_session_id')
+            if not session_id:
+                return jsonify({"error": "Unauthorized"}), 403
             run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "session_id": session_id})
         if not run:
             return jsonify({"error": "Run not found"}), 404
@@ -103,7 +105,7 @@ def get_pipeline_runs():
         if current_user.is_authenticated:
             runs = list(mongo.db.runs.find({"user_id": str(current_user.id)}))
         else:
-            session_id = session.get('session_id')
+            session_id = request.cookies.get('anonymous_session_id')
             runs = list(mongo.db.runs.find({"session_id": session_id})) if session_id else []
 
         formatted_runs = []
@@ -148,7 +150,7 @@ def get_run_file(run_id, filename):
         if current_user.is_authenticated:
             query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
         else:
-            session_id = session.get('session_id')
+            session_id = request.cookies.get('anonymous_session_id')
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
             query = {"_id": ObjectId(run_id), "session_id": session_id}
@@ -206,7 +208,7 @@ def get_run_files(run_id_str):
         if current_user.is_authenticated:
             query = {"_id": run_id, "user_id": str(current_user.id)}
         else:
-            session_id = session.get('session_id')
+            session_id = request.cookies.get('anonymous_session_id')
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
             query = {"_id": run_id, "session_id": session_id}
