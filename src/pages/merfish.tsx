@@ -10,6 +10,7 @@ import merfishImage from "../images/pipeline_merfish_probes.webp";
 import TargetFile from "../components/targetFile";
 import { NumberInput, NumberInputAlt } from "../components/numberInput";
 import { TextInput, TextInputAlt } from "../components/textInput";
+import {SelectInput, SelectInputAlt} from "../components/selectInput"
 import FileSelection from "../components/fileSelection";
 import FastaGeneration from "../components/fastaGeneration";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
@@ -666,11 +667,16 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col-md-6">
-                                <TextInputAlt
-                                    label="Strand"
+                                 <SelectInputAlt
+                                    label="Strand:"
                                     fieldID="target_probe_specificity_blastn_search_parameters"
-                                    subID="strand"
+                                    subID= "strand"
+                                    options= {[
+                                        { value: "minus", label: "Minus" },
+                                        { value: "plus", label: "Plus" }
+                                      ]}
                                     formData={formData}
+                                    setFormData={setFormData} 
                                 />
                             </div>
 
@@ -684,20 +690,30 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col-md-6">
-                                <TextInputAlt
-                                    label="Dust"
+                                 <SelectInputAlt
+                                    label="Dust:"
                                     fieldID="target_probe_specificity_blastn_search_parameters"
-                                    subID="dust"
+                                    subID= "dust"
+                                    options= {[
+                                        { value: "no", label: "No" },
+                                        { value: "yes", label: "Yes" }
+                                      ]}
                                     formData={formData}
+                                    setFormData={setFormData} 
                                 />
                             </div>
 
                             <div className="col-md-6">
-                                <TextInputAlt
+                                 <SelectInputAlt
                                     label="Soft Masking:"
                                     fieldID="target_probe_specificity_blastn_search_parameters"
-                                    subID="soft_masking"
+                                    subID= "soft_masking"
+                                    options= {[
+                                        { value: "false", label: "False" },
+                                        { value: "true", label: "True" }
+                                      ]}
                                     formData={formData}
+                                    setFormData={setFormData} 
                                 />
                             </div>
 
@@ -744,11 +760,16 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col-md-6">
-                                <TextInputAlt
+                                 <SelectInputAlt
                                     label="Strand:"
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
-                                    subID="strand"
+                                    subID= "strand"
+                                    options= {[
+                                        { value: "minus", label: "Minus" },
+                                        { value: "plus", label: "Plus" }
+                                      ]}
                                     formData={formData}
+                                    setFormData={setFormData} 
                                 />
                             </div>
 
@@ -762,20 +783,30 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col-md-6">
-                                <TextInputAlt
+                                <SelectInputAlt
                                     label="Dust:"
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
-                                    subID="dust"
+                                    subID= "dust"
+                                    options= {[
+                                        { value: "no", label: "No" },
+                                        { value: "yes", label: "Yes" }
+                                      ]}
                                     formData={formData}
+                                    setFormData={setFormData} 
                                 />
                             </div>
 
                             <div className="col-md-6">
-                                <TextInputAlt
+                                 <SelectInputAlt
                                     label="Soft Masking:"
                                     fieldID="target_probe_cross_hybridization_blastn_search_parameters"
-                                    subID="soft_masking"
+                                    subID= "soft_masking"
+                                    options= {[
+                                        { value: "false", label: "False" },
+                                        { value: "true", label: "True" }
+                                      ]}
                                     formData={formData}
+                                    setFormData={setFormData} 
                                 />
                             </div>
 
@@ -820,44 +851,16 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col-md-6">
-                                <label
-                                    htmlFor="heuristic"
-                                    className="form-label"
-                                >
-                                    Heuristic:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <select
-                                        className="form-control"
-                                        id="heuristic"
-                                        name="heuristic"
-                                        value={formData.heuristic.value}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="true">True</option>
-                                        <option value="false">False</option>
-                                    </select>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-n_jobs">
-                                                <Popover.Body>
-                                                    {formData.heuristic.comment}
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px",
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
+                            <SelectInput
+                                label="Heuristic:"
+                                fieldID="heuristic"
+                                options= {[
+                                    { value: "true", label: "True" },
+                                    { value: "false", label: "False" }
+                                ]}
+                                formData={formData}
+                                setFormData={setFormData} 
+                            />
                             </div>
 
                             <div className="col-md-6">
@@ -1010,52 +1013,17 @@ const Merfish: React.FC = () => {
                             </div>
                             <div className="row g-3">
                                 <div className="col">
-                                    <label
-                                        htmlFor="strand"
-                                        className="form-label"
-                                    >
-                                        Strand:
-                                    </label>
-                                    <div className="d-flex align-items-center">
-                                        <select
-                                            className="form-select"
-                                            id="strand"
-                                            name="readout_probe_specificity_blastn_search_parameters.strand"
-                                            value={
-                                                formData
-                                                    .readout_probe_specificity_blastn_search_parameters
-                                                    .strand.value
-                                            }
-                                            onChange={handleChange}
-                                        >
-                                            <option value="minus">Minus</option>
-                                            <option value="plus">Plus</option>
-                                        </select>
-                                        <OverlayTrigger
-                                            trigger="hover"
-                                            placement="top"
-                                            overlay={
-                                                <Popover id="popover-strand">
-                                                    <Popover.Body>
-                                                        {
-                                                            formData
-                                                                .readout_probe_specificity_blastn_search_parameters
-                                                                .strand.comment
-                                                        }
-                                                    </Popover.Body>
-                                                </Popover>
-                                            }
-                                        >
-                                            <InfoCircle
-                                                style={{
-                                                    fontSize: "1.2rem",
-                                                    cursor: "pointer",
-                                                    color: "#0d6efd",
-                                                    marginLeft: "10px",
-                                                }}
-                                            />
-                                        </OverlayTrigger>
-                                    </div>
+                                     <SelectInputAlt
+                                        label="Strand:"
+                                        fieldID="readout_probe_specificity_blastn_search_parameters"
+                                        subID= "strand"
+                                        options= {[
+                                            { value: "minus", label: "Minus" },
+                                            { value: "plus", label: "Plus" }
+                                          ]}
+                                        formData={formData}
+                                        setFormData={setFormData} 
+                                    />
                                 </div>
 
                                 <div className="col">
@@ -1069,105 +1037,31 @@ const Merfish: React.FC = () => {
                             </div>
                             <div className="row g-3">
                                 <div className="col">
-                                    <label
-                                        htmlFor="dust"
-                                        className="form-label"
-                                    >
-                                        Dust:
-                                    </label>
-                                    <div className="d-flex align-items-center">
-                                        <select
-                                            className="form-select"
-                                            id="readout_probe_specificity_blastn_search_parameters.dust"
-                                            name="readout_probe_specificity_blastn_search_parameters.dust"
-                                            value={
-                                                formData
-                                                    .readout_probe_specificity_blastn_search_parameters
-                                                    .dust.value
-                                            }
-                                            onChange={handleChange}
-                                        >
-                                            <option value="no">No</option>
-                                            <option value="yes">Yes</option>
-                                        </select>
-                                        <OverlayTrigger
-                                            trigger="hover"
-                                            placement="top"
-                                            overlay={
-                                                <Popover id="popover-dust">
-                                                    <Popover.Header as="h3">
-                                                        Dust Filtering
-                                                    </Popover.Header>
-                                                    <Popover.Body>
-                                                        {
-                                                            formData
-                                                                .readout_probe_specificity_blastn_search_parameters
-                                                                .dust.comment
-                                                        }
-                                                    </Popover.Body>
-                                                </Popover>
-                                            }
-                                        >
-                                            <InfoCircle
-                                                style={{
-                                                    fontSize: "1.2rem",
-                                                    cursor: "pointer",
-                                                    color: "#0d6efd",
-                                                    marginLeft: "10px",
-                                                }}
-                                            />
-                                        </OverlayTrigger>
-                                    </div>
+                                    <SelectInputAlt
+                                        label="Dust:"
+                                        fieldID="readout_probe_specificity_blastn_search_parameters"
+                                        subID= "dust"
+                                        options= {[
+                                            { value: "no", label: "No" },
+                                            { value: "yes", label: "Yes" }
+                                        ]}
+                                        formData={formData}
+                                        setFormData={setFormData} 
+                                    />
                                 </div>
 
                                 <div className="col">
-                                    <label
-                                        htmlFor="soft_masking"
-                                        className="form-label"
-                                    >
-                                        Soft Masking:
-                                    </label>
-                                    <div className="d-flex align-items-center">
-                                        <select
-                                            className="form-select"
-                                            id="soft_masking"
-                                            name="readout_probe_specificity_blastn_search_parameters.soft_masking"
-                                            value={
-                                                formData
-                                                    .readout_probe_specificity_blastn_search_parameters
-                                                    .soft_masking.value
-                                            }
-                                            onChange={handleChange}
-                                        >
-                                            <option value="false">False</option>
-                                            <option value="true">True</option>
-                                        </select>
-                                        <OverlayTrigger
-                                            trigger="hover"
-                                            placement="top"
-                                            overlay={
-                                                <Popover id="popover-soft-masking">
-                                                    <Popover.Body>
-                                                        {
-                                                            formData
-                                                                .readout_probe_specificity_blastn_search_parameters
-                                                                .soft_masking
-                                                                .comment
-                                                        }
-                                                    </Popover.Body>
-                                                </Popover>
-                                            }
-                                        >
-                                            <InfoCircle
-                                                style={{
-                                                    fontSize: "1.2rem",
-                                                    cursor: "pointer",
-                                                    color: "#0d6efd",
-                                                    marginLeft: "10px",
-                                                }}
-                                            />
-                                        </OverlayTrigger>
-                                    </div>
+                                    <SelectInputAlt
+                                        label="Soft Masking:"
+                                        fieldID="readout_probe_specificity_blastn_search_parameters"
+                                        subID= "soft_masking"
+                                        options= {[
+                                            { value: "false", label: "False" },
+                                            { value: "true", label: "True" }
+                                          ]}
+                                        formData={formData}
+                                        setFormData={setFormData} 
+                                    />
                                 </div>
                             </div>
 
@@ -1227,49 +1121,17 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col">
-                                <label htmlFor="strand" className="form-label">
-                                    Strand:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <select
-                                        className="form-select"
-                                        id="strand"
-                                        name="primer_specificity_refrence_blastn_search_parameters.strand"
-                                        value={
-                                            formData
-                                                .primer_specificity_refrence_blastn_search_parameters
-                                                .strand.value
-                                        }
-                                        onChange={handleChange}
-                                    >
-                                        <option value="minus">Minus</option>
-                                        <option value="plus">Plus</option>
-                                    </select>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-strand">
-                                                <Popover.Body>
-                                                    {
-                                                        formData
-                                                            .primer_specificity_refrence_blastn_search_parameters
-                                                            .strand.comment
-                                                    }
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px",
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
+                                 <SelectInputAlt
+                                    label="Strand:"
+                                    fieldID="primer_specificity_refrence_blastn_search_parameters"
+                                    subID= "strand"
+                                    options= {[
+                                        { value: "minus", label: "Minus" },
+                                        { value: "plus", label: "Plus" }
+                                      ]}
+                                    formData={formData}
+                                    setFormData={setFormData} 
+                                />
                             </div>
                         </div>
                         <div className="row g-3">
@@ -1283,101 +1145,30 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col">
-                                <label htmlFor="dust" className="form-label">
-                                    Dust:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <select
-                                        className="form-select"
-                                        id="dust"
-                                        name="primer_specificity_refrence_blastn_search_parameters.dust"
-                                        value={
-                                            formData
-                                                .primer_specificity_refrence_blastn_search_parameters
-                                                .dust.value
-                                        }
-                                        onChange={handleChange}
-                                    >
-                                        <option value="no">No</option>
-                                        <option value="yes">Yes</option>
-                                    </select>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-dust">
-                                                <Popover.Body>
-                                                    {
-                                                        formData
-                                                            .primer_specificity_refrence_blastn_search_parameters
-                                                            .dust.comment
-                                                    }
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px",
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
+                                 <SelectInputAlt
+                                    label="Dust:"
+                                    fieldID="primer_specificity_refrence_blastn_search_parameters"
+                                    subID= "dust"
+                                    options= {[
+                                        { value: "no", label: "No" },
+                                        { value: "yes", label: "Yes" }
+                                      ]}
+                                    formData={formData}
+                                    setFormData={setFormData} 
+                                />
                             </div>
                             <div className="col">
-                                <label
-                                    htmlFor="soft_masking"
-                                    className="form-label"
-                                >
-                                    Soft Masking:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <select
-                                        className="form-select"
-                                        id="soft_masking"
-                                        name="primer_specificity_refrence_blastn_search_parameters.soft_masking"
-                                        value={
-                                            formData
-                                                .primer_specificity_refrence_blastn_search_parameters
-                                                .soft_masking.value
-                                        }
-                                        onChange={handleChange}
-                                    >
-                                        <option value="false">False</option>
-                                        <option value="true">True</option>
-                                    </select>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-soft-masking">
-                                                <Popover.Header as="h3">
-                                                    Soft Masking
-                                                </Popover.Header>
-                                                <Popover.Body>
-                                                    {
-                                                        formData
-                                                            .primer_specificity_refrence_blastn_search_parameters
-                                                            .soft_masking
-                                                            .comment
-                                                    }
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px",
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
+                                 <SelectInputAlt
+                                    label="Soft Masking:"
+                                    fieldID="primer_specificity_refrence_blastn_search_parameters"
+                                    subID= "soft_masking"
+                                    options= {[
+                                        { value: "false", label: "False" },
+                                        { value: "true", label: "True" }
+                                      ]}
+                                    formData={formData}
+                                    setFormData={setFormData} 
+                                />
                             </div>
                         </div>
                         <div className="row g-3">
@@ -1419,54 +1210,22 @@ const Merfish: React.FC = () => {
                             </div>
 
                             <div className="col">
-                                <label htmlFor="strand" className="form-label">
-                                    Strand:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <select
-                                        className="form-select"
-                                        id="strand"
-                                        name="primer_specificity_encoding_probes_blastn_search_parameters.strand"
-                                        value={
-                                            formData
-                                                .primer_specificity_encoding_probes_blastn_search_parameters
-                                                .strand.value
-                                        }
-                                        onChange={handleChange}
-                                    >
-                                        <option value="minus">Minus</option>
-                                        <option value="plus">Plus</option>
-                                    </select>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-enc-strand">
-                                                <Popover.Body>
-                                                    {
-                                                        formData
-                                                            .primer_specificity_encoding_probes_blastn_search_parameters
-                                                            .strand.comment
-                                                    }
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px",
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
+                                 <SelectInputAlt
+                                    label="Strand:"
+                                    fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
+                                    subID= "strand"
+                                    options= {[
+                                        { value: "minus", label: "Minus" },
+                                        { value: "plus", label: "Plus" }
+                                      ]}
+                                    formData={formData}
+                                    setFormData={setFormData} 
+                                />
                             </div>
 
                             <div className="col">
                                 <NumberInputAlt
-                                    label="Word Size::"
+                                    label="Word Size:"
                                     fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
                                     subID="word_size"
                                     formData={formData}
@@ -1475,99 +1234,31 @@ const Merfish: React.FC = () => {
                         </div>
                         <div className="row g-3">
                             <div className="col">
-                                <label htmlFor="dust" className="form-label">
-                                    Dust:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <select
-                                        className="form-select"
-                                        id="dust"
-                                        name="primer_specificity_encoding_probes_blastn_search_parameters.dust"
-                                        value={
-                                            formData
-                                                .primer_specificity_encoding_probes_blastn_search_parameters
-                                                .dust.value
-                                        }
-                                        onChange={handleChange}
-                                    >
-                                        <option value="no">No</option>
-                                        <option value="yes">Yes</option>
-                                    </select>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-enc-dust">
-                                                <Popover.Body>
-                                                    {
-                                                        formData
-                                                            .primer_specificity_encoding_probes_blastn_search_parameters
-                                                            .dust.comment
-                                                    }
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px",
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
+                                <SelectInputAlt
+                                    label="Dust:"
+                                    fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
+                                    subID= "dust"
+                                    options= {[
+                                        { value: "no", label: "No" },
+                                        { value: "yes", label: "Yes" }
+                                      ]}
+                                    formData={formData}
+                                    setFormData={setFormData} 
+                                />
                             </div>
 
                             <div className="col">
-                                <label
-                                    htmlFor="soft_masking"
-                                    className="form-label"
-                                >
-                                    Soft Masking:
-                                </label>
-                                <div className="d-flex align-items-center">
-                                    <select
-                                        className="form-select"
-                                        id="soft_masking"
-                                        name="primer_specificity_encoding_probes_blastn_search_parameters.soft_masking"
-                                        value={
-                                            formData
-                                                .primer_specificity_encoding_probes_blastn_search_parameters
-                                                .soft_masking.value
-                                        }
-                                        onChange={handleChange}
-                                    >
-                                        <option value="false">False</option>
-                                        <option value="true">True</option>
-                                    </select>
-                                    <OverlayTrigger
-                                        trigger="hover"
-                                        placement="top"
-                                        overlay={
-                                            <Popover id="popover-enc-soft-masking">
-                                                <Popover.Body>
-                                                    {
-                                                        formData
-                                                            .primer_specificity_encoding_probes_blastn_search_parameters
-                                                            .soft_masking
-                                                            .comment
-                                                    }
-                                                </Popover.Body>
-                                            </Popover>
-                                        }
-                                    >
-                                        <InfoCircle
-                                            style={{
-                                                fontSize: "1.2rem",
-                                                cursor: "pointer",
-                                                color: "#0d6efd",
-                                                marginLeft: "10px",
-                                            }}
-                                        />
-                                    </OverlayTrigger>
-                                </div>
+                                 <SelectInputAlt
+                                    label="Soft Masking:"
+                                    fieldID="primer_specificity_encoding_probes_blastn_search_parameters"
+                                    subID= "soft_masking"
+                                    options= {[
+                                        { value: "false", label: "False" },
+                                        { value: "true", label: "True" }
+                                      ]}
+                                    formData={formData}
+                                    setFormData={setFormData} 
+                                />
                             </div>
 
                             <div className="col">
