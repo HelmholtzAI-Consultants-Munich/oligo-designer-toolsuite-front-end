@@ -13,6 +13,7 @@ import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import seqfishImage from "../images/pipeline_seqfishplus_probes.webp";
 import { RunLinkModal } from '../components/modal/RunLinkModal';
 import { InfoModal } from '../components/modal/InfoModal';
+import { RunIdAlert } from '../components/alert/RunIdAlert';
 
 const SeqFish: React.FC = () => {
     const defaultFastaForm = {
@@ -4259,7 +4260,7 @@ const SeqFish: React.FC = () => {
 
             try {
                 setRunStatus("running");
-                const response = await axios.post('http://localhost:5000/api/scrinshot', { formdata: formData, runid: newId }, {
+                const response = await axios.post('http://localhost:5000/api/seqfish', { formdata: formData, runid: newId }, {
                     withCredentials: true,
                     headers: { "Content-Type": "application/json" },
                 });
@@ -4272,7 +4273,7 @@ const SeqFish: React.FC = () => {
                     body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`
                 });
             } catch (error) {
-                console.error('Error submitting scrinshot form:', error);
+                console.error('Error submitting seqfish form:', error);
                 setModal({
                     show: true,
                     title: "Pipeline Failed",
@@ -4461,6 +4462,9 @@ A SeqFISH+ probe is a flourescent probe that contains a 28-nt gene-specific sequ
                                 <div className="alert alert-warning mt-3">
                                     Please upload all required files or fill the values before submitting.
                                 </div>
+                            )}
+                            {runId && (
+                                <RunIdAlert runId={runId} idCopySuccess={idCopySuccess} />
                             )}
                            <div className="d-flex justify-content-center mt-4">
                               <button
