@@ -1,5 +1,5 @@
 # using https://micromamba-docker.readthedocs.io/en/latest/index.html
-FROM mambaorg/micromamba:2-alpine3.22
+FROM mambaorg/micromamba:2
 
 # --- Set up environment ---
 COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/env.yml
