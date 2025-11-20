@@ -125,13 +125,3 @@ export const SelectInputAlt: React.FC<SelectInputAltProps> = ({
     );
 };
 
-//  <SelectInput
-//     label="Heuristic:"
-//     fieldID="heuristic"
-//     options= {[
-//         { value: "true", label: "True" },
-//         { value: "false", label: "False" }
-//       ]}
-//     formData={formData}
-//     setFormData={setFormData}
-// />
