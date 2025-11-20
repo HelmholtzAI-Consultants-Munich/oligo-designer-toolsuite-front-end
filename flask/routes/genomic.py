@@ -5,7 +5,7 @@ Cascaded endpoints (under `/api/genomic/cascaded/`) are designed to be used as i
 they generate genomic regions and pass the locations of created files/directories to downstream processes.
 Other endpoints are standalone: they run the full pipeline and return the output directly to the user.
 """
-from flask import Blueprint, request, jsonify, current_app, session
+from flask import Blueprint, request, jsonify, current_app
 from flask_login import current_user
 from bson import ObjectId
 import os
@@ -50,7 +50,9 @@ def genomic_cascaded_ncbi():
             session_id = None
         else:
             user_id = None
-            session_id = session['session_id']
+            session_id = request.cookies.get('anonymous_session_id')
+            if not session_id:
+                return jsonify({"error": "Anonymous session ID not found"}), 403
             user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
             config_path = os.path.join(user_dir, 'config.yaml')
         config_genomic = {}
@@ -189,7 +191,9 @@ def genomic_cascaded_ensemble():
             session_id = None
         else:
             user_id = None
-            session_id = session['session_id']
+            session_id = request.cookies.get('anonymous_session_id')
+            if not session_id:
+                return jsonify({"error": "Anonymous session ID not found"}), 403
             user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
 
         form_data = request.json
@@ -313,7 +317,9 @@ def genomic_cascaded_custom():
             session_id = None
         else:
             user_id = None
-            session_id = session['session_id']
+            session_id = request.cookies.get('anonymous_session_id')
+            if not session_id:
+                return jsonify({"error": "Anonymous session ID not found"}), 403
             user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
 
         form_data = request.json
