@@ -2,11 +2,13 @@ import React from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
 import { handleChange } from "./helpers";
+import type { formData } from "./types";
 
 interface TextInputProps {
     label: string;
     fieldID: string;
     formData: any;
+    setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 interface TextInputAltProps {
@@ -14,12 +16,14 @@ interface TextInputAltProps {
     fieldID: string;
     subID: string;
     formData: any;
+    setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 export const TextInput: React.FC<TextInputProps> = ({
     label, //display Name
     fieldID, //internal identifier
     formData,
+    setFormData,
 }) => {
     return (
         <>
@@ -33,7 +37,7 @@ export const TextInput: React.FC<TextInputProps> = ({
                     id={fieldID}
                     name={fieldID}
                     value={formData[fieldID].value}
-                    onChange={(e) => handleChange(e, formData)}
+                    onChange={(e) => handleChange(e, setFormData)}
                     required
                 />
                 <OverlayTrigger
@@ -66,6 +70,7 @@ export const TextInputAlt: React.FC<TextInputAltProps> = ({
     fieldID, //internal identifier
     subID, //subname of the internal Id
     formData,
+    setFormData,
 }) => {
     return (
         <>
@@ -79,7 +84,7 @@ export const TextInputAlt: React.FC<TextInputAltProps> = ({
                     id={`${fieldID}.${subID}`}
                     name={`${fieldID}.${subID}`}
                     value={formData[fieldID][subID].value}
-                    onChange={(e) => handleChange(e, formData)}
+                    onChange={(e) => handleChange(e, setFormData)}
                     required
                 />
                 <OverlayTrigger
