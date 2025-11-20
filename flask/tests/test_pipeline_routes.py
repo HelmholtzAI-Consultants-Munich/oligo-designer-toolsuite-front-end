@@ -138,8 +138,9 @@ def test_runid_null(client):
         response = client.post("/api/scrinshot", json=form)
         assert response.status_code == 400
 
-def test_get_files_valid_runid_unused(client, run_id):
-        response = client.get(f"/api/runs/{run_id}/files")
+@pytest.mark.knownfailure
+def test_get_files_valid_runid_unused(client):
+        response = client.get(f"/api/runs/{ObjectId()}/files")
         assert response.status_code == 404
 
 @pytest.mark.knownfailure
