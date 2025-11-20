@@ -3,7 +3,7 @@ import Navbar from "../modules/nav";
 import { Collapse, OverlayTrigger, Popover } from "react-bootstrap";
 import { ChevronDown, ChevronUp, InfoCircle } from "react-bootstrap-icons";
 import merfish_form from "../forms/merfish_form";
-import { FastaForm, FileState } from "../components/types";
+import type { FastaForm, FileState } from "../components/types";
 import { allFilesUploaded, handleSubmit } from "../components/helpers";
 import RunLocallyInfoBox from "../modules/RunLocallyInfoBox";
 import merfishImage from "../images/pipeline_merfish_probes.webp";

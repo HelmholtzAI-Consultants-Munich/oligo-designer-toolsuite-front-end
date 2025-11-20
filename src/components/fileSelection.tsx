@@ -1,6 +1,6 @@
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
-import { FileState, formData, formDataKey } from "./types";
+import type { FileState, formData, formDataKey } from "./types";
 import { handleFileChange } from "./helpers";
 
 type Props = {

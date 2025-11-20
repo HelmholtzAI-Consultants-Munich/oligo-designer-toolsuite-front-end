@@ -1,5 +1,5 @@
 import { handleChange } from "./helpers";
-import { formData } from "./types";
+import type { formData } from "./types";
 
 type Props = {
   setFormData: any;

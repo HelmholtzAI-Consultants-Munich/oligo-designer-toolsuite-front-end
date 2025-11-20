@@ -1,4 +1,4 @@
-import { FastaForm, FileState, formData } from "./types";
+import type { FastaForm, FileState, formData } from "./types";
 import { copyToClipboard, createRunId } from "../modules/helpers";
 import axios from "axios";
 export const handleChange = (
