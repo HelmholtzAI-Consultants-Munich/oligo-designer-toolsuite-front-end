@@ -143,6 +143,8 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run, session
     assert updated["status"] == "completed"
 
 def test_invalid_session(client, dummy_form, mock_run):
-    client.set_cookie('localhost', 'anonymous_session_id', 'gaeuhfwuahfuagdzgawuzdgauwgdu')
+    with client.session_transaction() as session:
+        session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
+        
     response = client.post(f"/api/scrinshot", json=dummy_form)
     assert response.status_code == 200

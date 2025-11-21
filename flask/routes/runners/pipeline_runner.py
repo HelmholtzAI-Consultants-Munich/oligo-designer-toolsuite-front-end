@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 import traceback
 from bson import ObjectId
-from flask import jsonify, current_app, request
+from flask import jsonify, session, current_app
 from ..helpers import multiline_to_list, split_on_newline, to_bool, to_int, to_null
 from flask_login import current_user
 import os
@@ -135,11 +135,11 @@ class PipelineRunner:
             config_path = os.path.join(user_dir, f'config_{self.pipeline_name}.yaml')
             session_id = None
         else:
-            # Anonymous user: use cookie-based directory
+            # Anonymous user: use session-based directory
             user_id = None
-            session_id = request.cookies.get('anonymous_session_id')
+            session_id = session.get('session_id')
             if not session_id:
-                raise ValueError("Anonymous session ID not found in cookie")
+                raise ValueError("Anonymous session ID not found in session")
             user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
             config_path = os.path.join(user_dir, 'config.yaml')
 

@@ -10,12 +10,17 @@ Environment Variables Required:
 """
 
 import os
+from datetime import timedelta
 
 class Config:
     """Base configuration class for Flask application with Helmholtz AAI settings."""
     
     # Flask settings
     SECRET_KEY = os.environ.get('SECRET_KEY', 'bi_oligo_gizemi_var')
+    # Make sessions persistent (90 days) for anonymous users
+    PERMANENT_SESSION_LIFETIME = timedelta(days=90)
+    # Remember me cookie duration (90 days) for authenticated users
+    REMEMBER_COOKIE_DURATION = timedelta(days=90)
     
     # MongoDB settings
     MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/oligo_db')

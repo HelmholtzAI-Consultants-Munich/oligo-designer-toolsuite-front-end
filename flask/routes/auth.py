@@ -17,7 +17,7 @@ Main features:
 :requires: Flask, Flask-Login, Authlib, MongoDB (via extensions.mongo), requests
 """
 
-from flask import Blueprint, request, jsonify, session, current_app, redirect, url_for, g
+from flask import Blueprint, request, jsonify, session, current_app, redirect, url_for
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, current_user, login_required
 )
@@ -29,46 +29,6 @@ import requests
 from extensions import mongo, oauth
 
 auth_bp = Blueprint('auth', __name__)
-
-# Cookie name for anonymous session tracking
-ANONYMOUS_SESSION_COOKIE = 'anonymous_session_id'
-COOKIE_MAX_AGE = 7776000  # 90 days in seconds
-
-# ---- Cookie Helper Functions ----
-def get_anonymous_session_id():
-    """
-    Get the anonymous session ID from the request cookie.
-    
-    :returns: Session ID string if present, None otherwise.
-    :rtype: str or None
-    """
-    return request.cookies.get(ANONYMOUS_SESSION_COOKIE)
-
-def set_anonymous_session_id(response, session_id: str):
-    """
-    Set the anonymous session ID cookie on the response.
-    
-    :param response: Flask response object to set cookie on.
-    :type response: flask.Response
-    :param session_id: The session ID UUID string to store.
-    :type session_id: str
-    """
-    response.set_cookie(
-        ANONYMOUS_SESSION_COOKIE,
-        session_id,
-        max_age=COOKIE_MAX_AGE,
-        httponly=True,
-        samesite='Lax'
-    )
-
-def clear_anonymous_session_id(response):
-    """
-    Clear the anonymous session ID cookie by setting it to expire immediately.
-    
-    :param response: Flask response object to clear cookie on.
-    :type response: flask.Response
-    """
-    response.set_cookie(ANONYMOUS_SESSION_COOKIE, '', expires=0)
 
 # ---- User Loader and User Class ----
 class User(UserMixin):
@@ -101,9 +61,14 @@ def init_login_manager(app):
     :rtype: flask_login.LoginManager
 
     The user_loader loads a user from the database using their ObjectId.
+    Session protection is enabled in "strong" mode to prevent session hijacking.
     """
     login_manager = LoginManager()
     login_manager.init_app(app)
+    
+    # Enable strong session protection to prevent session hijacking
+    # This tracks IP address and user agent, and deletes sessions if they don't match
+    login_manager.session_protection = "strong"
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -153,10 +118,10 @@ def register():
     user_dir = os.path.join(current_app.root_path, 'user_data', str(user_id))
     os.makedirs(user_dir, exist_ok=True)
 
-    # Log the user in immediately after registration
+    # Log the user in immediately after registration with "Remember Me"
     user_doc = mongo.db.users.find_one({"_id": user_id})
     user = User(user_doc)
-    login_user(user)
+    login_user(user, remember=True)
 
     return jsonify({"message": "User registered successfully"}), 201
 
@@ -181,6 +146,7 @@ def login():
     data = request.get_json() or {}
     email = (data.get("email") or "").strip().lower()
     password = data.get("password")
+    remember_me = data.get("remember_me", True)  # Default to True for backward compatibility
 
     if not email or not password:
         return jsonify({"error": "Email and password required"}), 400
@@ -194,7 +160,8 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
 
     user = User(user_doc)
-    login_user(user)
+    # Log in with optional "Remember Me" based on user preference
+    login_user(user, remember=remember_me)
 
     # Ensure user data directory exists
     user_dir = os.path.join(current_app.root_path, 'user_data', user.id)
@@ -204,17 +171,16 @@ def login():
     session.pop('oauth_token', None)
 
     # Migrate anonymous runs if present
-    session_id = get_anonymous_session_id()
-    response = jsonify({"message": "Logged in successfully"})
+    session_id = session.get('session_id')
     if session_id:
         mongo.db.runs.update_many(
             {"session_id": session_id},
             {"$set": {"user_id": user.id, "session_id": None}}
         )
-        # Clear anonymous session cookie after migration
-        clear_anonymous_session_id(response)
+        # Clear anonymous session_id from session
+        session.pop('session_id', None)
 
-    return response, 200
+    return jsonify({"message": "Logged in successfully"}), 200
 
 # ---- OAuth Callback Route ----
 @auth_bp.route('/auth/callback')
@@ -281,26 +247,25 @@ def auth_callback():
             user_dir = os.path.join(current_app.root_path, 'user_data', str(user_id))
             os.makedirs(user_dir, exist_ok=True)
         
-        # Log user in
+        # Log user in with "Remember Me" to persist login across browser sessions
         user = User(user_doc)
-        login_user(user)
+        login_user(user, remember=True)
         
         # Store access token in session for logout/revocation
         session['oauth_token'] = token.get('access_token')
         
         # If there is an anonymous session, migrate runs to this user
-        session_id = get_anonymous_session_id()
-        redirect_response = redirect('http://localhost:3000/')  # Adjust frontend URL as needed
+        session_id = session.get('session_id')
         if session_id:
             mongo.db.runs.update_many(
                 {"session_id": session_id},
                 {"$set": {"user_id": user.id, "session_id": None}}
             )
-            # Clear anonymous session cookie after migration
-            clear_anonymous_session_id(redirect_response)
+            # Clear anonymous session_id from session
+            session.pop('session_id', None)
         
         # Redirect to frontend homepage or dashboard
-        return redirect_response
+        return redirect('http://localhost:3000/')  # Adjust frontend URL as needed
         
     except Exception as e:
         current_app.logger.error(f"OAuth callback error: {str(e)}")
@@ -376,33 +341,17 @@ def assign_session_id():
     Assign a unique session_id to anonymous users for tracking their runs
     and data before they log in or register.
 
-    If the current user is not authenticated and cookie does not have a 'session_id',
-    generates a new UUID as session_id and stores it in g for later cookie setting.
+    If the current user is not authenticated and session does not have a 'session_id',
+    assigns a new UUID as session_id. Makes the session permanent so it persists across browser sessions.
     Creates a directory for anonymous user data if it does not exists already.
 
-    :modifies g: Stores new session_id in g.anonymous_session_id if one needs to be created.
+    :modifies session: Adds 'session_id' to Flask session for anonymous user tracking.
     """
     if not current_user.is_authenticated:
-        session_id = get_anonymous_session_id()
-        if not session_id:
-            # Generate new session ID and store in g for after_request handler
-            session_id = str(uuid.uuid4())
-            g.anonymous_session_id = session_id
+        # Make session permanent so it persists (uses PERMANENT_SESSION_LIFETIME)
+        session.permanent = True
+        if 'session_id' not in session:
+            session['session_id'] = str(uuid.uuid4())
         # Ensure directory for anonymous user data associated with this session exists
         user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session['session_id'])
         os.makedirs(user_dir, exist_ok=True)
-
-# ---- After Request Handler to Set Anonymous Session Cookie ----
-@auth_bp.after_app_request
-def set_anonymous_session_cookie(response):
-    """
-    Set the anonymous session ID cookie if a new one was generated in before_request.
-    
-    :param response: Flask response object.
-    :type response: flask.Response
-    :returns: Response with cookie set if needed.
-    :rtype: flask.Response
-    """
-    if hasattr(g, 'anonymous_session_id'):
-        set_anonymous_session_id(response, g.anonymous_session_id)
-    return response

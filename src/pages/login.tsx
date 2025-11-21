@@ -13,6 +13,7 @@ import { useAuth } from "../modules/auth";
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
     const { checkAuth } = useAuth();
 
@@ -21,7 +22,7 @@ const Login = () => {
         try {
             const res = await axios.post(
                 "http://localhost:5000/login",
-                { email, password },
+                { email, password, remember_me: rememberMe },
                 { withCredentials: true }
             );
 
@@ -114,6 +115,23 @@ const Login = () => {
                                             }
                                             required
                                         />
+                                    </div>
+                                    <div className="mb-3 form-check">
+                                        <input
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            id="rememberMe"
+                                            checked={rememberMe}
+                                            onChange={(e) =>
+                                                setRememberMe(e.target.checked)
+                                            }
+                                        />
+                                        <label
+                                            className="form-check-label"
+                                            htmlFor="rememberMe"
+                                        >
+                                            Remember me
+                                        </label>
                                     </div>
                                     <button
                                         type="submit"

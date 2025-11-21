@@ -41,5 +41,6 @@ def authenticated_user(monkeypatch):
 
 @pytest.fixture()
 def session_user(client):
-    # Simulate an anonymous user with cookie
-    client.set_cookie('localhost', 'anonymous_session_id', 'anon-session-123')
+    # Simulate an anonymous user with session
+    with client.session_transaction() as sess:
+        sess['session_id'] = 'anon-session-123'
