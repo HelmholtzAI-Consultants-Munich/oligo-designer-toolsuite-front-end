@@ -8,8 +8,6 @@ nav_order: 9
 
 ODT Cloud can be run and deployed using Docker containers. The provided configuration should only be used for development. For production deployment, please get in touch with us.
 
-**Warning: Due to a known bug in ODT Cloud, you always have to start a new browser session (e.g. via new private window) to access the application when using Docker.**
-
 ---
 
 ## Quickstart
