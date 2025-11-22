@@ -176,15 +176,15 @@ def get_run_file(run_id, filename):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-@pipelines_bp.route('/api/runs/<run_id>/files', methods=['GET'])
-def get_run_files(run_id):
+@pipelines_bp.route('/api/runs/<run_id_str>/files', methods=['GET'])
+def get_run_files(run_id_str):
     """
     List all output files for a specific pipeline run.
 
     Handles both main output directory and special annotation subdirectory for Genomic Region Generator pipeline.
 
-    :param run_id: The ObjectId string of the run.
-    :type run_id: str
+    :param run_id_str: The ObjectId string of the run.
+    :type run_id_str: str
     :returns: List of file metadata dictionaries (name, type, size).
     :rtype: flask.Response
 
@@ -194,14 +194,22 @@ def get_run_files(run_id):
         3. If pipeline is Genomic Region Generator, include files from annotation subdir.
     """
     try:
+        if not run_id_str:
+            return jsonify({"error": "Invalid run ID"}), 400
+        try:
+            run_id = ObjectId(run_id_str)
+        except Exception:
+            traceback.print_exc()
+            return jsonify({"error": "Invalid run ID"}), 400
+        
         # Auth or session check
         if current_user.is_authenticated:
-            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
+            query = {"_id": run_id, "user_id": str(current_user.id)}
         else:
             session_id = session.get('session_id')
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": ObjectId(run_id), "session_id": session_id}
+            query = {"_id": run_id, "session_id": session_id}
 
         run = mongo.db.runs.find_one(query)
         if not run:

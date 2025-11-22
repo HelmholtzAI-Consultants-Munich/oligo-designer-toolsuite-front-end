@@ -17,6 +17,7 @@ Main features:
 :requires: Flask, Flask-Login, Authlib, MongoDB (via extensions.mongo), requests
 """
 
+from os.path import exists
 from flask import Blueprint, request, jsonify, session, current_app, redirect, url_for
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, current_user, login_required
@@ -333,12 +334,15 @@ def assign_session_id():
     and data before they log in or register.
 
     If the current user is not authenticated and session does not have a 'session_id',
-    assigns a new UUID as session_id and creates a directory for anonymous user data.
+    assigns a new UUID as session_id.
+    Creates a directory for anonymous user data if it does not exists already.
 
     :modifies session: Adds 'session_id' to Flask session for anonymous user tracking.
     """
-    if not current_user.is_authenticated and 'session_id' not in session:
-        session['session_id'] = str(uuid.uuid4())
-        # Create directory for anonymous user data associated with this session
+    if not current_user.is_authenticated:
+        if 'session_id' not in session:
+            session['session_id'] = str(uuid.uuid4())
+
+        # Ensure directory for anonymous user data associated with this session exists
         user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session['session_id'])
         os.makedirs(user_dir, exist_ok=True)

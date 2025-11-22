@@ -82,14 +82,20 @@ class PipelineRunner:
 
     def run(self, current_user: current_user, form_data: dict, run_id_str: str):
         # Convert run ID string to ObjectId
+        if not run_id_str:
+            return jsonify({"error": "Invalid run ID"}), 400
         try:
             run_id = ObjectId(run_id_str)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
             return jsonify({"error": "Invalid run ID"}), 400
 
         # User Directory and Session / User ID Logic
-        context = self.create_context(current_user)
+        try:
+            context = self.create_context(current_user)
+        except Exception as e:
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 400
 
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
@@ -134,6 +140,9 @@ class PipelineRunner:
             session_id = session['session_id']
             user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session_id)
             config_path = os.path.join(user_dir, 'config.yaml')
+
+        if not os.path.exists(user_dir):
+            raise RuntimeError(f"Expected user directory at {user_dir} to exist")
 
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         output_path = os.path.join(user_dir, f'output_{self.pipeline_name}_probe_designer_{timestamp}')

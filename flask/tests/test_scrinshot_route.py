@@ -142,10 +142,9 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run, session
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
 
-@pytest.mark.knownfailure
 def test_invalid_session(client, dummy_form, mock_run):
     with client.session_transaction() as session:
         session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
         
     response = client.post(f"/api/scrinshot", json=dummy_form)
-    assert response.status_code == 404
+    assert response.status_code == 200
