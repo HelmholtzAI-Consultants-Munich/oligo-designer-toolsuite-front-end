@@ -2,22 +2,30 @@ import React, { useState } from "react";
 import axios from "axios";
 import Navbar from "../modules/nav";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../modules/auth";
 
 const Register = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const navigate = useNavigate(); //
+    const navigate = useNavigate();
+    const { checkAuth } = useAuth();
 
     const handleSubmit = async (e: { preventDefault: () => void }) => {
         e.preventDefault();
         try {
-            const res = await axios.post("http://localhost:5000/register", {
-                email,
-                password,
-            });
+            const res = await axios.post(
+                "http://localhost:5000/register",
+                {
+                    email,
+                    password,
+                },
+                { withCredentials: true }
+            );
             console.log(res.data);
-            navigate("/");
             alert("Registration successful!");
+
+            await checkAuth();
+            navigate("/");
         } catch (err: any) {
             if (err.response && err.response.status === 409) {
                 alert("Email already in use.");
