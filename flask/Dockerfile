@@ -6,6 +6,14 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER environment.yml /tmp/env.yml
 RUN micromamba install -y -n base -f /tmp/env.yml && \
     micromamba clean --all --yes
 
+# --- Install platform-specific build tools for ARM ---
+RUN if [[ $(uname -m) == "aarch64" ]]; then \
+    micromamba install -y -n base -c conda-forge \
+    gcc_linux-aarch64 \
+    gxx_linux-aarch64 \
+    && micromamba clean --all --yes; \
+    fi
+
 # --- Install oligo-designer-toolsuite ---
 # activate conda environment to use pip during build
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
