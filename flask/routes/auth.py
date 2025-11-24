@@ -118,9 +118,11 @@ def register():
     user_dir = os.path.join(current_app.root_path, 'user_data', str(user_id))
     os.makedirs(user_dir, exist_ok=True)
 
-    # Log the user in immediately after registration with "Remember Me"
+    # Log the user in immediately after registration with "Remember Me" enabled
     user_doc = mongo.db.users.find_one({"_id": user_id})
     user = User(user_doc)
+    # Make session cookie temporary; Flask-Login remember cookie handles persistence
+    session.permanent = False
     login_user(user, remember=True)
 
     return jsonify({"message": "User registered successfully"}), 201
@@ -160,7 +162,11 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
 
     user = User(user_doc)
+    # Always make session cookie temporary (non-persistent)
+    # Flask-Login's remember cookie handles persistence when remember=True
+    session.permanent = False
     # Log in with optional "Remember Me" based on user preference
+    # When remember=True, Flask-Login's remember cookie provides persistence
     login_user(user, remember=remember_me)
 
     # Ensure user data directory exists
@@ -248,7 +254,10 @@ def auth_callback():
             os.makedirs(user_dir, exist_ok=True)
         
         # Log user in with "Remember Me" to persist login across browser sessions
+        # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
         user = User(user_doc)
+        # Make session cookie temporary; Flask-Login remember cookie handles persistence
+        session.permanent = False
         login_user(user, remember=True)
         
         # Store access token in session for logout/revocation

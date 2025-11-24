@@ -22,6 +22,14 @@ class Config:
     # Remember me cookie duration (90 days) for authenticated users
     REMEMBER_COOKIE_DURATION = timedelta(days=90)
     
+    # Session cookie security settings
+    SESSION_COOKIE_SECURE = True  # Only send session cookies over HTTPS
+    SESSION_COOKIE_SAMESITE = "Lax"  # CSRF protection for session cookies
+    
+    # Remember me cookie security settings
+    REMEMBER_COOKIE_SECURE = True  # Only send remember me cookies over HTTPS
+    REMEMBER_COOKIE_SAMESITE = "Lax"  # CSRF protection for remember me cookies
+    
     # MongoDB settings
     MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/oligo_db')
     
