@@ -70,7 +70,9 @@ Please do not install with the requirements.txt; It is for testing purposes.
 git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
 cd oligo-designer-frontend
 npm install
-conda env update -n odt -f flask/environment.yml --prune
+conda activate odt
+conda env update -f flask/environment.yml
+pip install --group flask/pyproject.toml:dev
 ```
 
 You can also set up additional environment variables as needed for authentication, proxy, etc.

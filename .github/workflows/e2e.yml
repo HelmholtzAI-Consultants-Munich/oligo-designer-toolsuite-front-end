@@ -37,7 +37,6 @@ jobs:
       - name: 📥 Clone Oligo Designer Toolsuite
         run: |
           git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite odt_repo
-          cd odt_repo
 
       - name: 🧬 Set Up Conda Environment, Bio Tools, and Backend
         uses: conda-incubator/setup-miniconda@v3
@@ -45,13 +44,13 @@ jobs:
           miniconda-version: "latest"
           auto-update-conda: true
           activate-environment: odt
-          python-version: 3.11
+          python-version: 3.12
 
       - name: 📦 Cache pip
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -59,13 +58,7 @@ jobs:
         run: |
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
-          conda config --add channels bioconda
-          conda config --add channels conda-forge
-          conda update --all
-          conda install -n odt -y "blast>=2.15.0"
-          conda install -n odt -y "bedtools>=2.30"
-          conda install -n odt -y "bowtie>=1.3.1"
-          conda install -n odt -y "bowtie2>=2.5"
+          conda env update -f flask/environment.yml
           cd odt_repo
           pip install -e .
           cd ..
@@ -74,7 +67,7 @@ jobs:
         run: |
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
-          pip install -r flask/requirements.txt
+          pip install --group flask/pyproject.toml:test
 
       - name: 📦 Install Frontend Dependencies
         run: |
@@ -101,11 +94,12 @@ jobs:
           npx playwright test tests/genomic_ensemblE2E.spec.ts
           npx playwright test tests/genomic_ncbiE2E.spec.ts
 
-      - name: 📤 Upload logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs
-          path: |
-            frontend/frontend.log
-            backend/backend.log
+      # todo: set up test logging
+      # - name: 📤 Upload logs on failure
+      #   if: failure()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: logs
+      #     path: |
+      #       frontend/frontend.log
+      #       backend/backend.log

@@ -29,9 +29,9 @@ This document explains the test strategy for this software. There are **two** la
 
 ```bash
 # note: start database first
-pytest -q
+pytest flask
 # with coverage:
-pytest --maxfail=1 --disable-warnings --cov=flask --cov-report=term-missing
+pytest flask --cov=flask --cov-report=term-missing
 # exclude known failures
 pytest -m "not knownfailure"
 ```
@@ -40,7 +40,7 @@ or if using Docker:
 
 ```bash
 docker compose up odt-db -d
-docker compose run --rm --build odt-server pytest -q
+docker compose run --rm --build odt-server pytest
 # with coverage:
 docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-missing
 # exclude known failures
