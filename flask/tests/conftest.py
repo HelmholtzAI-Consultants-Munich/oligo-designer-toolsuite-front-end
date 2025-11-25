@@ -6,8 +6,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from app import create_app
 from extensions import mongo
 
-def pytest_configure(config):
-    config.addinivalue_line("markers", "knownfailure: this one marks tests where failure is known")
 
 @pytest.fixture
 def run_id():
