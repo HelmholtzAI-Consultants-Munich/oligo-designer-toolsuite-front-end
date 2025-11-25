@@ -19,8 +19,9 @@ RUN if [[ $(uname -m) == "aarch64" ]]; then \
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 RUN pip install --no-cache-dir git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git
 
-# --- Install Flask server ---
+# --- Install ODT Cloud server ---
 WORKDIR /app
 COPY --chown=$MAMBA_USER:$MAMBA_USER . .
+RUN pip install --no-cache-dir --group test
 
 CMD ["python", "app.py"]
