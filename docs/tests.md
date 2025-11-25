@@ -32,8 +32,6 @@ This document explains the test strategy for this software. There are **two** la
 pytest flask
 # with coverage:
 pytest flask --cov=flask --cov-report=term-missing
-# exclude known failures
-pytest -m "not knownfailure"
 ```
 
 or if using Docker:
@@ -43,8 +41,6 @@ docker compose up odt-db -d
 docker compose run --rm --build odt-server pytest
 # with coverage:
 docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-missing
-# exclude known failures
-docker compose run --rm --build odt-server pytest -m "not knownfailure"
 ```
 
 ### Fixtures & notes
