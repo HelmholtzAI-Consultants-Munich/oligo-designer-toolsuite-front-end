@@ -92,7 +92,7 @@ docker compose build odt-tests
 docker compose run --build odt-tests
 ```
 
-See [Tests]({% link tests.md %}) for details on executing Playwright tests using Docker.
+See [Tests]({{ site.baseurl }}{% link tests.md %}) for details on executing Playwright tests using Docker.
 
 ## Hot Code Reloading
 

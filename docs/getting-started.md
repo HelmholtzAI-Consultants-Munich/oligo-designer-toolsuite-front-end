@@ -22,7 +22,7 @@ npm i
 docker compose watch
 ```
 
-See [Using Docker]({% link using-docker.md %}) for details on using Docker for this project.
+See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for details on using Docker for this project.
 
 ## Manual Installation
 
