@@ -1,7 +1,8 @@
 ---
 title: Using Docker
 layout: default
-nav_order: 9
+nav_order: 2
+parent: Development
 ---
 
 # Using Docker
