@@ -7,6 +7,8 @@ import type { SingleValue } from "react-select";
 import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
+import OligoAlignment from "../components/visualization/OligoAlignment";
+
 
 interface RunFile {
     name: string;
@@ -758,6 +760,9 @@ const RunDetail = () => {
                                                 </button>
                                             </div>
                                         </div>
+                                        <OligoAlignment
+                                            oligos ={getOligosForOligoset()}
+                                        />
                                         <div className="table-responsive">
                                             <table className="table table-bordered table-striped table-hover">
                                                 <thead className="table-light">
