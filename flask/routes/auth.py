@@ -145,6 +145,7 @@ def register():
         "email": email,
         "password": hashed_password,
         "name": name,
+        "role": "user",  # Default role for new users
     }).inserted_id
 
     # Log the user in immediately after registration with "Remember Me" enabled
@@ -250,7 +251,8 @@ def auth_callback():
             user_id = mongo.db.users.insert_one({
                 "helmholtz_sub": helmholtz_sub,
                 "email": email,
-                "name": name
+                "name": name,
+                "role": "user",  # Default role for new users
             }).inserted_id
             user_doc = mongo.db.users.find_one({"_id": user_id})
         
@@ -282,12 +284,17 @@ def check_auth():
     :rtype: flask.Response
     """
     if current_user.is_authenticated:
+        # Get user document to include role
+        user_doc = mongo.db.users.find_one({'_id': ObjectId(current_user.id)})
+        role = user_doc.get('role', 'user') if user_doc else 'user'
+        
         return jsonify({
             "authenticated": True,
             "user": {
                 "id": str(current_user.id),
                 "email": current_user.email,
                 "name": current_user.name,
+                "role": role,
             }
         })
     return jsonify({"authenticated": False}), 200

@@ -6,6 +6,7 @@ from .merfish import merfish_bp
 from .seqfish import seqfish_bp
 from .genomic import genomic_bp
 from .oligoseq import oligoseq_bp
+from .admin import admin_bp
 
 def register_blueprints(app):
     app.register_blueprint(auth_bp)
@@ -16,3 +17,4 @@ def register_blueprints(app):
     app.register_blueprint(seqfish_bp)
     app.register_blueprint(genomic_bp)
     app.register_blueprint(oligoseq_bp)
+    app.register_blueprint(admin_bp)

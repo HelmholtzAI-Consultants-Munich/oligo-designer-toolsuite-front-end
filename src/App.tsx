@@ -16,6 +16,8 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import Login from "./pages/login";
 import Register from "./pages/register";
 import RunDetail from "./pages/rundetail";
+import AdminApp from "./admin/AdminApp";
+
 function App() {
     return (
         <Router>
@@ -34,6 +36,7 @@ function App() {
                 <Route path="/pipelines/seqfish" element={<SeqFish />} />
                 <Route path="/pipelines/oligoSeq" element={<OligoSeq />} />
                 <Route path="/runs/:runId" element={<RunDetail />} />
+                <Route path="/admin/*" element={<AdminApp />} />
             </Routes>
         </Router>
     );
