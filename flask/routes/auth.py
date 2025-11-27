@@ -80,6 +80,39 @@ def init_login_manager(app):
 
     return login_manager
 
+# ---- Helper Function for User Login Logic ----
+def _login(user: User, remember: bool = True):
+    """
+    Helper function to handle user login logic including directory creation,
+    session management, and anonymous run migration.
+    
+    :param user: The User instance to log in.
+    :type user: User
+    :param remember: Whether to use "Remember Me" functionality.
+    :type remember: bool
+    """
+    # Make session cookie temporary; Flask-Login remember cookie handles persistence
+    session.permanent = False
+    # Log in with optional "Remember Me" based on preference
+    login_user(user, remember=remember)
+    
+    # Ensure user data directory exists
+    user_dir = os.path.join(current_app.root_path, 'user_data', user.id)
+    os.makedirs(user_dir, exist_ok=True)
+    
+    # Clear any OAuth token from previous sessions
+    session.pop('oauth_token', None)
+    
+    # Migrate anonymous runs if present
+    session_id = session.get('session_id')
+    if session_id:
+        mongo.db.runs.update_many(
+            {"session_id": session_id},
+            {"$set": {"user_id": user.id, "session_id": None}}
+        )
+        # Clear anonymous session_id from session
+        session.pop('session_id', None)
+
 # ---- Register Route (Legacy Email/Password) ----
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -114,16 +147,10 @@ def register():
         "name": name,
     }).inserted_id
 
-    # Create user-specific data directory
-    user_dir = os.path.join(current_app.root_path, 'user_data', str(user_id))
-    os.makedirs(user_dir, exist_ok=True)
-
     # Log the user in immediately after registration with "Remember Me" enabled
     user_doc = mongo.db.users.find_one({"_id": user_id})
     user = User(user_doc)
-    # Make session cookie temporary; Flask-Login remember cookie handles persistence
-    session.permanent = False
-    login_user(user, remember=True)
+    _login(user, remember=True)
 
     return jsonify({"message": "User registered successfully"}), 201
 
@@ -162,29 +189,7 @@ def login():
         return jsonify({"error": "Invalid credentials"}), 401
 
     user = User(user_doc)
-    # Always make session cookie temporary (non-persistent)
-    # Flask-Login's remember cookie handles persistence when remember=True
-    session.permanent = False
-    # Log in with optional "Remember Me" based on user preference
-    # When remember=True, Flask-Login's remember cookie provides persistence
-    login_user(user, remember=remember_me)
-
-    # Ensure user data directory exists
-    user_dir = os.path.join(current_app.root_path, 'user_data', user.id)
-    os.makedirs(user_dir, exist_ok=True)
-
-    # Clear any OAuth token from previous sessions
-    session.pop('oauth_token', None)
-
-    # Migrate anonymous runs if present
-    session_id = session.get('session_id')
-    if session_id:
-        mongo.db.runs.update_many(
-            {"session_id": session_id},
-            {"$set": {"user_id": user.id, "session_id": None}}
-        )
-        # Clear anonymous session_id from session
-        session.pop('session_id', None)
+    _login(user, remember=remember_me)
 
     return jsonify({"message": "Logged in successfully"}), 200
 
@@ -248,30 +253,15 @@ def auth_callback():
                 "name": name
             }).inserted_id
             user_doc = mongo.db.users.find_one({"_id": user_id})
-            
-            # Create user-specific data directory
-            user_dir = os.path.join(current_app.root_path, 'user_data', str(user_id))
-            os.makedirs(user_dir, exist_ok=True)
         
         # Log user in with "Remember Me" to persist login across browser sessions
         # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
+        # _login() will create the user directory if it doesn't exist
         user = User(user_doc)
-        # Make session cookie temporary; Flask-Login remember cookie handles persistence
-        session.permanent = False
-        login_user(user, remember=True)
+        _login(user, remember=True)
         
         # Store access token in session for logout/revocation
         session['oauth_token'] = token.get('access_token')
-        
-        # If there is an anonymous session, migrate runs to this user
-        session_id = session.get('session_id')
-        if session_id:
-            mongo.db.runs.update_many(
-                {"session_id": session_id},
-                {"$set": {"user_id": user.id, "session_id": None}}
-            )
-            # Clear anonymous session_id from session
-            session.pop('session_id', None)
         
         # Redirect to frontend homepage or dashboard
         return redirect('http://localhost:3000/')  # Adjust frontend URL as needed
