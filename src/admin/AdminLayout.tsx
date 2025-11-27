@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../modules/auth';
 import { Navbar, Nav, Container, Spinner, Button } from 'react-bootstrap';
-import { People, House, BoxArrowRight, List } from 'react-bootstrap-icons';
+import { People, House, BoxArrowRight, List, Gear } from 'react-bootstrap-icons';
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
@@ -96,6 +96,25 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                             >
                                 <People size={20} className={sidebarCollapsed ? '' : 'me-2'} />
                                 {!sidebarCollapsed && <span>User Management</span>}
+                            </Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                            <Nav.Link
+                                as={Link}
+                                to="/admin/pipelines"
+                                className={`text-white ${isActive('/admin/pipelines') ? 'bg-primary rounded' : ''}`}
+                                style={{
+                                    padding: '0.75rem 1rem',
+                                    marginBottom: '0.25rem',
+                                    textDecoration: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                                }}
+                                title={sidebarCollapsed ? 'Pipeline Management' : ''}
+                            >
+                                <Gear size={20} className={sidebarCollapsed ? '' : 'me-2'} />
+                                {!sidebarCollapsed && <span>Pipeline Management</span>}
                             </Nav.Link>
                         </Nav.Item>
                         {/* Add more navigation items here as needed */}
@@ -197,6 +216,24 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                             >
                                 <People className="me-2" />
                                 User Management
+                            </Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item>
+                            <Nav.Link
+                                as={Link}
+                                to="/admin/pipelines"
+                                className={`text-white ${isActive('/admin/pipelines') ? 'bg-primary rounded' : ''}`}
+                                style={{
+                                    padding: '0.75rem 1rem',
+                                    marginBottom: '0.25rem',
+                                    textDecoration: 'none',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                }}
+                                onClick={() => setSidebarOpen(false)}
+                            >
+                                <Gear className="me-2" />
+                                Pipeline Management
                             </Nav.Link>
                         </Nav.Item>
                     </Nav>
