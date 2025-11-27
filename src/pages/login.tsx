@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../modules/nav";
 import { useAuth } from "../modules/auth";
 
@@ -15,7 +15,11 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { checkAuth } = useAuth();
+
+    // Get redirect URL from query params
+    const redirectTo = searchParams.get('redirect') || '/';
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -30,7 +34,8 @@ const Login = () => {
             alert("Login successful!");
 
             await checkAuth();
-            navigate("/");
+            // Navigate to the redirect URL or home
+            navigate(redirectTo);
         } catch (err: any) {
             if (err.response && err.response.status === 401) {
                 alert("Invalid email or password.");
@@ -42,7 +47,9 @@ const Login = () => {
     };
 
     const redirectToHelmholtz = () => {
-        window.location.href = "http://localhost:5000/login";
+        // Include redirect parameter in OAuth flow
+        const redirectParam = redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
+        window.location.href = `http://localhost:5000/login${redirectParam}`;
     };
 
     return (

@@ -9,15 +9,20 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
     const { user, loading } = useAuth();
 
     useEffect(() => {
-        // Check if user is admin
+        // Check if user is authenticated and is admin
         if (!loading) {
             console.log('Admin check - loading:', loading, 'user:', user, 'role:', user?.role);
-            if (!user || user.role !== 'admin') {
+            if (!user) {
+                // Not logged in - redirect to login with return URL
+                console.log('Redirecting to login - user not authenticated');
+                navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
+            } else if (user.role !== 'admin') {
+                // Logged in but not admin - redirect to home
                 console.log('Redirecting to home - user is not admin');
                 navigate('/');
             }
         }
-    }, [user, loading, navigate]);
+    }, [user, loading, navigate, location.pathname]);
 
     const handleLogout = async () => {
         try {
