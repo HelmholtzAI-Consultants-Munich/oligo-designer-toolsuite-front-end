@@ -1,10 +1,11 @@
 // Login page component for user authentication
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../modules/nav";
 import { useAuth } from "../modules/auth";
+import { Spinner } from "react-bootstrap";
 
 /**
  * Login component handles user login functionality.
@@ -16,10 +17,18 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { checkAuth } = useAuth();
+    const { user, loading, checkAuth } = useAuth();
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get('redirect') || '/';
+
+    // Redirect if already logged in
+    useEffect(() => {
+        if (!loading && user) {
+            // User is already authenticated, redirect them away from login page
+            navigate(redirectTo);
+        }
+    }, [user, loading, navigate, redirectTo]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -51,6 +60,25 @@ const Login = () => {
         const redirectParam = redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
         window.location.href = `http://localhost:5000/login${redirectParam}`;
     };
+
+    // Show loading spinner while checking auth status
+    if (loading) {
+        return (
+            <div>
+                <Navbar />
+                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </div>
+            </div>
+        );
+    }
+
+    // Don't render login form if user is already authenticated (will redirect)
+    if (user) {
+        return null;
+    }
 
     return (
         <div>
