@@ -10,8 +10,12 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
     useEffect(() => {
         // Check if user is admin
-        if (!loading && (!user || user.role !== 'admin')) {
-            navigate('/');
+        if (!loading) {
+            console.log('Admin check - loading:', loading, 'user:', user, 'role:', user?.role);
+            if (!user || user.role !== 'admin') {
+                console.log('Redirecting to home - user is not admin');
+                navigate('/');
+            }
         }
     }, [user, loading, navigate]);
 
