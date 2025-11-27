@@ -169,6 +169,10 @@ def login():
     :returns: Redirect response (GET) or JSON message (POST).
     """
     if request.method == 'GET':
+        # Preserve redirect parameter from frontend through OAuth flow
+        redirect_param = request.args.get('redirect')
+        if redirect_param:
+            session['oauth_redirect'] = redirect_param
         redirect_uri = url_for('auth.auth_callback', _external=True)
         return oauth.helmholtz.authorize_redirect(redirect_uri)
 
@@ -265,8 +269,22 @@ def auth_callback():
         # Store access token in session for logout/revocation
         session['oauth_token'] = token.get('access_token')
         
-        # Redirect to frontend homepage or dashboard
-        return redirect('http://localhost:3000/')  # Adjust frontend URL as needed
+        # If there is an anonymous session, migrate runs to this user
+        session_id = session.get('session_id')
+        if session_id:
+            mongo.db.runs.update_many(
+                {"session_id": session_id},
+                {"$set": {"user_id": user.id, "session_id": None}}
+            )
+            # Clear anonymous session_id
+            session.pop('session_id', None)
+        
+        # Redirect to frontend - check if there's a preserved redirect URL
+        frontend_url = 'http://localhost:3000'
+        redirect_path = session.pop('oauth_redirect', None)
+        if redirect_path:
+            return redirect(f'{frontend_url}{redirect_path}')
+        return redirect(f'{frontend_url}/')  # Default to homepage
         
     except Exception as e:
         current_app.logger.error(f"OAuth callback error: {str(e)}")
