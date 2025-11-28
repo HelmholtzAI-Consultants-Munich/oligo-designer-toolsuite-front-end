@@ -12,11 +12,12 @@ This document describes the basic configuration required to set up your IDE. The
 ## VS Code / VSCodium Extensions and Settings
 
 The repository includes a list of recommended extensions in `.vscode/extensions.json` as well as a `.vscode/settings.sample.json`.
+Consider [creating a separate profile](https://code.visualstudio.com/docs/configure/profiles) for this project to prevent loading unrelated extensions.
 
 > ##### TIP for VSCodium users
 >
 > Take a look at the included files and uncomment any lines marked as replacements for extensions and settings
-> that are not available on VS Code.
+> that are not available in VSCodium.
 {: .block-tip }
 
 Install the recommended extensions either via the automatic pop-up or by searching for `@recommended` in the "Extensions" tab. Rename `.vscode/settings.sample.json` to `.vscode/settings.json` to enable these settings for your workspace. You can change these settings to your liking - they are not tracked by git.
