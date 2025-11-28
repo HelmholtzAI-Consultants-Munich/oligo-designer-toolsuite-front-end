@@ -93,13 +93,3 @@ jobs:
           npx playwright test tests/seqfishE2E.spec.ts
           npx playwright test tests/genomic_ensemblE2E.spec.ts
           npx playwright test tests/genomic_ncbiE2E.spec.ts
-
-      # todo: set up test logging
-      # - name: 📤 Upload logs on failure
-      #   if: failure()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: logs
-      #     path: |
-      #       frontend/frontend.log
-      #       backend/backend.log
