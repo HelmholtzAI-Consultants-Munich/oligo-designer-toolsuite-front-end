@@ -108,7 +108,7 @@ def _login(user: User, remember: bool = True):
     if session_id:
         mongo.db.runs.update_many(
             {"session_id": session_id},
-            {"$set": {"user_id": user.id, "session_id": None}}
+            {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}}
         )
         # Clear anonymous session_id from session
         session.pop('session_id', None)
@@ -274,7 +274,7 @@ def auth_callback():
         if session_id:
             mongo.db.runs.update_many(
                 {"session_id": session_id},
-                {"$set": {"user_id": user.id, "session_id": None}}
+                {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}}
             )
             # Clear anonymous session_id
             session.pop('session_id', None)
