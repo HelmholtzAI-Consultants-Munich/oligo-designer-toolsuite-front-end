@@ -23,13 +23,13 @@ services:
   odt-web:
     image: node:22
     container_name: odt-web
-    user: node
     working_dir: /home/node/app
-    command: [npm, run, dev, "--", "--host"]
+    command: sh -c "chown -R node:node /home/node/app/node_modules 2>/dev/null || true && su node -c '[ ! -d node_modules ] && npm install || true; npm run dev -- --host'"
     ports:
       - 3000:3000
     volumes:
       - ./:/home/node/app
+      - odt-web-node-modules:/home/node/app/node_modules
 
   odt-tests:
     image: odt-tests
@@ -41,3 +41,6 @@ services:
     volumes:
       - ./tests:/home/node/tests
     profiles: [tests] # don't run unless specified
+
+volumes:
+  odt-web-node-modules:
