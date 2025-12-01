@@ -10,7 +10,7 @@ type Props = {
     files: any;
 };
 const FileSelection: React.FC<Props> = ({ formData, id, setFiles, files }) => {
-    const multiple = id === "files_region" ? true : false;
+    const multiple = id === "file_regions_file" ? false : true;
 
     return (
         <div className="flex-grow-1">
@@ -50,7 +50,7 @@ const FileSelection: React.FC<Props> = ({ formData, id, setFiles, files }) => {
                 </OverlayTrigger>
             </div>
             <div className="text-muted small mt-1">
-                {id === "file_regions"
+                {id === "file_regions_file"
                     ? files[id]
                         ? `Selected: ${files[id].name}`
                         : "No files selected"

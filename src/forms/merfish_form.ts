@@ -23,6 +23,11 @@ const formDatas = {
         comment:
             "file with a list the genes used to generate the probe sequences, leave empty if all the genes are used",
     },
+    file_regions_file: {
+        value: "",
+        comment:
+            "file with a list the genes used to generate the probe sequences, leave empty if all the genes are used",
+    },
     files_fasta_target_probe_database: {
         value: "",
         comment:

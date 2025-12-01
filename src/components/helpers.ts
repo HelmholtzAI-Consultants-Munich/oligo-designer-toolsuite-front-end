@@ -41,7 +41,7 @@ export const handleFileChange = (
     setFiles((prevFiles) => ({
         ...prevFiles,
         [name]:
-            name === "file_regions"
+            name === "file_regions_file"
                 ? selectedFiles[0] // Single file
                 : Array.from(selectedFiles), // Multiple files (always an array)
     }));
@@ -55,6 +55,7 @@ export const allFilesUploaded = (
     fastaFormsReadout: any,
     fastaFormsPrimer: any
 ) => {
+    console.log("Checking files uploaded:", files);
     return (
         (files.file_regions_file !== null ||
             formData.file_regions.value.length > 0) &&
@@ -237,6 +238,12 @@ export const handleSubmit = async (
     setRunStatus("submitting");
     setRunId(null);
     const uploadedPaths = await uploadFiles(files, formData);
+
+    if (uploadedPaths["file_regions_file"]) {
+        formData["file_regions"]["value"] =
+            uploadedPaths["file_regions_file"];
+    }
+
     const groups = [
         {
             forms: fastaForms,

@@ -76,7 +76,7 @@ const Merfish: React.FC = () => {
                             />
                             <FileSelection
                                 formData={formData}
-                                id="file_regions"
+                                id="file_regions_file"
                                 setFiles={setFiles}
                                 files={files}
                             />
