@@ -16,7 +16,7 @@ interface RunFile {
     size: number;
 }
 
-interface Oligo {
+export interface Oligo {
     oligo_id: string;
     [key: string]: any;
 }
@@ -761,7 +761,8 @@ const RunDetail = () => {
                                             </div>
                                         </div>
                                         <OligoAlignment
-                                            oligos ={getOligosForOligoset()}
+                                            oligos={getOligosForOligoset()}
+                                            pipeline="scrinshot"
                                         />
                                         <div className="table-responsive">
                                             <table className="table table-bordered table-striped table-hover">

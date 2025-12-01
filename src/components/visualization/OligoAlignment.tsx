@@ -1,8 +1,11 @@
 import * as d3 from "d3"
 import { useEffect } from "react";
+import type { Oligo } from "../../pages/rundetail";
+import ComponentDefinition from './oligoComponents.json'
 
 type Props ={
-    oligos: any;
+    oligos: Oligo[];
+    pipeline: string;
 };
 
 type OligoComponents = {
@@ -20,19 +23,19 @@ type OligoBases = {
 }[]
 
 const OligoAlignment: React.FC<Props> = ({
-    oligos
+    oligos,
+    pipeline
 }) => {
-    const components: OligoComponents = [{
-        sequence: "GACTTTCGAAATCG",
-        color: 'blue',
-        label: 'Barcode',
-        isBinding: false,
-    }, {
-        sequence: "ATTGCTGAG",
-        color: 'red',
-        label: 'Barcode',
-        isBinding: false,
-    }]
+    const components: OligoComponents = [];
+
+    ComponentDefinition[pipeline].forEach(componentDef => {
+        components.push({
+            sequence: oligos[0][componentDef.field as keyof Oligo][0][0] as string,
+            color: componentDef.color,
+            label: componentDef.label,
+            isBinding: componentDef.isBinding
+        })
+    })
 
     const componentsToBases = (components: OligoComponents): OligoBases => {
         return components.map(component =>
@@ -68,7 +71,7 @@ const OligoAlignment: React.FC<Props> = ({
         <svg id= "oligo" width="100%">
             <g>
                 {componentsToBases(components).map(
-                    (base, index) => <text x={(index*20)} y="0" style={{fill: base.color}}>{base.char}</text>
+                    (base, index) => <text x={(index*12)} y="0" style={{fill: base.color, textAnchor: "middle"}}>{base.char}</text>
                 )}
             </g>
         </svg>

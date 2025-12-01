@@ -1,0 +1,40 @@
+{
+    "scrinshot": [
+        {
+            "field": "sequence_padlock_arm1",
+            "color": "#b9dbf4",
+            "label": "Padlock Arm 1",
+            "isBinding": true
+        },
+        {
+            "field": "sequence_padlock_accessory1",
+            "color": "#c03830",
+            "label": "Padlock Accessory 1",
+            "isBinding": false
+        },
+        {
+            "field": "sequence_padlock_ISS_anchor",
+            "color": "#5aaa46",
+            "label": "ISS Anchor",
+            "isBinding": false
+        },
+        {
+            "field": "barcode",
+            "color": "#f2b342",
+            "label": "Barcode",
+            "isBinding": false
+        },
+        {
+            "field": "sequence_padlock_accessory2",
+            "color": "#8560a8",
+            "label": "Padlock Accessory 2",
+            "isBinding": false
+        },
+        {
+            "field": "sequence_padlock_arm2",
+            "color": "#b9dbf4",
+            "label": "Padlock Arm 2",
+            "isBinding": true
+        }
+    ]
+}
