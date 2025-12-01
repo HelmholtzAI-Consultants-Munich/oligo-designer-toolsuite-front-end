@@ -108,6 +108,13 @@ const Navbar: React.FC = () => {
                         {/* Auth  */}
                         {user ? (
                             <>
+                                {user.role === 'admin' && (
+                                    <li className="nav-item me-3">
+                                        <Link className="nav-link" to="/admin">
+                                            Admin
+                                        </Link>
+                                    </li>
+                                )}
                                 <li className="nav-item dropdown">
                                     <a
                                         className="nav-link dropdown-toggle"
