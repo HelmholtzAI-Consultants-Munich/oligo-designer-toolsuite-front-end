@@ -16,6 +16,7 @@ interface PipelineRun {
         email: string;
     };
     session_id?: string;
+    transferred_from_anon?: boolean;
 }
 
 const PipelineList: React.FC = () => {
@@ -149,14 +150,26 @@ const PipelineList: React.FC = () => {
 
     const getUserDisplay = (run: PipelineRun) => {
         if (run.user) {
-            // User exists - show email only
-            return <div>{run.user.email}</div>;
+            // User exists - show email with transfer indicator if applicable
+            return (
+                <div>
+                    <div>{run.user.email}</div>
+                    {run.transferred_from_anon && (
+                        <Badge bg="info" className="mt-1" title="This run was originally created anonymously and transferred to this user account">
+                            Transferred from Anonymous
+                        </Badge>
+                    )}
+                </div>
+            );
         } else if (run.user_id) {
             // User ID exists but user lookup failed (maybe user was deleted)
             return (
                 <div>
                     <Badge bg="warning">User Not Found</Badge>
                     <small className="text-muted d-block mt-1">ID: {run.user_id.substring(0, 8)}...</small>
+                    {run.transferred_from_anon && (
+                        <Badge bg="info" className="mt-1">Transferred from Anonymous</Badge>
+                    )}
                 </div>
             );
         } else if (run.session_id) {

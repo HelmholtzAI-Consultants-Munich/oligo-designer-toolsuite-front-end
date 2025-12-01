@@ -253,6 +253,7 @@ def get_pipeline_runs():
                 'user_id': user_id,
                 'user': user_info,
                 'session_id': run.get('session_id'),
+                'transferred_from_anon': run.get('transferred_from_anon', False),
             }
             formatted_runs.append(formatted)
         
@@ -328,6 +329,7 @@ def update_pipeline_run(run_id):
             'user_id': user_id,
             'user': user_info,
             'session_id': run.get('session_id'),
+            'transferred_from_anon': run.get('transferred_from_anon', False),
         }
         
         return jsonify(formatted), 200
