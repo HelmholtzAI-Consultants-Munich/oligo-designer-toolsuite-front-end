@@ -4,7 +4,7 @@ import tempfile
 import traceback
 from bson import ObjectId
 from flask import jsonify, session, current_app
-from ..helpers import multiline_to_list, split_on_newline, to_bool, to_int, to_null
+from ..helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
 from flask_login import current_user
 import os
 import yaml
@@ -205,7 +205,7 @@ class PipelineRunner:
                     case 'array':
                         if entry["items"]["type"] == 'string':
                             raw_value = deep_get(form_data, read_path + ['value'])
-                            value = multiline_to_list(raw_value)
+                            value = split_commas_and_newlines(raw_value)
                             deep_set(config, write_path, value)
                         else:
                             # type not supported
@@ -227,6 +227,7 @@ class PipelineRunner:
                         
         # Write config to YAML file
         print(f"Writing config to {context['config_path']}")
+        current_app.logger.warning(config)
         with open(context["config_path"], "w") as f:
             yaml.dump(config, f, sort_keys=False)
 

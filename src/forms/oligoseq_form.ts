@@ -39,7 +39,7 @@ const formDatas = {
         comment:
             "Minimum number of bases covering the exon junction, i.e. the oligo should contain at least x bases upstream/downstream of the junction.",
     },
-    target_probe_targeted_exons: { value: ["1, 2, 3"], comment: "" },
+    target_probe_targeted_exons: { value: "1, 2, 3", comment: "" },
     target_probe_isoform_consensus: {
         value: "0",
         comment:

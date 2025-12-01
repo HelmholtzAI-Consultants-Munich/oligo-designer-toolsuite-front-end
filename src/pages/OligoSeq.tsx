@@ -118,8 +118,8 @@ const OligoSeq: React.FC = () => {
                     if (formData.file_regions.value.length === 0) {
                         // @ts-ignore
                         formDataU.append("file", files[key]);
-                        // @ts-ignore
                         console.log(
+                            // @ts-ignore
                             files[key],
                             key,
                             "what it look like not array"
@@ -150,17 +150,13 @@ const OligoSeq: React.FC = () => {
     const toggleDeveloperSettings = () => {
         setShowDeveloperSettings(!showDeveloperSettings);
     };
-    const [formData, setFormData] = useState({
-        ...oligoseq_form,
-        target_probe_targeted_exons: { value: 1, comment: "" },
-    });
+    const [formData, setFormData] = useState(oligoseq_form);
     const [activeTab, setActiveTab] = useState("probe_sequences");
     const [activetab2, setActivetab2] = useState("specfblastn");
 
     const renderTabContent = () => {
         switch (activeTab) {
             case "probe_sequences":
-                // @ts-ignore
                 return (
                     <div>
                         <div className="mb-4">
@@ -636,7 +632,8 @@ const OligoSeq: React.FC = () => {
                                     Targeted Exons:
                                 </label>
                                 <div className="d-flex align-items-center">
-                                    <select
+                                    <input
+                                        type="text"
                                         className="form-control"
                                         id="target_probe_targeted_exons"
                                         name="target_probe_targeted_exons"
@@ -646,11 +643,7 @@ const OligoSeq: React.FC = () => {
                                         }
                                         onChange={handleChange}
                                         required
-                                    >
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                    </select>
+                                    />
                                     <OverlayTrigger
                                         trigger="hover"
                                         placement="top"

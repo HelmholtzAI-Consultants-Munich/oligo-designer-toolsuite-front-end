@@ -48,7 +48,10 @@
 
     "target_probe_split_region": { "type": "integer" },
     "target_probe_targeted_exons": {
-      "type": "integer"
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "target_probe_Tm_min": { "type": "integer" },
     "target_probe_Tm_opt": { "type": "integer" },
