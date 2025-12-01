@@ -150,8 +150,8 @@ const SeqFish: React.FC = () => {
                         const formDataU = new FormData();
                         // @ts-ignore
                         formDataU.append("file", files[key]);
-                        // @ts-ignore
                         console.log(
+                            // @ts-ignore
                             files[key],
                             key,
                             "what it look like not array"

@@ -2,6 +2,7 @@ import copy
 from typing import Dict, List
 import hashlib
 import json
+import re
 
 def get_form_cache_key(form: dict) -> str:
     relevant_part = {
@@ -45,8 +46,8 @@ def to_int(val):
 def to_null(val):
     return None if val == "" or str(val).lower() == "null" else val
 
-def multiline_to_list(val):
-    lines = [line.strip() for line in val.split('\n') if line.strip()]
+def split_commas_and_newlines(val):
+    lines = [line.strip() for line in re.split(',|\n', val) if line.strip()]
     return lines
 
 def split_on_newline(s):
