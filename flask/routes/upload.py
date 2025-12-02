@@ -1,13 +1,28 @@
+from bson import ObjectId
+from flask import Blueprint, request, jsonify, current_app
 import os
 import uuid
-
-from flask import Blueprint, current_app, jsonify, request
 
 # Blueprint for all upload-related endpoints
 upload_bp = Blueprint("upload", __name__)
 
 
-@upload_bp.route("/api/upload", methods=["POST"])
+# TODO: move this to a helper
+def is_valid_run_id(run_id_str: str) -> bool:
+    # Convert run ID string to ObjectId
+    if not run_id_str:
+        current_app.logger.warning("none")
+        return False
+    try:
+        run_id = ObjectId(run_id_str)
+        run = mongo.db.runs.find_one({"_id": ObjectId(run_id)})
+        return run is not None
+    except Exception:
+        return False
+
+# TODO: update other pipelines to also provide runid when uploading files
+# only Scrinshot updated yet (see commit diff)
+@upload_bp.route('/api/upload', methods=['POST'])
 def upload_file():
     """
     Handles file upload requests via POST, storing files with unique names in the server's upload directory.
@@ -50,11 +65,21 @@ def upload_file():
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
+    # Step 2.1: Read run ID from request
+    run_id_str = request.form["runid"]
+    current_app.logger.warning(run_id_str)
+    if not is_valid_run_id(run_id_str):
+        return jsonify({"error": "Invalid run ID format"}), 400
+
+    # Step 2.2: Create run-specific upload directory if it does not exist already
+    upload_path = os.path.join(current_app.config["UPLOAD_FOLDER"], run_id_str)
+    os.makedirs(upload_path, exist_ok=True)
+
     # Step 3: Generate a unique filename by prefixing with a UUID
     unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
 
     # Step 4: Build the full path in the uploads directory (from Flask app config)
-    file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], unique_filename)
+    file_path = os.path.join(upload_path, unique_filename)
 
     # Step 5: Save the file to disk
     file.save(file_path)

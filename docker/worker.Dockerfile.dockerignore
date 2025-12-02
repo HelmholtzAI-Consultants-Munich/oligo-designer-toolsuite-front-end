@@ -1,0 +1,15 @@
+# Ignore everything except the flask directory
+# see https://docs.docker.com/build/cache/optimize/#keep-the-context-small
+/*
+!/flask
+
+# Ignore everything in the flask directory except top-level Python files and the worker directory
+/flask/*
+!/flask/environment.yml
+!/flask/pyproject.toml
+!/flask/*.py
+!/flask/worker
+
+# Python artifacts
+**/__pycache__
+**/.pytest_cache

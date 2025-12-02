@@ -84,6 +84,7 @@ const RunDetail = () => {
     // --- Polling/log state variables ---
     const [hasYamlFile, setHasYamlFile] = useState(false);
     const [hasLogFile, setHasLogFile] = useState(false);
+    const [isFinished, setIsFinished] = useState(false);
     const [logFilename, setLogFilename] = useState<string | null>(null);
     const [logContent, setLogContent] = useState<string | null>(null);
     const [polling, setPolling] = useState(true);
@@ -163,74 +164,84 @@ const RunDetail = () => {
         const poll = async () => {
             try {
                 const response = await axios.get(
-                    `http://localhost:5000/api/runs/${runId}/files`,
+                    `http://localhost:5000/api/runs/${runId}/state`,
                     {
                         withCredentials: true,
                     }
                 );
-                setFiles(response.data);
-
-                const runResponse = await axios.get(
-                    `http://localhost:5000/api/runs/${runId}`,
-                    {
-                        withCredentials: true,
-                    }
-                );
-                setPipeline(runResponse.data.pipeline || "");
-
-                // Check for error status and display error message
-                let hasErrorMessage = false;
+                // If finished, stop polling
                 if (
-                    runResponse.data.status === "error" ||
-                    runResponse.data.status === "failed"
+                    response.data.state == "SUCCESS" ||
+                    response.data.state == "FAILURE"
                 ) {
-                    if (runResponse.data.error_message) {
-                        // Display error message to user
-                        setLogContent(
-                            `Pipeline Error: ${runResponse.data.error_message}`
-                        );
-                        hasErrorMessage = true;
-                    }
-                }
-
-                // YAML check
-                const yamlFile = response.data.find(
-                    (f: RunFile) =>
-                        f.name.includes("probes.yml") ||
-                        f.name.includes("probesets.yml")
-                );
-                setHasYamlFile(!!yamlFile);
-
-                // Log check - preserve error message state if no actual log file exists
-                const firstLog = response.data.find(
-                    (f: RunFile) => f.type === "log"
-                );
-                // Set hasLogFile to true if we have either an error message OR an actual log file
-                setHasLogFile(hasErrorMessage || !!firstLog);
-                setLogFilename(firstLog?.name || null);
-
-                // If YAML present, stop polling!
-                if (yamlFile) {
                     setPolling(false);
                     if (interval) clearInterval(interval);
-                    // Fetch and parse YAML as before
-                    fetchAndParseRunFiles(yamlFile.name);
-                } else if (firstLog && !hasErrorMessage) {
-                    // If log file is present and we don't have an error message, get its content
-                    // (Don't overwrite error message with log file content)
-                    const logResp = await axios.get(
-                        `http://localhost:5000/api/runs/${runId}/files/${firstLog.name}`,
-                        { withCredentials: true, responseType: "text" }
+                    const response = await axios.get(
+                        `http://localhost:5000/api/runs/${runId}/files`,
+                        {
+                            withCredentials: true,
+                        }
                     );
-                    setLogContent(logResp.data);
-                }
+                    setFiles(response.data);
+
+                    const runResponse = await axios.get(
+                        `http://localhost:5000/api/runs/${runId}`,
+                        {
+                            withCredentials: true,
+                        }
+                    );
+                    setPipeline(runResponse.data.pipeline || "");
+
+                    // Check for error status and display error message
+                    let hasErrorMessage = false;
+                    if (runResponse.data.status === "FAILURE") {
+                        if (runResponse.data.error_message) {
+                            // Display error message to user
+                            setLogContent(
+                                `Pipeline Error: ${runResponse.data.error_message}`
+                            );
+                            hasErrorMessage = true;
+                        }
+                    }
+
+                    // YAML check
+                    const yamlFile = response.data.find(
+                        (f: RunFile) =>
+                            f.name.includes("probes.yml") ||
+                            f.name.includes("probesets.yml")
+                    );
+                    setHasYamlFile(!!yamlFile);
+
+                    // Log check - preserve error message state if no actual log file exists
+                    const firstLog = response.data.find(
+                        (f: RunFile) => f.type === "log"
+                    );
+                    // Set hasLogFile to true if we have either an error message OR an actual log file
+                    setHasLogFile(hasErrorMessage || !!firstLog);
+                    setLogFilename(firstLog?.name || null);
+
+                    // If YAML present, stop polling!
+                    if (yamlFile) {
+                        setPolling(false);
+                        if (interval) clearInterval(interval);
+                        // Fetch and parse YAML as before
+                        fetchAndParseRunFiles(yamlFile.name);
+                    } else if (firstLog && !hasErrorMessage) {
+                        // If log file is present and we don't have an error message, get its content
+                        // (Don't overwrite error message with log file content)
+                        const logResp = await axios.get(
+                            `http://localhost:5000/api/runs/${runId}/files/${firstLog.name}`,
+                            { withCredentials: true, responseType: "text" }
+                        );
+                        setLogContent(logResp.data);
+                    }
             } catch (e) {
                 console.error(e);
             }
         };
 
         if (polling) {
-            interval = setInterval(poll, 1000);
+            interval = setInterval(poll, 2000);
             poll(); // initial
         }
 
@@ -714,7 +725,7 @@ const RunDetail = () => {
                     <>
                         {!hasLogFile && (
                             <div className="alert alert-info">
-                                Waiting for log file...{" "}
+                                Run is pending...{" "}
                                 <span className="spinner-border spinner-border-sm ms-2" />
                             </div>
                         )}

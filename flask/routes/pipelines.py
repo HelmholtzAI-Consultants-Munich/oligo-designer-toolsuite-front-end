@@ -1,315 +1,196 @@
-"""
-Pipeline Management Endpoints
-
-This module handles all pipeline run CRUD operations, including initialization, deletion,
-listing runs and files, and secure download of output files. Endpoints enforce user or session-level
-authorization to protect user data.
-
-Features:
-    - Run initialization (database entry)
-    - Run deletion with file system cleanup
-    - Listing of all runs for authenticated or session users
-    - Listing of output files for a given run
-    - Secure file download with mimetype detection and subdirectory support
-
-:requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
-"""
-
-import os
 from datetime import datetime
+import os
 
+import shutil
+import tempfile
+import traceback
+
+from typing import Any
 from bson import ObjectId
-from flask import Blueprint, jsonify, send_file, session
+
+from flask import Blueprint, current_app, jsonify, request, session
 from flask_login import current_user
 
-from extensions import mongo
-from routes.helpers import delete_pipeline_run_files_and_db
-from routes.error_handlers import create_user_error_response
+from flask_login.utils import LocalProxy
+from celery.result import AsyncResult
 
+
+from extensions import celery_app, mongo
+
+
+# Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
 
-@pipelines_bp.route("/api/runs/<run_id>", methods=["DELETE"])
-def delete_run(run_id):
-    """
-    Delete a pipeline run and its associated output files.
+EXISTING_PIPELINES = {
+    "scrinshot",
+    "seqfish",
+    "merfish",
+    "oligoseq",
+}
 
-    Only allows deletion if the run belongs to the current authenticated user.
-    Removes output files/folders from disk and deletes the corresponding database entry.
 
-    :param run_id: The ObjectId string of the run to delete.
-    :type run_id: str
-    :returns: JSON message with success or error.
-    :rtype: flask.Response
+def validate_name(pipeline_name: str) -> bool:
+    return pipeline_name in EXISTING_PIPELINES
 
-    Workflow:
-        1. Verify ownership (user_id or session_id).
-        2. Use shared helper to delete files and database entry.
-    """
+
+def parse_run_id(run_id_str: str) -> ObjectId | None:
+    # Convert run ID string to ObjectId
+    if not run_id_str:
+        return None
     try:
-        run_id_obj = ObjectId(run_id)
-
-        # Check ownership first (users can only delete their own runs)
-        if current_user.is_authenticated:
-            user_id = str(current_user.id)
-            run = mongo.db.runs.find_one({"_id": run_id_obj, "user_id": user_id})
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            run = mongo.db.runs.find_one({"_id": run_id_obj, "session_id": session_id})
-
-        if not run:
-            return jsonify({"error": "Run not found"}), 404
-
-        # Use shared deletion helper
-        success, error = delete_pipeline_run_files_and_db(mongo, run_id_obj)
-
-        if not success:
-            return jsonify({"error": error}), 500
-
-        return jsonify({"message": "Run deleted successfully"}), 200
-
-    except Exception as e:
-        print(f"Error deleting run: {e!s}")
-        return jsonify({"error": "Failed to delete run"}), 500
+        return ObjectId(run_id_str)
+    except Exception:
+        return None
 
 
-@pipelines_bp.route("/api/init_run_id", methods=["POST"])
-def init_run_id():
-    """
-    Initialize a new pipeline run in the database.
+# TODO: extract together with similar thing in pipeline_runner
+# there might be a better way to load multiple files into memory
+# than creating an archive on disk and reading that again
+def make_upload_archive(upload_path: str, run_id_str: str) -> bytes | None:
+    if not os.path.exists(upload_path):
+        return None
 
-    Sets initial status to "pending" and records creation timestamp.
+    archive_base_path = os.path.join(
+        tempfile.gettempdir(), f"upload-archive-{run_id_str}"
+    )
+    current_app.logger.warning(f"Writing archive to {archive_base_path}")
+    archive_path = shutil.make_archive(
+        base_name=archive_base_path,
+        format="zip",
+        root_dir=current_app.config["UPLOAD_FOLDER"],
+        base_dir=run_id_str,
+    )
 
-    :returns: JSON object with new run_id.
-    :rtype: flask.Response
-    """
-    run_doc = {"status": "pending", "created_at": datetime.utcnow()}
-    run_result = mongo.db.runs.insert_one(run_doc)
-    return jsonify({"run_id": str(run_result.inserted_id)})
+    with open(archive_path, "br") as f:
+        current_app.logger.warning(f"Reading archive from {archive_path}")
+        archive = f.read()
+
+    # Delete created archive locally
+    os.remove(archive_path)
+
+    # Delete all uploaded files locally
+    shutil.rmtree(upload_path)
+
+    return archive
 
 
-@pipelines_bp.route("/api/pipelines", methods=["GET"])
-def get_pipeline_runs():
-    """
-    List all pipeline runs for the current user or anonymous session.
+def create_context(
+    pipeline_name: str, current_user: LocalProxy[Any | None]
+) -> dict[str, str | None]:
+    if current_user.is_authenticated:
+        # Authenticated user: use user-specific directory
+        user_id = str(current_user.id)
+        user_dir = os.path.join(current_app.root_path, "user_data", user_id)
+        session_id = None
+    else:
+        # Anonymous user: use session-based directory
+        user_id = None
+        session_id = str(session.get("session_id"))
+        if not session_id:
+            raise ValueError("Anonymous session ID not found in session")
+        user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
 
-    Authenticated users see their runs; anonymous users see runs for their session_id.
+    if not os.path.exists(user_dir):
+        raise RuntimeError(f"Expected user directory at {user_dir} to exist")
 
-    :returns: List of run documents, formatted for the frontend.
-    :rtype: flask.Response
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_path = os.path.join(
+        user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}"
+    )
 
-    Workflow:
-        1. Check if user is authenticated.
-        2. Query DB for runs by user_id or session_id.
-        3. Format and return run info for each run.
-    """
+    # To prevent overwriting a run, fail if the directory already exists
+    os.makedirs(output_path, exist_ok=False)
+
+    context = {
+        "user_id": user_id,
+        "session_id": session_id,
+        "user_dir": user_dir,
+        "timestamp": timestamp,
+        "output_path": output_path,
+    }
+
+    return context
+
+
+def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
+    return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
+
+
+def write_run_to_DB(
+    pipeline_name: str,
+    run_id: ObjectId,
+    context: dict[str, str | None],
+    task_id: str | None,
+):
+    return update_run_in_DB(
+        run_id,
+        {
+            "session_id": context.get("session_id"),
+            "user_id": context.get("user_id"),
+            "timestamp": context.get("timestamp"),
+            "output_path": context.get("output_path"),
+            "status": "PENDING",
+            "pipeline": pipeline_name,
+            "task_id": task_id,
+        },
+    )
+
+
+def enqueue_pipeline(
+    pipeline_name: str,
+    form_data: dict[str, Any],
+    upload_path: str,
+    uploaded_files: bytes | None,
+) -> AsyncResult:
+    # TODO: install callbacks for metadata update
+    return celery_app.send_task(
+        "worker.tasks.run_pipeline",
+        (pipeline_name, form_data, upload_path, uploaded_files),
+    )
+
+
+@pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
+def start_pipeline(pipeline_name: str):
+    if not validate_name(pipeline_name):
+        return jsonify({"error": f'Pipeline "{pipeline_name}" does not exist'}), 400
+
+    json = request.get_json(silent=True)
+    if not json:
+        return jsonify({"error": "Expected JSON"}), 415
+
+    run_id_str = json.get("runid")  # Run ID from React
+    run_id = parse_run_id(run_id_str)
+    if not run_id:
+        return jsonify({"error": "Invalid run ID format"}), 400
+
+    form_data = json.get("formdata")  # Form data from React
+
+    upload_path = upload_path = os.path.join(
+        current_app.config["UPLOAD_FOLDER"], run_id_str
+    )
+    uploaded_files = make_upload_archive(upload_path, run_id_str)
+
+    # User Directory and Session / User ID Logic
     try:
-        if current_user.is_authenticated:
-            runs = list(mongo.db.runs.find({"user_id": str(current_user.id)}))
-        else:
-            session_id = session.get("session_id")
-            runs = list(mongo.db.runs.find({"session_id": session_id})) if session_id else []
-
-        formatted_runs = []
-        for run in runs:
-            formatted = {
-                "_id": str(run["_id"]),
-                "pipeline": run.get("pipeline", "unknown"),
-                "status": run.get("status", "unknown"),
-                "timestamp": run.get("timestamp", "").replace("_", " "),
-                "output_path": run.get("output_path", ""),
-                "user_id": run.get("user_id", "unknown"),
-            }
-            formatted_runs.append(formatted)
-        return jsonify(formatted_runs), 200
-
+        context = create_context(pipeline_name, current_user)
     except Exception as e:
-        print(f"Error fetching pipeline runs: {e!s}")
-        return jsonify({"error": "Failed to fetch pipeline runs"}), 500
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 400
 
+    result_promise = enqueue_pipeline(
+        pipeline_name, form_data, current_app.config["UPLOAD_FOLDER"], uploaded_files
+    )
+    current_app.logger.warning(result_promise.id)
 
-@pipelines_bp.route("/api/runs/<run_id>", methods=["GET"])
-def get_pipeline_run(run_id):
-    """
-    Retrieve details of a specific pipeline run.
+    # Mark Run as Enqueued in DB
+    update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
+    if update_result.matched_count == 0:
+        return jsonify(
+            {"error": "Run ID not found"}
+        ), 404
 
-    Checks user/session authorization for the run.
+    # The task state can be polled using get_run_state(run_id_str).
+    # If ready, the output will be written to our local filesystem.
 
-    :param run_id: The ObjectId string of the run.
-    :type run_id: str
-    :returns: Run document or JSON error.
-    :rtype: flask.Response
-
-    Workflow:
-        1. Fetch run for user/session.
-        2. Return run details or error if not found.
-    """
-    try:
-        # Auth or session check
-        if current_user.is_authenticated:
-            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": ObjectId(run_id), "session_id": session_id}
-
-        run = mongo.db.runs.find_one(query)
-        if not run:
-            return jsonify({"error": "Run not found"}), 404
-
-        formatted_run = {
-            "_id": str(run["_id"]),
-            "pipeline": run.get("pipeline", "unknown"),
-            "status": run.get("status", "unknown"),
-            "timestamp": run.get("timestamp", "").replace("_", " "),
-            "output_path": run.get("output_path", ""),
-            "user_id": run.get("user_id", "unknown"),
-        }
-        # Include error_message if status is error or failed
-        if run.get("status") in ["error", "failed"] and run.get("error_message"):
-            formatted_run["error_message"] = run.get("error_message")
-        return jsonify(formatted_run), 200
-
-    except Exception as e:
-        print(f"Error fetching pipeline run: {e!s}")
-        return jsonify({"error": "Failed to fetch pipeline run"}), 500
-
-
-@pipelines_bp.route("/api/runs/<run_id>/files/<path:filename>", methods=["GET"])
-def get_run_file(run_id, filename):
-    """
-    Download a file for a specific pipeline run.
-
-    Checks user/session authorization for the run. Supports nested files (e.g., annotation/ subdirectory).
-    Detects mimetype for common bioinformatics file types.
-
-    :param run_id: The ObjectId string of the run.
-    :type run_id: str
-    :param filename: The (possibly nested) file path relative to the run's output directory.
-    :type filename: str
-    :returns: File stream or JSON error.
-    :rtype: flask.Response
-
-    Workflow:
-        1. Fetch run for user/session.
-        2. Resolve the requested file path (with subdir support).
-        3. Serve file with correct mimetype, or return error.
-    """
-    try:
-        # Auth or session check
-        if current_user.is_authenticated:
-            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": ObjectId(run_id), "session_id": session_id}
-
-        run = mongo.db.runs.find_one(query)
-        if not run:
-            return jsonify({"error": "Run not found"}), 404
-
-        # Support subdirs (e.g. "annotation/example.fna")
-        file_path = os.path.join(run["output_path"], *filename.split("/"))
-        if not os.path.exists(file_path):
-            return jsonify({"error": "File not found"}), 404
-
-        # Return correct mimetype
-        if filename.endswith((".yml", ".yaml")):
-            return send_file(file_path, as_attachment=True)
-        elif filename.endswith((".txt", ".log")):
-            return send_file(file_path, mimetype="text/plain")
-        elif filename.endswith(".fna"):
-            return send_file(file_path, mimetype="application/octet-stream")
-        else:
-            return jsonify({"error": "Unsupported file type"}), 400
-
-    except Exception as e:
-        return create_user_error_response(e, "submission")
-
-
-@pipelines_bp.route("/api/runs/<run_id_str>/files", methods=["GET"])
-def get_run_files(run_id_str):
-    """
-    List all output files for a specific pipeline run.
-
-    Handles both main output directory and special annotation subdirectory for Genomic Region Generator pipeline.
-
-    :param run_id_str: The ObjectId string of the run.
-    :type run_id_str: str
-    :returns: List of file metadata dictionaries (name, type, size).
-    :rtype: flask.Response
-
-    Workflow:
-        1. Auth/session check for run.
-        2. List files in run output directory.
-        3. If pipeline is Genomic Region Generator, include files from annotation subdir.
-    """
-    try:
-        if not run_id_str:
-            return jsonify(
-                {"error": "The run ID you provided is not valid. Please check and try again."}
-            ), 400
-        try:
-            run_id = ObjectId(run_id_str)
-        except Exception as e:
-            return create_user_error_response(e, "submission")
-
-        # Auth or session check
-        run = None
-        try:
-            if current_user.is_authenticated:
-                query = {"_id": run_id, "user_id": str(current_user.id)}
-            else:
-                session_id = session.get("session_id")
-                if not session_id:
-                    return jsonify({"error": "Unauthorized"}), 403
-                query = {"_id": run_id, "session_id": session_id}
-
-            run = mongo.db.runs.find_one(query)
-        except Exception as e:
-            # Database errors should return 500
-            return create_user_error_response(e, "submission")
-
-        if not run:
-            # If run doesn't exist, return 404 (this is expected behavior)
-            return jsonify(
-                {
-                    "error": "The run you're looking for doesn't exist or you don't have permission to access it."
-                }
-            ), 404
-
-        output_dir = run["output_path"]
-        files = []
-
-        # Main output dir files
-        for fname in os.listdir(output_dir):
-            if fname.endswith((".yml", ".yaml", ".txt", ".log")):
-                files.append(
-                    {
-                        "name": fname,
-                        "type": "log" if "log" in fname else "config",
-                        "size": os.path.getsize(os.path.join(output_dir, fname)),
-                    }
-                )
-
-        # Special handling for "Genomic Region Generator" pipeline
-        if run.get("pipeline") == "Genomic Region Generator":
-            output_gen = os.path.join(output_dir, "annotation")
-            if os.path.exists(output_gen):
-                for fname in os.listdir(output_gen):
-                    if fname.endswith((".yml", ".yaml", ".txt", ".log", ".fna")):
-                        files.append(
-                            {
-                                "name": f"annotation/{fname}",
-                                "type": "log" if "log" in fname else "config",
-                                "size": os.path.getsize(os.path.join(output_gen, fname)),
-                            }
-                        )
-        return jsonify(files), 200
-
-    except Exception as e:
-        return create_user_error_response(e, "submission")
+    return jsonify({"run_id": run_id_str})

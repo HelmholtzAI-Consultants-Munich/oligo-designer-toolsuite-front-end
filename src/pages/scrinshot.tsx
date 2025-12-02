@@ -1,4 +1,4 @@
-import scrinshot_schema from "../../flask/routes/runners/schemas/scrinshot.schema.json";
+import scrinshot_schema from "../../flask/worker/runners/schemas/scrinshot.schema.json";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/tabs";
 import PipelineTemplate from "./pipelineTemplate";
