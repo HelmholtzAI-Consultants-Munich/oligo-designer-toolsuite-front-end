@@ -1,21 +1,17 @@
 from collections import defaultdict
-import os
+import json
+import shutil
 import subprocess
 import tempfile
-from datetime import datetime
+from typing import Any
 
-from flask_login.utils import LocalProxy
+from celery import Celery
+from helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
+import os
 import yaml
-from bson import ObjectId
-from flask import current_app, jsonify, session
 
 from Bio import SeqIO
 from oligo_designer_toolsuite.utils import FastaParser
-
-from extensions import mongo
-from ..error_handlers import create_user_error_response
-from bson.errors import InvalidId
-
 
 class PipelineRunner:
     """
@@ -81,163 +77,124 @@ class PipelineRunner:
 
     """
 
-    def __init__(self, pipeline_name: str, subprocess_name: str, schema: dict):
+    PIPELINE_SUBPROCESS: dict[str, str] = {
+        "scrinshot": "scrinshot_probe_designer",
+        "seqfish": "seqfish_plus_probe_designer",
+        "merfish": "merfish_probe_designer",
+        "oligoseq": "oligo_seq_probe_designer",
+    }
+
+    def __init__(self, pipeline_name: str, task: Celery.Task):
+        schema_path = os.path.join(
+            os.path.dirname(__file__), f"schemas/{pipeline_name}.schema.json"
+        )
+        with open(schema_path, "r") as f:
+            schema = json.load(f)
+
         self.pipeline_name = pipeline_name  # e.g., 'merfish'
-        self.subprocess_name = subprocess_name  # e.g., 'merfish_probe_designer'
+        self.subprocess_name = self.PIPELINE_SUBPROCESS[
+            pipeline_name
+        ]  # e.g., 'merfish_probe_designer'
         self.schema = schema  # JSON schema
+        self.task = task
 
-    def run(self, current_user: LocalProxy, form_data: dict, run_id_str: str):
+    def run(self, form_data: dict[str, Any], upload_path: str, uploaded_files: bytes | None) -> bytes | None:
+        # Temp File Creation (if needed)
+        self.populate_temp_file(form_data)
+
+        # Extract uploaded files (if needed)
+        self.extract_uploaded_files(upload_path, uploaded_files)
+
+        # Prepare output directory
+        # TODO: in separate function
+        output_path = os.path.join(tempfile.gettempdir(), "output")
+        os.makedirs(output_path, exist_ok=True)
+
+        # Build Config and Write to YAML
+        config_path = self.write_config_file(form_data, output_path)
+
+        # Subprocess Call
         try:
-            # Convert run ID string to ObjectId
-            if not run_id_str:
-                return jsonify(
-                    {"error": "The run ID you provided is not valid. Please check and try again."}
-                ), 400
-            try:
-                run_id = ObjectId(run_id_str)
-            except (InvalidId, Exception) as e:
-                return create_user_error_response(e, "submission")
+            self.call_subprocess(config_path)
+        except Exception:
+            self.task.update_state(state="FAILURE")
 
-            # User Directory and Session / User ID Logic
-            try:
-                context = self.create_context(current_user)
-            except Exception as e:
-                return create_user_error_response(e, "submission")
+        # Generate Visualization Files
+        self.generate_genomic_regions_file(form_data, output_path)
 
-            # Temp File Creation (if needed)
-            try:
-                self.populate_temp_file(form_data)
-            except Exception as e:
-                return create_user_error_response(e, "submission")
+        # Cleanup of Temporary Files
+        self.cleanup_temp_files(form_data, config_path)
 
-            # Mark Run as Started in DB
-            update_result = self.write_run_to_DB(run_id, context)
-            if update_result.matched_count == 0:
-                return create_user_error_response(ValueError("Run ID not found"), "submission")
+        # Serialize output
+        archive = self.serialize_output_directory(output_path)
 
-            # Build Config and Write to YAML
-            try:
-                self.write_config_file(form_data, context)
-            except Exception as e:
-                return create_user_error_response(e, "submission")
+        # Delete temporary directory
+        if os.path.exists(output_path):
+            shutil.rmtree(output_path)
 
-            # Subprocess Call
-            try:
-                status = self.call_subprocess(context["config_path"])
-            except Exception as e:
-                # Update run status to error before returning
-                try:
-                    self.update_run_status_in_DB(run_id, "error")
-                except Exception:
-                    pass  # If we can't update DB, continue with error response
-                return create_user_error_response(e, "submission")
-
-            # Generate Visualization Files
-            self.generate_genomic_regions_file(form_data, context)
-
-            # Cleanup of Temporary Files
-            try:
-                self.cleanup_temp_files(form_data)
-            except Exception as e:
-                # Log cleanup errors but don't fail the request
-                current_app.logger.warning(f"Error during cleanup: {e}")
-
-            # DB Update
-            self.update_run_status_in_DB(run_id, status)
-
-            # Response - return tuple for consistency with error responses
-            return jsonify(
-                {
-                    "run_id": str(run_id),
-                }
-            ), 200
-        except Exception as e:
-            # Catch-all for any unexpected errors
-            return create_user_error_response(e, "submission")
-
-    def create_context(self, current_user: LocalProxy) -> dict:
-        if current_user.is_authenticated:
-            # Authenticated user: use user-specific directory
-            user_id = str(current_user.id)
-            user_dir = os.path.join(current_app.root_path, "user_data", user_id)
-            config_path = os.path.join(user_dir, f"config_{self.pipeline_name}.yaml")
-            session_id = None
-        else:
-            # Anonymous user: use session-based directory
-            user_id = None
-            session_id = session.get("session_id")
-            if not session_id:
-                raise ValueError("Invalid session configuration")
-            user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
-            config_path = os.path.join(user_dir, "config.yaml")
-
-        if not os.path.exists(user_dir):
-            raise RuntimeError("User directory not found")
-
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output_path = os.path.join(user_dir, f"output_{self.pipeline_name}_probe_designer_{timestamp}")
-
-        context = {
-            "user_id": user_id,
-            "session_id": session_id,
-            "config_path": config_path,
-            "user_dir": user_dir,
-            "timestamp": timestamp,
-            "output_path": output_path,
-        }
-        return context
+        # Response
+        return archive
 
     def populate_temp_file(self, form_data: dict) -> None:
-        if form_data["file_regions"] != "":
-            if ".txt" not in form_data["file_regions"]:
-                with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+        if form_data["file_regions"]["value"] != "":
+            if ".txt" not in form_data["file_regions"]["value"]:
+                with tempfile.NamedTemporaryFile(
+                    mode="w", delete=False, suffix=".txt"
+                ) as temp_file:
                     file_path = temp_file.name
                     # Write each gene on a new line
-                    temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+                    temp_file.writelines(
+                        gene.strip() + "\n"
+                        for gene in form_data["file_regions"]["value"].split(",")
+                    )
                 # Update the path in form_data to point to the temp file
-                form_data["file_regions"] = file_path
+                form_data["file_regions"]["value"] = file_path
         else:
-            form_data["file_regions"] = None
+            form_data["file_regions"]["value"] = None
 
-    def write_config_file(self, form_data: dict, context: dict) -> None:
+    def extract_uploaded_files(self, upload_path: str, uploaded_files: bytes | None):
+        if uploaded_files:
+            # General upload directory
+            os.makedirs(upload_path, exist_ok=True)
+
+            archive_path = os.path.join(tempfile.gettempdir(), "upload-archive.zip")
+            print(f"Writing archive to {archive_path}")
+            with open(archive_path, "xb") as f:
+                f.write(uploaded_files)
+            
+            print(f"Unpacking archive at {archive_path}")
+            shutil.unpack_archive(archive_path, extract_dir=upload_path)
+            os.remove(archive_path)
+
+    def write_config_file(self, form_data: dict, output_path: str) -> str:
         config = form_data
 
         # Override output directory
-        config["dir_output"] = context.get("output_path")
+        config["dir_output"] = output_path
+
+        config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yaml")
 
         # Write config to YAML file
-        print(f"Writing config to {context['config_path']}")
-        current_app.logger.warning(config)
+        print(f"Writing config to {config_path}")
+
         # Ensure parent directory exists
-        config_dir = os.path.dirname(context["config_path"])
+        config_dir = os.path.dirname(config_path)
         if config_dir and not os.path.exists(config_dir):
             os.makedirs(config_dir, exist_ok=True)
-        with open(context["config_path"], "w") as f:
+        with open(config_path, "w") as f:
             yaml.dump(config, f, sort_keys=False)
+        return config_path
 
-    def call_subprocess(self, config_path: str) -> str:
-        result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
+    def call_subprocess(self, config_path: str):
+        result = subprocess.run(
+            [self.subprocess_name, "-c", config_path], capture_output=True, text=True
+        )
         print("STDERR:", result.stderr)
         print("STDOUT (partial logs):", result.stdout)
-        return "completed" if result.returncode == 0 else "failed"
+        if result.returncode != 0:
+            raise Exception("Pipeline execution was unsuccessful")
 
-    def update_run_in_DB(self, run_id: ObjectId, data: dict):
-        return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
-
-    def write_run_to_DB(self, runId: ObjectId, context: dict) -> ObjectId:
-        return self.update_run_in_DB(
-            runId,
-            {
-                "session_id": context.get("session_id"),
-                "user_id": context.get("user_id"),
-                "timestamp": context.get("timestamp"),
-                "output_path": context.get("output_path"),
-                "status": "started",
-                "pipeline": self.pipeline_name,
-            },
-        )
-
-    def generate_genomic_regions_file(self, form_data: dict, context: dict) -> None:
+    def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
         print("Generating visualization files...")
         regions_file = form_data.get("file_regions", None)
@@ -306,12 +263,11 @@ class PipelineRunner:
         # write regions to a temp file in user_dir
         # convert defaultdict to normal dict for yaml serialization
         regions_dict = {gene: dict(transcripts) for gene, transcripts in regions.items()}
-        vis_path = os.path.join(context["output_path"], f"genomic_regions.yaml")
+        vis_path = os.path.join(output_path, f"genomic_regions.yaml")
         with open(vis_path, "w") as vis_file:
             yaml.dump(regions_dict, vis_file)
-                        
 
-    def cleanup_temp_files(self, form_data: dict) -> None:
+    def cleanup_temp_files(self, form_data: dict, config_path: str) -> None:
         # Remove temp file for file_regions if it was created
         if form_data["file_regions"]:
             temp_path = form_data["file_regions"].strip()
@@ -335,6 +291,23 @@ class PipelineRunner:
             for fname in files_list:
                 if os.path.exists(fname):
                     os.remove(fname)
+        
+        if os.path.exists(config_path):
+            os.remove(config_path)
+            print("deleted config:", config_path)
+        else:
+            print("config not found, skipped:", config_path)
 
-    def update_run_status_in_DB(self, run_id: ObjectId, status: str):
-        return self.update_run_in_DB(run_id, {"status": status})
+    def serialize_output_directory(self, output_path: str) -> bytes | None:
+        if not os.path.exists(output_path) or len(os.listdir(output_path)) == 0:
+            return None
+
+        archive_base_path = os.path.join(tempfile.gettempdir(), "output-archive")
+        archive_path = shutil.make_archive(
+            archive_base_path, "zip", root_dir=output_path
+        )
+
+        with open(archive_path, "br") as f:
+            archive = f.read()
+        
+        return archive

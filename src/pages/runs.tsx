@@ -8,7 +8,7 @@ import axios from "axios";
 interface PipelineRun {
     _id: string;
     pipeline: string;
-    status: "started" | "completed" | "failed" | "error" | "unknown";
+    status: "STARTED" | "SUCCESS" | "FAILURE" | "PENDING";
     timestamp: string;
     output_path: string;
     user_id: string;
@@ -73,11 +73,10 @@ const Runs = () => {
 
     const statusBadge = (status: string) => {
         const statusMap: { [key: string]: string } = {
-            started: "primary",
-            completed: "success",
-            failed: "danger",
-            error: "danger",
-            unknown: "secondary",
+            STARTED: "primary",
+            SUCCESS: "success",
+            FAILURE: "danger",
+            PENDING: "secondary",
         };
         return `badge bg-${statusMap[status] || "secondary"}`;
     };

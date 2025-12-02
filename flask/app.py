@@ -1,14 +1,12 @@
+import logging
 import os
-
-from dotenv import load_dotenv
 from flask import Flask
 from flask_cors import CORS
-
-from config import Config
-from extensions import mongo, oauth
-from routes import register_blueprints
+from dotenv import load_dotenv
+from extensions import celery_app, mongo, oauth
 from routes.auth import init_login_manager
-
+from routes import register_blueprints
+from config import Config, CeleryConfig
 
 def create_app():
     app = Flask(__name__)
@@ -48,6 +46,11 @@ def create_app():
             "scope": app.config.get("HELMHOLTZ_SCOPE"),
         },
     )
+
+    # Initialize Celery configuration
+    celery_app.config_from_object(CeleryConfig)
+    app.logger.setLevel(logging.DEBUG)
+    celery_app.log_cls = app.logger
 
     # Register all blueprints from the routes package
     register_blueprints(app)

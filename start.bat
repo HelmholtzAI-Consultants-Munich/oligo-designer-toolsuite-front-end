@@ -2,6 +2,8 @@
 REM Start frontend (in the background)
 start "frontend" cmd /c npm run dev
 
+REM TODO: start Celery Worker too
+
 REM Change to backend directory and start backend (in new window)
 cd flask
 start "backend" cmd /k python app.py

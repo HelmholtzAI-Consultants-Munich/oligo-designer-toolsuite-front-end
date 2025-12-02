@@ -15,9 +15,8 @@ from flask import Blueprint, current_app, jsonify, request, session
 from flask_login import current_user
 
 from extensions import mongo
-
-from .cache_helpers import _prepare_ensembl_cached_assets, _prepare_ncbi_cached_assets
-from .helpers import generate_single_region_forms, get_form_cache_key, to_bool, to_int
+from helpers import to_bool, to_int, generate_single_region_forms, get_form_cache_key
+from .cache_helpers import _prepare_ncbi_cached_assets, _prepare_ensembl_cached_assets
 from .error_handlers import create_user_error_response
 
 genomic_bp = Blueprint("genomic", __name__)
