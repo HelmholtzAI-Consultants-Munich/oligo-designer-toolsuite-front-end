@@ -124,6 +124,50 @@ def get_pipeline_runs():
     except Exception as e:
         print(f"Error fetching pipeline runs: {str(e)}")
         return jsonify({"error": "Failed to fetch pipeline runs"}), 500
+    
+@pipelines_bp.route('/api/runs/<run_id>', methods=['GET'])
+def get_pipeline_run(run_id):
+    """
+    Retrieve details of a specific pipeline run.
+
+    Checks user/session authorization for the run.
+
+    :param run_id: The ObjectId string of the run.
+    :type run_id: str
+    :returns: Run document or JSON error.
+    :rtype: flask.Response
+
+    Workflow:
+        1. Fetch run for user/session.
+        2. Return run details or error if not found.
+    """
+    try:
+        # Auth or session check
+        if current_user.is_authenticated:
+            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
+        else:
+            session_id = session.get('session_id')
+            if not session_id:
+                return jsonify({"error": "Unauthorized"}), 403
+            query = {"_id": ObjectId(run_id), "session_id": session_id}
+
+        run = mongo.db.runs.find_one(query)
+        if not run:
+            return jsonify({"error": "Run not found"}), 404
+
+        formatted_run = {
+            "_id": str(run["_id"]),
+            "pipeline": run.get("pipeline", "unknown"),
+            "status": run.get("status", "unknown"),
+            "timestamp": run.get("timestamp", "").replace("_", " "),
+            "output_path": run.get("output_path", ""),
+            "user_id": run.get("user_id", "unknown")
+        }
+        return jsonify(formatted_run), 200
+
+    except Exception as e:
+        print(f"Error fetching pipeline run: {str(e)}")
+        return jsonify({"error": "Failed to fetch pipeline run"}), 500
 
 @pipelines_bp.route('/api/runs/<run_id>/files/<path:filename>', methods=['GET'])
 def get_run_file(run_id, filename):

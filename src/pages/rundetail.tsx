@@ -40,6 +40,7 @@ const RunDetail = () => {
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
+    const [pipeline, setPipeline] = useState<string>("");
 
     const [parsedYamlData, setParsedYamlData] = useState<any>(null);
     const [selectedGene, setSelectedGene] = useState<string>("");
@@ -130,6 +131,13 @@ const RunDetail = () => {
                     }
                 );
                 setFiles(response.data);
+
+                const runResponse = await axios.get(
+                    `http://localhost:5000/api/runs/${runId}`, {
+                        withCredentials: true,
+                    }
+                );
+                setPipeline(runResponse.data.pipeline || "");
 
                 // YAML check
                 const yamlFile = response.data.find(
@@ -762,7 +770,7 @@ const RunDetail = () => {
                                         </div>
                                         <OligoAlignment
                                             oligos={getOligosForOligoset()}
-                                            pipeline="scrinshot"
+                                            pipeline={pipeline}
                                         />
                                         <div className="table-responsive">
                                             <table className="table table-bordered table-striped table-hover">

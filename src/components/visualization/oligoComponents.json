@@ -1,40 +1,130 @@
 {
     "scrinshot": [
         {
+            "type": "entry",
             "field": "sequence_padlock_arm1",
             "color": "#b9dbf4",
             "label": "Padlock Arm 1",
             "isBinding": true
         },
         {
+            "type": "entry",
             "field": "sequence_padlock_accessory1",
             "color": "#c03830",
             "label": "Padlock Accessory 1",
             "isBinding": false
         },
         {
+            "type": "entry",
             "field": "sequence_padlock_ISS_anchor",
             "color": "#5aaa46",
             "label": "ISS Anchor",
             "isBinding": false
         },
         {
+            "type": "entry",
             "field": "barcode",
             "color": "#f2b342",
             "label": "Barcode",
             "isBinding": false
         },
         {
+            "type": "entry",
             "field": "sequence_padlock_accessory2",
             "color": "#8560a8",
             "label": "Padlock Accessory 2",
             "isBinding": false
         },
         {
+            "type": "entry",
             "field": "sequence_padlock_arm2",
             "color": "#b9dbf4",
             "label": "Padlock Arm 2",
             "isBinding": true
+        }
+    ],
+    "merfish": [
+        {
+            "type": "entry",
+            "field": "sequence_forward_primer"
+        },
+        {
+            "type": "entry",
+            "field": "sequence_readout_probe_1",
+            "isReverseComplement": true
+        },
+        {
+            "type": "sequence",
+            "value": "A"
+        },
+        {
+            "type": "entry",
+            "field": "sequence_target",
+            "isReverseComplement": true,
+            "isBinding": true
+        },
+        {
+            "type": "sequence",
+            "value": "A"
+        },
+        {
+            "type": "entry",
+            "field": "sequence_readout_probe_2",
+            "isReverseComplement": true
+        },
+        {
+            "type": "entry",
+            "field": "sequence_reverse_primer"
+        }
+],
+    "oligoseq": [
+        {
+            "type": "entry",
+            "field": "oligo"
+        }
+    ],
+    "seqfish": [
+        {
+            "type": "entry",
+            "field": "sequence_forward_primer"
+        },
+        {
+            "type": "entry",
+            "field": "sequence_readout_probe_1",
+            "isReverseComplement": true
+        },
+        {
+            "type": "entry",
+            "field": "sequence_readout_probe_2",
+            "isReverseComplement": true
+        },
+        {
+            "type": "sequence",
+            "value": "T"
+        },
+        {
+            "type": "entry",
+            "field": "sequence_target",
+            "isReverseComplement": true,
+            "isBinding": true
+        },
+        {
+            "type": "sequence",
+            "value": "A"
+        },
+        {
+            "type": "entry",
+            "field": "sequence_readout_probe_3",
+            "isReverseComplement": true
+        },
+        {
+            "type": "entry",
+            "field": "sequence_readout_probe_4",
+            "isReverseComplement": true
+        },
+        {
+            "type": "entry",
+            "field": "sequence_reverse_primer"
         }
     ]
 }
