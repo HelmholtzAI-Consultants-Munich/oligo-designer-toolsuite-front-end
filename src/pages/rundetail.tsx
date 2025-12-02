@@ -43,17 +43,17 @@ const RunDetail = () => {
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
-    const [tableColumns] = useState<string[]>([
+    
+
+    const [baseColumns] = useState<string[]>([
         "oligo_id",
-        "chromosome",
-        "start",
-        "end",
-        "source",
-        "species",
+        "location",
         "length",
+        "target_sequence",
         "Tm_arm1",
         "Tm_arm2",
     ]);
+    
     const closeFileView = () => {
         setViewingFilename(null);
     };
@@ -543,6 +543,14 @@ const RunDetail = () => {
             ) as Oligo[];
     };
 
+    const oligos = getOligosForOligoset();
+    const hasTargetSequence = oligos.some(o => o.target_sequence);
+    
+    const tableColumns = hasTargetSequence
+    ? [...baseColumns, "target_sequence"]
+    : baseColumns;
+
+
     const formatValue = (value: any): string => {
         // Handle deeply nested arrays
         const flatten = (arr: any[]): any[] => {
@@ -753,6 +761,7 @@ const RunDetail = () => {
                                 </div>
 
                                 {selectedOligoset && (
+                                    
                                     <div className="mt-3">
                                         <div className="d-flex justify-content-between align-items-center mb-2">
                                             <h5>
@@ -828,45 +837,61 @@ const RunDetail = () => {
                                                         )}
                                                     </tr>
                                                 </thead>
-                                                <tbody>
-                                                    {getOligosForOligoset().map(
-                                                        (oligo, index) => (
-                                                            <tr
-                                                                key={
-                                                                    oligo.oligo_id
-                                                                }
-                                                            >
-                                                                {tableColumns.map(
-                                                                    (
-                                                                        column
-                                                                    ) => (
-                                                                        <td
-                                                                            key={`${oligo.oligo_id}-${column}`}
-                                                                            className={
-                                                                                "text-nowrap " +
-                                                                                (index ===
-                                                                                oligoIndex
-                                                                                    ? "table-primary"
-                                                                                    : "")
-                                                                            }
-                                                                            onClick={() =>
-                                                                                setOligoIndex(
-                                                                                    index
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            {formatValue(
-                                                                                oligo[
-                                                                                    column
-                                                                                ]
-                                                                            )}
-                                                                        </td>
-                                                                    )
-                                                                )}
-                                                            </tr>
-                                                        )
-                                                    )}
-                                                </tbody>
+                                                {(() => {
+                                                const oligos = getOligosForOligoset();
+                                                return (
+                                                    <>
+                                                        <tbody>
+                                                            {getOligosForOligoset().map(
+                                                                (oligo, index) => (
+                                                                    <tr
+                                                                        key={
+                                                                            oligo.oligo_id
+                                                                        }
+                                                                    >
+                                                                        {tableColumns.map(
+                                                                            (
+                                                                                column
+                                                                            ) => (
+                                                                                <td
+                                                                                    key={`${oligo.oligo_id}-${column}`}
+                                                                                    className={
+                                                                                        "text-nowrap " +
+                                                                                        (index ===
+                                                                                        oligoIndex
+                                                                                            ? "table-primary"
+                                                                                            : "")
+                                                                                    }
+                                                                                    onClick={() =>
+                                                                                        setOligoIndex(
+                                                                                            index
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    {column === "location"
+                                                                                        ? `chr${oligo.chromosome}: ${oligo.start} - ${oligo.end}`
+                                                                                        : formatValue(oligo[column])}
+                                                                                </td>
+                                                                            )
+                                                                        )}
+                                                                    </tr>
+                                                                )
+                                                            )}
+                                                        </tbody>
+
+                                                        <tr>
+                                                            <td colSpan={tableColumns.length}>
+                                                                <div className="mt-2">
+                                                                <strong>Source:</strong> {oligos[0]?.source ?? "N/A"}
+                                                                <br />
+                                                                    <strong>Species:</strong>{" "}
+                                                                    {oligos[0]?.species ?? "N/A"}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        </>
+                                                    );
+                                                })()}
                                             </table>
                                         </div>
                                     </div>
