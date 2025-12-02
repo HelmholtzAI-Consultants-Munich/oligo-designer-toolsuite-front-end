@@ -1,5 +1,5 @@
 import * as d3 from "d3"
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { Oligo } from "../../pages/rundetail";
 import ComponentDefinition from './oligoComponents.json';
 import { reverseComplement } from "./helpers";
@@ -7,6 +7,7 @@ import { reverseComplement } from "./helpers";
 type Props ={
     oligos: Oligo[];
     pipeline: string;
+    oligoIndex: number;
 };
 
 type OligoComponentDefinition = {
@@ -39,9 +40,9 @@ type OligoBase = {
 
 const OligoAlignment: React.FC<Props> = ({
     oligos,
-    pipeline
+    pipeline,
+    oligoIndex
 }) => {
-    const [oligoIndex, setOligoIndex] = useState(0);
     const components: OligoComponent[] = [];
 
     useEffect(() => {
@@ -102,14 +103,6 @@ const OligoAlignment: React.FC<Props> = ({
     }
     return(
         <>
-            <label className="form-label" htmlFor="oligoSelect">
-                Select Oligo
-            </label>
-            <select id="oligoSelect" className="form-select" value={oligoIndex} onChange={(e) => setOligoIndex(parseInt(e.target.value))}>
-                {oligos.map((oligo, index) => 
-                    <option key={index} value={index}>Oligo {index + 1}</option>
-                )}
-            </select>
             <svg id= "oligo" width="100%">
                 <g>
                     {componentsToBases(components).map(

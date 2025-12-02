@@ -41,6 +41,7 @@ const RunDetail = () => {
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
     const [pipeline, setPipeline] = useState<string>("");
+    const [oligoIndex, setOligoIndex] = useState(0);
 
     const [parsedYamlData, setParsedYamlData] = useState<any>(null);
     const [selectedGene, setSelectedGene] = useState<string>("");
@@ -721,11 +722,12 @@ const RunDetail = () => {
                                             <select
                                                 className="form-select"
                                                 value={selectedOligoset}
-                                                onChange={(e) =>
-                                                    setSelectedOligoset(
-                                                        e.target.value
-                                                    )
-                                                }
+                                                onChange={(e) => {
+                                                        setSelectedOligoset(
+                                                            e.target.value
+                                                        );
+                                                        setOligoIndex(0);
+                                                }}
                                             >
                                                 <option value="">
                                                     Select an Oligoset
@@ -768,10 +770,21 @@ const RunDetail = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        <OligoAlignment
-                                            oligos={getOligosForOligoset()}
-                                            pipeline={pipeline}
-                                        />
+                                        <div className="my-3">
+                                            <label className="form-label" htmlFor="oligoSelect">
+                                                Select Oligo
+                                            </label>
+                                            <select id="oligoSelect" className="form-select" value={oligoIndex} onChange={(e) => setOligoIndex(parseInt(e.target.value))}>
+                                                {getOligosForOligoset().map((_, index) => 
+                                                    <option key={index} value={index}>Oligo {index + 1}</option>
+                                                )}
+                                            </select>
+                                            <OligoAlignment
+                                                oligos={getOligosForOligoset()}
+                                                pipeline={pipeline}
+                                                oligoIndex={oligoIndex}
+                                            />
+                                        </div>
                                         <div className="table-responsive">
                                             <table className="table table-bordered table-striped table-hover">
                                                 <thead className="table-light">
@@ -793,7 +806,7 @@ const RunDetail = () => {
                                                 </thead>
                                                 <tbody>
                                                     {getOligosForOligoset().map(
-                                                        (oligo) => (
+                                                        (oligo, index) => (
                                                             <tr
                                                                 key={
                                                                     oligo.oligo_id
@@ -805,7 +818,8 @@ const RunDetail = () => {
                                                                     ) => (
                                                                         <td
                                                                             key={`${oligo.oligo_id}-${column}`}
-                                                                            className="text-nowrap"
+                                                                            className={"text-nowrap " + (index === oligoIndex ? "table-primary" : "")}
+                                                                            onClick={() => setOligoIndex(index)}
                                                                         >
                                                                             {formatValue(
                                                                                 oligo[
