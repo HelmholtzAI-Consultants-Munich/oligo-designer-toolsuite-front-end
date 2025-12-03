@@ -9,3 +9,8 @@ export interface AuthContextType {
     checkAuth: () => Promise<void>;
     logout: () => void;
 }
+
+export interface Oligo {
+    oligo_id: string;
+    [key: string]: any;
+}

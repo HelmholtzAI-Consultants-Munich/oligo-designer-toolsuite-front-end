@@ -8,17 +8,12 @@ import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
 import OligoAlignment from "../components/visualization/OligoAlignment";
-
+import type { Oligo } from "../types";
 
 interface RunFile {
     name: string;
     type: "log" | "config";
     size: number;
-}
-
-export interface Oligo {
-    oligo_id: string;
-    [key: string]: any;
 }
 
 // Helper to extract all unique columns from an array of oligos
@@ -134,7 +129,8 @@ const RunDetail = () => {
                 setFiles(response.data);
 
                 const runResponse = await axios.get(
-                    `http://localhost:5000/api/runs/${runId}`, {
+                    `http://localhost:5000/api/runs/${runId}`,
+                    {
                         withCredentials: true,
                     }
                 );
@@ -723,10 +719,10 @@ const RunDetail = () => {
                                                 className="form-select"
                                                 value={selectedOligoset}
                                                 onChange={(e) => {
-                                                        setSelectedOligoset(
-                                                            e.target.value
-                                                        );
-                                                        setOligoIndex(0);
+                                                    setSelectedOligoset(
+                                                        e.target.value
+                                                    );
+                                                    setOligoIndex(0);
                                                 }}
                                             >
                                                 <option value="">
@@ -771,12 +767,31 @@ const RunDetail = () => {
                                             </div>
                                         </div>
                                         <div className="my-3">
-                                            <label className="form-label" htmlFor="oligoSelect">
+                                            <label
+                                                className="form-label"
+                                                htmlFor="oligoSelect"
+                                            >
                                                 Select Oligo
                                             </label>
-                                            <select id="oligoSelect" className="form-select" value={oligoIndex} onChange={(e) => setOligoIndex(parseInt(e.target.value))}>
-                                                {getOligosForOligoset().map((_, index) => 
-                                                    <option key={index} value={index}>Oligo {index + 1}</option>
+                                            <select
+                                                id="oligoSelect"
+                                                className="form-select"
+                                                value={oligoIndex}
+                                                onChange={(e) =>
+                                                    setOligoIndex(
+                                                        parseInt(e.target.value)
+                                                    )
+                                                }
+                                            >
+                                                {getOligosForOligoset().map(
+                                                    (_, index) => (
+                                                        <option
+                                                            key={index}
+                                                            value={index}
+                                                        >
+                                                            Oligo {index + 1}
+                                                        </option>
+                                                    )
                                                 )}
                                             </select>
                                             <OligoAlignment
@@ -818,8 +833,18 @@ const RunDetail = () => {
                                                                     ) => (
                                                                         <td
                                                                             key={`${oligo.oligo_id}-${column}`}
-                                                                            className={"text-nowrap " + (index === oligoIndex ? "table-primary" : "")}
-                                                                            onClick={() => setOligoIndex(index)}
+                                                                            className={
+                                                                                "text-nowrap " +
+                                                                                (index ===
+                                                                                oligoIndex
+                                                                                    ? "table-primary"
+                                                                                    : "")
+                                                                            }
+                                                                            onClick={() =>
+                                                                                setOligoIndex(
+                                                                                    index
+                                                                                )
+                                                                            }
                                                                         >
                                                                             {formatValue(
                                                                                 oligo[
