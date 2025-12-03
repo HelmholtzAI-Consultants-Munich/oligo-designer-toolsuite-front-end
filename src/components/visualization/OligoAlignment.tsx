@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
 import { reverseComplement } from "./helpers";
 import type { Oligo } from "../../types";
@@ -41,7 +41,39 @@ type OligoBase = {
 };
 
 const OligoAlignment: React.FC<Props> = ({ oligos, pipeline, oligoIndex }) => {
-    const components: OligoComponent[] = [];
+    const definition = ComponentDefinition[
+        pipeline as keyof typeof ComponentDefinition
+    ] as OligoComponentDefinition[];
+
+    const components: OligoComponent[] = useMemo(() => {
+        const comps: OligoComponent[] = [];
+        if (definition) {
+            definition.forEach((componentDef) => {
+                if (componentDef.type === "entry") {
+                    let sequence = oligos[oligoIndex][
+                        componentDef.field as keyof Oligo
+                    ][0][0] as string;
+                    if (componentDef.isReverseComplement) {
+                        sequence = reverseComplement(sequence);
+                    }
+                    comps.push({
+                        sequence: sequence,
+                        color: componentDef.color,
+                        label: componentDef.label,
+                        isBinding: componentDef.isBinding ?? false,
+                    });
+                } else if (componentDef.type === "sequence") {
+                    comps.push({
+                        sequence: componentDef.value,
+                        color: componentDef.color,
+                        label: componentDef.label,
+                        isBinding: false,
+                    });
+                }
+            });
+        }
+        return comps;
+    }, [oligos, oligoIndex, definition]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
         return components
@@ -57,36 +89,6 @@ const OligoAlignment: React.FC<Props> = ({ oligos, pipeline, oligoIndex }) => {
             )
             .flat();
     };
-
-    const definition = ComponentDefinition[
-        pipeline as keyof typeof ComponentDefinition
-    ] as OligoComponentDefinition[];
-
-    if (definition) {
-        definition.forEach((componentDef) => {
-            if (componentDef.type === "entry") {
-                let sequence = oligos[oligoIndex][
-                    componentDef.field as keyof Oligo
-                ][0][0] as string;
-                if (componentDef.isReverseComplement) {
-                    sequence = reverseComplement(sequence);
-                }
-                components.push({
-                    sequence: sequence,
-                    color: componentDef.color,
-                    label: componentDef.label,
-                    isBinding: componentDef.isBinding ?? false,
-                });
-            } else if (componentDef.type === "sequence") {
-                components.push({
-                    sequence: componentDef.value,
-                    color: componentDef.color,
-                    label: componentDef.label,
-                    isBinding: false,
-                });
-            }
-        });
-    }
 
     useEffect(() => {
         const width = 12 * (componentsToBases(components).length + 2);
