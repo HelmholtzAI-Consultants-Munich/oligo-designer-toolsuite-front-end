@@ -24,7 +24,7 @@ services:
     image: node:22
     container_name: odt-web
     working_dir: /home/node/app
-    command: sh -c "chown -R node:node /home/node/app/node_modules 2>/dev/null || true && su node -c '[ ! -d node_modules ] && npm install || true; npm run dev -- --host'"
+    command: sh -c "chown -R node:node /home/node/app/node_modules 2>/dev/null || true && su node -c 'npm install && npm run dev -- --host'"
     ports:
       - 3000:3000
     volumes:
