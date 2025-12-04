@@ -11,39 +11,39 @@ interface SelectOption {
 
 interface SelectInputProps {
     label: string;
-    fieldID: string;
+    id: string;
     options: SelectOption[];
-    formData: any;
+    formData: formData;
     setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 interface SelectInputAltProps {
     label: string;
-    fieldID: string;
-    subID: string;
+    id: string;
+    subId: string;
     options: SelectOption[];
-    formData: any;
+    formData: formData;
     setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 export const SelectInput: React.FC<SelectInputProps> = ({
     label, //display Name
-    fieldID, //internal identifier
+    id, //internal identifier
     options = [],
     formData,
     setFormData,
 }) => {
     return (
         <>
-            <label htmlFor={fieldID} className={"form-label"}>
+            <label htmlFor={id} className={"form-label"}>
                 {label}
             </label>
             <div className="d-flex align-items-center">
                 <select
                     className="form-select"
-                    id={fieldID}
-                    name={fieldID}
-                    value={formData[fieldID].value}
+                    id={id}
+                    name={id}
+                    value={formData[id].value}
                     onChange={(e) => handleChange(e, setFormData)}
                 >
                     {options.map((opt) => (
@@ -55,9 +55,7 @@ export const SelectInput: React.FC<SelectInputProps> = ({
                     placement="top"
                     overlay={
                         <Popover id="popover-n_jobs">
-                            <Popover.Body>
-                                {formData[fieldID].comment}
-                            </Popover.Body>
+                            <Popover.Body>{formData[id].comment}</Popover.Body>
                         </Popover>
                     }
                 >
@@ -77,23 +75,23 @@ export const SelectInput: React.FC<SelectInputProps> = ({
 
 export const SelectInputAlt: React.FC<SelectInputAltProps> = ({
     label, //display Name
-    fieldID, //internal identifier
-    subID,
+    id, //internal identifier
+    subId,
     options = [],
     formData,
     setFormData,
 }) => {
     return (
         <>
-            <label htmlFor={fieldID} className={"form-label"}>
+            <label htmlFor={id} className={"form-label"}>
                 {label}
             </label>
             <div className="d-flex align-items-center">
                 <select
                     className="form-select"
-                    id={`${fieldID}.${subID}`}
-                    name={`${fieldID}.${subID}`}
-                    value={formData[fieldID][subID].value}
+                    id={`${id}.${subId}`}
+                    name={`${id}.${subId}`}
+                    value={formData[id][subId].value}
                     onChange={(e) => handleChange(e, setFormData)}
                 >
                     {options.map((opt) => (
@@ -106,7 +104,7 @@ export const SelectInputAlt: React.FC<SelectInputAltProps> = ({
                     overlay={
                         <Popover id="popover-n_jobs">
                             <Popover.Body>
-                                {formData[fieldID][subID].comment}
+                                {formData[id][subId].comment}
                             </Popover.Body>
                         </Popover>
                     }
@@ -124,4 +122,3 @@ export const SelectInputAlt: React.FC<SelectInputAltProps> = ({
         </>
     );
 };
-
