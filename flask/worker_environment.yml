@@ -7,7 +7,6 @@ dependencies:
   # Core runtime
   - python=3.12
   - pip>=25.1 # min version supporting dependency groups
-  # TODO: Flask technically does not need everything below this line, only the Worker needs this
   - git       # required by setuptools-scm for local odt install
   
   # Oligo Designer Toolsuite dependencies

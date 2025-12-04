@@ -2,7 +2,7 @@
 FROM mambaorg/micromamba:2-alpine3.22
 
 # --- Set up environment ---
-RUN --mount=source=flask/environment.yml,target=/tmp/env.yml \
+RUN --mount=source=flask/worker_environment.yml,target=/tmp/env.yml \
     --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
     micromamba install -y -n base -f /tmp/env.yml
 

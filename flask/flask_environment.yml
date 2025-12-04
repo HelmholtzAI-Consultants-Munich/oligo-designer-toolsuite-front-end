@@ -1,0 +1,9 @@
+name: odt
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  # Core runtime
+  - python=3.12
+  - pip>=25.1 # min version supporting dependency groups
