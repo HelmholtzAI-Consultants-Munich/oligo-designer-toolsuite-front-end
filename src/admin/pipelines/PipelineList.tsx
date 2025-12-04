@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Table, Badge, Spinner, Alert, Button, Card, Form } from 'react-bootstrap';
 import { Eye, EyeSlash, Trash, Pencil } from 'react-bootstrap-icons';
@@ -20,6 +21,7 @@ interface PipelineRun {
 }
 
 const PipelineList: React.FC = () => {
+    const navigate = useNavigate();
     const [runs, setRuns] = useState<PipelineRun[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -226,8 +228,12 @@ const PipelineList: React.FC = () => {
                     <tbody>
                         {runs.map((run) => (
                             <React.Fragment key={run.id}>
-                                <tr>
-                                    <td>
+                                <tr
+                                    onClick={() => navigate(`/runs/${run.id}`, { state: { fromAdmin: true } })}
+                                    style={{ cursor: 'pointer' }}
+                                    className="hover:bg-gray-100 transition-colors"
+                                >
+                                    <td onClick={(e) => e.stopPropagation()}>
                                         <Button
                                             variant="link"
                                             size="sm"
@@ -245,7 +251,7 @@ const PipelineList: React.FC = () => {
                                     <td>
                                         <strong>{run.pipeline || 'Unknown'}</strong>
                                     </td>
-                                    <td>
+                                    <td onClick={(e) => e.stopPropagation()}>
                                         {editingStatus[run.id] !== undefined ? (
                                             <div className="d-flex align-items-center gap-2">
                                                 <Form.Select
@@ -291,7 +297,7 @@ const PipelineList: React.FC = () => {
                                     </td>
                                     <td>{getUserDisplay(run)}</td>
                                     <td>{formatDate(run.created_at)}</td>
-                                    <td>
+                                    <td onClick={(e) => e.stopPropagation()}>
                                         <Button
                                             variant="danger"
                                             size="sm"

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import YAML from "js-yaml";
 import Select from "react-select";
@@ -32,6 +32,7 @@ const RunDetail = () => {
     const { runId } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
@@ -189,7 +190,9 @@ const RunDetail = () => {
                 await axios.delete(`http://localhost:5000/api/runs/${runId}`, {
                     withCredentials: true,
                 });
-                navigate("/runs");
+                // Navigate back to admin panel if we came from there, otherwise go to runs page
+                const fromAdmin = (location.state as any)?.fromAdmin;
+                navigate(fromAdmin ? "/admin/pipelines" : "/runs");
             } catch (error) {
                 console.error("Error deleting run:", error);
                 alert("Failed to delete run");
@@ -566,9 +569,15 @@ const RunDetail = () => {
             <Navbar />
             <div className="container mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <Link to="/runs" className="btn btn-outline-secondary">
-                        ← Back to Runs
-                    </Link>
+                    <button 
+                        onClick={() => {
+                            const fromAdmin = (location.state as any)?.fromAdmin;
+                            navigate(fromAdmin ? "/admin/pipelines" : "/runs");
+                        }}
+                        className="btn btn-outline-secondary"
+                    >
+                        ← Back to {((location.state as any)?.fromAdmin) ? "Admin Panel" : "Runs"}
+                    </button>
                     <button className="btn btn-danger" onClick={handleDelete}>
                         Delete Run
                     </button>
