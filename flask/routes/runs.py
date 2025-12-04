@@ -21,7 +21,8 @@ import traceback
 from datetime import datetime
 from typing import Any
 from bson import ObjectId
-from flask import Blueprint, abort, current_app, jsonify, send_file, session
+from flask import Blueprint, current_app, jsonify, send_file, session
+from .validation_helper import get_run, get_run_id, get_task_id
 from flask_login import current_user
 from extensions import celery_app, mongo
 from helpers import delete_pipeline_run_files_and_db
@@ -302,32 +303,14 @@ def update_run_status_in_DB(run_id: ObjectId, status: str):
 
 @runs_bp.route('/api/runs/<run_id_str>/state', methods=['GET'])
 def get_run_status(run_id_str):
-    # TODO: put all this validation in helper file
-    if not run_id_str:
-        return jsonify({"error": "Invalid run ID"}), 400
-    try:
-        run_id = ObjectId(run_id_str)
-    except Exception:
-        traceback.print_exc()
-        return jsonify({"error": "Invalid run ID"}), 400
+    run_id = get_run_id(run_id_str)
     
-    if current_user.is_authenticated:
-        query = {"_id": run_id, "user_id": str(current_user.id)}
-    else:
-        session_id = session.get('session_id')
-        if not session_id:
-            return jsonify({"error": "Unauthorized"}), 403
-        query = {"_id": run_id, "session_id": session_id}
-    run = mongo.db.runs.find_one(query)
-    if not run:
-        return jsonify({"error": "Run not found"}), 404
+    run = get_run(run_id)
 
     if run["status"] in {"SUCCESS", "FAILURE"}:
         return jsonify({"state": run["status"]})
     
-    task_id = run["task_id"]
-    if not task_id:
-        abort(500, "Corresponding task not found")    
+    task_id = get_task_id(run)
 
     # TODO: this still has a nasty bug that it always returns PENDING
     # after returning STARTED for the first time if you open the RunDetail
