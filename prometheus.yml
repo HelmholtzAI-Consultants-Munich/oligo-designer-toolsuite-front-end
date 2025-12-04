@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Docker Engine metrics
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['host.docker.internal:9323']
+    metrics_path: '/metrics'
+
+  # Flask server (add prometheus_flask_exporter to your Flask app)
+  - job_name: 'odt-server'
+    static_configs:
+      - targets: ['odt-server:5000']
+    metrics_path: '/metrics'
+
+  # Add more scrape configs here as needed
+  # For example, if you add a MongoDB exporter:
+  # - job_name: 'mongodb'
+  #   static_configs:
+  #     - targets: ['mongodb-exporter:9216']
+
