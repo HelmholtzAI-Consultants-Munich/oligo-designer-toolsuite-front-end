@@ -6,37 +6,37 @@ import type { formData } from "./types";
 
 interface NumberInputProps {
     label: string;
-    fieldID: string;
-    formData: any;
+    id: string;
+    formData: formData;
     setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 interface NumberInputAltProps {
     label: string;
-    fieldID: string;
-    subID: string;
-    formData: any;
+    id: string;
+    subId: string;
+    formData: formData;
     setFormData: React.Dispatch<React.SetStateAction<formData>>;
 }
 
 export const NumberInput: React.FC<NumberInputProps> = ({
     label, //display Name
-    fieldID, //internal identifier
+    id, //internal identifier
     formData,
     setFormData,
 }) => {
     return (
         <>
-            <label htmlFor={fieldID} className={"form-label"}>
+            <label htmlFor={id} className={"form-label"}>
                 {label}
             </label>
             <div className="d-flex align-items-center">
                 <input
                     type="number"
                     className="form-control"
-                    id={fieldID}
-                    name={fieldID}
-                    value={formData[fieldID].value}
+                    id={id}
+                    name={id}
+                    value={formData[id].value}
                     onChange={(e) => handleChange(e, setFormData)}
                     required
                 />
@@ -45,9 +45,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
                     placement="top"
                     overlay={
                         <Popover id="popover-n_jobs">
-                            <Popover.Body>
-                                {formData[fieldID].comment}
-                            </Popover.Body>
+                            <Popover.Body>{formData[id].comment}</Popover.Body>
                         </Popover>
                     }
                 >
@@ -67,23 +65,23 @@ export const NumberInput: React.FC<NumberInputProps> = ({
 
 export const NumberInputAlt: React.FC<NumberInputAltProps> = ({
     label, //display name
-    fieldID, //internal identifier
-    subID, //subname of the internal Id
+    id, //internal identifier
+    subId, //subname of the internal Id
     formData,
     setFormData,
 }) => {
     return (
         <>
-            <label htmlFor={fieldID} className={"form-label"}>
+            <label htmlFor={id} className={"form-label"}>
                 {label}
             </label>
             <div className="d-flex align-items-center">
                 <input
                     type="number"
                     className="form-control"
-                    id={`${fieldID}.${subID}`}
-                    name={`${fieldID}.${subID}`}
-                    value={formData[fieldID][subID].value}
+                    id={`${id}.${subId}`}
+                    name={`${id}.${subId}`}
+                    value={formData[id][subId].value}
                     onChange={(e) => handleChange(e, setFormData)}
                     required
                 />
@@ -93,7 +91,7 @@ export const NumberInputAlt: React.FC<NumberInputAltProps> = ({
                     overlay={
                         <Popover id="popover-n_jobs">
                             <Popover.Body>
-                                {formData[fieldID][subID].comment}
+                                {formData[id][subId].comment}
                             </Popover.Body>
                         </Popover>
                     }
