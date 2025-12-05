@@ -18,7 +18,7 @@ from flask_login import login_required, current_user
 from bson import ObjectId
 from datetime import datetime
 from extensions import mongo
-from routes.helpers import delete_pipeline_run_files_and_db
+from routes.helpers import delete_pipeline_run_files_and_db, validate_and_convert_ids, execute_bulk_pipeline_run_deletion
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -340,4 +340,290 @@ def delete_pipeline_run(run_id):
     
     except Exception as e:
         return jsonify({"error": f"Failed to delete pipeline run: {str(e)}"}), 500
+
+@admin_bp.route('/api/admin/dashboard', methods=['GET'])
+@login_required
+@require_admin
+def get_dashboard_stats():
+    """
+    Get dashboard statistics (admin only).
+    
+    Returns aggregated statistics for the admin dashboard including:
+    - Total users count
+    - Admin vs regular user breakdown
+    - Pipeline runs by status
+    
+    :returns: JSON object with dashboard statistics
+    :rtype: flask.Response
+    """
+    try:
+        # User statistics
+        total_users = mongo.db.users.count_documents({})
+        admin_users = mongo.db.users.count_documents({'role': 'admin'})
+        regular_users = total_users - admin_users
+        
+        # Pipeline run statistics by status
+        pipeline_stats = {}
+        valid_statuses = ['pending', 'started', 'completed', 'error']
+        
+        for status in valid_statuses:
+            count = mongo.db.runs.count_documents({'status': status})
+            pipeline_stats[status] = count
+        
+        # Total pipeline runs
+        total_runs = mongo.db.runs.count_documents({})
+        
+        return jsonify({
+            'users': {
+                'total': total_users,
+                'admin': admin_users,
+                'regular': regular_users,
+            },
+            'pipeline_runs': {
+                'total': total_runs,
+                'by_status': pipeline_stats,
+            },
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Failed to fetch dashboard statistics: {str(e)}"}), 500
+
+@admin_bp.route('/api/admin/users/bulk-delete', methods=['POST'])
+@login_required
+@require_admin
+def bulk_delete_users():
+    """
+    Bulk delete users (admin only).
+    
+    Deletes multiple users in a single operation. Prevents self-deletion.
+    
+    :request json user_ids: Array of user IDs to delete
+    :returns: JSON object with deletion results
+    :rtype: flask.Response
+    """
+    try:
+        data = request.get_json() or {}
+        user_ids = data.get('user_ids', [])
+        
+        if not user_ids or not isinstance(user_ids, list):
+            return jsonify({"error": "user_ids must be a non-empty array"}), 400
+        
+        # Filter out current user's ID (prevent self-deletion)
+        current_user_id = str(current_user.id)
+        filtered_user_ids = [uid for uid in user_ids if uid != current_user_id]
+        skipped = [uid for uid in user_ids if uid == current_user_id]
+        
+        if not filtered_user_ids:
+            return jsonify({
+                "error": "Cannot delete users",
+                "message": "Cannot delete your own account or no valid users to delete"
+            }), 400
+        
+        # Convert to ObjectIds and validate
+        object_ids, invalid_ids = validate_and_convert_ids(filtered_user_ids)
+        
+        if not object_ids:
+            return jsonify({"error": "No valid user IDs provided"}), 400
+        
+        # Delete users in batch
+        result = mongo.db.users.delete_many({'_id': {'$in': object_ids}})
+        
+        response = {
+            "deleted_count": result.deleted_count,
+            "message": f"Successfully deleted {result.deleted_count} user(s)"
+        }
+        
+        if skipped:
+            response["skipped"] = skipped
+            response["message"] += f", skipped {len(skipped)} (cannot delete own account)"
+        
+        if invalid_ids:
+            response["invalid_ids"] = invalid_ids
+        
+        return jsonify(response), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Failed to bulk delete users: {str(e)}"}), 500
+
+@admin_bp.route('/api/admin/users/bulk-update-role', methods=['POST'])
+@login_required
+@require_admin
+def bulk_update_user_role():
+    """
+    Bulk update user roles (admin only).
+    
+    Updates the role of multiple users. Prevents self-demotion from admin.
+    
+    :request json user_ids: Array of user IDs to update
+    :request json role: New role ('user' or 'admin')
+    :returns: JSON object with update results
+    :rtype: flask.Response
+    """
+    try:
+        data = request.get_json() or {}
+        user_ids = data.get('user_ids', [])
+        role = data.get('role', '').strip().lower()
+        
+        if not user_ids or not isinstance(user_ids, list):
+            return jsonify({"error": "user_ids must be a non-empty array"}), 400
+        
+        if role not in ['user', 'admin']:
+            return jsonify({"error": "role must be 'user' or 'admin'"}), 400
+        
+        # Filter out current user's ID if demoting from admin (prevent self-demotion)
+        current_user_id = str(current_user.id)
+        filtered_user_ids = user_ids.copy()
+        skipped = []
+        
+        if role == 'user':
+            # Check if current user is trying to demote themselves
+            if current_user_id in filtered_user_ids:
+                # Check if current user is actually an admin
+                current_user_doc = mongo.db.users.find_one({'_id': ObjectId(current_user_id)})
+                if current_user_doc and current_user_doc.get('role') == 'admin':
+                    filtered_user_ids.remove(current_user_id)
+                    skipped.append(current_user_id)
+        
+        if not filtered_user_ids:
+            return jsonify({
+                "error": "Cannot update roles",
+                "message": "Cannot demote your own admin account or no valid users to update"
+            }), 400
+        
+        # Convert to ObjectIds and validate
+        object_ids, invalid_ids = validate_and_convert_ids(filtered_user_ids)
+        
+        if not object_ids:
+            return jsonify({"error": "No valid user IDs provided"}), 400
+        
+        # Update users in batch
+        result = mongo.db.users.update_many(
+            {'_id': {'$in': object_ids}},
+            {'$set': {'role': role}}
+        )
+        
+        response = {
+            "updated_count": result.modified_count,
+            "message": f"Successfully updated role of {result.modified_count} user(s) to {role}"
+        }
+        
+        if skipped:
+            response["skipped"] = skipped
+            response["message"] += f", skipped {len(skipped)} (cannot demote own admin account)"
+        
+        if invalid_ids:
+            response["invalid_ids"] = invalid_ids
+        
+        return jsonify(response), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Failed to bulk update user roles: {str(e)}"}), 500
+
+@admin_bp.route('/api/admin/pipelines/bulk-delete', methods=['POST'])
+@login_required
+@require_admin
+def bulk_delete_pipeline_runs():
+    """
+    Bulk delete pipeline runs (admin only).
+    
+    Deletes multiple pipeline runs and their associated output files.
+    Handles partial failures gracefully.
+    
+    :request json run_ids: Array of run IDs to delete
+    :returns: JSON object with deletion results
+    :rtype: flask.Response
+    """
+    try:
+        data = request.get_json() or {}
+        run_ids = data.get('run_ids', [])
+        
+        if not run_ids or not isinstance(run_ids, list):
+            return jsonify({"error": "run_ids must be a non-empty array"}), 400
+        
+        # Convert to ObjectIds and validate
+        object_ids, invalid_ids = validate_and_convert_ids(run_ids)
+        
+        if not object_ids:
+            return jsonify({"error": "No valid run IDs provided"}), 400
+        
+        # Delete runs using the shared helper function
+        result = execute_bulk_pipeline_run_deletion(mongo, object_ids)
+        
+        response = {
+            "deleted_count": result['deleted_count'],
+            "message": f"Successfully deleted {result['deleted_count']} pipeline run(s)"
+        }
+        
+        if result['failed']:
+            response["failed"] = result['failed']
+            response["failed_count"] = len(result['failed'])
+            response["message"] += f", {len(result['failed'])} failed"
+        
+        if result['errors']:
+            response["errors"] = result['errors']
+        
+        if invalid_ids:
+            response["invalid_ids"] = invalid_ids
+        
+        return jsonify(response), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Failed to bulk delete pipeline runs: {str(e)}"}), 500
+
+@admin_bp.route('/api/admin/pipelines/bulk-update-status', methods=['POST'])
+@login_required
+@require_admin
+def bulk_update_pipeline_status():
+    """
+    Bulk update pipeline run status (admin only).
+    
+    Updates the status of multiple pipeline runs.
+    
+    :request json run_ids: Array of run IDs to update
+    :request json status: New status ('pending', 'started', 'completed', 'error')
+    :returns: JSON object with update results
+    :rtype: flask.Response
+    """
+    try:
+        data = request.get_json() or {}
+        run_ids = data.get('run_ids', [])
+        status = data.get('status', '').strip().lower()
+        
+        if not run_ids or not isinstance(run_ids, list):
+            return jsonify({"error": "run_ids must be a non-empty array"}), 400
+        
+        if not status:
+            return jsonify({"error": "status field is required"}), 400
+        
+        # Validate status
+        valid_statuses = ['pending', 'started', 'completed', 'error']
+        if status not in valid_statuses:
+            return jsonify({
+                "error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+            }), 400
+        
+        # Convert to ObjectIds and validate
+        object_ids, invalid_ids = validate_and_convert_ids(run_ids)
+        
+        if not object_ids:
+            return jsonify({"error": "No valid run IDs provided"}), 400
+        
+        # Update runs in batch
+        result = mongo.db.runs.update_many(
+            {'_id': {'$in': object_ids}},
+            {'$set': {'status': status}}
+        )
+        
+        response = {
+            "updated_count": result.modified_count,
+            "message": f"Successfully updated status of {result.modified_count} pipeline run(s) to {status}"
+        }
+        
+        if invalid_ids:
+            response["invalid_ids"] = invalid_ids
+        
+        return jsonify(response), 200
+    
+    except Exception as e:
+        return jsonify({"error": f"Failed to bulk update pipeline status: {str(e)}"}), 500
 

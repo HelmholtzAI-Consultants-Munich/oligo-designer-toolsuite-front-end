@@ -1,10 +1,11 @@
 import copy
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import hashlib
 import json
 import re
 import os
 import shutil
+from bson import ObjectId
 
 def get_form_cache_key(form: dict) -> str:
     relevant_part = {
@@ -95,4 +96,59 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
         return False, "Failed to delete pipeline run from database"
     
     return True, None
+
+def validate_and_convert_ids(id_strings: List[str]) -> Tuple[List[ObjectId], List[str]]:
+    """
+    Validate and convert a list of string IDs to MongoDB ObjectIds.
+    
+    :param id_strings: List of string IDs to validate and convert
+    :type id_strings: List[str]
+    :returns: Tuple of (valid_object_ids, invalid_ids)
+    :rtype: Tuple[List[ObjectId], List[str]]
+    """
+    object_ids = []
+    invalid_ids = []
+    
+    for id_str in id_strings:
+        try:
+            object_ids.append(ObjectId(id_str))
+        except:
+            invalid_ids.append(id_str)
+    
+    return object_ids, invalid_ids
+
+def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: List[ObjectId]) -> Dict:
+    """
+    Bulk delete multiple pipeline runs using the shared deletion helper.
+    Handles partial failures gracefully.
+    
+    :param mongo: MongoDB instance
+    :param run_id_objects: List of run ID ObjectIds to delete (already validated)
+    :type run_id_objects: List[ObjectId]
+    :returns: Dictionary with deletion results (deleted_count, failed, errors)
+    :rtype: Dict
+    """
+    # Delete each run using the shared helper
+    deleted_count = 0
+    failed = []
+    errors = []
+    
+    for run_id_obj in run_id_objects:
+        try:
+            success, error = delete_pipeline_run_files_and_db(mongo, run_id_obj)
+            if success:
+                deleted_count += 1
+            else:
+                failed.append(str(run_id_obj))
+                if error:
+                    errors.append(error)
+        except Exception as e:
+            failed.append(str(run_id_obj))
+            errors.append(str(e))
+    
+    return {
+        'deleted_count': deleted_count,
+        'failed': failed,
+        'errors': errors,
+    }
 
