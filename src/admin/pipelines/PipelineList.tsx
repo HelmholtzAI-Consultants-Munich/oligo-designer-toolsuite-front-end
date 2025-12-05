@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Table, Badge, Spinner, Alert, Button, Card, Form } from 'react-bootstrap';
 import { Eye, EyeSlash, Trash, Pencil } from 'react-bootstrap-icons';
+import { useBulkSelection } from '../shared/useBulkSelection';
+import BulkActionToolbar from '../shared/BulkActionToolbar';
 
 interface PipelineRun {
     id: string;
@@ -27,6 +29,18 @@ const PipelineList: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [editingStatus, setEditingStatus] = useState<{ [key: string]: string }>({});
+    const [isBulkOperationLoading, setIsBulkOperationLoading] = useState(false);
+    
+    // Use shared bulk selection hook
+    const {
+        selectedItems,
+        isSelectAll,
+        handleSelectItem,
+        handleSelectAll,
+        clearSelection,
+        isSelected,
+        selectedCount,
+    } = useBulkSelection();
 
     useEffect(() => {
         fetchPipelineRuns();
@@ -101,10 +115,87 @@ const PipelineList: React.FC = () => {
                 const newExpanded = new Set(expandedRows);
                 newExpanded.delete(runId);
                 setExpandedRows(newExpanded);
+                // Remove from selection if selected
+                if (selectedItems.has(runId)) {
+                    handleSelectItem(runId);
+                }
             } catch (err: any) {
                 alert(`Failed to delete pipeline run: ${err.response?.data?.error || err.message}`);
                 console.error('Error deleting pipeline run:', err);
             }
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const selectedArray = Array.from(selectedItems);
+        if (selectedArray.length === 0) return;
+
+        const confirmed = window.confirm(
+            `Are you sure you want to delete ${selectedArray.length} pipeline run(s)? This will also delete all associated output files.`
+        );
+        
+        if (!confirmed) return;
+
+        setIsBulkOperationLoading(true);
+        try {
+            const response = await axios.post(
+                'http://localhost:5000/api/admin/pipelines/bulk-delete',
+                { run_ids: selectedArray },
+                { withCredentials: true }
+            );
+
+            const result = response.data;
+            let message = result.message || `Successfully deleted ${result.deleted_count} pipeline run(s)`;
+            
+            if (result.failed && result.failed.length > 0) {
+                message += `. ${result.failed.length} failed`;
+            }
+
+            alert(message);
+            clearSelection();
+            
+            // Remove deleted runs from expanded rows
+            const newExpanded = new Set(expandedRows);
+            selectedArray.forEach(runId => newExpanded.delete(runId));
+            setExpandedRows(newExpanded);
+            
+            fetchPipelineRuns();
+        } catch (err: any) {
+            alert(`Failed to delete pipeline runs: ${err.response?.data?.error || err.message}`);
+        } finally {
+            setIsBulkOperationLoading(false);
+        }
+    };
+
+    const handleBulkStatusUpdate = async (newStatus: string) => {
+        const selectedArray = Array.from(selectedItems);
+        if (selectedArray.length === 0) return;
+
+        const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        const confirmed = window.confirm(
+            `Are you sure you want to update status of ${selectedArray.length} run(s) to ${statusLabel}?`
+        );
+        
+        if (!confirmed) return;
+
+        setIsBulkOperationLoading(true);
+        try {
+            const response = await axios.post(
+                'http://localhost:5000/api/admin/pipelines/bulk-update-status',
+                { run_ids: selectedArray, status: newStatus },
+                { withCredentials: true }
+            );
+
+            const result = response.data;
+            const message = result.message || `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
+
+            alert(message);
+            clearSelection();
+            fetchPipelineRuns();
+        } catch (err: any) {
+            alert(`Failed to update status: ${err.response?.data?.error || err.message}`);
+        } finally {
+            setIsBulkOperationLoading(false);
         }
     };
 
@@ -200,6 +291,9 @@ const PipelineList: React.FC = () => {
         );
     }
 
+    const allRunIds = runs.map(run => run.id);
+    const allSelected = allRunIds.length > 0 && allRunIds.every(id => selectedItems.has(id));
+
     return (
         <div className="container-fluid p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -209,12 +303,59 @@ const PipelineList: React.FC = () => {
                 </Button>
             </div>
 
+            {/* Bulk Action Toolbar */}
+            <BulkActionToolbar
+                selectedCount={selectedCount}
+                itemName="runs"
+                onClearSelection={clearSelection}
+                actions={
+                    <>
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            disabled={isBulkOperationLoading || selectedCount === 0}
+                        >
+                            Delete Selected
+                        </Button>
+                        <Form.Select
+                            size="sm"
+                            style={{ width: 'auto', display: 'inline-block' }}
+                            onChange={(e) => {
+                                const status = e.target.value;
+                                if (status) {
+                                    handleBulkStatusUpdate(status);
+                                    e.target.value = ''; // Reset dropdown
+                                }
+                            }}
+                            disabled={isBulkOperationLoading || selectedCount === 0}
+                            defaultValue=""
+                        >
+                            <option value="">Update Status...</option>
+                            <option value="pending">Pending</option>
+                            <option value="started">Started</option>
+                            <option value="completed">Completed</option>
+                            <option value="error">Error</option>
+                        </Form.Select>
+                    </>
+                }
+            />
+
             {runs.length === 0 ? (
                 <Alert variant="info">No pipeline runs found.</Alert>
             ) : (
                 <Table striped bordered hover responsive>
                     <thead>
                         <tr>
+                            <th style={{ width: '50px' }}>
+                                <Form.Check
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={() => handleSelectAll(allRunIds)}
+                                    title="Select all"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </th>
                             <th style={{ width: '50px' }}></th>
                             <th>Pipeline</th>
                             <th>Status</th>
@@ -231,6 +372,13 @@ const PipelineList: React.FC = () => {
                                     style={{ cursor: 'pointer' }}
                                     className="hover:bg-gray-100 transition-colors"
                                 >
+                                    <td onClick={(e) => e.stopPropagation()}>
+                                        <Form.Check
+                                            type="checkbox"
+                                            checked={isSelected(run.id)}
+                                            onChange={() => handleSelectItem(run.id)}
+                                        />
+                                    </td>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         <Button
                                             variant="link"
@@ -308,7 +456,7 @@ const PipelineList: React.FC = () => {
                                 </tr>
                                 {expandedRows.has(run.id) && (
                                     <tr>
-                                        <td colSpan={6}>
+                                        <td colSpan={7}>
                                             <Card className="m-2">
                                                 <Card.Body>
                                                     <h6 className="mb-3">Additional Information</h6>

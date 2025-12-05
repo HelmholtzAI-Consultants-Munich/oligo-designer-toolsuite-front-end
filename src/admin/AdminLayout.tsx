@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../modules/auth';
 import { Navbar, Nav, Container, Spinner, Button } from 'react-bootstrap';
-import { People, House, BoxArrowRight, List, Gear } from 'react-bootstrap-icons';
+import { People, House, BoxArrowRight, List, Gear, Speedometer2 } from 'react-bootstrap-icons';
 import axios from 'axios';
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
@@ -89,6 +89,18 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
             >
                 <div className="p-3">
                     <Nav className="flex-column">
+                        <Nav.Item>
+                            <Nav.Link
+                                as={Link}
+                                to="/admin/dashboard"
+                                className={`text-white ${isActive('/admin/dashboard') ? 'bg-primary rounded' : ''}`}
+                                style={getNavLinkStyle(sidebarCollapsed)}
+                                title={sidebarCollapsed ? 'Dashboard' : ''}
+                            >
+                                <Speedometer2 size={20} className={sidebarCollapsed ? '' : 'me-2'} />
+                                {!sidebarCollapsed && <span>Dashboard</span>}
+                            </Nav.Link>
+                        </Nav.Item>
                         <Nav.Item>
                             <Nav.Link
                                 as={Link}
@@ -196,6 +208,18 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
             >
                 <div className="p-3">
                     <Nav className="flex-column">
+                        <Nav.Item>
+                            <Nav.Link
+                                as={Link}
+                                to="/admin/dashboard"
+                                className={`text-white ${isActive('/admin/dashboard') ? 'bg-primary rounded' : ''}`}
+                                style={getNavLinkStyle()}
+                                onClick={() => setSidebarOpen(false)}
+                            >
+                                <Speedometer2 className="me-2" />
+                                Dashboard
+                            </Nav.Link>
+                        </Nav.Item>
                         <Nav.Item>
                             <Nav.Link
                                 as={Link}

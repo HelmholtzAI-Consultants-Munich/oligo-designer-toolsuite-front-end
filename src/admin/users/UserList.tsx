@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Table, Button, Badge, Spinner, Alert } from 'react-bootstrap';
+import { Table, Button, Badge, Spinner, Alert, Form } from 'react-bootstrap';
+import { useBulkSelection } from '../shared/useBulkSelection';
+import BulkActionToolbar from '../shared/BulkActionToolbar';
 
 interface User {
     id: string;
@@ -16,6 +18,18 @@ const UserList: React.FC = () => {
     const [users, setUsers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isBulkOperationLoading, setIsBulkOperationLoading] = useState(false);
+    
+    // Use shared bulk selection hook
+    const {
+        selectedItems,
+        isSelectAll,
+        handleSelectItem,
+        handleSelectAll,
+        clearSelection,
+        isSelected,
+        selectedCount,
+    } = useBulkSelection();
 
     useEffect(() => {
         fetchUsers();
@@ -48,6 +62,77 @@ const UserList: React.FC = () => {
             } catch (err: any) {
                 alert(`Failed to delete user: ${err.response?.data?.error || err.message}`);
             }
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        const selectedArray = Array.from(selectedItems);
+        if (selectedArray.length === 0) return;
+
+        const confirmed = window.confirm(
+            `Are you sure you want to delete ${selectedArray.length} user(s)? This action cannot be undone.`
+        );
+        
+        if (!confirmed) return;
+
+        setIsBulkOperationLoading(true);
+        try {
+            const response = await axios.post(
+                'http://localhost:5000/api/admin/users/bulk-delete',
+                { user_ids: selectedArray },
+                { withCredentials: true }
+            );
+
+            const result = response.data;
+            let message = result.message || `Successfully deleted ${result.deleted_count} user(s)`;
+            
+            if (result.skipped && result.skipped.length > 0) {
+                message += `. Skipped ${result.skipped.length} (cannot delete own account)`;
+            }
+
+            alert(message);
+            clearSelection();
+            fetchUsers();
+        } catch (err: any) {
+            alert(`Failed to delete users: ${err.response?.data?.error || err.message}`);
+        } finally {
+            setIsBulkOperationLoading(false);
+        }
+    };
+
+    const handleBulkRoleChange = async (newRole: 'user' | 'admin') => {
+        const selectedArray = Array.from(selectedItems);
+        if (selectedArray.length === 0) return;
+
+        const roleLabel = newRole === 'admin' ? 'Admin' : 'User';
+        const confirmed = window.confirm(
+            `Are you sure you want to change role of ${selectedArray.length} user(s) to ${roleLabel}?`
+        );
+        
+        if (!confirmed) return;
+
+        setIsBulkOperationLoading(true);
+        try {
+            const response = await axios.post(
+                'http://localhost:5000/api/admin/users/bulk-update-role',
+                { user_ids: selectedArray, role: newRole },
+                { withCredentials: true }
+            );
+
+            const result = response.data;
+            let message = result.message || `Successfully updated role of ${result.updated_count} user(s) to ${newRole}`;
+            
+            if (result.skipped && result.skipped.length > 0) {
+                message += `. Skipped ${result.skipped.length} (cannot demote own admin account)`;
+            }
+
+            alert(message);
+            clearSelection();
+            fetchUsers();
+        } catch (err: any) {
+            alert(`Failed to update roles: ${err.response?.data?.error || err.message}`);
+        } finally {
+            setIsBulkOperationLoading(false);
         }
     };
 
@@ -86,11 +171,50 @@ const UserList: React.FC = () => {
         );
     }
 
+    const allUserIds = users.map(user => user.id);
+    const allSelected = allUserIds.length > 0 && allUserIds.every(id => selectedItems.has(id));
+
     return (
         <div className="container-fluid p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2>User Management</h2>
             </div>
+
+            {/* Bulk Action Toolbar */}
+            <BulkActionToolbar
+                selectedCount={selectedCount}
+                itemName="users"
+                onClearSelection={clearSelection}
+                actions={
+                    <>
+                        <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            disabled={isBulkOperationLoading || selectedCount === 0}
+                        >
+                            Delete Selected
+                        </Button>
+                        <Form.Select
+                            size="sm"
+                            style={{ width: 'auto', display: 'inline-block' }}
+                            onChange={(e) => {
+                                const role = e.target.value as 'user' | 'admin';
+                                if (role) {
+                                    handleBulkRoleChange(role);
+                                    e.target.value = ''; // Reset dropdown
+                                }
+                            }}
+                            disabled={isBulkOperationLoading || selectedCount === 0}
+                            defaultValue=""
+                        >
+                            <option value="">Change Role...</option>
+                            <option value="admin">Promote to Admin</option>
+                            <option value="user">Demote to User</option>
+                        </Form.Select>
+                    </>
+                }
+            />
 
             {users.length === 0 ? (
                 <Alert variant="info">No users found.</Alert>
@@ -98,6 +222,14 @@ const UserList: React.FC = () => {
                 <Table striped bordered hover responsive>
                     <thead>
                         <tr>
+                            <th style={{ width: '50px' }}>
+                                <Form.Check
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    onChange={() => handleSelectAll(allUserIds)}
+                                    title="Select all"
+                                />
+                            </th>
                             <th>Email</th>
                             <th>Name</th>
                             <th>Role</th>
@@ -108,6 +240,14 @@ const UserList: React.FC = () => {
                     <tbody>
                         {users.map((user) => (
                             <tr key={user.id}>
+                                <td>
+                                    <Form.Check
+                                        type="checkbox"
+                                        checked={isSelected(user.id)}
+                                        onChange={() => handleSelectItem(user.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                </td>
                                 <td>{user.email}</td>
                                 <td>{user.name || 'N/A'}</td>
                                 <td>
