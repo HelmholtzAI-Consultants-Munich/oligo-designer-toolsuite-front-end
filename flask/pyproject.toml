@@ -10,6 +10,8 @@ main = [
     "Flask-Login >=0.6, <0.7",
     "Flask-PyMongo >=3, <4",
     "python-dotenv >=1.2, <2",
+    "prometheus-flask-exporter >=0.23, <0.24",
+
     "PyYAML >=6, <7",
     "requests >=2.32, <3",
 ]

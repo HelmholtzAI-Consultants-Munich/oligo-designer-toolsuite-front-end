@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
+from prometheus_flask_exporter import PrometheusMetrics
 from extensions import mongo, oauth
 from routes.auth import init_login_manager
 from routes import register_blueprints
@@ -9,6 +10,7 @@ from config import Config
 
 def create_app():
     app = Flask(__name__)
+    metrics = PrometheusMetrics(app)
     
     # Load environment variables from .env file if present
     load_dotenv()
@@ -53,4 +55,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=False, host="0.0.0.0") # If debug is True, Prometheus metrics won't be available

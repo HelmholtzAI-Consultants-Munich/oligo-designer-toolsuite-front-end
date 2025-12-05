@@ -20,7 +20,7 @@ scrape_configs:
       - targets: ['odt-mongodb-exporter:9216']
     metrics_path: '/metrics'
 
-  # Flask server (add prometheus_flask_exporter to your Flask app)
+  # Flask server metrics
   - job_name: 'odt-server'
     static_configs:
       - targets: ['odt-server:5000']
