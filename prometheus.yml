@@ -26,3 +26,9 @@ scrape_configs:
       - targets: ['odt-server:5000']
     metrics_path: '/metrics'
 
+  # Host OS metrics (node_exporter)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['odt-node-exporter:9100']
+    metrics_path: '/metrics'
+
