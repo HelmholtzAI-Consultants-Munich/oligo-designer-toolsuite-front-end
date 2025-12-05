@@ -13,13 +13,12 @@ Endpoints:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo)
 """
 
-import os
-import shutil
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from bson import ObjectId
 from datetime import datetime
 from extensions import mongo
+from routes.helpers import delete_pipeline_run_files_and_db
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -330,25 +329,12 @@ def delete_pipeline_run(run_id):
     :rtype: flask.Response
     """
     try:
-        # Fetch run (admin can delete any run)
-        run = mongo.db.runs.find_one({'_id': ObjectId(run_id)})
+        # Admin can delete any run - use shared deletion helper
+        success, error = delete_pipeline_run_files_and_db(mongo, ObjectId(run_id))
         
-        if not run:
-            return jsonify({"error": "Pipeline run not found"}), 404
-        
-        # Delete output files/folders
-        output_path = run.get('output_path', '')
-        if output_path and os.path.exists(output_path):
-            try:
-                shutil.rmtree(output_path)
-            except Exception as e:
-                print(f"Warning: Failed to delete output directory {output_path}: {str(e)}")
-        
-        # Remove from database
-        result = mongo.db.runs.delete_one({'_id': ObjectId(run_id)})
-        
-        if result.deleted_count == 0:
-            return jsonify({"error": "Failed to delete pipeline run"}), 500
+        if not success:
+            status_code = 404 if error == "Pipeline run not found" else 500
+            return jsonify({"error": error}), status_code
         
         return jsonify({"message": "Pipeline run deleted successfully"}), 200
     

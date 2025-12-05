@@ -3,6 +3,8 @@ from typing import Dict, List
 import hashlib
 import json
 import re
+import os
+import shutil
 
 def get_form_cache_key(form: dict) -> str:
     relevant_part = {
@@ -61,4 +63,36 @@ def split_on_newline(s):
         return result
     else:
         return [s]
+
+def delete_pipeline_run_files_and_db(mongo, run_id_obj):
+    """
+    Shared helper to delete a pipeline run's output files and database entry.
+    
+    :param mongo: MongoDB instance
+    :param run_id_obj: ObjectId of the run to delete
+    :returns: Tuple of (success: bool, error_message: str or None)
+    :rtype: tuple
+    """
+    # Fetch the run
+    run = mongo.db.runs.find_one({'_id': run_id_obj})
+    
+    if not run:
+        return False, "Pipeline run not found"
+    
+    # Delete output files/folders
+    output_path = run.get('output_path', '')
+    if output_path and os.path.exists(output_path):
+        try:
+            shutil.rmtree(output_path)
+        except Exception as e:
+            print(f"Warning: Failed to delete output directory {output_path}: {str(e)}")
+            # Continue with DB deletion even if file deletion fails
+    
+    # Remove from database
+    result = mongo.db.runs.delete_one({'_id': run_id_obj})
+    
+    if result.deleted_count == 0:
+        return False, "Failed to delete pipeline run from database"
+    
+    return True, None
 
