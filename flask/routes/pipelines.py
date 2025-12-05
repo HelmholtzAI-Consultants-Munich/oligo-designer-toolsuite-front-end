@@ -12,17 +12,17 @@ Features:
     - Listing of output files for a given run
     - Secure file download with mimetype detection and subdirectory support
 
-:requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, shutil, datetime, traceback
+:requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
 """
 
 import os
-import shutil
 import traceback
 from datetime import datetime
 from bson import ObjectId
 from flask import Blueprint, jsonify, send_file, session, request
 from flask_login import current_user
 from extensions import mongo
+from routes.helpers import delete_pipeline_run_files_and_db
 
 pipelines_bp = Blueprint('pipelines', __name__)
 
@@ -40,29 +40,31 @@ def delete_run(run_id):
     :rtype: flask.Response
 
     Workflow:
-        1. Fetch run from DB for current user.
-        2. Remove output directory from disk if it exists.
-        3. Delete run from DB.
+        1. Verify ownership (user_id or session_id).
+        2. Use shared helper to delete files and database entry.
     """
     try:
+        run_id_obj = ObjectId(run_id)
+        
+        # Check ownership first (users can only delete their own runs)
         if current_user.is_authenticated:
             user_id = str(current_user.id)
-            run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "user_id": user_id})
-
+            run = mongo.db.runs.find_one({"_id": run_id_obj, "user_id": user_id})
         else:
             session_id = session.get('session_id')
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
-            run = mongo.db.runs.find_one({"_id": ObjectId(run_id), "session_id": session_id})
+            run = mongo.db.runs.find_one({"_id": run_id_obj, "session_id": session_id})
+        
         if not run:
             return jsonify({"error": "Run not found"}), 404
-
-        # Delete output files/folders
-        if os.path.exists(run['output_path']):
-            shutil.rmtree(run['output_path'])
-
-        # Remove from database
-        mongo.db.runs.delete_one({"_id": ObjectId(run_id)})
+        
+        # Use shared deletion helper
+        success, error = delete_pipeline_run_files_and_db(mongo, run_id_obj)
+        
+        if not success:
+            return jsonify({"error": error}), 500
+        
         return jsonify({"message": "Run deleted successfully"}), 200
 
     except Exception as e:

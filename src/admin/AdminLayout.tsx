@@ -3,6 +3,7 @@ import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../modules/auth';
 import { Navbar, Nav, Container, Spinner, Button } from 'react-bootstrap';
 import { People, House, BoxArrowRight, List, Gear } from 'react-bootstrap-icons';
+import axios from 'axios';
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
@@ -29,9 +30,8 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
     const handleLogout = async () => {
         try {
-            await fetch('http://localhost:5000/logout', {
-                method: 'POST',
-                credentials: 'include',
+            await axios.post('http://localhost:5000/logout', {}, {
+                withCredentials: true,
             });
             navigate('/');
         } catch (error) {
@@ -60,6 +60,16 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
     const sidebarWidth = sidebarCollapsed ? '70px' : '250px';
 
+    // Extracted common styles for nav links
+    const getNavLinkStyle = (collapsed?: boolean) => ({
+        padding: '0.75rem 1rem',
+        marginBottom: '0.25rem',
+        textDecoration: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        ...(collapsed !== undefined && { justifyContent: collapsed ? 'center' : 'flex-start' }),
+    });
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh' }}>
             {/* Desktop Sidebar */}
@@ -84,14 +94,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                                 as={Link}
                                 to="/admin/users"
                                 className={`text-white ${isActive('/admin/users') ? 'bg-primary rounded' : ''}`}
-                                style={{
-                                    padding: '0.75rem 1rem',
-                                    marginBottom: '0.25rem',
-                                    textDecoration: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                                }}
+                                style={getNavLinkStyle(sidebarCollapsed)}
                                 title={sidebarCollapsed ? 'User Management' : ''}
                             >
                                 <People size={20} className={sidebarCollapsed ? '' : 'me-2'} />
@@ -103,14 +106,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                                 as={Link}
                                 to="/admin/pipelines"
                                 className={`text-white ${isActive('/admin/pipelines') ? 'bg-primary rounded' : ''}`}
-                                style={{
-                                    padding: '0.75rem 1rem',
-                                    marginBottom: '0.25rem',
-                                    textDecoration: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                                }}
+                                style={getNavLinkStyle(sidebarCollapsed)}
                                 title={sidebarCollapsed ? 'Pipeline Management' : ''}
                             >
                                 <Gear size={20} className={sidebarCollapsed ? '' : 'me-2'} />
@@ -205,13 +201,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                                 as={Link}
                                 to="/admin/users"
                                 className={`text-white ${isActive('/admin/users') ? 'bg-primary rounded' : ''}`}
-                                style={{
-                                    padding: '0.75rem 1rem',
-                                    marginBottom: '0.25rem',
-                                    textDecoration: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                }}
+                                style={getNavLinkStyle()}
                                 onClick={() => setSidebarOpen(false)}
                             >
                                 <People className="me-2" />
@@ -223,13 +213,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                                 as={Link}
                                 to="/admin/pipelines"
                                 className={`text-white ${isActive('/admin/pipelines') ? 'bg-primary rounded' : ''}`}
-                                style={{
-                                    padding: '0.75rem 1rem',
-                                    marginBottom: '0.25rem',
-                                    textDecoration: 'none',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                }}
+                                style={getNavLinkStyle()}
                                 onClick={() => setSidebarOpen(false)}
                             >
                                 <Gear className="me-2" />

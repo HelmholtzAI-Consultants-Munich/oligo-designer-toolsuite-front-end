@@ -58,6 +58,16 @@ const PipelineList: React.FC = () => {
         setExpandedRows(newExpanded);
     };
 
+    const cancelEditingStatus = (runId: string) => {
+        const newEditing = { ...editingStatus };
+        delete newEditing[runId];
+        setEditingStatus(newEditing);
+    };
+
+    const startEditingStatus = (runId: string, currentStatus: string) => {
+        setEditingStatus({ ...editingStatus, [runId]: currentStatus });
+    };
+
     const handleStatusChange = async (runId: string, newStatus: string) => {
         try {
             const response = await axios.put(
@@ -72,9 +82,7 @@ const PipelineList: React.FC = () => {
             ));
             
             // Remove from editing state
-            const newEditing = { ...editingStatus };
-            delete newEditing[runId];
-            setEditingStatus(newEditing);
+            cancelEditingStatus(runId);
         } catch (err: any) {
             alert(`Failed to update status: ${err.response?.data?.error || err.message}`);
             console.error('Error updating status:', err);
@@ -98,16 +106,6 @@ const PipelineList: React.FC = () => {
                 console.error('Error deleting pipeline run:', err);
             }
         }
-    };
-
-    const startEditingStatus = (runId: string, currentStatus: string) => {
-        setEditingStatus({ ...editingStatus, [runId]: currentStatus });
-    };
-
-    const cancelEditingStatus = (runId: string) => {
-        const newEditing = { ...editingStatus };
-        delete newEditing[runId];
-        setEditingStatus(newEditing);
     };
 
     const formatDate = (dateString?: string) => {
