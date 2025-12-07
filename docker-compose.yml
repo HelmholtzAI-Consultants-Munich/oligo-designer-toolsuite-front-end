@@ -46,6 +46,6 @@ services:
     container_name: odt-tests
     network_mode: host # this should be removed once the URL is configurable
     environment:
-      PLAYWRIGHT_HTML_OUTPUT_DIR: /home/node/tests/playwright-report
+      PLAYWRIGHT_HTML_OUTPUT_DIR: /app/tests/playwright-report
     restart: no
     profiles: [tests] # don't run unless specified
