@@ -1,7 +1,10 @@
-FROM node:22
+# TODO: This should be replaced with the official Docker image
+# see https://playwright.dev/docs/docker
+
+FROM node:22-slim
 
 USER node
-WORKDIR /home/node/
+WORKDIR /app
 
 # --- Install dependencies ---
 RUN npm install @playwright/test
@@ -11,12 +14,11 @@ RUN npx playwright install-deps
 USER node
 
 # --- Install Playwright browsers ---
-# Playwright needs access to package.json for this
 RUN npx playwright install
 ENV CI=true
 
 # --- Copy ODT Cloud tests ---
-COPY --chown=node:node . ./tests
+COPY --chown=node:node tests ./tests
 
 ENTRYPOINT ["npx", "playwright"]
 CMD ["test", "tests", "--reporter=html"]

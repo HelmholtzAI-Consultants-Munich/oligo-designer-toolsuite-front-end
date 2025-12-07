@@ -15,75 +15,70 @@ ODT Cloud can be run and deployed using Docker containers. The provided configur
 
 This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
 
-To launch the frontend, backend and database, run:
+All commands necessary to use Docker are defined in the `package.json`. To launch the frontend, backend and database, run:
 
 ```bash
-npm i
-docker compose watch
+npm run docker:start
+# or for development:
+npm run docker:watch
 ```
 
 and when you're finished:
 
 ```bash
-docker compose down
+npm run docker:stop
 ```
 
 To view the logs, use:
 
 ```bash
-docker logs -f odt-web # or odt-server
+npm run docker:logs odt-web # or odt-server
 ```
 
 ---
 
-## Building and Running the Flask Backend
+## Docker Project Structure
 
-The Dockerfile located at `flask/Dockerfile` is used to build the backend using a minimal conda environment. In the Docker Compose file, the resulting container is tagged `odt-server`.
+The Dockerfiles used for building the frontend, backend and Playwright tests containers are located in the `docker` directory, along with their respective [`.dockerignore`](https://docs.docker.com/build/concepts/context/#dockerignore-files) files.
 
-To force rebuilding the container, use:
+The `docker-compose.yml` at the project root defines the containers used for ODT Cloud and their respective deployment configuration.
 
-```bash
-docker compose build odt-server
-# or if you want to start it too:
-docker compose run -d --build odt-server
-```
+Currently, the project consists of the following containers:
 
-## Running the Node Frontend
+|  Service   |    Name    | Self-Built? |    Dockerfile     |      Base Image       |
+| :--------: | :--------: | :---------: | :---------------: | :-------------------: |
+|  Frontend  |  odt-web   |     yes     |  web.Dockerfile   |     node:22-slim      |
+|  Backend   | odt-server |     yes     | server.Dockerfile | mambaorg/micromamba:2 |
+|  Database  |   odt-db   |     no      |         -         |        mongo:8        |
+| Playwright | odt-tests  |     yes     | tests.Dockerfile  |     node:22-slim      |
 
-The Docker Compose file configures a prebuilt Node container and gives it access to the entire working directory with a bind mount. By default, starting the container executes `npm run dev -- --host`. The container is tagged `odt-web`.
+## Build Configuration
 
-To run an arbitrary command in the container, use:
+For all self-built containers, the build context is the project root. The `.dockerignore` files define files and directories not to be included in the build context for each container. These are also specified relative to the project root.
 
-```bash
-docker compose run --rm odt-web <command>
-```
+## Building and Updating Containers
 
-## Running the Database
+Starting the Docker Compose stack with the provided commands will automatically build the required containers if they haven't been already. Note that you should prefer `npm run docker:watch` for development since it _always_ attempts to rebuild to apply the latest changes.
 
-The Docker Compose file configures a prebuild MongoDB container tagged `odt-db`. By default, the container is accessible on localhost.
+Container builds do not pull the latest version of their base images by default. To update all containers to the latest available version, use `npm run docker:update`. This will pull the latest container images and rebuild the frontend and backend containers using these updated base images.
 
-To start just the database, run:
+Naturally, regular Docker commands not specified in the `package.json` can be used for managing containers too.
+
+<!-- TODO: add RabbitMQ here once it's added -->
+
+## Local Development with Docker
+
+While ODT Cloud can be run with Docker alone, you might prefer to develop locally and only use Docker for supporting services like the database. Because of this, the supporting containers (currently just `odt-db`) are accessible on localhost by default.
+
+To start just the supporting services, run:
 
 ```bash
 docker compose up odt-db -d
 ```
 
-To limit access to the Docker containers, comment out the lines configuring port forwarding in `docker-compose.yml`:
-
-```yaml
-#...
-odt-db:
-  image: mongo:8
-  container_name: odt-db
-  # Comment out these lines to restrict database access from localhost
-  ports:
-    - 27017:27017
-#...
-```
-
 ## Building and Running the Playwright Tests
 
-The Dockerfile located at `tests/Dockerfile` is used to build the Playwright testing environment, including all necessary browsers. In the Docker Compose file, the resulting container is tagged `odt-tests`. **It is not executed by default.**
+The `odt-tests` container contains the Playwright testing environment, including all necessary browsers. Because of the large size and rare usage of this image, **it is not built or started** using the commands specified in the `package.json`.
 
 To force rebuilding the container, use:
 
@@ -97,19 +92,41 @@ See [Tests]({{ site.baseurl }}{% link tests.md %}) for details on executing Play
 
 ## Hot Code Reloading
 
-The Docker setup supports hot code reloading both for the frontend and the backend. However, the mechanism to achieve this differs between them.
+With hot code reloading, code changes are automatically propagated into the respective containers. The Docker setup supports this both for the frontend and the backend using Docker Compose's built-in [Watch](https://docs.docker.com/compose/how-tos/file-watch/) feature.
 
-For the frontend, the entire working directory is bind mounted to the container. Any file changes are reflected inside the container too - the development server picks these up and updates the website if hot code reloading is enabled. This is possible because the container is executed with UID 1000 which is usually equivalent to the permissions set on the files of the local directory.
+If a container crashes (e.g. because of autosave triggering a sync of an incomplete change), it will be restarted until it either stops crashing (e.g. because the change was completed and synced) or is stopped manually.
 
-All relevant code is added to the backend container when it is built. This means that by default, launching the container works with the state of the codebase when it was last built. Due to conflicting file permissions, it's impractical to use a bind mount here. Using Docker Compose's `watch` functionality, the contents of the local `flask` directory are synced into the container upon change.
-Note that you might need to force a sync by slightly changing a file to avoid working with outdated code.
-
-With this setup, hot code reloading can't be disabled for the frontend, but it can for the backend.
-
-To launch the frontend, backend and database, run:
+To start the containers using hot code reloading, run:
 
 ```bash
-docker compose watch
-# or without hot code reloading for the backend:
-docker compose up -d
+npm run docker:watch
 ```
+
+To start the containers **without** hot code reloading, run:
+
+```bash
+npm run docker:start
+```
+
+As an example, take a look at the backend's `watch` configuration in the Docker Compose file:
+
+```yaml
+#...
+odt-server:
+  image: odt-server
+  #...
+  restart: on-failure
+  develop:
+    watch:
+      - action: sync
+        path: ./flask
+        target: /app
+        initial_sync: true
+#...
+```
+
+The code contained in the `odt-server` image might be out of date compared to the local filesystem, which is why `initial_sync: true` ensures the `flask` directory is synced into the container on startup. As long as `watch` is active, any changes made to files in the `flask` directory are synced into the `/app` directory inside of the container. The Flask server also watches for file changes and will reload.
+
+## Additional Tips for using Docker
+
+You can check Docker's disk usage using `docker system df`. To reclaim disk space used by Docker (e.g. images, volumes, build cache), run `npm run docker:prune`. Be aware that this might cause significantly increased container building times because of deleted build cache.

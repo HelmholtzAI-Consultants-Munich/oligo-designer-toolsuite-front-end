@@ -5,42 +5,47 @@ services:
     # Comment out these lines to restrict database access to containers
     ports:
       - 27017:27017
+    restart: on-failure
 
   odt-server:
     image: odt-server
-    build: ./flask
+    build:
+      dockerfile: docker/server.Dockerfile
     container_name: odt-server
     ports:
       - 5000:5000
     environment:
       MONGO_URI: mongodb://odt-db:27017/oligo_db
+    restart: on-failure
     develop:
       watch:
         - action: sync
           path: ./flask
           target: /app
+          initial_sync: true
 
   odt-web:
-    image: node:22
+    image: odt-web
+    build:
+      dockerfile: docker/web.Dockerfile
     container_name: odt-web
-    working_dir: /home/node/app
-    command: sh -c "chown -R node:node /home/node/app/node_modules 2>/dev/null || true && su node -c 'npm install && npm run dev -- --host'"
     ports:
       - 3000:3000
-    volumes:
-      - ./:/home/node/app
-      - odt-web-node-modules:/home/node/app/node_modules
+    restart: on-failure
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          initial_sync: true
 
   odt-tests:
     image: odt-tests
-    build: ./tests
+    build:
+      dockerfile: docker/tests.Dockerfile
     container_name: odt-tests
     network_mode: host # this should be removed once the URL is configurable
     environment:
       PLAYWRIGHT_HTML_OUTPUT_DIR: /home/node/tests/playwright-report
-    volumes:
-      - ./tests:/home/node/tests
+    restart: no
     profiles: [tests] # don't run unless specified
-
-volumes:
-  odt-web-node-modules:

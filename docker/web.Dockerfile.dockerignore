@@ -1,0 +1,12 @@
+# Hidden files
+.*
+
+# Node artifacts
+**/node_modules
+/dist
+
+# Non-web files
+/docker
+/docs
+/flask
+/tests
