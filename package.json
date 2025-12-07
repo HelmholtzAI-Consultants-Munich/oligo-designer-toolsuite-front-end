@@ -28,7 +28,14 @@
     "test": "vitest run --exclude 'tests/**'",
     "test:watch": "vitest --exclude 'tests/**'",
     "format": "prettier . --check",
-    "format:fix": "prettier . --write"
+    "format:fix": "prettier . --write",
+    "docker:start": "docker compose up -d",
+    "docker:watch": "docker compose watch --quiet",
+    "docker:stop": "docker compose down",
+    "docker:logs": "docker logs -fn 100",
+    "docker:update": "docker compose build --pull && docker compose pull --ignore-buildable",
+    "docker:prune": "docker system prune",
+    "docker:test": "npm run docker:start && docker compose run --rm odt-tests"
   },
   "prettier": {
     "tabWidth": 4,

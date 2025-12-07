@@ -1,0 +1,10 @@
+# Ignore everything except the tests directory
+# see https://docs.docker.com/build/cache/optimize/#keep-the-context-small
+/*
+!/tests
+
+# Playwright artifacts
+**/test-results
+**/playwright-report
+**/blob-report
+**/playwright/.cache/
