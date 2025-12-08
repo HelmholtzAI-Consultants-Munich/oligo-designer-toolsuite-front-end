@@ -225,6 +225,7 @@ const Genomic: React.FC = () => {
                                 "http://localhost:5000/api/upload",
                                 formData,
                                 {
+                                    withCredentials: true,
                                     headers: {
                                         "Content-Type": "multipart/form-data",
                                     },
@@ -245,6 +246,7 @@ const Genomic: React.FC = () => {
                             "http://localhost:5000/api/upload",
                             formData,
                             {
+                                withCredentials: true,
                                 headers: {
                                     "Content-Type": "multipart/form-data",
                                 },
