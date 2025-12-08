@@ -342,7 +342,7 @@ def assign_session_id():
 
     If the current user is not authenticated and session does not have a 'session_id',
     assigns a new UUID as session_id. Makes the session permanent so it persists across browser sessions.
-    Creates a directory for anonymous user data if it does not exists already.
+    Creates a data directory for a user if it does not exists already.
 
     :modifies session: Adds 'session_id' to Flask session for anonymous user tracking.
     """
@@ -353,4 +353,7 @@ def assign_session_id():
             session['session_id'] = str(uuid.uuid4())
         # Ensure directory for anonymous user data associated with this session exists
         user_dir = os.path.join(current_app.root_path, 'user_data', 'anon', session['session_id'])
-        os.makedirs(user_dir, exist_ok=True)
+    else:
+        # Ensure data directory for registered user exists
+        user_dir = os.path.join(current_app.root_path, 'user_data', current_user.id)
+    os.makedirs(user_dir, exist_ok=True)
