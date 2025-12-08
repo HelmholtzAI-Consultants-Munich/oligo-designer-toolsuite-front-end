@@ -55,7 +55,6 @@ export const allFilesUploaded = (
     fastaFormsReadout: any,
     fastaFormsPrimer: any
 ) => {
-    console.log("Checking files uploaded:", files);
     return (
         (files.file_regions_file !== null ||
             formData.file_regions.value.length > 0) &&
