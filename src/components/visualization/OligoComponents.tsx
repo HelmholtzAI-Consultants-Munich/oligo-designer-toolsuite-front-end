@@ -7,7 +7,8 @@ import type { Oligo } from "../../types";
 type Props = {
     oligos: Oligo[];
     pipeline: string;
-    oligoIndex: number;
+    selectedOligo: number;
+    setSelectedOligo: (index: number) => void;
 };
 
 type OligoComponentDefinition =
@@ -40,7 +41,7 @@ type OligoBase = {
     isBinding: boolean;
 };
 
-const OligoAlignment: React.FC<Props> = ({ oligos, pipeline, oligoIndex }) => {
+const OligoComponents: React.FC<Props> = ({ oligos, pipeline, selectedOligo, setSelectedOligo }) => {
     const definition = ComponentDefinition[
         pipeline as keyof typeof ComponentDefinition
     ] as OligoComponentDefinition[];
@@ -50,7 +51,7 @@ const OligoAlignment: React.FC<Props> = ({ oligos, pipeline, oligoIndex }) => {
         if (definition) {
             definition.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
-                    let sequence = oligos[oligoIndex][
+                    let sequence = oligos[selectedOligo][
                         componentDef.field as keyof Oligo
                     ][0][0] as string;
                     if (componentDef.isReverseComplement) {
@@ -73,7 +74,7 @@ const OligoAlignment: React.FC<Props> = ({ oligos, pipeline, oligoIndex }) => {
             });
         }
         return comps;
-    }, [oligos, oligoIndex, definition]);
+    }, [oligos, selectedOligo, definition]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
         return components
@@ -128,6 +129,33 @@ const OligoAlignment: React.FC<Props> = ({ oligos, pipeline, oligoIndex }) => {
 
     return (
         <>
+            <label
+                className="form-label"
+                htmlFor="oligoSelect"
+            >
+                Select Oligo
+            </label>
+            <select
+                id="oligoSelect"
+                className="form-select"
+                value={selectedOligo}
+                onChange={(e) =>
+                    setSelectedOligo(
+                        parseInt(e.target.value)
+                    )
+                }
+            >
+                {oligos.map(
+                    (_, index) => (
+                        <option
+                            key={index}
+                            value={index}
+                        >
+                            Oligo {index + 1}
+                        </option>
+                    )
+                )}
+            </select>
             <svg id="oligo">
                 <g>
                     {componentsToBases(components).map((base, index) => (
@@ -179,4 +207,4 @@ const OligoAlignment: React.FC<Props> = ({ oligos, pipeline, oligoIndex }) => {
     );
 };
 
-export default OligoAlignment;
+export default OligoComponents;
