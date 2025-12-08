@@ -1,5 +1,5 @@
 import copy
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 import hashlib
 import json
 import re
@@ -151,4 +151,23 @@ def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: List[ObjectId]) ->
         'failed': failed,
         'errors': errors,
     }
+
+def validate_id_array(data: Dict, key_name: str) -> Tuple[List, Optional[Tuple[Dict, int]]]:
+    """
+    Validate that a request data dictionary contains a non-empty array of IDs.
+    
+    :param data: Request JSON data dictionary
+    :type data: Dict
+    :param key_name: The key name in the data dict (e.g., 'user_ids', 'run_ids')
+    :type key_name: str
+    :returns: Tuple of (id_list, error_response) where error_response is None if valid,
+              or (error_dict, status_code) if invalid
+    :rtype: Tuple[List, Optional[Tuple[Dict, int]]]
+    """
+    ids = data.get(key_name, [])
+    
+    if not ids or not isinstance(ids, list):
+        return [], ({"error": f"{key_name} must be a non-empty array"}, 400)
+    
+    return ids, None
 

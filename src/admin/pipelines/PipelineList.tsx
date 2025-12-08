@@ -5,6 +5,7 @@ import { Table, Badge, Spinner, Alert, Button, Card, Form } from 'react-bootstra
 import { Eye, EyeSlash, Trash, Pencil } from 'react-bootstrap-icons';
 import { useBulkSelection } from '../shared/useBulkSelection';
 import BulkActionToolbar from '../shared/BulkActionToolbar';
+import { handleBulkOperationSuccess } from '../shared/bulkOperationHelpers';
 
 interface PipelineRun {
     id: string;
@@ -151,15 +152,12 @@ const PipelineList: React.FC = () => {
                 message += `. ${result.failed.length} failed`;
             }
 
-            alert(message);
-            clearSelection();
-            
             // Remove deleted runs from expanded rows
             const newExpanded = new Set(expandedRows);
             selectedArray.forEach(runId => newExpanded.delete(runId));
             setExpandedRows(newExpanded);
             
-            fetchPipelineRuns();
+            handleBulkOperationSuccess(message, clearSelection, fetchPipelineRuns);
         } catch (err: any) {
             alert(`Failed to delete pipeline runs: ${err.response?.data?.error || err.message}`);
         } finally {
@@ -189,9 +187,7 @@ const PipelineList: React.FC = () => {
             const result = response.data;
             const message = result.message || `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
 
-            alert(message);
-            clearSelection();
-            fetchPipelineRuns();
+            handleBulkOperationSuccess(message, clearSelection, fetchPipelineRuns);
         } catch (err: any) {
             alert(`Failed to update status: ${err.response?.data?.error || err.message}`);
         } finally {

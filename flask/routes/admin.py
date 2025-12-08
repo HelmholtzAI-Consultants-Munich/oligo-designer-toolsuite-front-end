@@ -18,7 +18,7 @@ from flask_login import login_required, current_user
 from bson import ObjectId
 from datetime import datetime
 from extensions import mongo
-from routes.helpers import delete_pipeline_run_files_and_db, validate_and_convert_ids, execute_bulk_pipeline_run_deletion
+from routes.helpers import delete_pipeline_run_files_and_db, validate_and_convert_ids, execute_bulk_pipeline_run_deletion, validate_id_array
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -114,6 +114,15 @@ def format_pipeline_run(run):
         'session_id': run.get('session_id'),
         'transferred_from_anon': run.get('transferred_from_anon', False),
     }
+
+def get_valid_pipeline_statuses():
+    """
+    Get the list of valid pipeline run statuses.
+    
+    :returns: List of valid status strings
+    :rtype: list[str]
+    """
+    return ['pending', 'started', 'completed', 'error']
 
 @admin_bp.route('/api/admin/users', methods=['GET'])
 @login_required
@@ -257,9 +266,8 @@ def get_pipeline_runs():
         # Get all runs, sorted by created_at descending (newest first)
         runs = list(mongo.db.runs.find({}).sort('created_at', -1))
         
-        formatted_runs = []
-        for run in runs:
-            formatted_runs.append(format_pipeline_run(run))
+        # Format for Refine: convert _id to id, format dates
+        formatted_runs = [format_pipeline_run(run) for run in runs]
         
         return jsonify(formatted_runs), 200
     
@@ -269,7 +277,7 @@ def get_pipeline_runs():
 @admin_bp.route('/api/admin/pipelines/<run_id>', methods=['PUT'])
 @login_required
 @require_admin
-def update_pipeline_run(run_id):
+def update_pipeline_status(run_id):
     """
     Update a pipeline run status (admin only).
     
@@ -290,7 +298,7 @@ def update_pipeline_run(run_id):
         status = data['status'].strip().lower()
         
         # Validate status (only these 4 statuses are allowed)
-        valid_statuses = ['pending', 'started', 'completed', 'error']
+        valid_statuses = get_valid_pipeline_statuses()
         if status not in valid_statuses:
             return jsonify({"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}), 400
         
@@ -364,7 +372,7 @@ def get_dashboard_stats():
         
         # Pipeline run statistics by status
         pipeline_stats = {}
-        valid_statuses = ['pending', 'started', 'completed', 'error']
+        valid_statuses = get_valid_pipeline_statuses()
         
         for status in valid_statuses:
             count = mongo.db.runs.count_documents({'status': status})
@@ -403,10 +411,9 @@ def bulk_delete_users():
     """
     try:
         data = request.get_json() or {}
-        user_ids = data.get('user_ids', [])
-        
-        if not user_ids or not isinstance(user_ids, list):
-            return jsonify({"error": "user_ids must be a non-empty array"}), 400
+        user_ids, error = validate_id_array(data, 'user_ids')
+        if error:
+            return jsonify(error[0]), error[1]
         
         # Filter out current user's ID (prevent self-deletion)
         current_user_id = str(current_user.id)
@@ -461,11 +468,11 @@ def bulk_update_user_role():
     """
     try:
         data = request.get_json() or {}
-        user_ids = data.get('user_ids', [])
-        role = data.get('role', '').strip().lower()
+        user_ids, error = validate_id_array(data, 'user_ids')
+        if error:
+            return jsonify(error[0]), error[1]
         
-        if not user_ids or not isinstance(user_ids, list):
-            return jsonify({"error": "user_ids must be a non-empty array"}), 400
+        role = data.get('role', '').strip().lower()
         
         if role not in ['user', 'admin']:
             return jsonify({"error": "role must be 'user' or 'admin'"}), 400
@@ -476,13 +483,10 @@ def bulk_update_user_role():
         skipped = []
         
         if role == 'user':
-            # Check if current user is trying to demote themselves
+            # Check if current user is trying to demote themselves (prevent self-demotion)
             if current_user_id in filtered_user_ids:
-                # Check if current user is actually an admin
-                current_user_doc = mongo.db.users.find_one({'_id': ObjectId(current_user_id)})
-                if current_user_doc and current_user_doc.get('role') == 'admin':
-                    filtered_user_ids.remove(current_user_id)
-                    skipped.append(current_user_id)
+                filtered_user_ids.remove(current_user_id)
+                skipped.append(current_user_id)
         
         if not filtered_user_ids:
             return jsonify({
@@ -535,10 +539,9 @@ def bulk_delete_pipeline_runs():
     """
     try:
         data = request.get_json() or {}
-        run_ids = data.get('run_ids', [])
-        
-        if not run_ids or not isinstance(run_ids, list):
-            return jsonify({"error": "run_ids must be a non-empty array"}), 400
+        run_ids, error = validate_id_array(data, 'run_ids')
+        if error:
+            return jsonify(error[0]), error[1]
         
         # Convert to ObjectIds and validate
         object_ids, invalid_ids = validate_and_convert_ids(run_ids)
@@ -586,17 +589,17 @@ def bulk_update_pipeline_status():
     """
     try:
         data = request.get_json() or {}
-        run_ids = data.get('run_ids', [])
-        status = data.get('status', '').strip().lower()
+        run_ids, error = validate_id_array(data, 'run_ids')
+        if error:
+            return jsonify(error[0]), error[1]
         
-        if not run_ids or not isinstance(run_ids, list):
-            return jsonify({"error": "run_ids must be a non-empty array"}), 400
+        status = data.get('status', '').strip().lower()
         
         if not status:
             return jsonify({"error": "status field is required"}), 400
         
         # Validate status
-        valid_statuses = ['pending', 'started', 'completed', 'error']
+        valid_statuses = get_valid_pipeline_statuses()
         if status not in valid_statuses:
             return jsonify({
                 "error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
