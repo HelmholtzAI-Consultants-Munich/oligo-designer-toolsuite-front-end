@@ -7,6 +7,13 @@ from app import create_app
 from extensions import mongo
 
 
+@pytest.fixture(autouse=True)
+def mock_make_dir():
+    """Auto-use fixture to mock os.makedirs across all tests"""
+    with patch("os.makedirs"):
+        yield
+
+
 @pytest.fixture
 def run_id():
     # Insert dummy run
@@ -21,10 +28,17 @@ def mock_run():
         yield mock_run
 
 @pytest.fixture
-def client():
+def client(monkeypatch):
+    """Base test client with anonymous user"""
     app = create_app()
     app.config['TESTING'] = True
     app.secret_key = 'test-key'
+
+    class AnonymousUser:
+        is_authenticated = False
+
+    monkeypatch.setattr("flask_login.utils._get_user", lambda: AnonymousUser())
+
     with app.test_client() as client:
         with app.app_context():
             yield client
