@@ -239,8 +239,7 @@ export const handleSubmit = async (
     const uploadedPaths = await uploadFiles(files, formData);
 
     if (uploadedPaths["file_regions_file"]) {
-        formData["file_regions"]["value"] =
-            uploadedPaths["file_regions_file"];
+        formData["file_regions"]["value"] = uploadedPaths["file_regions_file"];
     }
 
     const groups = [
