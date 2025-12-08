@@ -1,5 +1,5 @@
 # using https://micromamba-docker.readthedocs.io/en/latest/index.html
-FROM mambaorg/micromamba:2
+FROM mambaorg/micromamba:2-alpine3.22
 
 # --- Set up environment ---
 RUN --mount=source=flask/environment.yml,target=/tmp/env.yml \

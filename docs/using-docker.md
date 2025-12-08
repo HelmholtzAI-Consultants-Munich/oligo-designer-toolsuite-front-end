@@ -45,12 +45,12 @@ The `docker-compose.yml` at the project root defines the containers used for ODT
 
 Currently, the project consists of the following containers:
 
-|  Service   |    Name    | Self-Built? |    Dockerfile     |      Base Image       |
-| :--------: | :--------: | :---------: | :---------------: | :-------------------: |
-|  Frontend  |  odt-web   |     yes     |  web.Dockerfile   |     node:22-slim      |
-|  Backend   | odt-server |     yes     | server.Dockerfile | mambaorg/micromamba:2 |
-|  Database  |   odt-db   |     no      |         -         |        mongo:8        |
-| Playwright | odt-tests  |     yes     | tests.Dockerfile  |     node:22-slim      |
+|  Service   |    Name    | Self-Built? |    Dockerfile     |            Base Image            |
+| :--------: | :--------: | :---------: | :---------------: | :------------------------------: |
+|  Frontend  |  odt-web   |     yes     |  web.Dockerfile   |        node:22-alpine3.22        |
+|  Backend   | odt-server |     yes     | server.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
+|  Database  |   odt-db   |     no      |         -         |             mongo:8              |
+| Playwright | odt-tests  |     yes     | tests.Dockerfile  |           node:22-slim           |
 
 ## Build Configuration
 
