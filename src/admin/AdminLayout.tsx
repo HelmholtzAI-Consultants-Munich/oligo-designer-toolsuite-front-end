@@ -5,6 +5,60 @@ import { Navbar, Nav, Container, Spinner, Button } from 'react-bootstrap';
 import { People, House, BoxArrowRight, List, Gear, Speedometer2 } from 'react-bootstrap-icons';
 import axios from 'axios';
 
+interface NavItemConfig {
+    path: string;
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+}
+
+interface AdminNavItemProps {
+    config: NavItemConfig;
+    isActive: boolean;
+    collapsed?: boolean;
+    onNavigate?: () => void;
+}
+
+/**
+ * Reusable navigation item component for admin sidebar
+ */
+const AdminNavItem: React.FC<AdminNavItemProps> = ({ config, isActive, collapsed, onNavigate }) => {
+    const { icon: Icon, path, label } = config;
+    
+    const navLinkStyle: React.CSSProperties = {
+        padding: '0.75rem 1rem',
+        marginBottom: '0.25rem',
+        textDecoration: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: collapsed ? 'center' : 'flex-start',
+    };
+
+    return (
+        <Nav.Item>
+            <Nav.Link
+                as={Link}
+                to={path}
+                className={`text-white ${isActive ? 'bg-primary rounded' : ''}`}
+                style={navLinkStyle}
+                title={collapsed ? label : ''}
+                onClick={onNavigate}
+            >
+                <Icon size={20} className={collapsed ? '' : 'me-2'} />
+                {!collapsed && <span>{label}</span>}
+            </Nav.Link>
+        </Nav.Item>
+    );
+};
+
+/**
+ * Navigation items configuration
+ */
+const navItems: NavItemConfig[] = [
+    { path: '/admin/dashboard', label: 'Dashboard', icon: Speedometer2 },
+    { path: '/admin/users', label: 'User Management', icon: People },
+    { path: '/admin/pipelines', label: 'Pipeline Management', icon: Gear },
+];
+
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -60,16 +114,6 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
     const sidebarWidth = sidebarCollapsed ? '70px' : '250px';
 
-    // Extracted common styles for nav links
-    const getNavLinkStyle = (collapsed?: boolean) => ({
-        padding: '0.75rem 1rem',
-        marginBottom: '0.25rem',
-        textDecoration: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        ...(collapsed !== undefined && { justifyContent: collapsed ? 'center' : 'flex-start' }),
-    });
-
     return (
         <div style={{ display: 'flex', minHeight: '100vh' }}>
             {/* Desktop Sidebar */}
@@ -89,43 +133,14 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
             >
                 <div className="p-3">
                     <Nav className="flex-column">
-                        <Nav.Item>
-                            <Nav.Link
-                                as={Link}
-                                to="/admin/dashboard"
-                                className={`text-white ${isActive('/admin/dashboard') ? 'bg-primary rounded' : ''}`}
-                                style={getNavLinkStyle(sidebarCollapsed)}
-                                title={sidebarCollapsed ? 'Dashboard' : ''}
-                            >
-                                <Speedometer2 size={20} className={sidebarCollapsed ? '' : 'me-2'} />
-                                {!sidebarCollapsed && <span>Dashboard</span>}
-                            </Nav.Link>
-                        </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link
-                                as={Link}
-                                to="/admin/users"
-                                className={`text-white ${isActive('/admin/users') ? 'bg-primary rounded' : ''}`}
-                                style={getNavLinkStyle(sidebarCollapsed)}
-                                title={sidebarCollapsed ? 'User Management' : ''}
-                            >
-                                <People size={20} className={sidebarCollapsed ? '' : 'me-2'} />
-                                {!sidebarCollapsed && <span>User Management</span>}
-                            </Nav.Link>
-                        </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link
-                                as={Link}
-                                to="/admin/pipelines"
-                                className={`text-white ${isActive('/admin/pipelines') ? 'bg-primary rounded' : ''}`}
-                                style={getNavLinkStyle(sidebarCollapsed)}
-                                title={sidebarCollapsed ? 'Pipeline Management' : ''}
-                            >
-                                <Gear size={20} className={sidebarCollapsed ? '' : 'me-2'} />
-                                {!sidebarCollapsed && <span>Pipeline Management</span>}
-                            </Nav.Link>
-                        </Nav.Item>
-                        {/* Add more navigation items here as needed */}
+                        {navItems.map((item) => (
+                            <AdminNavItem
+                                key={item.path}
+                                config={item}
+                                isActive={isActive(item.path)}
+                                collapsed={sidebarCollapsed}
+                            />
+                        ))}
                     </Nav>
                 </div>
             </div>
@@ -208,42 +223,14 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
             >
                 <div className="p-3">
                     <Nav className="flex-column">
-                        <Nav.Item>
-                            <Nav.Link
-                                as={Link}
-                                to="/admin/dashboard"
-                                className={`text-white ${isActive('/admin/dashboard') ? 'bg-primary rounded' : ''}`}
-                                style={getNavLinkStyle()}
-                                onClick={() => setSidebarOpen(false)}
-                            >
-                                <Speedometer2 className="me-2" />
-                                Dashboard
-                            </Nav.Link>
-                        </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link
-                                as={Link}
-                                to="/admin/users"
-                                className={`text-white ${isActive('/admin/users') ? 'bg-primary rounded' : ''}`}
-                                style={getNavLinkStyle()}
-                                onClick={() => setSidebarOpen(false)}
-                            >
-                                <People className="me-2" />
-                                User Management
-                            </Nav.Link>
-                        </Nav.Item>
-                        <Nav.Item>
-                            <Nav.Link
-                                as={Link}
-                                to="/admin/pipelines"
-                                className={`text-white ${isActive('/admin/pipelines') ? 'bg-primary rounded' : ''}`}
-                                style={getNavLinkStyle()}
-                                onClick={() => setSidebarOpen(false)}
-                            >
-                                <Gear className="me-2" />
-                                Pipeline Management
-                            </Nav.Link>
-                        </Nav.Item>
+                        {navItems.map((item) => (
+                            <AdminNavItem
+                                key={item.path}
+                                config={item}
+                                isActive={isActive(item.path)}
+                                onNavigate={() => setSidebarOpen(false)}
+                            />
+                        ))}
                     </Nav>
                 </div>
             </div>

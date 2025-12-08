@@ -3,6 +3,38 @@ import axios from 'axios';
 import { Card, Spinner, Alert, Button, Row, Col } from 'react-bootstrap';
 import { People, PersonBadge, Person, Folder2, Clock, CheckCircle, XCircle, PlayCircle } from 'react-bootstrap-icons';
 
+/**
+ * Calculate percentage with one decimal place
+ */
+const calculatePercentage = (value: number, total: number): string => {
+    if (total === 0) return '0.0';
+    return ((value / total) * 100).toFixed(1);
+};
+
+/**
+ * Status configuration for pipeline runs
+ */
+const STATUS_CONFIG = {
+    icons: {
+        pending: Clock,
+        started: PlayCircle,
+        completed: CheckCircle,
+        error: XCircle,
+    },
+    colors: {
+        pending: 'warning',
+        started: 'info',
+        completed: 'success',
+        error: 'danger',
+    },
+    labels: {
+        pending: 'Pending',
+        started: 'Started',
+        completed: 'Completed',
+        error: 'Error',
+    },
+} as const;
+
 interface DashboardStats {
     users: {
         total: number;
@@ -73,27 +105,6 @@ const Dashboard: React.FC = () => {
         return null;
     }
 
-    const statusIcons = {
-        pending: Clock,
-        started: PlayCircle,
-        completed: CheckCircle,
-        error: XCircle,
-    };
-
-    const statusColors = {
-        pending: 'warning',
-        started: 'info',
-        completed: 'success',
-        error: 'danger',
-    };
-
-    const statusLabels = {
-        pending: 'Pending',
-        started: 'Started',
-        completed: 'Completed',
-        error: 'Error',
-    };
-
     return (
         <div className="container-fluid p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -137,7 +148,7 @@ const Dashboard: React.FC = () => {
                             </div>
                             {stats.users.total > 0 && (
                                 <small className="text-muted">
-                                    {((stats.users.admin / stats.users.total) * 100).toFixed(1)}% of total
+                                    {calculatePercentage(stats.users.admin, stats.users.total)}% of total
                                 </small>
                             )}
                         </Card.Body>
@@ -157,7 +168,7 @@ const Dashboard: React.FC = () => {
                             </div>
                             {stats.users.total > 0 && (
                                 <small className="text-muted">
-                                    {((stats.users.regular / stats.users.total) * 100).toFixed(1)}% of total
+                                    {calculatePercentage(stats.users.regular, stats.users.total)}% of total
                                 </small>
                             )}
                         </Card.Body>
@@ -186,9 +197,9 @@ const Dashboard: React.FC = () => {
                     </Card>
                 </Col>
                 {Object.entries(stats.pipeline_runs.by_status).map(([status, count]) => {
-                    const Icon = statusIcons[status as keyof typeof statusIcons];
-                    const color = statusColors[status as keyof typeof statusColors];
-                    const label = statusLabels[status as keyof typeof statusLabels];
+                    const Icon = STATUS_CONFIG.icons[status as keyof typeof STATUS_CONFIG.icons];
+                    const color = STATUS_CONFIG.colors[status as keyof typeof STATUS_CONFIG.colors];
+                    const label = STATUS_CONFIG.labels[status as keyof typeof STATUS_CONFIG.labels];
                     
                     return (
                         <Col md={3} key={status} className="mb-3">
@@ -205,7 +216,7 @@ const Dashboard: React.FC = () => {
                                     </div>
                                     {stats.pipeline_runs.total > 0 && (
                                         <small className="text-muted">
-                                            {((count / stats.pipeline_runs.total) * 100).toFixed(1)}% of total
+                                            {calculatePercentage(count, stats.pipeline_runs.total)}% of total
                                         </small>
                                     )}
                                 </Card.Body>

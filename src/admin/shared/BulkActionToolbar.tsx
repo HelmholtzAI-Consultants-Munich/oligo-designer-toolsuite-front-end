@@ -10,6 +10,17 @@ interface BulkActionToolbarProps {
 }
 
 /**
+ * Styles for the bulk action toolbar card
+ */
+const toolbarStyles: React.CSSProperties = {
+    backgroundColor: '#e7f3ff',
+    border: '1px solid #b3d9ff',
+    position: 'sticky',
+    top: '56px',
+    zIndex: 100,
+};
+
+/**
  * Reusable bulk action toolbar component
  * Shows when items are selected and provides action buttons
  */
@@ -26,13 +37,7 @@ const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
     return (
         <Card
             className="mb-3"
-            style={{
-                backgroundColor: '#e7f3ff',
-                border: '1px solid #b3d9ff',
-                position: 'sticky',
-                top: '56px',
-                zIndex: 100,
-            }}
+            style={toolbarStyles}
         >
             <Card.Body className="d-flex align-items-center justify-content-between py-2">
                 <div className="d-flex align-items-center">
