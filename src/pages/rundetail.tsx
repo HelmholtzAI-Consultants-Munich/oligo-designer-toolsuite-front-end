@@ -7,9 +7,9 @@ import type { SingleValue } from "react-select";
 import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import OligoAlignment from "../components/visualization/OligoAlignment";
 import type { Oligo } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
+import ResultVisualization from "../components/visualization/ResultVisualization";
 
 interface RunFile {
     name: string;
@@ -60,7 +60,7 @@ const RunDetail = () => {
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
     const [pipeline, setPipeline] = useState<string>("");
-    const [oligoIndex, setOligoIndex] = useState(0);
+    const [selectedOligo, setSelectedOligo] = useState(0);
 
     const [parsedYamlData, setParsedYamlData] = useState<any>(null);
     const [selectedGene, setSelectedGene] = useState<string>("");
@@ -772,7 +772,7 @@ const RunDetail = () => {
                                                     setSelectedOligoset(
                                                         e.target.value
                                                     );
-                                                    setOligoIndex(0);
+                                                    setSelectedOligo(0);
                                                 }}
                                             >
                                                 <option value="">
@@ -817,37 +817,11 @@ const RunDetail = () => {
                                             </div>
                                         </div>
                                         <div className="my-3">
-                                            <label
-                                                className="form-label"
-                                                htmlFor="oligoSelect"
-                                            >
-                                                Select Oligo
-                                            </label>
-                                            <select
-                                                id="oligoSelect"
-                                                className="form-select"
-                                                value={oligoIndex}
-                                                onChange={(e) =>
-                                                    setOligoIndex(
-                                                        parseInt(e.target.value)
-                                                    )
-                                                }
-                                            >
-                                                {getOligosForOligoset().map(
-                                                    (_, index) => (
-                                                        <option
-                                                            key={index}
-                                                            value={index}
-                                                        >
-                                                            Oligo {index + 1}
-                                                        </option>
-                                                    )
-                                                )}
-                                            </select>
-                                            <OligoAlignment
+                                            <ResultVisualization
                                                 oligos={getOligosForOligoset()}
                                                 pipeline={pipeline}
-                                                oligoIndex={oligoIndex}
+                                                selectedOligo={selectedOligo}
+                                                setSelectedOligo={setSelectedOligo}
                                             />
                                         </div>
                                         <div className="table-responsive">
@@ -887,12 +861,12 @@ const RunDetail = () => {
                                                                             className={
                                                                                 "text-nowrap " +
                                                                                 (index ===
-                                                                                oligoIndex
+                                                                                selectedOligo
                                                                                     ? "table-primary"
                                                                                     : "")
                                                                             }
                                                                             onClick={() =>
-                                                                                setOligoIndex(
+                                                                                setSelectedOligo(
                                                                                     index
                                                                                 )
                                                                             }
