@@ -1,5 +1,6 @@
 import sys
 import os
+from unittest.mock import patch
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
 from extensions import mongo
@@ -144,8 +145,7 @@ def test_scrinshot_unauthenticated(client, mongo, dummy_form, run_id, mock_run, 
 
 def test_forgotten_session(client, dummy_form, mock_run):
     with client.session_transaction() as session:
-        session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
+        session["session_id"] = "validsessionidbutforgottenbybackend"
 
-    with patch("os.makedirs"):
-        response = client.post(f"/api/scrinshot", json=dummy_form)
+    response = client.post(f"/api/scrinshot", json=dummy_form)
     assert response.status_code == 200

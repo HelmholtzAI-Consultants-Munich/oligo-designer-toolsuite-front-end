@@ -73,12 +73,15 @@ def run_id(mongo):
 
 
 @pytest.fixture
-def authenticated_user(monkeypatch, dummy_current_user):
+def authenticated_user(client, monkeypatch, dummy_current_user):
+    # Simulate an authenticated user
+    with client.session_transaction() as session:
+        session["session_id"] = "test-session"  # static session id
     monkeypatch.setattr("flask_login.utils._get_user", lambda: dummy_current_user)
 
 
 @pytest.fixture()
 def session_user(client):
     # Simulate an anonymous user with session
-    with client.session_transaction() as sess:
-        sess["session_id"] = "anon-session-123"  # static session id
+    with client.session_transaction() as session:
+        session["session_id"] = "anon-session-123"  # static session id
