@@ -41,6 +41,10 @@ This web app connects to the [Oligo Designer Toolsuite backend](https://github.c
 
 ---
 
+### Supported platforms
+
+The project supports Linux and MacOS, both on amd64 and arm64 architectures. Development on Windows is possible using Docker.
+
 ## Quickstart (using Docker)
 
 This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
@@ -76,16 +80,10 @@ pip install --group flask/pyproject.toml:dev
 
 You can also set up additional environment variables as needed for authentication, proxy, etc.
 
-### 3. Run the frontend (For MacOS and Linux)
+### 3. Run the frontend
 
 ```bash
 ./start.sh
-```
-
-### 3. Run the frontend (For Windows)
-
-```bash
-.\start.bat
 ```
 
 The app will open at [http://localhost:3000](http://localhost:3000).
