@@ -7,7 +7,7 @@ import type { SingleValue } from "react-select";
 import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import type { GenomicRegions, Oligo } from "../types";
+import type { Oligo, RunState, GenomicRegions } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 
@@ -84,9 +84,9 @@ const RunDetail = () => {
     // --- Polling/log state variables ---
     const [hasYamlFile, setHasYamlFile] = useState(false);
     const [hasLogFile, setHasLogFile] = useState(false);
-    const [isFinished, setIsFinished] = useState(false);
     const [logFilename, setLogFilename] = useState<string | null>(null);
     const [logContent, setLogContent] = useState<string | null>(null);
+    const [runState, setRunState] = useState<RunState>("PENDING");
     const [polling, setPolling] = useState(true);
     const fetchAndParseRunFiles = useCallback(
         (yamlFilename: string) => {
@@ -169,6 +169,8 @@ const RunDetail = () => {
                         withCredentials: true,
                     }
                 );
+                setRunState(response.data.state)
+
                 // If finished, stop polling
                 if (
                     response.data.state == "SUCCESS" ||
@@ -721,29 +723,11 @@ const RunDetail = () => {
                 )}
 
                 {/* Polling/waiting for YAML/log */}
-                {!hasYamlFile && (
-                    <>
-                        {!hasLogFile && (
-                            <div className="alert alert-info">
-                                Run is pending...{" "}
-                                <span className="spinner-border spinner-border-sm ms-2" />
-                            </div>
-                        )}
-                        {hasLogFile && logContent && (
-                            <div className="mt-4">
-                                <h4>Live Log</h4>
-                                <pre
-                                    className="bg-light p-3 rounded mb-4"
-                                    style={{
-                                        maxHeight: "500px",
-                                        overflow: "auto",
-                                    }}
-                                >
-                                    {logContent}
-                                </pre>
-                            </div>
-                        )}
-                    </>
+                {(runState == "PENDING" || runState == "STARTED") && (
+                    <div className="alert alert-info">
+                        Run is {runState == "PENDING" ? "pending" : "executing"}...
+                        <span className="spinner-border spinner-border-sm ms-2" />
+                    </div>
                 )}
 
                 {/* YAML/table logic remains unchanged below */}
