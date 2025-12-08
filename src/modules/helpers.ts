@@ -4,12 +4,9 @@ export async function createRunId() {
     try {
         const response = await axios.post(
             "http://localhost:5000/api/init_run_id",
-            {},
+            null,
             {
                 withCredentials: true,
-                headers: {
-                    "Content-Type": "application/json",
-                },
             }
         );
 

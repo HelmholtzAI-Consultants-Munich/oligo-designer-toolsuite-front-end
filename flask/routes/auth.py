@@ -380,6 +380,9 @@ def assign_session_id():
 
     :modifies session: Adds 'session_id' to Flask session for anonymous user tracking.
     """
+    if request.method == "OPTIONS":
+        return
+
     if not current_user.is_authenticated:
         # Make session permanent so it persists (uses PERMANENT_SESSION_LIFETIME)
         session.permanent = True
