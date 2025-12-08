@@ -32,7 +32,11 @@ npm run docker:stop
 To view the logs, use:
 
 ```bash
-npm run docker:logs odt-web # or odt-server
+npm run docker:logs
+# or to only show the logs of a specific container:
+npm run docker:logs odt-web
+# you can select multiple containers at once:
+npm run docker:logs odt-web odt-server
 ```
 
 ---
