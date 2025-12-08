@@ -3,12 +3,9 @@
 /*
 !/flask
 
-# Ignore everything in the flask directory except top-level Python files and the worker directory
-/flask/*
-!/flask/environment.yml
-!/flask/pyproject.toml
-!/flask/*.py
-!/flask/worker
+# Ignore directory contents in the flask directory except for the worker directory
+/flask/*/*
+!/flask/worker/*
 
 # Python artifacts
 **/__pycache__
