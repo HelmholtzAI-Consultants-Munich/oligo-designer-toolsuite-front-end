@@ -4,11 +4,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import axios from "axios";
+import type { RunState } from "../types";
 
 interface PipelineRun {
     _id: string;
     pipeline: string;
-    status: "STARTED" | "SUCCESS" | "FAILURE" | "PENDING";
+    status: RunState;
     timestamp: string;
     output_path: string;
     user_id: string;

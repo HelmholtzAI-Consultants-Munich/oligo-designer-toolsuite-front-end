@@ -175,8 +175,8 @@ export const handleSubmit = async (
 
         setModal({
             show: true,
-            title: "Pipeline Finished",
-            body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`,
+            title: "Pipeline Enqueued",
+            body: `The pipeline run was successfully added to the queue. Your run ID is: ${newId}`,
         });
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
