@@ -5,7 +5,6 @@ import pytest
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from app import create_app
-from extensions import mongo
 
 @pytest.fixture(autouse=True)
 def mock_make_dir():
@@ -32,7 +31,7 @@ def run_id():
     return ObjectId()
 
 @pytest.fixture
-def output_path(tmp_path, run_id):
+def output_path(mongo, tmp_path, run_id):
     output_path = tmp_path / "run_output"
     output_path.mkdir()
     (output_path / "log.txt").write_text("log content")
@@ -56,7 +55,7 @@ def test_init_run_id(client):
     assert "run_id" in response.get_json()
 
 
-def test_get_pipeline_runs_authenticated(client, monkeypatch):
+def test_get_pipeline_runs_authenticated(client, mongo, monkeypatch):
     class DummyUser:
         is_authenticated = True
         id = "dummy_user"

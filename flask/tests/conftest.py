@@ -1,16 +1,40 @@
+from bson import ObjectId
 import pytest
 import sys
 import os
 from unittest.mock import patch
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from werkzeug.security import generate_password_hash
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app import create_app
-from extensions import mongo
+from extensions import mongo as ext_mongo
+
+
+# scope to module to allow registered_user fixture to only be executed once
+@pytest.fixture(scope="session")
+def dummy_user():
+    """Dummy user dictionary with static id and password"""
+    return {
+        "_id": ObjectId(b"testuser1234"),  # 12-byte string for static id
+        "email": "test@example.com",
+        "name": "testuser1234",
+        "password": generate_password_hash("mypassword"),
+    }
 
 
 @pytest.fixture
-def run_id():
-    # Insert dummy run
-    return mongo.db.runs.insert_one({"status": "created"}).inserted_id
+def dummy_current_user(dummy_user):
+    """Dummy user object simulating an authenticated flask_login.current_user"""
+
+    class DummyCurrentUser:
+        is_authenticated = True
+        id = str(dummy_user["_id"])
+        email = dummy_user["email"]
+        name = dummy_user["name"]
+
+    return DummyCurrentUser()
+
 
 @pytest.fixture
 def mock_run():
@@ -20,25 +44,41 @@ def mock_run():
         mock_run.return_value.stderr = ""
         yield mock_run
 
-@pytest.fixture
-def client():
+
+@pytest.fixture(scope="session")
+def app():
     app = create_app()
-    app.config['TESTING'] = True
-    app.secret_key = 'test-key'
+    app.config["TESTING"] = True
+    app.secret_key = "test-key"
+    return app
+
+
+@pytest.fixture()
+def client(app):
     with app.test_client() as client:
-        with app.app_context():
-            yield client
+        yield client
+
+
+@pytest.fixture(scope="session")
+def mongo(app):
+    # Initialize app before connecting to mongo
+    assert ext_mongo.db is not None
+    return ext_mongo
+
 
 @pytest.fixture
-def authenticated_user(monkeypatch):
-    # Simulate an authenticated user
-    class DummyUser:
-        is_authenticated = True
-        id = "testuser123"
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
+def run_id(mongo):
+    # Insert dummy run
+    return mongo.db.runs.insert_one({"status": "created"}).inserted_id
+
+
+@pytest.fixture
+def authenticated_user(monkeypatch, dummy_current_user):
+    monkeypatch.setattr("flask_login.utils._get_user", lambda: dummy_current_user)
+
 
 @pytest.fixture()
 def session_user(client):
     # Simulate an anonymous user with session
     with client.session_transaction() as sess:
-        sess['session_id'] = 'anon-session-123'
+        sess["session_id"] = "anon-session-123"  # static session id

@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
-from extensions import mongo
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -95,7 +94,7 @@ def dummy_form(run_id):
         "runid": str(run_id)
     }
 
-def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
+def test_oligoseq_authenticated(client, mongo, run_id, dummy_form, mock_run, authenticated_user):
     response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
@@ -105,7 +104,7 @@ def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authentica
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
 
-def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
+def test_oligoseq_unauthenticated(client, mongo, run_id, dummy_form, mock_run, session_user):
     # Simulate an anonymous user (no monkeypatch needed)
     response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200

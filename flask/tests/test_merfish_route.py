@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import pytest
-from extensions import mongo
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -153,7 +152,7 @@ def dummy_form(run_id):
         "runid": str(run_id)
     }
 
-def test_merfish_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
+def test_merfish_authenticated(client, mongo, run_id, dummy_form, mock_run, authenticated_user):
     response = client.post("/api/merfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
@@ -165,7 +164,7 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_run, authenticat
 
 
 # Test unauthenticated user flow for /api/merfish
-def test_merfish_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
+def test_merfish_unauthenticated(client, mongo, run_id, dummy_form, mock_run, session_user):
     response = client.post("/api/merfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
