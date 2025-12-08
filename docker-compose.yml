@@ -8,7 +8,7 @@ services:
     restart: on-failure
 
   odt-mq:
-    image: rabbitmq:management
+    image: rabbitmq:4
     container_name: odt-mq
     ports:
       - 5672:5672
@@ -24,6 +24,7 @@ services:
       - 5000:5000
     environment:
       MONGO_URI: mongodb://odt-db:27017/oligo_db
+      CELERY_MONGO_URI: mongodb://odt-db:27017/
       CELERY_BROKER: pyamqp://guest@odt-mq/
     depends_on:
       - odt-db
@@ -42,8 +43,10 @@ services:
       dockerfile: docker/worker.Dockerfile
     container_name: odt-worker
     environment:
+      CELERY_MONGO_URI: mongodb://odt-db:27017/
       CELERY_BROKER: pyamqp://guest@odt-mq/
     depends_on:
+      - odt-db
       - odt-mq
     restart: on-failure
     develop:

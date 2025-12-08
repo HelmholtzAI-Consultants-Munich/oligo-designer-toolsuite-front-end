@@ -312,12 +312,7 @@ def get_run_status(run_id_str):
     
     task_id = get_task_id(run)
 
-    # TODO: this still has a nasty bug that it always returns PENDING
-    # after returning STARTED for the first time if you open the RunDetail
-    # page (which polls this endpoint) via the "Show Run" button in the pipeline modal
-    # ! manually navigating to RunDetail has no issues with polling !
     result_promise = celery_app.AsyncResult(task_id)
-    current_app.logger.warning(result_promise._cache)
     
     if result_promise.ready():
         # TODO: store result in file system, do this in separate function
