@@ -240,6 +240,48 @@ def test_delete_pipeline_run_not_found(admin_client):
     assert response.status_code == 404
 
 
+def test_get_pipeline_runs_unauthorized(regular_client):
+    """Test that regular users cannot access pipeline runs list"""
+    response = regular_client.get("/api/admin/pipelines")
+    assert response.status_code == 403
+
+
+def test_get_pipeline_runs_unauthenticated(unauthenticated_client):
+    """Test that unauthenticated users cannot access pipeline runs list"""
+    response = unauthenticated_client.get("/api/admin/pipelines")
+    assert response.status_code == 401 or response.status_code == 403
+
+
+def test_update_pipeline_status_unauthorized(regular_client, pipeline_run):
+    """Test that regular users cannot update pipeline run status"""
+    response = regular_client.put(
+        f"/api/admin/pipelines/{pipeline_run['_id']}",
+        json={"status": "completed"}
+    )
+    assert response.status_code == 403
+
+
+def test_update_pipeline_status_unauthenticated(unauthenticated_client, pipeline_run):
+    """Test that unauthenticated users cannot update pipeline run status"""
+    response = unauthenticated_client.put(
+        f"/api/admin/pipelines/{pipeline_run['_id']}",
+        json={"status": "completed"}
+    )
+    assert response.status_code == 401 or response.status_code == 403
+
+
+def test_delete_pipeline_run_unauthorized(regular_client, pipeline_run):
+    """Test that regular users cannot delete pipeline runs"""
+    response = regular_client.delete(f"/api/admin/pipelines/{pipeline_run['_id']}")
+    assert response.status_code == 403
+
+
+def test_delete_pipeline_run_unauthenticated(unauthenticated_client, pipeline_run):
+    """Test that unauthenticated users cannot delete pipeline runs"""
+    response = unauthenticated_client.delete(f"/api/admin/pipelines/{pipeline_run['_id']}")
+    assert response.status_code == 401 or response.status_code == 403
+
+
 # ==================== Dashboard Tests ====================
 
 def test_get_dashboard_stats_success(admin_client, admin_user, regular_user, pipeline_run):
@@ -259,28 +301,44 @@ def test_get_dashboard_stats_success(admin_client, admin_user, regular_user, pip
     assert "pending" in data["pipeline_runs"]["by_status"]
 
 
+def test_get_dashboard_stats_unauthorized(regular_client):
+    """Test that regular users cannot access dashboard statistics"""
+    response = regular_client.get("/api/admin/dashboard")
+    assert response.status_code == 403
+
+
+def test_get_dashboard_stats_unauthenticated(unauthenticated_client):
+    """Test that unauthenticated users cannot access dashboard statistics"""
+    response = unauthenticated_client.get("/api/admin/dashboard")
+    assert response.status_code == 401 or response.status_code == 403
+
+
 # ==================== Bulk Operations Tests ====================
 
-def _create_test_user(user_id=None, email=None, role="user"):
-    """Helper function to create a test user"""
-    if user_id is None:
-        user_id = ObjectId()
-    if email is None:
-        email = f"user{user_id}@test.com"
-    user = {
-        "_id": user_id,
-        "email": email,
-        "role": role,
-        "password": "hashed"
-    }
-    mongo.db.users.insert_one(user)
-    return user_id
+@pytest.fixture
+def create_test_user(client):
+    """Factory fixture to create test users"""
+    def _create_user(user_id=None, email=None, role="user"):
+        """Helper function to create a test user"""
+        if user_id is None:
+            user_id = ObjectId()
+        if email is None:
+            email = f"user{user_id}@test.com"
+        user = {
+            "_id": user_id,
+            "email": email,
+            "role": role,
+            "password": "hashed"
+        }
+        mongo.db.users.insert_one(user)
+        return user_id
+    return _create_user
 
 
-def test_bulk_delete_users_success(admin_client, regular_user):
+def test_bulk_delete_users_success(admin_client, regular_user, create_test_user):
     """Test bulk deleting users"""
     # Create additional users
-    user2_id = _create_test_user()
+    user2_id = create_test_user()
     
     try:
         response = admin_client.post(
@@ -312,9 +370,9 @@ def test_bulk_delete_users_invalid_format(admin_client):
     assert response.status_code == 400
 
 
-def test_bulk_delete_users_self(admin_client, admin_user):
+def test_bulk_delete_users_self(admin_client, admin_user, create_test_user):
     """Test bulk delete including self (should skip)"""
-    user2_id = _create_test_user()
+    user2_id = create_test_user()
     
     try:
         response = admin_client.post(
@@ -329,9 +387,9 @@ def test_bulk_delete_users_self(admin_client, admin_user):
         mongo.db.users.delete_one({"_id": user2_id})
 
 
-def test_bulk_update_user_role_success(admin_client, regular_user):
+def test_bulk_update_user_role_success(admin_client, regular_user, create_test_user):
     """Test bulk updating user roles"""
-    user2_id = _create_test_user()
+    user2_id = create_test_user()
     
     try:
         response = admin_client.post(
@@ -370,23 +428,65 @@ def test_bulk_update_user_role_self_demotion(admin_client, admin_user):
     assert "Cannot demote your own admin account" in response.get_json()["message"]
 
 
-def _create_test_run(run_id=None, pipeline="test_pipeline2", status="pending"):
-    """Helper function to create a test pipeline run"""
-    if run_id is None:
-        run_id = ObjectId()
-    run = {
-        "_id": run_id,
-        "pipeline": pipeline,
-        "status": status,
-        "output_path": f"/tmp/test_output_{run_id}"
-    }
-    mongo.db.runs.insert_one(run)
-    return run_id
+def test_bulk_delete_users_unauthorized(regular_client, regular_user):
+    """Test that regular users cannot bulk delete users"""
+    response = regular_client.post(
+        "/api/admin/users/bulk-delete",
+        json={"user_ids": [str(regular_user["_id"])]}
+    )
+    assert response.status_code == 403
 
 
-def test_bulk_delete_pipeline_runs_success(admin_client, pipeline_run):
+def test_bulk_delete_users_unauthenticated(unauthenticated_client):
+    """Test that unauthenticated users cannot bulk delete users"""
+    fake_id = ObjectId()
+    response = unauthenticated_client.post(
+        "/api/admin/users/bulk-delete",
+        json={"user_ids": [str(fake_id)]}
+    )
+    assert response.status_code == 401 or response.status_code == 403
+
+
+def test_bulk_update_user_role_unauthorized(regular_client, regular_user):
+    """Test that regular users cannot bulk update user roles"""
+    response = regular_client.post(
+        "/api/admin/users/bulk-update-role",
+        json={"user_ids": [str(regular_user["_id"])], "role": "admin"}
+    )
+    assert response.status_code == 403
+
+
+def test_bulk_update_user_role_unauthenticated(unauthenticated_client):
+    """Test that unauthenticated users cannot bulk update user roles"""
+    fake_id = ObjectId()
+    response = unauthenticated_client.post(
+        "/api/admin/users/bulk-update-role",
+        json={"user_ids": [str(fake_id)], "role": "admin"}
+    )
+    assert response.status_code == 401 or response.status_code == 403
+
+
+@pytest.fixture
+def create_test_run(client):
+    """Factory fixture to create test pipeline runs"""
+    def _create_run(run_id=None, pipeline="test_pipeline2", status="pending"):
+        """Helper function to create a test pipeline run"""
+        if run_id is None:
+            run_id = ObjectId()
+        run = {
+            "_id": run_id,
+            "pipeline": pipeline,
+            "status": status,
+            "output_path": f"/tmp/test_output_{run_id}"
+        }
+        mongo.db.runs.insert_one(run)
+        return run_id
+    return _create_run
+
+
+def test_bulk_delete_pipeline_runs_success(admin_client, pipeline_run, create_test_run):
     """Test bulk deleting pipeline runs"""
-    run2_id = _create_test_run()
+    run2_id = create_test_run()
     
     try:
         with patch("shutil.rmtree"):
@@ -412,9 +512,28 @@ def test_bulk_delete_pipeline_runs_invalid_ids(admin_client):
     assert "No valid run IDs provided" in response.get_json()["error"]
 
 
-def test_bulk_update_pipeline_status_success(admin_client, pipeline_run):
+def test_bulk_delete_pipeline_runs_unauthorized(regular_client, pipeline_run):
+    """Test that regular users cannot bulk delete pipeline runs"""
+    response = regular_client.post(
+        "/api/admin/pipelines/bulk-delete",
+        json={"run_ids": [str(pipeline_run["_id"])]}
+    )
+    assert response.status_code == 403
+
+
+def test_bulk_delete_pipeline_runs_unauthenticated(unauthenticated_client):
+    """Test that unauthenticated users cannot bulk delete pipeline runs"""
+    fake_id = ObjectId()
+    response = unauthenticated_client.post(
+        "/api/admin/pipelines/bulk-delete",
+        json={"run_ids": [str(fake_id)]}
+    )
+    assert response.status_code == 401 or response.status_code == 403
+
+
+def test_bulk_update_pipeline_status_success(admin_client, pipeline_run, create_test_run):
     """Test bulk updating pipeline run status"""
-    run2_id = _create_test_run()
+    run2_id = create_test_run()
     
     try:
         response = admin_client.post(
@@ -457,4 +576,23 @@ def test_bulk_update_pipeline_status_empty_run_ids(admin_client):
         json={"run_ids": [], "status": "completed"}
     )
     assert response.status_code == 400
+
+
+def test_bulk_update_pipeline_status_unauthorized(regular_client, pipeline_run):
+    """Test that regular users cannot bulk update pipeline run status"""
+    response = regular_client.post(
+        "/api/admin/pipelines/bulk-update-status",
+        json={"run_ids": [str(pipeline_run["_id"])], "status": "completed"}
+    )
+    assert response.status_code == 403
+
+
+def test_bulk_update_pipeline_status_unauthenticated(unauthenticated_client):
+    """Test that unauthenticated users cannot bulk update pipeline run status"""
+    fake_id = ObjectId()
+    response = unauthenticated_client.post(
+        "/api/admin/pipelines/bulk-update-status",
+        json={"run_ids": [str(fake_id)], "status": "completed"}
+    )
+    assert response.status_code == 401 or response.status_code == 403
 
