@@ -19,7 +19,7 @@ def dummy_form(run_id):
     return form
 
 
-def test_seqfish_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
+def test_seqfish_authenticated(client, run_id, dummy_form, mock_celery, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
     from conftest import create_test_run
 
@@ -32,18 +32,37 @@ def test_seqfish_authenticated(client, run_id, dummy_form, mock_run, authenticat
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "completed"
+    assert updated["status"] in {"PENDING", "STARTED"}
 
+    # Actual pipeline execution by a worker is mocked
 
-def test_seqfish_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
+    response = client.get(f"/api/runs/{run_id}/state")
+    data = response.get_json()
+    assert data["state"] == "SUCCESS"
+
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "SUCCESS"
+
+def test_seqfish_unauthenticated(client, run_id, dummy_form, mock_celery, session_user):
     response = client.post("/api/seqfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
 
+    # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "completed"
+    assert updated["status"] in {"PENDING", "STARTED"}
 
+    # Actual pipeline execution by a worker is mocked
+
+    response = client.get(f"/api/runs/{run_id}/state")
+    data = response.get_json()
+    assert data["state"] == "SUCCESS"
+
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "SUCCESS"
 
 # Error handling tests
 def test_seqfish_route_invalid_run_id(client, dummy_form, authenticated_user):

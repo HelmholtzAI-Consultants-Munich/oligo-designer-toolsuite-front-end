@@ -9,4 +9,14 @@
 
 # Data
 /flask/data
-/flask/user_data
+/flask/user_data/*
+
+# Exceptions for test user data (TODO: remove once tests are independent)
+!/flask/user_data/
+
+!/flask/user_data/testuser123/
+
+!/flask/user_data/anon/
+/flask/user_data/anon/*
+
+!/flask/user_data/anon/anon-session-123/
