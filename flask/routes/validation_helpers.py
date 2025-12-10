@@ -10,7 +10,6 @@ def get_run_id(run_id_str: str) -> ObjectId:
         run_id = ObjectId(run_id_str)
     except Exception:
         abort(Response("Error: Invalid run ID",400))
-        return
     return run_id
 
 def get_run(run_id: ObjectId):
@@ -31,6 +30,3 @@ def get_task_id(run):
     if not task_id:
         abort(Response("Corresponding task not found", 500))
     return task_id
-    
-
-

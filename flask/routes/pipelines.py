@@ -1,8 +1,6 @@
 from datetime import datetime
 import os
 
-import shutil
-import tempfile
 import traceback
 
 from typing import Any
@@ -16,68 +14,27 @@ from celery.result import AsyncResult
 
 
 from extensions import celery_app, mongo
+from helpers import get_archive_of_directory
+from routes.validation_helpers import get_run_id
 
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
 
-EXISTING_PIPELINES = {
+EXISTING_PIPELINES = frozenset({
     "scrinshot",
     "seqfish",
     "merfish",
     "oligoseq",
-}
+})
 
 
 def validate_name(pipeline_name: str) -> bool:
     return pipeline_name in EXISTING_PIPELINES
 
 
-def parse_run_id(run_id_str: str) -> ObjectId | None:
-    # Convert run ID string to ObjectId
-    if not run_id_str:
-        return None
-    try:
-        return ObjectId(run_id_str)
-    except Exception:
-        return None
-
-
-# TODO: extract together with similar thing in pipeline_runner
-# there might be a better way to load multiple files into memory
-# than creating an archive on disk and reading that again
-def make_upload_archive(upload_path: str, run_id_str: str) -> bytes | None:
-    if not os.path.exists(upload_path):
-        return None
-
-    archive_base_path = os.path.join(
-        tempfile.gettempdir(), f"upload-archive-{run_id_str}"
-    )
-    current_app.logger.warning(f"Writing archive to {archive_base_path}")
-    archive_path = shutil.make_archive(
-        base_name=archive_base_path,
-        format="zip",
-        root_dir=current_app.config["UPLOAD_FOLDER"],
-        base_dir=run_id_str,
-    )
-
-    with open(archive_path, "br") as f:
-        current_app.logger.warning(f"Reading archive from {archive_path}")
-        archive = f.read()
-
-    # Delete created archive locally
-    os.remove(archive_path)
-
-    # Delete all uploaded files locally
-    shutil.rmtree(upload_path)
-
-    return archive
-
-
-def create_context(
-    pipeline_name: str, current_user: LocalProxy[Any | None]
-) -> dict[str, str | None]:
+def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> dict[str, str | None]:
     if current_user.is_authenticated:
         # Authenticated user: use user-specific directory
         user_id = str(current_user.id)
@@ -95,9 +52,7 @@ def create_context(
         raise RuntimeError(f"Expected user directory at {user_dir} to exist")
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_path = os.path.join(
-        user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}"
-    )
+    output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}")
 
     # To prevent overwriting a run, fail if the directory already exists
     os.makedirs(output_path, exist_ok=False)
@@ -141,17 +96,37 @@ def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     upload_path: str,
-    uploaded_files: bytes | None,
+    upload_archive: bytes | None,
 ) -> AsyncResult:
-    # TODO: install callbacks for metadata update
     return celery_app.send_task(
         "worker.tasks.run_pipeline",
-        (pipeline_name, form_data, upload_path, uploaded_files),
+        (pipeline_name, form_data, upload_path, upload_archive),
     )
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
 def start_pipeline(pipeline_name: str):
+    """
+    Handles the pipeline requests by preparing the execution context, updating the run information
+    in the database and sending a pipeline task to the Celery cluster by adding it to the queue.
+
+    Orchestrates the workflow for running the pipeline as follows:
+
+    - Verifies the pipeline name
+    - Loads and validates user/session context.
+    - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
+    - Builds an archive of the files uploaded by the user.
+    - Prepares output directory.
+    - Adds pipeline execution to the Celery queue.
+    - Writes updated run information to database.
+    - Returns the run ID as a JSON response.
+
+    :returns: JSON response containing the run ID.
+    :rtype: flask.Response
+
+    For more information on the input parameters and configuration options, refer to the pipeline documentation.
+
+    """
     if not validate_name(pipeline_name):
         return jsonify({"error": f'Pipeline "{pipeline_name}" does not exist'}), 400
 
@@ -160,16 +135,12 @@ def start_pipeline(pipeline_name: str):
         return jsonify({"error": "Expected JSON"}), 415
 
     run_id_str = json.get("runid")  # Run ID from React
-    run_id = parse_run_id(run_id_str)
-    if not run_id:
-        return jsonify({"error": "Invalid run ID format"}), 400
+    run_id = get_run_id(run_id_str)
 
     form_data = json.get("formdata")  # Form data from React
 
-    upload_path = upload_path = os.path.join(
-        current_app.config["UPLOAD_FOLDER"], run_id_str
-    )
-    uploaded_files = make_upload_archive(upload_path, run_id_str)
+    upload_path = os.path.join(current_app.config["UPLOAD_FOLDER"], run_id_str)
+    upload_archive = get_archive_of_directory(upload_path, delete=True)
 
     # User Directory and Session / User ID Logic
     try:
@@ -178,17 +149,12 @@ def start_pipeline(pipeline_name: str):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
 
-    result_promise = enqueue_pipeline(
-        pipeline_name, form_data, current_app.config["UPLOAD_FOLDER"], uploaded_files
-    )
-    current_app.logger.warning(result_promise.id)
+    result_promise = enqueue_pipeline(pipeline_name, form_data, upload_path, upload_archive)
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
     if update_result.matched_count == 0:
-        return jsonify(
-            {"error": "Run ID not found"}
-        ), 404
+        return jsonify({"error": "Run ID not found"}), 404
 
     # The task state can be polled using get_run_state(run_id_str).
     # If ready, the output will be written to our local filesystem.
