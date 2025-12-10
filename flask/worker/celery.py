@@ -1,8 +1,8 @@
 from celery import Celery
-from config import CeleryConfig
+from config import Config
 
 app = Celery()
-app.config_from_object(CeleryConfig)
+app.config_from_object(Config.CELERY_CONFIG)
 
 # Optional configuration, see the application user guide.
 app.conf.update(

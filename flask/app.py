@@ -1,4 +1,3 @@
-import logging
 import os
 from flask import Flask
 from flask_cors import CORS
@@ -6,7 +5,7 @@ from dotenv import load_dotenv
 from extensions import celery_app, mongo, oauth
 from routes.auth import init_login_manager
 from routes import register_blueprints
-from config import Config, CeleryConfig
+from config import Config
 
 def create_app():
     app = Flask(__name__)
@@ -48,9 +47,7 @@ def create_app():
     )
 
     # Initialize Celery configuration
-    celery_app.config_from_object(CeleryConfig)
-    app.logger.setLevel(logging.DEBUG)
-    celery_app.log_cls = app.logger
+    celery_app.config_from_object(Config.CELERY_CONFIG)
 
     # Register all blueprints from the routes package
     register_blueprints(app)
