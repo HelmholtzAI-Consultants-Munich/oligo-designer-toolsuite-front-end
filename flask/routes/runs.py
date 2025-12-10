@@ -21,8 +21,10 @@ import traceback
 from datetime import datetime
 from typing import Any
 from bson import ObjectId
-from flask import Blueprint, current_app, jsonify, send_file, session
-from .validation_helper import get_run, get_run_id, get_task_id
+from flask import Blueprint, jsonify, send_file, session
+
+from helpers import extract_archive
+from .validation_helpers import get_run, get_run_id, get_task_id
 from flask_login import current_user
 from extensions import celery_app, mongo
 from helpers import delete_pipeline_run_files_and_db
@@ -79,14 +81,28 @@ def init_run_id():
     """
     Initialize a new pipeline run in the database.
 
-    Sets initial status to "pending" and records creation timestamp.
+    Sets initial status to "PENDING" and records creation timestamp
+    along with id of the initializing user.
 
     :returns: JSON object with new run_id.
     :rtype: flask.Response
     """
+    if current_user.is_authenticated:
+        # Authenticated user: use user-specific directory
+        user_id = str(current_user.id)
+        session_id = None
+    else:
+        # Anonymous user: use session-based directory
+        user_id = None
+        session_id = str(session.get("session_id"))
+        if not session_id:
+            raise ValueError("Anonymous session ID not found in session")
+
     run_doc = {
         "status": "PENDING",
-        "created_at": datetime.utcnow()
+        "user_id": user_id,
+        "session_id": session_id,
+        "created_at": datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     }
     run_result = mongo.db.runs.insert_one(run_doc)
     return jsonify({"run_id": str(run_result.inserted_id)})
@@ -303,34 +319,42 @@ def update_run_status_in_DB(run_id: ObjectId, status: str):
 
 @runs_bp.route('/api/runs/<run_id_str>/state', methods=['GET'])
 def get_run_status(run_id_str):
+    """
+    Return status of a specific pipeline run.
+
+    Queries the Celery result backend for the current state of the run.
+    Unpacks results and updates the database if the state changed.
+
+    :param run_id_str: The ObjectId string of the run.
+    :type run_id_str: str
+    :returns: Run status or JSON error.
+    :rtype: flask.Response
+    """
     run_id = get_run_id(run_id_str)
     
     run = get_run(run_id)
+    state = run["status"]
 
-    if run["status"] in {"SUCCESS", "FAILURE"}:
-        return jsonify({"state": run["status"]})
+    if state in {"SUCCESS", "FAILURE"}:
+        return jsonify({"state": state})
     
+    # Check for potential state changes
     task_id = get_task_id(run)
-
     result_promise = celery_app.AsyncResult(task_id)
     
-    if result_promise.ready():
-        # TODO: store result in file system, do this in separate function
-        archive = result_promise.get(propagate=False)
+    if result_promise.successful():
+        ok, archive = result_promise.get()
         if archive:
+            # there might be files (e.g. logs) in the output archive even if ok is False
             output_path = run['output_path']
-            archive_path = os.path.join(output_path, "output-archive.zip")
-            with open(archive_path, "xb") as f:
-                f.write(archive)
-            
-            shutil.unpack_archive(archive_path, extract_dir=output_path)
-            os.remove(archive_path)
+            extract_archive(archive, output_path)
 
-    state = result_promise.state
-    del result_promise
-
-    current_app.logger.warning(state)
-
-    update_run_status_in_DB(run_id, state)
+        # overwrite "SUCCESS" state if pipeline failed but output was delivered successfully
+        state = result_promise.state if ok else "FAILURE"
+    else:
+        state = result_promise.state
+      
+    if run["status"] != state:
+        update_run_status_in_DB(run_id, state)
 
     return jsonify({"state": state}), 200

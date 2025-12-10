@@ -1,27 +1,11 @@
-from bson import ObjectId
 from flask import Blueprint, request, jsonify, current_app
 import os
 import uuid
+from routes.validation_helpers import get_run, get_run_id
 
 # Blueprint for all upload-related endpoints
-upload_bp = Blueprint("upload", __name__)
+upload_bp = Blueprint('upload', __name__)
 
-
-# TODO: move this to a helper
-def is_valid_run_id(run_id_str: str) -> bool:
-    # Convert run ID string to ObjectId
-    if not run_id_str:
-        current_app.logger.warning("none")
-        return False
-    try:
-        run_id = ObjectId(run_id_str)
-        run = mongo.db.runs.find_one({"_id": ObjectId(run_id)})
-        return run is not None
-    except Exception:
-        return False
-
-# TODO: update other pipelines to also provide runid when uploading files
-# only Scrinshot updated yet (see commit diff)
 @upload_bp.route('/api/upload', methods=['POST'])
 def upload_file():
     """
@@ -56,20 +40,20 @@ def upload_file():
         }
     """
     # Step 1: Check if the request includes a file under the 'file' key
-    if "file" not in request.files:
+    if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
 
-    file = request.files["file"]
+    file = request.files['file']
 
     # Step 2: Check if the user actually selected a file (filename should not be empty)
-    if file.filename == "":
+    if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
     # Step 2.1: Read run ID from request
     run_id_str = request.form["runid"]
-    current_app.logger.warning(run_id_str)
-    if not is_valid_run_id(run_id_str):
-        return jsonify({"error": "Invalid run ID format"}), 400
+    # Validation
+    run_id = get_run_id(run_id_str)
+    _ = get_run(run_id)
 
     # Step 2.2: Create run-specific upload directory if it does not exist already
     upload_path = os.path.join(current_app.config["UPLOAD_FOLDER"], run_id_str)

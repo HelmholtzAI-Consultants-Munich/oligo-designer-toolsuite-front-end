@@ -1,12 +1,12 @@
 from collections import defaultdict
 import json
-import shutil
 import subprocess
 import tempfile
 from typing import Any
 
 from celery import Celery
 from helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
+from helpers import extract_archive, get_archive_of_directory, split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
 import os
 import yaml
 
@@ -15,63 +15,15 @@ from oligo_designer_toolsuite.utils import FastaParser
 
 class PipelineRunner:
     """
-    Handles the pipeline requests by preparing user inputs, managing temporary files,
-    invoking the external probe designer tool, cleaning up resources, and updating run status in MongoDB.
+    Executes the pipeline by invoking the corresponding oligo designer toolsuite tool while managing temporary files.
 
-    This function is triggered via a POST request from the frontend, typically with user-provided form data
-    and a run ID. It orchestrates the workflow for running the pipeline as follows:
-
-    - Loads and validates user/session context.
-    - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
     - Prepares input files as needed (e.g., writes gene list as a temp file).
+    - Unpacks archive of files uploaded by user.
     - Builds the configuration dictionary for the probe designer pipeline based on the submitted form.
     - Writes this configuration as a YAML file to the user's directory.
     - Launches the external `[<pipeline_name>]_probe_designer` process as a subprocess, passing the YAML config.
     - Cleans up any temporary files created during input preparation.
-    - Updates the run status in MongoDB to reflect completion or errors.
-    - Returns the run ID as a JSON response.
-
-    :returns: JSON response containing the run ID.
-    :rtype: flask.Response
-
-    :request json formdata: The form data submitted from the frontend React application.
-    :type formdata: dict
-
-    :request json runid: The ID of the run document in MongoDB, as a string.
-    :type runid: str
-
-    :context user_dir: The user's data directory. For authenticated users, this is based on user ID;
-        for anonymous sessions, it is based on a session ID.
-    :type user_dir: str
-
-    :context config_path: The path where the YAML configuration file will be written.
-    :type config_path: str
-
-    :context session_id: The session ID, used for anonymous users.
-    :type session_id: str
-
-    :context run_id: The MongoDB ObjectId for the run document.
-    :type run_id: ObjectId
-
-    :context output_path: The directory where output files from the probe designer will be stored.
-    :type output_path: str
-
-    :context config: The configuration dictionary assembled from user inputs.
-    :type config: dict
-
-    :raises: Returns HTTP 400 if the provided run ID is invalid.
-    :raises: Returns HTTP 404 if the run ID is not found in the database.
-
-    Workflow steps:
-      1. Determine user or session context and prepare the working directory.
-      2. Parse and validate form data and run ID.
-      3. Create a temporary regions file if needed, and update form data accordingly.
-      4. Update the database with the initial run status ('started').
-      5. Build the config dictionary from form data and write to YAML.
-      6. Invoke the external Scrinshot probe designer subprocess.
-      7. Clean up any temporary files created.
-      8. Update the run status in MongoDB based on subprocess completion.
-      9. Return the run ID as confirmation.
+    - Returns an archive of the resulting output directory.
 
     For more information on the input parameters and configuration options, refer to the pipeline documentation.
 
@@ -98,26 +50,22 @@ class PipelineRunner:
         self.schema = schema  # JSON schema
         self.task = task
 
-    def run(self, form_data: dict[str, Any], upload_path: str, uploaded_files: bytes | None) -> bytes | None:
+    def run(self, form_data: dict[str, Any], upload_path: str, upload_archive: bytes | None) -> tuple[bool, bytes | None]:
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
 
         # Extract uploaded files (if needed)
-        self.extract_uploaded_files(upload_path, uploaded_files)
+        if upload_archive:
+            extract_archive(upload_archive, upload_path)
 
         # Prepare output directory
-        # TODO: in separate function
-        output_path = os.path.join(tempfile.gettempdir(), "output")
-        os.makedirs(output_path, exist_ok=True)
+        output_path = tempfile.mkdtemp()
 
         # Build Config and Write to YAML
         config_path = self.write_config_file(form_data, output_path)
 
         # Subprocess Call
-        try:
-            self.call_subprocess(config_path)
-        except Exception:
-            self.task.update_state(state="FAILURE")
+        ok = self.call_subprocess(config_path)
 
         # Generate Visualization Files
         self.generate_genomic_regions_file(form_data, output_path)
@@ -126,14 +74,10 @@ class PipelineRunner:
         self.cleanup_temp_files(form_data, config_path)
 
         # Serialize output
-        archive = self.serialize_output_directory(output_path)
-
-        # Delete temporary directory
-        if os.path.exists(output_path):
-            shutil.rmtree(output_path)
+        archive = get_archive_of_directory(output_path)
 
         # Response
-        return archive
+        return ok, archive
 
     def populate_temp_file(self, form_data: dict) -> None:
         if form_data["file_regions"]["value"] != "":
@@ -152,25 +96,12 @@ class PipelineRunner:
         else:
             form_data["file_regions"]["value"] = None
 
-    def extract_uploaded_files(self, upload_path: str, uploaded_files: bytes | None):
-        if uploaded_files:
-            # General upload directory
-            os.makedirs(upload_path, exist_ok=True)
-
-            archive_path = os.path.join(tempfile.gettempdir(), "upload-archive.zip")
-            print(f"Writing archive to {archive_path}")
-            with open(archive_path, "xb") as f:
-                f.write(uploaded_files)
-            
-            print(f"Unpacking archive at {archive_path}")
-            shutil.unpack_archive(archive_path, extract_dir=upload_path)
-            os.remove(archive_path)
-
     def write_config_file(self, form_data: dict, output_path: str) -> str:
         config = form_data
 
         # Override output directory
         config["dir_output"] = output_path
+
 
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yaml")
 
@@ -185,14 +116,14 @@ class PipelineRunner:
             yaml.dump(config, f, sort_keys=False)
         return config_path
 
-    def call_subprocess(self, config_path: str):
+    def call_subprocess(self, config_path: str) -> bool:
         result = subprocess.run(
             [self.subprocess_name, "-c", config_path], capture_output=True, text=True
         )
+        # TODO: debug printing, replace with logger
         print("STDERR:", result.stderr)
         print("STDOUT (partial logs):", result.stdout)
-        if result.returncode != 0:
-            raise Exception("Pipeline execution was unsuccessful")
+        return result.returncode == 0
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
@@ -297,17 +228,3 @@ class PipelineRunner:
             print("deleted config:", config_path)
         else:
             print("config not found, skipped:", config_path)
-
-    def serialize_output_directory(self, output_path: str) -> bytes | None:
-        if not os.path.exists(output_path) or len(os.listdir(output_path)) == 0:
-            return None
-
-        archive_base_path = os.path.join(tempfile.gettempdir(), "output-archive")
-        archive_path = shutil.make_archive(
-            archive_base_path, "zip", root_dir=output_path
-        )
-
-        with open(archive_path, "br") as f:
-            archive = f.read()
-        
-        return archive

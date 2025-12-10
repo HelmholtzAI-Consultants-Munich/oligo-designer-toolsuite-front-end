@@ -4,7 +4,10 @@ from celery import Celery
 from .runners.pipeline_runner import PipelineRunner
 from .celery import app
 
+# TODO: instead of sending compressed archives of our uploaded files as messages in RabbitMQ and output files as results in mongodb,
+# we should use some kind of shared filesystem (e.g. NFS or S3 object storage)
+
 @app.task(bind=True)
-def run_pipeline(self: Celery.Task, pipeline_name: str, form_data: Any, upload_path: str, uploaded_files: bytes | None) -> bytes | None:
+def run_pipeline(self: Celery.Task, pipeline_name: str, form_data: Any, upload_path: str, upload_archive: bytes | None) -> tuple[bool, bytes | None]:
     runner = PipelineRunner(pipeline_name, task=self)
-    return runner.run(form_data, upload_path, uploaded_files)
+    return runner.run(form_data, upload_path, upload_archive)
