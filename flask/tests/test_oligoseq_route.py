@@ -19,7 +19,7 @@ def dummy_form(run_id):
     return form
 
 
-def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
+def test_oligoseq_authenticated(client, run_id, dummy_form, mock_celery, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
     from conftest import create_test_run
 
@@ -32,11 +32,20 @@ def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authentica
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "completed"
+    assert updated["status"] in {"PENDING", "STARTED"}
+
+    # Actual pipeline execution by a worker is mocked
+
+    response = client.get(f"/api/runs/{run_id}/state")
+    data = response.get_json()
+    assert data["state"] == "SUCCESS"
+
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "SUCCESS"
 
 
-def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
-    # Simulate an anonymous user (no monkeypatch needed)
+def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_celery, session_user):
     response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
@@ -44,7 +53,17 @@ def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run, session_
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "completed"
+    assert updated["status"] in {"PENDING", "STARTED"}
+
+    # Actual pipeline execution by a worker is mocked
+
+    response = client.get(f"/api/runs/{run_id}/state")
+    data = response.get_json()
+    assert data["state"] == "SUCCESS"
+
+    # Confirm Mongo updated status
+    updated = mongo.db.runs.find_one({"_id": run_id})
+    assert updated["status"] == "SUCCESS"
 
 
 # Error handling tests
