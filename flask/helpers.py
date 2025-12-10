@@ -189,7 +189,7 @@ def get_archive_of_directory(path: str, compression: int = zipfile.ZIP_DEFLATED,
     Returns None if the provided path is empty or not a directory.
     Optionally deletes the directory after creating the archive.
     """
-    if not os.path.isdir or len(os.listdir(path)) == 0:
+    if not os.path.isdir(path) or len(os.listdir(path)) == 0:
         return None
 
     archive_dir = pathlib.Path(path)
