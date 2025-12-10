@@ -3,31 +3,33 @@
 
 # see https://packaging.python.org/en/latest/specifications/dependency-groups/
 [dependency-groups]
-# TODO: split flask and celery worker
-main = [
+shared = ["celery >=5.6, <6", "pymongo >=4.15, <5", "PyYAML >=6, <7"]
+server = [
+    { include-group = "shared" },
     "Authlib >=1.6, <2",
-    "celery >=5.6, <6",
     "Flask >=3.1, <4",
     "flask-cors >=6, <7",
     "Flask-Login >=0.6, <0.7",
     "Flask-PyMongo >=3, <4",
     "python-dotenv >=1.2, <2",
-    "PyYAML >=6, <7",
     "requests >=2.32, <3",
     "biopython >=1.86, <2",
 ]
+worker = [{ include-group = "shared" }]
 test = [
-    {include-group = "main"},
+    { include-group = "server" },
     "coverage >=7.12, <8",
     "pytest >=9, <10",
     "pytest-cov >=7, <8",
     "pytest-mock >=3.15, <4",
 ]
-lint = [
-    "pre-commit >=4.5, <5",
-    "ruff >=0.14",
+lint = ["pre-commit >=4.5, <5", "ruff >=0.14"]
+dev = [
+    { include-group = "server" },
+    { include-group = "worker" },
+    { include-group = "test" },
+    { include-group = "lint" },
 ]
-dev = [{include-group = "test"}, {include-group = "lint"}]
 
 [tool.pytest]
 addopts = ["-q"]
