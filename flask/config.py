@@ -11,7 +11,6 @@ Environment Variables Required:
 
 from datetime import timedelta
 import os
-from datetime import timedelta
 
 
 class Config:
@@ -63,16 +62,15 @@ class Config:
         if not Config.HELMHOLTZ_CLIENT_SECRET:
             raise ValueError("HELMHOLTZ_CLIENT_SECRET environment variable is required")
 
-
-# TODO: could be integrated with above settings
-# see https://www.pythontutorials.net/blog/how-to-make-celery-worker-return-results-from-task/#5-1-creating-basic-flask-app
-# see https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html#django-first-steps
-class CeleryConfig:
-    broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
-    result_backend: str = os.environ.get('CELERY_MONGO_URI', 'mongodb://localhost:27017/')
-    task_track_started: bool = True
-    task_compressen: str = "zlib"
-    result_compression: str = "zlib"
-    result_expires: timedelta = timedelta(weeks=1)      # non-polled results will be dropped
-    worker_send_task_events: bool = True                # enable events to be monitored by Flower
-
+    # Celery settings
+    # see https://github.com/celery/celery/issues/7309
+    class CeleryConfig:
+        broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
+        result_backend: str = os.environ.get('CELERY_MONGO_URI', 'mongodb://localhost:27017/')
+        task_track_started: bool = True
+        task_compressen: str = "zlib"
+        result_compression: str = "zlib"
+        result_expires: timedelta = timedelta(weeks=1)      # non-polled results will be dropped
+        worker_send_task_events: bool = True                # enable events to be monitored by Flower
+    
+    CELERY_CONFIG = CeleryConfig()
