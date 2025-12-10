@@ -8,11 +8,10 @@ services:
     restart: on-failure
 
   odt-mq:
-    image: rabbitmq:4
+    image: rabbitmq:4-alpine
     container_name: odt-mq
     ports:
       - 5672:5672
-      - 15672:15672
     restart: on-failure
 
   odt-server:
@@ -52,8 +51,8 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./flask/worker
-          target: /app/worker
+          path: ./flask
+          target: /app
           initial_sync: true
 
   odt-web:

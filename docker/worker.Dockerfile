@@ -7,6 +7,7 @@ RUN --mount=source=flask/worker_environment.yml,target=/tmp/env.yml \
     micromamba install -y -n base -f /tmp/env.yml
 
 # --- Install platform-specific build tools for ARM ---
+# these are required to install oligo-designer-toolsuite on ARM
 ARG TARGETARCH
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
     micromamba install -y -n base -c conda-forge \
@@ -21,8 +22,7 @@ RUN --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
     pip install git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git
 RUN --mount=source=flask/pyproject.toml,target=pyproject.toml \
     --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
-    pip install --group test
-
+    pip install --group worker
 
 # --- Copy Celery worker ---
 WORKDIR /app
