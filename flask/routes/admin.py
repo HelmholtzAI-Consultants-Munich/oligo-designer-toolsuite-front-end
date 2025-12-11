@@ -18,12 +18,7 @@ from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
 from extensions import mongo
-from routes.helpers import (
-    delete_pipeline_run_files_and_db,
-    execute_bulk_pipeline_run_deletion,
-    validate_and_convert_ids,
-    validate_id_array,
-)
+from helpers import delete_pipeline_run_files_and_db, validate_and_convert_ids, execute_bulk_pipeline_run_deletion, validate_id_array
 
 admin_bp = Blueprint("admin", __name__)
 
