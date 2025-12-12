@@ -31,17 +31,17 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] in {"PENDING", "STARTED"}
+    assert updated["status"] in {"pending", "started"}
 
     # Actual pipeline execution by a worker is mocked
 
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()
-    assert data["state"] == "SUCCESS"
+    assert data["state"] == "success"
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "SUCCESS"
+    assert updated["status"] == "success"
 
 
 # Test unauthenticated user flow for /api/merfish
@@ -53,17 +53,17 @@ def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] in {"PENDING", "STARTED"}
+    assert updated["status"] in {"pending", "started"}
 
     # Actual pipeline execution by a worker is mocked
 
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()
-    assert data["state"] == "SUCCESS"
+    assert data["state"] == "success"
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "SUCCESS"
+    assert updated["status"] == "success"
 
 # Error handling tests
 def test_merfish_route_invalid_run_id(client, dummy_form, authenticated_user):

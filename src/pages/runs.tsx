@@ -74,10 +74,10 @@ const Runs = () => {
 
     const statusBadge = (status: string) => {
         const statusMap: { [key: string]: string } = {
-            STARTED: "primary",
-            SUCCESS: "success",
-            FAILURE: "danger",
-            PENDING: "secondary",
+            started: "primary",
+            success: "success",
+            failure: "danger",
+            pending: "secondary",
         };
         return `badge bg-${statusMap[status] || "secondary"}`;
     };

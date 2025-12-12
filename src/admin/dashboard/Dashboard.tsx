@@ -1,17 +1,9 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { Card, Spinner, Alert, Button, Row, Col } from "react-bootstrap";
-import {
-    People,
-    PersonBadge,
-    Person,
-    Folder2,
-    Clock,
-    CheckCircle,
-    XCircle,
-    PlayCircle,
-} from "react-bootstrap-icons";
-import type { Icon } from "react-bootstrap-icons";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Card, Spinner, Alert, Button, Row, Col } from 'react-bootstrap';
+import { People, PersonBadge, Person, Folder2 } from 'react-bootstrap-icons';
+import type { Icon } from 'react-bootstrap-icons';
+import { STATUS_CONFIG } from '../shared/types';
 
 /**
  * Calculate percentage with one decimal place
@@ -63,30 +55,6 @@ const StatCard: React.FC<StatCardProps> = ({
     );
 };
 
-/**
- * Status configuration for pipeline runs
- */
-const STATUS_CONFIG = {
-    icons: {
-        pending: Clock,
-        started: PlayCircle,
-        completed: CheckCircle,
-        error: XCircle,
-    },
-    colors: {
-        pending: "warning",
-        started: "info",
-        completed: "success",
-        error: "danger",
-    },
-    labels: {
-        pending: "Pending",
-        started: "Started",
-        completed: "Completed",
-        error: "Error",
-    },
-} as const;
-
 interface DashboardStats {
     users: {
         total: number;
@@ -98,8 +66,8 @@ interface DashboardStats {
         by_status: {
             pending: number;
             started: number;
-            completed: number;
-            error: number;
+            success: number;
+            failure: number;
         };
     };
 }

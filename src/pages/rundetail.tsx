@@ -86,7 +86,7 @@ const RunDetail = () => {
     const [hasLogFile, setHasLogFile] = useState(false);
     const [logFilename, setLogFilename] = useState<string | null>(null);
     const [logContent, setLogContent] = useState<string | null>(null);
-    const [runState, setRunState] = useState<RunState>("PENDING");
+    const [runState, setRunState] = useState<RunState>("pending");
     const [polling, setPolling] = useState(true);
     const fetchAndParseRunFiles = useCallback(
         (yamlFilename: string) => {
@@ -172,10 +172,7 @@ const RunDetail = () => {
                 setRunState(response.data.state)
 
                 // If finished, stop polling
-                if (
-                    response.data.state == "SUCCESS" ||
-                    response.data.state == "FAILURE"
-                ) {
+                if (response.data.state == "success" || response.data.state == "failure") {
                     setPolling(false);
                     if (interval) clearInterval(interval);
                     const response = await axios.get(
@@ -723,9 +720,9 @@ const RunDetail = () => {
                 )}
 
                 {/* Polling/waiting for YAML/log */}
-                {(runState == "PENDING" || runState == "STARTED") && (
+                {(runState == "pending" || runState == "started") && (
                     <div className="alert alert-info">
-                        Run is {runState == "PENDING" ? "pending" : "executing"}...
+                        Run is {runState == "pending" ? "pending" : "executing"}...
                         <span className="spinner-border spinner-border-sm ms-2" />
                     </div>
                 )}

@@ -1,19 +1,12 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import {
-    Table,
-    Badge,
-    Spinner,
-    Alert,
-    Button,
-    Card,
-    Form,
-} from "react-bootstrap";
-import { Eye, EyeSlash, Trash, Pencil } from "react-bootstrap-icons";
-import { useBulkSelection } from "../shared/useBulkSelection";
-import BulkActionToolbar from "../shared/BulkActionToolbar";
-import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Table, Badge, Spinner, Alert, Button, Card, Form } from 'react-bootstrap';
+import { Eye, EyeSlash, Trash, Pencil } from 'react-bootstrap-icons';
+import { useBulkSelection } from '../shared/useBulkSelection';
+import BulkActionToolbar from '../shared/BulkActionToolbar';
+import { handleBulkOperationSuccess } from '../shared/bulkOperationHelpers';
+import { STATUS_CONFIG } from '../shared/types';
 
 interface PipelineRun {
     id: string;
@@ -265,21 +258,8 @@ const PipelineList: React.FC = () => {
     };
 
     const getStatusBadge = (status: string) => {
-        const statusLower = status.toLowerCase();
-        if (statusLower === "completed" || statusLower === "success") {
-            return <Badge bg="success">{status}</Badge>;
-        } else if (statusLower === "failed" || statusLower === "error") {
-            return <Badge bg="danger">{status}</Badge>;
-        } else if (statusLower === "pending" || statusLower === "queued") {
-            return <Badge bg="warning">{status}</Badge>;
-        } else if (
-            statusLower === "started" ||
-            statusLower === "running" ||
-            statusLower === "in_progress"
-        ) {
-            return <Badge bg="info">{status}</Badge>;
-        }
-        return <Badge bg="secondary">{status}</Badge>;
+        const color = STATUS_CONFIG.colors[status as keyof typeof STATUS_CONFIG.colors];
+        return <Badge bg={color}>{status}</Badge>;
     };
 
     const getUserDisplay = (run: PipelineRun) => {
@@ -390,8 +370,8 @@ const PipelineList: React.FC = () => {
                             <option value="">Update Status...</option>
                             <option value="pending">Pending</option>
                             <option value="started">Started</option>
-                            <option value="completed">Completed</option>
-                            <option value="error">Error</option>
+                            <option value="success">Success</option>
+                            <option value="failure">Failure</option>
                         </Form.Select>
                     </>
                 }
@@ -481,18 +461,10 @@ const PipelineList: React.FC = () => {
                                                         minWidth: "120px",
                                                     }}
                                                 >
-                                                    <option value="pending">
-                                                        Pending
-                                                    </option>
-                                                    <option value="started">
-                                                        Started
-                                                    </option>
-                                                    <option value="completed">
-                                                        Completed
-                                                    </option>
-                                                    <option value="error">
-                                                        Error
-                                                    </option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="started">Started</option>
+                                                    <option value="success">Success</option>
+                                                    <option value="failure">Failure</option>
                                                 </Form.Select>
                                                 <Button
                                                     variant="success"

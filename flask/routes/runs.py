@@ -81,7 +81,7 @@ def init_run_id():
     """
     Initialize a new pipeline run in the database.
 
-    Sets initial status to "PENDING" and records creation timestamp
+    Sets initial status to "pending" and records creation timestamp
     along with id of the initializing user.
 
     :returns: JSON object with new run_id.
@@ -99,10 +99,10 @@ def init_run_id():
             raise ValueError("Anonymous session ID not found in session")
 
     run_doc = {
-        "status": "PENDING",
+        "status": "pending",
         "user_id": user_id,
         "session_id": session_id,
-        "created_at": datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        "created_at": datetime.now()
     }
     run_result = mongo.db.runs.insert_one(run_doc)
     return jsonify({"run_id": str(run_result.inserted_id)})
@@ -335,7 +335,7 @@ def get_run_status(run_id_str):
     run = get_run(run_id)
     state = run["status"]
 
-    if state in {"SUCCESS", "FAILURE"}:
+    if state in {"success", "failure"}:
         return jsonify({"state": state})
     
     # Check for potential state changes
@@ -349,10 +349,10 @@ def get_run_status(run_id_str):
             output_path = run['output_path']
             extract_archive(archive, output_path)
 
-        # overwrite "SUCCESS" state if pipeline failed but output was delivered successfully
-        state = result_promise.state if ok else "FAILURE"
+        # overwrite "success" state if pipeline failed but output was delivered successfully
+        state = result_promise.state.lower() if ok else "failure"
     else:
-        state = result_promise.state
+        state = result_promise.state.lower()
       
     if run["status"] != state:
         update_run_status_in_DB(run_id, state)

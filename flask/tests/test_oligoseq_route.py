@@ -32,17 +32,17 @@ def test_oligoseq_authenticated(client, run_id, dummy_form, mock_celery, authent
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] in {"PENDING", "STARTED"}
+    assert updated["status"] in {"pending", "started"}
 
     # Actual pipeline execution by a worker is mocked
 
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()
-    assert data["state"] == "SUCCESS"
+    assert data["state"] == "success"
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "SUCCESS"
+    assert updated["status"] == "success"
 
 
 def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_celery, session_user):
@@ -53,17 +53,17 @@ def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_celery, sessi
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] in {"PENDING", "STARTED"}
+    assert updated["status"] in {"pending", "started"}
 
     # Actual pipeline execution by a worker is mocked
 
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()
-    assert data["state"] == "SUCCESS"
+    assert data["state"] == "success"
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "SUCCESS"
+    assert updated["status"] == "success"
 
 
 # Error handling tests

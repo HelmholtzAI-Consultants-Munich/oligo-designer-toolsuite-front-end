@@ -85,7 +85,7 @@ def write_run_to_DB(
             "user_id": context.get("user_id"),
             "timestamp": context.get("timestamp"),
             "output_path": context.get("output_path"),
-            "status": "PENDING",
+            "status": "pending",
             "pipeline": pipeline_name,
             "task_id": task_id,
         },
