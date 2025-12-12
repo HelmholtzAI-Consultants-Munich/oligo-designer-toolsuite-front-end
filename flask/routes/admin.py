@@ -126,8 +126,7 @@ def get_valid_pipeline_statuses():
     :returns: List of valid status strings
     :rtype: list[str]
     """
-    return ["pending", "started", "completed", "error"]
-
+    return ['pending', 'started', 'success', 'failure']
 
 @admin_bp.route("/api/admin/users", methods=["GET"])
 @login_required
@@ -596,7 +595,7 @@ def bulk_update_pipeline_status():
     Updates the status of multiple pipeline runs.
 
     :request json run_ids: Array of run IDs to update
-    :request json status: New status ('pending', 'started', 'completed', 'error')
+    :request json status: New status ('pending', 'started', 'success', 'failure')
     :returns: JSON object with update results
     :rtype: flask.Response
     """

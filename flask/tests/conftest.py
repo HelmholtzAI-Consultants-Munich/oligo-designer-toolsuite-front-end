@@ -86,13 +86,13 @@ def run_id():
 def mock_celery():
     class MockPendingAsyncResult:
         id = "123"
-        state = "PENDING"
+        state = "pending"
         def successful(self): return False
         def get(self): return False, b""
 
     class MockSuccessfulAsyncResult:
         id = "123"
-        state = "SUCCESS"
+        state = "success"
         def successful(self): return True
         def get(self): return True, b""
 

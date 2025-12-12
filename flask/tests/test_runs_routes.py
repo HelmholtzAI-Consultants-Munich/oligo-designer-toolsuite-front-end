@@ -16,7 +16,7 @@ def output_path(tmp_path, run_id, dummy_user):
     (output_path / "log.txt").write_text("log content")
     (output_path / "config.yaml").write_text("config content")
 
-    create_test_run(run_id, user_id=dummy_user.id, status="SUCCESS", output_path=str(output_path))
+    create_test_run(run_id, user_id=dummy_user.id, status="success", output_path=str(output_path))
 
     return str(output_path)
 
