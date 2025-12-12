@@ -96,13 +96,19 @@ const OligoComponents: React.FC<Props> = ({ oligos, pipeline, selectedOligo, set
         const height = 100;
         const margin = 20;
 
-        const svg = d3.select("#oligo") as d3.Selection<
+        const svg = d3.select("#oligo-components") as d3.Selection<
             Element,
             unknown,
             Element,
             unknown
         >;
-        const group = svg.select("#oligo g");
+
+        const group = svg.select("#oligo-components g");
+
+        /* clear previous transforms */
+        svg.call(d3.zoom().transform, d3.zoomIdentity);
+        group.attr("transform", null);
+
         const zoomed = ({ transform }: { transform: d3.ZoomTransform }) => {
             group.attr("transform", transform.toString());
         };
@@ -156,13 +162,14 @@ const OligoComponents: React.FC<Props> = ({ oligos, pipeline, selectedOligo, set
                     )
                 )}
             </select>
-            <svg id="oligo">
+            <svg id="oligo-components">
                 <g>
                     {componentsToBases(components).map((base, index) => (
                         <text
                             x={(index + 1) * 12}
                             y={base.isBinding ? 55 : 45}
                             style={{ fill: base.color, textAnchor: "middle" }}
+                            key={oligos[selectedOligo].oligo_id + "-" + index}
                         >
                             {base.char}
                         </text>
