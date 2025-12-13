@@ -57,35 +57,49 @@
   "merfish": [
     {
       "type": "entry",
-      "field": "sequence_forward_primer"
+      "field": "sequence_forward_primer",
+      "color": "#825ca6",
+      "label": "Forward Primer"
     },
     {
       "type": "entry",
       "field": "sequence_readout_probe_1",
+      "color": "#5baa47",
+      "label": "Readout Sequence 1",
       "isReverseComplement": true
     },
     {
       "type": "sequence",
-      "value": "A"
+      "value": "A",
+      "color": "#f2b342",
+      "label": "Spacer Nucleotide"
     },
     {
       "type": "entry",
       "field": "sequence_target",
+      "color": "#c4e1f6",
+      "label": "Target Sequence",
       "isReverseComplement": true,
       "isBinding": true
     },
     {
       "type": "sequence",
-      "value": "A"
+      "value": "A",
+      "color": "#f2b342",
+      "label": "Spacer Nucleotide"
     },
     {
       "type": "entry",
       "field": "sequence_readout_probe_2",
+      "color": "#06948e",
+      "label": "Readout Sequence 2",
       "isReverseComplement": true
     },
     {
       "type": "entry",
-      "field": "sequence_reverse_primer"
+      "field": "sequence_reverse_primer",
+      "color": "#c43e96",
+      "label": "Reverse Primer"
     },
     {
       "type": "columns",
@@ -101,7 +115,8 @@
   "oligoseq": [
     {
       "type": "entry",
-      "field": "oligo"
+      "field": "oligo",
+      "label": "Oligo Sequence"
     },
     {
       "type": "columns",
@@ -118,45 +133,63 @@
   "seqfish": [
     {
       "type": "entry",
-      "field": "sequence_forward_primer"
+      "field": "sequence_forward_primer",
+      "color": "#825ca6",
+      "label": "Forward Primer"
     },
     {
       "type": "entry",
       "field": "sequence_readout_probe_1",
+      "color": "#5baa47",
+      "label": "Readout Sequence A",
       "isReverseComplement": true
     },
     {
       "type": "entry",
       "field": "sequence_readout_probe_2",
+      "color": "#c8dbc8",
+      "label": "Readout Sequence B",
       "isReverseComplement": true
     },
     {
       "type": "sequence",
-      "value": "T"
+      "value": "T",
+      "color": "#f2b342",
+      "label": "Spacer Nucleotide"
     },
     {
       "type": "entry",
       "field": "sequence_target",
+      "color": "#c4e1f6",
+      "label": "Target Sequence",
       "isReverseComplement": true,
       "isBinding": true
     },
     {
       "type": "sequence",
-      "value": "A"
+      "value": "T",
+      "color": "#f2b342",
+      "label": "Spacer Nucleotide"
     },
     {
       "type": "entry",
       "field": "sequence_readout_probe_3",
+      "color": "#b8e2de",
+      "label": "Readout Sequence C",
       "isReverseComplement": true
     },
     {
       "type": "entry",
       "field": "sequence_readout_probe_4",
+      "color": "#06948e",
+      "label": "Readout Sequence D",
       "isReverseComplement": true
     },
     {
       "type": "entry",
-      "field": "sequence_reverse_primer"
+      "field": "sequence_reverse_primer",
+      "color": "#c43e96",
+      "label": "Reverse Primer"
     },
     {
       "type": "columns",

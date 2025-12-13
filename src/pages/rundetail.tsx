@@ -145,6 +145,7 @@ const RunDetail = () => {
                         withCredentials: true,
                     }
                 );
+                console.log("Polled files:", response.data);
                 setFiles(response.data);
 
                 const runResponse = await axios.get(
@@ -712,8 +713,7 @@ const RunDetail = () => {
                 )}
 
                 {/* YAML/table logic remains unchanged below */}
-                {parsedYamlData &&
-                    parsedYamlFilename === "padlock_probes.yml.yml" && (
+                {parsedYamlData && (
                         <div className="card">
                             <div className="card-body">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
