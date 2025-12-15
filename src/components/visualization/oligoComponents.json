@@ -3,7 +3,7 @@
     {
       "type": "entry",
       "field": "sequence_padlock_arm1",
-      "color": "#b9dbf4",
+      "color": "#25a3ff",
       "label": "Padlock Arm 1",
       "isBinding": true
     },
@@ -38,7 +38,7 @@
     {
       "type": "entry",
       "field": "sequence_padlock_arm2",
-      "color": "#b9dbf4",
+      "color": "#25a3ff",
       "label": "Padlock Arm 2",
       "isBinding": true
     },
@@ -77,7 +77,7 @@
     {
       "type": "entry",
       "field": "sequence_target",
-      "color": "#c4e1f6",
+      "color": "#25a3ff",
       "label": "Target Sequence",
       "isReverseComplement": true,
       "isBinding": true
@@ -116,6 +116,7 @@
     {
       "type": "entry",
       "field": "oligo",
+      "color": "#25a3ff",
       "label": "Oligo Sequence"
     },
     {
@@ -147,7 +148,7 @@
     {
       "type": "entry",
       "field": "sequence_readout_probe_2",
-      "color": "#c8dbc8",
+      "color": "#236014",
       "label": "Readout Sequence B",
       "isReverseComplement": true
     },
@@ -160,7 +161,7 @@
     {
       "type": "entry",
       "field": "sequence_target",
-      "color": "#c4e1f6",
+      "color": "#25a3ff",
       "label": "Target Sequence",
       "isReverseComplement": true,
       "isBinding": true
@@ -174,7 +175,7 @@
     {
       "type": "entry",
       "field": "sequence_readout_probe_3",
-      "color": "#b8e2de",
+      "color": "#186864",
       "label": "Readout Sequence C",
       "isReverseComplement": true
     },
