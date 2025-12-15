@@ -53,7 +53,10 @@ const OligoComponents: React.FC<Props> = ({ oligos, pipeline, selectedOligo, set
                 if (componentDef.type === "entry") {
                     let sequence = oligos[selectedOligo][
                         componentDef.field as keyof Oligo
-                    ][0][0] as string;
+                    ] as string | Array<string> | Array<Array<string>>;
+                    if (Array.isArray(sequence)) {
+                        sequence = sequence.flat(Infinity).join("");
+                    }
                     if (componentDef.isReverseComplement) {
                         sequence = reverseComplement(sequence);
                     }

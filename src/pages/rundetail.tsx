@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import YAML from "js-yaml";
 import Select from "react-select";
@@ -174,7 +174,7 @@ const RunDetail = () => {
                 // YAML check
                 const yamlFile = response.data.find(
                     (f: RunFile) =>
-                        f.name.endsWith(".yml") || f.name.endsWith(".yaml")
+                        f.name.includes("probes.yml") || f.name.includes("probesets.yml")
                 );
                 setHasYamlFile(!!yamlFile);
 
