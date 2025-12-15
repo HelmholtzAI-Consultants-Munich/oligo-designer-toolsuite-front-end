@@ -32,3 +32,9 @@ scrape_configs:
       - targets: ['odt-node-exporter:9100']
     metrics_path: '/metrics'
 
+  # Container metrics (cAdvisor)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['odt-cadvisor:8080']
+    metrics_path: '/metrics'
+
