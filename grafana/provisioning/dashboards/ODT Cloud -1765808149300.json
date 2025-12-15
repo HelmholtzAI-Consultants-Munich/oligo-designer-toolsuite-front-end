@@ -19,7 +19,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 0,
   "links": [],
   "panels": [
     {
@@ -234,6 +233,5 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "ODT Cloud ",
-  "uid": "adkcvwd",
-  "version": 7
+  "uid": "adkcvwd"
 }
