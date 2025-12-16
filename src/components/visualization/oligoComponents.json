@@ -41,6 +41,17 @@
       "color": "#b9dbf4",
       "label": "Padlock Arm 2",
       "isBinding": true
+    },
+    {
+      "type": "columns",
+      "value": [
+        "oligo_id",
+        "location",
+        "length",
+        "Tm_arm1",
+        "Tm_arm2",
+        "sequence_target"
+      ]
     }
   ],
   "merfish": [
@@ -75,12 +86,33 @@
     {
       "type": "entry",
       "field": "sequence_reverse_primer"
+    },
+    {
+      "type": "columns",
+      "value": [
+        "oligo_id",
+        "location",
+        "length",
+        "GC_content",
+        "sequence_target"
+      ]
     }
   ],
   "oligoseq": [
     {
       "type": "entry",
       "field": "oligo"
+    },
+    {
+      "type": "columns",
+      "value": [
+        "oligo_id",
+        "location",
+        "length",
+        "GC_content",
+        "TmNN",
+        "target"
+      ]
     }
   ],
   "seqfish": [
@@ -125,6 +157,16 @@
     {
       "type": "entry",
       "field": "sequence_reverse_primer"
+    },
+    {
+      "type": "columns",
+      "value": [
+        "oligo_id",
+        "location",
+        "length",
+        "GC_content",
+        "sequence_target"
+      ]
     }
   ]
 }
