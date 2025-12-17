@@ -4,18 +4,18 @@ import type { Oligo } from "../../types";
 
 type Props = {
     oligos: Oligo[];
+    selectedOligo?: number;
 }
 
-const GenomeAlignment: React.FC<Props> = ({ oligos }) => {
+const GenomeAlignment: React.FC<Props> = ({ oligos, selectedOligo }) => {
     useEffect(() => {
         const width = 800;
         const height = 200;
         const margin = 20;
+        const innerWidth = width - margin * 2;
+        const innerHeight = height - margin * 2;
 
-        const x = d3.scaleLinear()
-            .domain([1000, 10000])
-            .range([margin, width - margin])
-        const xAxis = d3.axisBottom(x).tickSizeOuter(0);
+        const oligoPositions = oligos.map(oligo => [oligo.start, oligo.end]);
 
         const svg = d3.select("#genome-alignment") as d3.Selection<
             Element,
@@ -33,24 +33,55 @@ const GenomeAlignment: React.FC<Props> = ({ oligos }) => {
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;")
 
-        svg.append("g")
+        const x = d3.scaleLinear()
+            .domain(d3.extent(oligoPositions.flat()) as [number, number])
+            .range([0, innerWidth]);
+        const xAxis = d3.axisBottom(x);
+
+        // Inner plot group with padding
+        const plot = svg.append("g")
+            .attr("transform", `translate(${margin},${margin})`);
+
+        plot.append("g")
+            .attr("class", "oligos")
+            .selectAll("rect")
+            .data(oligoPositions)
+            .join("rect")
+            .attr("fill", (d, i) => i === selectedOligo ? "orange" : "steelblue")
+            .attr("x", d => x(d[0]))
+            .attr("y", innerHeight / 3)
+            .attr("width", d => x(d[1]) - x(d[0]))
+            .attr("height", innerHeight / 10);
+
+        // Append the x-axis inside the plot area
+        const gX = plot.append("g")
             .attr("class", "x-axis")
-            .attr("transform", `translate(0,${height - margin})`)
+            .attr("transform", `translate(0,${innerHeight})`)
             .call(xAxis);
 
-        const extent = [[margin, margin], [width - margin, height - margin]];
+        const extent: [[number, number], [number, number]] = [[0, 0], [innerWidth, innerHeight]];
 
         svg.call(d3.zoom()
             .scaleExtent([1, 8])
-            .translateExtent(extent as [[number, number], [number, number]])
-            .extent(extent as [[number, number], [number, number]])
+            .translateExtent(extent)
+            .extent(extent)
+            .filter(filter)
             .on("zoom", zoomed));
 
         function zoomed(event: d3.D3ZoomEvent<Element, unknown>) {
-            x.range([margin, width - margin].map(d => event.transform.applyX(d)));
-            svg.selectAll(".x-axis").call(xAxis);
+            const zx = event.transform.rescaleX(x); // zoomed scale
+            plot.selectAll<SVGRectElement, number[]>(".oligos rect")
+                .attr("x", d => zx(d[0]))
+                .attr("width", d => zx(d[1]) - zx(d[0]));
+            gX.call(xAxis.scale(zx));
         }
-    }, [oligos]);
+
+        // prevent scrolling then apply the default filter
+        function filter(event: any) {
+            event.preventDefault();
+            return (!event.ctrlKey || event.type === 'wheel') && !event.button;
+        }
+    }, [oligos, selectedOligo]);
 
     return (
         <svg id="genome-alignment"></svg>
