@@ -21,6 +21,7 @@ After starting the Docker containers with `docker compose up -d`, the following 
 | **Prometheus** | http://localhost:9090 | Metrics collection and querying |
 | **MongoDB Exporter** | http://localhost:9216/metrics | MongoDB database metrics |
 | **Node Exporter** | http://localhost:9100/metrics | Host operating system metrics |
+| **cAdvisor** | http://localhost:8080 | Container resource usage metrics |
 | **Flask Metrics** | http://localhost:5000/metrics | Application metrics (when configured) |
 
 ---
@@ -129,16 +130,25 @@ Exports Flask application metrics including:
 
 **Note:** Flask metrics are configured using `prometheus-flask-exporter`. The `/metrics` endpoint is automatically registered when the Flask app starts.
 
-### 4. Docker Engine Metrics (Optional)
+### 4. cAdvisor (Container Metrics)
 
-**Target:** `host.docker.internal:9323`  
-**Status:** Configured but requires Docker metrics API to be enabled
+**Service:** `odt-cadvisor`  
+**Port:** `8080`  
+**Web UI:** http://localhost:8080  
+**Metrics Endpoint:** http://localhost:8080/metrics
 
-To enable Docker metrics:
-1. Configure Docker daemon with `"metrics-addr": "0.0.0.0:9323"`
-2. Restart Docker daemon
+Exports container-level resource usage metrics including:
+- CPU usage per container (`container_cpu_usage_seconds_total`)
+- Memory usage per container (`container_memory_usage_bytes`)
+- Network I/O (`container_network_receive_bytes_total`, `container_network_transmit_bytes_total`)
+- Filesystem usage (`container_fs_usage_bytes`)
+- Container limits (`container_spec_memory_limit_bytes`, `container_spec_cpu_quota`)
 
----
+**Configuration:**
+- Runs in privileged mode to access container metrics
+- Mounts host filesystems (`/`, `/sys`, `/var/run`, `/var/lib/docker`)
+- Provides per-container metrics identified by container ID path (`id` label)
+- Metrics are prefixed with `container_*`
 
 ## Adding a New Exporter
 
@@ -185,6 +195,7 @@ odt-prometheus:
   depends_on:
     - odt-mongodb-exporter
     - odt-node-exporter
+    - odt-cadvisor
     - odt-new-exporter  # Add here
 ```
 
