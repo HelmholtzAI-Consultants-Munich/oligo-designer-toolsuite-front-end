@@ -29,7 +29,10 @@ const ResultVisualization: React.FC<Props> = ({ oligos, pipeline, selectedOligo,
                 />
             </Tab>
             <Tab eventKey="alignment" title="Genome Alignment">
-                <GenomeAlignment oligos={oligos} />
+                <GenomeAlignment
+                    oligos={oligos}
+                    selectedOligo={selectedOligo}
+                />
             </Tab>
         </Tabs>
     );
