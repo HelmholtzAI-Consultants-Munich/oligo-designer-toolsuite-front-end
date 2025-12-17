@@ -30,8 +30,10 @@ const ResultVisualization: React.FC<Props> = ({ oligos, pipeline, selectedOligo,
             </Tab>
             <Tab eventKey="alignment" title="Genome Alignment">
                 <GenomeAlignment
+                    key={oligos.map(o => o.oligo_id).join(",")} // Force remount on oligos change
                     oligos={oligos}
                     selectedOligo={selectedOligo}
+                    setSelectedOligo={setSelectedOligo}
                 />
             </Tab>
         </Tabs>
