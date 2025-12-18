@@ -873,7 +873,7 @@ const RunDetail = () => {
                                                                         >
                                                                             {column ===
                                                                             "location"
-                                                                                ? `chr${oligo.chromosome}: ${oligo.start} - ${oligo.end}`
+                                                                                ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
                                                                                 : formatValue(
                                                                                       oligo[
                                                                                           column
