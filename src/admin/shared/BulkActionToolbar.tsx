@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, Button } from 'react-bootstrap';
-import { X } from 'react-bootstrap-icons';
+import React from "react";
+import { Card, Button } from "react-bootstrap";
+import { X } from "react-bootstrap-icons";
 
 interface BulkActionToolbarProps {
     selectedCount: number;
@@ -13,10 +13,10 @@ interface BulkActionToolbarProps {
  * Styles for the bulk action toolbar card
  */
 const toolbarStyles: React.CSSProperties = {
-    backgroundColor: '#e7f3ff',
-    border: '1px solid #b3d9ff',
-    position: 'sticky',
-    top: '56px',
+    backgroundColor: "#e7f3ff",
+    border: "1px solid #b3d9ff",
+    position: "sticky",
+    top: "56px",
     zIndex: 100,
 };
 
@@ -35,10 +35,7 @@ const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
     }
 
     return (
-        <Card
-            className="mb-3"
-            style={toolbarStyles}
-        >
+        <Card className="mb-3" style={toolbarStyles}>
             <Card.Body className="d-flex align-items-center justify-content-between py-2">
                 <div className="d-flex align-items-center">
                     <span className="fw-bold me-2">
@@ -54,13 +51,10 @@ const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
                         <X size={16} />
                     </Button>
                 </div>
-                <div className="d-flex align-items-center gap-2">
-                    {actions}
-                </div>
+                <div className="d-flex align-items-center gap-2">{actions}</div>
             </Card.Body>
         </Card>
     );
 };
 
 export default BulkActionToolbar;
-

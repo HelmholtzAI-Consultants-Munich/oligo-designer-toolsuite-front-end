@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 /**
  * Custom hook for managing bulk selection state
@@ -9,7 +9,7 @@ export const useBulkSelection = () => {
     const [isSelectAll, setIsSelectAll] = useState(false);
 
     const handleSelectItem = useCallback((itemId: string) => {
-        setSelectedItems(prev => {
+        setSelectedItems((prev) => {
             const newSet = new Set(prev);
             if (newSet.has(itemId)) {
                 newSet.delete(itemId);
@@ -21,26 +21,32 @@ export const useBulkSelection = () => {
         });
     }, []);
 
-    const handleSelectAll = useCallback((allItemIds: string[]) => {
-        if (isSelectAll || selectedItems.size > 0) {
-            // Deselect all
-            setSelectedItems(new Set());
-            setIsSelectAll(false);
-        } else {
-            // Select all
-            setSelectedItems(new Set(allItemIds));
-            setIsSelectAll(true);
-        }
-    }, [isSelectAll, selectedItems.size]);
+    const handleSelectAll = useCallback(
+        (allItemIds: string[]) => {
+            if (isSelectAll || selectedItems.size > 0) {
+                // Deselect all
+                setSelectedItems(new Set());
+                setIsSelectAll(false);
+            } else {
+                // Select all
+                setSelectedItems(new Set(allItemIds));
+                setIsSelectAll(true);
+            }
+        },
+        [isSelectAll, selectedItems.size]
+    );
 
     const clearSelection = useCallback(() => {
         setSelectedItems(new Set());
         setIsSelectAll(false);
     }, []);
 
-    const isSelected = useCallback((itemId: string) => {
-        return selectedItems.has(itemId);
-    }, [selectedItems]);
+    const isSelected = useCallback(
+        (itemId: string) => {
+            return selectedItems.has(itemId);
+        },
+        [selectedItems]
+    );
 
     return {
         selectedItems,
@@ -52,4 +58,3 @@ export const useBulkSelection = () => {
         selectedCount: selectedItems.size,
     };
 };
-

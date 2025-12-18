@@ -1,19 +1,24 @@
-import hashlib, gzip, shutil, os
+import gzip
+import hashlib
+import os
 import re
-from pathlib import Path
+import shutil
 from ftplib import FTP, error_perm
+from pathlib import Path
 
-def _md5sum(path, chunk=1024*1024):
+
+def _md5sum(path, chunk=1024 * 1024):
     h = hashlib.md5()
     with open(path, "rb") as f:
         for blk in iter(lambda: f.read(chunk), b""):
             h.update(blk)
     return h.hexdigest()
 
+
 def _parse_md5checksums(md5_text_path):
     # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
     m = {}
-    with open(md5_text_path, "r") as f:
+    with open(md5_text_path) as f:
         for line in f:
             line = line.strip()
             if not line or "  " not in line:
@@ -22,6 +27,7 @@ def _parse_md5checksums(md5_text_path):
             rel = rel.lstrip("./")
             m[rel] = digest
     return m
+
 
 def _get_md5_for_filename(md5map, filename):
     """
@@ -32,6 +38,7 @@ def _get_md5_for_filename(md5map, filename):
         if os.path.basename(relpath) == filename:
             return md5
     raise KeyError(f"'{filename}' not found in md5checksums.txt")
+
 
 def _parse_uncompressed_checksums(manifest_path):
     """
@@ -44,12 +51,14 @@ def _parse_uncompressed_checksums(manifest_path):
     # normalize to basename keys for easy matching
     return {os.path.basename(k): v for k, v in m.items()}
 
+
 def _ftp_get(ftp_host, remote_dir, filename, local_path):
     Path(local_path).parent.mkdir(parents=True, exist_ok=True)
     with FTP(ftp_host) as ftp, open(local_path, "wb") as out:
         ftp.login()
         ftp.cwd(remote_dir)
         ftp.retrbinary(f"RETR {filename}", out.write)
+
 
 def _ensure_file_with_md5(ftp_host, remote_dir, filename, expected_md5, dst_path):
     if os.path.exists(dst_path):
@@ -61,12 +70,14 @@ def _ensure_file_with_md5(ftp_host, remote_dir, filename, expected_md5, dst_path
         raise RuntimeError(f"MD5 mismatch for {filename}: expected {expected_md5}, got {got}")
     return dst_path, True
 
+
 def _ensure_gunzipped(gz_path, out_path):
     if os.path.exists(out_path):
         return out_path, False
     with gzip.open(gz_path, "rb") as gz, open(out_path, "wb") as out:
         shutil.copyfileobj(gz, out)
     return out_path, True
+
 
 def _resolve_ncbi_release_and_dir(taxon, species, release):
     host = "ftp.ncbi.nlm.nih.gov"
@@ -117,6 +128,7 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
 
     return host, str(release), assembly_name, accession, final_dir
 
+
 def _prepare_ncbi_cached_assets(cache_root, taxon, species, release):
     """
     Returns cached, MD5-verified local paths for .gtf and .fna (decompressed),
@@ -158,7 +170,7 @@ def _prepare_ncbi_cached_assets(cache_root, taxon, species, release):
     # Ensure raw files present & verified (store in our cache /raw regardless of NCBI nesting)
     gtf_gz_path, _ = _ensure_file_with_md5(host, final_dir, gtf_gz, exp_gtf_md5, os.path.join(raw, gtf_gz))
     fna_gz_path, _ = _ensure_file_with_md5(host, final_dir, fna_gz, exp_fna_md5, os.path.join(raw, fna_gz))
-    _, _          = _ensure_file_with_md5(host, final_dir, report,  exp_rep_md5, os.path.join(raw, report))
+    _, _ = _ensure_file_with_md5(host, final_dir, report, exp_rep_md5, os.path.join(raw, report))
 
     gtf_path, _ = _ensure_gunzipped(gtf_gz_path, os.path.join(dec, f"{accession}_{assembly}_genomic.gtf"))
     fna_path, _ = _ensure_gunzipped(fna_gz_path, os.path.join(dec, f"{accession}_{assembly}_genomic.fna"))
@@ -188,6 +200,7 @@ def _prepare_ncbi_cached_assets(cache_root, taxon, species, release):
 
 # ----------------- Ensembl helpers -----------------
 
+
 def _ftp_try_get(ftp_host, remote_dir, filename, local_path):
     """Try to retrieve a file. Return True if downloaded, False if not found."""
     try:
@@ -202,6 +215,7 @@ def _ftp_try_get(ftp_host, remote_dir, filename, local_path):
             pass
         return False
 
+
 def _ensembl_release_dirs(release):
     """
     Return tuple (gtf_dir, fasta_dir, resolved_release_is_current_flag).
@@ -212,6 +226,7 @@ def _ensembl_release_dirs(release):
         return ("pub/current_gtf", "pub/current_fasta", True)
     else:
         return (f"pub/release-{release}/gtf", f"pub/release-{release}/fasta", False)
+
 
 def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir):
     """
@@ -258,7 +273,9 @@ def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir):
                 break
 
         if not fasta_gz:
-            raise RuntimeError(f"No suitable DNA FASTA found in {fasta_dir} (tried primary_assembly and toplevel, with dna_sm and dna).")
+            raise RuntimeError(
+                f"No suitable DNA FASTA found in {fasta_dir} (tried primary_assembly and toplevel, with dna_sm and dna)."
+            )
 
         # Try to parse assembly from FASTA filename: Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
         asm_match_fa = re.match(r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.dna\.", fasta_gz)
@@ -269,12 +286,13 @@ def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir):
 
     return gtf_gz, fasta_gz, assembly
 
+
 def _read_single_line_md5(md5_file_path):
     """
     Read a file that typically contains '<md5>  <filename>' or just '<md5>'.
     Return the hex digest if found; else raise.
     """
-    with open(md5_file_path, "r") as f:
+    with open(md5_file_path) as f:
         line = f.readline().strip()
         if not line:
             raise RuntimeError("Empty md5 sidecar file")
@@ -283,6 +301,7 @@ def _read_single_line_md5(md5_file_path):
         if len(token) < 16:  # sanity
             raise RuntimeError(f"Malformed md5 content: {line}")
         return token
+
 
 def _prepare_ensembl_cached_assets(cache_root, species, release):
     """

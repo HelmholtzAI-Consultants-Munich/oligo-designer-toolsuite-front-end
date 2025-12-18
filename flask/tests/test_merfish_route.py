@@ -1,8 +1,11 @@
-import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import pytest
+
 from extensions import mongo
+
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -25,7 +28,10 @@ def dummy_form(run_id):
             "target_probe_Tm_opt": {"value": "65"},
             "target_probe_Tm_max": {"value": "75"},
             "target_probe_homopolymeric_base_n": {
-                "A": {"value": "3"}, "T": {"value": "3"}, "C": {"value": "3"}, "G": {"value": "3"}
+                "A": {"value": "3"},
+                "T": {"value": "3"},
+                "C": {"value": "3"},
+                "G": {"value": "3"},
             },
             "target_probe_T_secondary_structure": {"value": "2"},
             "target_probe_secondary_structures_threshold_deltaG": {"value": "10"},
@@ -38,7 +44,10 @@ def dummy_form(run_id):
             "n_sets": {"value": "1"},
             "files_fasta_reference_database_readout_probe": {"value": "readout1.fna"},
             "readout_probe_base_probabilities": {
-                "A": {"value": "25"}, "T": {"value": "25"}, "C": {"value": "25"}, "G": {"value": "25"}
+                "A": {"value": "25"},
+                "T": {"value": "25"},
+                "C": {"value": "25"},
+                "G": {"value": "25"},
             },
             "readout_probe_length": {"value": "20"},
             "readout_probe_GC_content_min": {"value": "30"},
@@ -46,7 +55,8 @@ def dummy_form(run_id):
             "readout_probe_homopolymeric_base_n": {"G": {"value": "3"}},
             "readout_probe_set_size": {"value": "16"},
             "readout_probe_homogeneous_properties_weights": {
-                "TmNN": {"value": "1"}, "GC_content": {"value": "1"}
+                "TmNN": {"value": "1"},
+                "GC_content": {"value": "1"},
             },
             "n_bits": {"value": "8"},
             "min_hamming_dist": {"value": "4"},
@@ -60,7 +70,10 @@ def dummy_form(run_id):
             "primer_number_GC_GCclamp": {"value": "2"},
             "primer_number_three_prime_base_GCclamp": {"value": "1"},
             "primer_homopolymeric_base_n": {
-                "A": {"value": "3"}, "T": {"value": "3"}, "C": {"value": "3"}, "G": {"value": "3"}
+                "A": {"value": "3"},
+                "T": {"value": "3"},
+                "C": {"value": "3"},
+                "G": {"value": "3"},
             },
             "primer_max_len_selfcomplement": {"value": "4"},
             "primer_max_len_complement_reverse_primer": {"value": "4"},
@@ -69,16 +82,22 @@ def dummy_form(run_id):
             "primer_T_secondary_structure": {"value": "2"},
             "primer_secondary_structures_threshold_deltaG": {"value": "10"},
             "target_probe_specificity_blastn_search_parameters": {
-                "perc_identity": {"value": "85"}, "strand": {"value": "both"}, "word_size": {"value": "11"},
-                "dust": {"value": "yes"}, "soft_masking": {"value": "true"},
-                "max_target_seqs": {"value": "500"}, "max_hsps": {"value": "10"}
+                "perc_identity": {"value": "85"},
+                "strand": {"value": "both"},
+                "word_size": {"value": "11"},
+                "dust": {"value": "yes"},
+                "soft_masking": {"value": "true"},
+                "max_target_seqs": {"value": "500"},
+                "max_hsps": {"value": "10"},
             },
-            "target_probe_specificity_blastn_hit_parameters": {
-                "min_alignment_length": {"value": "18"}
-            },
+            "target_probe_specificity_blastn_hit_parameters": {"min_alignment_length": {"value": "18"}},
             "target_probe_cross_hybridization_blastn_search_parameters": {
-                "perc_identity": {"value": "85"}, "strand": {"value": "both"}, "word_size": {"value": "11"},
-                "dust": {"value": "yes"}, "soft_masking": {"value": "true"}, "max_target_seqs": {"value": "500"}
+                "perc_identity": {"value": "85"},
+                "strand": {"value": "both"},
+                "word_size": {"value": "11"},
+                "dust": {"value": "yes"},
+                "soft_masking": {"value": "true"},
+                "max_target_seqs": {"value": "500"},
             },
             "target_probe_cross_hybridization_blastn_hit_parameters": {
                 "min_alignment_length": {"value": "18"}
@@ -88,70 +107,103 @@ def dummy_form(run_id):
             "heuristic": {"value": "false"},
             "heuristic_n_attempts": {"value": "2"},
             "target_probe_Tm_parameters": {
-                "nn_table": {"value": "DNA_NN1"}, "tmm_table": {"value": "DNA_TMM1"},
-                "imm_table": {"value": "DNA_IMM1"}, "de_table": {"value": "DNA_DE1"},
-                "dnac1": {"value": "50"}, "dnac2": {"value": "50"}, "saltcorr": {"value": "1"},
-                "Na": {"value": "50"}, "K": {"value": "50"}, "Tris": {"value": "10"},
-                "Mg": {"value": "1"}, "dNTPs": {"value": "0.2"}
+                "nn_table": {"value": "DNA_NN1"},
+                "tmm_table": {"value": "DNA_TMM1"},
+                "imm_table": {"value": "DNA_IMM1"},
+                "de_table": {"value": "DNA_DE1"},
+                "dnac1": {"value": "50"},
+                "dnac2": {"value": "50"},
+                "saltcorr": {"value": "1"},
+                "Na": {"value": "50"},
+                "K": {"value": "50"},
+                "Tris": {"value": "10"},
+                "Mg": {"value": "1"},
+                "dNTPs": {"value": "0.2"},
             },
             "readout_probe_initial_num_sequences": {"value": "100"},
             "readout_probe_specificity_blastn_search_parameters": {
-                "perc_identity": {"value": "85"}, "strand": {"value": "both"}, "word_size": {"value": "11"},
-                "dust": {"value": "yes"}, "soft_masking": {"value": "true"},
-                "max_target_seqs": {"value": "500"}, "max_hsps": {"value": "10"}
+                "perc_identity": {"value": "85"},
+                "strand": {"value": "both"},
+                "word_size": {"value": "11"},
+                "dust": {"value": "yes"},
+                "soft_masking": {"value": "true"},
+                "max_target_seqs": {"value": "500"},
+                "max_hsps": {"value": "10"},
             },
-            "readout_probe_specificity_blastn_hit_parameters": {
-                "min_alignment_length": {"value": "18"}
-            },
+            "readout_probe_specificity_blastn_hit_parameters": {"min_alignment_length": {"value": "18"}},
             "readout_probe_cross_hybridization_blastn_search_parameters": {
-                "perc_identity": {"value": "85"}, "strand": {"value": "both"}, "word_size": {"value": "11"},
-                "dust": {"value": "yes"}, "soft_masking": {"value": "true"},
-                "max_target_seqs": {"value": "500"}
+                "perc_identity": {"value": "85"},
+                "strand": {"value": "both"},
+                "word_size": {"value": "11"},
+                "dust": {"value": "yes"},
+                "soft_masking": {"value": "true"},
+                "max_target_seqs": {"value": "500"},
             },
             "readout_probe_cross_hybridization_blastn_hit_parameters": {
                 "min_alignment_length": {"value": "18"}
             },
             "readout_probe_Tm_parameters": {
-                "nn_table": {"value": "DNA_NN1"}, "tmm_table": {"value": "DNA_TMM1"},
-                "imm_table": {"value": "DNA_IMM1"}, "de_table": {"value": "DNA_DE1"},
-                "dnac1": {"value": "50"}, "dnac2": {"value": "50"}, "saltcorr": {"value": "1"},
-                "Na": {"value": "50"}, "K": {"value": "50"}, "Tris": {"value": "10"},
-                "Mg": {"value": "1"}, "dNTPs": {"value": "0.2"}
+                "nn_table": {"value": "DNA_NN1"},
+                "tmm_table": {"value": "DNA_TMM1"},
+                "imm_table": {"value": "DNA_IMM1"},
+                "de_table": {"value": "DNA_DE1"},
+                "dnac1": {"value": "50"},
+                "dnac2": {"value": "50"},
+                "saltcorr": {"value": "1"},
+                "Na": {"value": "50"},
+                "K": {"value": "50"},
+                "Tris": {"value": "10"},
+                "Mg": {"value": "1"},
+                "dNTPs": {"value": "0.2"},
             },
             "readout_probe_n_combinations": {"value": "100"},
             "primer_initial_num_sequences": {"value": "100"},
             "primer_specificity_refrence_blastn_search_parameters": {
-                "perc_identity": {"value": "85"}, "strand": {"value": "both"}, "word_size": {"value": "11"},
-                "dust": {"value": "yes"}, "soft_masking": {"value": "true"},
-                "max_target_seqs": {"value": "500"}, "max_hsps": {"value": "10"}
+                "perc_identity": {"value": "85"},
+                "strand": {"value": "both"},
+                "word_size": {"value": "11"},
+                "dust": {"value": "yes"},
+                "soft_masking": {"value": "true"},
+                "max_target_seqs": {"value": "500"},
+                "max_hsps": {"value": "10"},
             },
-            "primer_specificity_refrence_blastn_hit_parameters": {
-                "min_alignment_length": {"value": "18"}
-            },
+            "primer_specificity_refrence_blastn_hit_parameters": {"min_alignment_length": {"value": "18"}},
             "primer_specificity_encoding_probes_blastn_search_parameters": {
-                "perc_identity": {"value": "85"}, "strand": {"value": "both"}, "word_size": {"value": "11"},
-                "dust": {"value": "yes"}, "soft_masking": {"value": "true"},
-                "max_target_seqs": {"value": "500"}, "max_hsps": {"value": "10"}
+                "perc_identity": {"value": "85"},
+                "strand": {"value": "both"},
+                "word_size": {"value": "11"},
+                "dust": {"value": "yes"},
+                "soft_masking": {"value": "true"},
+                "max_target_seqs": {"value": "500"},
+                "max_hsps": {"value": "10"},
             },
             "primer_specificity_encoding_probes_blastn_hit_parameters": {
                 "min_alignment_length": {"value": "18"}
             },
             "primer_Tm_parameters": {
-                "nn_table": {"value": "DNA_NN1"}, "tmm_table": {"value": "DNA_TMM1"},
-                "imm_table": {"value": "DNA_IMM1"}, "de_table": {"value": "DNA_DE1"},
-                "dnac1": {"value": "50"}, "dnac2": {"value": "50"}, "saltcorr": {"value": "1"},
-                "Na": {"value": "50"}, "K": {"value": "50"}, "Tris": {"value": "10"},
-                "Mg": {"value": "1"}, "dNTPs": {"value": "0.2"}
+                "nn_table": {"value": "DNA_NN1"},
+                "tmm_table": {"value": "DNA_TMM1"},
+                "imm_table": {"value": "DNA_IMM1"},
+                "de_table": {"value": "DNA_DE1"},
+                "dnac1": {"value": "50"},
+                "dnac2": {"value": "50"},
+                "saltcorr": {"value": "1"},
+                "Na": {"value": "50"},
+                "K": {"value": "50"},
+                "Tris": {"value": "10"},
+                "Mg": {"value": "1"},
+                "dNTPs": {"value": "0.2"},
             },
             "primer_base_probabilities": {
                 "A": {"value": 0.25},
                 "T": {"value": 0.25},
                 "C": {"value": 0.25},
                 "G": {"value": 0.25},
-            }
+            },
         },
-        "runid": str(run_id)
+        "runid": str(run_id),
     }
+
 
 def test_merfish_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
     response = client.post("/api/merfish", json=dummy_form)

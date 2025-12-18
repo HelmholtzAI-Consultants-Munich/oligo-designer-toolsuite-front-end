@@ -1,14 +1,16 @@
 from flask import Blueprint, request
-from .runners.runner_factory import get_runner
 from flask_login import current_user
 
-# Blueprint for Seqfish endpoints
-seqfish_bp = Blueprint('seqfish', __name__)
+from .runners.runner_factory import get_runner
 
-@seqfish_bp.route('/api/seqfish', methods=['POST'])
+# Blueprint for Seqfish endpoints
+seqfish_bp = Blueprint("seqfish", __name__)
+
+
+@seqfish_bp.route("/api/seqfish", methods=["POST"])
 def seqfish():
-    form_data = request.json.get('formdata') # Form data from React
-    run_id_string = request.json.get('runid') # Run ID from React
+    form_data = request.json.get("formdata")  # Form data from React
+    run_id_string = request.json.get("runid")  # Run ID from React
 
     runner = get_runner("seqfish")
     return runner.run(current_user, form_data, run_id_string)

@@ -1,12 +1,13 @@
-from flask import Blueprint, request, jsonify, current_app
 import os
 import uuid
-from extensions import mongo
+
+from flask import Blueprint, current_app, jsonify, request
 
 # Blueprint for all upload-related endpoints
-upload_bp = Blueprint('upload', __name__)
+upload_bp = Blueprint("upload", __name__)
 
-@upload_bp.route('/api/upload', methods=['POST'])
+
+@upload_bp.route("/api/upload", methods=["POST"])
 def upload_file():
     """
     Handles file upload requests via POST, storing files with unique names in the server's upload directory.
@@ -40,13 +41,13 @@ def upload_file():
         }
     """
     # Step 1: Check if the request includes a file under the 'file' key
-    if 'file' not in request.files:
+    if "file" not in request.files:
         return jsonify({"error": "No file part"}), 400
 
-    file = request.files['file']
+    file = request.files["file"]
 
     # Step 2: Check if the user actually selected a file (filename should not be empty)
-    if file.filename == '':
+    if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
     # Step 3: Generate a unique filename by prefixing with a UUID

@@ -20,7 +20,7 @@ const Login = () => {
     const { user, loading, checkAuth } = useAuth();
 
     // Get redirect URL from query params
-    const redirectTo = searchParams.get('redirect') || '/';
+    const redirectTo = searchParams.get("redirect") || "/";
 
     // Redirect if already logged in
     useEffect(() => {
@@ -57,7 +57,10 @@ const Login = () => {
 
     const redirectToHelmholtz = () => {
         // Include redirect parameter in OAuth flow
-        const redirectParam = redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : '';
+        const redirectParam =
+            redirectTo !== "/"
+                ? `?redirect=${encodeURIComponent(redirectTo)}`
+                : "";
         window.location.href = `http://localhost:5000/login${redirectParam}`;
     };
 
@@ -66,7 +69,10 @@ const Login = () => {
         return (
             <div>
                 <Navbar />
-                <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+                <div
+                    className="d-flex justify-content-center align-items-center"
+                    style={{ minHeight: "50vh" }}
+                >
                     <Spinner animation="border" role="status">
                         <span className="visually-hidden">Loading...</span>
                     </Spinner>

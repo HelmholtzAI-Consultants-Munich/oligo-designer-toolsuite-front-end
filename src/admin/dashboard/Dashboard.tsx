@@ -1,14 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Card, Spinner, Alert, Button, Row, Col } from 'react-bootstrap';
-import { People, PersonBadge, Person, Folder2, Clock, CheckCircle, XCircle, PlayCircle } from 'react-bootstrap-icons';
-import type { Icon } from 'react-bootstrap-icons';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Card, Spinner, Alert, Button, Row, Col } from "react-bootstrap";
+import {
+    People,
+    PersonBadge,
+    Person,
+    Folder2,
+    Clock,
+    CheckCircle,
+    XCircle,
+    PlayCircle,
+} from "react-bootstrap-icons";
+import type { Icon } from "react-bootstrap-icons";
 
 /**
  * Calculate percentage with one decimal place
  */
 const calculatePercentage = (value: number, total: number): string => {
-    if (total === 0) return '0.0';
+    if (total === 0) return "0.0";
     return ((value / total) * 100).toFixed(1);
 };
 
@@ -25,17 +34,17 @@ interface StatCardProps {
 /**
  * Reusable statistics card component
  */
-const StatCard: React.FC<StatCardProps> = ({ 
-    icon: Icon, 
-    title, 
-    value, 
-    color, 
-    total, 
+const StatCard: React.FC<StatCardProps> = ({
+    icon: Icon,
+    title,
+    value,
+    color,
+    total,
     showPercentage = false,
-    showBorder = false
+    showBorder = false,
 }) => {
     return (
-        <Card className={`h-100 ${showBorder ? `border-${color}` : ''}`}>
+        <Card className={`h-100 ${showBorder ? `border-${color}` : ""}`}>
             <Card.Body>
                 <div className="d-flex align-items-center mb-2">
                     <Icon size={32} className={`text-${color} me-3`} />
@@ -43,9 +52,7 @@ const StatCard: React.FC<StatCardProps> = ({
                         <Card.Title className="mb-0">{title}</Card.Title>
                     </div>
                 </div>
-                <div className={`display-4 fw-bold text-${color}`}>
-                    {value}
-                </div>
+                <div className={`display-4 fw-bold text-${color}`}>{value}</div>
                 {showPercentage && total !== undefined && total > 0 && (
                     <small className="text-muted">
                         {calculatePercentage(value, total)}% of total
@@ -67,16 +74,16 @@ const STATUS_CONFIG = {
         error: XCircle,
     },
     colors: {
-        pending: 'warning',
-        started: 'info',
-        completed: 'success',
-        error: 'danger',
+        pending: "warning",
+        started: "info",
+        completed: "success",
+        error: "danger",
     },
     labels: {
-        pending: 'Pending',
-        started: 'Started',
-        completed: 'Completed',
-        error: 'Error',
+        pending: "Pending",
+        started: "Started",
+        completed: "Completed",
+        error: "Error",
     },
 } as const;
 
@@ -110,13 +117,19 @@ const Dashboard: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await axios.get('http://localhost:5000/api/admin/dashboard', {
-                withCredentials: true,
-            });
+            const response = await axios.get(
+                "http://localhost:5000/api/admin/dashboard",
+                {
+                    withCredentials: true,
+                }
+            );
             setStats(response.data);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to load dashboard statistics');
-            console.error('Error fetching dashboard stats:', err);
+            setError(
+                err.response?.data?.error ||
+                    "Failed to load dashboard statistics"
+            );
+            console.error("Error fetching dashboard stats:", err);
         } finally {
             setIsLoading(false);
         }
@@ -207,29 +220,39 @@ const Dashboard: React.FC = () => {
                         color="secondary"
                     />
                 </Col>
-                {Object.entries(stats.pipeline_runs.by_status).map(([status, count]) => {
-                    const Icon = STATUS_CONFIG.icons[status as keyof typeof STATUS_CONFIG.icons];
-                    const color = STATUS_CONFIG.colors[status as keyof typeof STATUS_CONFIG.colors];
-                    const label = STATUS_CONFIG.labels[status as keyof typeof STATUS_CONFIG.labels];
-                    
-                    return (
-                        <Col md={3} key={status} className="mb-3">
-                            <StatCard
-                                icon={Icon}
-                                title={label}
-                                value={count}
-                                color={color}
-                                total={stats.pipeline_runs.total}
-                                showPercentage={true}
-                                showBorder={true}
-                            />
-                        </Col>
-                    );
-                })}
+                {Object.entries(stats.pipeline_runs.by_status).map(
+                    ([status, count]) => {
+                        const Icon =
+                            STATUS_CONFIG.icons[
+                                status as keyof typeof STATUS_CONFIG.icons
+                            ];
+                        const color =
+                            STATUS_CONFIG.colors[
+                                status as keyof typeof STATUS_CONFIG.colors
+                            ];
+                        const label =
+                            STATUS_CONFIG.labels[
+                                status as keyof typeof STATUS_CONFIG.labels
+                            ];
+
+                        return (
+                            <Col md={3} key={status} className="mb-3">
+                                <StatCard
+                                    icon={Icon}
+                                    title={label}
+                                    value={count}
+                                    color={color}
+                                    total={stats.pipeline_runs.total}
+                                    showPercentage={true}
+                                    showBorder={true}
+                                />
+                            </Col>
+                        );
+                    }
+                )}
             </Row>
         </div>
     );
 };
 
 export default Dashboard;
-

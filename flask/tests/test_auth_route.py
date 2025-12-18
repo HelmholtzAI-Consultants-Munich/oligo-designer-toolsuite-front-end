@@ -1,23 +1,29 @@
-import pytest
-import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+
+import pytest
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from unittest.mock import patch
+
 from bson import ObjectId
+from werkzeug.security import generate_password_hash
+
 from app import create_app
 from extensions import mongo
-from werkzeug.security import generate_password_hash
+
 
 @pytest.fixture(autouse=True)
 def mock_make_dir():
     with patch("os.makedirs"):
         yield
 
+
 @pytest.fixture
 def client(monkeypatch):
     app = create_app()
-    app.config['TESTING'] = True
-    app.secret_key = 'test-key'
+    app.config["TESTING"] = True
+    app.secret_key = "test-key"
 
     class AnonymousUser:
         is_authenticated = False
@@ -31,11 +37,7 @@ def client(monkeypatch):
 
 @pytest.fixture
 def dummy_user():
-    return {
-        "_id": ObjectId(),
-        "email": "test@example.com",
-        "password": generate_password_hash("mypassword")
-    }
+    return {"_id": ObjectId(), "email": "test@example.com", "password": generate_password_hash("mypassword")}
 
 
 def test_register_success(client, dummy_user):
@@ -96,7 +98,7 @@ def test_check_auth_logged_in(client, monkeypatch, dummy_user):
         is_authenticated = True
         id = str(dummy_user["_id"])
         email = dummy_user["email"]
-        name= ""
+        name = ""
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyCurrentUser())
 

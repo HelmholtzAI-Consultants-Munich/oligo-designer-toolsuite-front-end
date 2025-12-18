@@ -1,29 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Form, Button, Card, Alert, Spinner, FormSelect } from 'react-bootstrap';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import axios from "axios";
+import {
+    Form,
+    Button,
+    Card,
+    Alert,
+    Spinner,
+    FormSelect,
+} from "react-bootstrap";
 
 interface User {
     id: string;
     email: string;
     name: string;
-    role: 'user' | 'admin';
+    role: "user" | "admin";
 }
 
 const UserEdit: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    
+
     const [user, setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
-    
+
     const [formData, setFormData] = useState({
-        email: '',
-        name: '',
-        role: 'user' as 'user' | 'admin',
+        email: "",
+        name: "",
+        role: "user" as "user" | "admin",
     });
 
     useEffect(() => {
@@ -36,19 +43,22 @@ const UserEdit: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await axios.get(`http://localhost:5000/api/admin/users/${id}`, {
-                withCredentials: true,
-            });
+            const response = await axios.get(
+                `http://localhost:5000/api/admin/users/${id}`,
+                {
+                    withCredentials: true,
+                }
+            );
             const userData = response.data;
             setUser(userData);
             setFormData({
-                email: userData.email || '',
-                name: userData.name || '',
-                role: userData.role || 'user',
+                email: userData.email || "",
+                name: userData.name || "",
+                role: userData.role || "user",
             });
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to load user');
-            console.error('Error fetching user:', err);
+            setError(err.response?.data?.error || "Failed to load user");
+            console.error("Error fetching user:", err);
         } finally {
             setIsLoading(false);
         }
@@ -58,12 +68,12 @@ const UserEdit: React.FC = () => {
         e.preventDefault();
         setError(null);
         setSuccess(false);
-        
+
         if (!id) {
-            setError('Invalid user ID');
+            setError("Invalid user ID");
             return;
         }
-        
+
         try {
             setIsSaving(true);
             await axios.put(
@@ -72,23 +82,25 @@ const UserEdit: React.FC = () => {
                 {
                     withCredentials: true,
                     headers: {
-                        'Content-Type': 'application/json',
+                        "Content-Type": "application/json",
                     },
                 }
             );
             setSuccess(true);
             setTimeout(() => {
-                navigate('/admin/users');
+                navigate("/admin/users");
             }, 1500);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to update user');
-            console.error('Error updating user:', err);
+            setError(err.response?.data?.error || "Failed to update user");
+            console.error("Error updating user:", err);
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
@@ -112,7 +124,10 @@ const UserEdit: React.FC = () => {
                 <Alert variant="danger">
                     <Alert.Heading>Error loading user</Alert.Heading>
                     <p>{error}</p>
-                    <Button variant="primary" onClick={() => navigate('/admin/users')}>
+                    <Button
+                        variant="primary"
+                        onClick={() => navigate("/admin/users")}
+                    >
                         Back to Users
                     </Button>
                 </Alert>
@@ -124,7 +139,10 @@ const UserEdit: React.FC = () => {
         <div className="container-fluid p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2>Edit User</h2>
-                <Button variant="secondary" onClick={() => navigate('/admin/users')}>
+                <Button
+                    variant="secondary"
+                    onClick={() => navigate("/admin/users")}
+                >
                     Back to Users
                 </Button>
             </div>
@@ -132,7 +150,11 @@ const UserEdit: React.FC = () => {
             <Card>
                 <Card.Body>
                     {error && (
-                        <Alert variant="danger" dismissible onClose={() => setError(null)}>
+                        <Alert
+                            variant="danger"
+                            dismissible
+                            onClose={() => setError(null)}
+                        >
                             {error}
                         </Alert>
                     )}
@@ -184,12 +206,12 @@ const UserEdit: React.FC = () => {
                                 type="submit"
                                 disabled={isSaving}
                             >
-                                {isSaving ? 'Saving...' : 'Save Changes'}
+                                {isSaving ? "Saving..." : "Save Changes"}
                             </Button>
                             <Button
                                 variant="secondary"
                                 type="button"
-                                onClick={() => navigate('/admin/users')}
+                                onClick={() => navigate("/admin/users")}
                             >
                                 Cancel
                             </Button>
