@@ -22,9 +22,10 @@ repos:
     hooks:
       # Run the linter.
       - id: ruff-check
-        args: [--fix]
+        args: [--fix, --config, flask/pyproject.toml]
       # Run the formatter.
       - id: ruff-format
+        args: [--config, flask/pyproject.toml]
 
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: v3.6.2
