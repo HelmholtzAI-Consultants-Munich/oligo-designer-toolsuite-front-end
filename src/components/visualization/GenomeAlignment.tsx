@@ -12,7 +12,6 @@ class GenomeAlignment extends React.Component<Props> {
     private el: SVGSVGElement | null = null;
 
     componentDidMount() {
-        console.log("Mounting GenomeAlignment");
         GenomeAlignmentD3.create(this.el!, this.props.oligos, this.props.selectedOligo, this.props.setSelectedOligo);   
     }
 

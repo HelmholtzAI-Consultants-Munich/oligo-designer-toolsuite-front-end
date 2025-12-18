@@ -62,7 +62,7 @@ const GenomeAlignmentD3 = {
         const extent: [[number, number], [number, number]] = [[0, 0], [innerWidth, innerHeight]];
 
         svg.call(d3.zoom()
-            .scaleExtent([1, 8])
+            .scaleExtent([1, (x.domain()[1] - x.domain()[0]) / 100]) // max zoom to 100bp width
             .translateExtent(extent)
             .extent(extent)
             .filter(filter)
