@@ -1,10 +1,12 @@
-import pytest
-import sys
 import os
-from unittest.mock import patch
-from bson import ObjectId
+import sys
 from datetime import datetime
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from unittest.mock import patch
+
+import pytest
+from bson import ObjectId
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from extensions import mongo
 
 
@@ -17,7 +19,7 @@ def admin_user(client):
         "email": "admin@test.com",
         "name": "Admin User",
         "role": "admin",
-        "password": "hashed_password"
+        "password": "hashed_password",
     }
     mongo.db.users.insert_one(user)
     yield user
@@ -33,7 +35,7 @@ def regular_user(client):
         "email": "user@test.com",
         "name": "Regular User",
         "role": "user",
-        "password": "hashed_password"
+        "password": "hashed_password",
     }
     mongo.db.users.insert_one(user)
     yield user
@@ -43,6 +45,7 @@ def regular_user(client):
 @pytest.fixture
 def admin_client(client, monkeypatch, admin_user):
     """Test client with authenticated admin user"""
+
     class AdminUser:
         is_authenticated = True
         id = str(admin_user["_id"])
@@ -54,6 +57,7 @@ def admin_client(client, monkeypatch, admin_user):
 @pytest.fixture
 def regular_client(client, monkeypatch, regular_user):
     """Test client with authenticated regular user"""
+
     class RegularUser:
         is_authenticated = True
         id = str(regular_user["_id"])
@@ -82,7 +86,7 @@ def pipeline_run(client):
         "created_at": datetime.now(),
         "output_path": "/tmp/test_output",
         "session_id": None,
-        "transferred_from_anon": False
+        "transferred_from_anon": False,
     }
     mongo.db.runs.insert_one(run)
     yield run
@@ -90,6 +94,7 @@ def pipeline_run(client):
 
 
 # ==================== User Management Tests ====================
+
 
 def test_get_users_success(admin_client, admin_user, regular_user):
     """Test getting all users as admin"""
@@ -136,7 +141,7 @@ def test_update_user_success(admin_client, regular_user):
     """Test updating a user"""
     response = admin_client.put(
         f"/api/admin/users/{regular_user['_id']}",
-        json={"email": "updated@test.com", "name": "Updated Name", "role": "admin"}
+        json={"email": "updated@test.com", "name": "Updated Name", "role": "admin"},
     )
     assert response.status_code == 200
     data = response.get_json()
@@ -147,20 +152,14 @@ def test_update_user_success(admin_client, regular_user):
 
 def test_update_user_invalid_role(admin_client, regular_user):
     """Test updating user with invalid role"""
-    response = admin_client.put(
-        f"/api/admin/users/{regular_user['_id']}",
-        json={"role": "invalid_role"}
-    )
+    response = admin_client.put(f"/api/admin/users/{regular_user['_id']}", json={"role": "invalid_role"})
     assert response.status_code == 400
     assert "Invalid role" in response.get_json()["error"]
 
 
 def test_update_user_no_fields(admin_client, regular_user):
     """Test updating user with no fields"""
-    response = admin_client.put(
-        f"/api/admin/users/{regular_user['_id']}",
-        json={}
-    )
+    response = admin_client.put(f"/api/admin/users/{regular_user['_id']}", json={})
     assert response.status_code == 400
 
 
@@ -169,7 +168,7 @@ def test_delete_user_success(admin_client, regular_user):
     response = admin_client.delete(f"/api/admin/users/{regular_user['_id']}")
     assert response.status_code == 200
     assert "deleted successfully" in response.get_json()["message"]
-    
+
     # Verify user is deleted
     user = mongo.db.users.find_one({"_id": regular_user["_id"]})
     assert user is None
@@ -184,6 +183,7 @@ def test_delete_user_self(admin_client, admin_user):
 
 # ==================== Pipeline Management Tests ====================
 
+
 def test_get_pipeline_runs_success(admin_client, pipeline_run):
     """Test getting all pipeline runs"""
     response = admin_client.get("/api/admin/pipelines")
@@ -197,10 +197,7 @@ def test_get_pipeline_runs_success(admin_client, pipeline_run):
 
 def test_update_pipeline_status_success(admin_client, pipeline_run):
     """Test updating pipeline run status"""
-    response = admin_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={"status": "completed"}
-    )
+    response = admin_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "completed"})
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "completed"
@@ -209,8 +206,7 @@ def test_update_pipeline_status_success(admin_client, pipeline_run):
 def test_update_pipeline_status_invalid(admin_client, pipeline_run):
     """Test updating pipeline run with invalid status"""
     response = admin_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={"status": "invalid_status"}
+        f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "invalid_status"}
     )
     assert response.status_code == 400
     assert "Invalid status" in response.get_json()["error"]
@@ -218,10 +214,7 @@ def test_update_pipeline_status_invalid(admin_client, pipeline_run):
 
 def test_update_pipeline_status_missing_field(admin_client, pipeline_run):
     """Test updating pipeline run without status field"""
-    response = admin_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={}
-    )
+    response = admin_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={})
     assert response.status_code == 400
 
 
@@ -254,18 +247,14 @@ def test_get_pipeline_runs_unauthenticated(unauthenticated_client):
 
 def test_update_pipeline_status_unauthorized(regular_client, pipeline_run):
     """Test that regular users cannot update pipeline run status"""
-    response = regular_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={"status": "completed"}
-    )
+    response = regular_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "completed"})
     assert response.status_code == 403
 
 
 def test_update_pipeline_status_unauthenticated(unauthenticated_client, pipeline_run):
     """Test that unauthenticated users cannot update pipeline run status"""
     response = unauthenticated_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={"status": "completed"}
+        f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "completed"}
     )
     assert response.status_code == 401 or response.status_code == 403
 
@@ -284,17 +273,18 @@ def test_delete_pipeline_run_unauthenticated(unauthenticated_client, pipeline_ru
 
 # ==================== Dashboard Tests ====================
 
+
 def test_get_dashboard_stats_success(admin_client, admin_user, regular_user, pipeline_run):
     """Test getting dashboard statistics"""
     response = admin_client.get("/api/admin/dashboard")
     assert response.status_code == 200
     data = response.get_json()
-    
+
     assert "users" in data
     assert data["users"]["total"] >= 2
     assert data["users"]["admin"] >= 1
     assert data["users"]["regular"] >= 1
-    
+
     assert "pipeline_runs" in data
     assert data["pipeline_runs"]["total"] >= 1
     assert "by_status" in data["pipeline_runs"]
@@ -315,23 +305,21 @@ def test_get_dashboard_stats_unauthenticated(unauthenticated_client):
 
 # ==================== Bulk Operations Tests ====================
 
+
 @pytest.fixture
 def create_test_user(client):
     """Factory fixture to create test users"""
+
     def _create_user(user_id=None, email=None, role="user"):
         """Helper function to create a test user"""
         if user_id is None:
             user_id = ObjectId()
         if email is None:
             email = f"user{user_id}@test.com"
-        user = {
-            "_id": user_id,
-            "email": email,
-            "role": role,
-            "password": "hashed"
-        }
+        user = {"_id": user_id, "email": email, "role": role, "password": "hashed"}
         mongo.db.users.insert_one(user)
         return user_id
+
     return _create_user
 
 
@@ -339,11 +327,10 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
     """Test bulk deleting users"""
     # Create additional users
     user2_id = create_test_user()
-    
+
     try:
         response = admin_client.post(
-            "/api/admin/users/bulk-delete",
-            json={"user_ids": [str(regular_user["_id"]), str(user2_id)]}
+            "/api/admin/users/bulk-delete", json={"user_ids": [str(regular_user["_id"]), str(user2_id)]}
         )
         assert response.status_code == 200
         data = response.get_json()
@@ -354,30 +341,23 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
 
 def test_bulk_delete_users_empty_array(admin_client):
     """Test bulk delete with empty array"""
-    response = admin_client.post(
-        "/api/admin/users/bulk-delete",
-        json={"user_ids": []}
-    )
+    response = admin_client.post("/api/admin/users/bulk-delete", json={"user_ids": []})
     assert response.status_code == 400
 
 
 def test_bulk_delete_users_invalid_format(admin_client):
     """Test bulk delete with invalid format"""
-    response = admin_client.post(
-        "/api/admin/users/bulk-delete",
-        json={"user_ids": "not_an_array"}
-    )
+    response = admin_client.post("/api/admin/users/bulk-delete", json={"user_ids": "not_an_array"})
     assert response.status_code == 400
 
 
 def test_bulk_delete_users_self(admin_client, admin_user, create_test_user):
     """Test bulk delete including self (should skip)"""
     user2_id = create_test_user()
-    
+
     try:
         response = admin_client.post(
-            "/api/admin/users/bulk-delete",
-            json={"user_ids": [str(admin_user["_id"]), str(user2_id)]}
+            "/api/admin/users/bulk-delete", json={"user_ids": [str(admin_user["_id"]), str(user2_id)]}
         )
         assert response.status_code == 200
         data = response.get_json()
@@ -390,16 +370,16 @@ def test_bulk_delete_users_self(admin_client, admin_user, create_test_user):
 def test_bulk_update_user_role_success(admin_client, regular_user, create_test_user):
     """Test bulk updating user roles"""
     user2_id = create_test_user()
-    
+
     try:
         response = admin_client.post(
             "/api/admin/users/bulk-update-role",
-            json={"user_ids": [str(regular_user["_id"]), str(user2_id)], "role": "admin"}
+            json={"user_ids": [str(regular_user["_id"]), str(user2_id)], "role": "admin"},
         )
         assert response.status_code == 200
         data = response.get_json()
         assert data["updated_count"] == 2
-        
+
         # Verify roles were updated
         updated_user = mongo.db.users.find_one({"_id": regular_user["_id"]})
         assert updated_user["role"] == "admin"
@@ -410,8 +390,7 @@ def test_bulk_update_user_role_success(admin_client, regular_user, create_test_u
 def test_bulk_update_user_role_invalid_role(admin_client, regular_user):
     """Test bulk update with invalid role"""
     response = admin_client.post(
-        "/api/admin/users/bulk-update-role",
-        json={"user_ids": [str(regular_user["_id"])], "role": "invalid"}
+        "/api/admin/users/bulk-update-role", json={"user_ids": [str(regular_user["_id"])], "role": "invalid"}
     )
     assert response.status_code == 400
 
@@ -419,8 +398,7 @@ def test_bulk_update_user_role_invalid_role(admin_client, regular_user):
 def test_bulk_update_user_role_self_demotion(admin_client, admin_user):
     """Test bulk update preventing self-demotion"""
     response = admin_client.post(
-        "/api/admin/users/bulk-update-role",
-        json={"user_ids": [str(admin_user["_id"])], "role": "user"}
+        "/api/admin/users/bulk-update-role", json={"user_ids": [str(admin_user["_id"])], "role": "user"}
     )
     # When trying to demote yourself and you're the only user, filtered_user_ids is empty
     # so the endpoint returns 400
@@ -431,8 +409,7 @@ def test_bulk_update_user_role_self_demotion(admin_client, admin_user):
 def test_bulk_delete_users_unauthorized(regular_client, regular_user):
     """Test that regular users cannot bulk delete users"""
     response = regular_client.post(
-        "/api/admin/users/bulk-delete",
-        json={"user_ids": [str(regular_user["_id"])]}
+        "/api/admin/users/bulk-delete", json={"user_ids": [str(regular_user["_id"])]}
     )
     assert response.status_code == 403
 
@@ -440,18 +417,14 @@ def test_bulk_delete_users_unauthorized(regular_client, regular_user):
 def test_bulk_delete_users_unauthenticated(unauthenticated_client):
     """Test that unauthenticated users cannot bulk delete users"""
     fake_id = ObjectId()
-    response = unauthenticated_client.post(
-        "/api/admin/users/bulk-delete",
-        json={"user_ids": [str(fake_id)]}
-    )
+    response = unauthenticated_client.post("/api/admin/users/bulk-delete", json={"user_ids": [str(fake_id)]})
     assert response.status_code == 401 or response.status_code == 403
 
 
 def test_bulk_update_user_role_unauthorized(regular_client, regular_user):
     """Test that regular users cannot bulk update user roles"""
     response = regular_client.post(
-        "/api/admin/users/bulk-update-role",
-        json={"user_ids": [str(regular_user["_id"])], "role": "admin"}
+        "/api/admin/users/bulk-update-role", json={"user_ids": [str(regular_user["_id"])], "role": "admin"}
     )
     assert response.status_code == 403
 
@@ -460,8 +433,7 @@ def test_bulk_update_user_role_unauthenticated(unauthenticated_client):
     """Test that unauthenticated users cannot bulk update user roles"""
     fake_id = ObjectId()
     response = unauthenticated_client.post(
-        "/api/admin/users/bulk-update-role",
-        json={"user_ids": [str(fake_id)], "role": "admin"}
+        "/api/admin/users/bulk-update-role", json={"user_ids": [str(fake_id)], "role": "admin"}
     )
     assert response.status_code == 401 or response.status_code == 403
 
@@ -469,6 +441,7 @@ def test_bulk_update_user_role_unauthenticated(unauthenticated_client):
 @pytest.fixture
 def create_test_run(client):
     """Factory fixture to create test pipeline runs"""
+
     def _create_run(run_id=None, pipeline="test_pipeline2", status="pending"):
         """Helper function to create a test pipeline run"""
         if run_id is None:
@@ -477,22 +450,22 @@ def create_test_run(client):
             "_id": run_id,
             "pipeline": pipeline,
             "status": status,
-            "output_path": f"/tmp/test_output_{run_id}"
+            "output_path": f"/tmp/test_output_{run_id}",
         }
         mongo.db.runs.insert_one(run)
         return run_id
+
     return _create_run
 
 
 def test_bulk_delete_pipeline_runs_success(admin_client, pipeline_run, create_test_run):
     """Test bulk deleting pipeline runs"""
     run2_id = create_test_run()
-    
+
     try:
         with patch("shutil.rmtree"):
             response = admin_client.post(
-                "/api/admin/pipelines/bulk-delete",
-                json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)]}
+                "/api/admin/pipelines/bulk-delete", json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)]}
             )
             assert response.status_code == 200
             data = response.get_json()
@@ -504,8 +477,7 @@ def test_bulk_delete_pipeline_runs_success(admin_client, pipeline_run, create_te
 def test_bulk_delete_pipeline_runs_invalid_ids(admin_client):
     """Test bulk delete with invalid IDs"""
     response = admin_client.post(
-        "/api/admin/pipelines/bulk-delete",
-        json={"run_ids": ["invalid_id", "another_invalid"]}
+        "/api/admin/pipelines/bulk-delete", json={"run_ids": ["invalid_id", "another_invalid"]}
     )
     # When all IDs are invalid, object_ids is empty, so the endpoint returns 400
     assert response.status_code == 400
@@ -515,8 +487,7 @@ def test_bulk_delete_pipeline_runs_invalid_ids(admin_client):
 def test_bulk_delete_pipeline_runs_unauthorized(regular_client, pipeline_run):
     """Test that regular users cannot bulk delete pipeline runs"""
     response = regular_client.post(
-        "/api/admin/pipelines/bulk-delete",
-        json={"run_ids": [str(pipeline_run["_id"])]}
+        "/api/admin/pipelines/bulk-delete", json={"run_ids": [str(pipeline_run["_id"])]}
     )
     assert response.status_code == 403
 
@@ -525,8 +496,7 @@ def test_bulk_delete_pipeline_runs_unauthenticated(unauthenticated_client):
     """Test that unauthenticated users cannot bulk delete pipeline runs"""
     fake_id = ObjectId()
     response = unauthenticated_client.post(
-        "/api/admin/pipelines/bulk-delete",
-        json={"run_ids": [str(fake_id)]}
+        "/api/admin/pipelines/bulk-delete", json={"run_ids": [str(fake_id)]}
     )
     assert response.status_code == 401 or response.status_code == 403
 
@@ -534,16 +504,16 @@ def test_bulk_delete_pipeline_runs_unauthenticated(unauthenticated_client):
 def test_bulk_update_pipeline_status_success(admin_client, pipeline_run, create_test_run):
     """Test bulk updating pipeline run status"""
     run2_id = create_test_run()
-    
+
     try:
         response = admin_client.post(
             "/api/admin/pipelines/bulk-update-status",
-            json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)], "status": "completed"}
+            json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)], "status": "completed"},
         )
         assert response.status_code == 200
         data = response.get_json()
         assert data["updated_count"] == 2
-        
+
         # Verify statuses were updated
         updated_run = mongo.db.runs.find_one({"_id": pipeline_run["_id"]})
         assert updated_run["status"] == "completed"
@@ -555,7 +525,7 @@ def test_bulk_update_pipeline_status_invalid_status(admin_client, pipeline_run):
     """Test bulk update with invalid status"""
     response = admin_client.post(
         "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(pipeline_run["_id"])], "status": "invalid_status"}
+        json={"run_ids": [str(pipeline_run["_id"])], "status": "invalid_status"},
     )
     assert response.status_code == 400
 
@@ -563,8 +533,7 @@ def test_bulk_update_pipeline_status_invalid_status(admin_client, pipeline_run):
 def test_bulk_update_pipeline_status_missing_status(admin_client, pipeline_run):
     """Test bulk update without status field"""
     response = admin_client.post(
-        "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(pipeline_run["_id"])]}
+        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(pipeline_run["_id"])]}
     )
     assert response.status_code == 400
 
@@ -572,8 +541,7 @@ def test_bulk_update_pipeline_status_missing_status(admin_client, pipeline_run):
 def test_bulk_update_pipeline_status_empty_run_ids(admin_client):
     """Test bulk update with empty run_ids"""
     response = admin_client.post(
-        "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [], "status": "completed"}
+        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [], "status": "completed"}
     )
     assert response.status_code == 400
 
@@ -582,7 +550,7 @@ def test_bulk_update_pipeline_status_unauthorized(regular_client, pipeline_run):
     """Test that regular users cannot bulk update pipeline run status"""
     response = regular_client.post(
         "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(pipeline_run["_id"])], "status": "completed"}
+        json={"run_ids": [str(pipeline_run["_id"])], "status": "completed"},
     )
     assert response.status_code == 403
 
@@ -591,8 +559,6 @@ def test_bulk_update_pipeline_status_unauthenticated(unauthenticated_client):
     """Test that unauthenticated users cannot bulk update pipeline run status"""
     fake_id = ObjectId()
     response = unauthenticated_client.post(
-        "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(fake_id)], "status": "completed"}
+        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(fake_id)], "status": "completed"}
     )
     assert response.status_code == 401 or response.status_code == 403
-

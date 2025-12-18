@@ -1,8 +1,11 @@
-import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import pytest
+
 from extensions import mongo
+
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -29,7 +32,10 @@ def dummy_form(run_id):
             "target_probe_secondary_structures_T": {"value": "2"},
             "target_probe_secondary_structures_threshold_deltaG": {"value": "10"},
             "target_probe_homopolymeric_base_n": {
-                "A": {"value": "3"}, "T": {"value": "3"}, "C": {"value": "3"}, "G": {"value": "3"}
+                "A": {"value": "3"},
+                "T": {"value": "3"},
+                "C": {"value": "3"},
+                "G": {"value": "3"},
             },
             "target_probe_max_len_selfcomplement": {"value": "4"},
             "target_probe_hybridization_probability_threshold": {"value": "0.8"},
@@ -43,27 +49,23 @@ def dummy_form(run_id):
             "target_probe_hybridization_probability_blastn_search_parameters": {
                 "perc_identity": {"value": "85"},
                 "strand": {"value": "both"},
-                "word_size": {"value": "11"}
+                "word_size": {"value": "11"},
             },
-            "target_probe_hybridization_probability_blastn_hit_parameters": {
-                "coverage": {"value": "85"}
-            },
+            "target_probe_hybridization_probability_blastn_hit_parameters": {"coverage": {"value": "85"}},
             "target_probe_hybridization_probability_bowtie_search_parameters": {
                 "v": {"value": "3"},
-                "nofw": {"value": "true"}
+                "nofw": {"value": "true"},
             },
             "target_probe_cross_hybridization_alignment_method": {"value": "bowtie"},
             "target_probe_cross_hybridization_blastn_search_parameters": {
                 "perc_identity": {"value": "85"},
                 "strand": {"value": "both"},
-                "word_size": {"value": "11"}
+                "word_size": {"value": "11"},
             },
-            "target_probe_cross_hybridization_blastn_hit_parameters": {
-                "coverage": {"value": "85"}
-            },
+            "target_probe_cross_hybridization_blastn_hit_parameters": {"coverage": {"value": "85"}},
             "target_probe_cross_hybridization_bowtie_search_parameters": {
                 "v": {"value": "3"},
-                "nofw": {"value": "true"}
+                "nofw": {"value": "true"},
             },
             "max_graph_size": {"value": "1000"},
             "n_attempts": {"value": "3"},
@@ -81,7 +83,7 @@ def dummy_form(run_id):
                 "K": {"value": "50"},
                 "Tris": {"value": "10"},
                 "Mg": {"value": "1"},
-                "dNTPs": {"value": "0.2"}
+                "dNTPs": {"value": "0.2"},
             },
             "target_probe_Tm_chem_correction_parameters": {
                 "DMSO": {"value": "0"},
@@ -89,11 +91,12 @@ def dummy_form(run_id):
                 "DMSOfactor": {"value": "0.0"},
                 "fmdfactor": {"value": "0.0"},
                 "fmdmethod": {"value": "0"},
-                "GC": {"value": ""}
-            }
+                "GC": {"value": ""},
+            },
         },
-        "runid": str(run_id)
+        "runid": str(run_id),
     }
+
 
 def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
     response = client.post("/api/oligoseq", json=dummy_form)
@@ -104,6 +107,7 @@ def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authentica
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
+
 
 def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run, session_user):
     # Simulate an anonymous user (no monkeypatch needed)

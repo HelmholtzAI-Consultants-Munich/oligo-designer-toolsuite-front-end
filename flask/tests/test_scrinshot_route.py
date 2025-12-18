@@ -1,8 +1,11 @@
-import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import pytest
+
 from extensions import mongo
+
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -28,7 +31,7 @@ def dummy_form(run_id):
                 "A": {"value": "3"},
                 "T": {"value": "3"},
                 "C": {"value": "3"},
-                "G": {"value": "3"}
+                "G": {"value": "3"},
             },
             "target_probe_padlock_arm_Tm_dif_max": {"value": "10"},
             "target_probe_padlock_arm_length_min": {"value": "15"},
@@ -54,22 +57,18 @@ def dummy_form(run_id):
                 "dust": {"value": "yes"},
                 "soft_masking": {"value": "true"},
                 "max_target_seqs": {"value": "500"},
-                "max_hsps": {"value": "10"}
+                "max_hsps": {"value": "10"},
             },
-            "target_probe_specificity_blastn_hit_parameters": {
-                "coverage": {"value": "80"}
-            },
+            "target_probe_specificity_blastn_hit_parameters": {"coverage": {"value": "80"}},
             "target_probe_cross_hybridization_blastn_search_parameters": {
                 "perc_identity": {"value": "85"},
                 "strand": {"value": "both"},
                 "word_size": {"value": "11"},
                 "dust": {"value": "yes"},
                 "soft_masking": {"value": "true"},
-                "max_target_seqs": {"value": "500"}
+                "max_target_seqs": {"value": "500"},
             },
-            "target_probe_cross_hybridization_blastn_hit_parameters": {
-                "coverage": {"value": "80"}
-            },
+            "target_probe_cross_hybridization_blastn_hit_parameters": {"coverage": {"value": "80"}},
             "max_graph_size": {"value": "1000"},
             "n_attempts": {"value": "3"},
             "heuristic": {"value": "false"},
@@ -86,7 +85,7 @@ def dummy_form(run_id):
                 "K": {"value": "50"},
                 "Tris": {"value": "10"},
                 "Mg": {"value": "1"},
-                "dNTPs": {"value": "0.2"}
+                "dNTPs": {"value": "0.2"},
             },
             "target_probe_Tm_chem_correction_parameters": {
                 "DMSO": {"value": "5"},
@@ -94,7 +93,7 @@ def dummy_form(run_id):
                 "DMSOfactor": {"value": "0.75"},
                 "fmdfactor": {"value": "1.1"},
                 "fmdmethod": {"value": "1"},
-                "GC": {"value": ""}
+                "GC": {"value": ""},
             },
             "detection_oligo_Tm_parameters": {
                 "nn_table": {"value": "DNA_NN1"},
@@ -108,7 +107,7 @@ def dummy_form(run_id):
                 "K": {"value": "50"},
                 "Tris": {"value": "10"},
                 "Mg": {"value": "1"},
-                "dNTPs": {"value": "0.2"}
+                "dNTPs": {"value": "0.2"},
             },
             "detection_oligo_Tm_chem_correction_parameters": {
                 "DMSO": {"value": "5"},
@@ -116,11 +115,12 @@ def dummy_form(run_id):
                 "DMSOfactor": {"value": "0.75"},
                 "fmdfactor": {"value": "1.1"},
                 "fmdmethod": {"value": "1"},
-                "GC": {"value": ""}
-            }
+                "GC": {"value": ""},
+            },
         },
-        "runid": str(run_id)
+        "runid": str(run_id),
     }
+
 
 def test_scrinshot_authenticated(client, dummy_form, run_id, mock_run, authenticated_user):
     response = client.post("/api/scrinshot", json=dummy_form)
@@ -132,6 +132,7 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_run, authentic
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
 
+
 def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run, session_user):
     response = client.post("/api/scrinshot", json=dummy_form)
     assert response.status_code == 200
@@ -142,9 +143,10 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run, session
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
 
+
 def test_invalid_session(client, dummy_form, mock_run):
     with client.session_transaction() as session:
         session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
-        
-    response = client.post(f"/api/scrinshot", json=dummy_form)
+
+    response = client.post("/api/scrinshot", json=dummy_form)
     assert response.status_code == 200

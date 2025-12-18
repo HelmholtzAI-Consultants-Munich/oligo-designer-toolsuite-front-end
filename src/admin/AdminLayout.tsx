@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, Outlet, Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../modules/auth';
-import { Navbar, Nav, Container, Spinner, Button } from 'react-bootstrap';
-import { People, House, BoxArrowRight, List, Gear, Speedometer2 } from 'react-bootstrap-icons';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import { useNavigate, Outlet, Link, useLocation } from "react-router-dom";
+import { useAuth } from "../modules/auth";
+import { Navbar, Nav, Container, Spinner, Button } from "react-bootstrap";
+import {
+    People,
+    House,
+    BoxArrowRight,
+    List,
+    Gear,
+    Speedometer2,
+} from "react-bootstrap-icons";
+import axios from "axios";
 
 interface NavItemConfig {
     path: string;
@@ -21,16 +28,21 @@ interface AdminNavItemProps {
 /**
  * Reusable navigation item component for admin sidebar
  */
-const AdminNavItem: React.FC<AdminNavItemProps> = ({ config, isActive, collapsed, onNavigate }) => {
+const AdminNavItem: React.FC<AdminNavItemProps> = ({
+    config,
+    isActive,
+    collapsed,
+    onNavigate,
+}) => {
     const { icon: Icon, path, label } = config;
-    
+
     const navLinkStyle: React.CSSProperties = {
-        padding: '0.75rem 1rem',
-        marginBottom: '0.25rem',
-        textDecoration: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: collapsed ? 'center' : 'flex-start',
+        padding: "0.75rem 1rem",
+        marginBottom: "0.25rem",
+        textDecoration: "none",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: collapsed ? "center" : "flex-start",
     };
 
     return (
@@ -38,12 +50,12 @@ const AdminNavItem: React.FC<AdminNavItemProps> = ({ config, isActive, collapsed
             <Nav.Link
                 as={Link}
                 to={path}
-                className={`text-white ${isActive ? 'bg-primary rounded' : ''}`}
+                className={`text-white ${isActive ? "bg-primary rounded" : ""}`}
                 style={navLinkStyle}
-                title={collapsed ? label : ''}
+                title={collapsed ? label : ""}
                 onClick={onNavigate}
             >
-                <Icon size={20} className={collapsed ? '' : 'me-2'} />
+                <Icon size={20} className={collapsed ? "" : "me-2"} />
                 {!collapsed && <span>{label}</span>}
             </Nav.Link>
         </Nav.Item>
@@ -54,12 +66,14 @@ const AdminNavItem: React.FC<AdminNavItemProps> = ({ config, isActive, collapsed
  * Navigation items configuration
  */
 const navItems: NavItemConfig[] = [
-    { path: '/admin/dashboard', label: 'Dashboard', icon: Speedometer2 },
-    { path: '/admin/users', label: 'User Management', icon: People },
-    { path: '/admin/pipelines', label: 'Pipeline Management', icon: Gear },
+    { path: "/admin/dashboard", label: "Dashboard", icon: Speedometer2 },
+    { path: "/admin/users", label: "User Management", icon: People },
+    { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
 ];
 
-const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
+    children,
+}) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { user, loading } = useAuth();
@@ -69,34 +83,50 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
     useEffect(() => {
         // Check if user is authenticated and is admin
         if (!loading) {
-            console.log('Admin check - loading:', loading, 'user:', user, 'role:', user?.role);
+            console.log(
+                "Admin check - loading:",
+                loading,
+                "user:",
+                user,
+                "role:",
+                user?.role
+            );
             if (!user) {
                 // Not logged in - redirect to login with return URL
-                console.log('Redirecting to login - user not authenticated');
-                navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
-            } else if (user.role !== 'admin') {
+                console.log("Redirecting to login - user not authenticated");
+                navigate(
+                    `/login?redirect=${encodeURIComponent(location.pathname)}`
+                );
+            } else if (user.role !== "admin") {
                 // Logged in but not admin - redirect to home
-                console.log('Redirecting to home - user is not admin');
-                navigate('/');
+                console.log("Redirecting to home - user is not admin");
+                navigate("/");
             }
         }
     }, [user, loading, navigate, location.pathname]);
 
     const handleLogout = async () => {
         try {
-            await axios.post('http://localhost:5000/logout', {}, {
-                withCredentials: true,
-            });
-            navigate('/');
+            await axios.post(
+                "http://localhost:5000/logout",
+                {},
+                {
+                    withCredentials: true,
+                }
+            );
+            navigate("/");
         } catch (error) {
-            console.error('Logout failed:', error);
-            navigate('/');
+            console.error("Logout failed:", error);
+            navigate("/");
         }
     };
 
     if (loading) {
         return (
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
+            <div
+                className="d-flex justify-content-center align-items-center"
+                style={{ minHeight: "100vh" }}
+            >
                 <Spinner animation="border" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </Spinner>
@@ -104,7 +134,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
         );
     }
 
-    if (!user || user.role !== 'admin') {
+    if (!user || user.role !== "admin") {
         return null; // Will redirect
     }
 
@@ -112,23 +142,23 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
         return location.pathname.startsWith(path);
     };
 
-    const sidebarWidth = sidebarCollapsed ? '70px' : '250px';
+    const sidebarWidth = sidebarCollapsed ? "70px" : "250px";
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <div style={{ display: "flex", minHeight: "100vh" }}>
             {/* Desktop Sidebar */}
             <div
                 className="bg-dark text-white d-none d-lg-block"
                 style={{
                     width: sidebarWidth,
-                    minHeight: '100vh',
-                    position: 'fixed',
+                    minHeight: "100vh",
+                    position: "fixed",
                     left: 0,
                     top: 0,
                     zIndex: 1000,
-                    paddingTop: '56px',
-                    transition: 'width 0.3s ease',
-                    overflow: 'hidden',
+                    paddingTop: "56px",
+                    transition: "width 0.3s ease",
+                    overflow: "hidden",
                 }}
             >
                 <div className="p-3">
@@ -146,9 +176,22 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
             </div>
 
             {/* Main Content Area */}
-            <div style={{ marginLeft: sidebarWidth, flex: 1, display: 'flex', flexDirection: 'column', transition: 'margin-left 0.3s ease' }}>
+            <div
+                style={{
+                    marginLeft: sidebarWidth,
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    transition: "margin-left 0.3s ease",
+                }}
+            >
                 {/* Top Navbar */}
-                <Navbar bg="light" variant="light" expand="lg" style={{ borderBottom: '1px solid #dee2e6' }}>
+                <Navbar
+                    bg="light"
+                    variant="light"
+                    expand="lg"
+                    style={{ borderBottom: "1px solid #dee2e6" }}
+                >
                     <Container fluid>
                         <Navbar.Brand>
                             <Button
@@ -163,7 +206,9 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                                 variant="outline-secondary"
                                 size="sm"
                                 className="me-3 d-none d-lg-inline-block"
-                                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                                onClick={() =>
+                                    setSidebarCollapsed(!sidebarCollapsed)
+                                }
                             >
                                 <List />
                             </Button>
@@ -175,7 +220,10 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                                     <House className="me-1" />
                                     Back to App
                                 </Nav.Link>
-                                <Nav.Link onClick={handleLogout} style={{ cursor: 'pointer' }}>
+                                <Nav.Link
+                                    onClick={handleLogout}
+                                    style={{ cursor: "pointer" }}
+                                >
                                     <BoxArrowRight className="me-1" />
                                     Logout
                                 </Nav.Link>
@@ -185,7 +233,13 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                 </Navbar>
 
                 {/* Main Content */}
-                <main style={{ flex: 1, padding: '2rem', backgroundColor: '#f8f9fa' }}>
+                <main
+                    style={{
+                        flex: 1,
+                        padding: "2rem",
+                        backgroundColor: "#f8f9fa",
+                    }}
+                >
                     {children || <Outlet />}
                 </main>
             </div>
@@ -195,12 +249,12 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                 <div
                     className="d-lg-none"
                     style={{
-                        position: 'fixed',
+                        position: "fixed",
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
                         zIndex: 999,
                     }}
                     onClick={() => setSidebarOpen(false)}
@@ -209,16 +263,16 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
 
             {/* Mobile Sidebar */}
             <div
-                className={`d-lg-none bg-dark text-white ${sidebarOpen ? '' : 'd-none'}`}
+                className={`d-lg-none bg-dark text-white ${sidebarOpen ? "" : "d-none"}`}
                 style={{
-                    width: '250px',
-                    minHeight: '100vh',
-                    position: 'fixed',
-                    left: sidebarOpen ? 0 : '-250px',
+                    width: "250px",
+                    minHeight: "100vh",
+                    position: "fixed",
+                    left: sidebarOpen ? 0 : "-250px",
                     top: 0,
                     zIndex: 1001,
-                    transition: 'left 0.3s ease',
-                    paddingTop: '56px',
+                    transition: "left 0.3s ease",
+                    paddingTop: "56px",
                 }}
             >
                 <div className="p-3">

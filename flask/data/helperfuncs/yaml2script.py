@@ -1,5 +1,7 @@
-import yaml
 import re
+
+import yaml
+
 
 def convert_value_to_js(value, indent=8):
     if isinstance(value, dict):
@@ -7,38 +9,37 @@ def convert_value_to_js(value, indent=8):
         for k, v in value.items():
             converted = convert_value_to_js(v, indent + 4)
             items.append(f"{' ' * indent}{k}: {converted}")
-        return '{\n' + ',\n'.join(items) + '\n' + ' ' * (indent - 4) + '}'
+        return "{\n" + ",\n".join(items) + "\n" + " " * (indent - 4) + "}"
     elif isinstance(value, list):
         elements = [convert_value_to_js(e, indent) for e in value]
-        return '[ ' + ', '.join(elements) + ' ]'
+        return "[ " + ", ".join(elements) + " ]"
     elif isinstance(value, bool):
         return '"true"' if value else '"false"'
     else:
-        return f'"{str(value)}"'
+        return f'"{value!s}"'
+
 
 def yaml_to_js(yaml_text):
     parsed_data = yaml.safe_load(yaml_text)
     js_lines = []
-    lines = yaml_text.split('\n')
+    lines = yaml_text.split("\n")
 
     for line in lines:
         stripped = line.strip()
         # Process section headers
-        if stripped.startswith('###'):
-            section_name = re.sub(r'#+', '', stripped).strip()
-            js_lines.append(f'    // {section_name}')
+        if stripped.startswith("###"):
+            section_name = re.sub(r"#+", "", stripped).strip()
+            js_lines.append(f"    // {section_name}")
         # Process key-value lines
-        elif ':' in line and not stripped.startswith('#'):
-            key_part, remainder = line.split(':', 1)
+        elif ":" in line and not stripped.startswith("#"):
+            key_part, remainder = line.split(":", 1)
             key = key_part.strip()
 
             # Extract comment and value part
-            comment = ''
-            if '#' in remainder:
-                value_part, comment_part = remainder.split('#', 1)
+            comment = ""
+            if "#" in remainder:
+                _, comment_part = remainder.split("#", 1)
                 comment = comment_part.strip()
-            else:
-                value_part = remainder
 
             # Skip if key not in parsed data (handles nested keys)
             if key not in parsed_data:
@@ -48,17 +49,18 @@ def yaml_to_js(yaml_text):
             js_value = convert_value_to_js(value)
 
             # Build JavaScript line
-            js_line = f'    {key}: {js_value},'
+            js_line = f"    {key}: {js_value},"
             if comment:
-                js_line += f' // {comment}'
+                js_line += f" // {comment}"
             js_lines.append(js_line)
 
     # Clean up trailing commas
-    js_code = '\n'.join(js_lines)
-    js_code = re.sub(r',\n\s+}', '\n}', js_code)    # Objects
-    js_code = re.sub(r',\n\s+\]', '\n]', js_code)   # Arrays
-    js_code = re.sub(r',\n}', '\n}', js_code)       # Last object property
+    js_code = "\n".join(js_lines)
+    js_code = re.sub(r",\n\s+}", "\n}", js_code)  # Objects
+    js_code = re.sub(r",\n\s+\]", "\n]", js_code)  # Arrays
+    js_code = re.sub(r",\n}", "\n}", js_code)  # Last object property
     return js_code
+
 
 # Example YAML input with comments
 yaml_text = """### General parameters

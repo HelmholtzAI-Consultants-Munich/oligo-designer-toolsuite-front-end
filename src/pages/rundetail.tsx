@@ -589,14 +589,18 @@ const RunDetail = () => {
             <Navbar />
             <div className="container mt-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <button 
+                    <button
                         onClick={() => {
-                            const fromAdmin = (location.state as any)?.fromAdmin;
+                            const fromAdmin = (location.state as any)
+                                ?.fromAdmin;
                             navigate(fromAdmin ? "/admin/pipelines" : "/runs");
                         }}
                         className="btn btn-outline-secondary"
                     >
-                        ← Back to {((location.state as any)?.fromAdmin) ? "Admin Panel" : "Runs"}
+                        ← Back to{" "}
+                        {(location.state as any)?.fromAdmin
+                            ? "Admin Panel"
+                            : "Runs"}
                     </button>
                     <button className="btn btn-danger" onClick={handleDelete}>
                         Delete Run

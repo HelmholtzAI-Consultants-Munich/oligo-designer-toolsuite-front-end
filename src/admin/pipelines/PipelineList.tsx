@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Table, Badge, Spinner, Alert, Button, Card, Form } from 'react-bootstrap';
-import { Eye, EyeSlash, Trash, Pencil } from 'react-bootstrap-icons';
-import { useBulkSelection } from '../shared/useBulkSelection';
-import BulkActionToolbar from '../shared/BulkActionToolbar';
-import { handleBulkOperationSuccess } from '../shared/bulkOperationHelpers';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import {
+    Table,
+    Badge,
+    Spinner,
+    Alert,
+    Button,
+    Card,
+    Form,
+} from "react-bootstrap";
+import { Eye, EyeSlash, Trash, Pencil } from "react-bootstrap-icons";
+import { useBulkSelection } from "../shared/useBulkSelection";
+import BulkActionToolbar from "../shared/BulkActionToolbar";
+import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
 
 interface PipelineRun {
     id: string;
@@ -29,9 +37,11 @@ const PipelineList: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-    const [editingStatus, setEditingStatus] = useState<{ [key: string]: string }>({});
+    const [editingStatus, setEditingStatus] = useState<{
+        [key: string]: string;
+    }>({});
     const [isBulkOperationLoading, setIsBulkOperationLoading] = useState(false);
-    
+
     // Use shared bulk selection hook
     const {
         selectedItems,
@@ -51,13 +61,18 @@ const PipelineList: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await axios.get('http://localhost:5000/api/admin/pipelines', {
-                withCredentials: true,
-            });
+            const response = await axios.get(
+                "http://localhost:5000/api/admin/pipelines",
+                {
+                    withCredentials: true,
+                }
+            );
             setRuns(response.data);
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to load pipeline runs');
-            console.error('Error fetching pipeline runs:', err);
+            setError(
+                err.response?.data?.error || "Failed to load pipeline runs"
+            );
+            console.error("Error fetching pipeline runs:", err);
         } finally {
             setIsLoading(false);
         }
@@ -90,28 +105,37 @@ const PipelineList: React.FC = () => {
                 { status: newStatus },
                 { withCredentials: true }
             );
-            
+
             // Update the run in the local state
-            setRuns(runs.map(run => 
-                run.id === runId ? response.data : run
-            ));
-            
+            setRuns(
+                runs.map((run) => (run.id === runId ? response.data : run))
+            );
+
             // Remove from editing state
             cancelEditingStatus(runId);
         } catch (err: any) {
-            alert(`Failed to update status: ${err.response?.data?.error || err.message}`);
-            console.error('Error updating status:', err);
+            alert(
+                `Failed to update status: ${err.response?.data?.error || err.message}`
+            );
+            console.error("Error updating status:", err);
         }
     };
 
     const handleDelete = async (runId: string, pipelineName: string) => {
-        if (window.confirm(`Are you sure you want to delete pipeline run "${pipelineName}"? This will also delete all associated output files.`)) {
+        if (
+            window.confirm(
+                `Are you sure you want to delete pipeline run "${pipelineName}"? This will also delete all associated output files.`
+            )
+        ) {
             try {
-                await axios.delete(`http://localhost:5000/api/admin/pipelines/${runId}`, {
-                    withCredentials: true,
-                });
+                await axios.delete(
+                    `http://localhost:5000/api/admin/pipelines/${runId}`,
+                    {
+                        withCredentials: true,
+                    }
+                );
                 // Remove from local state
-                setRuns(runs.filter(run => run.id !== runId));
+                setRuns(runs.filter((run) => run.id !== runId));
                 // Remove from expanded rows if it was expanded
                 const newExpanded = new Set(expandedRows);
                 newExpanded.delete(runId);
@@ -121,8 +145,10 @@ const PipelineList: React.FC = () => {
                     handleSelectItem(runId);
                 }
             } catch (err: any) {
-                alert(`Failed to delete pipeline run: ${err.response?.data?.error || err.message}`);
-                console.error('Error deleting pipeline run:', err);
+                alert(
+                    `Failed to delete pipeline run: ${err.response?.data?.error || err.message}`
+                );
+                console.error("Error deleting pipeline run:", err);
             }
         }
     };
@@ -134,32 +160,40 @@ const PipelineList: React.FC = () => {
         const confirmed = window.confirm(
             `Are you sure you want to delete ${selectedArray.length} pipeline run(s)? This will also delete all associated output files.`
         );
-        
+
         if (!confirmed) return;
 
         setIsBulkOperationLoading(true);
         try {
             const response = await axios.post(
-                'http://localhost:5000/api/admin/pipelines/bulk-delete',
+                "http://localhost:5000/api/admin/pipelines/bulk-delete",
                 { run_ids: selectedArray },
                 { withCredentials: true }
             );
 
             const result = response.data;
-            let message = result.message || `Successfully deleted ${result.deleted_count} pipeline run(s)`;
-            
+            let message =
+                result.message ||
+                `Successfully deleted ${result.deleted_count} pipeline run(s)`;
+
             if (result.failed && result.failed.length > 0) {
                 message += `. ${result.failed.length} failed`;
             }
 
             // Remove deleted runs from expanded rows
             const newExpanded = new Set(expandedRows);
-            selectedArray.forEach(runId => newExpanded.delete(runId));
+            selectedArray.forEach((runId) => newExpanded.delete(runId));
             setExpandedRows(newExpanded);
-            
-            handleBulkOperationSuccess(message, clearSelection, fetchPipelineRuns);
+
+            handleBulkOperationSuccess(
+                message,
+                clearSelection,
+                fetchPipelineRuns
+            );
         } catch (err: any) {
-            alert(`Failed to delete pipeline runs: ${err.response?.data?.error || err.message}`);
+            alert(
+                `Failed to delete pipeline runs: ${err.response?.data?.error || err.message}`
+            );
         } finally {
             setIsBulkOperationLoading(false);
         }
@@ -169,52 +203,61 @@ const PipelineList: React.FC = () => {
         const selectedArray = Array.from(selectedItems);
         if (selectedArray.length === 0) return;
 
-        const statusLabel = newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
+        const statusLabel =
+            newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
         const confirmed = window.confirm(
             `Are you sure you want to update status of ${selectedArray.length} run(s) to ${statusLabel}?`
         );
-        
+
         if (!confirmed) return;
 
         setIsBulkOperationLoading(true);
         try {
             const response = await axios.post(
-                'http://localhost:5000/api/admin/pipelines/bulk-update-status',
+                "http://localhost:5000/api/admin/pipelines/bulk-update-status",
                 { run_ids: selectedArray, status: newStatus },
                 { withCredentials: true }
             );
 
             const result = response.data;
-            const message = result.message || `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
+            const message =
+                result.message ||
+                `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
 
-            handleBulkOperationSuccess(message, clearSelection, fetchPipelineRuns);
+            handleBulkOperationSuccess(
+                message,
+                clearSelection,
+                fetchPipelineRuns
+            );
         } catch (err: any) {
-            alert(`Failed to update status: ${err.response?.data?.error || err.message}`);
+            alert(
+                `Failed to update status: ${err.response?.data?.error || err.message}`
+            );
         } finally {
             setIsBulkOperationLoading(false);
         }
     };
 
     const formatDate = (dateString?: string) => {
-        if (!dateString) return 'N/A';
+        if (!dateString) return "N/A";
         try {
             const date = new Date(dateString);
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, "0");
+            const month = (date.getMonth() + 1).toString().padStart(2, "0");
             const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const hours = date.getHours().toString().padStart(2, "0");
+            const minutes = date.getMinutes().toString().padStart(2, "0");
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         } catch {
-            return 'N/A';
+            return "N/A";
         }
     };
 
     const formatTimestamp = (timestamp?: string) => {
-        if (!timestamp) return 'N/A';
+        if (!timestamp) return "N/A";
         try {
             // Handle timestamp format like "2024-01-15_14-30-45"
-            const formatted = timestamp.replace('_', ' ').replace(/-/g, '/');
+            const formatted = timestamp.replace("_", " ").replace(/-/g, "/");
             return formatted;
         } catch {
             return timestamp;
@@ -223,13 +266,17 @@ const PipelineList: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         const statusLower = status.toLowerCase();
-        if (statusLower === 'completed' || statusLower === 'success') {
+        if (statusLower === "completed" || statusLower === "success") {
             return <Badge bg="success">{status}</Badge>;
-        } else if (statusLower === 'failed' || statusLower === 'error') {
+        } else if (statusLower === "failed" || statusLower === "error") {
             return <Badge bg="danger">{status}</Badge>;
-        } else if (statusLower === 'pending' || statusLower === 'queued') {
+        } else if (statusLower === "pending" || statusLower === "queued") {
             return <Badge bg="warning">{status}</Badge>;
-        } else if (statusLower === 'started' || statusLower === 'running' || statusLower === 'in_progress') {
+        } else if (
+            statusLower === "started" ||
+            statusLower === "running" ||
+            statusLower === "in_progress"
+        ) {
             return <Badge bg="info">{status}</Badge>;
         }
         return <Badge bg="secondary">{status}</Badge>;
@@ -242,7 +289,11 @@ const PipelineList: React.FC = () => {
                 <div>
                     <div>{run.user.email}</div>
                     {run.transferred_from_anon && (
-                        <Badge bg="info" className="mt-1" title="This run was originally created anonymously and transferred to this user account">
+                        <Badge
+                            bg="info"
+                            className="mt-1"
+                            title="This run was originally created anonymously and transferred to this user account"
+                        >
                             Transferred from Anonymous
                         </Badge>
                     )}
@@ -253,9 +304,13 @@ const PipelineList: React.FC = () => {
             return (
                 <div>
                     <Badge bg="warning">User Not Found</Badge>
-                    <small className="text-muted d-block mt-1">ID: {run.user_id.substring(0, 8)}...</small>
+                    <small className="text-muted d-block mt-1">
+                        ID: {run.user_id.substring(0, 8)}...
+                    </small>
                     {run.transferred_from_anon && (
-                        <Badge bg="info" className="mt-1">Transferred from Anonymous</Badge>
+                        <Badge bg="info" className="mt-1">
+                            Transferred from Anonymous
+                        </Badge>
                     )}
                 </div>
             );
@@ -287,8 +342,9 @@ const PipelineList: React.FC = () => {
         );
     }
 
-    const allRunIds = runs.map(run => run.id);
-    const allSelected = allRunIds.length > 0 && allRunIds.every(id => selectedItems.has(id));
+    const allRunIds = runs.map((run) => run.id);
+    const allSelected =
+        allRunIds.length > 0 && allRunIds.every((id) => selectedItems.has(id));
 
     return (
         <div className="container-fluid p-4">
@@ -310,21 +366,25 @@ const PipelineList: React.FC = () => {
                             variant="danger"
                             size="sm"
                             onClick={handleBulkDelete}
-                            disabled={isBulkOperationLoading || selectedCount === 0}
+                            disabled={
+                                isBulkOperationLoading || selectedCount === 0
+                            }
                         >
                             Delete Selected
                         </Button>
                         <Form.Select
                             size="sm"
-                            style={{ width: 'auto', display: 'inline-block' }}
+                            style={{ width: "auto", display: "inline-block" }}
                             onChange={(e) => {
                                 const status = e.target.value;
                                 if (status) {
                                     handleBulkStatusUpdate(status);
-                                    e.target.value = ''; // Reset dropdown
+                                    e.target.value = ""; // Reset dropdown
                                 }
                             }}
-                            disabled={isBulkOperationLoading || selectedCount === 0}
+                            disabled={
+                                isBulkOperationLoading || selectedCount === 0
+                            }
                             defaultValue=""
                         >
                             <option value="">Update Status...</option>
@@ -343,7 +403,7 @@ const PipelineList: React.FC = () => {
                 <Table striped bordered hover responsive>
                     <thead>
                         <tr>
-                            <th style={{ width: '50px' }}>
+                            <th style={{ width: "50px" }}>
                                 <Form.Check
                                     type="checkbox"
                                     checked={allSelected}
@@ -352,27 +412,33 @@ const PipelineList: React.FC = () => {
                                     onClick={(e) => e.stopPropagation()}
                                 />
                             </th>
-                            <th style={{ width: '50px' }}></th>
+                            <th style={{ width: "50px" }}></th>
                             <th>Pipeline</th>
                             <th>Status</th>
                             <th>Run By</th>
                             <th>Created</th>
-                            <th style={{ width: '150px' }}>Actions</th>
+                            <th style={{ width: "150px" }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {runs.map((run) => (
                             <React.Fragment key={run.id}>
                                 <tr
-                                    onClick={() => navigate(`/runs/${run.id}`, { state: { fromAdmin: true } })}
-                                    style={{ cursor: 'pointer' }}
+                                    onClick={() =>
+                                        navigate(`/runs/${run.id}`, {
+                                            state: { fromAdmin: true },
+                                        })
+                                    }
+                                    style={{ cursor: "pointer" }}
                                     className="hover:bg-gray-100 transition-colors"
                                 >
                                     <td onClick={(e) => e.stopPropagation()}>
                                         <Form.Check
                                             type="checkbox"
                                             checked={isSelected(run.id)}
-                                            onChange={() => handleSelectItem(run.id)}
+                                            onChange={() =>
+                                                handleSelectItem(run.id)
+                                            }
                                         />
                                     </td>
                                     <td onClick={(e) => e.stopPropagation()}>
@@ -381,7 +447,7 @@ const PipelineList: React.FC = () => {
                                             size="sm"
                                             className="p-0"
                                             onClick={() => toggleRow(run.id)}
-                                            style={{ color: 'inherit' }}
+                                            style={{ color: "inherit" }}
                                         >
                                             {expandedRows.has(run.id) ? (
                                                 <EyeSlash size={16} />
@@ -391,33 +457,65 @@ const PipelineList: React.FC = () => {
                                         </Button>
                                     </td>
                                     <td>
-                                        <strong>{run.pipeline || 'Unknown'}</strong>
+                                        <strong>
+                                            {run.pipeline || "Unknown"}
+                                        </strong>
                                     </td>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         {editingStatus[run.id] !== undefined ? (
                                             <div className="d-flex align-items-center gap-2">
                                                 <Form.Select
                                                     size="sm"
-                                                    value={editingStatus[run.id]}
-                                                    onChange={(e) => setEditingStatus({ ...editingStatus, [run.id]: e.target.value })}
-                                                    style={{ width: 'auto', minWidth: '120px' }}
+                                                    value={
+                                                        editingStatus[run.id]
+                                                    }
+                                                    onChange={(e) =>
+                                                        setEditingStatus({
+                                                            ...editingStatus,
+                                                            [run.id]:
+                                                                e.target.value,
+                                                        })
+                                                    }
+                                                    style={{
+                                                        width: "auto",
+                                                        minWidth: "120px",
+                                                    }}
                                                 >
-                                                    <option value="pending">Pending</option>
-                                                    <option value="started">Started</option>
-                                                    <option value="completed">Completed</option>
-                                                    <option value="error">Error</option>
+                                                    <option value="pending">
+                                                        Pending
+                                                    </option>
+                                                    <option value="started">
+                                                        Started
+                                                    </option>
+                                                    <option value="completed">
+                                                        Completed
+                                                    </option>
+                                                    <option value="error">
+                                                        Error
+                                                    </option>
                                                 </Form.Select>
                                                 <Button
                                                     variant="success"
                                                     size="sm"
-                                                    onClick={() => handleStatusChange(run.id, editingStatus[run.id])}
+                                                    onClick={() =>
+                                                        handleStatusChange(
+                                                            run.id,
+                                                            editingStatus[
+                                                                run.id
+                                                            ]
+                                                        )
+                                                    }
                                                 >
                                                     ✓
                                                 </Button>
                                                 <Button
                                                     variant="secondary"
                                                     size="sm"
-                                                    onClick={() => cancelEditingStatus(run.id)}
+                                                    onClick={() =>
+                                                        cancelEditingStatus(
+                                                            run.id
+                                                        )
+                                                    }
                                                 >
                                                     ✕
                                                 </Button>
@@ -429,7 +527,12 @@ const PipelineList: React.FC = () => {
                                                     variant="link"
                                                     size="sm"
                                                     className="p-0"
-                                                    onClick={() => startEditingStatus(run.id, run.status)}
+                                                    onClick={() =>
+                                                        startEditingStatus(
+                                                            run.id,
+                                                            run.status
+                                                        )
+                                                    }
                                                     title="Edit status"
                                                 >
                                                     <Pencil size={14} />
@@ -443,7 +546,12 @@ const PipelineList: React.FC = () => {
                                         <Button
                                             variant="danger"
                                             size="sm"
-                                            onClick={() => handleDelete(run.id, run.pipeline)}
+                                            onClick={() =>
+                                                handleDelete(
+                                                    run.id,
+                                                    run.pipeline
+                                                )
+                                            }
                                             title="Delete pipeline run"
                                         >
                                             <Trash size={14} />
@@ -455,25 +563,87 @@ const PipelineList: React.FC = () => {
                                         <td colSpan={7}>
                                             <Card className="m-2">
                                                 <Card.Body>
-                                                    <h6 className="mb-3">Additional Information</h6>
+                                                    <h6 className="mb-3">
+                                                        Additional Information
+                                                    </h6>
                                                     <div className="row">
                                                         <div className="col-md-6">
-                                                            <p><strong>Run ID:</strong> <code>{run.id}</code></p>
-                                                            <p><strong>Pipeline:</strong> {run.pipeline || 'Unknown'}</p>
-                                                            <p><strong>Status:</strong> {getStatusBadge(run.status)}</p>
+                                                            <p>
+                                                                <strong>
+                                                                    Run ID:
+                                                                </strong>{" "}
+                                                                <code>
+                                                                    {run.id}
+                                                                </code>
+                                                            </p>
+                                                            <p>
+                                                                <strong>
+                                                                    Pipeline:
+                                                                </strong>{" "}
+                                                                {run.pipeline ||
+                                                                    "Unknown"}
+                                                            </p>
+                                                            <p>
+                                                                <strong>
+                                                                    Status:
+                                                                </strong>{" "}
+                                                                {getStatusBadge(
+                                                                    run.status
+                                                                )}
+                                                            </p>
                                                             {run.user_id && (
-                                                                <p><strong>User ID:</strong> <code>{run.user_id}</code></p>
+                                                                <p>
+                                                                    <strong>
+                                                                        User ID:
+                                                                    </strong>{" "}
+                                                                    <code>
+                                                                        {
+                                                                            run.user_id
+                                                                        }
+                                                                    </code>
+                                                                </p>
                                                             )}
                                                             {run.session_id && (
-                                                                <p><strong>Session ID:</strong> <code>{run.session_id}</code></p>
+                                                                <p>
+                                                                    <strong>
+                                                                        Session
+                                                                        ID:
+                                                                    </strong>{" "}
+                                                                    <code>
+                                                                        {
+                                                                            run.session_id
+                                                                        }
+                                                                    </code>
+                                                                </p>
                                                             )}
                                                         </div>
                                                         <div className="col-md-6">
-                                                            <p><strong>Output Path:</strong></p>
-                                                            <code className="d-block text-break mb-2">{run.output_path || 'N/A'}</code>
-                                                            <p><strong>Created At:</strong> {formatDate(run.created_at)}</p>
+                                                            <p>
+                                                                <strong>
+                                                                    Output Path:
+                                                                </strong>
+                                                            </p>
+                                                            <code className="d-block text-break mb-2">
+                                                                {run.output_path ||
+                                                                    "N/A"}
+                                                            </code>
+                                                            <p>
+                                                                <strong>
+                                                                    Created At:
+                                                                </strong>{" "}
+                                                                {formatDate(
+                                                                    run.created_at
+                                                                )}
+                                                            </p>
                                                             {run.timestamp && (
-                                                                <p><strong>Timestamp:</strong> {formatTimestamp(run.timestamp)}</p>
+                                                                <p>
+                                                                    <strong>
+                                                                        Timestamp:
+                                                                    </strong>{" "}
+                                                                    {formatTimestamp(
+                                                                        run.timestamp
+                                                                    )}
+                                                                </p>
                                                             )}
                                                         </div>
                                                     </div>
@@ -492,4 +662,3 @@ const PipelineList: React.FC = () => {
 };
 
 export default PipelineList;
-
