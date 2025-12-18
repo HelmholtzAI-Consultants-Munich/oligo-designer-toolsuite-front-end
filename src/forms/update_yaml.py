@@ -51,16 +51,11 @@ def convert_value_to_js(value, comment=""):
     escaped_comment = escape_js_string(comment)
 
     if isinstance(value, dict):
-        items = [
-            f"    {normalize_key(k)}: {convert_value_to_js(v, comment)}"
-            for k, v in value.items()
-        ]
+        items = [f"    {normalize_key(k)}: {convert_value_to_js(v, comment)}" for k, v in value.items()]
         return "{\n" + ",\n".join(items) + "\n    }"
     elif isinstance(value, list):
         escaped_items = [escape_js_string(item) for item in value]
-        return (
-            f'{{ value: ["{", ".join(escaped_items)}"], comment: "{escaped_comment}" }}'
-        )
+        return f'{{ value: ["{", ".join(escaped_items)}"], comment: "{escaped_comment}" }}'
     elif isinstance(value, bool):
         return f'{{ value: "{str(value).lower()}", comment: "{escaped_comment}" }}'  # Convert to lowercase string
     else:
@@ -81,9 +76,7 @@ def process_dict(d, indent=4):
             nested = process_dict(v, indent + 4)
             items.append(f"{' ' * indent}{normalized_key}: {nested}")
         else:
-            items.append(
-                f"{' ' * indent}{normalized_key}: {convert_value_to_js(v, comment)}"
-            )
+            items.append(f"{' ' * indent}{normalized_key}: {convert_value_to_js(v, comment)}")
 
     return "{\n" + ",\n".join(items) + f"\n{' ' * (indent - 4)}}}"
 

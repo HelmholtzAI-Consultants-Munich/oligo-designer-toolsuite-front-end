@@ -9,7 +9,6 @@ from flask_login.utils import LocalProxy
 import yaml
 from bson import ObjectId
 from flask import current_app, jsonify, session
-from flask_login import current_user
 
 from extensions import mongo
 
