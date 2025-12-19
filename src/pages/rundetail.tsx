@@ -174,7 +174,8 @@ const RunDetail = () => {
                 // YAML check
                 const yamlFile = response.data.find(
                     (f: RunFile) =>
-                        f.name.includes("probes.yml") || f.name.includes("probesets.yml")
+                        f.name.includes("probes.yml") ||
+                        f.name.includes("probesets.yml")
                 );
                 setHasYamlFile(!!yamlFile);
 
@@ -714,211 +715,199 @@ const RunDetail = () => {
 
                 {/* YAML/table logic remains unchanged below */}
                 {parsedYamlData && (
-                        <div className="card">
-                            <div className="card-body">
-                                <div className="d-flex justify-content-between align-items-center mb-3">
-                                    <h4 className="card-title mb-0">
-                                        Gene Analysis
-                                    </h4>
-                                    <div className="btn-group">
-                                        <button
-                                            onClick={handleDownloadExcel}
-                                            className="btn btn-success"
-                                            title="Download Excel file with each gene as a separate sheet"
-                                        >
-                                            Download All Genes Excel
-                                        </button>
-                                    </div>
+                    <div className="card">
+                        <div className="card-body">
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <h4 className="card-title mb-0">
+                                    Gene Analysis
+                                </h4>
+                                <div className="btn-group">
+                                    <button
+                                        onClick={handleDownloadExcel}
+                                        className="btn btn-success"
+                                        title="Download Excel file with each gene as a separate sheet"
+                                    >
+                                        Download All Genes Excel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="row mb-3">
+                                <div className="col-md-6">
+                                    <label className="form-label">
+                                        Select Gene
+                                    </label>
+                                    <Select
+                                        options={geneOptions}
+                                        value={geneOptions.find(
+                                            (option) =>
+                                                option.value === selectedGene
+                                        )}
+                                        onChange={(
+                                            newValue: SingleValue<GeneOption>
+                                        ) => {
+                                            setSelectedGene(
+                                                newValue?.value || ""
+                                            );
+                                            setSelectedOligoset("Oligoset 1");
+                                        }}
+                                        placeholder="Search or select gene..."
+                                        isSearchable
+                                        className="basic-single"
+                                        classNamePrefix="select"
+                                    />
                                 </div>
 
-                                <div className="row mb-3">
+                                {selectedGene && (
                                     <div className="col-md-6">
                                         <label className="form-label">
-                                            Select Gene
+                                            Select Oligoset
                                         </label>
-                                        <Select
-                                            options={geneOptions}
-                                            value={geneOptions.find(
-                                                (option) =>
-                                                    option.value ===
-                                                    selectedGene
-                                            )}
-                                            onChange={(
-                                                newValue: SingleValue<GeneOption>
-                                            ) => {
-                                                setSelectedGene(
-                                                    newValue?.value || ""
-                                                );
+                                        <select
+                                            className="form-select"
+                                            value={selectedOligoset}
+                                            onChange={(e) => {
                                                 setSelectedOligoset(
-                                                    "Oligoset 1"
+                                                    e.target.value
                                                 );
+                                                setSelectedOligo(0);
                                             }}
-                                            placeholder="Search or select gene..."
-                                            isSearchable
-                                            className="basic-single"
-                                            classNamePrefix="select"
-                                        />
-                                    </div>
-
-                                    {selectedGene && (
-                                        <div className="col-md-6">
-                                            <label className="form-label">
-                                                Select Oligoset
-                                            </label>
-                                            <select
-                                                className="form-select"
-                                                value={selectedOligoset}
-                                                onChange={(e) => {
-                                                    setSelectedOligoset(
-                                                        e.target.value
-                                                    );
-                                                    setSelectedOligo(0);
-                                                }}
-                                            >
-                                                <option value="">
-                                                    Select an Oligoset
-                                                </option>
-                                                {getOligosetsForGene(
-                                                    selectedGene
-                                                ).map((oligoset) => (
-                                                    <option
-                                                        key={oligoset}
-                                                        value={oligoset}
-                                                    >
-                                                        {oligoset}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {selectedOligoset && (
-                                    <div className="mt-3">
-                                        <div className="d-flex justify-content-between align-items-center mb-2">
-                                            <h5>
-                                                Oligos in {selectedOligoset}
-                                            </h5>
-                                            <div>
-                                                <span className="form-text me-2">
-                                                    Showing{" "}
-                                                    {
-                                                        getOligosForOligoset()
-                                                            .length
-                                                    }{" "}
-                                                    oligos
-                                                </span>
-                                                <button
-                                                    onClick={handleDownloadCSV}
-                                                    className="btn btn-sm btn-primary"
+                                        >
+                                            <option value="">
+                                                Select an Oligoset
+                                            </option>
+                                            {getOligosetsForGene(
+                                                selectedGene
+                                            ).map((oligoset) => (
+                                                <option
+                                                    key={oligoset}
+                                                    value={oligoset}
                                                 >
-                                                    Download Oligoset CSV
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="my-3">
-                                            <ResultVisualization
-                                                oligos={getOligosForOligoset()}
-                                                pipeline={pipeline}
-                                                selectedOligo={selectedOligo}
-                                                setSelectedOligo={setSelectedOligo}
-                                            />
-                                        </div>
-                                        <div className="table-responsive">
-                                            <table className="table table-bordered table-striped table-hover">
-                                                <thead className="table-light">
-                                                    <tr>
-                                                        {tableColumns.map(
-                                                            (column) => (
-                                                                <th
-                                                                    key={column}
-                                                                    className="text-nowrap"
-                                                                >
-                                                                    {column.replace(
-                                                                        /_/g,
-                                                                        " "
-                                                                    )}
-                                                                </th>
-                                                            )
-                                                        )}
-                                                    </tr>
-                                                </thead>
-
-                                                <tbody>
-                                                    {getOligosForOligoset().map(
-                                                        (oligo, index) => (
-                                                            <tr
-                                                                key={
-                                                                    oligo.oligo_id
-                                                                }
-                                                            >
-                                                                {tableColumns.map(
-                                                                    (
-                                                                        column
-                                                                    ) => (
-                                                                        <td
-                                                                            key={`${oligo.oligo_id}-${column}`}
-                                                                            className={
-                                                                                "text-nowrap " +
-                                                                                (index ===
-                                                                                selectedOligo
-                                                                                    ? "table-primary"
-                                                                                    : "")
-                                                                            }
-                                                                            onClick={() =>
-                                                                                setSelectedOligo(
-                                                                                    index
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            {column ===
-                                                                            "location"
-                                                                                ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                                                : formatValue(
-                                                                                      oligo[
-                                                                                          column
-                                                                                      ]
-                                                                                  )}
-                                                                        </td>
-                                                                    )
-                                                                )}
-                                                            </tr>
-                                                        )
-                                                    )}
-                                                </tbody>
-
-                                                <tfoot>
-                                                    <tr>
-                                                        <td
-                                                            colSpan={
-                                                                tableColumns.length
-                                                            }
-                                                        >
-                                                            <div className="mt-2">
-                                                                <strong>
-                                                                    Source:
-                                                                </strong>{" "}
-                                                                {oligos[0]
-                                                                    ?.source ??
-                                                                    "N/A"}
-                                                                <br />
-                                                                <strong>
-                                                                    Species:
-                                                                </strong>{" "}
-                                                                {oligos[0]
-                                                                    ?.species ??
-                                                                    "N/A"}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
-                                        </div>
+                                                    {oligoset}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </div>
                                 )}
                             </div>
+
+                            {selectedOligoset && (
+                                <div className="mt-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <h5>Oligos in {selectedOligoset}</h5>
+                                        <div>
+                                            <span className="form-text me-2">
+                                                Showing{" "}
+                                                {getOligosForOligoset().length}{" "}
+                                                oligos
+                                            </span>
+                                            <button
+                                                onClick={handleDownloadCSV}
+                                                className="btn btn-sm btn-primary"
+                                            >
+                                                Download Oligoset CSV
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="my-3">
+                                        <ResultVisualization
+                                            oligos={getOligosForOligoset()}
+                                            pipeline={pipeline}
+                                            selectedOligo={selectedOligo}
+                                            setSelectedOligo={setSelectedOligo}
+                                        />
+                                    </div>
+                                    <div className="table-responsive">
+                                        <table className="table table-bordered table-striped table-hover">
+                                            <thead className="table-light">
+                                                <tr>
+                                                    {tableColumns.map(
+                                                        (column) => (
+                                                            <th
+                                                                key={column}
+                                                                className="text-nowrap"
+                                                            >
+                                                                {column.replace(
+                                                                    /_/g,
+                                                                    " "
+                                                                )}
+                                                            </th>
+                                                        )
+                                                    )}
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                {getOligosForOligoset().map(
+                                                    (oligo, index) => (
+                                                        <tr
+                                                            key={oligo.oligo_id}
+                                                        >
+                                                            {tableColumns.map(
+                                                                (column) => (
+                                                                    <td
+                                                                        key={`${oligo.oligo_id}-${column}`}
+                                                                        className={
+                                                                            "text-nowrap " +
+                                                                            (index ===
+                                                                            selectedOligo
+                                                                                ? "table-primary"
+                                                                                : "")
+                                                                        }
+                                                                        onClick={() =>
+                                                                            setSelectedOligo(
+                                                                                index
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        {column ===
+                                                                        "location"
+                                                                            ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
+                                                                            : formatValue(
+                                                                                  oligo[
+                                                                                      column
+                                                                                  ]
+                                                                              )}
+                                                                    </td>
+                                                                )
+                                                            )}
+                                                        </tr>
+                                                    )
+                                                )}
+                                            </tbody>
+
+                                            <tfoot>
+                                                <tr>
+                                                    <td
+                                                        colSpan={
+                                                            tableColumns.length
+                                                        }
+                                                    >
+                                                        <div className="mt-2">
+                                                            <strong>
+                                                                Source:
+                                                            </strong>{" "}
+                                                            {oligos[0]
+                                                                ?.source ??
+                                                                "N/A"}
+                                                            <br />
+                                                            <strong>
+                                                                Species:
+                                                            </strong>{" "}
+                                                            {oligos[0]
+                                                                ?.species ??
+                                                                "N/A"}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </div>
+                )}
             </div>
         </div>
     );

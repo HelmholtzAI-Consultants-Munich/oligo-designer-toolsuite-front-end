@@ -41,7 +41,12 @@ type OligoBase = {
     isBinding: boolean;
 };
 
-const OligoComponents: React.FC<Props> = ({ oligos, pipeline, selectedOligo, setSelectedOligo }) => {
+const OligoComponents: React.FC<Props> = ({
+    oligos,
+    pipeline,
+    selectedOligo,
+    setSelectedOligo,
+}) => {
     const definition = ComponentDefinition[
         pipeline as keyof typeof ComponentDefinition
     ] as OligoComponentDefinition[];
@@ -138,32 +143,20 @@ const OligoComponents: React.FC<Props> = ({ oligos, pipeline, selectedOligo, set
 
     return (
         <>
-            <label
-                className="form-label"
-                htmlFor="oligoSelect"
-            >
+            <label className="form-label" htmlFor="oligoSelect">
                 Select Oligo
             </label>
             <select
                 id="oligoSelect"
                 className="form-select"
                 value={selectedOligo}
-                onChange={(e) =>
-                    setSelectedOligo(
-                        parseInt(e.target.value)
-                    )
-                }
+                onChange={(e) => setSelectedOligo(parseInt(e.target.value))}
             >
-                {oligos.map(
-                    (_, index) => (
-                        <option
-                            key={index}
-                            value={index}
-                        >
-                            Oligo {index + 1}
-                        </option>
-                    )
-                )}
+                {oligos.map((_, index) => (
+                    <option key={index} value={index}>
+                        Oligo {index + 1}
+                    </option>
+                ))}
             </select>
             <svg id="oligo-components">
                 <g>
