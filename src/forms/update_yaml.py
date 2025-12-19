@@ -55,7 +55,9 @@ def convert_value_to_js(value, comment=""):
         return "{\n" + ",\n".join(items) + "\n    }"
     elif isinstance(value, list):
         escaped_items = [escape_js_string(item) for item in value]
-        return f'{{ value: ["{", ".join(escaped_items)}"], comment: "{escaped_comment}" }}'
+        return (
+            f'{{ value: ["{", ".join(escaped_items)}"], comment: "{escaped_comment}" }}'
+        )
     elif isinstance(value, bool):
         return f'{{ value: "{str(value).lower()}", comment: "{escaped_comment}" }}'  # Convert to lowercase string
     else:

@@ -6,17 +6,26 @@ type Props = {
     oligos: Oligo[];
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
-}
+};
 
 class GenomeAlignment extends React.Component<Props> {
     private el: SVGSVGElement | null = null;
 
     componentDidMount() {
-        GenomeAlignmentD3.create(this.el!, this.props.oligos, this.props.selectedOligo, this.props.setSelectedOligo);   
+        GenomeAlignmentD3.create(
+            this.el!,
+            this.props.oligos,
+            this.props.selectedOligo,
+            this.props.setSelectedOligo
+        );
     }
 
     componentDidUpdate() {
-        GenomeAlignmentD3.update(this.el!, this.props.oligos, this.props.selectedOligo);
+        GenomeAlignmentD3.update(
+            this.el!,
+            this.props.oligos,
+            this.props.selectedOligo
+        );
     }
 
     componentWillUnmount() {
@@ -25,7 +34,11 @@ class GenomeAlignment extends React.Component<Props> {
 
     render() {
         return (
-            <svg ref={el => { this.el = el; }}></svg>
+            <svg
+                ref={(el) => {
+                    this.el = el;
+                }}
+            ></svg>
         );
     }
 }

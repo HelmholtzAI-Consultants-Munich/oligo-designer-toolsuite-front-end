@@ -9,10 +9,15 @@ type Props = {
     pipeline: string;
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
-}
+};
 
-const ResultVisualization: React.FC<Props> = ({ oligos, pipeline, selectedOligo, setSelectedOligo }) => {
-    const [key, setKey] = useState('components');
+const ResultVisualization: React.FC<Props> = ({
+    oligos,
+    pipeline,
+    selectedOligo,
+    setSelectedOligo,
+}) => {
+    const [key, setKey] = useState("components");
 
     return (
         <Tabs
@@ -30,7 +35,7 @@ const ResultVisualization: React.FC<Props> = ({ oligos, pipeline, selectedOligo,
             </Tab>
             <Tab eventKey="alignment" title="Genome Alignment">
                 <GenomeAlignment
-                    key={oligos.map(o => o.oligo_id).join(",")} // Force remount on oligos change
+                    key={oligos.map((o) => o.oligo_id).join(",")} // Force remount on oligos change
                     oligos={oligos}
                     selectedOligo={selectedOligo}
                     setSelectedOligo={setSelectedOligo}
