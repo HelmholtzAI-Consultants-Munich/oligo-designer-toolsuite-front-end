@@ -1,0 +1,158 @@
+name: PR Lint & Format
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: # Allow manual runs for testing
+
+jobs:
+  python-lint:
+    name: Python Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Ruff
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          pip install --group flask/pyproject.toml:lint
+
+      - name: Run Ruff lint check
+        id: python-lint-run
+        run: |
+          set -euxo pipefail
+          ruff check flask --config flask/pyproject.toml
+        continue-on-error: false
+
+      - name: Lint summary
+        if: always()
+        run: |
+          echo "## Python Lint Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.python-lint-run.outcome }}" == "success" ]; then
+            echo "✅ Python linting passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Python linting failed" >> $GITHUB_STEP_SUMMARY
+            echo "Run 'ruff check flask --config flask/pyproject.toml' to see issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  python-format:
+    name: Python Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install Ruff
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          pip install --group flask/pyproject.toml:lint
+
+      - name: Run Ruff format check
+        id: python-format-run
+        run: |
+          set -euxo pipefail
+          ruff format flask --check --config flask/pyproject.toml
+        continue-on-error: false
+
+      - name: Format summary
+        if: always()
+        run: |
+          echo "## Python Format Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.python-format-run.outcome }}" == "success" ]; then
+            echo "✅ Python formatting is correct" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Python formatting check failed" >> $GITHUB_STEP_SUMMARY
+            echo "Run 'ruff format flask --config flask/pyproject.toml' to fix" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          npm ci
+
+      - name: Run ESLint
+        id: frontend-lint-run
+        run: |
+          set -euxo pipefail
+          npm run lint
+        continue-on-error: false
+
+      - name: Lint summary
+        if: always()
+        run: |
+          echo "## Frontend Lint Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.frontend-lint-run.outcome }}" == "success" ]; then
+            echo "✅ Frontend linting passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Frontend linting failed" >> $GITHUB_STEP_SUMMARY
+            echo "Run 'npm run lint:fix' to auto-fix some issues" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  frontend-format:
+    name: Frontend Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          npm ci
+
+      - name: Run Prettier check
+        id: frontend-format-run
+        run: |
+          set -euxo pipefail
+          npm run format
+        continue-on-error: false
+
+      - name: Format summary
+        if: always()
+        run: |
+          echo "## Frontend Format Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.frontend-format-run.outcome }}" == "success" ]; then
+            echo "✅ Frontend formatting is correct" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Frontend formatting check failed" >> $GITHUB_STEP_SUMMARY
+            echo "Run 'npm run format:fix' to fix" >> $GITHUB_STEP_SUMMARY
+          fi
+

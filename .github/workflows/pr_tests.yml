@@ -1,0 +1,116 @@
+name: PR Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: # Allow manual runs for testing
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      mongo:
+        image: mongo:6
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          pip install --group flask/pyproject.toml:test
+
+      - name: Wait for MongoDB to be ready
+        run: |
+          set -euxo pipefail
+          echo "Waiting for MongoDB connection..."
+          for i in {1..10}; do
+            if nc -z localhost 27017; then
+              echo "✅ MongoDB is ready!"
+              mongosh --eval 'db.adminCommand("ping")' && break
+            fi
+            echo "⏳ Waiting for MongoDB... (attempt $i/10)"
+            sleep 3
+          done
+
+      - name: Run tests with coverage
+        id: backend-tests-run
+        run: |
+          set -euxo pipefail
+          pytest --cov=flask --cov-report=term-missing --cov-report=xml
+        continue-on-error: false
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: coverage.xml
+          retention-days: 7
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Backend Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.backend-tests-run.outcome }}" == "success" ]; then
+            echo "✅ Backend tests completed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "Coverage report uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Backend tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "Check the test logs above for details" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          npm ci
+
+      - name: Run tests
+        id: frontend-tests-run
+        run: |
+          set -euxo pipefail
+          npm test
+        continue-on-error: false
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## Frontend Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.frontend-tests-run.outcome }}" == "success" ]; then
+            echo "✅ Frontend tests completed successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Frontend tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "Check the test logs above for details" >> $GITHUB_STEP_SUMMARY
+          fi
+
