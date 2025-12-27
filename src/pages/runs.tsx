@@ -8,10 +8,11 @@ import axios from "axios";
 interface PipelineRun {
     _id: string;
     pipeline: string;
-    status: "started" | "completed" | "failed" | "unknown";
+    status: "started" | "completed" | "failed" | "error" | "unknown";
     timestamp: string;
     output_path: string;
     user_id: string;
+    error_message?: string;
 }
 
 const Runs = () => {
@@ -75,6 +76,7 @@ const Runs = () => {
             started: "primary",
             completed: "success",
             failed: "danger",
+            error: "danger",
             unknown: "secondary",
         };
         return `badge bg-${statusMap[status] || "secondary"}`;
@@ -150,6 +152,11 @@ const Runs = () => {
                                                 >
                                                     {run.status}
                                                 </span>
+                                                {(run.status === "error" || run.status === "failed") && run.error_message && (
+                                                    <div className="text-danger small mt-1" title={run.error_message}>
+                                                        {run.error_message}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td>
                                                 {formatTimestamp(run.timestamp)}

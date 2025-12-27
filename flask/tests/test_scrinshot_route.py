@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import pytest
 
 from extensions import mongo
+from conftest import assert_error_sanitized
 
 
 @pytest.fixture
@@ -123,6 +124,10 @@ def dummy_form(run_id):
 
 
 def test_scrinshot_authenticated(client, dummy_form, run_id, mock_run, authenticated_user):
+    # Ensure run exists with correct user_id for authenticated user
+    from conftest import create_test_run
+    create_test_run(run_id, user_id="test_user_id", status="created")
+    
     response = client.post("/api/scrinshot", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
@@ -144,9 +149,43 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_run, session
     assert updated["status"] == "completed"
 
 
-def test_invalid_session(client, dummy_form, mock_run):
+def test_invalid_session(client, dummy_form, mock_run, run_id):
+    # Ensure run exists with correct session_id
+    from conftest import create_test_run
+    create_test_run(run_id, user_id=None, session_id="gaeuhfwuahfuagdzgawuzdgauwgdu", status="created")
+    
     with client.session_transaction() as session:
         session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
 
     response = client.post("/api/scrinshot", json=dummy_form)
     assert response.status_code == 200
+
+
+# Error handling tests
+def test_scrinshot_route_invalid_run_id(client, dummy_form, authenticated_user):
+    """Test scrinshot route with invalid run ID returns sanitized error."""
+    invalid_form = dummy_form.copy()
+    invalid_form["runid"] = "invalid_id"
+    
+    response = client.post("/api/scrinshot", json=invalid_form)
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Invalid run identifier"
+    # Verify no raw error strings exposed
+    assert_error_sanitized(data)
+
+
+def test_scrinshot_route_propagates_pipeline_runner_errors(client, run_id, authenticated_user):
+    """Test scrinshot route propagates PipelineRunner errors correctly."""
+    # Test with empty run ID to trigger PipelineRunner error
+    form_with_empty_runid = {
+        "formdata": {"file_regions": {"value": "Gene1"}},
+        "runid": "",
+    }
+    
+    response = client.post("/api/scrinshot", json=form_with_empty_runid)
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Invalid run identifier"

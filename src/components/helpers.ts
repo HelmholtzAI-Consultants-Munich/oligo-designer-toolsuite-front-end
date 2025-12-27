@@ -1,5 +1,6 @@
 import type { FastaForm, FileState, formData } from "./types";
 import { copyToClipboard, createRunId } from "../modules/helpers";
+import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
 export const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -328,10 +329,11 @@ export const handleSubmit = async (
             body: `The pipeline has successfully finished processing. Your run ID is: ${newId}`,
         });
     } catch (error) {
+        const errorMessage = extractSubmissionError(error);
         setModal({
             show: true,
             title: "Pipeline Failed",
-            body: `The pipeline has failed during processing. Your run ID is: ${newId}.`,
+            body: errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
         });
     } finally {
         setRunStatus("idle");

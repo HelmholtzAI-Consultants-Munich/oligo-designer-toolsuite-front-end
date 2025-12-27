@@ -13,6 +13,7 @@ import seqfishImage from "../images/pipeline_seqfishplus_probes.webp";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
 import { InfoModal } from "../components/modal/InfoModal";
 import { RunIdAlert } from "../components/alert/RunIdAlert";
+import { extractSubmissionError } from "../components/errorHandler";
 
 const OligoSeq: React.FC = () => {
     const defaultFastaForm = {
@@ -3061,10 +3062,11 @@ const OligoSeq: React.FC = () => {
             });
         } catch (error) {
             console.error("Error submitting oligoseq form:", error);
+            const errorMessage = extractSubmissionError(error);
             setModal({
                 show: true,
                 title: "Pipeline Failed",
-                body: `The pipeline has failed during processing. Your run ID is: ${newId}.`,
+                body: errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
             });
         } finally {
             setRunStatus("idle");

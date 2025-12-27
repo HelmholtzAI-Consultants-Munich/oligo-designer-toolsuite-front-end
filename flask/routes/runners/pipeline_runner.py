@@ -13,6 +13,8 @@ from flask import current_app, jsonify, session
 from extensions import mongo
 
 from ..helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
+from ..error_handlers import create_user_error_response
+from bson.errors import InvalidId
 
 
 class PipelineRunner:
@@ -85,52 +87,68 @@ class PipelineRunner:
         self.schema = schema  # JSON schema
 
     def run(self, current_user: LocalProxy, form_data: dict, run_id_str: str):
-        # Convert run ID string to ObjectId
-        if not run_id_str:
-            return jsonify({"error": "Invalid run ID"}), 400
         try:
-            run_id = ObjectId(run_id_str)
-        except Exception:
-            traceback.print_exc()
-            return jsonify({"error": "Invalid run ID"}), 400
+            # Convert run ID string to ObjectId
+            if not run_id_str:
+                return jsonify({"error": "The run ID you provided is not valid. Please check and try again."}), 400
+            try:
+                run_id = ObjectId(run_id_str)
+            except (InvalidId, Exception) as e:
+                return create_user_error_response(e, "submission")
 
-        # User Directory and Session / User ID Logic
-        try:
-            context = self.create_context(current_user)
+            # User Directory and Session / User ID Logic
+            try:
+                context = self.create_context(current_user)
+            except Exception as e:
+                return create_user_error_response(e, "submission")
+
+            # Temp File Creation (if needed)
+            try:
+                self.populate_temp_file(form_data)
+            except Exception as e:
+                return create_user_error_response(e, "submission")
+
+            # Mark Run as Started in DB
+            update_result = self.write_run_to_DB(run_id, context)
+            if update_result.matched_count == 0:
+                return create_user_error_response(ValueError("Run ID not found"), "submission")
+
+            # Build Config and Write to YAML
+            try:
+                self.populate_config_file(form_data, context)
+            except Exception as e:
+                return create_user_error_response(e, "submission")
+
+            # Subprocess Call
+            try:
+                status = self.call_subprocess(context["config_path"])
+            except Exception as e:
+                # Update run status to error before returning
+                try:
+                    self.update_run_status_in_DB(run_id, "error")
+                except:
+                    pass  # If we can't update DB, continue with error response
+                return create_user_error_response(e, "submission")
+
+            # Cleanup of Temporary Files
+            try:
+                self.cleanup_temp_files(form_data)
+            except Exception as e:
+                # Log cleanup errors but don't fail the request
+                current_app.logger.warning(f"Error during cleanup: {e}")
+
+            # DB Update
+            self.update_run_status_in_DB(run_id, status)
+
+            # Response - return tuple for consistency with error responses
+            return jsonify(
+                {
+                    "run_id": str(run_id),
+                }
+            ), 200
         except Exception as e:
-            traceback.print_exc()
-            return jsonify({"error": str(e)}), 400
-
-        # Temp File Creation (if needed)
-        self.populate_temp_file(form_data)
-
-        # Mark Run as Started in DB
-        update_result = self.write_run_to_DB(run_id, context)
-        if update_result.matched_count == 0:
-            return jsonify({"error": "Run ID not found"}), 404
-
-        # Build Config and Write to YAML
-        try:
-            self.populate_config_file(form_data, context)
-        except Exception as e:
-            traceback.print_exc()
-            return jsonify({"error": str(e)}), 400
-
-        # Subprocess Call
-        status = self.call_subprocess(context["config_path"])
-
-        # Cleanup of Temporary Files
-        self.cleanup_temp_files(form_data)
-
-        # DB Update
-        self.update_run_status_in_DB(run_id, status)
-
-        # Response
-        return jsonify(
-            {
-                "run_id": str(run_id),
-            }
-        )
+            # Catch-all for any unexpected errors
+            return create_user_error_response(e, "submission")
 
     def create_context(self, current_user: LocalProxy) -> dict:
         if current_user.is_authenticated:
@@ -144,12 +162,12 @@ class PipelineRunner:
             user_id = None
             session_id = session.get("session_id")
             if not session_id:
-                raise ValueError("Anonymous session ID not found in session")
+                raise ValueError("Invalid session configuration")
             user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
             config_path = os.path.join(user_dir, "config.yaml")
 
         if not os.path.exists(user_dir):
-            raise RuntimeError(f"Expected user directory at {user_dir} to exist")
+            raise RuntimeError("User directory not found")
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(user_dir, f"output_{self.pipeline_name}_probe_designer_{timestamp}")
@@ -233,6 +251,10 @@ class PipelineRunner:
         # Write config to YAML file
         print(f"Writing config to {context['config_path']}")
         current_app.logger.warning(config)
+        # Ensure parent directory exists
+        config_dir = os.path.dirname(context["config_path"])
+        if config_dir and not os.path.exists(config_dir):
+            os.makedirs(config_dir, exist_ok=True)
         with open(context["config_path"], "w") as f:
             yaml.dump(config, f, sort_keys=False)
 
