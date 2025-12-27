@@ -10,8 +10,9 @@ env:
 
 jobs:
   e2e:
-    name: 🧪 Playwright E2E Test
+    name: Playwright E2E Test
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     services:
       mongo:
@@ -25,20 +26,22 @@ jobs:
           --health-retries=5
 
     steps:
-      - name: 🧹 Free up disk space
+      - name: Free up disk space
         run: |
+          set -euxo pipefail
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
           sudo apt-get clean
           df -h
 
-      - name: 🧾 Checkout Repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 📥 Clone Oligo Designer Toolsuite
+      - name: Clone Oligo Designer Toolsuite
         run: |
+          set -euxo pipefail
           git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite odt_repo
 
-      - name: 🧬 Set Up Conda Environment, Bio Tools, and Backend
+      - name: Set up Conda Environment, Bio Tools, and Backend
         uses: conda-incubator/setup-miniconda@v3
         with:
           miniconda-version: "latest"
@@ -46,7 +49,7 @@ jobs:
           activate-environment: odt
           python-version: 3.12
 
-      - name: 📦 Cache pip
+      - name: Cache pip
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
@@ -54,8 +57,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: 🔬 Install Bio Tools and ODT Repo
+      - name: Install Bio Tools and ODT Repo
         run: |
+          set -euxo pipefail
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
           conda env update -f flask/environment.yml
@@ -63,33 +67,60 @@ jobs:
           pip install -e .
           cd ..
 
-      - name: 🧪 Set Up ODT Environment from Repo
+      - name: Set up ODT Environment from Repo
         run: |
+          set -euxo pipefail
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
           pip install --group flask/pyproject.toml:test
 
-      - name: 📦 Install Frontend Dependencies
+      - name: Install Frontend Dependencies
         run: |
+          set -euxo pipefail
           npm ci
 
-      - name: 🚀 Start Full App (Frontend + Backend)
+      - name: Start Full App (Frontend + Backend)
         run: |
+          set -euxo pipefail
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
           chmod +x start.sh
           ./start.sh &
           sleep 30
 
-      - name: 🎭 Install Playwright
+      - name: Install Playwright
         run: |
+          set -euxo pipefail
           npx playwright install --with-deps
 
-      - name: 🧪 Run E2E Tests
+      - name: Run E2E Tests
+        id: e2e-tests-run
         run: |
+          set -euxo pipefail
           npx playwright test tests/scrinshotE2E.spec.ts
           npx playwright test tests/oligoseqE2E.spec.ts
           npx playwright test tests/merfishE2E.spec.ts
           npx playwright test tests/seqfishE2E.spec.ts
           npx playwright test tests/genomic_ensemblE2E.spec.ts
           npx playwright test tests/genomic_ncbiE2E.spec.ts
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-e2e-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Test summary
+        if: always()
+        run: |
+          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.e2e-tests-run.outcome }}" == "success" ]; then
+            echo "✅ E2E tests completed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "Test report uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ E2E tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "Check the test logs above for details" >> $GITHUB_STEP_SUMMARY
+            echo "Test report uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+          fi
