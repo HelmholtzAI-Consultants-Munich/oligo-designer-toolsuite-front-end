@@ -19,6 +19,7 @@ from extensions import mongo
 
 from .cache_helpers import _prepare_ensembl_cached_assets, _prepare_ncbi_cached_assets
 from .helpers import generate_single_region_forms, get_form_cache_key, to_bool, to_int
+from .error_handlers import create_user_error_response
 
 genomic_bp = Blueprint("genomic", __name__)
 
@@ -63,6 +64,15 @@ def genomic_cascaded_ncbi():
 
         # Parse JSON data from the request
         form_data = request.json
+        if not form_data:
+            raise ValueError("Invalid input: form data is required")
+        if "source" not in form_data or "value" not in form_data.get("source", {}):
+            raise ValueError("Invalid input: source is required")
+        if form_data["source"]["value"] not in ["NCBI", "Ensembl"]:
+            raise ValueError("Invalid input: source must be 'NCBI' or 'Ensembl'")
+        if "genomic_regions" not in form_data:
+            raise ValueError("Invalid input: genomic_regions is required")
+        
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(user_dir, f"output_genomic_ncbi_{timestamp}")
         output_gen = output_path + "/annotation"
@@ -81,6 +91,9 @@ def genomic_cascaded_ncbi():
         single_region_forms = generate_single_region_forms(
             form_data
         )  # creates a list of forms with only one region set to true
+        
+        if not single_region_forms:
+            raise ValueError("Invalid input: no valid genomic regions specified")
 
         all_fna_files = []
         cached_skips = []
@@ -161,8 +174,9 @@ def genomic_cascaded_ncbi():
             }
         ), 200
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({"status": "error", "message": "Internal server error", "error": str(e)}), 500
+        error_response, status_code = create_user_error_response(e, "submission")
+        error_data = error_response.get_json()
+        return jsonify({"status": "error", "message": "We couldn't process your genomic data. Please check your input and try again.", "error": error_data.get("error", "Something went wrong. Please try again.")}), status_code
 
 
 @genomic_bp.route("/api/genomic/cascaded/ensembl", methods=["POST"])
@@ -200,6 +214,15 @@ def genomic_cascaded_ensemble():
             user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
 
         form_data = request.json
+        if not form_data:
+            raise ValueError("Invalid input: form data is required")
+        if "source" not in form_data or "value" not in form_data.get("source", {}):
+            raise ValueError("Invalid input: source is required")
+        if form_data["source"]["value"] not in ["NCBI", "Ensembl"]:
+            raise ValueError("Invalid input: source must be 'NCBI' or 'Ensembl'")
+        if "genomic_regions" not in form_data:
+            raise ValueError("Invalid input: genomic_regions is required")
+        
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         run_output_path = os.path.join(user_dir, f"output_genomic_ensemble_{timestamp}")
 
@@ -215,6 +238,9 @@ def genomic_cascaded_ensemble():
         run_id = run_result.inserted_id
 
         single_region_forms = generate_single_region_forms(form_data)
+        
+        if not single_region_forms:
+            raise ValueError("Invalid input: no valid genomic regions specified")
 
         all_fna_files = []
         cached_skips = []
@@ -280,8 +306,9 @@ def genomic_cascaded_ensemble():
         ), 200
 
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({"status": "error", "message": "An error occurred.", "error": str(e)}), 500
+        error_response, status_code = create_user_error_response(e, "submission")
+        error_data = error_response.get_json()
+        return jsonify({"status": "error", "message": "We couldn't process your genomic data. Please check your input and try again.", "error": error_data.get("error", "Something went wrong. Please try again.")}), status_code
 
 
 @genomic_bp.route("/api/genomic/cascaded/custom", methods=["POST"])
@@ -321,6 +348,17 @@ def genomic_cascaded_custom():
             user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
 
         form_data = request.json
+        if not form_data:
+            raise ValueError("Invalid input: form data is required")
+        if "source" not in form_data or "value" not in form_data.get("source", {}):
+            raise ValueError("Invalid input: source is required")
+        if form_data["source"]["value"] not in ["NCBI", "Ensembl", "Custom"]:
+            raise ValueError("Invalid input: source must be 'NCBI', 'Ensembl', or 'Custom'")
+        if form_data["source"]["value"] == "Custom" and not form_data.get("file_regions", {}).get("value"):
+            raise ValueError("Invalid input: file_regions is required for Custom source")
+        if "genomic_regions" not in form_data:
+            raise ValueError("Invalid input: genomic_regions is required")
+        
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         genomic_type = form_data["source"]["value"]
         run_output_path = os.path.join(user_dir, f"output_genomic_{genomic_type}_{timestamp}")
@@ -337,6 +375,9 @@ def genomic_cascaded_custom():
         run_id = run_result.inserted_id
 
         single_region_forms = generate_single_region_forms(form_data)
+        
+        if not single_region_forms:
+            raise ValueError("Invalid input: no valid genomic regions specified")
 
         all_fna_files = []
         cached_skips = []
@@ -449,5 +490,6 @@ def genomic_cascaded_custom():
         ), 200
 
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({"status": "error", "message": "An error occurred.", "error": str(e)}), 500
+        error_response, status_code = create_user_error_response(e, "submission")
+        error_data = error_response.get_json()
+        return jsonify({"status": "error", "message": "We couldn't process your genomic data. Please check your input and try again.", "error": error_data.get("error", "Something went wrong. Please try again.")}), status_code

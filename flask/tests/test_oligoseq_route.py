@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import pytest
 
 from extensions import mongo
+from conftest import assert_error_sanitized
 
 
 @pytest.fixture
@@ -99,6 +100,10 @@ def dummy_form(run_id):
 
 
 def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
+    # Ensure run exists with correct user_id for authenticated user
+    from conftest import create_test_run
+    create_test_run(run_id, user_id="test_user_id", status="created")
+    
     response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
@@ -119,3 +124,33 @@ def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_run, session_
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "completed"
+
+
+# Error handling tests
+def test_oligoseq_route_invalid_run_id(client, dummy_form, authenticated_user):
+    """Test oligoseq route with invalid run ID returns sanitized error."""
+    invalid_form = dummy_form.copy()
+    invalid_form["runid"] = "invalid_id"
+    
+    response = client.post("/api/oligoseq", json=invalid_form)
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Invalid run identifier"
+    # Verify no raw error strings exposed
+    assert_error_sanitized(data)
+
+
+def test_oligoseq_route_propagates_pipeline_runner_errors(client, run_id, authenticated_user):
+    """Test oligoseq route propagates PipelineRunner errors correctly."""
+    # Test with empty run ID to trigger PipelineRunner error
+    form_with_empty_runid = {
+        "formdata": {"file_regions": {"value": "Gene1"}},
+        "runid": "",
+    }
+    
+    response = client.post("/api/oligoseq", json=form_with_empty_runid)
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Invalid run identifier"

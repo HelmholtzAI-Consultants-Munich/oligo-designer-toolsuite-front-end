@@ -154,6 +154,16 @@ const RunDetail = () => {
                     }
                 );
                 setPipeline(runResponse.data.pipeline || "");
+                
+                // Check for error status and display error message
+                let hasErrorMessage = false;
+                if (runResponse.data.status === "error" || runResponse.data.status === "failed") {
+                    if (runResponse.data.error_message) {
+                        // Display error message to user
+                        setLogContent(`Pipeline Error: ${runResponse.data.error_message}`);
+                        hasErrorMessage = true;
+                    }
+                }
 
                 // YAML check
                 const yamlFile = response.data.find(
@@ -162,11 +172,12 @@ const RunDetail = () => {
                 );
                 setHasYamlFile(!!yamlFile);
 
-                // Log check
+                // Log check - preserve error message state if no actual log file exists
                 const firstLog = response.data.find(
                     (f: RunFile) => f.type === "log"
                 );
-                setHasLogFile(!!firstLog);
+                // Set hasLogFile to true if we have either an error message OR an actual log file
+                setHasLogFile(hasErrorMessage || !!firstLog);
                 setLogFilename(firstLog?.name || null);
 
                 // If YAML present, stop polling!
@@ -175,8 +186,9 @@ const RunDetail = () => {
                     if (interval) clearInterval(interval);
                     // Fetch and parse YAML as before
                     fetchAndParsePadlockFile(yamlFile.name);
-                } else if (firstLog) {
-                    // If log file is present, get its content
+                } else if (firstLog && !hasErrorMessage) {
+                    // If log file is present and we don't have an error message, get its content
+                    // (Don't overwrite error message with log file content)
                     const logResp = await axios.get(
                         `http://localhost:5000/api/runs/${runId}/files/${firstLog.name}`,
                         { withCredentials: true, responseType: "text" }
