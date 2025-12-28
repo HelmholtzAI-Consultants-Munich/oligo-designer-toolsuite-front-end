@@ -7,9 +7,8 @@ while ensuring sensitive information is never exposed.
 
 import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-import pytest
 from bson.errors import InvalidId
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -99,7 +98,10 @@ class TestErrorHandlerUtility:
             error = PermissionError("Permission denied")
             response, status_code = create_user_error_response(error, "submission")
             data = response.get_json()
-            assert data["error"] == "Something went wrong while accessing files. Please try again or contact support if the problem persists."
+            assert (
+                data["error"]
+                == "Something went wrong while accessing files. Please try again or contact support if the problem persists."
+            )
             assert status_code == 500
 
     def test_key_error(self, app):
@@ -125,7 +127,7 @@ class TestErrorHandlerUtility:
         with app.app_context():
             # Test file path sanitization
             error = Exception("Error in /user_data/123/config.yaml")
-            response, status_code = create_user_error_response(error, "submission")
+            response, _status_code = create_user_error_response(error, "submission")
             data = response.get_json()
             assert "/user_data/" not in data["error"]
             assert "config.yaml" not in data["error"]
@@ -143,7 +145,7 @@ class TestErrorHandlerUtility:
         with app.app_context():
             long_message = "A" * 300  # Very long error message
             error = Exception(long_message)
-            response, status_code = create_user_error_response(error, "submission")
+            response, _status_code = create_user_error_response(error, "submission")
             data = response.get_json()
             assert len(data["error"]) <= 200
             assert data["error"] == "An error occurred while processing your request"
@@ -154,7 +156,7 @@ class TestErrorHandlerUtility:
             with patch("flask.current_app.logger.error") as mock_logger:
                 error = ValueError("Test error with sensitive info")
                 create_user_error_response(error, "submission")
-                
+
                 # Verify logger was called
                 assert mock_logger.called
                 # Verify full error details are in log
@@ -177,12 +179,11 @@ class TestErrorHandlerUtility:
         with app.app_context():
             with patch("flask.current_app.logger.error") as mock_logger:
                 error = ValueError("Test error")
-                
+
                 # Both should return same message
                 response1, _ = create_user_error_response(error, "submission")
                 response2, _ = create_user_error_response(error, "run")
                 assert response1.get_json()["error"] == response2.get_json()["error"]
-                
+
                 # But error_type should be logged (2 calls from above)
                 assert mock_logger.call_count == 2
-

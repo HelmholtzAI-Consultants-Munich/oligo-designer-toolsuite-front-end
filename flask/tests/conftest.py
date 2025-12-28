@@ -19,16 +19,17 @@ def mock_make_dir():
 @pytest.fixture(autouse=True)
 def mock_user_dir_exists(monkeypatch):
     """Auto-use fixture to mock user directory existence for authenticated users.
-    
+
     This allows pipeline route tests to succeed without creating actual directories.
     Tests that specifically test missing directories can override this with their own patch.
     """
     import os
     import builtins
+
     original_exists = os.path.exists
     original_makedirs = os.makedirs
     original_open = builtins.open
-    
+
     def mock_exists(path):
         path_str = str(path)
         # Allow user directories to exist for authenticated users
@@ -41,7 +42,7 @@ def mock_user_dir_exists(monkeypatch):
                 return True
         # Use original behavior for other paths (files, etc.)
         return original_exists(path)
-    
+
     def mock_makedirs(path, mode=0o777, exist_ok=False):
         """Mock makedirs to silently succeed for test user directories."""
         path_str = str(path)
@@ -51,12 +52,15 @@ def mock_user_dir_exists(monkeypatch):
                 return
         # Use original behavior for other paths
         return original_makedirs(path, mode=mode, exist_ok=exist_ok)
-    
+
     def mock_open(file_path, mode="r", *args, **kwargs):
         """Mock open() to succeed for config files in test user directories."""
         from unittest.mock import MagicMock
+
         path_str = str(file_path)
-        if "/user_data/" in path_str and any(user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]):
+        if "/user_data/" in path_str and any(
+            user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]
+        ):
             if "config" in path_str and mode == "w":
                 # For config files, return a mock file object that can be written to
                 # MagicMock can be used as a context manager and supports write()
@@ -66,7 +70,7 @@ def mock_user_dir_exists(monkeypatch):
                 return mock_file
         # Use original behavior for other files - use saved reference to avoid recursion
         return original_open(file_path, mode, *args, **kwargs)
-    
+
     monkeypatch.setattr("os.path.exists", mock_exists)
     monkeypatch.setattr("os.makedirs", mock_makedirs)
     monkeypatch.setattr("builtins.open", mock_open)
@@ -99,6 +103,7 @@ def app():
 @pytest.fixture
 def client(app, monkeypatch):
     """Base test client with anonymous user"""
+
     class AnonymousUser:
         is_authenticated = False
 
@@ -122,12 +127,13 @@ def authenticated_user(monkeypatch):
 @pytest.fixture()
 def session_user(client, monkeypatch):
     """Simulate an anonymous user with session (works for both HTTP requests and direct method calls)."""
+
     # Monkeypatch Flask-Login for anonymous user
     class AnonymousUser:
         is_authenticated = False
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: AnonymousUser())
-    
+
     # Set up session for HTTP requests
     with client.session_transaction() as sess:
         sess["session_id"] = "anon-session-123"
@@ -136,18 +142,18 @@ def session_user(client, monkeypatch):
 def assert_error_sanitized(response_data):
     """
     Helper function to verify that error responses are sanitized.
-    
+
     Checks that common raw error strings (like exception class names,
     file paths, etc.) are not exposed in the response.
-    
+
     Args:
         response_data: The response data (dict or response object with get_json())
     """
-    if hasattr(response_data, 'get_json'):
+    if hasattr(response_data, "get_json"):
         data = response_data.get_json()
     else:
         data = response_data
-    
+
     data_str = str(data)
     # Verify no raw error strings exposed
     assert "InvalidId" not in data_str, "Raw InvalidId exception name should not be exposed"
@@ -159,6 +165,7 @@ def assert_error_sanitized(response_data):
 @pytest.fixture
 def dummy_user(monkeypatch):
     """Fixture for a test user with id='dummy_user' (used in test_pipeline_routes.py)."""
+
     class DummyUser:
         is_authenticated = True
         id = "dummy_user"
@@ -170,30 +177,30 @@ def dummy_user(monkeypatch):
 def create_test_run(run_id, user_id="dummy_user", **kwargs):
     """
     Helper function to create a test run in MongoDB.
-    
+
     Args:
         run_id: The run ID (ObjectId or string)
         user_id: The user ID (default: "dummy_user"). Set to None for anonymous sessions.
         **kwargs: Additional fields to include in the run document (e.g., session_id)
-    
+
     Returns:
         The inserted/updated document
     """
     from extensions import mongo
-    
+
     run_doc = {
         "_id": run_id,
         "pipeline": kwargs.get("pipeline", "TestPipeline"),
         "status": kwargs.get("status", "completed"),
         "timestamp": kwargs.get("timestamp", "2025_08_20"),
         "output_path": kwargs.get("output_path", "/tmp/fake"),
-        **{k: v for k, v in kwargs.items() if k not in ["pipeline", "status", "timestamp", "output_path"]}
+        **{k: v for k, v in kwargs.items() if k not in ["pipeline", "status", "timestamp", "output_path"]},
     }
-    
+
     # Only set user_id if provided (None means anonymous session)
     if user_id is not None:
         run_doc["user_id"] = user_id
-    
+
     # Use replace_one to handle existing runs (from run_id fixture)
     return mongo.db.runs.replace_one({"_id": run_id}, run_doc, upsert=True)
 
@@ -222,5 +229,5 @@ def form_data():
 def pipeline_runner(mock_schema):
     """Create PipelineRunner instance for testing."""
     from routes.runners.pipeline_runner import PipelineRunner
-    return PipelineRunner("test_pipeline", "test_probe_designer", mock_schema)
 
+    return PipelineRunner("test_pipeline", "test_probe_designer", mock_schema)

@@ -154,13 +154,18 @@ const RunDetail = () => {
                     }
                 );
                 setPipeline(runResponse.data.pipeline || "");
-                
+
                 // Check for error status and display error message
                 let hasErrorMessage = false;
-                if (runResponse.data.status === "error" || runResponse.data.status === "failed") {
+                if (
+                    runResponse.data.status === "error" ||
+                    runResponse.data.status === "failed"
+                ) {
                     if (runResponse.data.error_message) {
                         // Display error message to user
-                        setLogContent(`Pipeline Error: ${runResponse.data.error_message}`);
+                        setLogContent(
+                            `Pipeline Error: ${runResponse.data.error_message}`
+                        );
                         hasErrorMessage = true;
                     }
                 }

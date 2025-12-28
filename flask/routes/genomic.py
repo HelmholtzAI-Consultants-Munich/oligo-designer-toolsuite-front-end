@@ -8,7 +8,6 @@ Other endpoints are standalone: they run the full pipeline and return the output
 
 import os
 import subprocess
-import traceback
 from datetime import datetime
 
 import yaml
@@ -72,7 +71,7 @@ def genomic_cascaded_ncbi():
             raise ValueError("Invalid input: source must be 'NCBI' or 'Ensembl'")
         if "genomic_regions" not in form_data:
             raise ValueError("Invalid input: genomic_regions is required")
-        
+
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(user_dir, f"output_genomic_ncbi_{timestamp}")
         output_gen = output_path + "/annotation"
@@ -91,7 +90,7 @@ def genomic_cascaded_ncbi():
         single_region_forms = generate_single_region_forms(
             form_data
         )  # creates a list of forms with only one region set to true
-        
+
         if not single_region_forms:
             raise ValueError("Invalid input: no valid genomic regions specified")
 
@@ -176,7 +175,13 @@ def genomic_cascaded_ncbi():
     except Exception as e:
         error_response, status_code = create_user_error_response(e, "submission")
         error_data = error_response.get_json()
-        return jsonify({"status": "error", "message": "We couldn't process your genomic data. Please check your input and try again.", "error": error_data.get("error", "Something went wrong. Please try again.")}), status_code
+        return jsonify(
+            {
+                "status": "error",
+                "message": "We couldn't process your genomic data. Please check your input and try again.",
+                "error": error_data.get("error", "Something went wrong. Please try again."),
+            }
+        ), status_code
 
 
 @genomic_bp.route("/api/genomic/cascaded/ensembl", methods=["POST"])
@@ -222,7 +227,7 @@ def genomic_cascaded_ensemble():
             raise ValueError("Invalid input: source must be 'NCBI' or 'Ensembl'")
         if "genomic_regions" not in form_data:
             raise ValueError("Invalid input: genomic_regions is required")
-        
+
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         run_output_path = os.path.join(user_dir, f"output_genomic_ensemble_{timestamp}")
 
@@ -238,7 +243,7 @@ def genomic_cascaded_ensemble():
         run_id = run_result.inserted_id
 
         single_region_forms = generate_single_region_forms(form_data)
-        
+
         if not single_region_forms:
             raise ValueError("Invalid input: no valid genomic regions specified")
 
@@ -308,7 +313,13 @@ def genomic_cascaded_ensemble():
     except Exception as e:
         error_response, status_code = create_user_error_response(e, "submission")
         error_data = error_response.get_json()
-        return jsonify({"status": "error", "message": "We couldn't process your genomic data. Please check your input and try again.", "error": error_data.get("error", "Something went wrong. Please try again.")}), status_code
+        return jsonify(
+            {
+                "status": "error",
+                "message": "We couldn't process your genomic data. Please check your input and try again.",
+                "error": error_data.get("error", "Something went wrong. Please try again."),
+            }
+        ), status_code
 
 
 @genomic_bp.route("/api/genomic/cascaded/custom", methods=["POST"])
@@ -358,7 +369,7 @@ def genomic_cascaded_custom():
             raise ValueError("Invalid input: file_regions is required for Custom source")
         if "genomic_regions" not in form_data:
             raise ValueError("Invalid input: genomic_regions is required")
-        
+
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         genomic_type = form_data["source"]["value"]
         run_output_path = os.path.join(user_dir, f"output_genomic_{genomic_type}_{timestamp}")
@@ -375,7 +386,7 @@ def genomic_cascaded_custom():
         run_id = run_result.inserted_id
 
         single_region_forms = generate_single_region_forms(form_data)
-        
+
         if not single_region_forms:
             raise ValueError("Invalid input: no valid genomic regions specified")
 
@@ -492,4 +503,10 @@ def genomic_cascaded_custom():
     except Exception as e:
         error_response, status_code = create_user_error_response(e, "submission")
         error_data = error_response.get_json()
-        return jsonify({"status": "error", "message": "We couldn't process your genomic data. Please check your input and try again.", "error": error_data.get("error", "Something went wrong. Please try again.")}), status_code
+        return jsonify(
+            {
+                "status": "error",
+                "message": "We couldn't process your genomic data. Please check your input and try again.",
+                "error": error_data.get("error", "Something went wrong. Please try again."),
+            }
+        ), status_code

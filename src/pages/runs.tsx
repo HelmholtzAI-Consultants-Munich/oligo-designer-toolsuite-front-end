@@ -152,11 +152,18 @@ const Runs = () => {
                                                 >
                                                     {run.status}
                                                 </span>
-                                                {(run.status === "error" || run.status === "failed") && run.error_message && (
-                                                    <div className="text-danger small mt-1" title={run.error_message}>
-                                                        {run.error_message}
-                                                    </div>
-                                                )}
+                                                {(run.status === "error" ||
+                                                    run.status === "failed") &&
+                                                    run.error_message && (
+                                                        <div
+                                                            className="text-danger small mt-1"
+                                                            title={
+                                                                run.error_message
+                                                            }
+                                                        >
+                                                            {run.error_message}
+                                                        </div>
+                                                    )}
                                             </td>
                                             <td>
                                                 {formatTimestamp(run.timestamp)}

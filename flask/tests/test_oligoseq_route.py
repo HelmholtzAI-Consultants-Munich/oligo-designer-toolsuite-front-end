@@ -102,8 +102,9 @@ def dummy_form(run_id):
 def test_oligoseq_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
     from conftest import create_test_run
+
     create_test_run(run_id, user_id="test_user_id", status="created")
-    
+
     response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
@@ -131,7 +132,7 @@ def test_oligoseq_route_invalid_run_id(client, dummy_form, authenticated_user):
     """Test oligoseq route with invalid run ID returns sanitized error."""
     invalid_form = dummy_form.copy()
     invalid_form["runid"] = "invalid_id"
-    
+
     response = client.post("/api/oligoseq", json=invalid_form)
     assert response.status_code == 400
     data = response.get_json()
@@ -148,7 +149,7 @@ def test_oligoseq_route_propagates_pipeline_runner_errors(client, run_id, authen
         "formdata": {"file_regions": {"value": "Gene1"}},
         "runid": "",
     }
-    
+
     response = client.post("/api/oligoseq", json=form_with_empty_runid)
     assert response.status_code == 400
     data = response.get_json()

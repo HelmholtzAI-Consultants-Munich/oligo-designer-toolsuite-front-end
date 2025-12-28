@@ -4759,7 +4759,8 @@ const Scrinshot: React.FC = () => {
             setModal({
                 show: true,
                 title: "Pipeline Failed",
-                body: errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
+                body:
+                    errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
             });
         } finally {
             setRunStatus("idle");
