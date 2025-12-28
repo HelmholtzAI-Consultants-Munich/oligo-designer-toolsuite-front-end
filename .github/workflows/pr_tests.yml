@@ -113,4 +113,3 @@ jobs:
             echo "❌ Frontend tests failed" >> $GITHUB_STEP_SUMMARY
             echo "Check the test logs above for details" >> $GITHUB_STEP_SUMMARY
           fi
-
