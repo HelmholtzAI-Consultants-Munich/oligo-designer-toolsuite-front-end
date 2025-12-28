@@ -7,19 +7,16 @@ sanitized, user-friendly error messages.
 
 import os
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-import pytest
-from bson import ObjectId
-from bson.errors import InvalidId
 from flask_login import current_user
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app import create_app
 from extensions import mongo
 
 # Import conftest helpers - use relative import to avoid pytest import issues
 import conftest
+
 assert_error_sanitized = conftest.assert_error_sanitized
 create_test_run = conftest.create_test_run
 
@@ -55,12 +52,14 @@ class TestPipelineRunnerErrors:
                     assert response[1] == 400
                     assert data["error"] == "Invalid session configuration"
 
-    def test_missing_user_directory(self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path):
+    def test_missing_user_directory(
+        self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path
+    ):
         """Test missing user directory returns user-friendly error."""
         with app.app_context():
             # Create run in DB first
             create_test_run(run_id, user_id="test_user_id", status="pending")
-            
+
             with patch("os.path.exists", return_value=False):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
@@ -71,16 +70,18 @@ class TestPipelineRunnerErrors:
                     assert "/user_data/" not in data["error"]
                     assert "test_user_id" not in data["error"]
 
-    def test_config_generation_error(self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path):
+    def test_config_generation_error(
+        self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path
+    ):
         """Test config generation errors return sanitized error."""
         with app.app_context():
             # Create run in DB
             create_test_run(run_id, user_id="test_user_id", status="pending")
-            
+
             # Create user directory
             user_dir = tmp_path / "user_data" / "test_user_id"
             user_dir.mkdir(parents=True)
-            
+
             with patch("yaml.dump", side_effect=Exception("YAML write error")):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
@@ -96,13 +97,13 @@ class TestPipelineRunnerErrors:
         with app.app_context():
             # Create run in DB
             create_test_run(run_id, user_id="test_user_id", status="pending")
-            
+
             # Create user directory and config file
             user_dir = tmp_path / "user_data" / "test_user_id"
             user_dir.mkdir(parents=True)
             config_file = user_dir / "config_test_pipeline.yaml"
             config_file.write_text("test config")
-            
+
             with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
@@ -118,35 +119,40 @@ class TestPipelineRunnerErrors:
         with app.app_context():
             # Create run in DB
             create_test_run(run_id, user_id="test_user_id", status="pending")
-            
+
             # Create user directory
             user_dir = tmp_path / "user_data" / "test_user_id"
             user_dir.mkdir(parents=True)
-            
+
             form_data_with_regions = {
                 "file_regions": {"value": "gene1,gene2,gene3"},
                 "test_param": {"value": "123"},
             }
-            
+
             with patch("tempfile.NamedTemporaryFile", side_effect=PermissionError("Cannot create temp file")):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data_with_regions, str(run_id))
                     data = response[0].get_json()
                     assert response[1] == 500
-                    assert data["error"] == "Something went wrong while accessing files. Please try again or contact support if the problem persists."
+                    assert (
+                        data["error"]
+                        == "Something went wrong while accessing files. Please try again or contact support if the problem persists."
+                    )
 
-    def test_cleanup_errors_logged_but_dont_fail(self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path):
+    def test_cleanup_errors_logged_but_dont_fail(
+        self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path
+    ):
         """Test cleanup errors are logged but don't fail the request."""
         with app.app_context():
             # Create run in DB
             create_test_run(run_id, user_id="test_user_id", status="pending")
-            
+
             # Create user directory
             user_dir = tmp_path / "user_data" / "test_user_id"
             user_dir.mkdir(parents=True)
             config_file = user_dir / "config_test_pipeline.yaml"
             config_file.write_text("test config")
-            
+
             with patch("subprocess.run") as mock_subprocess:
                 mock_subprocess.return_value.returncode = 0
                 with patch("os.remove", side_effect=Exception("Cleanup error")):
@@ -158,18 +164,22 @@ class TestPipelineRunnerErrors:
                             # Verify cleanup error was logged
                             mock_logger.assert_called()
 
-    def test_catch_all_exception_handler(self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path):
+    def test_catch_all_exception_handler(
+        self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path
+    ):
         """Test catch-all exception handler works."""
         with app.app_context():
             # Create run in DB
             create_test_run(run_id, user_id="test_user_id", status="pending")
-            
+
             # Create user directory
             user_dir = tmp_path / "user_data" / "test_user_id"
             user_dir.mkdir(parents=True)
-            
+
             with patch("flask.current_app.root_path", str(tmp_path)):
-                with patch.object(pipeline_runner, "create_context", side_effect=Exception("Unexpected error")):
+                with patch.object(
+                    pipeline_runner, "create_context", side_effect=Exception("Unexpected error")
+                ):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
                     data = response[0].get_json()
                     assert response[1] == 500
@@ -178,23 +188,25 @@ class TestPipelineRunnerErrors:
                     assert "Unexpected error" not in data["error"]
                     assert data["error"] == "An error occurred while processing your request"
 
-    def test_no_raw_error_strings_exposed(self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path):
+    def test_no_raw_error_strings_exposed(
+        self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path
+    ):
         """Test that no raw error strings are exposed."""
         with app.app_context():
             # Create run in DB
             create_test_run(run_id, user_id="test_user_id", status="pending")
-            
+
             # Create user directory
             user_dir = tmp_path / "user_data" / "test_user_id"
             user_dir.mkdir(parents=True)
-            
+
             # Test with various error types
             error_scenarios = [
                 (ValueError("Session ID not found"), "Invalid session configuration"),
                 (RuntimeError("/user_data/123/config.yaml missing"), "User directory not found"),
                 (FileNotFoundError("/path/to/file.txt"), "Required file is missing"),
             ]
-            
+
             for error, expected_message in error_scenarios:
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     with patch.object(pipeline_runner, "create_context", side_effect=error):
@@ -203,4 +215,3 @@ class TestPipelineRunnerErrors:
                         # Verify no raw error strings
                         assert str(error) not in data["error"]
                         assert data["error"] == expected_message
-

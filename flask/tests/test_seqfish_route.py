@@ -171,8 +171,9 @@ def dummy_form(run_id):
 def test_seqfish_authenticated(client, run_id, dummy_form, mock_run, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
     from conftest import create_test_run
+
     create_test_run(run_id, user_id="test_user_id", status="created")
-    
+
     response = client.post("/api/seqfish", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
@@ -198,7 +199,7 @@ def test_seqfish_route_invalid_run_id(client, dummy_form, authenticated_user):
     """Test seqfish route with invalid run ID returns sanitized error."""
     invalid_form = dummy_form.copy()
     invalid_form["runid"] = "invalid_id"
-    
+
     response = client.post("/api/seqfish", json=invalid_form)
     assert response.status_code == 400
     data = response.get_json()
@@ -215,7 +216,7 @@ def test_seqfish_route_propagates_pipeline_runner_errors(client, run_id, authent
         "formdata": {"file_regions": {"value": "Gene1"}},
         "runid": "",
     }
-    
+
     response = client.post("/api/seqfish", json=form_with_empty_runid)
     assert response.status_code == 400
     data = response.get_json()

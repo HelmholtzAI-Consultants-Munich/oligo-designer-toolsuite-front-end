@@ -16,7 +16,6 @@ Features:
 """
 
 import os
-import traceback
 from datetime import datetime
 
 from bson import ObjectId
@@ -251,7 +250,9 @@ def get_run_files(run_id_str):
     """
     try:
         if not run_id_str:
-            return jsonify({"error": "The run ID you provided is not valid. Please check and try again."}), 400
+            return jsonify(
+                {"error": "The run ID you provided is not valid. Please check and try again."}
+            ), 400
         try:
             run_id = ObjectId(run_id_str)
         except Exception as e:
@@ -272,10 +273,14 @@ def get_run_files(run_id_str):
         except Exception as e:
             # Database errors should return 500
             return create_user_error_response(e, "submission")
-        
+
         if not run:
             # If run doesn't exist, return 404 (this is expected behavior)
-            return jsonify({"error": "The run you're looking for doesn't exist or you don't have permission to access it."}), 404
+            return jsonify(
+                {
+                    "error": "The run you're looking for doesn't exist or you don't have permission to access it."
+                }
+            ), 404
 
         output_dir = run["output_path"]
         files = []

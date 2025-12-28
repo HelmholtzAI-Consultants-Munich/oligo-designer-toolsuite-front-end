@@ -1,7 +1,6 @@
 import os
 import subprocess
 import tempfile
-import traceback
 from datetime import datetime
 from typing import Any
 
@@ -90,7 +89,9 @@ class PipelineRunner:
         try:
             # Convert run ID string to ObjectId
             if not run_id_str:
-                return jsonify({"error": "The run ID you provided is not valid. Please check and try again."}), 400
+                return jsonify(
+                    {"error": "The run ID you provided is not valid. Please check and try again."}
+                ), 400
             try:
                 run_id = ObjectId(run_id_str)
             except (InvalidId, Exception) as e:
@@ -126,7 +127,7 @@ class PipelineRunner:
                 # Update run status to error before returning
                 try:
                     self.update_run_status_in_DB(run_id, "error")
-                except:
+                except Exception:
                     pass  # If we can't update DB, continue with error response
                 return create_user_error_response(e, "submission")
 

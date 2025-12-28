@@ -5,7 +5,6 @@ This module provides centralized error handling that sanitizes error messages
 before returning them to users, ensuring sensitive information is never exposed.
 """
 
-import traceback
 from flask import current_app, jsonify
 from bson.errors import InvalidId
 
@@ -27,8 +26,7 @@ def create_user_error_response(exception: Exception, error_type: str = "submissi
     """
     # Log full error details server-side for debugging
     current_app.logger.error(
-        f"Error ({error_type}): {type(exception).__name__}: {str(exception)}",
-        exc_info=True
+        f"Error ({error_type}): {type(exception).__name__}: {exception!s}", exc_info=True
     )
 
     # Sanitize error message based on exception type
@@ -61,7 +59,12 @@ def _sanitize_error_message(exception: Exception) -> str:
 
     if isinstance(exception, RuntimeError):
         # Check for specific RuntimeError messages
-        if "directory" in error_str or "not found" in error_str or "User directory not found" in str(exception) or "/user_data/" in error_str:
+        if (
+            "directory" in error_str
+            or "not found" in error_str
+            or "User directory not found" in str(exception)
+            or "/user_data/" in error_str
+        ):
             return "Unable to access your data directory. Please try again or contact support."
         if "pipeline" in error_str or "subprocess" in error_str:
             return "The pipeline failed to execute. Please check your input and try again."
@@ -101,7 +104,11 @@ def _get_http_status_code(exception: Exception) -> int:
     if isinstance(exception, RuntimeError):
         # RuntimeError for missing directories should be 400 (bad request)
         error_str = str(exception).lower()
-        if "directory" in error_str or "not found" in error_str or "User directory not found" in str(exception):
+        if (
+            "directory" in error_str
+            or "not found" in error_str
+            or "User directory not found" in str(exception)
+        ):
             return 400
         # Other runtime errors are server errors
         return 500
@@ -124,4 +131,3 @@ def sanitize_error_message_for_storage(exception: Exception) -> str:
     Returns user-friendly message suitable for displaying to users later.
     """
     return _sanitize_error_message(exception)
-
