@@ -155,4 +155,3 @@ jobs:
             echo "❌ Frontend formatting check failed" >> $GITHUB_STEP_SUMMARY
             echo "Run 'npm run format:fix' to fix" >> $GITHUB_STEP_SUMMARY
           fi
-
