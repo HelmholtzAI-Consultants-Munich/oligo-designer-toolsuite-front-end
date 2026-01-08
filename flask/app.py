@@ -7,6 +7,24 @@ from routes.auth import init_login_manager
 from routes import register_blueprints
 from config import Config
 
+
+def prepare_paths(app: Flask):
+    relative_data_access_path_key = "RELATIVE_DATA_ACCESS_PATH"
+    relative_to_data_access_keys = ["RELATIVE_UPLOAD_PATH", "RELATIVE_USERDATA_PATH"]
+
+    def _update_and_mkdir(relative_key: str, path: str):
+        key = relative_key.split("RELATIVE_", maxsplit=1)[1]
+        app.config[key] = path
+        os.makedirs(path, exist_ok=True)
+
+    data_access_path = os.path.join(app.root_path, app.config[relative_data_access_path_key])
+    _update_and_mkdir(relative_data_access_path_key, data_access_path)
+
+    for relative_key in relative_to_data_access_keys:
+        path = os.path.join(data_access_path, app.config[relative_key])
+        _update_and_mkdir(relative_key, path)
+
+
 def create_app():
     app = Flask(__name__)
 
@@ -23,11 +41,8 @@ def create_app():
         app.logger.warning(f"OAuth configuration incomplete: {e}")
         app.logger.warning("Helmholtz AAI authentication will not be available.")
 
-    # Set up the uploads directory (always exists)
-    UPLOAD_FOLDER = os.path.join(os.getcwd(), "uploads")
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+    # Set up directories and update config with absolute paths
+    prepare_paths(app)
 
     # Initialize Flask extensions
     mongo.init_app(app)

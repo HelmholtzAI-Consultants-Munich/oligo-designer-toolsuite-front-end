@@ -180,35 +180,5 @@ def validate_id_array(data: dict, key_name: str) -> tuple[list, tuple[dict, int]
 
     if not ids or not isinstance(ids, list):
         return [], ({"error": f"{key_name} must be a non-empty array"}, 400)
-
+    
     return ids, None
-
-def get_archive_of_directory(path: str, compression: int = zipfile.ZIP_DEFLATED, delete: bool = False) -> bytes | None:
-    """
-    Returns a zipfile archive bytestring of all contents of the directory at path.
-    Returns None if the provided path is empty or not a directory.
-    Optionally deletes the directory after creating the archive.
-    """
-    if not os.path.isdir(path) or len(os.listdir(path)) == 0:
-        return None
-
-    archive_dir = pathlib.Path(path)
-
-    archive_buffer = io.BytesIO()
-    with zipfile.ZipFile(archive_buffer, "a", compression=compression) as zip_file:
-        for file_path in archive_dir.rglob("*"):
-            zip_file.write(file_path, file_path.relative_to(archive_dir))
-
-    if delete:
-        shutil.rmtree(path)
-
-    return archive_buffer.getvalue()
-
-
-def extract_archive(archive: bytes, output_path: str, compression: int = zipfile.ZIP_DEFLATED):
-    # Make sure the output directory exists
-    os.makedirs(output_path, exist_ok=True)
-
-    archive_buffer = io.BytesIO(archive)
-    with zipfile.ZipFile(archive_buffer, compression=compression) as zip_file:
-        zip_file.extractall(output_path)

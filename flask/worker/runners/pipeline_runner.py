@@ -6,7 +6,6 @@ from typing import Any
 
 from celery import Celery
 from helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
-from helpers import extract_archive, get_archive_of_directory, split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
 import os
 import yaml
 
@@ -18,12 +17,10 @@ class PipelineRunner:
     Executes the pipeline by invoking the corresponding oligo designer toolsuite tool while managing temporary files.
 
     - Prepares input files as needed (e.g., writes gene list as a temp file).
-    - Unpacks archive of files uploaded by user.
     - Builds the configuration dictionary for the probe designer pipeline based on the submitted form.
     - Writes this configuration as a YAML file to the user's directory.
     - Launches the external `[<pipeline_name>]_probe_designer` process as a subprocess, passing the YAML config.
     - Cleans up any temporary files created during input preparation.
-    - Returns an archive of the resulting output directory.
 
     For more information on the input parameters and configuration options, refer to the pipeline documentation.
 
@@ -50,16 +47,9 @@ class PipelineRunner:
         self.schema = schema  # JSON schema
         self.task = task
 
-    def run(self, form_data: dict[str, Any], upload_path: str, upload_archive: bytes | None) -> tuple[bool, bytes | None]:
+    def run(self, form_data: dict[str, Any], upload_path: str, output_path: str) -> bool:
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
-
-        # Extract uploaded files (if needed)
-        if upload_archive:
-            extract_archive(upload_archive, upload_path)
-
-        # Prepare output directory
-        output_path = tempfile.mkdtemp()
 
         # Build Config and Write to YAML
         config_path = self.write_config_file(form_data, output_path)
@@ -73,11 +63,8 @@ class PipelineRunner:
         # Cleanup of Temporary Files
         self.cleanup_temp_files(form_data, config_path)
 
-        # Serialize output
-        archive = get_archive_of_directory(output_path)
-
         # Response
-        return ok, archive
+        return ok
 
     def populate_temp_file(self, form_data: dict) -> None:
         if form_data["file_regions"]["value"] != "":
@@ -102,10 +89,8 @@ class PipelineRunner:
         # Override output directory
         config["dir_output"] = output_path
 
-
-        config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yaml")
-
         # Write config to YAML file
+        config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
         print(f"Writing config to {config_path}")
 
         # Ensure parent directory exists
@@ -120,7 +105,7 @@ class PipelineRunner:
         result = subprocess.run(
             [self.subprocess_name, "-c", config_path], capture_output=True, text=True
         )
-        # TODO: debug printing, replace with logger
+        # TODO: replace with logger
         print("STDERR:", result.stderr)
         print("STDOUT (partial logs):", result.stdout)
         return result.returncode == 0

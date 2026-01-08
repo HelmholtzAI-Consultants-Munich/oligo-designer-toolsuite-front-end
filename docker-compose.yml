@@ -21,6 +21,8 @@ services:
     container_name: odt-server
     ports:
       - 5000:5000
+    volumes:
+      - data-access:/app/data-access
     environment:
       MONGO_URI: mongodb://odt-db:27017/oligo_db
       CELERY_MONGO_URI: mongodb://odt-db:27017/
@@ -41,6 +43,8 @@ services:
     build:
       dockerfile: docker/worker.Dockerfile
     container_name: odt-worker
+    volumes:
+      - data-access:/app/data-access
     environment:
       CELERY_MONGO_URI: mongodb://odt-db:27017/
       CELERY_BROKER: pyamqp://guest@odt-mq/
@@ -83,3 +87,6 @@ services:
       - odt-server
     restart: no
     profiles: [tests] # don't run unless specified
+
+volumes:
+  data-access:

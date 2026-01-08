@@ -101,7 +101,7 @@ def _login(user: User, remember: bool = True):
     login_user(user, remember=remember)
 
     # Ensure user data directory exists
-    user_dir = os.path.join(current_app.root_path, "user_data", user.id)
+    user_dir = os.path.join(current_app.config["USERDATA_PATH"], user.id)
     os.makedirs(user_dir, exist_ok=True)
 
     # Clear any OAuth token from previous sessions
@@ -389,5 +389,5 @@ def assign_session_id():
         if "session_id" not in session:
             session["session_id"] = str(uuid.uuid4())
         # Ensure directory for anonymous user data associated with this session exists
-        user_dir = os.path.join(current_app.root_path, "user_data", "anon", session["session_id"])
+        user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session['session_id'])
         os.makedirs(user_dir, exist_ok=True)
