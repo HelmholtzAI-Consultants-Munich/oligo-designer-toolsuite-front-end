@@ -13,7 +13,6 @@ import os
 from datetime import timedelta
 
 
-
 class Config:
     """Base configuration class for Flask application with Helmholtz AAI settings."""
 
