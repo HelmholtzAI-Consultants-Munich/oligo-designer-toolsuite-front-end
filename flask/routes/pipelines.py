@@ -1,32 +1,29 @@
-from datetime import datetime
 import os
-
 import traceback
-
+from datetime import datetime
 from typing import Any
+
 from bson import ObjectId
+from celery.result import AsyncResult
+from extensions import celery_app, mongo
+from flask_login import current_user
+from flask_login.utils import LocalProxy
 
 from flask import Blueprint, current_app, jsonify, request, session
-from flask_login import current_user
-
-from flask_login.utils import LocalProxy
-from celery.result import AsyncResult
-
-
-from extensions import celery_app, mongo
 from routes.validation_helpers import get_run_id
-
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
 
-EXISTING_PIPELINES = frozenset({
-    "scrinshot",
-    "seqfish",
-    "merfish",
-    "oligoseq",
-})
+EXISTING_PIPELINES = frozenset(
+    {
+        "scrinshot",
+        "seqfish",
+        "merfish",
+        "oligoseq",
+    }
+)
 
 
 def validate_name(pipeline_name: str) -> bool:
@@ -145,7 +142,7 @@ def start_pipeline(pipeline_name: str):
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
-    
+
     if context["output_path"] is None:
         return jsonify({"error": "Could not infer output directory"}), 500
 

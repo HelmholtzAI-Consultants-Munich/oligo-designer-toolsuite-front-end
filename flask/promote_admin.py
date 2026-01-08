@@ -27,7 +27,7 @@ def promote_user(email):
             return False
 
         if user.get("role") == "admin":
-            print(f'☑️ User "{email}" is already an admin.')
+            print(f'☑️  User "{email}" is already an admin.')
             return True
 
         result = mongo.db.users.update_one({"email": email}, {"$set": {"role": "admin"}})

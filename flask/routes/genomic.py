@@ -11,8 +11,11 @@ import subprocess
 from datetime import datetime
 
 import yaml
-from flask import Blueprint, current_app, jsonify, request, session
+from extensions import mongo
 from flask_login import current_user
+from helpers import generate_single_region_forms, get_form_cache_key, to_bool, to_int
+
+from flask import Blueprint, current_app, jsonify, request, session
 
 from extensions import mongo
 from helpers import to_bool, to_int, generate_single_region_forms, get_form_cache_key
@@ -105,8 +108,8 @@ def genomic_cascaded_ncbi():
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session_id)
-            config_path = os.path.join(user_dir, 'config.yaml')
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session_id)
+            config_path = os.path.join(user_dir, "config.yaml")
         config_genomic = {}
 
         # Parse JSON data from the request
@@ -245,7 +248,7 @@ def genomic_cascaded_ensemble():
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session_id)
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session_id)
 
         form_data = request.json
         _validate_genomic_form_data(form_data)
@@ -366,7 +369,7 @@ def genomic_cascaded_custom():
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session_id)
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session_id)
 
         form_data = request.json
         _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl", "Custom"])

@@ -1,4 +1,4 @@
-import { Clock, CheckCircle, XCircle, PlayCircle } from 'react-bootstrap-icons';
+import { Clock, CheckCircle, XCircle, PlayCircle } from "react-bootstrap-icons";
 
 /**
  * Status configuration for pipeline runs

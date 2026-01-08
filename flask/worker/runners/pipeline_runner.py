@@ -1,13 +1,14 @@
 from collections import defaultdict
 import json
+import os
 import subprocess
 import tempfile
+from collections.abc import Mapping
 from typing import Any
 
+import yaml
 from celery import Celery
 from helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
-import os
-import yaml
 
 from Bio import SeqIO
 from oligo_designer_toolsuite.utils import FastaParser
@@ -26,7 +27,7 @@ class PipelineRunner:
 
     """
 
-    PIPELINE_SUBPROCESS: dict[str, str] = {
+    PIPELINE_SUBPROCESS: Mapping[str, str] = {
         "scrinshot": "scrinshot_probe_designer",
         "seqfish": "seqfish_plus_probe_designer",
         "merfish": "merfish_probe_designer",
@@ -34,16 +35,12 @@ class PipelineRunner:
     }
 
     def __init__(self, pipeline_name: str, task: Celery.Task):
-        schema_path = os.path.join(
-            os.path.dirname(__file__), f"schemas/{pipeline_name}.schema.json"
-        )
-        with open(schema_path, "r") as f:
+        schema_path = os.path.join(os.path.dirname(__file__), f"schemas/{pipeline_name}.schema.json")
+        with open(schema_path) as f:
             schema = json.load(f)
 
         self.pipeline_name = pipeline_name  # e.g., 'merfish'
-        self.subprocess_name = self.PIPELINE_SUBPROCESS[
-            pipeline_name
-        ]  # e.g., 'merfish_probe_designer'
+        self.subprocess_name = self.PIPELINE_SUBPROCESS[pipeline_name]  # e.g., 'merfish_probe_designer'
         self.schema = schema  # JSON schema
         self.task = task
 
@@ -69,14 +66,11 @@ class PipelineRunner:
     def populate_temp_file(self, form_data: dict) -> None:
         if form_data["file_regions"]["value"] != "":
             if ".txt" not in form_data["file_regions"]["value"]:
-                with tempfile.NamedTemporaryFile(
-                    mode="w", delete=False, suffix=".txt"
-                ) as temp_file:
+                with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
                     file_path = temp_file.name
                     # Write each gene on a new line
                     temp_file.writelines(
-                        gene.strip() + "\n"
-                        for gene in form_data["file_regions"]["value"].split(",")
+                        gene.strip() + "\n" for gene in form_data["file_regions"]["value"].split(",")
                     )
                 # Update the path in form_data to point to the temp file
                 form_data["file_regions"]["value"] = file_path
@@ -102,9 +96,7 @@ class PipelineRunner:
         return config_path
 
     def call_subprocess(self, config_path: str) -> bool:
-        result = subprocess.run(
-            [self.subprocess_name, "-c", config_path], capture_output=True, text=True
-        )
+        result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
         # TODO: replace with logger
         print("STDERR:", result.stderr)
         print("STDOUT (partial logs):", result.stdout)

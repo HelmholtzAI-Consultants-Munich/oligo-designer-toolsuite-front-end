@@ -169,10 +169,13 @@ const RunDetail = () => {
                         withCredentials: true,
                     }
                 );
-                setRunState(response.data.state)
+                setRunState(response.data.state);
 
                 // If finished, stop polling
-                if (response.data.state == "success" || response.data.state == "failure") {
+                if (
+                    response.data.state == "success" ||
+                    response.data.state == "failure"
+                ) {
                     setPolling(false);
                     if (interval) clearInterval(interval);
                     const response = await axios.get(
@@ -722,7 +725,8 @@ const RunDetail = () => {
                 {/* Polling/waiting for YAML/log */}
                 {(runState == "pending" || runState == "started") && (
                     <div className="alert alert-info">
-                        Run is {runState == "pending" ? "pending" : "executing"}...
+                        Run is {runState == "pending" ? "pending" : "executing"}
+                        ...
                         <span className="spinner-border spinner-border-sm ms-2" />
                     </div>
                 )}

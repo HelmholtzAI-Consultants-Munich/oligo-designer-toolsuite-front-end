@@ -14,11 +14,16 @@ Endpoints:
 """
 
 from bson import ObjectId
-from flask import Blueprint, jsonify, request
-from flask_login import current_user, login_required
-
 from extensions import mongo
-from helpers import delete_pipeline_run_files_and_db, validate_and_convert_ids, execute_bulk_pipeline_run_deletion, validate_id_array
+from flask_login import current_user, login_required
+from helpers import (
+    delete_pipeline_run_files_and_db,
+    execute_bulk_pipeline_run_deletion,
+    validate_and_convert_ids,
+    validate_id_array,
+)
+
+from flask import Blueprint, jsonify, request
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -126,7 +131,8 @@ def get_valid_pipeline_statuses():
     :returns: List of valid status strings
     :rtype: list[str]
     """
-    return ['pending', 'started', 'success', 'failure']
+    return ["pending", "started", "success", "failure"]
+
 
 @admin_bp.route("/api/admin/users", methods=["GET"])
 @login_required

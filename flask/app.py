@@ -1,11 +1,13 @@
 import os
-from flask import Flask
-from flask_cors import CORS
+
+from config import Config
 from dotenv import load_dotenv
 from extensions import celery_app, mongo, oauth
-from routes.auth import init_login_manager
+from flask_cors import CORS
 from routes import register_blueprints
-from config import Config
+from routes.auth import init_login_manager
+
+from flask import Flask
 
 
 def prepare_paths(app: Flask):
