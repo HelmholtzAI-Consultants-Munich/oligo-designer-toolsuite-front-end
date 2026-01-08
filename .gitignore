@@ -110,14 +110,17 @@ flask/uploads/
 # Flask User Data
 #  This keeps only the empty testing data directories.
 #  todo: separate test data from user data -> ignore all user data
-flask/user_data/**
+flask/data-access/**
 
-!flask/user_data/testuser123/
-!flask/user_data/testuser123/.gitkeep
+!flask/data-access/user_data/
+flask/data-access/user_data/**
 
-!flask/user_data/anon/
-!flask/user_data/anon/anon-session-123/
-!flask/user_data/anon/anon-session-123/.gitkeep
+!flask/data-access/user_data/testuser123/
+!flask/data-access/user_data/testuser123/.gitkeep
+
+!flask/data-access/user_data/anon/
+!flask/data-access/user_data/anon/anon-session-123/
+!flask/data-access/user_data/anon/anon-session-123/.gitkeep
 
 # Ruff stuff:
 .ruff_cache/

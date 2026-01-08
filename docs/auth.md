@@ -10,6 +10,8 @@ parent: User Management
 The authentication system manages both registered users and anonymous sessions.  
 It uses **Flask-Login**, password hashing, and MongoDB to store user credentials, and supports automatic **run migration** from anonymous sessions to authenticated accounts.
 
+**Warning: This documentation page may contain outdated information.**
+
 ---
 
 ## Features

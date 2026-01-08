@@ -14,7 +14,6 @@ from celery.result import AsyncResult
 
 
 from extensions import celery_app, mongo
-from helpers import get_archive_of_directory
 from routes.validation_helpers import get_run_id
 
 
@@ -38,7 +37,7 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
     if current_user.is_authenticated:
         # Authenticated user: use user-specific directory
         user_id = str(current_user.id)
-        user_dir = os.path.join(current_app.root_path, "user_data", user_id)
+        user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
         session_id = None
     else:
         # Anonymous user: use session-based directory
@@ -46,7 +45,7 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
         session_id = str(session.get("session_id"))
         if not session_id:
             raise ValueError("Anonymous session ID not found in session")
-        user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
+        user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session_id)
 
     if not os.path.exists(user_dir):
         raise RuntimeError(f"Expected user directory at {user_dir} to exist")
@@ -96,11 +95,11 @@ def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     upload_path: str,
-    upload_archive: bytes | None,
+    output_path: str,
 ) -> AsyncResult:
     return celery_app.send_task(
         "worker.tasks.run_pipeline",
-        (pipeline_name, form_data, upload_path, upload_archive),
+        (pipeline_name, form_data, upload_path, output_path),
     )
 
 
@@ -115,7 +114,6 @@ def start_pipeline(pipeline_name: str):
     - Verifies the pipeline name
     - Loads and validates user/session context.
     - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
-    - Builds an archive of the files uploaded by the user.
     - Prepares output directory.
     - Adds pipeline execution to the Celery queue.
     - Writes updated run information to database.
@@ -139,8 +137,7 @@ def start_pipeline(pipeline_name: str):
 
     form_data = json.get("formdata")  # Form data from React
 
-    upload_path = os.path.join(current_app.config["UPLOAD_FOLDER"], run_id_str)
-    upload_archive = get_archive_of_directory(upload_path, delete=True)
+    upload_path = os.path.join(current_app.config["UPLOAD_PATH"], run_id_str)
 
     # User Directory and Session / User ID Logic
     try:
@@ -148,8 +145,11 @@ def start_pipeline(pipeline_name: str):
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 400
+    
+    if context["output_path"] is None:
+        return jsonify({"error": "Could not infer output directory"}), 500
 
-    result_promise = enqueue_pipeline(pipeline_name, form_data, upload_path, upload_archive)
+    result_promise = enqueue_pipeline(pipeline_name, form_data, upload_path, context["output_path"])
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
@@ -157,6 +157,5 @@ def start_pipeline(pipeline_name: str):
         return jsonify({"error": "Run ID not found"}), 404
 
     # The task state can be polled using get_run_state(run_id_str).
-    # If ready, the output will be written to our local filesystem.
 
     return jsonify({"run_id": run_id_str})

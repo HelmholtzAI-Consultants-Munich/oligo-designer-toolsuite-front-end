@@ -17,7 +17,17 @@ class Config:
     """Base configuration class for Flask application with Helmholtz AAI settings."""
 
     # Flask settings
-    SECRET_KEY = os.environ.get("SECRET_KEY", "bi_oligo_gizemi_var")
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'bi_oligo_gizemi_var')
+
+    # Directory settings
+    # Directory shared between server and worker
+    RELATIVE_DATA_ACCESS_PATH = os.environ.get("RELATIVE_DATA_ACCESS_PATH", "data-access")
+    
+    # Upload directory relative to data access path
+    RELATIVE_UPLOAD_PATH = os.environ.get("RELATIVE_UPLOAD_PATH", "uploads")
+    # User data directory relative to data access path
+    RELATIVE_USERDATA_PATH = os.environ.get("RELATIVE_USERDATA_PATH", "user_data")
+
     # Make sessions persistent (90 days) for anonymous users
     PERMANENT_SESSION_LIFETIME = timedelta(days=90)
     # Remember me cookie duration (90 days) for authenticated users

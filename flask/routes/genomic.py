@@ -97,7 +97,7 @@ def genomic_cascaded_ncbi():
         # Handle authentication/session to determine user directory
         if current_user.is_authenticated:
             user_id = str(current_user.id)
-            user_dir = os.path.join(current_app.root_path, "user_data", user_id)
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
             config_path = os.path.join(user_dir, "config_genomic_ensemble.yaml")
             session_id = None
         else:
@@ -105,8 +105,8 @@ def genomic_cascaded_ncbi():
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
-            config_path = os.path.join(user_dir, "config.yaml")
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session_id)
+            config_path = os.path.join(user_dir, 'config.yaml')
         config_genomic = {}
 
         # Parse JSON data from the request
@@ -238,14 +238,14 @@ def genomic_cascaded_ensemble():
     try:
         if current_user.is_authenticated:
             user_id = str(current_user.id)
-            user_dir = os.path.join(current_app.root_path, "user_data", user_id)
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
             session_id = None
         else:
             user_id = None
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session_id)
 
         form_data = request.json
         _validate_genomic_form_data(form_data)
@@ -359,14 +359,14 @@ def genomic_cascaded_custom():
     try:
         if current_user.is_authenticated:
             user_id = str(current_user.id)
-            user_dir = os.path.join(current_app.root_path, "user_data", user_id)
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
             session_id = None
         else:
             user_id = None
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
+            user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session_id)
 
         form_data = request.json
         _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl", "Custom"])

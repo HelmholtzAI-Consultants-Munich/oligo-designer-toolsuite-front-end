@@ -56,7 +56,7 @@ def upload_file():
     _ = get_run(run_id)
 
     # Step 2.2: Create run-specific upload directory if it does not exist already
-    upload_path = os.path.join(current_app.config["UPLOAD_FOLDER"], run_id_str)
+    upload_path = os.path.join(current_app.config["UPLOAD_PATH"], run_id_str)
     os.makedirs(upload_path, exist_ok=True)
 
     # Step 3: Generate a unique filename by prefixing with a UUID

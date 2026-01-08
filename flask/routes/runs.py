@@ -16,14 +16,12 @@ Features:
 """
 
 import os
-import shutil
 import traceback
 from datetime import datetime
 from typing import Any
 from bson import ObjectId
 from flask import Blueprint, jsonify, send_file, session
 
-from helpers import extract_archive
 from .validation_helpers import get_run, get_run_id, get_task_id
 from flask_login import current_user
 from extensions import celery_app, mongo
@@ -343,13 +341,9 @@ def get_run_status(run_id_str):
     result_promise = celery_app.AsyncResult(task_id)
     
     if result_promise.successful():
-        ok, archive = result_promise.get()
-        if archive:
-            # there might be files (e.g. logs) in the output archive even if ok is False
-            output_path = run['output_path']
-            extract_archive(archive, output_path)
-
+        ok = result_promise.get()
         # overwrite "success" state if pipeline failed but output was delivered successfully
+        # -> literally "task failed successfully"
         state = result_promise.state.lower() if ok else "failure"
     else:
         state = result_promise.state.lower()
