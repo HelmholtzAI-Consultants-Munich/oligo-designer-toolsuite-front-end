@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Card, Spinner, Alert, Button, Row, Col } from 'react-bootstrap';
-import { People, PersonBadge, Person, Folder2 } from 'react-bootstrap-icons';
-import type { Icon } from 'react-bootstrap-icons';
-import { STATUS_CONFIG } from '../shared/types';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { Card, Spinner, Alert, Button, Row, Col } from "react-bootstrap";
+import { People, PersonBadge, Person, Folder2 } from "react-bootstrap-icons";
+import type { Icon } from "react-bootstrap-icons";
+import { STATUS_CONFIG } from "../shared/types";
 
 /**
  * Calculate percentage with one decimal place

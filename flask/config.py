@@ -9,20 +9,21 @@ Environment Variables Required:
     HELMHOLTZ_CLIENT_SECRET: OAuth2 client secret from Helmholtz AAI registration
 """
 
-from datetime import timedelta
 import os
+from datetime import timedelta
+
 
 
 class Config:
     """Base configuration class for Flask application with Helmholtz AAI settings."""
 
     # Flask settings
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'bi_oligo_gizemi_var')
+    SECRET_KEY = os.environ.get("SECRET_KEY", "bi_oligo_gizemi_var")
 
     # Directory settings
     # Directory shared between server and worker
     RELATIVE_DATA_ACCESS_PATH = os.environ.get("RELATIVE_DATA_ACCESS_PATH", "data-access")
-    
+
     # Upload directory relative to data access path
     RELATIVE_UPLOAD_PATH = os.environ.get("RELATIVE_UPLOAD_PATH", "uploads")
     # User data directory relative to data access path
@@ -76,11 +77,11 @@ class Config:
     # see https://github.com/celery/celery/issues/7309
     class CeleryConfig:
         broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
-        result_backend: str = os.environ.get('CELERY_MONGO_URI', 'mongodb://localhost:27017/')
+        result_backend: str = os.environ.get("CELERY_MONGO_URI", "mongodb://localhost:27017/")
         task_track_started: bool = True
         task_compressen: str = "zlib"
         result_compression: str = "zlib"
-        result_expires: timedelta = timedelta(weeks=1)      # non-polled results will be dropped
-        worker_send_task_events: bool = True                # enable events to be monitored by Flower
-    
+        result_expires: timedelta = timedelta(weeks=1)  # non-polled results will be dropped
+        worker_send_task_events: bool = True  # enable events to be monitored by Flower
+
     CELERY_CONFIG = CeleryConfig()

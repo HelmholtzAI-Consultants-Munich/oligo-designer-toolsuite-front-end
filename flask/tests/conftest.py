@@ -87,21 +87,29 @@ def mock_celery():
     class MockPendingAsyncResult:
         id = "123"
         state = "pending"
-        def successful(self): return False
-        def get(self): return False, b""
+
+        def successful(self):
+            return False
+
+        def get(self):
+            return False, b""
 
     class MockSuccessfulAsyncResult:
         id = "123"
         state = "success"
-        def successful(self): return True
-        def get(self): return True, b""
 
+        def successful(self):
+            return True
+
+        def get(self):
+            return True, b""
 
     with patch("routes.pipelines.enqueue_pipeline") as mock_pending:
         mock_pending.return_value = MockPendingAsyncResult()
         with patch("extensions.celery_app.AsyncResult") as mock_success:
             mock_success.return_value = MockSuccessfulAsyncResult()
             yield mock_success
+
 
 @pytest.fixture
 def mock_run():

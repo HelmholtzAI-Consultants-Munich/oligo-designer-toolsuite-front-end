@@ -65,10 +65,9 @@ def test_get_run_file_not_found(client, dummy_user, run_id):
     response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
     assert response.status_code == 404
 
+
 def test_runid_null(client, mock_celery):
-    form = {
-        "runid": None
-    }
+    form = {"runid": None}
 
     response = client.post("/api/scrinshot", json=form)
     assert response.status_code == 400

@@ -44,6 +44,7 @@ def test_seqfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "success"
 
+
 def test_seqfish_unauthenticated(client, run_id, dummy_form, mock_celery, session_user):
     response = client.post("/api/seqfish", json=dummy_form)
     assert response.status_code == 200
@@ -63,6 +64,7 @@ def test_seqfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "success"
+
 
 # Error handling tests
 def test_seqfish_route_invalid_run_id(client, dummy_form, authenticated_user):

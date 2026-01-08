@@ -4,9 +4,7 @@ import json
 import os
 import re
 import shutil
-import io
-import pathlib
-import zipfile
+
 from bson import ObjectId
 
 
@@ -180,5 +178,5 @@ def validate_id_array(data: dict, key_name: str) -> tuple[list, tuple[dict, int]
 
     if not ids or not isinstance(ids, list):
         return [], ({"error": f"{key_name} must be a non-empty array"}, 400)
-    
+
     return ids, None

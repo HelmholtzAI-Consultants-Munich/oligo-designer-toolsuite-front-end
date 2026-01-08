@@ -22,11 +22,11 @@ import uuid
 
 import requests
 from bson import ObjectId
-from flask import Blueprint, current_app, jsonify, redirect, request, session, url_for
+from extensions import mongo, oauth
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from extensions import mongo, oauth
+from flask import Blueprint, current_app, jsonify, redirect, request, session, url_for
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -389,5 +389,5 @@ def assign_session_id():
         if "session_id" not in session:
             session["session_id"] = str(uuid.uuid4())
         # Ensure directory for anonymous user data associated with this session exists
-        user_dir = os.path.join(current_app.config["USERDATA_PATH"], 'anon', session['session_id'])
+        user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session["session_id"])
         os.makedirs(user_dir, exist_ok=True)

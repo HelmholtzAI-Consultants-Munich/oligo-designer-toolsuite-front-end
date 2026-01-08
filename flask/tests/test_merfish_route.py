@@ -18,6 +18,7 @@ def dummy_form(run_id):
     form["runid"] = str(run_id)
     return form
 
+
 def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
     from conftest import create_test_run
@@ -64,6 +65,7 @@ def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "success"
+
 
 # Error handling tests
 def test_merfish_route_invalid_run_id(client, dummy_form, authenticated_user):

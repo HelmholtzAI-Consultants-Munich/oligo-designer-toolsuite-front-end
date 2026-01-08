@@ -6,11 +6,10 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from unittest.mock import patch
 
-from bson import ObjectId
-from werkzeug.security import generate_password_hash
-
 from app import create_app
+from bson import ObjectId
 from extensions import mongo
+from werkzeug.security import generate_password_hash
 
 
 @pytest.fixture(autouse=True)

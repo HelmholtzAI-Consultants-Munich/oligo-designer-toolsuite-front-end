@@ -28,4 +28,5 @@ export interface GenomicRegion {
 export interface GenomicRegions {
     [key: string]: GenomicRegion[];
 }
+
 export type RunState = "started" | "success" | "failure" | "pending"

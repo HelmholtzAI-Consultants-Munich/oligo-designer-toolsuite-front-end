@@ -18,6 +18,7 @@ def dummy_form(run_id):
     form["runid"] = str(run_id)
     return form
 
+
 def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
     from conftest import create_test_run
@@ -43,6 +44,7 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "success"
 
+
 def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, session_user):
     response = client.post("/api/scrinshot", json=dummy_form)
     assert response.status_code == 200
@@ -62,6 +64,7 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, sess
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] == "success"
+
 
 @pytest.mark.xfail(reason="User directory creation gets mocked")
 def test_invalid_session(client, dummy_form, run_id, mock_celery):

@@ -1,12 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { Table, Badge, Spinner, Alert, Button, Card, Form } from 'react-bootstrap';
-import { Eye, EyeSlash, Trash, Pencil } from 'react-bootstrap-icons';
-import { useBulkSelection } from '../shared/useBulkSelection';
-import BulkActionToolbar from '../shared/BulkActionToolbar';
-import { handleBulkOperationSuccess } from '../shared/bulkOperationHelpers';
-import { STATUS_CONFIG } from '../shared/types';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import {
+    Table,
+    Badge,
+    Spinner,
+    Alert,
+    Button,
+    Card,
+    Form,
+} from "react-bootstrap";
+import { Eye, EyeSlash, Trash, Pencil } from "react-bootstrap-icons";
+import { useBulkSelection } from "../shared/useBulkSelection";
+import BulkActionToolbar from "../shared/BulkActionToolbar";
+import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
+import { STATUS_CONFIG } from "../shared/types";
 
 interface PipelineRun {
     id: string;
@@ -258,7 +266,8 @@ const PipelineList: React.FC = () => {
     };
 
     const getStatusBadge = (status: string) => {
-        const color = STATUS_CONFIG.colors[status as keyof typeof STATUS_CONFIG.colors];
+        const color =
+            STATUS_CONFIG.colors[status as keyof typeof STATUS_CONFIG.colors];
         return <Badge bg={color}>{status}</Badge>;
     };
 
@@ -461,10 +470,18 @@ const PipelineList: React.FC = () => {
                                                         minWidth: "120px",
                                                     }}
                                                 >
-                                                    <option value="pending">Pending</option>
-                                                    <option value="started">Started</option>
-                                                    <option value="success">Success</option>
-                                                    <option value="failure">Failure</option>
+                                                    <option value="pending">
+                                                        Pending
+                                                    </option>
+                                                    <option value="started">
+                                                        Started
+                                                    </option>
+                                                    <option value="success">
+                                                        Success
+                                                    </option>
+                                                    <option value="failure">
+                                                        Failure
+                                                    </option>
                                                 </Form.Select>
                                                 <Button
                                                     variant="success"

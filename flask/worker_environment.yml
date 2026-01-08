@@ -7,8 +7,8 @@ dependencies:
   # Core runtime
   - python=3.12
   - pip>=25.1 # min version supporting dependency groups
-  - git       # required by setuptools-scm for local odt install
-  
+  - git # required by setuptools-scm for local odt install
+
   # Oligo Designer Toolsuite dependencies
   - bcftools>=1.22 # required in next ODT version
   - bedtools>=2.30
@@ -17,4 +17,4 @@ dependencies:
   - bowtie2>=2.5
 
   # Oligo Designer Toolsuite AI filters dependencies
-  - pytorch         # conda chooses PyTorch backend, avoids CUDA if not available
+  - pytorch # conda chooses PyTorch backend, avoids CUDA if not available

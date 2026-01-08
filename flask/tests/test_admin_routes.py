@@ -197,10 +197,7 @@ def test_get_pipeline_runs_success(admin_client, pipeline_run):
 
 def test_update_pipeline_status_success(admin_client, pipeline_run):
     """Test updating pipeline run status"""
-    response = admin_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={"status": "success"}
-    )
+    response = admin_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "success"})
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "success"
@@ -250,18 +247,14 @@ def test_get_pipeline_runs_unauthenticated(unauthenticated_client):
 
 def test_update_pipeline_status_unauthorized(regular_client, pipeline_run):
     """Test that regular users cannot update pipeline run status"""
-    response = regular_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={"status": "success"}
-    )
+    response = regular_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "success"})
     assert response.status_code == 403
 
 
 def test_update_pipeline_status_unauthenticated(unauthenticated_client, pipeline_run):
     """Test that unauthenticated users cannot update pipeline run status"""
     response = unauthenticated_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}",
-        json={"status": "success"}
+        f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "success"}
     )
     assert response.status_code == 401 or response.status_code == 403
 
@@ -515,7 +508,7 @@ def test_bulk_update_pipeline_status_success(admin_client, pipeline_run, create_
     try:
         response = admin_client.post(
             "/api/admin/pipelines/bulk-update-status",
-            json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)], "status": "success"}
+            json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)], "status": "success"},
         )
         assert response.status_code == 200
         data = response.get_json()
@@ -548,8 +541,7 @@ def test_bulk_update_pipeline_status_missing_status(admin_client, pipeline_run):
 def test_bulk_update_pipeline_status_empty_run_ids(admin_client):
     """Test bulk update with empty run_ids"""
     response = admin_client.post(
-        "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [], "status": "success"}
+        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [], "status": "success"}
     )
     assert response.status_code == 400
 
@@ -558,7 +550,7 @@ def test_bulk_update_pipeline_status_unauthorized(regular_client, pipeline_run):
     """Test that regular users cannot bulk update pipeline run status"""
     response = regular_client.post(
         "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(pipeline_run["_id"])], "status": "success"}
+        json={"run_ids": [str(pipeline_run["_id"])], "status": "success"},
     )
     assert response.status_code == 403
 
@@ -567,7 +559,6 @@ def test_bulk_update_pipeline_status_unauthenticated(unauthenticated_client):
     """Test that unauthenticated users cannot bulk update pipeline run status"""
     fake_id = ObjectId()
     response = unauthenticated_client.post(
-        "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(fake_id)], "status": "success"}
+        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(fake_id)], "status": "success"}
     )
     assert response.status_code == 401 or response.status_code == 403
