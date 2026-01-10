@@ -85,33 +85,41 @@ def test_get_files_invalid_runid(client):
 
 
 # Error handling tests
-def test_get_pipeline_run_returns_error_message(client, dummy_user, run_id):
-    """Test get_pipeline_run returns error_message field when status is error."""
-    create_test_run(run_id, user_id=dummy_user.id, status="error", error_message="Pipeline execution failed")
+def _assert_pipeline_run_error_message(client, dummy_user, run_id, status, error_message):
+    """
+    Helper function to test that get_pipeline_run returns error_message field.
+
+    Args:
+        client: Flask test client
+        dummy_user: Test user fixture
+        run_id: Run ID fixture
+        status: Expected status (e.g., "error", "failed")
+        error_message: Expected error message
+    """
+    create_test_run(run_id, user_id=dummy_user.id, status=status, error_message=error_message)
 
     response = client.get(f"/api/runs/{run_id}")
     assert response.status_code == 200
     data = response.get_json()
-    assert data["status"] == "error"
+    assert data["status"] == status
     assert "error_message" in data
-    assert data["error_message"] == "Pipeline execution failed"
+    assert data["error_message"] == error_message
+
+
+def test_get_pipeline_run_returns_error_message(client, dummy_user, run_id):
+    """Test get_pipeline_run returns error_message field when status is error."""
+    _assert_pipeline_run_error_message(client, dummy_user, run_id, "error", "Pipeline execution failed")
 
 
 def test_get_pipeline_run_returns_error_message_failed_status(client, dummy_user, run_id):
     """Test get_pipeline_run returns error_message field when status is failed."""
-    create_test_run(
+    _assert_pipeline_run_error_message(
+        client,
+        dummy_user,
         run_id,
-        user_id=dummy_user.id,
-        status="failed",
-        error_message="Invalid configuration: Missing required parameter",
+        "failed",
+        "Invalid configuration: Missing required parameter",
     )
-
-    response = client.get(f"/api/runs/{run_id}")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "failed"
-    assert "error_message" in data
-    assert data["error_message"] == "Invalid configuration: Missing required parameter"
 
 
 def test_get_pipeline_run_no_error_message_when_completed(client, dummy_user, run_id):
@@ -166,7 +174,7 @@ def test_get_run_files_invalid_run_id_sanitized(client):
     assert response.status_code == 400
     data = response.get_json()
     assert "error" in data
-    assert data["error"] == "Invalid run identifier"
+    assert data["error"] == "The run ID you provided is not valid. Please check and try again."
 
 
 def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id):

@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import pytest
 
 from extensions import mongo
-from conftest import assert_error_sanitized
+from conftest import assert_invalid_run_id_error
 
 
 @pytest.fixture
@@ -201,12 +201,7 @@ def test_seqfish_route_invalid_run_id(client, dummy_form, authenticated_user):
     invalid_form["runid"] = "invalid_id"
 
     response = client.post("/api/seqfish", json=invalid_form)
-    assert response.status_code == 400
-    data = response.get_json()
-    assert "error" in data
-    assert data["error"] == "Invalid run identifier"
-    # Verify no raw error strings exposed
-    assert_error_sanitized(data)
+    assert_invalid_run_id_error(response)
 
 
 def test_seqfish_route_propagates_pipeline_runner_errors(client, run_id, authenticated_user):
@@ -218,7 +213,4 @@ def test_seqfish_route_propagates_pipeline_runner_errors(client, run_id, authent
     }
 
     response = client.post("/api/seqfish", json=form_with_empty_runid)
-    assert response.status_code == 400
-    data = response.get_json()
-    assert "error" in data
-    assert data["error"] == "Invalid run identifier"
+    assert_invalid_run_id_error(response)

@@ -45,89 +45,82 @@ def _sanitize_error_message(exception: Exception) -> str:
     """
     error_str = str(exception).lower()
 
-    # Handle specific exception types
-    if isinstance(exception, InvalidId):
-        return "The run ID you provided is not valid. Please check and try again."
+    match exception:
+        case InvalidId():
+            return "The run ID you provided is not valid. Please check and try again."
 
-    if isinstance(exception, ValueError):
-        # Check for specific ValueError messages
-        if "session" in error_str or "session_id" in error_str:
-            return "Your session has expired. Please refresh the page and try again."
-        if "directory" in error_str or "user_dir" in error_str:
-            return "Unable to access your data directory. Please try again or contact support."
-        return "The information you provided is not valid. Please check your input and try again."
+        case ValueError():
+            # Check for specific ValueError messages
+            if "session" in error_str or "session_id" in error_str:
+                return "Your session has expired. Please refresh the page and try again."
+            if "directory" in error_str or "user_dir" in error_str:
+                return "Unable to access your data directory. Please try again or contact support."
+            return "The information you provided is not valid. Please check your input and try again."
 
-    if isinstance(exception, RuntimeError):
-        # Check for specific RuntimeError messages
-        if (
-            "directory" in error_str
-            or "not found" in error_str
-            or "User directory not found" in str(exception)
-            or "/user_data/" in error_str
-        ):
-            return "Unable to access your data directory. Please try again or contact support."
-        if "pipeline" in error_str or "subprocess" in error_str:
-            return "The pipeline failed to execute. Please check your input and try again."
-        return "An error occurred while running the pipeline. Please try again."
+        case RuntimeError():
+            # Check for specific RuntimeError messages
+            if (
+                "directory" in error_str
+                or "not found" in error_str
+                or "User directory not found" in str(exception)
+                or "/user_data/" in error_str
+            ):
+                return "Unable to access your data directory. Please try again or contact support."
+            if "pipeline" in error_str or "subprocess" in error_str:
+                return "The pipeline failed to execute. Please check your input and try again."
+            return "An error occurred while running the pipeline. Please try again."
 
-    if isinstance(exception, FileNotFoundError):
-        return "A required file is missing. Please check your input files and try again."
+        case FileNotFoundError():
+            return "A required file is missing. Please check your input files and try again."
 
-    if isinstance(exception, PermissionError):
-        # Permission errors are internal server issues - users can't fix file permissions
-        return "Something went wrong while accessing files. Please try again or contact support if the problem persists."
+        case PermissionError():
+            # Permission errors are internal server issues - users can't fix file permissions
+            return "Something went wrong while accessing files. Please try again or contact support if the problem persists."
 
-    if isinstance(exception, KeyError):
-        return "Some required information is missing. Please check your input and try again."
+        case KeyError():
+            return "Some required information is missing. Please check your input and try again."
 
-    # Check error message content for sensitive patterns
-    if any(pattern in error_str for pattern in ["/user_data/", "/tmp/", "traceback", "stack trace"]):
-        return "An error occurred while processing your request"
+        case _:
+            # Check error message content for sensitive patterns
+            if any(pattern in error_str for pattern in ["/user_data/", "/tmp/", "traceback", "stack trace"]):
+                return "An error occurred while processing your request"
 
-    # Generic fallback - still sanitize the message
-    if len(str(exception)) > 200:
-        # Truncate very long error messages
-        return "An error occurred while processing your request"
+            # Generic fallback - still sanitize the message
+            if len(str(exception)) > 200:
+                # Truncate very long error messages
+                return "An error occurred while processing your request"
 
-    # Return a generic message for unknown errors
-    return "Something went wrong. Please try again or contact support if the problem persists."
+            # Return a generic message for unknown errors
+            return "Something went wrong. Please try again or contact support if the problem persists."
 
 
 def _get_http_status_code(exception: Exception) -> int:
     """
     Determine appropriate HTTP status code based on exception type.
     """
-    if isinstance(exception, InvalidId):
-        return 400
-    if isinstance(exception, ValueError):
-        return 400
-    if isinstance(exception, RuntimeError):
-        # RuntimeError for missing directories should be 400 (bad request)
-        error_str = str(exception).lower()
-        if (
-            "directory" in error_str
-            or "not found" in error_str
-            or "User directory not found" in str(exception)
-        ):
+    match exception:
+        case InvalidId():
             return 400
-        # Other runtime errors are server errors
-        return 500
-    if isinstance(exception, FileNotFoundError):
-        return 404
-    if isinstance(exception, PermissionError):
-        # Permission errors are internal server issues, not user permission issues
-        return 500
-    if isinstance(exception, KeyError):
-        return 400
-    # Default to 500 for server errors
-    return 500
-
-
-def sanitize_error_message_for_storage(exception: Exception) -> str:
-    """
-    Sanitize error message for storage in database.
-
-    Used for async pipeline runs where errors are stored in MongoDB.
-    Returns user-friendly message suitable for displaying to users later.
-    """
-    return _sanitize_error_message(exception)
+        case ValueError():
+            return 400
+        case RuntimeError():
+            # RuntimeError for missing directories should be 400 (bad request)
+            error_str = str(exception).lower()
+            if (
+                "directory" in error_str
+                or "not found" in error_str
+                or "User directory not found" in str(exception)
+            ):
+                return 400
+            # Other runtime errors are server errors
+            return 500
+        case FileNotFoundError():
+            return 404
+        case PermissionError():
+            # Permission errors are internal server issues, not user permission issues
+            return 500
+        case KeyError():
+            return 400
+        case _:
+            # Default to 500 for server errors
+            return 500

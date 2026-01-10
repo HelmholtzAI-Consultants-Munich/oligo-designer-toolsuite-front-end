@@ -162,6 +162,26 @@ def assert_error_sanitized(response_data):
     assert "/user_data/" not in data_str, "File paths should not be exposed"
 
 
+def assert_invalid_run_id_error(response, check_sanitized=True):
+    """
+    Helper function to assert standard invalid run ID error response.
+
+    Checks that the response has status code 400, contains an error field,
+    and the error message matches the expected InvalidId error message. Optionally verifies
+    that the error is sanitized.
+
+    Args:
+        response: Flask test client response object
+        check_sanitized: Whether to also check that error is sanitized (default: True)
+    """
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "The run ID you provided is not valid. Please check and try again."
+    if check_sanitized:
+        assert_error_sanitized(data)
+
+
 @pytest.fixture
 def dummy_user(monkeypatch):
     """Fixture for a test user with id='dummy_user' (used in test_pipeline_routes.py)."""

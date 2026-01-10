@@ -98,7 +98,7 @@ def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user):
     assert data["status"] == "error"
     assert "error" in data
     # Verify error is user-friendly and sanitized
-    assert "An error occurred during genomic processing" in data["message"]
+    assert "We couldn't process your genomic data" in data["message"]
     # Verify no raw error strings exposed
     assert_error_sanitized(data)
 
@@ -115,7 +115,7 @@ def test_genomic_cascaded_ncbi_subprocess_failure(client, dummy_form_ncbi, authe
         assert "error" in data
         # Verify error is sanitized
         assert "Subprocess failed" not in data["error"]
-        assert data["error"] == "Pipeline execution failed" or "An error occurred" in data["error"]
+        assert data["error"] == "The pipeline failed to execute. Please check your input and try again."
 
 
 def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
@@ -128,7 +128,7 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
     assert data["status"] == "error"
     assert "error" in data
     # Verify error is user-friendly
-    assert "An error occurred during genomic processing" in data["message"]
+    assert "We couldn't process your genomic data" in data["message"]
     # Verify no raw error strings exposed
     assert_error_sanitized(data)
 
@@ -157,7 +157,7 @@ def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
     assert data["status"] == "error"
     assert "error" in data
     # Verify error is user-friendly
-    assert "An error occurred during genomic processing" in data["message"]
+    assert "We couldn't process your genomic data" in data["message"]
     # Verify no raw error strings exposed
     assert_error_sanitized(data)
 
