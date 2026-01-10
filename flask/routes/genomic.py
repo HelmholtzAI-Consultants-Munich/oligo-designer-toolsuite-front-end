@@ -23,6 +23,55 @@ from .error_handlers import create_user_error_response
 genomic_bp = Blueprint("genomic", __name__)
 
 
+def _validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | None = None) -> None:
+    """
+    Validate genomic form data structure and required fields.
+
+    Args:
+        form_data: The form data dictionary to validate
+        allowed_sources: List of allowed source values. Defaults to ["NCBI", "Ensembl"]
+
+    Raises:
+        ValueError: If validation fails
+    """
+    if allowed_sources is None:
+        allowed_sources = ["NCBI", "Ensembl"]
+
+    if not form_data:
+        raise ValueError("Invalid input: form data is required")
+    if "source" not in form_data or "value" not in form_data.get("source", {}):
+        raise ValueError("Invalid input: source is required")
+    if form_data["source"]["value"] not in allowed_sources:
+        raise ValueError(
+            f"Invalid input: source must be one of {', '.join(repr(s) for s in allowed_sources)}"
+        )
+    if "genomic_regions" not in form_data:
+        raise ValueError("Invalid input: genomic_regions is required")
+    if form_data["source"]["value"] == "Custom" and not form_data.get("file_regions", {}).get("value"):
+        raise ValueError("Invalid input: file_regions is required for Custom source")
+
+
+def _handle_genomic_error(exception: Exception) -> tuple:
+    """
+    Handle errors in genomic endpoints with consistent error response format.
+
+    Args:
+        exception: The exception that was raised
+
+    Returns:
+        Tuple of (jsonify response, HTTP status code)
+    """
+    error_response, status_code = create_user_error_response(exception, "submission")
+    error_data = error_response.get_json()
+    return jsonify(
+        {
+            "status": "error",
+            "message": "We couldn't process your genomic data. Please check your input and try again.",
+            "error": error_data.get("error", "Something went wrong. Please try again."),
+        }
+    ), status_code
+
+
 @genomic_bp.route("/api/genomic/cascaded/ncbi", methods=["POST"])
 def genomic_cascaded_ncbi():
     """
@@ -63,14 +112,7 @@ def genomic_cascaded_ncbi():
 
         # Parse JSON data from the request
         form_data = request.json
-        if not form_data:
-            raise ValueError("Invalid input: form data is required")
-        if "source" not in form_data or "value" not in form_data.get("source", {}):
-            raise ValueError("Invalid input: source is required")
-        if form_data["source"]["value"] not in ["NCBI", "Ensembl"]:
-            raise ValueError("Invalid input: source must be 'NCBI' or 'Ensembl'")
-        if "genomic_regions" not in form_data:
-            raise ValueError("Invalid input: genomic_regions is required")
+        _validate_genomic_form_data(form_data)
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_path = os.path.join(user_dir, f"output_genomic_ncbi_{timestamp}")
@@ -173,15 +215,7 @@ def genomic_cascaded_ncbi():
             }
         ), 200
     except Exception as e:
-        error_response, status_code = create_user_error_response(e, "submission")
-        error_data = error_response.get_json()
-        return jsonify(
-            {
-                "status": "error",
-                "message": "We couldn't process your genomic data. Please check your input and try again.",
-                "error": error_data.get("error", "Something went wrong. Please try again."),
-            }
-        ), status_code
+        return _handle_genomic_error(e)
 
 
 @genomic_bp.route("/api/genomic/cascaded/ensembl", methods=["POST"])
@@ -219,14 +253,7 @@ def genomic_cascaded_ensemble():
             user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
 
         form_data = request.json
-        if not form_data:
-            raise ValueError("Invalid input: form data is required")
-        if "source" not in form_data or "value" not in form_data.get("source", {}):
-            raise ValueError("Invalid input: source is required")
-        if form_data["source"]["value"] not in ["NCBI", "Ensembl"]:
-            raise ValueError("Invalid input: source must be 'NCBI' or 'Ensembl'")
-        if "genomic_regions" not in form_data:
-            raise ValueError("Invalid input: genomic_regions is required")
+        _validate_genomic_form_data(form_data)
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         run_output_path = os.path.join(user_dir, f"output_genomic_ensemble_{timestamp}")
@@ -311,15 +338,7 @@ def genomic_cascaded_ensemble():
         ), 200
 
     except Exception as e:
-        error_response, status_code = create_user_error_response(e, "submission")
-        error_data = error_response.get_json()
-        return jsonify(
-            {
-                "status": "error",
-                "message": "We couldn't process your genomic data. Please check your input and try again.",
-                "error": error_data.get("error", "Something went wrong. Please try again."),
-            }
-        ), status_code
+        return _handle_genomic_error(e)
 
 
 @genomic_bp.route("/api/genomic/cascaded/custom", methods=["POST"])
@@ -359,16 +378,7 @@ def genomic_cascaded_custom():
             user_dir = os.path.join(current_app.root_path, "user_data", "anon", session_id)
 
         form_data = request.json
-        if not form_data:
-            raise ValueError("Invalid input: form data is required")
-        if "source" not in form_data or "value" not in form_data.get("source", {}):
-            raise ValueError("Invalid input: source is required")
-        if form_data["source"]["value"] not in ["NCBI", "Ensembl", "Custom"]:
-            raise ValueError("Invalid input: source must be 'NCBI', 'Ensembl', or 'Custom'")
-        if form_data["source"]["value"] == "Custom" and not form_data.get("file_regions", {}).get("value"):
-            raise ValueError("Invalid input: file_regions is required for Custom source")
-        if "genomic_regions" not in form_data:
-            raise ValueError("Invalid input: genomic_regions is required")
+        _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl", "Custom"])
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         genomic_type = form_data["source"]["value"]
@@ -501,12 +511,4 @@ def genomic_cascaded_custom():
         ), 200
 
     except Exception as e:
-        error_response, status_code = create_user_error_response(e, "submission")
-        error_data = error_response.get_json()
-        return jsonify(
-            {
-                "status": "error",
-                "message": "We couldn't process your genomic data. Please check your input and try again.",
-                "error": error_data.get("error", "Something went wrong. Please try again."),
-            }
-        ), status_code
+        return _handle_genomic_error(e)

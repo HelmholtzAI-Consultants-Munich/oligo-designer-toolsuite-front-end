@@ -24,23 +24,42 @@ create_test_run = conftest.create_test_run
 class TestPipelineRunnerErrors:
     """Test PipelineRunner error handling."""
 
+    def _assert_pipeline_runner_error(
+        self, response, expected_status_code, expected_error_message, check_sanitized=False
+    ):
+        """
+        Helper function to assert pipeline runner error response.
+
+        Args:
+            response: Tuple from pipeline_runner.run() - (response_object, status_code)
+            expected_status_code: Expected HTTP status code
+            expected_error_message: Expected error message
+            check_sanitized: Whether to also check that error is sanitized (default: False)
+        """
+        data = response[0].get_json()
+        assert response[1] == expected_status_code
+        assert data["error"] == expected_error_message
+        if check_sanitized:
+            assert_error_sanitized(data)
+
     def test_invalid_run_id_empty_string(self, app, pipeline_runner, authenticated_user, form_data):
         """Test empty run ID returns user-friendly error."""
         with app.app_context():
             response = pipeline_runner.run(current_user, form_data, "")
-            data = response[0].get_json()
-            assert response[1] == 400
-            assert data["error"] == "Invalid run identifier"
+            self._assert_pipeline_runner_error(
+                response, 400, "The run ID you provided is not valid. Please check and try again."
+            )
 
     def test_invalid_run_id_malformed(self, app, pipeline_runner, authenticated_user, form_data):
         """Test malformed run ID returns sanitized error."""
         with app.app_context():
             response = pipeline_runner.run(current_user, form_data, "invalid_id")
-            data = response[0].get_json()
-            assert response[1] == 400
-            assert data["error"] == "Invalid run identifier"
-            # Verify no raw error strings exposed
-            assert_error_sanitized(data)
+            self._assert_pipeline_runner_error(
+                response,
+                400,
+                "The run ID you provided is not valid. Please check and try again.",
+                check_sanitized=True,
+            )
 
     def test_missing_session_id(self, app, pipeline_runner, session_user, form_data, run_id):
         """Test missing session ID returns user-friendly error."""
@@ -48,9 +67,9 @@ class TestPipelineRunnerErrors:
             with app.test_request_context():
                 with patch("flask.session.get", return_value=None):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
-                    data = response[0].get_json()
-                    assert response[1] == 400
-                    assert data["error"] == "Invalid session configuration"
+                    self._assert_pipeline_runner_error(
+                        response, 400, "Your session has expired. Please refresh the page and try again."
+                    )
 
     def test_missing_user_directory(
         self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path
@@ -63,10 +82,13 @@ class TestPipelineRunnerErrors:
             with patch("os.path.exists", return_value=False):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
-                    data = response[0].get_json()
-                    assert response[1] == 400
-                    assert data["error"] == "User directory not found"
+                    self._assert_pipeline_runner_error(
+                        response,
+                        400,
+                        "Unable to access your data directory. Please try again or contact support.",
+                    )
                     # Verify no file paths exposed
+                    data = response[0].get_json()
                     assert "/user_data/" not in data["error"]
                     assert "test_user_id" not in data["error"]
 
@@ -90,7 +112,10 @@ class TestPipelineRunnerErrors:
                     assert "error" in data
                     # Verify error is sanitized
                     assert "YAML write error" not in data["error"]
-                    assert data["error"] == "An error occurred while processing your request"
+                    assert (
+                        data["error"]
+                        == "Something went wrong. Please try again or contact support if the problem persists."
+                    )
 
     def test_subprocess_failure(self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path):
         """Test subprocess failures return user-friendly error."""
@@ -109,7 +134,10 @@ class TestPipelineRunnerErrors:
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
                     data = response[0].get_json()
                     assert response[1] == 500
-                    assert data["error"] == "Pipeline execution failed"
+                    assert (
+                        data["error"]
+                        == "The pipeline failed to execute. Please check your input and try again."
+                    )
                     # Verify run status updated to error
                     run = mongo.db.runs.find_one({"_id": run_id})
                     assert run["status"] == "error"
@@ -186,7 +214,10 @@ class TestPipelineRunnerErrors:
                     assert "error" in data
                     # Verify error is sanitized
                     assert "Unexpected error" not in data["error"]
-                    assert data["error"] == "An error occurred while processing your request"
+                    assert (
+                        data["error"]
+                        == "Something went wrong. Please try again or contact support if the problem persists."
+                    )
 
     def test_no_raw_error_strings_exposed(
         self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path
@@ -202,9 +233,18 @@ class TestPipelineRunnerErrors:
 
             # Test with various error types
             error_scenarios = [
-                (ValueError("Session ID not found"), "Invalid session configuration"),
-                (RuntimeError("/user_data/123/config.yaml missing"), "User directory not found"),
-                (FileNotFoundError("/path/to/file.txt"), "Required file is missing"),
+                (
+                    ValueError("Session ID not found"),
+                    "Your session has expired. Please refresh the page and try again.",
+                ),
+                (
+                    RuntimeError("/user_data/123/config.yaml missing"),
+                    "Unable to access your data directory. Please try again or contact support.",
+                ),
+                (
+                    FileNotFoundError("/path/to/file.txt"),
+                    "A required file is missing. Please check your input files and try again.",
+                ),
             ]
 
             for error, expected_message in error_scenarios:

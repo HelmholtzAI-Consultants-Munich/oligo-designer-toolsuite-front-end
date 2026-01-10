@@ -14,141 +14,147 @@ from bson.errors import InvalidId
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from routes.error_handlers import (
     create_user_error_response,
-    sanitize_error_message_for_storage,
 )
 
 
 class TestErrorHandlerUtility:
     """Test error handler utility functions."""
 
+    def _assert_error_response(self, app, exception, expected_error_message, expected_status_code=None):
+        """
+        Helper method to test error response.
+
+        Args:
+            app: Flask app fixture
+            exception: Exception to test
+            expected_error_message: Expected error message in response
+            expected_status_code: Expected HTTP status code (optional)
+
+        Returns:
+            Tuple of (response, data, status_code) for additional assertions if needed
+        """
+        with app.app_context():
+            response, status_code = create_user_error_response(exception, "submission")
+            data = response.get_json()
+            assert data["error"] == expected_error_message
+            if expected_status_code is not None:
+                assert status_code == expected_status_code
+            return response, data, status_code
+
     def test_invalid_id_exception(self, app):
         """Test InvalidId exception returns user-friendly message."""
-        with app.app_context():
-            response, status_code = create_user_error_response(InvalidId("invalid"), "submission")
-            data = response.get_json()
-            assert data["error"] == "Invalid run identifier"
-            assert status_code == 400
+        self._assert_error_response(
+            app,
+            InvalidId("invalid"),
+            "The run ID you provided is not valid. Please check and try again.",
+            400,
+        )
 
     def test_value_error_session(self, app):
         """Test ValueError with session returns user-friendly message."""
-        with app.app_context():
-            error = ValueError("Anonymous session ID not found in session")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "Invalid session configuration"
-            assert status_code == 400
+        error = ValueError("Anonymous session ID not found in session")
+        self._assert_error_response(
+            app, error, "Your session has expired. Please refresh the page and try again.", 400
+        )
 
     def test_value_error_directory(self, app):
         """Test ValueError with directory returns user-friendly message."""
-        with app.app_context():
-            error = ValueError("user_dir not found")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "User directory not found"
-            assert status_code == 400
+        error = ValueError("user_dir not found")
+        self._assert_error_response(
+            app, error, "Unable to access your data directory. Please try again or contact support.", 400
+        )
 
     def test_value_error_generic(self, app):
         """Test generic ValueError returns user-friendly message."""
-        with app.app_context():
-            error = ValueError("Some validation error")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "Invalid input provided"
-            assert status_code == 400
+        error = ValueError("Some validation error")
+        self._assert_error_response(
+            app,
+            error,
+            "The information you provided is not valid. Please check your input and try again.",
+            400,
+        )
 
     def test_runtime_error_directory(self, app):
         """Test RuntimeError with directory returns user-friendly message."""
-        with app.app_context():
-            error = RuntimeError("Directory /user_data/123 not found")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "User directory not found"
-            assert status_code == 400
+        error = RuntimeError("Directory /user_data/123 not found")
+        self._assert_error_response(
+            app, error, "Unable to access your data directory. Please try again or contact support.", 400
+        )
 
     def test_runtime_error_pipeline(self, app):
         """Test RuntimeError with pipeline returns user-friendly message."""
-        with app.app_context():
-            error = RuntimeError("Pipeline failed: subprocess error")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "Pipeline execution failed"
-            assert status_code == 500
+        error = RuntimeError("Pipeline failed: subprocess error")
+        self._assert_error_response(
+            app, error, "The pipeline failed to execute. Please check your input and try again.", 500
+        )
 
     def test_runtime_error_generic(self, app):
         """Test generic RuntimeError returns user-friendly message."""
-        with app.app_context():
-            error = RuntimeError("Some runtime error")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "An error occurred during pipeline execution"
-            assert status_code == 500
+        error = RuntimeError("Some runtime error")
+        self._assert_error_response(
+            app, error, "An error occurred while running the pipeline. Please try again.", 500
+        )
 
     def test_file_not_found_error(self, app):
         """Test FileNotFoundError returns user-friendly message."""
-        with app.app_context():
-            error = FileNotFoundError("/path/to/file.txt")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "Required file is missing"
-            assert status_code == 404
+        error = FileNotFoundError("/path/to/file.txt")
+        self._assert_error_response(
+            app, error, "A required file is missing. Please check your input files and try again.", 404
+        )
 
     def test_permission_error(self, app):
         """Test PermissionError returns user-friendly message (internal server error)."""
-        with app.app_context():
-            error = PermissionError("Permission denied")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert (
-                data["error"]
-                == "Something went wrong while accessing files. Please try again or contact support if the problem persists."
-            )
-            assert status_code == 500
+        error = PermissionError("Permission denied")
+        self._assert_error_response(
+            app,
+            error,
+            "Something went wrong while accessing files. Please try again or contact support if the problem persists.",
+            500,
+        )
 
     def test_key_error(self, app):
         """Test KeyError returns user-friendly message."""
-        with app.app_context():
-            error = KeyError("missing_key")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "Invalid configuration: Missing required parameter"
-            assert status_code == 400
+        error = KeyError("missing_key")
+        self._assert_error_response(
+            app, error, "Some required information is missing. Please check your input and try again.", 400
+        )
 
     def test_generic_exception(self, app):
         """Test generic exception returns user-friendly message."""
-        with app.app_context():
-            error = Exception("Some unexpected error")
-            response, status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert data["error"] == "An error occurred while processing your request"
-            assert status_code == 500
+        error = Exception("Some unexpected error")
+        self._assert_error_response(
+            app,
+            error,
+            "Something went wrong. Please try again or contact support if the problem persists.",
+            500,
+        )
 
-    def test_sensitive_patterns_sanitized(self, app):
-        """Test that sensitive patterns are sanitized."""
-        with app.app_context():
-            # Test file path sanitization
-            error = Exception("Error in /user_data/123/config.yaml")
-            response, _status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert "/user_data/" not in data["error"]
-            assert "config.yaml" not in data["error"]
-            assert data["error"] == "An error occurred while processing your request"
+    def test_file_path_sanitized(self, app):
+        """Test that file paths are sanitized from error messages."""
+        error = Exception("Error in /user_data/123/config.yaml")
+        _, data, _ = self._assert_error_response(
+            app, error, "An error occurred while processing your request"
+        )
+        assert "/user_data/" not in data["error"]
+        assert "config.yaml" not in data["error"]
 
-            # Test traceback sanitization
-            error2 = Exception("Traceback (most recent call last):")
-            response2, _ = create_user_error_response(error2, "submission")
-            data2 = response2.get_json()
-            assert "Traceback" not in data2["error"]
-            assert "traceback" not in data2["error"].lower()
+    def test_traceback_sanitized(self, app):
+        """Test that traceback information is sanitized from error messages."""
+        error = Exception("Traceback (most recent call last):")
+        _, data, _ = self._assert_error_response(
+            app, error, "An error occurred while processing your request"
+        )
+        assert "Traceback" not in data["error"]
+        assert "traceback" not in data["error"].lower()
 
     def test_long_error_message_truncated(self, app):
         """Test that very long error messages are sanitized."""
-        with app.app_context():
-            long_message = "A" * 300  # Very long error message
-            error = Exception(long_message)
-            response, _status_code = create_user_error_response(error, "submission")
-            data = response.get_json()
-            assert len(data["error"]) <= 200
-            assert data["error"] == "An error occurred while processing your request"
+        long_message = "A" * 300  # Very long error message
+        error = Exception(long_message)
+        _, data, _ = self._assert_error_response(
+            app, error, "An error occurred while processing your request"
+        )
+        assert len(data["error"]) <= 200
 
     def test_error_logged_server_side(self, app):
         """Test that full error details are logged server-side."""
@@ -162,17 +168,6 @@ class TestErrorHandlerUtility:
                 # Verify full error details are in log
                 call_args = mock_logger.call_args
                 assert "Test error with sensitive info" in str(call_args)
-
-    def test_sanitize_error_message_for_storage(self, app):
-        """Test sanitize_error_message_for_storage returns same messages."""
-        with app.app_context():
-            error = ValueError("Invalid session configuration")
-            sanitized = sanitize_error_message_for_storage(error)
-            assert sanitized == "Invalid session configuration"
-
-            error2 = RuntimeError("Pipeline execution failed")
-            sanitized2 = sanitize_error_message_for_storage(error2)
-            assert sanitized2 == "Pipeline execution failed"
 
     def test_error_type_parameter(self, app):
         """Test that error_type parameter is logged but doesn't affect message."""
