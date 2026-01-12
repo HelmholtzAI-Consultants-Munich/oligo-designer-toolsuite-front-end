@@ -38,6 +38,7 @@ class TestPipelineRunnerErrors:
         """
         data = response[0].get_json()
         assert response[1] == expected_status_code
+        assert "error" in data
         assert data["error"] == expected_error_message
         if check_sanitized:
             assert_error_sanitized(data)
@@ -107,14 +108,10 @@ class TestPipelineRunnerErrors:
             with patch("yaml.dump", side_effect=Exception("YAML write error")):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
-                    data = response[0].get_json()
-                    assert response[1] == 500
-                    assert "error" in data
-                    # Verify error is sanitized
-                    assert "YAML write error" not in data["error"]
-                    assert (
-                        data["error"]
-                        == "Something went wrong. Please try again or contact support if the problem persists."
+                    self._assert_pipeline_runner_error(
+                        response,
+                        500,
+                        "Something went wrong. Please try again or contact support if the problem persists.",
                     )
 
     def test_subprocess_failure(self, app, pipeline_runner, authenticated_user, form_data, run_id, tmp_path):
@@ -132,11 +129,10 @@ class TestPipelineRunnerErrors:
             with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
-                    data = response[0].get_json()
-                    assert response[1] == 500
-                    assert (
-                        data["error"]
-                        == "The pipeline failed to execute. Please check your input and try again."
+                    self._assert_pipeline_runner_error(
+                        response,
+                        500,
+                        "The pipeline failed to execute. Please check your input and try again.",
                     )
                     # Verify run status updated to error
                     run = mongo.db.runs.find_one({"_id": run_id})
@@ -160,11 +156,10 @@ class TestPipelineRunnerErrors:
             with patch("tempfile.NamedTemporaryFile", side_effect=PermissionError("Cannot create temp file")):
                 with patch("flask.current_app.root_path", str(tmp_path)):
                     response = pipeline_runner.run(current_user, form_data_with_regions, str(run_id))
-                    data = response[0].get_json()
-                    assert response[1] == 500
-                    assert (
-                        data["error"]
-                        == "Something went wrong while accessing files. Please try again or contact support if the problem persists."
+                    self._assert_pipeline_runner_error(
+                        response,
+                        500,
+                        "Something went wrong while accessing files. Please try again or contact support if the problem persists.",
                     )
 
     def test_cleanup_errors_logged_but_dont_fail(
@@ -209,14 +204,10 @@ class TestPipelineRunnerErrors:
                     pipeline_runner, "create_context", side_effect=Exception("Unexpected error")
                 ):
                     response = pipeline_runner.run(current_user, form_data, str(run_id))
-                    data = response[0].get_json()
-                    assert response[1] == 500
-                    assert "error" in data
-                    # Verify error is sanitized
-                    assert "Unexpected error" not in data["error"]
-                    assert (
-                        data["error"]
-                        == "Something went wrong. Please try again or contact support if the problem persists."
+                    self._assert_pipeline_runner_error(
+                        response,
+                        500,
+                        "Something went wrong. Please try again or contact support if the problem persists.",
                     )
 
     def test_no_raw_error_strings_exposed(
