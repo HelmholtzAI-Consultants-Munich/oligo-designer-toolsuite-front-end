@@ -198,7 +198,7 @@ class PipelineRunner:
             form_data["file_regions"]["value"] = None
 
     def populate_config_file(self, form_data: dict, context: dict) -> None:
-        config = {"dir_output": context.get("output_path")}
+        config = {}
 
         def deep_get(dictionary: dict | Any, keys: list[str]) -> Any:
             for key in keys:
@@ -249,6 +249,9 @@ class PipelineRunner:
 
         traverse_object(self.schema, [])
 
+        # Override output directory
+        config["dir_output"] = context.get("output_path")
+                        
         # Write config to YAML file
         print(f"Writing config to {context['config_path']}")
         current_app.logger.warning(config)
