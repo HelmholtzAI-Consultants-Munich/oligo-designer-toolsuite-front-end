@@ -88,19 +88,59 @@ def test_genomic_single_ensembl_unauthenticated(client, dummy_form_ensembl, mock
 
 
 # Error handling tests
+def _assert_genomic_error_response(
+    response,
+    expected_status_codes,
+    expected_message_substring=None,
+    expected_error_message=None,
+    forbidden_strings=None,
+    check_sanitized=False,
+):
+    """
+    Helper function to assert genomic route error responses.
+
+    Args:
+        response: Flask test client response object
+        expected_status_codes: Expected status code(s) - can be int or list/tuple
+        expected_message_substring: Substring that should be in data["message"] (optional)
+        expected_error_message: Exact error message expected in data["error"] (optional)
+        forbidden_strings: List of strings that should NOT be in data["error"] (optional)
+        check_sanitized: Whether to call assert_error_sanitized (default: False)
+    """
+    if isinstance(expected_status_codes, (list, tuple)):
+        assert response.status_code in expected_status_codes
+    else:
+        assert response.status_code == expected_status_codes
+
+    data = response.get_json()
+    assert data["status"] == "error"
+    assert "error" in data
+
+    if expected_message_substring:
+        assert expected_message_substring in data["message"]
+
+    if expected_error_message:
+        assert data["error"] == expected_error_message
+
+    if forbidden_strings:
+        for forbidden in forbidden_strings:
+            assert forbidden not in data["error"]
+
+    if check_sanitized:
+        assert_error_sanitized(data)
+
+
 def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user):
     """Test genomic_cascaded_ncbi with invalid input returns sanitized error."""
     invalid_form = {"source": {"value": "Invalid"}}
 
     response = client.post("/api/genomic/cascaded/ncbi", json=invalid_form)
-    assert response.status_code in [400, 500]  # Could be either depending on where it fails
-    data = response.get_json()
-    assert data["status"] == "error"
-    assert "error" in data
-    # Verify error is user-friendly and sanitized
-    assert "We couldn't process your genomic data" in data["message"]
-    # Verify no raw error strings exposed
-    assert_error_sanitized(data)
+    _assert_genomic_error_response(
+        response,
+        expected_status_codes=[400, 500],
+        expected_message_substring="We couldn't process your genomic data",
+        check_sanitized=True,
+    )
 
 
 def test_genomic_cascaded_ncbi_subprocess_failure(client, dummy_form_ncbi, authenticated_user):
@@ -109,13 +149,12 @@ def test_genomic_cascaded_ncbi_subprocess_failure(client, dummy_form_ncbi, authe
 
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
         response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form_ncbi)
-        assert response.status_code == 500
-        data = response.get_json()
-        assert data["status"] == "error"
-        assert "error" in data
-        # Verify error is sanitized
-        assert "Subprocess failed" not in data["error"]
-        assert data["error"] == "The pipeline failed to execute. Please check your input and try again."
+        _assert_genomic_error_response(
+            response,
+            expected_status_codes=500,
+            expected_error_message="The pipeline failed to execute. Please check your input and try again.",
+            forbidden_strings=["Subprocess failed"],
+        )
 
 
 def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
@@ -123,14 +162,12 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
     invalid_form = {"source": {"value": "Invalid"}}
 
     response = client.post("/api/genomic/cascaded/ensembl", json=invalid_form)
-    assert response.status_code in [400, 500]
-    data = response.get_json()
-    assert data["status"] == "error"
-    assert "error" in data
-    # Verify error is user-friendly
-    assert "We couldn't process your genomic data" in data["message"]
-    # Verify no raw error strings exposed
-    assert_error_sanitized(data)
+    _assert_genomic_error_response(
+        response,
+        expected_status_codes=[400, 500],
+        expected_message_substring="We couldn't process your genomic data",
+        check_sanitized=True,
+    )
 
 
 def test_genomic_cascaded_ensembl_subprocess_failure(client, dummy_form_ensembl, authenticated_user):
@@ -139,12 +176,11 @@ def test_genomic_cascaded_ensembl_subprocess_failure(client, dummy_form_ensembl,
 
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
         response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form_ensembl)
-        assert response.status_code == 500
-        data = response.get_json()
-        assert data["status"] == "error"
-        assert "error" in data
-        # Verify error is sanitized
-        assert "Subprocess failed" not in data["error"]
+        _assert_genomic_error_response(
+            response,
+            expected_status_codes=500,
+            forbidden_strings=["Subprocess failed"],
+        )
 
 
 def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
@@ -152,14 +188,12 @@ def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
     invalid_form = {"source": {"value": "Custom"}, "file_regions": {"value": ""}}
 
     response = client.post("/api/genomic/cascaded/custom", json=invalid_form)
-    assert response.status_code in [400, 500]
-    data = response.get_json()
-    assert data["status"] == "error"
-    assert "error" in data
-    # Verify error is user-friendly
-    assert "We couldn't process your genomic data" in data["message"]
-    # Verify no raw error strings exposed
-    assert_error_sanitized(data)
+    _assert_genomic_error_response(
+        response,
+        expected_status_codes=[400, 500],
+        expected_message_substring="We couldn't process your genomic data",
+        check_sanitized=True,
+    )
 
 
 def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user):
@@ -182,12 +216,11 @@ def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user):
 
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
         response = client.post("/api/genomic/cascaded/custom", json=custom_form)
-        assert response.status_code == 500
-        data = response.get_json()
-        assert data["status"] == "error"
-        assert "error" in data
-        # Verify error is sanitized
-        assert "Subprocess failed" not in data["error"]
+        _assert_genomic_error_response(
+            response,
+            expected_status_codes=500,
+            forbidden_strings=["Subprocess failed"],
+        )
 
 
 def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
