@@ -90,7 +90,8 @@
         "T": { "type": "integer", "default": 6, "title": "T" },
         "C": { "type": "integer", "default": 6, "title": "C" },
         "G": { "type": "integer", "default": 6, "title": "G" }
-      }
+      },
+      "title": "Target Probe Homopolymeric Base N"
     },
     "target_probe_GC_weight": {
       "type": "integer",
@@ -228,7 +229,8 @@
           "description": "this parameter is fixed, if reference is whole genome, consider using \"both\""
         },
         "word_size": { "type": "integer", "default": 10, "title": "Word Size" }
-      }
+      },
+      "title": "Target Probe Hybridization Probability Blastn Search Parameters"
     },
     "target_probe_hybridization_probability_blastn_hit_parameters": {
       "type": "object",
@@ -239,7 +241,8 @@
           "title": "Coverage",
           "description": "could be turned into min_alignment_length"
         }
-      }
+      },
+      "title": "Target Probe Hybridization Probability Blastn Hit Parameters"
     },
     "target_probe_hybridization_probability_bowtie_search_parameters": {
       "type": "object",
@@ -251,10 +254,13 @@
           "title": "--Nofw",
           "description": "this parameter is fixed, if reference is whole genome, consider using both strands (remove this parameter)"
         }
-      }
+      },
+      "title": "Target Probe Hybridization Probability Bowtie Search Parameters"
     },
     "target_probe_hybridization_probability_bowtie_hit_parameters": {
-      "type": "null"
+      "type": "null",
+      "title": "Target Probe Hybridization Probability Bowtie Hit Parameters",
+      "description": "No hit parameters available currently"
     },
     "target_probe_cross_hybridization_alignment_method": {
       "type": "string",
@@ -278,7 +284,8 @@
           "description": "this parameter is fixed"
         },
         "word_size": { "type": "integer", "default": 10, "title": "Word Size" }
-      }
+      },
+      "title": "Target Probe Cross Hybridization Blastn Search Parameters"
     },
     "target_probe_cross_hybridization_blastn_hit_parameters": {
       "type": "object",
@@ -289,7 +296,8 @@
           "title": "Coverage",
           "description": "could be turned into min_alignment_length"
         }
-      }
+      },
+      "title": "Target Probe Cross Hybridization Blastn Hit Parameters"
     },
     "target_probe_cross_hybridization_bowtie_search_parameters": {
       "type": "object",
@@ -301,10 +309,13 @@
           "title": "--Nofw",
           "description": "this parameter is fixed"
         }
-      }
+      },
+      "title": "Target Probe Cross Hybridization Bowtie Search Parameters"
     },
     "target_probe_cross_hybridization_bowtie_hit_parameters": {
-      "type": "null"
+      "type": "null",
+      "title": "Target Probe Cross Hybridization Bowtie Hit Parameters",
+      "description": "No hit parameters available currently"
     },
     "target_probe_Tm_parameters": {
       "type": "object",
@@ -372,7 +383,8 @@
           "title": "Dntps",
           "description": "[mM]"
         }
-      }
+      },
+      "title": "Target Probe Tm Parameters"
     },
     "target_probe_Tm_chem_correction_parameters": {
       "type": "object",
@@ -391,8 +403,13 @@
         },
         "fmdmethod": { "type": "integer", "default": 1, "title": "Fmdmethod" },
         "GC": { "type": ["integer", "null"], "default": "None", "title": "Gc" }
-      }
+      },
+      "title": "Target Probe Tm Chem Correction Parameters"
     },
-    "target_probe_Tm_salt_correction_parameters": { "type": "null" }
+    "target_probe_Tm_salt_correction_parameters": {
+      "type": "null",
+      "title": "Target Probe Tm Salt Correction Parameters",
+      "description": "if salt correction desired, please add parameters below"
+    }
   }
 }
