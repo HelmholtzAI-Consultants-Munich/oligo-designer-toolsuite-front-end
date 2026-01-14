@@ -90,7 +90,8 @@
         "T": { "type": "integer", "default": 5, "title": "T" },
         "C": { "type": "integer", "default": 5, "title": "C" },
         "G": { "type": "integer", "default": 5, "title": "G" }
-      }
+      },
+      "title": "Target Probe Homopolymeric Base N"
     },
     "target_probe_GC_weight": {
       "type": "integer",
@@ -255,7 +256,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -264,7 +265,8 @@
           "title": "Max Target Seqs"
         },
         "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
-      }
+      },
+      "title": "Target Probe Specificity Blastn Search Parameters"
     },
     "target_probe_specificity_blastn_hit_parameters": {
       "type": "object",
@@ -275,7 +277,8 @@
           "title": "Coverage",
           "description": "can be turned into min_alignment_length"
         }
-      }
+      },
+      "title": "Target Probe Specificity Blastn Hit Parameters"
     },
     "target_probe_cross_hybridization_blastn_search_parameters": {
       "type": "object",
@@ -296,7 +299,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -304,7 +307,8 @@
           "default": 10,
           "title": "Max Target Seqs"
         }
-      }
+      },
+      "title": "Target Probe Cross Hybridization Blastn Search Parameters"
     },
     "target_probe_cross_hybridization_blastn_hit_parameters": {
       "type": "object",
@@ -315,7 +319,8 @@
           "title": "Coverage",
           "description": "can be turned into min_alignment_length"
         }
-      }
+      },
+      "title": "Target Probe Cross Hybridization Blastn Hit Parameters"
     },
     "target_probe_Tm_parameters": {
       "type": "object",
@@ -392,7 +397,8 @@
           "title": "Dntps",
           "description": "[mM] default"
         }
-      }
+      },
+      "title": "Target Probe Tm Parameters"
     },
     "target_probe_Tm_chem_correction_parameters": {
       "type": "object",
@@ -428,9 +434,14 @@
           "title": "Gc",
           "description": "default"
         }
-      }
+      },
+      "title": "Target Probe Tm Chem Correction Parameters"
     },
-    "target_probe_Tm_salt_correction_parameters": { "type": "null" },
+    "target_probe_Tm_salt_correction_parameters": {
+      "type": "null",
+      "title": "Target Probe Tm Salt Correction Parameters",
+      "description": "if salt correction desired, please add parameters below"
+    },
     "detection_oligo_Tm_parameters": {
       "type": "object",
       "properties": {
@@ -506,7 +517,8 @@
           "title": "Dntps",
           "description": "[mM] default"
         }
-      }
+      },
+      "title": "Detection Oligo Tm Parameters"
     },
     "detection_oligo_Tm_chem_correction_parameters": {
       "type": "object",
@@ -542,8 +554,13 @@
           "title": "Gc",
           "description": "default"
         }
-      }
+      },
+      "title": "Detection Oligo Tm Chem Correction Parameters"
     },
-    "detection_oligo_Tm_salt_correction_parameters": { "type": "null" }
+    "detection_oligo_Tm_salt_correction_parameters": {
+      "type": "null",
+      "title": "Detection Oligo Tm Salt Correction Parameters",
+      "description": "if salt correction desired, please add parameters below"
+    }
   }
 }

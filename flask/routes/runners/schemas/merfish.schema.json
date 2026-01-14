@@ -90,7 +90,8 @@
         "T": { "type": "integer", "default": 6, "title": "T" },
         "C": { "type": "integer", "default": 6, "title": "C" },
         "G": { "type": "integer", "default": 6, "title": "G" }
-      }
+      },
+      "title": "Target Probe Homopolymeric Base N"
     },
     "target_probe_GC_weight": {
       "type": "integer",
@@ -202,7 +203,8 @@
         "T": { "type": "number", "default": 0.25, "title": "T" },
         "C": { "type": "number", "default": 0.0, "title": "C" },
         "G": { "type": "number", "default": 0.5, "title": "G" }
-      }
+      },
+      "title": "Readout Probe Base Probabilities"
     },
     "readout_probe_length": {
       "type": "integer",
@@ -224,7 +226,8 @@
     },
     "readout_probe_homopolymeric_base_n": {
       "type": "object",
-      "properties": { "G": { "type": "integer", "default": 3, "title": "G" } }
+      "properties": { "G": { "type": "integer", "default": 3, "title": "G" } },
+      "title": "Readout Probe Homopolymeric Base N"
     },
     "readout_probe_set_size": {
       "type": "integer",
@@ -247,7 +250,8 @@
           "title": "Gc Content",
           "description": "GC content"
         }
-      }
+      },
+      "title": "Readout Probe Homogeneous Properties Weights"
     },
     "n_bits": {
       "type": "integer",
@@ -299,7 +303,8 @@
         "T": { "type": "number", "default": 0.25, "title": "T" },
         "C": { "type": "number", "default": 0.25, "title": "C" },
         "G": { "type": "number", "default": 0.25, "title": "G" }
-      }
+      },
+      "title": "Primer Base Probabilities"
     },
     "primer_GC_content_min": {
       "type": "integer",
@@ -330,7 +335,8 @@
         "T": { "type": "integer", "default": 4, "title": "T" },
         "C": { "type": "integer", "default": 4, "title": "C" },
         "G": { "type": "integer", "default": 4, "title": "G" }
-      }
+      },
+      "title": "Primer Homopolymeric Base N"
     },
     "primer_max_len_selfcomplement": {
       "type": "integer",
@@ -383,7 +389,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -392,7 +398,8 @@
           "title": "Max Target Seqs"
         },
         "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
-      }
+      },
+      "title": "Target Probe Specificity Blastn Search Parameters"
     },
     "target_probe_specificity_blastn_hit_parameters": {
       "type": "object",
@@ -403,7 +410,8 @@
           "title": "Min Alignment Length",
           "description": "can be turned into coverage"
         }
-      }
+      },
+      "title": "Target Probe Specificity Blastn Hit Parameters"
     },
     "target_probe_cross_hybridization_blastn_search_parameters": {
       "type": "object",
@@ -424,7 +432,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -432,7 +440,8 @@
           "default": 10,
           "title": "Max Target Seqs"
         }
-      }
+      },
+      "title": "Target Probe Cross Hybridization Blastn Search Parameters"
     },
     "target_probe_cross_hybridization_blastn_hit_parameters": {
       "type": "object",
@@ -443,7 +452,8 @@
           "title": "Min Alignment Length",
           "description": "can be turned into coverage"
         }
-      }
+      },
+      "title": "Target Probe Cross Hybridization Blastn Hit Parameters"
     },
     "target_probe_Tm_parameters": {
       "type": "object",
@@ -520,10 +530,19 @@
           "title": "Dntps",
           "description": "[mM] default"
         }
-      }
+      },
+      "title": "Target Probe Tm Parameters"
     },
-    "target_probe_Tm_chem_correction_parameters": { "type": "null" },
-    "target_probe_Tm_salt_correction_parameters": { "type": "null" },
+    "target_probe_Tm_chem_correction_parameters": {
+      "type": "null",
+      "title": "Target Probe Tm Chem Correction Parameters",
+      "description": "if chem correction desired, please add parameters below"
+    },
+    "target_probe_Tm_salt_correction_parameters": {
+      "type": "null",
+      "title": "Target Probe Tm Salt Correction Parameters",
+      "description": "if salt correction desired, please add parameters below"
+    },
     "readout_probe_initial_num_sequences": {
       "type": "integer",
       "default": 100000,
@@ -549,7 +568,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -558,7 +577,8 @@
           "title": "Max Target Seqs"
         },
         "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
-      }
+      },
+      "title": "Readout Probe Specificity Blastn Search Parameters"
     },
     "readout_probe_specificity_blastn_hit_parameters": {
       "type": "object",
@@ -569,7 +589,8 @@
           "title": "Min Alignment Length",
           "description": "can be turned into coverage"
         }
-      }
+      },
+      "title": "Readout Probe Specificity Blastn Hit Parameters"
     },
     "readout_probe_cross_hybridization_blastn_search_parameters": {
       "type": "object",
@@ -590,7 +611,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -598,7 +619,8 @@
           "default": 10,
           "title": "Max Target Seqs"
         }
-      }
+      },
+      "title": "Readout Probe Cross Hybridization Blastn Search Parameters"
     },
     "readout_probe_cross_hybridization_blastn_hit_parameters": {
       "type": "object",
@@ -609,7 +631,8 @@
           "title": "Min Alignment Length",
           "description": "can be turned into coverage"
         }
-      }
+      },
+      "title": "Readout Probe Cross Hybridization Blastn Hit Parameters"
     },
     "readout_probe_Tm_parameters": {
       "type": "object",
@@ -686,10 +709,19 @@
           "title": "Dntps",
           "description": "[mM] default"
         }
-      }
+      },
+      "title": "Readout Probe Tm Parameters"
     },
-    "readout_probe_Tm_chem_correction_parameters": { "type": "null" },
-    "readout_probe_Tm_salt_correction_parameters": { "type": "null" },
+    "readout_probe_Tm_chem_correction_parameters": {
+      "type": "null",
+      "title": "Readout Probe Tm Chem Correction Parameters",
+      "description": "if chem correction desired, please add parameters below"
+    },
+    "readout_probe_Tm_salt_correction_parameters": {
+      "type": "null",
+      "title": "Readout Probe Tm Salt Correction Parameters",
+      "description": "if salt correction desired, please add parameters below"
+    },
     "readout_probe_n_combinations": {
       "type": "integer",
       "default": 100000,
@@ -721,7 +753,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -730,7 +762,8 @@
           "title": "Max Target Seqs"
         },
         "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
-      }
+      },
+      "title": "Primer Specificity Refrence Blastn Search Parameters"
     },
     "primer_specificity_refrence_blastn_hit_parameters": {
       "type": "object",
@@ -741,7 +774,8 @@
           "title": "Min Alignment Length",
           "description": "can be turned into coverage"
         }
-      }
+      },
+      "title": "Primer Specificity Refrence Blastn Hit Parameters"
     },
     "primer_specificity_encoding_probes_blastn_search_parameters": {
       "type": "object",
@@ -762,7 +796,7 @@
         "dust": { "type": "string", "default": "no", "title": "Dust" },
         "soft_masking": {
           "type": "string",
-          "default": false,
+          "default": "false",
           "title": "Soft Masking"
         },
         "max_target_seqs": {
@@ -771,7 +805,8 @@
           "title": "Max Target Seqs"
         },
         "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
-      }
+      },
+      "title": "Primer Specificity Encoding Probes Blastn Search Parameters"
     },
     "primer_specificity_encoding_probes_blastn_hit_parameters": {
       "type": "object",
@@ -782,7 +817,8 @@
           "title": "Min Alignment Length",
           "description": "can be turned into coverage"
         }
-      }
+      },
+      "title": "Primer Specificity Encoding Probes Blastn Hit Parameters"
     },
     "primer_Tm_parameters": {
       "type": "object",
@@ -859,9 +895,18 @@
           "title": "Dntps",
           "description": "[mM] default"
         }
-      }
+      },
+      "title": "Primer Tm Parameters"
     },
-    "primer_Tm_chem_correction_parameters": { "type": "null" },
-    "primer_Tm_salt_correction_parameters": { "type": "null" }
+    "primer_Tm_chem_correction_parameters": {
+      "type": "null",
+      "title": "Primer Tm Chem Correction Parameters",
+      "description": "if chem correction desired, please add parameters below"
+    },
+    "primer_Tm_salt_correction_parameters": {
+      "type": "null",
+      "title": "Primer Tm Salt Correction Parameters",
+      "description": "if salt correction desired, please add parameters below"
+    }
   }
 }
