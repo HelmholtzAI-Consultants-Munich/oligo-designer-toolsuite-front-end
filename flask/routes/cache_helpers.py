@@ -3,8 +3,10 @@ import hashlib
 import os
 import re
 import shutil
+import requests
 from ftplib import FTP, error_perm
 from pathlib import Path
+from flask import current_app
 
 
 def _md5sum(path, chunk=1024 * 1024):
@@ -52,19 +54,20 @@ def _parse_uncompressed_checksums(manifest_path):
     return {os.path.basename(k): v for k, v in m.items()}
 
 
-def _ftp_get(ftp_host, remote_dir, filename, local_path):
-    Path(local_path).parent.mkdir(parents=True, exist_ok=True)
-    with FTP(ftp_host) as ftp, open(local_path, "wb") as out:
-        ftp.login()
-        ftp.cwd(remote_dir)
-        ftp.retrbinary(f"RETR {filename}", out.write)
+def download_file(ftp_host, remote_dir, filename, local_path):
+    with requests.get(f"https://{ftp_host}/{remote_dir}{filename}", stream=True) as r, open(local_path,mode="wb") as file:        
+        size = r.headers.get("Content-Length")
+        download_size_curr = 0
+        for chunk in r.iter_content(chunk_size=current_app.config["DOWNLOAD_CHUNK_SIZE"]):
+            download_size_curr += len(chunk)
+            file.write(chunk)
 
 
 def _ensure_file_with_md5(ftp_host, remote_dir, filename, expected_md5, dst_path):
     if os.path.exists(dst_path):
         if _md5sum(dst_path) == expected_md5:
             return dst_path, False
-    _ftp_get(ftp_host, remote_dir, filename, dst_path)
+    download_file(ftp_host, remote_dir, filename, dst_path)
     got = _md5sum(dst_path)
     if got != expected_md5:
         raise RuntimeError(f"MD5 mismatch for {filename}: expected {expected_md5}, got {got}")
@@ -95,7 +98,7 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
                 raise RuntimeError("Empty 'current' directory at NCBI.")
             release = listing[0]
             rel_dir = base + f"{release}/"
-            ftp.cwd(rel_dir)
+            ftp.cwd(release)
         # find README
         readmes = sorted([n for n in ftp.nlst() if n.startswith("README_")])
         if not readmes:
@@ -104,7 +107,7 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
 
     # download README temporarily to parse assembly + accession
     tmp = os.path.join("/tmp", f"README_{species}_{release}.txt")
-    _ftp_get(host, rel_dir, readme, tmp)
+    download_file(host, rel_dir, readme, tmp)
     assembly_name, accession = None, None
     with open(tmp) as fh:
         for line in fh:
@@ -116,7 +119,6 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
     os.remove(tmp)
     if not assembly_name or not accession:
         raise RuntimeError("Failed to parse assembly/accession from README.")
-
     nested = f"{rel_dir}{accession}_{assembly_name}/"
     with FTP(host) as ftp:
         ftp.login()
@@ -125,7 +127,6 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
             final_dir = nested
         except error_perm:
             final_dir = rel_dir
-
     return host, str(release), assembly_name, accession, final_dir
 
 
@@ -144,17 +145,15 @@ def _prepare_ncbi_cached_assets(cache_root, taxon, species, release):
 
     # md5 manifests (compressed + optional uncompressed)
     md5_local = os.path.join(raw, "md5checksums.txt")
-    _ftp_get(host, final_dir, "md5checksums.txt", md5_local)
+    download_file(host, final_dir, "md5checksums.txt", md5_local)
     md5map = _parse_md5checksums(md5_local)
-
     unc_local = os.path.join(raw, "uncompressed_checksums.txt")
     try:
-        _ftp_get(host, final_dir, "uncompressed_checksums.txt", unc_local)
+        download_file(host, final_dir, "uncompressed_checksums.txt", unc_local)
     except Exception:
         # Not all NCBI directories publish this file; proceed without it.
         pass
     unc_map = _parse_uncompressed_checksums(unc_local)
-
     # Filenames we care about (resolve MD5 by basename to handle nested manifest paths)
     gtf_gz = f"{accession}_{assembly}_genomic.gtf.gz"
     fna_gz = f"{accession}_{assembly}_genomic.fna.gz"
@@ -204,7 +203,7 @@ def _prepare_ncbi_cached_assets(cache_root, taxon, species, release):
 def _ftp_try_get(ftp_host, remote_dir, filename, local_path):
     """Try to retrieve a file. Return True if downloaded, False if not found."""
     try:
-        _ftp_get(ftp_host, remote_dir, filename, local_path)
+        download_file(ftp_host, remote_dir, filename, local_path)
         return True
     except Exception:
         try:
@@ -348,7 +347,7 @@ def _prepare_ensembl_cached_assets(cache_root, species, release):
     else:
         # No md5 available → just download if missing
         if not os.path.exists(gtf_gz_local):
-            _ftp_get(host, gtf_dir, gtf_gz, gtf_gz_local)
+            download_file(host, gtf_dir, gtf_gz, gtf_gz_local)
 
     # Gunzip
     gtf_plain = os.path.join(dec, os.path.splitext(os.path.splitext(gtf_gz)[0])[0] + ".gtf")
@@ -368,7 +367,7 @@ def _prepare_ensembl_cached_assets(cache_root, species, release):
         _ensure_file_with_md5(host, fasta_dir, fasta_gz, fasta_md5_expected, fasta_gz_local)
     else:
         if not os.path.exists(fasta_gz_local):
-            _ftp_get(host, fasta_dir, fasta_gz, fasta_gz_local)
+            download_file(host, fasta_dir, fasta_gz, fasta_gz_local)
 
     # Gunzip
     fasta_plain = os.path.join(dec, os.path.splitext(os.path.splitext(fasta_gz)[0])[0] + ".fa")
