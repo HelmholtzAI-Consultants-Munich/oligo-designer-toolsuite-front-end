@@ -41,7 +41,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
                     required
                 />
                 <OverlayTrigger
-                    trigger="hover"
+                    trigger={["focus", "hover"]}
                     placement="top"
                     overlay={
                         <Popover id="popover-n_jobs">

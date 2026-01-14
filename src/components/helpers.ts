@@ -6,8 +6,8 @@ export const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
     setFormData: React.Dispatch<React.SetStateAction<formData>>
 ) => {
-    const { name, value } = e.target;
-    const keys = name.split(".");
+    const { id, value } = e.target;
+    const keys = id.split(".");
 
     if (keys.length === 2) {
         const [parent, child] = keys;
@@ -24,8 +24,8 @@ export const handleChange = (
     } else {
         setFormData((prev: any) => ({
             ...prev,
-            [name]: {
-                ...(prev as any)[name],
+            [id]: {
+                ...(prev as any)[id],
                 value,
             },
         }));
@@ -41,6 +41,7 @@ export const handleFileChange = (
 
     setFiles((prevFiles) => ({
         ...prevFiles,
+
         [name]:
             name === "file_regions_file"
                 ? selectedFiles[0] // Single file
@@ -56,9 +57,14 @@ export const allFilesUploaded = (
     fastaFormsReadout: any,
     fastaFormsPrimer: any
 ) => {
+    console.log("fileuploadcheck");
+
     return (
-        (files.file_regions_file !== null ||
-            formData.file_regions.value.length > 0) &&
+        // file_regions_file existiert nicht
+        // (
+        // files.file_regions_file !== null
+        // // || formData.file_regions.value.length > 0)
+        // &&
         (files.files_fasta_target_probe_database.length > 0 ||
             fastaForms.length > 0) &&
         (files.files_fasta_reference_database_target_probe.length > 0 ||
@@ -72,7 +78,6 @@ export const allFilesUploaded = (
 
 export const uploadFiles = async (files: any, formData: any) => {
     const filePaths: { [key: string]: string } = {};
-    console.log(files, "from the event");
     for (const key in files) {
         // @ts-ignore
         if (files[key]) {
@@ -86,7 +91,7 @@ export const uploadFiles = async (files: any, formData: any) => {
                     formDataU.append("file", file);
                     try {
                         const response = await axios.post(
-                            "http://localhost:5000/api/upload",
+                            "http://localhost:9999/api/upload",
                             formDataU,
                             {
                                 headers: {
@@ -106,7 +111,7 @@ export const uploadFiles = async (files: any, formData: any) => {
                     formDataU.append("file", files[key]);
                     try {
                         const response = await axios.post(
-                            "http://localhost:5000/api/upload",
+                            "http://localhost:9999/api/upload",
                             formDataU,
                             {
                                 headers: {
@@ -147,7 +152,7 @@ export const handleSubmitGenomicAll = async (
             }
             try {
                 const response = await axios.post(
-                    `http://localhost:5000/api/genomic/cascaded/${endpoint}`,
+                    `http://localhost:9999/api/genomic/cascaded/${endpoint}`,
                     payload,
                     {
                         withCredentials: true,
@@ -174,17 +179,15 @@ export const handleSubmitGenomicAll = async (
 async function processFastaGroup({
     forms,
     uploadedPaths,
-    uploadKey,
+    key,
     formData,
-    formDataKey,
     setModal,
     setRunStatus,
 }: {
     forms: FastaForm[];
     uploadedPaths: Record<string, string>;
-    uploadKey: string;
+    key: string;
     formData: any;
-    formDataKey: string;
     setModal: any;
     setRunStatus: any;
 }) {
@@ -201,22 +204,21 @@ async function processFastaGroup({
             return null;
         }
     }
-    const uploaded = uploadedPaths[uploadKey] ?? "";
+    const uploaded = uploadedPaths[key] ?? "";
     const merged = [generated, uploaded].filter(Boolean).join("\n");
 
     if (merged) {
-        formData[formDataKey]["value"] = merged;
+        formData[key]["value"] = merged;
     }
 
     return merged;
 }
 
 export const handleSubmit = async (
-    e: React.FormEvent,
     runStatus: "idle" | "submitting" | "running",
     setRunStatus: React.Dispatch<React.SetStateAction<typeof runStatus>>,
     setRunId: React.Dispatch<React.SetStateAction<string | null>>,
-    fastaForms: FastaForm[],
+
     setModal: React.Dispatch<
         React.SetStateAction<{
             show: boolean;
@@ -226,43 +228,39 @@ export const handleSubmit = async (
     >,
     files: FileState,
     formData: any,
+    fastaFormsTarget: FastaForm[],
     fastaFormsPrimer: FastaForm[],
     fastaFormsReadout: FastaForm[],
     fastaFormsReference: FastaForm[],
     setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
-    if (e) e.preventDefault();
-
+    console.log(fastaFormsTarget);
     if (runStatus !== "idle") return;
-
+    console.log("submitted");
     setRunStatus("submitting");
     setRunId(null);
     const uploadedPaths = await uploadFiles(files, formData);
-
+    console.log(uploadedPaths);
     if (uploadedPaths["file_regions_file"]) {
         formData["file_regions"]["value"] = uploadedPaths["file_regions_file"];
     }
 
     const groups = [
         {
-            forms: fastaForms,
-            uploadKey: "files_fasta_target_probe_database",
-            formDataKey: "files_fasta_target_probe_database",
+            forms: fastaFormsTarget,
+            key: "files_fasta_target_probe_database",
         },
         {
             forms: fastaFormsReference,
-            uploadKey: "files_fasta_reference_database_target_probe",
-            formDataKey: "files_fasta_reference_database_target_probe",
+            key: "files_fasta_reference_database_target_probe",
         },
         {
             forms: fastaFormsPrimer,
-            uploadKey: "files_fasta_reference_database_primer",
-            formDataKey: "files_fasta_reference_database_primer",
+            key: "files_fasta_reference_database_primer",
         },
         {
             forms: fastaFormsReadout,
-            uploadKey: "files_fasta_reference_database_readout_probe",
-            formDataKey: "files_fasta_reference_database_readout_probe",
+            key: "files_fasta_reference_database_readout_probe",
         },
     ];
 
@@ -282,7 +280,7 @@ export const handleSubmit = async (
         !allFilesUploaded(
             files,
             formData,
-            fastaForms,
+            fastaFormsTarget,
             fastaFormsReference,
             fastaFormsReadout,
             fastaFormsPrimer
@@ -315,7 +313,7 @@ export const handleSubmit = async (
         setRunStatus("running");
 
         const response = await axios.post(
-            "http://localhost:5000/api/merfish",
+            "http://localhost:9999/api/merfish",
             { formdata: formData, runid: newId },
             {
                 withCredentials: true,
