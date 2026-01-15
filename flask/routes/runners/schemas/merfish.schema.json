@@ -273,7 +273,7 @@
     },
     "channels_ids": {
       "type": "string",
-      "default": ["Alexa488, Cy3b, Alexa647"],
+      "default": "Alexa488, Cy3b, Alexa647",
       "title": "Channels Ids",
       "description": "names of fluorescent channels"
     },
