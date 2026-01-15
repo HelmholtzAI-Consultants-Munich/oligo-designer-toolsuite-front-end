@@ -161,18 +161,14 @@ def genomic_cascaded_ncbi():
             config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
             config_genomic = {
                 "dir_output": output_path,
-                "source": single_form["source"]["value"],
+                "source": single_form["source"],
                 "source_params": {
-                    "taxon": single_form["source_params"]["taxon"]["value"],
-                    "species": single_form["source_params"]["species"]["value"],
-                    "annotation_release": to_int(single_form["source_params"]["annotation_release"]["value"]),
+                    "taxon": single_form["source_params"]["taxon"],
+                    "species": single_form["source_params"]["species"],
+                    "annotation_release": to_int(single_form["source_params"]["annotation_release"]),
                 },
-                "genomic_regions": {
-                    key: to_bool(val["value"]) for key, val in single_form["genomic_regions"].items()
-                },
-                "exon_exon_junction_block_size": to_int(
-                    single_form["exon_exon_junction_block_size"]["value"]
-                ),
+                "genomic_regions": {key: to_bool(val) for key, val in single_form["genomic_regions"].items()},
+                "exon_exon_junction_block_size": to_int(single_form["exon_exon_junction_block_size"]),
             }
 
             with open(config_path, "w") as yaml_file:
@@ -295,17 +291,13 @@ def genomic_cascaded_ensemble():
             config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
             config_genomic = {
                 "dir_output": output_path,
-                "source": single_form["source"]["value"],
+                "source": single_form["source"],
                 "source_params": {
-                    "species": single_form["source_params"]["species"]["value"],
-                    "annotation_release": to_int(single_form["source_params"]["annotation_release"]["value"]),
+                    "species": single_form["source_params"]["species"],
+                    "annotation_release": to_int(single_form["source_params"]["annotation_release"]),
                 },
-                "genomic_regions": {
-                    key: to_bool(val["value"]) for key, val in single_form["genomic_regions"].items()
-                },
-                "exon_exon_junction_block_size": to_int(
-                    single_form["exon_exon_junction_block_size"]["value"]
-                ),
+                "genomic_regions": {key: to_bool(val) for key, val in single_form["genomic_regions"].items()},
+                "exon_exon_junction_block_size": to_int(single_form["exon_exon_junction_block_size"]),
             }
 
             with open(config_path, "w") as yaml_file:
@@ -381,7 +373,7 @@ def genomic_cascaded_custom():
         _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl", "Custom"])
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        genomic_type = form_data["source"]["value"]
+        genomic_type = form_data["source"]
         run_output_path = os.path.join(user_dir, f"output_genomic_{genomic_type}_{timestamp}")
 
         run_doc = {
@@ -424,12 +416,12 @@ def genomic_cascaded_custom():
             # ---------------------------------------------
             os.makedirs(cache_dir, exist_ok=True)
             source_params = single_form.get("source_params", {})
-            source_val = (single_form.get("source", {}) or {}).get("value", "").lower()
+            source_val = single_form.get("source", "").lower()
 
             if source_val == "ensembl":
                 # Ensembl second-line cache
-                species = (source_params.get("species", {}) or {}).get("value")
-                ann_rel = (source_params.get("annotation_release", {}) or {}).get("value")
+                species = source_params.get("species")
+                ann_rel = source_params.get("annotation_release")
                 if not species or ann_rel is None:
                     raise RuntimeError(
                         "Custom genomic (Ensembl) requires 'species' and 'annotation_release' in source_params."
@@ -442,9 +434,9 @@ def genomic_cascaded_custom():
                 files_source = "Ensembl"
             else:
                 # Default to NCBI second-line cache
-                taxon = (source_params.get("taxon", {}) or {}).get("value") or "H_sapiens"
-                species = (source_params.get("species", {}) or {}).get("value")
-                ann_rel = (source_params.get("annotation_release", {}) or {}).get("value")
+                taxon = source_params.get("taxon", "H_sapiens")
+                species = source_params.get("species")
+                ann_rel = source_params.get("annotation_release")
                 if not species or ann_rel is None:
                     raise RuntimeError(
                         "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
@@ -471,12 +463,8 @@ def genomic_cascaded_custom():
                     else resolved_rel,
                     "genome_assembly": genome_assembly,  # optional
                 },
-                "genomic_regions": {
-                    key: to_bool(val["value"]) for key, val in single_form["genomic_regions"].items()
-                },
-                "exon_exon_junction_block_size": to_int(
-                    single_form["exon_exon_junction_block_size"]["value"]
-                ),
+                "genomic_regions": {key: to_bool(val) for key, val in single_form["genomic_regions"].items()},
+                "exon_exon_junction_block_size": to_int(single_form["exon_exon_junction_block_size"]),
             }
 
             with open(config_path, "w") as yaml_file:
