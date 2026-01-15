@@ -71,9 +71,7 @@
         "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -232,6 +230,6 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ODT Cloud ",
+  "title": "ODT Cloud - Overview",
   "uid": "adkcvwd"
 }

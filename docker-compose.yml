@@ -2,7 +2,6 @@ services:
   odt-db:
     image: mongo:8
     container_name: odt-db
-    # Comment out these lines to restrict database access to containers
     ports:
       - 27017:27017
 
@@ -14,22 +13,16 @@ services:
       - 5000:5000
     environment:
       MONGO_URI: mongodb://odt-db:27017/oligo_db
-    develop:
-      watch:
-        - action: sync
-          path: ./flask
-          target: /app
+      DEBUG: ${DEBUG:-False}
 
   odt-web:
-    image: node:22
+    image: odt-web
+    build:
+      context: .
+      dockerfile: Dockerfile.web
     container_name: odt-web
-    working_dir: /home/node/app
-    command: sh -c "chown -R node:node /home/node/app/node_modules 2>/dev/null || true && su node -c 'npm install && npm run dev -- --host'"
     ports:
       - 3000:3000
-    volumes:
-      - ./:/home/node/app
-      - odt-web-node-modules:/home/node/app/node_modules
 
   odt-tests:
     image: odt-tests
@@ -38,42 +31,37 @@ services:
     network_mode: host # this should be removed once the URL is configurable
     environment:
       PLAYWRIGHT_HTML_OUTPUT_DIR: /home/node/tests/playwright-report
-    volumes:
-      - ./tests:/home/node/tests
     profiles: [tests] # don't run unless specified
 
   odt-mongodb-exporter:
-    image: percona/mongodb_exporter:0.40
+    image: percona/mongodb_exporter:0.47.2
     container_name: odt-mongodb-exporter
     command:
-      - '--mongodb.uri=mongodb://odt-db:27017'
-      - '--collect-all'
-    ports:
-      - 9216:9216
+      - "--mongodb.uri=mongodb://odt-db:27017"
+      - "--collect-all"
     depends_on:
       - odt-db
+    restart: unless-stopped
+    profiles: [monitoring]
 
   odt-node-exporter:
     image: prom/node-exporter:latest
     container_name: odt-node-exporter
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-    ports:
-      - 9100:9100
     restart: unless-stopped
+    profiles: [monitoring]
 
   odt-cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: odt-cadvisor
-    ports:
-      - 8080:8080
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -84,6 +72,7 @@ services:
     devices:
       - /dev/kmsg
     restart: unless-stopped
+    profiles: [monitoring]
 
   odt-prometheus:
     image: prom/prometheus:latest
@@ -91,18 +80,19 @@ services:
     ports:
       - 9090:9090
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus' 
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--web.enable-lifecycle"
     depends_on:
       - odt-mongodb-exporter
       - odt-node-exporter
       - odt-cadvisor
+    restart: unless-stopped
+    profiles: [monitoring]
 
   odt-grafana:
     image: grafana/grafana:11.3.0
@@ -113,12 +103,8 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_SECURITY_ADMIN_USER=admin
     volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - odt-prometheus
-
-volumes:
-  odt-web-node-modules:
-  prometheus-data:
-  grafana-data:
+    restart: unless-stopped
+    profiles: [monitoring]

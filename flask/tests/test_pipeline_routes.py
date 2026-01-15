@@ -1,22 +1,26 @@
 import os
-from bson import ObjectId
-from unittest.mock import patch
-import pytest
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from unittest.mock import patch
+
+import pytest
+from bson import ObjectId
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app import create_app
 from extensions import mongo
+
 
 @pytest.fixture(autouse=True)
 def mock_make_dir():
     with patch("os.makedirs"):
         yield
 
+
 @pytest.fixture
 def client(monkeypatch):
     app = create_app()
-    app.config['TESTING'] = True
-    app.secret_key = 'test-key'
+    app.config["TESTING"] = True
+    app.secret_key = "test-key"
 
     class AnonymousUser:
         is_authenticated = False
@@ -27,9 +31,11 @@ def client(monkeypatch):
         with app.app_context():
             yield client
 
+
 @pytest.fixture()
 def run_id():
     return ObjectId()
+
 
 @pytest.fixture
 def output_path(tmp_path, run_id):
@@ -38,14 +44,16 @@ def output_path(tmp_path, run_id):
     (output_path / "log.txt").write_text("log content")
     (output_path / "config.yaml").write_text("config content")
 
-    mongo.db.runs.insert_one({
-        "_id": run_id,
-        "user_id": "dummy_user",
-        "pipeline": "TestPipeline",
-        "status": "completed",
-        "timestamp": "2025_08_20",
-        "output_path": str(output_path)
-    })
+    mongo.db.runs.insert_one(
+        {
+            "_id": run_id,
+            "user_id": "dummy_user",
+            "pipeline": "TestPipeline",
+            "status": "completed",
+            "timestamp": "2025_08_20",
+            "output_path": str(output_path),
+        }
+    )
 
     return str(output_path)
 
@@ -63,13 +71,15 @@ def test_get_pipeline_runs_authenticated(client, monkeypatch):
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
 
-    mongo.db.runs.insert_one({
-        "user_id": DummyUser.id,
-        "pipeline": "TestPipeline",
-        "status": "completed",
-        "timestamp": "2025_08_20",
-        "output_path": "/tmp/fake"
-    })
+    mongo.db.runs.insert_one(
+        {
+            "user_id": DummyUser.id,
+            "pipeline": "TestPipeline",
+            "status": "completed",
+            "timestamp": "2025_08_20",
+            "output_path": "/tmp/fake",
+        }
+    )
 
     response = client.get("/api/pipelines")
     assert response.status_code == 200
@@ -124,25 +134,26 @@ def test_get_run_file_not_found(client, monkeypatch, run_id):
     response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
     assert response.status_code == 404
 
+
 def test_runid_null(client):
     with patch("subprocess.run") as mock_run:
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = "success"
         mock_run.return_value.stderr = ""
 
-        form = {
-            "runid": None
-        }
+        form = {"runid": None}
 
         response = client.post("/api/scrinshot", json=form)
         assert response.status_code == 400
 
+
 def test_get_files_valid_runid_unused(client):
-        response = client.get(f"/api/runs/{ObjectId()}/files")
-        assert response.status_code == 404
+    response = client.get(f"/api/runs/{ObjectId()}/files")
+    assert response.status_code == 404
+
 
 def test_get_files_invalid_runid(client):
-        run_id = "hallo"
+    run_id = "hallo"
 
-        response = client.get(f"/api/runs/{run_id}/files")
-        assert response.status_code == 400
+    response = client.get(f"/api/runs/{run_id}/files")
+    assert response.status_code == 400

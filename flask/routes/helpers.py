@@ -1,7 +1,7 @@
 import copy
-from typing import Dict, List
 import hashlib
 import json
+
 
 def get_form_cache_key(form: dict) -> str:
     relevant_part = {
@@ -12,7 +12,8 @@ def get_form_cache_key(form: dict) -> str:
     serialized = json.dumps(relevant_part, sort_keys=True)
     return hashlib.sha256(serialized.encode()).hexdigest()
 
-def generate_single_region_forms(form: Dict) -> List[Dict]:
+
+def generate_single_region_forms(form: dict) -> list[dict]:
     """
     Generate separate forms where each form has only one genomic region set to "true",
     and all others set to "false".
@@ -20,9 +21,7 @@ def generate_single_region_forms(form: Dict) -> List[Dict]:
     :param form: Original form dictionary with possibly multiple "true" genomic regions
     :return: List of form dictionaries, each with only one "true" genomic region
     """
-    true_regions = [
-        key for key, val in form.get("genomic_regions", {}).items() if val["value"] == "true"
-    ]
+    true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val["value"] == "true"]
 
     form_variants = []
 
@@ -33,31 +32,36 @@ def generate_single_region_forms(form: Dict) -> List[Dict]:
         form_variants.append(new_form)
 
     return form_variants
+
+
 def to_bool(val):
-    return True if str(val).lower() == 'true' else False
+    return True if str(val).lower() == "true" else False
+
 
 def to_int(val):
     try:
         return int(val)
-    except:
+    except Exception:
         return val
+
 
 def to_null(val):
     return None if val == "" or str(val).lower() == "null" else val
 
+
 def multiline_to_list(val):
-    lines = [line.strip() for line in val.split('\n') if line.strip()]
+    lines = [line.strip() for line in val.split("\n") if line.strip()]
     return lines
 
+
 def split_on_newline(s):
-    if '\n' in s:
+    if "\n" in s:
         result = []
-        parts = s.split('\n')
+        parts = s.split("\n")
         for i, part in enumerate(parts):
             if i > 0:
-                result.append('\n')
+                result.append("\n")
             result.append(part)
         return result
     else:
         return [s]
-

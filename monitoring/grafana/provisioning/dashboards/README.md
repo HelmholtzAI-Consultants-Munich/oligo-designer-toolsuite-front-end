@@ -12,4 +12,3 @@ This directory contains Grafana dashboard JSON files that are automatically prov
 4. Restart Grafana: `docker compose restart odt-grafana`
 
 Dashboards will be automatically loaded on startup for all users who run `docker compose up`.
-
