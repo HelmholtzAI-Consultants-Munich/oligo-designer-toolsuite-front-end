@@ -9,6 +9,9 @@ import yaml
 from bson import ObjectId
 from flask import current_app, jsonify, session
 
+from Bio import SeqIO
+from oligo_designer_toolsuite.utils import FastaParser
+
 from extensions import mongo
 
 from ..helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
@@ -130,6 +133,9 @@ class PipelineRunner:
                 except Exception:
                     pass  # If we can't update DB, continue with error response
                 return create_user_error_response(e, "submission")
+
+            # Generate Visualization Files
+            self.generate_visualization_files(form_data, context)
 
             # Cleanup of Temporary Files
             try:
@@ -280,6 +286,53 @@ class PipelineRunner:
                 "pipeline": self.pipeline_name,
             },
         )
+
+    def generate_visualization_files(self, form_data: dict, context: dict) -> None:
+        # find files_fasta_target_probe_database fasta file and read it
+        print("Generating visualization files...")
+        regions_file = form_data.get("file_regions", {}).get("value")
+        if not regions_file:
+            return
+        genes = []
+        with open(regions_file, "r") as rf:
+            for line in rf:
+                line = line.strip()
+                genes.append(line)
+        fasta_paths = form_data.get("files_fasta_target_probe_database", {}).get("value")
+        print("Fasta path for visualization:", fasta_paths)
+        if not fasta_paths:
+            return
+        
+        regions = []
+
+        fasta_parser = FastaParser()
+        fasta_files = split_on_newline(fasta_paths)
+        for fname in fasta_files:
+            if os.path.exists(fname):
+                seq_record = SeqIO.index(fname, "fasta")
+                for idx in seq_record:
+                    region_name, additional_info, coordinates = fasta_parser.parse_fasta_header(idx)
+                    gene = region_name.lstrip(">")
+                    record = seq_record[idx]
+
+                    if gene in genes:
+                        regions.append({
+                            "gene": gene,
+                            "regiontype": additional_info['regiontype'][0] if 'regiontype' in additional_info else 'unknown',
+                            "transcript_ids": additional_info['transcript_id'] if 'transcript_id' in additional_info else [],
+                            "exon_numbers": additional_info['exon_number'] if 'exon_number' in additional_info else [],
+                            "chromosomes": coordinates['chromosome'] if 'chromosome' in coordinates else [],
+                            "starts": coordinates['start'] if 'start' in coordinates else [],
+                            "ends": coordinates['end'] if 'end' in coordinates else [],
+                            "strands": coordinates['strand'] if 'strand' in coordinates else [],
+                            "sequence": str(record.seq),
+                        })
+        
+        # write regions to a temp file in user_dir
+        vis_path = os.path.join(context["output_path"], f"visualization_regions.yaml")
+        with open(vis_path, "w") as vis_file:
+            yaml.dump(regions, vis_file)
+                        
 
     def cleanup_temp_files(self, form_data: dict) -> None:
         # Remove temp file for file_regions if it was created
