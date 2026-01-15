@@ -202,6 +202,12 @@ const RunDetail = () => {
                     );
                     setLogContent(logResp.data);
                 }
+
+                const visFile = await axios.get(
+                    `http://localhost:5000/api/runs/${runId}/files/visualization_regions.yaml`,
+                    { withCredentials: true, responseType: "text" }
+                );
+                console.log("Visualization regions file content:", visFile.data);
             } catch (e) {
                 console.error(e);
             }
