@@ -26,14 +26,14 @@ def generate_single_region_forms(form: dict) -> list[dict]:
     :param form: Original form dictionary with possibly multiple "true" genomic regions
     :return: List of form dictionaries, each with only one "true" genomic region
     """
-    true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val["value"] == "true"]
+    true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val == "true"]
 
     form_variants = []
 
     for region in true_regions:
         new_form = copy.deepcopy(form)
         for key in new_form["genomic_regions"]:
-            new_form["genomic_regions"][key]["value"] = "true" if key == region else "false"
+            new_form["genomic_regions"][key] = "true" if key == region else "false"
         form_variants.append(new_form)
 
     return form_variants

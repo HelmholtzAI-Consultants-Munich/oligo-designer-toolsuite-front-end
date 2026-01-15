@@ -184,18 +184,16 @@ class PipelineRunner:
         return context
 
     def populate_temp_file(self, form_data: dict) -> None:
-        if form_data["file_regions"]["value"] != "":
-            if ".txt" not in form_data["file_regions"]["value"]:
+        if form_data["file_regions"] != "":
+            if ".txt" not in form_data["file_regions"]:
                 with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
                     file_path = temp_file.name
                     # Write each gene on a new line
-                    temp_file.writelines(
-                        gene.strip() + "\n" for gene in form_data["file_regions"]["value"].split(",")
-                    )
+                    temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
                 # Update the path in form_data to point to the temp file
-                form_data["file_regions"]["value"] = file_path
+                form_data["file_regions"] = file_path
         else:
-            form_data["file_regions"]["value"] = None
+            form_data["file_regions"] = None
 
     def populate_config_file(self, form_data: dict, context: dict) -> None:
         config = {}
@@ -218,29 +216,29 @@ class PipelineRunner:
                     case "object":
                         traverse_object(entry, write_path)
                     case "integer":
-                        value = to_int(deep_get(form_data, [*read_path, "value"]))
+                        value = to_int(deep_get(form_data, read_path))
                         deep_set(config, write_path, value)
                     case "number":
-                        value = float(deep_get(form_data, [*read_path, "value"]))
+                        value = float(deep_get(form_data, read_path))
                         deep_set(config, write_path, value)
                     case "boolean":
-                        value = to_bool(deep_get(form_data, [*read_path, "value"]))
+                        value = to_bool(deep_get(form_data, read_path))
                         deep_set(config, write_path, value)
                     case "array":
                         if entry["items"]["type"] == "string":
-                            raw_value = deep_get(form_data, [*read_path, "value"])
+                            raw_value = deep_get(form_data, read_path)
                             value = split_commas_and_newlines(raw_value)
                             deep_set(config, write_path, value)
                         else:
                             # type not supported
                             raise Exception("Unsupported array type in config schema encountered")
                     case "string":
-                        value = deep_get(form_data, [*read_path, "value"])
+                        value = deep_get(form_data, read_path)
                         deep_set(config, write_path, value)
                     case "null":
                         deep_set(config, write_path, None)
                     case ["integer", "null"]:
-                        raw_value = deep_get(form_data, [*read_path, "value"])
+                        raw_value = deep_get(form_data, read_path)
                         value = to_null(to_int(raw_value))
                         deep_set(config, write_path, value)
                     case _:
@@ -251,7 +249,7 @@ class PipelineRunner:
 
         # Override output directory
         config["dir_output"] = context.get("output_path")
-                        
+
         # Write config to YAML file
         print(f"Writing config to {context['config_path']}")
         current_app.logger.warning(config)
@@ -286,8 +284,8 @@ class PipelineRunner:
 
     def cleanup_temp_files(self, form_data: dict) -> None:
         # Remove temp file for file_regions if it was created
-        if form_data["file_regions"]["value"]:
-            temp_path = form_data["file_regions"]["value"].strip()
+        if form_data["file_regions"]:
+            temp_path = form_data["file_regions"].strip()
             if os.path.exists(temp_path):
                 os.remove(temp_path)
                 print("deleted temp file_regions:", temp_path)
@@ -304,7 +302,7 @@ class PipelineRunner:
         for field in fasta_fields:
             if form_data.get(field) is None:
                 continue
-            files_list = split_on_newline(form_data[field]["value"])
+            files_list = split_on_newline(form_data[field])
             if "\n" in files_list:
                 files_list.remove("\n")
             for fname in files_list:
