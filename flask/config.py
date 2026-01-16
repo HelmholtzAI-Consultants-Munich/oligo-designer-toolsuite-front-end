@@ -51,7 +51,7 @@ class Config:
     HELMHOLTZ_REDIRECT_URI = "http://localhost:5000/auth/callback"
 
     # Performance Settings
-    DOWNLOAD_CHUNK_SIZE = 100 * 1024 * 1024
+    DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE",100 * 1024 * 1024))
 
     @staticmethod
     def validate_oauth_config():
