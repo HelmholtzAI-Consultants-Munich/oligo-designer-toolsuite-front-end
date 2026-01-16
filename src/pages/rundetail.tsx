@@ -66,6 +66,7 @@ const RunDetail = () => {
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
+    const [visualizationRegions, setVisualizationRegions] = useState<any>({});
 
     const definition = ComponentDefinition[
         pipeline as keyof typeof ComponentDefinition
@@ -129,6 +130,17 @@ const RunDetail = () => {
                 .catch((error) =>
                     console.error("Error fetching padlock file content:", error)
                 );
+
+                axios.get(
+                    `http://localhost:5000/api/runs/${runId}/files/visualization_regions.yaml`,
+                    { withCredentials: true, responseType: "text" }
+                ).then((response) => {
+                    const regions = YAML.load(response.data);
+                    setVisualizationRegions(regions);
+                }).catch((error) => {
+                    console.error("Error fetching visualization regions file:", error);
+                    return null;
+                });
         },
         [runId]
     );
@@ -202,12 +214,6 @@ const RunDetail = () => {
                     );
                     setLogContent(logResp.data);
                 }
-
-                const visFile = await axios.get(
-                    `http://localhost:5000/api/runs/${runId}/files/visualization_regions.yaml`,
-                    { withCredentials: true, responseType: "text" }
-                );
-                console.log("Visualization regions file content:", visFile.data);
             } catch (e) {
                 console.error(e);
             }
@@ -821,6 +827,7 @@ const RunDetail = () => {
                                             pipeline={pipeline}
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
+                                            visualizationRegions={visualizationRegions}
                                         />
                                     </div>
                                     <div className="table-responsive">
