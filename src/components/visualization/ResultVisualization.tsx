@@ -9,6 +9,8 @@ type Props = {
     pipeline: string;
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
+    // TODO: Define proper type for visualizationRegions
+    visualizationRegions: any;
 };
 
 const ResultVisualization: React.FC<Props> = ({
@@ -16,6 +18,7 @@ const ResultVisualization: React.FC<Props> = ({
     pipeline,
     selectedOligo,
     setSelectedOligo,
+    visualizationRegions,
 }) => {
     const [key, setKey] = useState("components");
 
@@ -39,6 +42,7 @@ const ResultVisualization: React.FC<Props> = ({
                     oligos={oligos}
                     selectedOligo={selectedOligo}
                     setSelectedOligo={setSelectedOligo}
+                    visualizationRegions={visualizationRegions}
                 />
             </Tab>
         </Tabs>
