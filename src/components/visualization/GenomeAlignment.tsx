@@ -6,7 +6,7 @@ type Props = {
     oligos: Oligo[];
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
-    visualizationRegions: any;
+    genomeRegions: any;
 };
 
 class GenomeAlignment extends React.Component<Props> {
@@ -16,16 +16,18 @@ class GenomeAlignment extends React.Component<Props> {
         GenomeAlignmentD3.create(
             this.el!,
             this.props.oligos,
+            this.props.genomeRegions,
             this.props.selectedOligo,
-            this.props.setSelectedOligo
+            this.props.setSelectedOligo,
         );
     }
 
     componentDidUpdate() {
-        console.log(this.props.visualizationRegions);
+        console.log(this.props.genomeRegions);
         GenomeAlignmentD3.update(
             this.el!,
             this.props.oligos,
+            this.props.genomeRegions,
             this.props.selectedOligo
         );
     }

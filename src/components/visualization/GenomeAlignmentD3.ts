@@ -5,6 +5,7 @@ const GenomeAlignmentD3 = {
     create: (
         el: Element,
         oligos: any[],
+        genomeRegions: any[],
         selectedOligo: number,
         setSelectedOligo: (index: number) => void
     ) => {
@@ -32,9 +33,10 @@ const GenomeAlignmentD3 = {
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;");
 
-        const ext = d3.extent(
-            oligoPositions.flatMap((d) => [d.start, d.end])
-        ) as [number, number];
+        const ext = d3.extent([
+            ...oligoPositions.flatMap((d) => [d.start, d.end]),
+            ...Object.values(genomeRegions).flat().flatMap((d: any) => [d.start, d.end]),
+        ]) as [number, number];
         const x = d3
             .scaleLinear()
             .domain([ext[0] - 100, ext[1] + 100])
@@ -62,6 +64,45 @@ const GenomeAlignmentD3 = {
                 );
                 setSelectedOligo(index);
             });
+
+        const transcriptCount = Object.keys(genomeRegions).length;
+        const transcriptHeight = innerHeight / 2 / transcriptCount;
+
+        // Draw genome regions as lines
+        const genomeGroup = plot.append("g").attr("class", "genome-regions");
+
+        Object.entries(genomeRegions).forEach(([transcriptName, regions]) => {
+            const tGroup = genomeGroup
+                .append("g")
+                .attr(
+                    "transform",
+                    `translate(0, ${
+                        innerHeight / 2 +
+                        Object.keys(genomeRegions).indexOf(transcriptName) *
+                            transcriptHeight
+                    })`
+                );
+
+            // Transcript label
+            // tGroup
+            //     .append("text")
+            //     .attr("x", -margin + 5)
+            //     .attr("y", transcriptHeight / 2)
+            //     .attr("dominant-baseline", "middle")
+            //     .text(transcriptName);
+
+            // Regions
+            tGroup
+                .selectAll("line")
+                .data(regions)
+                .join("line")
+                .attr("x1", (d: any) => x(d.start))
+                .attr("x2", (d: any) => x(d.end + 1))
+                .attr("y1", transcriptHeight / 2)
+                .attr("y2", transcriptHeight / 2)
+                .attr("stroke", "black")
+                .attr("stroke-width", (d: any) => (d.regiontype === 'intron' ? 1 : transcriptHeight / 4));
+        });
 
         // Append the x-axis inside the plot area
         const gX = plot
@@ -93,6 +134,10 @@ const GenomeAlignmentD3 = {
                 .attr("x", (d) => zx(d.start))
                 .attr("width", (d) => zx(d.end) - zx(d.start));
             gX.call(xAxis.scale(zx));
+
+            genomeGroup.selectAll("g").selectAll("line")
+                .attr("x1", (d: any) => zx(d.start))
+                .attr("x2", (d: any) => zx(d.end + 1));
         }
 
         // prevent scrolling then apply the default filter
@@ -101,10 +146,10 @@ const GenomeAlignmentD3 = {
             return (!event.ctrlKey || event.type === "wheel") && !event.button;
         }
 
-        GenomeAlignmentD3.update(el, oligos, selectedOligo);
+        GenomeAlignmentD3.update(el, oligos, genomeRegions, selectedOligo);
     },
 
-    update: (el: Element, oligos: Oligo[], selectedOligo: number) => {
+    update: (el: Element, oligos: Oligo[], genomeRegions: any[], selectedOligo: number) => {
         const oligoPositions = oligos.map((oligo) => ({
             start: oligo.start[0][0],
             end: oligo.end[0][0],

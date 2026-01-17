@@ -827,7 +827,7 @@ const RunDetail = () => {
                                             pipeline={pipeline}
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
-                                            visualizationRegions={visualizationRegions}
+                                            genomeRegions={visualizationRegions[selectedGene] || []}
                                         />
                                     </div>
                                     <div className="table-responsive">
