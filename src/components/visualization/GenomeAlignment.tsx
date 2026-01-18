@@ -1,12 +1,12 @@
 import React from "react";
-import type { Oligo } from "../../types";
-import GenomeAlignmentD3 from "./GenomeAlignmentD3";
+import type { Oligo, GenomicRegions } from "../../types";
+import GenomeAlignmentD3, { regionColors } from "./GenomeAlignmentD3";
 
 type Props = {
     oligos: Oligo[];
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
-    genomeRegions: any;
+    genomicRegions: GenomicRegions;
 };
 
 class GenomeAlignment extends React.Component<Props> {
@@ -16,19 +16,18 @@ class GenomeAlignment extends React.Component<Props> {
         GenomeAlignmentD3.create(
             this.el!,
             this.props.oligos,
-            this.props.genomeRegions,
+            this.props.genomicRegions,
             this.props.selectedOligo,
             this.props.setSelectedOligo,
         );
     }
 
     componentDidUpdate() {
-        console.log(this.props.genomeRegions);
+        console.log(this.props.genomicRegions);
         GenomeAlignmentD3.update(
             this.el!,
             this.props.oligos,
-            this.props.genomeRegions,
-            this.props.selectedOligo
+            this.props.selectedOligo,
         );
     }
 
@@ -38,11 +37,41 @@ class GenomeAlignment extends React.Component<Props> {
 
     render() {
         return (
-            <svg
-                ref={(el) => {
-                    this.el = el;
-                }}
-            ></svg>
+            <>
+                <svg
+                    ref={(el) => {
+                        this.el = el;
+                    }}
+                ></svg>
+                <div className="container mt-2 mb-4">
+                    <div className="row">
+                        <div className="col col-auto">
+                            <strong>Legend:</strong>
+                        </div>
+                        {
+                        Object.keys(regionColors).filter((label) => {
+                            return Object.values(this.props.genomicRegions).some(regions =>
+                                regions.some(region => region.regiontype === label)
+                            );
+                        }).map((label, index) => {
+                            return (
+                                <div className="col col-auto" key={index}>
+                                    <span
+                                        style={{
+                                            display: "inline-block",
+                                            width: "12px",
+                                            height: "12px",
+                                            backgroundColor: regionColors[label] || 'lightgray',
+                                            marginRight: "5px",
+                                        }}
+                                    ></span>
+                                    {label}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </>
         );
     }
 }

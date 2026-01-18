@@ -135,7 +135,7 @@ class PipelineRunner:
                 return create_user_error_response(e, "submission")
 
             # Generate Visualization Files
-            self.generate_visualization_files(form_data, context)
+            self.generate_genomic_regions_file(form_data, context)
 
             # Cleanup of Temporary Files
             try:
@@ -287,7 +287,7 @@ class PipelineRunner:
             },
         )
 
-    def generate_visualization_files(self, form_data: dict, context: dict) -> None:
+    def generate_genomic_regions_file(self, form_data: dict, context: dict) -> None:
         # find files_fasta_target_probe_database fasta file and read it
         print("Generating visualization files...")
         regions_file = form_data.get("file_regions", {}).get("value")
@@ -321,7 +321,7 @@ class PipelineRunner:
                             if not transcript_id in regions[gene]:
                                 regions[gene][transcript_id] = []
 
-                            region_type = additional_info['regiontype'][0] if 'regiontype' in additional_info else None
+                            region_type = additional_info['regiontype'][0] if 'regiontype' in additional_info else 'unknown'
                             total_sequence = str(record.seq)
                             starts = coordinates['start']
                             ends = coordinates['end']
@@ -356,7 +356,7 @@ class PipelineRunner:
                                     })
         
         # write regions to a temp file in user_dir
-        vis_path = os.path.join(context["output_path"], f"visualization_regions.yaml")
+        vis_path = os.path.join(context["output_path"], f"genomic_regions.yaml")
         with open(vis_path, "w") as vis_file:
             yaml.dump(regions, vis_file)
                         

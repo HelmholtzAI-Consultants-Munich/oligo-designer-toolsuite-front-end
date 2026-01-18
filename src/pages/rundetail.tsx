@@ -66,7 +66,7 @@ const RunDetail = () => {
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
-    const [visualizationRegions, setVisualizationRegions] = useState<any>({});
+    const [genomicRegions, setGenomicRegions] = useState<any>({});
 
     const definition = ComponentDefinition[
         pipeline as keyof typeof ComponentDefinition
@@ -85,11 +85,11 @@ const RunDetail = () => {
     const [logFilename, setLogFilename] = useState<string | null>(null);
     const [logContent, setLogContent] = useState<string | null>(null);
     const [polling, setPolling] = useState(true);
-    const fetchAndParsePadlockFile = useCallback(
-        (filename: string) => {
+    const fetchAndParseRunFiles = useCallback(
+        (yamlFilename: string) => {
             axios
                 .get(
-                    `http://localhost:5000/api/runs/${runId}/files/${filename}`,
+                    `http://localhost:5000/api/runs/${runId}/files/${yamlFilename}`,
                     {
                         withCredentials: true,
                         responseType: "text",
@@ -102,7 +102,7 @@ const RunDetail = () => {
                             any
                         >;
                         setParsedYamlData(parsed);
-                        setParsedYamlFilename(filename);
+                        setParsedYamlFilename(yamlFilename);
 
                         const genes = Object.keys(parsed || {});
                         setGeneOptions(
@@ -132,13 +132,13 @@ const RunDetail = () => {
                 );
 
                 axios.get(
-                    `http://localhost:5000/api/runs/${runId}/files/visualization_regions.yaml`,
+                    `http://localhost:5000/api/runs/${runId}/files/genomic_regions.yaml`,
                     { withCredentials: true, responseType: "text" }
                 ).then((response) => {
                     const regions = YAML.load(response.data);
-                    setVisualizationRegions(regions);
+                    setGenomicRegions(regions);
                 }).catch((error) => {
-                    console.error("Error fetching visualization regions file:", error);
+                    console.error("Error fetching genomic regions file:", error);
                     return null;
                 });
         },
@@ -204,7 +204,7 @@ const RunDetail = () => {
                     setPolling(false);
                     if (interval) clearInterval(interval);
                     // Fetch and parse YAML as before
-                    fetchAndParsePadlockFile(yamlFile.name);
+                    fetchAndParseRunFiles(yamlFile.name);
                 } else if (firstLog && !hasErrorMessage) {
                     // If log file is present and we don't have an error message, get its content
                     // (Don't overwrite error message with log file content)
@@ -227,7 +227,7 @@ const RunDetail = () => {
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [runId, polling, fetchAndParsePadlockFile]);
+    }, [runId, polling, fetchAndParseRunFiles]);
 
     const handleDelete = async () => {
         if (
@@ -827,7 +827,7 @@ const RunDetail = () => {
                                             pipeline={pipeline}
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
-                                            genomeRegions={visualizationRegions[selectedGene] || []}
+                                            genomicRegions={genomicRegions[selectedGene] || []}
                                         />
                                     </div>
                                     <div className="table-responsive">
