@@ -272,8 +272,8 @@
       "description": "number of bits containing one in each barcode"
     },
     "channels_ids": {
-      "type": "string",
-      "default": "Alexa488, Cy3b, Alexa647",
+      "type": "array",
+      "default": ["Alexa488", "Cy3b", "Alexa647"],
       "title": "Channels Ids",
       "description": "names of fluorescent channels"
     },

@@ -47,7 +47,7 @@ const formDatas = {
     },
     n_barcode_rounds: 4,
     n_pseudocolors: 20,
-    channels_ids: "Alexa488, Cy3b, Alexa647",
+    channels_ids: ["Alexa488", "Cy3b", "Alexa647"],
     files_fasta_reference_database_primer: [
         "data:application/octet-stream;name=placeholder;base64,",
     ],
