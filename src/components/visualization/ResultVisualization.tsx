@@ -35,7 +35,7 @@ const ResultVisualization: React.FC<Props> = ({
                     setSelectedOligo={setSelectedOligo}
                 />
             </Tab>
-            <Tab eventKey="alignment" title="Genome Alignment">
+            <Tab eventKey="alignment" title="Genomic Regions">
                 <GenomeAlignment
                     key={oligos.map((o) => o.oligo_id).join(",")} // Force remount on oligos change
                     oligos={oligos}
