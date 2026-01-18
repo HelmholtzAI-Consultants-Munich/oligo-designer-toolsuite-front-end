@@ -1,5 +1,5 @@
 {
- "$schema": "https://json-schema.org/draft-07/schema",
+  "$schema": "https://json-schema.org/draft-07/schema",
   "$id": "odt:oligoseq",
   "type": "object",
   "properties": {
@@ -402,7 +402,7 @@
           "title": "Fmdfactor"
         },
         "fmdmethod": { "type": "integer", "default": 1, "title": "Fmdmethod" },
-        "GC": { "type": ["integer", "null"], "default": "None", "title": "Gc" }
+        "GC": { "type": ["integer", "null"], "default": null, "title": "Gc" }
       },
       "title": "Target Probe Tm Chem Correction Parameters"
     },
