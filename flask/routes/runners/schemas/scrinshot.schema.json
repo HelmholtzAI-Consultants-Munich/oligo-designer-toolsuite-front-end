@@ -1,4 +1,4 @@
-{ 
+{
   "$schema": "https://json-schema.org/draft-07/schema",
   "$id": "odt:scrinshot",
   "type": "object",
@@ -430,7 +430,7 @@
         },
         "GC": {
           "type": ["integer", "null"],
-          "default": "None",
+          "default": null,
           "title": "Gc",
           "description": "default"
         }
