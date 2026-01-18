@@ -1,5 +1,5 @@
 import { Tab, Tabs } from "react-bootstrap";
-import type { Oligo } from "../../types";
+import type { Oligo, GenomicRegions } from "../../types";
 import OligoComponents from "./OligoComponents";
 import { useState } from "react";
 import GenomeAlignment from "./GenomeAlignment";
@@ -9,8 +9,7 @@ type Props = {
     pipeline: string;
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
-    // TODO: Define proper type for genomeRegions
-    genomeRegions: any;
+    genomicRegions: GenomicRegions;
 };
 
 const ResultVisualization: React.FC<Props> = ({
@@ -18,7 +17,7 @@ const ResultVisualization: React.FC<Props> = ({
     pipeline,
     selectedOligo,
     setSelectedOligo,
-    genomeRegions,
+    genomicRegions,
 }) => {
     const [key, setKey] = useState("components");
 
@@ -42,7 +41,7 @@ const ResultVisualization: React.FC<Props> = ({
                     oligos={oligos}
                     selectedOligo={selectedOligo}
                     setSelectedOligo={setSelectedOligo}
-                    genomeRegions={genomeRegions}
+                    genomicRegions={genomicRegions}
                 />
             </Tab>
         </Tabs>

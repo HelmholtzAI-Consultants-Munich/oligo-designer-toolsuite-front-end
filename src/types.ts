@@ -16,3 +16,13 @@ export interface Oligo {
     oligo_id: string;
     [key: string]: any;
 }
+
+export interface GenomicRegion {
+    start: number;
+    end: number;
+    regiontype?: string;
+}
+
+export interface GenomicRegions {
+    [key: string]: GenomicRegion[];
+}
