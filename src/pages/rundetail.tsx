@@ -131,14 +131,20 @@ const RunDetail = () => {
                     console.error("Error fetching padlock file content:", error)
                 );
 
-                axios.get(
+            axios
+                .get(
                     `http://localhost:5000/api/runs/${runId}/files/genomic_regions.yaml`,
                     { withCredentials: true, responseType: "text" }
-                ).then((response) => {
+                )
+                .then((response) => {
                     const regions = YAML.load(response.data);
                     setGenomicRegions(regions);
-                }).catch((error) => {
-                    console.error("Error fetching genomic regions file:", error);
+                })
+                .catch((error) => {
+                    console.error(
+                        "Error fetching genomic regions file:",
+                        error
+                    );
                     return null;
                 });
         },
@@ -827,7 +833,10 @@ const RunDetail = () => {
                                             pipeline={pipeline}
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
-                                            genomicRegions={genomicRegions[selectedGene] || []}
+                                            genomicRegions={
+                                                genomicRegions[selectedGene] ||
+                                                []
+                                            }
                                         />
                                     </div>
                                     <div className="table-responsive">

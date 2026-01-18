@@ -85,18 +85,16 @@ const OligoComponents: React.FC<Props> = ({
     }, [oligos, selectedOligo, definition]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
-        return components
-            .map((component) =>
-                [...component.sequence].map((char) => {
-                    return {
-                        char,
-                        color: component.color,
-                        label: component.label,
-                        isBinding: component.isBinding,
-                    };
-                })
-            )
-            .flat();
+        return components.flatMap((component) =>
+            [...component.sequence].map((char) => {
+                return {
+                    char,
+                    color: component.color,
+                    label: component.label,
+                    isBinding: component.isBinding,
+                };
+            })
+        );
     };
 
     useEffect(() => {
