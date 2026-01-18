@@ -4,13 +4,8 @@ const formData = {
     write_intermediate_steps: true,
     top_n_sets: 3,
     file_regions: "",
-    file_regions_file: "",
-    files_fasta_target_probe_database: [
-        "data:application/octet-stream;name=placeholder;base64,",
-    ],
-    files_fasta_reference_database_target_probe: [
-        "data:application/octet-stream;name=placeholder;base64,",
-    ],
+    files_fasta_target_probe_database: [],
+    files_fasta_reference_database_target_probe: [],
     target_probe_length_min: 30,
     target_probe_length_max: 30,
     target_probe_isoform_consensus: 50,
@@ -35,9 +30,7 @@ const formData = {
     set_size_opt: 50,
     distance_between_target_probes: 0,
     n_sets: 100,
-    files_fasta_reference_database_readout_probe: [
-        "data:application/octet-stream;name=placeholder;base64,",
-    ],
+    files_fasta_reference_database_readout_probe: [],
     readout_probe_length: 20,
     readout_probe_base_probabilities: {
         A: 0.25,
@@ -59,9 +52,8 @@ const formData = {
     min_hamming_dist: 4,
     hamming_weight: 4,
     channels_ids: ["Alexa488", "Cy3b", "Alexa647"],
-    files_fasta_reference_database_primer: [
-        "data:application/octet-stream;name=placeholder;base64,",
-    ],
+    files_fasta_reference_database_primer: [],
+
     reverse_primer_sequence: "CCCTATAGTGAGTCGTATTA",
     primer_length: 20,
     primer_base_probabilities: {

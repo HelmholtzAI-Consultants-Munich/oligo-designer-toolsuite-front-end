@@ -1,10 +1,11 @@
-import type { FastaForm, FileState, formData } from "./types";
+import type { FastaForm, FileState, FormData, Status } from "./types";
 import { copyToClipboard, createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
+
 export const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    setFormData: React.Dispatch<React.SetStateAction<formData>>
+    setFormData: React.Dispatch<React.SetStateAction<FormData>>
 ) => {
     const { id, value } = e.target;
     const keys = id.split(".");
@@ -32,6 +33,8 @@ export const handleChange = (
     }
 };
 
+
+
 export const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setFiles: React.Dispatch<React.SetStateAction<FileState>>
@@ -43,38 +46,21 @@ export const handleFileChange = (
         ...prevFiles,
 
         [name]:
-            name === "file_regions_file"
-                ? selectedFiles[0] // Single file
-                : Array.from(selectedFiles), // Multiple files (always an array)
+            Array.from(selectedFiles), // Multiple files (always an array)
     }));
 };
 
 export const allFilesUploaded = (
     files: any,
-    formData: formData,
-    fastaForms: any,
-    fastaFormsReference: any,
-    fastaFormsReadout: any,
-    fastaFormsPrimer: any
+    required_files: string[]
 ) => {
-    console.log("fileuploadcheck");
-
-    return (
-        // file_regions_file existiert nicht
-        // (
-        // files.file_regions_file !== null
-        // // || formData.file_regions.value.length > 0)
-        // &&
-        (files.files_fasta_target_probe_database.length > 0 ||
-            fastaForms.length > 0) &&
-        (files.files_fasta_reference_database_target_probe.length > 0 ||
-            fastaFormsReference.length > 0) &&
-        (files.files_fasta_reference_database_readout_probe.length > 0 ||
-            fastaFormsReadout.length > 0) &&
-        (files.files_fasta_reference_database_primer.length > 0 ||
-            fastaFormsPrimer.length > 0)
-    );
+    let uploaded = true;
+    for (const file of required_files) {
+        if (files[file].length == 0) { uploaded = false; }
+    }
+    return (uploaded);
 };
+
 
 export const uploadFiles = async (files: any, formData: any) => {
     const filePaths: { [key: string]: string } = {};
@@ -214,8 +200,26 @@ async function processFastaGroup({
     return merged;
 }
 
+export const getRequiredFiles = (pipeline: string) => {
+    if (pipeline === "scrinshot" || pipeline === "oligoseq") {
+        return ([
+            "files_fasta_target_probe_database",
+            "files_fasta_reference_database_target_probe",
+        ])
+    }
+    else {
+        return ([
+            "files_fasta_target_probe_database",
+            "files_fasta_reference_database_target_probe",
+            "files_fasta_reference_database_readout_probe",
+            "files_fasta_reference_database_primer",
+        ])
+    }
+    ;
+}
+
 export const handleSubmit = async (
-    runStatus: "idle" | "submitting" | "running",
+    runStatus: Status,
     setRunStatus: React.Dispatch<React.SetStateAction<typeof runStatus>>,
     setRunId: React.Dispatch<React.SetStateAction<string | null>>,
 
@@ -228,62 +232,18 @@ export const handleSubmit = async (
     >,
     files: FileState,
     formData: any,
-    fastaFormsTarget: FastaForm[],
-    fastaFormsPrimer: FastaForm[],
-    fastaFormsReadout: FastaForm[],
-    fastaFormsReference: FastaForm[],
-    setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>
+    setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>,
+    pipeline: string
 ) => {
-    console.log(fastaFormsTarget);
     if (runStatus !== "idle") return;
-    console.log("submitted");
     setRunStatus("submitting");
     setRunId(null);
     const uploadedPaths = await uploadFiles(files, formData);
-    console.log(uploadedPaths);
-    if (uploadedPaths["file_regions_file"]) {
-        formData["file_regions"]["value"] = uploadedPaths["file_regions_file"];
-    }
-
-    const groups = [
-        {
-            forms: fastaFormsTarget,
-            key: "files_fasta_target_probe_database",
-        },
-        {
-            forms: fastaFormsReference,
-            key: "files_fasta_reference_database_target_probe",
-        },
-        {
-            forms: fastaFormsPrimer,
-            key: "files_fasta_reference_database_primer",
-        },
-        {
-            forms: fastaFormsReadout,
-            key: "files_fasta_reference_database_readout_probe",
-        },
-    ];
-
-    for (const group of groups) {
-        const ok = await processFastaGroup({
-            ...group,
-            uploadedPaths,
-            formData,
-            setModal,
-            setRunStatus,
-        });
-
-        if (ok === null) return;
-    }
 
     if (
         !allFilesUploaded(
             files,
-            formData,
-            fastaFormsTarget,
-            fastaFormsReference,
-            fastaFormsReadout,
-            fastaFormsPrimer
+            getRequiredFiles(pipeline)
         )
     ) {
         setModal({
@@ -313,7 +273,7 @@ export const handleSubmit = async (
         setRunStatus("running");
 
         const response = await axios.post(
-            "http://localhost:9999/api/merfish",
+            `http://localhost:9999/api/${pipeline}`,
             { formdata: formData, runid: newId },
             {
                 withCredentials: true,

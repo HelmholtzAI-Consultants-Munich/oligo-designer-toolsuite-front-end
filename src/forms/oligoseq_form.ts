@@ -4,12 +4,8 @@ const formDatas = {
     write_intermediate_steps: true,
     top_n_sets: 3,
     file_regions: "",
-    files_fasta_target_probe_database: [
-        "data:application/octet-stream;name=placeholder;base64,",
-    ],
-    files_fasta_reference_database_target_probe: [
-        "data:application/octet-stream;name=placeholder;base64,",
-    ],
+    files_fasta_target_probe_database: [],
+    files_fasta_reference_database_target_probe: [],
     target_probe_length_min: 26,
     target_probe_length_max: 30,
     target_probe_split_region: 4,
