@@ -33,8 +33,6 @@ export const handleChange = (
     }
 };
 
-
-
 export const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setFiles: React.Dispatch<React.SetStateAction<FileState>>
@@ -45,22 +43,19 @@ export const handleFileChange = (
     setFiles((prevFiles) => ({
         ...prevFiles,
 
-        [name]:
-            Array.from(selectedFiles), // Multiple files (always an array)
+        [name]: Array.from(selectedFiles), // Multiple files (always an array)
     }));
 };
 
-export const allFilesUploaded = (
-    files: any,
-    required_files: string[]
-) => {
+export const allFilesUploaded = (files: any, required_files: string[]) => {
     let uploaded = true;
     for (const file of required_files) {
-        if (files[file].length == 0) { uploaded = false; }
+        if (files[file].length == 0) {
+            uploaded = false;
+        }
     }
-    return (uploaded);
+    return uploaded;
 };
-
 
 export const uploadFiles = async (files: any, formData: any) => {
     const filePaths: { [key: string]: string } = {};
@@ -77,7 +72,7 @@ export const uploadFiles = async (files: any, formData: any) => {
                     formDataU.append("file", file);
                     try {
                         const response = await axios.post(
-                            "http://localhost:9999/api/upload",
+                            "http://localhost:5000/api/upload",
                             formDataU,
                             {
                                 headers: {
@@ -97,7 +92,7 @@ export const uploadFiles = async (files: any, formData: any) => {
                     formDataU.append("file", files[key]);
                     try {
                         const response = await axios.post(
-                            "http://localhost:9999/api/upload",
+                            "http://localhost:5000/api/upload",
                             formDataU,
                             {
                                 headers: {
@@ -138,7 +133,7 @@ export const handleSubmitGenomicAll = async (
             }
             try {
                 const response = await axios.post(
-                    `http://localhost:9999/api/genomic/cascaded/${endpoint}`,
+                    `http://localhost:5000/api/genomic/cascaded/${endpoint}`,
                     payload,
                     {
                         withCredentials: true,
@@ -202,21 +197,19 @@ async function processFastaGroup({
 
 export const getRequiredFiles = (pipeline: string) => {
     if (pipeline === "scrinshot" || pipeline === "oligoseq") {
-        return ([
+        return [
             "files_fasta_target_probe_database",
             "files_fasta_reference_database_target_probe",
-        ])
-    }
-    else {
-        return ([
+        ];
+    } else {
+        return [
             "files_fasta_target_probe_database",
             "files_fasta_reference_database_target_probe",
             "files_fasta_reference_database_readout_probe",
             "files_fasta_reference_database_primer",
-        ])
+        ];
     }
-    ;
-}
+};
 
 export const handleSubmit = async (
     runStatus: Status,
@@ -240,12 +233,7 @@ export const handleSubmit = async (
     setRunId(null);
     const uploadedPaths = await uploadFiles(files, formData);
 
-    if (
-        !allFilesUploaded(
-            files,
-            getRequiredFiles(pipeline)
-        )
-    ) {
+    if (!allFilesUploaded(files, getRequiredFiles(pipeline))) {
         setModal({
             show: true,
             title: "Pipeline Failed",
@@ -273,7 +261,7 @@ export const handleSubmit = async (
         setRunStatus("running");
 
         const response = await axios.post(
-            `http://localhost:9999/api/${pipeline}`,
+            `http://localhost:5000/api/${pipeline}`,
             { formdata: formData, runid: newId },
             {
                 withCredentials: true,
