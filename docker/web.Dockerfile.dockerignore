@@ -10,3 +10,6 @@
 /docs
 /flask
 /tests
+
+# Include schemas
+!/flask/routes/runners/schemas

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+"$schema": "https://json-schema.org/draft-07/schema",
   "$id": "odt:seqfish",
   "type": "object",
   "properties": {
@@ -220,6 +220,7 @@
     "channels_ids": {
       "type": "array",
       "default": ["Alexa488", "Cy3b", "Alexa647"],
+      "items": { "type": "string" },
       "title": "Channels Ids",
       "description": "names of fluorescent channels"
     },

@@ -8,7 +8,7 @@ import Runs from "./pages/runs";
 import Genomic from "./pages/genomic";
 import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
-import OligoSeq from "./pages/OligoSeq";
+import OligoSeq from "./pages/oligoseq";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";

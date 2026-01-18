@@ -1,17 +1,9 @@
-import { useState } from "react";
-import Form from "@rjsf/react-bootstrap";
-import validator from "@rjsf/validator-ajv8";
-import Navbar from "../modules/nav";
 import merfish_schema from "../../flask/routes/runners/schemas/merfish.schema.json";
 import type { JSONSchema7 } from "json-schema";
 import type { UiSchema } from "@rjsf/utils";
-import FieldTemplate from "../components/fieldTemplate";
+import Pipeline_Template from "./pipelineTemplate";
 import merfish_form from "../forms/merfish_form";
 import { TabsLayout } from "../components/tabs";
-import type { FileState } from "../components/types";
-import { handleSubmit } from "../components/helpers";
-import FileSelection from "../components/fileSelection_rjsf";
-import type { FastaForm } from "../components/types";
 
 const schema = merfish_schema as JSONSchema7;
 
@@ -129,88 +121,15 @@ const uiSchema: UiSchema = {
 };
 
 const Merfish: React.FC = () => {
-    const [formData, setFormData] = useState<any>(merfish_form);
-
-    const [files, setFiles] = useState<FileState>({
-        file_regions_file: null,
-        files_fasta_target_probe_database: [],
-        files_fasta_reference_database_target_probe: [],
-        files_fasta_reference_database_readout_probe: [],
-        files_fasta_reference_database_primer: [],
-    });
-    const [fastaFormsTarget, setfastaFormsTarget] = useState<Array<FastaForm>>(
-        []
-    );
-    const [fastaFormsReference, setFastaFormsReference] = useState<
-        Array<FastaForm>
-    >([]);
-    const [fastaFormsReadout, setFastaFormsReadout] = useState<
-        Array<FastaForm>
-    >([]);
-    const [fastaFormsPrimer, setFastaFormsPrimer] = useState<Array<FastaForm>>(
-        []
-    );
-    const [runId, setRunId] = useState<string | null>(null);
-    // TODO type aus status machen
-    const [runStatus, setRunStatus] = useState<
-        "idle" | "submitting" | "running"
-    >("idle");
-    const [idCopySuccess, setIdCopySuccess] = useState<boolean>(false);
-    const [modal, setModal] = useState<{
-        show: boolean;
-        title: string;
-        body: string;
-    }>({
-        show: false,
-        title: "",
-        body: "",
-    });
-    const widgets = {
-        fileSelection: FileSelection,
-    };
-
     return (
         <>
-            <Navbar />
-            <div className="mb-3">
-                <div className="d-flex justify-content-center align-items-center mt-3">
-                    <h2 className="mb-0">Example</h2>
-                </div>
-                <div className="container my-4">
-                    <Form
-                        schema={schema}
-                        uiSchema={uiSchema}
-                        formContext={{
-                            files,
-                            setFiles,
-                        }}
-                        formData={formData}
-                        fields={{ fileSelection: FileSelection }}
-                        templates={{
-                            FieldTemplate: FieldTemplate,
-                            ObjectFieldTemplate: TabsLayout,
-                        }}
-                        widgets={widgets}
-                        validator={validator}
-                        onChange={(e) => setFormData(e.formData)}
-                        onSubmit={() =>
-                            handleSubmit(
-                                runStatus,
-                                setRunStatus,
-                                setRunId,
-                                setModal,
-                                files,
-                                formData,
-                                fastaFormsTarget,
-                                fastaFormsPrimer,
-                                fastaFormsReadout,
-                                fastaFormsReference,
-                                setIdCopySuccess
-                            )
-                        }
-                    />
-                </div>
-            </div>
+            <Pipeline_Template
+                pipeline="merfish"
+                title="Merfish Probe Designer"
+                form={merfish_form}
+                schema={schema}
+                uiSchema={uiSchema}
+            />
         </>
     );
 };
