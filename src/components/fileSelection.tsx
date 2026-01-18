@@ -34,6 +34,3 @@ const FileSelection = (props: any) => {
     );
 };
 export default FileSelection;
-
-// platzhalter in formdata schreiben
-// beim submit hochladen und richtig in formdata schreiben
