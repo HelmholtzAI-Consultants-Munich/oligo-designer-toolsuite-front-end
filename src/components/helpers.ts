@@ -58,57 +58,29 @@ export const allFilesUploaded = (files: any, required_files: string[]) => {
 };
 
 export const uploadFiles = async (files: any, formData: any) => {
-    const filePaths: { [key: string]: string } = {};
     for (const key in files) {
-        // @ts-ignore
         if (files[key]) {
-            const formDataU = new FormData();
-            // @ts-ignore
-            if (Array.isArray(files[key])) {
-                const paths = [];
-                // @ts-ignore
-                for (const file of files[key]) {
-                    const formDataU = new FormData();
-                    formDataU.append("file", file);
-                    try {
-                        const response = await axios.post(
-                            "http://localhost:5000/api/upload",
-                            formDataU,
-                            {
-                                headers: {
-                                    "Content-Type": "multipart/form-data",
-                                },
-                            }
-                        );
-                        paths.push(response.data.filePath);
-                    } catch (error) {
-                        console.error(`Error uploading ${key}:`, error);
-                    }
-                }
-                filePaths[key] = paths.join("\n");
-            } else {
-                if (formData.file_regions.value.length === 0) {
-                    // @ts-ignore
-                    formDataU.append("file", files[key]);
-                    try {
-                        const response = await axios.post(
-                            "http://localhost:5000/api/upload",
-                            formDataU,
-                            {
-                                headers: {
-                                    "Content-Type": "multipart/form-data",
-                                },
-                            }
-                        );
-                        filePaths[key] = response.data.filePath;
-                    } catch (error) {
-                        console.error(`Error uploading ${key}:`, error);
-                    }
+            for (const file of files[key]) {
+                const formDataU = new FormData();
+                formDataU.append("file", file);
+                try {
+                    const response = await axios.post(
+                        "http://localhost:5000/api/upload",
+                        formDataU,
+                        {
+                            headers: {
+                                "Content-Type": "multipart/form-data",
+                            },
+                        }
+                    );
+                    // update formData to contain server-side file path
+                    formData[key].push(response.data.filePath);
+                } catch (error) {
+                    console.error(`Error uploading ${key}:`, error);
                 }
             }
         }
     }
-    return filePaths;
 };
 
 export const handleSubmitGenomicAll = async (
@@ -231,7 +203,7 @@ export const handleSubmit = async (
     if (runStatus !== "idle") return;
     setRunStatus("submitting");
     setRunId(null);
-    const uploadedPaths = await uploadFiles(files, formData);
+    await uploadFiles(files, formData);
 
     if (!allFilesUploaded(files, getRequiredFiles(pipeline))) {
         setModal({

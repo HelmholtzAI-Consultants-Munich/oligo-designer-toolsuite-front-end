@@ -2,7 +2,6 @@ import os
 import subprocess
 import tempfile
 from datetime import datetime
-from typing import Any
 
 from flask_login.utils import LocalProxy
 import yaml
@@ -10,8 +9,6 @@ from bson import ObjectId
 from flask import current_app, jsonify, session
 
 from extensions import mongo
-
-from ..helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
 from ..error_handlers import create_user_error_response
 from bson.errors import InvalidId
 
@@ -116,7 +113,7 @@ class PipelineRunner:
 
             # Build Config and Write to YAML
             try:
-                self.populate_config_file(form_data, context)
+                self.write_config_file(form_data, context)
             except Exception as e:
                 return create_user_error_response(e, "submission")
 
@@ -195,57 +192,8 @@ class PipelineRunner:
         else:
             form_data["file_regions"] = None
 
-    def populate_config_file(self, form_data: dict, context: dict) -> None:
-        config = {}
-
-        def deep_get(dictionary: dict | Any, keys: list[str]) -> Any:
-            for key in keys:
-                dictionary = dictionary.get(key, {})
-            return dictionary
-
-        def deep_set(dictionary: dict, keys: list[str], value):
-            for key in keys[:-1]:
-                dictionary = dictionary.setdefault(key, {})
-            dictionary[keys[-1]] = value
-
-        def traverse_object(obj: dict, path: list[str]):
-            for [key, entry] in obj.get("properties", {}).items():
-                read_path = [*path, key.lstrip("-")]  # Remove leading '-' for YAML keys
-                write_path = [*path, key]
-                match entry["type"]:
-                    case "object":
-                        traverse_object(entry, write_path)
-                    case "integer":
-                        value = to_int(deep_get(form_data, read_path))
-                        deep_set(config, write_path, value)
-                    case "number":
-                        value = float(deep_get(form_data, read_path))
-                        deep_set(config, write_path, value)
-                    case "boolean":
-                        value = to_bool(deep_get(form_data, read_path))
-                        deep_set(config, write_path, value)
-                    case "array":
-                        if entry["items"]["type"] == "string":
-                            raw_value = deep_get(form_data, read_path)
-                            value = split_commas_and_newlines(raw_value)
-                            deep_set(config, write_path, value)
-                        else:
-                            # type not supported
-                            raise Exception("Unsupported array type in config schema encountered")
-                    case "string":
-                        value = deep_get(form_data, read_path)
-                        deep_set(config, write_path, value)
-                    case "null":
-                        deep_set(config, write_path, None)
-                    case ["integer", "null"]:
-                        raw_value = deep_get(form_data, read_path)
-                        value = to_null(to_int(raw_value))
-                        deep_set(config, write_path, value)
-                    case _:
-                        # type not supported
-                        raise Exception("Unsupported config schema type encountered")
-
-        traverse_object(self.schema, [])
+    def write_config_file(self, form_data: dict, context: dict) -> None:
+        config = form_data
 
         # Override output directory
         config["dir_output"] = context.get("output_path")
@@ -300,11 +248,9 @@ class PipelineRunner:
             "files_fasta_reference_database_primer",
         ]
         for field in fasta_fields:
-            if form_data.get(field) is None:
+            if field not in form_data:
                 continue
-            files_list = split_on_newline(form_data[field])
-            if "\n" in files_list:
-                files_list.remove("\n")
+            files_list = form_data[field]
             for fname in files_list:
                 if os.path.exists(fname):
                     os.remove(fname)
