@@ -1,16 +1,17 @@
 import * as d3 from "d3";
 import type { Oligo, GenomicRegions, GenomicRegion } from "../../types";
 
-export const regionColors: { [key: string]: string } = {
-    exon: "blue",
-    intron: "red",
-    CDS: "green",
-    three_prime_UTR: "orange",
-    five_prime_UTR: "orange",
-    exonexonjunction: "darkblue",
-    gene: "purple",
-    unknown: "lightgray",
-};
+export const regionColors: { [key: string]: { color: string; label: string } } =
+    {
+        exon: { color: "blue", label: "Exon" },
+        intron: { color: "red", label: "Intron" },
+        CDS: { color: "green", label: "CDS" },
+        three_prime_UTR: { color: "orange", label: "3' UTR" },
+        five_prime_UTR: { color: "orange", label: "5' UTR" },
+        exonexonjunction: { color: "darkblue", label: "Start / End of Exon" },
+        gene: { color: "purple", label: "Gene" },
+        unknown: { color: "lightgray", label: "Unknown" },
+    };
 
 const collectReferenceBases = (
     regions: GenomicRegions,
@@ -140,7 +141,8 @@ const GenomeAlignmentD3 = {
                 .attr(
                     "stroke",
                     (d: GenomicRegion) =>
-                        regionColors[d.regiontype || "unknown"] || "lightgray"
+                        regionColors[d.regiontype || "unknown"].color ||
+                        "lightgray"
                 )
                 .attr("stroke-width", (d: GenomicRegion) =>
                     d.regiontype === "intron"

@@ -48,16 +48,16 @@ class GenomeAlignment extends React.Component<Props> {
                             <strong>Legend:</strong>
                         </div>
                         {Object.keys(regionColors)
-                            .filter((label) => {
+                            .filter((type) => {
                                 return Object.values(
                                     this.props.genomicRegions
                                 ).some((regions) =>
                                     regions.some(
-                                        (region) => region.regiontype === label
+                                        (region) => region.regiontype === type
                                     )
                                 );
                             })
-                            .map((label, index) => {
+                            .map((type, index) => {
                                 return (
                                     <div className="col col-auto" key={index}>
                                         <span
@@ -66,12 +66,12 @@ class GenomeAlignment extends React.Component<Props> {
                                                 width: "12px",
                                                 height: "12px",
                                                 backgroundColor:
-                                                    regionColors[label] ||
+                                                    regionColors[type].color ||
                                                     "lightgray",
                                                 marginRight: "5px",
                                             }}
                                         ></span>
-                                        {label}
+                                        {regionColors[type].label}
                                     </div>
                                 );
                             })}
