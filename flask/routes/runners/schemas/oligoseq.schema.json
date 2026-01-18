@@ -156,7 +156,7 @@
     "target_probe_targeted_exons": {
       "type": "array",
       "items": { "type": "string" },
-      "default": "1, 2, 3",
+      "default": ["1", "2", "3"],
       "title": "Target Probe Targeted Exons"
     },
     "target_probe_Tm_min": {

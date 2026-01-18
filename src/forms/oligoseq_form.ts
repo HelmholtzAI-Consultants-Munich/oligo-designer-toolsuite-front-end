@@ -13,7 +13,7 @@ const formDatas = {
     target_probe_length_min: 26,
     target_probe_length_max: 30,
     target_probe_split_region: 4,
-    target_probe_targeted_exons: "1, 2, 3",
+    target_probe_targeted_exons: ["1", "2", "3"],
     target_probe_isoform_consensus: 0,
     target_probe_GC_content_min: 45,
     target_probe_GC_content_opt: 55,

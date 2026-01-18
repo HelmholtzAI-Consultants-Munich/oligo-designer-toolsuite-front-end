@@ -218,8 +218,8 @@
       "description": "number of pseudocolors"
     },
     "channels_ids": {
-      "type": "string",
-      "default": "Alexa488, Cy3b, Alexa647",
+      "type": "array",
+      "default": ["Alexa488", "Cy3b", "Alexa647"],
       "title": "Channels Ids",
       "description": "names of fluorescent channels"
     },
