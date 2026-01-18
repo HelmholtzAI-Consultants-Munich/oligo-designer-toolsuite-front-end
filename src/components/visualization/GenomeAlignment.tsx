@@ -18,16 +18,15 @@ class GenomeAlignment extends React.Component<Props> {
             this.props.oligos,
             this.props.genomicRegions,
             this.props.selectedOligo,
-            this.props.setSelectedOligo,
+            this.props.setSelectedOligo
         );
     }
 
     componentDidUpdate() {
-        console.log(this.props.genomicRegions);
         GenomeAlignmentD3.update(
             this.el!,
             this.props.oligos,
-            this.props.selectedOligo,
+            this.props.selectedOligo
         );
     }
 
@@ -48,27 +47,42 @@ class GenomeAlignment extends React.Component<Props> {
                         <div className="col col-auto">
                             <strong>Legend:</strong>
                         </div>
-                        {
-                        Object.keys(regionColors).filter((label) => {
-                            return Object.values(this.props.genomicRegions).some(regions =>
-                                regions.some(region => region.regiontype === label)
-                            );
-                        }).map((label, index) => {
-                            return (
-                                <div className="col col-auto" key={index}>
-                                    <span
-                                        style={{
-                                            display: "inline-block",
-                                            width: "12px",
-                                            height: "12px",
-                                            backgroundColor: regionColors[label] || 'lightgray',
-                                            marginRight: "5px",
-                                        }}
-                                    ></span>
-                                    {label}
-                                </div>
-                            );
-                        })}
+                        {Object.keys(regionColors)
+                            .filter((label) => {
+                                return Object.values(
+                                    this.props.genomicRegions
+                                ).some((regions) =>
+                                    regions.some(
+                                        (region) => region.regiontype === label
+                                    )
+                                );
+                            })
+                            .map((label, index) => {
+                                return (
+                                    <div className="col col-auto" key={index}>
+                                        <span
+                                            style={{
+                                                display: "inline-block",
+                                                width: "12px",
+                                                height: "12px",
+                                                backgroundColor:
+                                                    regionColors[label] ||
+                                                    "lightgray",
+                                                marginRight: "5px",
+                                            }}
+                                        ></span>
+                                        {label}
+                                    </div>
+                                );
+                            })}
+                    </div>
+                    <div className="row">
+                        <div className="col col-auto">
+                            <strong>Strand:</strong>
+                        </div>
+                        {Object.values(this.props.genomicRegions)[0][0][
+                            "strand"
+                        ] || "unknown"}
                     </div>
                 </div>
             </>

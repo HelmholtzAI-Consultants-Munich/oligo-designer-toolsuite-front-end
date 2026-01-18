@@ -20,6 +20,8 @@ export interface Oligo {
 export interface GenomicRegion {
     start: number;
     end: number;
+    sequence: string;
+    strand?: "+" | "-";
     regiontype?: string;
 }
 

@@ -12,6 +12,41 @@ export const regionColors: { [key: string]: string } = {
     unknown: "lightgray",
 };
 
+const collectReferenceBases = (
+    regions: GenomicRegions,
+    start: number,
+    end: number
+) => {
+    const allRegions = Object.values(regions).flat();
+    allRegions.sort((a, b) => a.start - b.start);
+    let collectingPosition = start;
+    const bases: { char: string; position: number }[] = [];
+
+    allRegions.forEach((region) => {
+        if (!region.sequence) {
+            return;
+        }
+        if (collectingPosition >= region.end + 1) {
+            return; // already collected this region
+        }
+        if (collectingPosition > end) {
+            return; // beyond desired end
+        }
+
+        // Start from the max of collectingPosition and region.start
+        const regionStartPos = Math.max(collectingPosition, region.start);
+        for (let pos = regionStartPos; pos <= region.end && pos <= end; pos++) {
+            bases.push({
+                char: region.sequence[pos - region.start],
+                position: pos,
+            });
+        }
+        collectingPosition = region.end + 1;
+    });
+
+    return bases;
+};
+
 const GenomeAlignmentD3 = {
     create: (
         el: Element,
@@ -46,7 +81,9 @@ const GenomeAlignmentD3 = {
 
         const ext = d3.extent([
             ...oligoPositions.flatMap((d) => [d.start, d.end]),
-            ...Object.values(genomicRegions).flat().flatMap((d: GenomicRegion) => [d.start, d.end]),
+            ...Object.values(genomicRegions)
+                .flat()
+                .flatMap((d: GenomicRegion) => [d.start, d.end]),
         ]) as [number, number];
         const x = d3
             .scaleLinear()
@@ -65,11 +102,10 @@ const GenomeAlignmentD3 = {
             .data(oligoPositions)
             .join("rect")
             .attr("x", (d) => x(d.start))
-            .attr("y", innerHeight * 0.075)
+            .attr("y", innerHeight * 0.05)
             .attr("width", (d) => x(d.end) - x(d.start))
             .attr("height", innerHeight / 10)
             .on("click", (_, data) => {
-                console.log(data);
                 const index = oligoPositions.findIndex(
                     (pos) => pos.id === data.id
                 );
@@ -77,22 +113,20 @@ const GenomeAlignmentD3 = {
             });
 
         const transcriptCount = Object.keys(genomicRegions).length;
-        const transcriptHeight = innerHeight * (0.7) / transcriptCount;
+        const transcriptHeight = (innerHeight * 0.6) / transcriptCount;
 
         // Draw genome regions as lines
         const genomeGroup = plot.append("g").attr("class", "genome-regions");
 
         Object.entries(genomicRegions).forEach(([transcriptName, regions]) => {
+            const yOffset =
+                innerHeight / 4 +
+                Object.keys(genomicRegions).indexOf(transcriptName) *
+                    transcriptHeight;
+
             const tGroup = genomeGroup
                 .append("g")
-                .attr(
-                    "transform",
-                    `translate(0, ${
-                        innerHeight / 4 +
-                        Object.keys(genomicRegions).indexOf(transcriptName) *
-                            transcriptHeight
-                    })`
-                );
+                .attr("transform", `translate(0, ${yOffset})`);
 
             // Regions
             tGroup
@@ -103,9 +137,20 @@ const GenomeAlignmentD3 = {
                 .attr("x2", (d: GenomicRegion) => x(d.end + 1))
                 .attr("y1", transcriptHeight / 2)
                 .attr("y2", transcriptHeight / 2)
-                .attr("stroke", (d: GenomicRegion) => regionColors[d.regiontype || 'unknown'] || 'lightgray')
-                .attr("stroke-width", (d: GenomicRegion) => (d.regiontype === 'intron' ? Math.min(transcriptHeight / 10, 1) : Math.min(transcriptHeight / 2, 10)));
+                .attr(
+                    "stroke",
+                    (d: GenomicRegion) =>
+                        regionColors[d.regiontype || "unknown"] || "lightgray"
+                )
+                .attr("stroke-width", (d: GenomicRegion) =>
+                    d.regiontype === "intron"
+                        ? Math.min(transcriptHeight / 10, 1)
+                        : Math.min(transcriptHeight / 2, 10)
+                );
         });
+
+        // Reference sequence
+        const baseGroup = plot.append("g").attr("class", "reference-bases");
 
         // Append the x-axis inside the plot area
         const gX = plot
@@ -138,15 +183,45 @@ const GenomeAlignmentD3 = {
                 .attr("width", (d) => zx(d.end) - zx(d.start));
             gX.call(xAxis.scale(zx));
 
-            genomeGroup.selectAll("g").selectAll<SVGLineElement, GenomicRegion>("line")
+            genomeGroup
+                .selectAll("g")
+                .selectAll<SVGLineElement, GenomicRegion>("line")
                 .attr("x1", (d) => zx(d.start))
                 .attr("x2", (d) => zx(d.end + 1));
+
+            // Calculate visible range
+            const domain = zx.domain();
+            const visibleRange = domain[1] - domain[0];
+            const showBases = visibleRange <= 120;
+
+            // Show bases only when zoomed in to 200bp or less, and only if in view
+            const bases = showBases
+                ? collectReferenceBases(
+                      genomicRegions,
+                      Math.floor(domain[0]),
+                      Math.ceil(domain[1])
+                  )
+                : [];
+            baseGroup
+                .selectAll<SVGTextElement, { char: string; position: number }>(
+                    "text"
+                )
+                .data(bases)
+                .join("text")
+                .attr("x", (d) => zx(d.position + 0.5))
+                .attr("y", innerHeight - 10)
+                .attr("font-size", 10)
+                .attr("text-anchor", "middle")
+                .text((d) => d.char);
         }
 
         // prevent scrolling then apply the default filter
         function filter(event: d3.D3ZoomEvent<Element, unknown>) {
             event.sourceEvent?.preventDefault();
-            return (!event.sourceEvent?.ctrlKey || event.type === "wheel") && !event.sourceEvent?.button;
+            return (
+                (!event.sourceEvent?.ctrlKey || event.type === "wheel") &&
+                !event.sourceEvent?.button
+            );
         }
 
         GenomeAlignmentD3.update(el, oligos, selectedOligo);
