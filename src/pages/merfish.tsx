@@ -2,7 +2,6 @@ import merfish_schema from "../../flask/routes/runners/schemas/merfish.schema.js
 import type { JSONSchema7 } from "json-schema";
 import type { UiSchema } from "@rjsf/utils";
 import Pipeline_Template from "./pipelineTemplate";
-import merfish_form from "../forms/merfish_form";
 import { TabsLayout } from "../components/tabs";
 
 const schema = merfish_schema as JSONSchema7;
@@ -127,7 +126,6 @@ const Merfish: React.FC = () => {
             <Pipeline_Template
                 pipeline="merfish"
                 title="Merfish Probe Designer"
-                form={merfish_form}
                 schema={schema}
                 uiSchema={uiSchema}
             />

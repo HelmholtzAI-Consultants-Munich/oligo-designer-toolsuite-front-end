@@ -1,4 +1,4 @@
-import type { FastaForm, FileState, FormData, Status } from "./types";
+import type { FastaForm, FileState, Status } from "./types";
 import { copyToClipboard, createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
@@ -196,7 +196,7 @@ export const handleSubmit = async (
         }>
     >,
     files: FileState,
-    formData: any,
+    formData: FormData,
     setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>,
     pipeline: string
 ) => {

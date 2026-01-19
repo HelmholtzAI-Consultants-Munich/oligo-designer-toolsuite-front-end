@@ -19,11 +19,9 @@ export const defaultFastaForm: FastaForm = {
     formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
 };
 
-export type FormData = any;
-export type FormDataKey = string;
 export type Status = "idle" | "submitting" | "running";
 export type Modal = {
     show: boolean;
     title: string;
     body: string;
-}
+};
