@@ -1,10 +1,9 @@
 import merfish_schema from "../../flask/routes/runners/schemas/merfish.schema.json";
-import type { JSONSchema7 } from "json-schema";
-import type { UiSchema } from "@rjsf/utils";
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import Pipeline_Template from "./pipelineTemplate";
 import { TabsLayout } from "../components/tabs";
 
-const schema = merfish_schema as JSONSchema7;
+const schema = merfish_schema as RJSFSchema;
 
 const uiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,

@@ -1,10 +1,9 @@
 import oligoseq_schema from "../../flask/routes/runners/schemas/oligoseq.schema.json";
 import Pipeline_Template from "./pipelineTemplate";
-import type { JSONSchema7 } from "json-schema";
-import type { UiSchema } from "@rjsf/utils";
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/tabs";
 
-const schema = oligoseq_schema as JSONSchema7;
+const schema = oligoseq_schema as RJSFSchema;
 
 const uiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,
