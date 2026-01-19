@@ -3,36 +3,6 @@ import { copyToClipboard, createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
 
-export const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    setFormData: React.Dispatch<React.SetStateAction<FormData>>
-) => {
-    const { id, value } = e.target;
-    const keys = id.split(".");
-
-    if (keys.length === 2) {
-        const [parent, child] = keys;
-        setFormData((prev: any) => ({
-            ...prev,
-            [parent]: {
-                ...(prev as any)[parent],
-                [child]: {
-                    ...(prev as any)[parent]?.[child],
-                    value,
-                },
-            },
-        }));
-    } else {
-        setFormData((prev: any) => ({
-            ...prev,
-            [id]: {
-                ...(prev as any)[id],
-                value,
-            },
-        }));
-    }
-};
-
 export const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     setFiles: React.Dispatch<React.SetStateAction<FileState>>
