@@ -16,6 +16,7 @@ const uiSchema: UiSchema = {
                 "file_regions",
                 "files_fasta_target_probe_database",
                 "files_fasta_reference_database_target_probe",
+                "top_n_sets",
                 "target_probe_length_min",
                 "target_probe_length_max",
                 "target_probe_isoform_consensus",
