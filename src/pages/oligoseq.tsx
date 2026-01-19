@@ -2,7 +2,6 @@ import oligoseq_schema from "../../flask/routes/runners/schemas/oligoseq.schema.
 import Pipeline_Template from "./pipelineTemplate";
 import type { JSONSchema7 } from "json-schema";
 import type { UiSchema } from "@rjsf/utils";
-import oligoseq_form from "../forms/oligoseq_form";
 import { TabsLayout } from "../components/tabs";
 
 const schema = oligoseq_schema as JSONSchema7;
@@ -89,7 +88,6 @@ const Oligoseq: React.FC = () => {
             <Pipeline_Template
                 pipeline="oligoseq"
                 title="OligoSeq Probe Designer"
-                form={oligoseq_form}
                 schema={schema}
                 uiSchema={uiSchema}
             />

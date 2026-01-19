@@ -4,7 +4,7 @@ import validator from "@rjsf/validator-ajv8";
 import type { UiSchema } from "@rjsf/utils";
 import type { JSONSchema7 } from "json-schema";
 import Navbar from "../modules/nav";
-import type { FileState, Status, Modal, FormData } from "../components/types";
+import type { FileState, Status, Modal } from "../components/types";
 import { handleSubmit } from "../components/helpers";
 import FieldTemplate from "../components/fieldTemplate";
 import { TabsLayout } from "../components/tabs";
@@ -15,7 +15,6 @@ import { InfoModal } from "../components/modal/InfoModal";
 type Props = {
     pipeline: string;
     title: string;
-    form: FormData;
     schema: JSONSchema7;
     uiSchema: UiSchema;
 };
@@ -23,11 +22,10 @@ type Props = {
 const Pipeline_Template: React.FC<Props> = ({
     pipeline,
     title,
-    form,
     schema,
     uiSchema,
 }) => {
-    const [formData, setFormData] = useState<any>(form);
+    const [formData, setFormData] = useState<FormData>(new FormData());
 
     const [files, setFiles] = useState<FileState>({
         files_fasta_target_probe_database: [],

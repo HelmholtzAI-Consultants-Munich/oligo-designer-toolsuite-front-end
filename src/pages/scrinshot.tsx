@@ -1,7 +1,6 @@
 import scrinshot_schema from "../../flask/routes/runners/schemas/scrinshot.schema.json";
 import type { JSONSchema7 } from "json-schema";
 import type { UiSchema } from "@rjsf/utils";
-import scrinshot_form from "../forms/scrinshot_form";
 import { TabsLayout } from "../components/tabs";
 import Pipeline_Template from "./pipelineTemplate";
 
@@ -99,7 +98,6 @@ const Scrinshot: React.FC = () => {
             <Pipeline_Template
                 pipeline="scrinshot"
                 title="Scrinshot Probe Designer"
-                form={scrinshot_form}
                 schema={schema}
                 uiSchema={uiSchema}
             />
