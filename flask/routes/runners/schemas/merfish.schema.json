@@ -536,11 +536,13 @@
     },
     "target_probe_Tm_chem_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Target Probe Tm Chem Correction Parameters",
       "description": "if chem correction desired, please add parameters below"
     },
     "target_probe_Tm_salt_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Target Probe Tm Salt Correction Parameters",
       "description": "if salt correction desired, please add parameters below"
     },
@@ -715,11 +717,13 @@
     },
     "readout_probe_Tm_chem_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Readout Probe Tm Chem Correction Parameters",
       "description": "if chem correction desired, please add parameters below"
     },
     "readout_probe_Tm_salt_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Readout Probe Tm Salt Correction Parameters",
       "description": "if salt correction desired, please add parameters below"
     },
@@ -901,11 +905,13 @@
     },
     "primer_Tm_chem_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Primer Tm Chem Correction Parameters",
       "description": "if chem correction desired, please add parameters below"
     },
     "primer_Tm_salt_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Primer Tm Salt Correction Parameters",
       "description": "if salt correction desired, please add parameters below"
     }
