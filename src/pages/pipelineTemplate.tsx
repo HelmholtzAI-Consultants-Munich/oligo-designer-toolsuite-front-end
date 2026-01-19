@@ -1,8 +1,7 @@
 import { useState } from "react";
 import Form from "@rjsf/react-bootstrap";
-import validator from "@rjsf/validator-ajv8";
-import type { UiSchema } from "@rjsf/utils";
-import type { JSONSchema7 } from "json-schema";
+import { customizeValidator } from "@rjsf/validator-ajv8";
+import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 import Navbar from "../modules/nav";
 import type { FileState, Status, Modal } from "../components/types";
 import { handleSubmit } from "../components/helpers";
@@ -11,11 +10,12 @@ import { TabsLayout } from "../components/tabs";
 import FileSelection from "../components/fileSelection";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
 import { InfoModal } from "../components/modal/InfoModal";
+import Ajv2020 from "ajv/dist/2020";
 
 type Props = {
     pipeline: string;
     title: string;
-    schema: JSONSchema7;
+    schema: RJSFSchema;
     uiSchema: UiSchema;
 };
 
@@ -26,6 +26,7 @@ const Pipeline_Template: React.FC<Props> = ({
     uiSchema,
 }) => {
     const [formData, setFormData] = useState<FormData>(new FormData());
+    const validator = customizeValidator({ AjvClass: Ajv2020 });
 
     const [files, setFiles] = useState<FileState>({
         files_fasta_target_probe_database: [],

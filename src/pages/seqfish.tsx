@@ -1,10 +1,9 @@
 import seqfish_schema from "../../flask/routes/runners/schemas/seqfish.schema.json";
 import Pipeline_Template from "./pipelineTemplate";
-import type { JSONSchema7 } from "json-schema";
-import type { UiSchema } from "@rjsf/utils";
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/tabs";
 
-const schema = seqfish_schema as JSONSchema7;
+const schema = seqfish_schema as RJSFSchema;
 
 const uiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,

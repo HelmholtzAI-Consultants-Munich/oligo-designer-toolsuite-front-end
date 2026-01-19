@@ -1,10 +1,9 @@
 import scrinshot_schema from "../../flask/routes/runners/schemas/scrinshot.schema.json";
-import type { JSONSchema7 } from "json-schema";
-import type { UiSchema } from "@rjsf/utils";
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/tabs";
 import Pipeline_Template from "./pipelineTemplate";
 
-const schema = scrinshot_schema as JSONSchema7;
+const schema = scrinshot_schema as RJSFSchema;
 
 const uiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,
