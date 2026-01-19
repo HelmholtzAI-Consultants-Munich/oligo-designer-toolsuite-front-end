@@ -1,5 +1,5 @@
 {
-"$schema": "https://json-schema.org/draft-07/schema",
+  "$schema": "https://json-schema.org/draft-07/schema",
   "$id": "odt:seqfish",
   "type": "object",
   "properties": {
@@ -667,11 +667,13 @@
     },
     "primer_Tm_chem_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Primer Tm Chem Correction Parameters",
       "description": "if chem correction desired, please add parameters below"
     },
     "primer_Tm_salt_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Primer Tm Salt Correction Parameters",
       "description": "if salt correction desired, please add parameters below"
     }

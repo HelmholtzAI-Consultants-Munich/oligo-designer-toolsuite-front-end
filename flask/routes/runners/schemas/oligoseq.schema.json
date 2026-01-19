@@ -259,6 +259,7 @@
     },
     "target_probe_hybridization_probability_bowtie_hit_parameters": {
       "type": "null",
+      "default": null,
       "title": "Target Probe Hybridization Probability Bowtie Hit Parameters",
       "description": "No hit parameters available currently"
     },
@@ -314,6 +315,7 @@
     },
     "target_probe_cross_hybridization_bowtie_hit_parameters": {
       "type": "null",
+      "default": null,
       "title": "Target Probe Cross Hybridization Bowtie Hit Parameters",
       "description": "No hit parameters available currently"
     },
@@ -408,6 +410,7 @@
     },
     "target_probe_Tm_salt_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Target Probe Tm Salt Correction Parameters",
       "description": "if salt correction desired, please add parameters below"
     }

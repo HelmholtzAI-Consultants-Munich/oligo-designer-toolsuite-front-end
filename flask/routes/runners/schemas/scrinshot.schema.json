@@ -439,6 +439,7 @@
     },
     "target_probe_Tm_salt_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Target Probe Tm Salt Correction Parameters",
       "description": "if salt correction desired, please add parameters below"
     },
@@ -559,6 +560,7 @@
     },
     "detection_oligo_Tm_salt_correction_parameters": {
       "type": "null",
+      "default": null,
       "title": "Detection Oligo Tm Salt Correction Parameters",
       "description": "if salt correction desired, please add parameters below"
     }
