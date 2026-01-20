@@ -15,14 +15,14 @@ ODT Cloud includes a comprehensive monitoring stack using Prometheus and Grafana
 
 After starting the Docker containers with `docker compose up -d`, the following monitoring services are available:
 
-| Service | URL | Description |
-|---------|-----|-------------|
-| **Grafana** | http://localhost:3001 | Visualization and dashboards (default: `admin`/`admin`) |
-| **Prometheus** | http://localhost:9090 | Metrics collection and querying |
-| **MongoDB Exporter** | http://localhost:9216/metrics | MongoDB database metrics |
-| **Node Exporter** | http://localhost:9100/metrics | Host operating system metrics |
-| **cAdvisor** | http://localhost:8080 | Container resource usage metrics |
-| **Flask Metrics** | http://localhost:5000/metrics | Application metrics (when configured) |
+| Service              | URL                           | Description                                             |
+| -------------------- | ----------------------------- | ------------------------------------------------------- |
+| **Grafana**          | http://localhost:3001         | Visualization and dashboards (default: `admin`/`admin`) |
+| **Prometheus**       | http://localhost:9090         | Metrics collection and querying                         |
+| **MongoDB Exporter** | http://localhost:9216/metrics | MongoDB database metrics                                |
+| **Node Exporter**    | http://localhost:9100/metrics | Host operating system metrics                           |
+| **cAdvisor**         | http://localhost:8080         | Container resource usage metrics                        |
+| **Flask Metrics**    | http://localhost:5000/metrics | Application metrics (when configured)                   |
 
 ---
 
@@ -41,12 +41,14 @@ Grafana provides visualization dashboards for all collected metrics. It is autom
 ### Prometheus Data Source
 
 Prometheus is automatically configured as a data source in Grafana via provisioning. The data source:
+
 - **Name:** Prometheus
 - **URL:** `http://odt-prometheus:9090`
 - **Access:** Proxy (server-side)
 - **Status:** Automatically set as default data source
 
 If you need to manually verify or reconfigure:
+
 1. Go to **Configuration → Data Sources**
 2. Click on **Prometheus**
 3. Verify the URL is set to `http://odt-prometheus:9090`
@@ -89,6 +91,7 @@ Exporters expose metrics in Prometheus format. The following exporters are confi
 **Metrics Endpoint:** http://localhost:9216/metrics
 
 Exports MongoDB database metrics including:
+
 - Connection counts
 - Operation counters
 - Replication status
@@ -96,6 +99,7 @@ Exports MongoDB database metrics including:
 - Query performance
 
 **Configuration:**
+
 - Connects to MongoDB at `mongodb://odt-db:27017`
 - Collects all available metrics (`--collect-all`)
 
@@ -106,6 +110,7 @@ Exports MongoDB database metrics including:
 **Metrics Endpoint:** http://localhost:9100/metrics
 
 Exports host operating system metrics including:
+
 - CPU usage and time (`node_cpu_*`)
 - Memory usage (`node_memory_*`)
 - Disk I/O and space (`node_disk_*`, `node_filesystem_*`)
@@ -113,6 +118,7 @@ Exports host operating system metrics including:
 - System load (`node_load*`)
 
 **Configuration:**
+
 - Mounts host `/proc`, `/sys`, and `/` filesystems
 - Excludes virtual filesystems from disk metrics
 - Provides actual host-level metrics, not container metrics
@@ -124,6 +130,7 @@ Exports host operating system metrics including:
 **Metrics Endpoint:** http://localhost:5000/metrics
 
 Exports Flask application metrics including:
+
 - HTTP request counts (`flask_http_request_total`)
 - Request latency (`flask_http_request_duration_seconds`)
 - Error rates (`flask_http_request_exceptions_total`)
@@ -138,6 +145,7 @@ Exports Flask application metrics including:
 **Metrics Endpoint:** http://localhost:8080/metrics
 
 Exports container-level resource usage metrics including:
+
 - CPU usage per container (`container_cpu_usage_seconds_total`)
 - Memory usage per container (`container_memory_usage_bytes`)
 - Network I/O (`container_network_receive_bytes_total`, `container_network_transmit_bytes_total`)
@@ -145,6 +153,7 @@ Exports container-level resource usage metrics including:
 - Container limits (`container_spec_memory_limit_bytes`, `container_spec_cpu_quota`)
 
 **Configuration:**
+
 - Runs in privileged mode to access container metrics
 - Mounts host filesystems (`/`, `/sys`, `/var/run`, `/var/lib/docker`)
 - Provides per-container metrics identified by container ID path (`id` label)
@@ -163,11 +172,11 @@ odt-new-exporter:
   image: exporter-image:version
   container_name: odt-new-exporter
   ports:
-    - 9091:9091  # Adjust port as needed
+    - 9091:9091 # Adjust port as needed
   command:
-    - '--exporter-specific-options'
+    - "--exporter-specific-options"
   depends_on:
-    - odt-db  # Add dependencies as needed
+    - odt-db # Add dependencies as needed
 ```
 
 ### Step 2: Add Scrape Configuration to prometheus.yml
@@ -177,12 +186,12 @@ Add a new scrape job:
 ```yaml
 scrape_configs:
   # ... existing jobs ...
-  
+
   # New exporter
-  - job_name: 'new-exporter'
+  - job_name: "new-exporter"
     static_configs:
-      - targets: ['odt-new-exporter:9091']
-    metrics_path: '/metrics'
+      - targets: ["odt-new-exporter:9091"]
+    metrics_path: "/metrics"
 ```
 
 ### Step 3: Update Prometheus Dependencies
@@ -196,7 +205,7 @@ odt-prometheus:
     - odt-mongodb-exporter
     - odt-node-exporter
     - odt-cadvisor
-    - odt-new-exporter  # Add here
+    - odt-new-exporter # Add here
 ```
 
 ### Step 4: Restart Services

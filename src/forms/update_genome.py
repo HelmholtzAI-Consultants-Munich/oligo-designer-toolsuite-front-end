@@ -18,19 +18,20 @@ GENOME_CATEGORIES = {
     "unknown": "Unknown",
 }
 
+
 def fetch_entries(url):
     try:
         response = requests.get(url)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
+        soup = BeautifulSoup(response.text, "html.parser")
 
         folders = [
-            link.get('href').rstrip('/')
-            for link in soup.find_all('a')
-            if link.get('href') and
-               link.get('href').endswith('/') and
-               not link.get('href').startswith('/') and
-               link.get('href') != '../'
+            link.get("href").rstrip("/")
+            for link in soup.find_all("a")
+            if link.get("href")
+            and link.get("href").endswith("/")
+            and not link.get("href").startswith("/")
+            and link.get("href") != "../"
         ]
 
         if folders:
@@ -38,11 +39,11 @@ def fetch_entries(url):
 
         # fallback: collect meaningful file names
         files = [
-            link.get('href')
-            for link in soup.find_all('a')
-            if link.get('href') and
-               link.get('href') != '../' and
-               not link.get('href').endswith('/')
+            link.get("href")
+            for link in soup.find_all("a")
+            if link.get("href")
+            and link.get("href") != "../"
+            and not link.get("href").endswith("/")
         ]
 
         return files
@@ -50,6 +51,7 @@ def fetch_entries(url):
     except Exception as e:
         print(f"❌ Failed to fetch {url}: {e}")
         return []
+
 
 ts_content = "// Auto-generated species or file lists\n\n"
 

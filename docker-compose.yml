@@ -48,19 +48,19 @@ services:
     image: prom/node-exporter:latest
     container_name: odt-node-exporter
     command:
-      - "--path.procfs=/host/proc"
-      - "--path.sysfs=/host/sys"
-      - "--path.rootfs=/rootfs"
+      - "--path.rootfs=/host"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
+      # Note: rslave mount propagation is not used here because onDocker Desktop,
+      # Docker runs in a VM and the host's root filesystem (/) is not configured for
+      # shared/slave mounts, causing "path / is mounted on / but it is not a shared or slave mount" errors.
+      # The simpler configuration without rslave works fine for node-exporter's metrics collection.
+      - /:/host:ro
     restart: unless-stopped
     profiles: [monitoring]
 
   odt-cadvisor:
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: ghcr.io/google/cadvisor:latest
     container_name: odt-cadvisor
     volumes:
       - /:/rootfs:ro
@@ -81,21 +81,11 @@ services:
       - 9090:9090
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.console.libraries=/etc/prometheus/console_libraries"
-      - "--web.console.templates=/etc/prometheus/consoles"
-      - "--web.enable-lifecycle"
-    depends_on:
-      - odt-mongodb-exporter
-      - odt-node-exporter
-      - odt-cadvisor
     restart: unless-stopped
     profiles: [monitoring]
 
   odt-grafana:
-    image: grafana/grafana:11.3.0
+    image: grafana/grafana:latest
     container_name: odt-grafana
     ports:
       - 3001:3000
