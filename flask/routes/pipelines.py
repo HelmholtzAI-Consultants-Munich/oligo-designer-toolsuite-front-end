@@ -1,5 +1,4 @@
 import os
-import traceback
 from datetime import datetime
 from typing import Any
 
@@ -11,6 +10,7 @@ from flask_login.utils import LocalProxy
 
 from flask import Blueprint, current_app, jsonify, request, session
 from routes.validation_helpers import get_run_id
+from routes.error_handlers import create_user_error_response
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -130,7 +130,10 @@ def start_pipeline(pipeline_name: str):
         return jsonify({"error": "Expected JSON"}), 415
 
     run_id_str = json.get("runid")  # Run ID from React
-    run_id = get_run_id(run_id_str)
+    try:
+        run_id = get_run_id(run_id_str)
+    except Exception as e:
+        return create_user_error_response(e, "submission")
 
     form_data = json.get("formdata")  # Form data from React
 
@@ -140,8 +143,7 @@ def start_pipeline(pipeline_name: str):
     try:
         context = create_context(pipeline_name, current_user)
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 400
+        return create_user_error_response(e, "submission")
 
     if context["output_path"] is None:
         return jsonify({"error": "Could not infer output directory"}), 500
@@ -151,7 +153,7 @@ def start_pipeline(pipeline_name: str):
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
     if update_result.matched_count == 0:
-        return jsonify({"error": "Run ID not found"}), 404
+        return create_user_error_response(ValueError("Run ID not found"), "submission")
 
     # The task state can be polled using get_run_state(run_id_str).
 

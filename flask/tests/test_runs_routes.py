@@ -94,12 +94,13 @@ def _assert_pipeline_run_error_message(client, dummy_user, run_id, status, error
         client: Flask test client
         dummy_user: Test user fixture
         run_id: Run ID fixture
-        status: Expected status (e.g., "error", "failed")
+        status: Expected status (e.g., "success", "failure")
         error_message: Expected error message
     """
     create_test_run(run_id, user_id=dummy_user.id, status=status, error_message=error_message)
 
     response = client.get(f"/api/runs/{run_id}")
+    print(response.get_json())
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == status
@@ -107,37 +108,32 @@ def _assert_pipeline_run_error_message(client, dummy_user, run_id, status, error
     assert data["error_message"] == error_message
 
 
-def test_get_pipeline_run_returns_error_message(client, dummy_user, run_id):
-    """Test get_pipeline_run returns error_message field when status is error."""
-    _assert_pipeline_run_error_message(client, dummy_user, run_id, "error", "Pipeline execution failed")
-
-
-def test_get_pipeline_run_returns_error_message_failed_status(client, dummy_user, run_id):
-    """Test get_pipeline_run returns error_message field when status is failed."""
+def test_get_pipeline_run_returns_error_message_failure_status(client, dummy_user, run_id):
+    """Test get_pipeline_run returns error_message field when status is failure."""
     _assert_pipeline_run_error_message(
         client,
         dummy_user,
         run_id,
-        "failed",
+        "failure",
         "Invalid configuration: Missing required parameter",
     )
 
 
-def test_get_pipeline_run_no_error_message_when_completed(client, dummy_user, run_id):
-    """Test get_pipeline_run does NOT return error_message when status is completed."""
-    create_test_run(run_id, user_id=dummy_user.id, status="completed")
+def test_get_pipeline_run_no_error_message_when_success(client, dummy_user, run_id):
+    """Test get_pipeline_run does NOT return error_message when status is success."""
+    create_test_run(run_id, user_id=dummy_user.id, status="success")
 
     response = client.get(f"/api/runs/{run_id}")
     assert response.status_code == 200
     data = response.get_json()
-    assert data["status"] == "completed"
+    assert data["status"] == "success"
     assert "error_message" not in data
 
 
 def test_get_run_file_not_found_sanitized(client, dummy_user, run_id):
     """Test get_run_file with file not found returns sanitized error."""
     # Create run but no output directory
-    create_test_run(run_id, user_id=dummy_user.id, status="completed", output_path="/nonexistent/path")
+    create_test_run(run_id, user_id=dummy_user.id, status="success", output_path="/nonexistent/path")
 
     response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
     assert response.status_code in [404, 500]  # Could be either depending on error type
@@ -150,13 +146,12 @@ def test_get_run_file_not_found_sanitized(client, dummy_user, run_id):
 
 def test_get_run_file_permission_error_sanitized(client, dummy_user, run_id, tmp_path):
     """Test get_run_file with permission error returns sanitized error."""
-    from unittest.mock import patch
 
     output_path = tmp_path / "run_output"
     output_path.mkdir()
     (output_path / "test.txt").write_text("content")
 
-    create_test_run(run_id, user_id=dummy_user.id, status="completed", output_path=str(output_path))
+    create_test_run(run_id, user_id=dummy_user.id, status="success", output_path=str(output_path))
 
     with patch("builtins.open", side_effect=PermissionError("Permission denied")):
         response = client.get(f"/api/runs/{run_id}/files/test.txt")
@@ -187,11 +182,9 @@ def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id
         ValueError("Invalid input"),
     ]
 
-    create_test_run(run_id, user_id=dummy_user.id, status="completed")
+    create_test_run(run_id, user_id=dummy_user.id, status="success")
 
     for exc in exceptions:
-        from unittest.mock import patch
-
         with patch("routes.pipelines.os.path.join", side_effect=exc):
             response = client.get(f"/api/runs/{run_id}/files/test.txt")
             data = response.get_json()
