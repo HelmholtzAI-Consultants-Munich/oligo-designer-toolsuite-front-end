@@ -240,14 +240,14 @@ class PipelineRunner:
     def generate_genomic_regions_file(self, form_data: dict, context: dict) -> None:
         # find files_fasta_target_probe_database fasta file and read it
         print("Generating visualization files...")
-        regions_file = form_data.get("file_regions", {}).get("value")
+        regions_file = form_data.get("file_regions", None)
         if not regions_file:
             print("No regions file provided, skipping visualization generation.")
             return
         genes = []
         with open(regions_file, "r") as rf:
             genes = [line.strip() for line in rf]
-        fasta_paths = form_data.get("files_fasta_target_probe_database", {}).get("value")
+        fasta_paths = form_data.get("files_fasta_target_probe_database", [])
         if not fasta_paths:
             print("No fasta files provided, skipping visualization generation.")
             return
@@ -255,8 +255,7 @@ class PipelineRunner:
         regions = {gene: defaultdict(list) for gene in genes}
 
         fasta_parser = FastaParser()
-        fasta_files = split_on_newline(fasta_paths)
-        for fname in fasta_files:
+        for fname in fasta_paths:
             if not os.path.exists(fname):
                 print(f"Fasta file {fname} not found, skipping.")
                 continue
