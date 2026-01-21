@@ -1,7 +1,7 @@
-import type { FieldProps } from "@rjsf/utils";
+import type { WidgetProps } from "@rjsf/utils";
 import { handleFileChange } from "./helpers";
 
-const FileSelection = ({ id, name, registry }: FieldProps) => {
+const FileSelection = ({ id, name, registry }: WidgetProps) => {
     const { files, setFiles } = registry.formContext;
 
     return (
