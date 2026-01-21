@@ -51,7 +51,12 @@ class GenomeAlignment extends React.Component<Props> {
 
     render() {
         if (!this.props.genomicRegions) {
-            return <p>Genomic regions data is not available. Try reloading the page.</p>;
+            return (
+                <p>
+                    Genomic regions data is not available. Try reloading the
+                    page.
+                </p>
+            );
         }
         return (
             <>
