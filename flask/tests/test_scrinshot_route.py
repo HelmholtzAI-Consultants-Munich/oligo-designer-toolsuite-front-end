@@ -34,8 +34,6 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    # Actual pipeline execution by a worker is mocked
-
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()
     assert data["state"] == "success"
@@ -54,8 +52,6 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, sess
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
-
-    # Actual pipeline execution by a worker is mocked
 
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()
