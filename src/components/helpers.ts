@@ -99,44 +99,6 @@ export const handleSubmitGenomicAll = async (
     }
 };
 
-async function processFastaGroup({
-    forms,
-    uploadedPaths,
-    key,
-    formData,
-    setModal,
-    setRunStatus,
-}: {
-    forms: FastaForm[];
-    uploadedPaths: Record<string, string>;
-    key: string;
-    formData: any;
-    setModal: any;
-    setRunStatus: any;
-}) {
-    let generated = "";
-    if (forms && forms.length > 0) {
-        generated = await handleSubmitGenomicAll(forms);
-        if (generated === "error") {
-            setModal({
-                show: true,
-                title: "Pipeline Failed",
-                body: "An error occurred while submitting FASTA data.",
-            });
-            setRunStatus("idle");
-            return null;
-        }
-    }
-    const uploaded = uploadedPaths[key] ?? "";
-    const merged = [generated, uploaded].filter(Boolean).join("\n");
-
-    if (merged) {
-        formData[key]["value"] = merged;
-    }
-
-    return merged;
-}
-
 export const getRequiredFiles = (pipeline: string) => {
     if (pipeline === "scrinshot" || pipeline === "oligoseq") {
         return [
