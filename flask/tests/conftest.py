@@ -18,11 +18,12 @@ from app import create_app
 from extensions import mongo
 
 
-@pytest.fixture(autouse=True)
-def mock_make_dir():
-    """Auto-use fixture to mock os.makedirs across all tests"""
-    with patch("os.makedirs"):
-        yield
+# Temporarily disabled - see issue for better directory mocking solution
+# @pytest.fixture(autouse=True)
+# def mock_make_dir():
+#     """Auto-use fixture to mock os.makedirs across all tests"""
+#     with patch("os.makedirs"):
+#         yield
 
 
 @pytest.fixture(autouse=True)

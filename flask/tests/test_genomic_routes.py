@@ -230,50 +230,24 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
 
 
 def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi, mock_run):
-    # Test scenario: session_id exists but directory was deleted (e.g., manual cleanup)
-    # This can happen in production since sessions are permanent (90 days) but directories
-    # might be deleted. Users with existing sessions should get an error, not silently fail.
-    # Note: Genomic routes don't check directory existence upfront, but assign_session_id
-    # will try to create it (mocked), so the directory won't exist.
+    """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ncbi
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)
         session["session_id"] = "existing-session-123"
-        # Note: os.makedirs is mocked globally, so assign_session_id won't create the directory
-        # This simulates the directory was deleted after the session was created
 
-    # Genomic routes may fail when trying to write files to non-existent directory
-    # or may succeed if they create subdirectories. The exact behavior depends on implementation.
-    # For now, we test that the request doesn't crash and returns a response.
+    # With makedirs mock disabled, directories will be created and request should succeed
     response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
-    # The response might be 200 (if it creates subdirs) or 500 (if it fails to write)
-    # We just verify it doesn't crash with a missing directory
-    assert response.status_code in [200, 500]
-    if response.status_code == 500:
-        data = response.get_json()
-        assert "error" in data
+    assert response.status_code == 200
 
 
 def test_genomic_single_ensembl_session_without_directory(client, dummy_form_ensembl, mock_run):
-    # Test scenario: session_id exists but directory was deleted (e.g., manual cleanup)
-    # This can happen in production since sessions are permanent (90 days) but directories
-    # might be deleted. Users with existing sessions should get an error, not silently fail.
-    # Note: Genomic routes don't check directory existence upfront, but assign_session_id
-    # will try to create it (mocked), so the directory won't exist.
+    """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ensembl
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)
         session["session_id"] = "existing-session-123"
-        # Note: os.makedirs is mocked globally, so assign_session_id won't create the directory
-        # This simulates the directory was deleted after the session was created
 
-    # Genomic routes may fail when trying to write files to non-existent directory
-    # or may succeed if they create subdirectories. The exact behavior depends on implementation.
-    # For now, we test that the request doesn't crash and returns a response.
+    # With makedirs mock disabled, directories will be created and request should succeed
     response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)
-    # The response might be 200 (if it creates subdirs) or 500 (if it fails to write)
-    # We just verify it doesn't crash with a missing directory
-    assert response.status_code in [200, 500]
-    if response.status_code == 500:
-        data = response.get_json()
-        assert "error" in data
+    assert response.status_code == 200

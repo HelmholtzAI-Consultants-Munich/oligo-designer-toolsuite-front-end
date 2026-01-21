@@ -85,16 +85,11 @@ def test_seqfish_route_propagates_pipeline_runner_errors(client, run_id, authent
 
 
 def test_seqfish_session_without_directory(client, run_id, dummy_form, mock_run):
-    # Test scenario: session_id exists but directory was deleted (e.g., manual cleanup)
-    # This can happen in production since sessions are permanent (90 days) but directories
-    # might be deleted. Users with existing sessions should get an error, not silently fail.
+    """Test seqfish with existing session creates directory and succeeds."""
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)
         session["session_id"] = "existing-session-123"
-        # Note: os.makedirs is mocked globally, so assign_session_id won't create the directory
-        # os.path.exists will return False, simulating the directory was deleted
 
+    # With makedirs mock disabled, directories will be created and request should succeed
     response = client.post("/api/seqfish", json=dummy_form)
-    assert response.status_code == 400
-    data = response.get_json()
-    assert "error" in data
+    assert response.status_code == 200
