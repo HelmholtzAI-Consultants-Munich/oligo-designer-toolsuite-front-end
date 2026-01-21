@@ -1,6 +1,6 @@
 import merfish_schema from "../../flask/routes/runners/schemas/merfish.schema.json";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
-import Pipeline_Template from "./pipelineTemplate";
+import PipelineTemplate from "./pipelineTemplate";
 import { TabsLayout } from "../components/tabs";
 
 const schema = merfish_schema as RJSFSchema;
@@ -122,7 +122,7 @@ const uiSchema: UiSchema = {
 const Merfish: React.FC = () => {
     return (
         <>
-            <Pipeline_Template
+            <PipelineTemplate
                 pipeline="merfish"
                 title="Merfish Probe Designer"
                 schema={schema}

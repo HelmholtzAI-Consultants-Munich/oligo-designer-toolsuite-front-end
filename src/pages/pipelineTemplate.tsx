@@ -24,7 +24,7 @@ type Props = {
     uiSchema: UiSchema;
 };
 
-const Pipeline_Template: React.FC<Props> = ({
+const PipelineTemplate: React.FC<Props> = ({
     pipeline,
     title,
     schema,
@@ -113,4 +113,4 @@ const Pipeline_Template: React.FC<Props> = ({
         </>
     );
 };
-export default Pipeline_Template;
+export default PipelineTemplate;
