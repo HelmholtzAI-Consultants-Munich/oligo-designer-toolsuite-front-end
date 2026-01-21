@@ -249,7 +249,7 @@ def create_test_run(run_id, user_id="dummy_user", **kwargs):
     run_doc = {
         "_id": run_id,
         "pipeline": kwargs.get("pipeline", "TestPipeline"),
-        "status": kwargs.get("status", "completed"),
+        "status": kwargs.get("status", "success"),
         "timestamp": kwargs.get("timestamp", "2025_08_20"),
         "output_path": kwargs.get("output_path", "/tmp/fake"),
         **{k: v for k, v in kwargs.items() if k not in ["pipeline", "status", "timestamp", "output_path"]},
@@ -283,9 +283,9 @@ def form_data():
     }
 
 
-@pytest.fixture
-def pipeline_runner(mock_schema):
-    """Create PipelineRunner instance for testing."""
-    from routes.runners.pipeline_runner import PipelineRunner
+# @pytest.fixture
+# def pipeline_runner(mock_schema):
+#     """Create PipelineRunner instance for testing."""
+#     from routes.runners.pipeline_runner import PipelineRunner
 
-    return PipelineRunner("test_pipeline", "test_probe_designer", mock_schema)
+#     return PipelineRunner("test_pipeline", "test_probe_designer", mock_schema)

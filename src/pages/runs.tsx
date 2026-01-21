@@ -152,8 +152,7 @@ const Runs = () => {
                                                 >
                                                     {run.status}
                                                 </span>
-                                                {(run.status === "error" ||
-                                                    run.status === "failed") &&
+                                                {run.status === "failure" &&
                                                     run.error_message && (
                                                         <div
                                                             className="text-danger small mt-1"

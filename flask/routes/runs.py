@@ -12,22 +12,22 @@ Features:
     - Listing of output files for a given run
     - Secure file download with mimetype detection and subdirectory support
 
-:requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, shutil, datetime, traceback
+:requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
 """
 
-import os
-import traceback
-from datetime import datetime
 from typing import Any
 
+import os
+from datetime import datetime
+
 from bson import ObjectId
-from extensions import celery_app, mongo
-from flask_login import current_user
-from helpers import delete_pipeline_run_files_and_db
-
 from flask import Blueprint, jsonify, send_file, session
+from flask_login import current_user
 
-from .validation_helpers import get_run, get_run_id, get_task_id
+from extensions import celery_app, mongo
+from helpers import delete_pipeline_run_files_and_db
+from routes.error_handlers import create_user_error_response
+from routes.validation_helpers import get_run, get_run_id, get_task_id
 
 runs_bp = Blueprint("runs", __name__)
 
@@ -56,12 +56,12 @@ def delete_run(run_id):
         if current_user.is_authenticated:
             user_id = str(current_user.id)
             run = mongo.db.runs.find_one({"_id": run_id_obj, "user_id": user_id})
-
         else:
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
             run = mongo.db.runs.find_one({"_id": run_id_obj, "session_id": session_id})
+
         if not run:
             return jsonify({"error": "Run not found"}), 404
 
@@ -83,8 +83,7 @@ def init_run_id():
     """
     Initialize a new pipeline run in the database.
 
-    Sets initial status to "pending" and records creation timestamp
-    along with id of the initializing user.
+    Sets initial status to "pending" and records creation timestamp.
 
     :returns: JSON object with new run_id.
     :rtype: flask.Response
@@ -188,6 +187,9 @@ def get_pipeline_run(run_id):
             "output_path": run.get("output_path", ""),
             "user_id": run.get("user_id", "unknown"),
         }
+        # Include error_message if status is failure
+        if run.get("status") == "failure" and run.get("error_message"):
+            formatted_run["error_message"] = run.get("error_message")
         return jsonify(formatted_run), 200
 
     except Exception as e:
@@ -245,8 +247,7 @@ def get_run_file(run_id, filename):
             return jsonify({"error": "Unsupported file type"}), 400
 
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return create_user_error_response(e, "submission")
 
 
 @runs_bp.route("/api/runs/<run_id_str>/files", methods=["GET"])
@@ -268,25 +269,37 @@ def get_run_files(run_id_str):
     """
     try:
         if not run_id_str:
-            return jsonify({"error": "Invalid run ID"}), 400
+            return jsonify(
+                {"error": "The run ID you provided is not valid. Please check and try again."}
+            ), 400
         try:
             run_id = ObjectId(run_id_str)
-        except Exception:
-            traceback.print_exc()
-            return jsonify({"error": "Invalid run ID"}), 400
+        except Exception as e:
+            return create_user_error_response(e, "submission")
 
         # Auth or session check
-        if current_user.is_authenticated:
-            query = {"_id": run_id, "user_id": str(current_user.id)}
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": run_id, "session_id": session_id}
+        run = None
+        try:
+            if current_user.is_authenticated:
+                query = {"_id": run_id, "user_id": str(current_user.id)}
+            else:
+                session_id = session.get("session_id")
+                if not session_id:
+                    return jsonify({"error": "Unauthorized"}), 403
+                query = {"_id": run_id, "session_id": session_id}
 
-        run = mongo.db.runs.find_one(query)
+            run = mongo.db.runs.find_one(query)
+        except Exception as e:
+            # Database errors should return 500
+            return create_user_error_response(e, "submission")
+
         if not run:
-            return jsonify({"error": "Run not found"}), 404
+            # If run doesn't exist, return 404 (this is expected behavior)
+            return jsonify(
+                {
+                    "error": "The run you're looking for doesn't exist or you don't have permission to access it."
+                }
+            ), 404
 
         output_dir = run["output_path"]
         files = []
@@ -318,8 +331,7 @@ def get_run_files(run_id_str):
         return jsonify(files), 200
 
     except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+        return create_user_error_response(e, "submission")
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):

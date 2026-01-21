@@ -1,3 +1,4 @@
+from bson.errors import InvalidId
 from bson import ObjectId
 from extensions import mongo
 from flask_login import current_user
@@ -7,11 +8,11 @@ from flask import Response, abort, session
 
 def get_run_id(run_id_str: str) -> ObjectId:
     if not run_id_str:
-        abort(Response("Error: Invalid run ID", 400))
+        raise InvalidId
     try:
         run_id = ObjectId(run_id_str)
     except Exception:
-        abort(Response("Error: Invalid run ID", 400))
+        raise InvalidId
     return run_id
 
 
