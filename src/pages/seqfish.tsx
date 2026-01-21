@@ -1,5 +1,5 @@
 import seqfish_schema from "../../flask/routes/runners/schemas/seqfish.schema.json";
-import Pipeline_Template from "./pipelineTemplate";
+import PipelineTemplate from "./pipelineTemplate";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/tabs";
 
@@ -125,7 +125,7 @@ const uiSchema: UiSchema = {
 const Seqfish: React.FC = () => {
     return (
         <>
-            <Pipeline_Template
+            <PipelineTemplate
                 pipeline="seqfish"
                 title="Seqfish+ Probe Designer"
                 schema={schema}

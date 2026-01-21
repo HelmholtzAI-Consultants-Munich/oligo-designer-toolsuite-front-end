@@ -1,5 +1,5 @@
 import oligoseq_schema from "../../flask/routes/runners/schemas/oligoseq.schema.json";
-import Pipeline_Template from "./pipelineTemplate";
+import PipelineTemplate from "./pipelineTemplate";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/tabs";
 
@@ -84,7 +84,7 @@ const uiSchema: UiSchema = {
 const Oligoseq: React.FC = () => {
     return (
         <>
-            <Pipeline_Template
+            <PipelineTemplate
                 pipeline="oligoseq"
                 title="OligoSeq Probe Designer"
                 schema={schema}
