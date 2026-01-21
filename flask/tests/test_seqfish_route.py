@@ -15,8 +15,7 @@ def dummy_form(run_id):
     form_path = os.path.join(os.path.dirname(__file__), "data/seqfish_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    form["runid"] = run_id
-    print(1, run_id)
+    form["runid"] = str(run_id)
     return form
 
 
