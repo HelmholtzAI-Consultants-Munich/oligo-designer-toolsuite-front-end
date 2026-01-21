@@ -1,4 +1,4 @@
-import type { FastaForm, FileState, Status } from "./types";
+import type { FastaForm, FileState, RJSFFormData, Status } from "./types";
 import { copyToClipboard, createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
@@ -27,7 +27,7 @@ export const allFilesUploaded = (files: any, required_files: string[]) => {
     return uploaded;
 };
 
-export const uploadFiles = async (files: any, formData: any) => {
+export const uploadFiles = async (files: any, formData: RJSFFormData) => {
     for (const key in files) {
         if (files[key]) {
             for (const file of files[key]) {
@@ -117,7 +117,7 @@ export const getRequiredFiles = (pipeline: string) => {
 
 export const handleSubmit = async (
     runStatus: Status,
-    setRunStatus: React.Dispatch<React.SetStateAction<typeof runStatus>>,
+    setRunStatus: React.Dispatch<React.SetStateAction<Status>>,
     setRunId: React.Dispatch<React.SetStateAction<string | null>>,
 
     setModal: React.Dispatch<
@@ -128,31 +128,31 @@ export const handleSubmit = async (
         }>
     >,
     files: FileState,
-    formData: FormData,
+    formData: RJSFFormData,
     setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>,
     pipeline: string
 ) => {
     if (runStatus !== "idle") return;
     setRunStatus("submitting");
     setRunId(null);
-    await uploadFiles(files, formData);
 
     if (!allFilesUploaded(files, getRequiredFiles(pipeline))) {
         setModal({
             show: true,
-            title: "Pipeline Failed",
+            title: "Submission Failed",
             body: `Please upload all required files before submitting.`,
         });
         setRunStatus("idle");
         return;
     }
+    await uploadFiles(files, formData);
 
     const newId = await createRunId();
     if (!newId) {
         setModal({
             show: true,
             title: "Pipeline Failed",
-            body: `The pipeline has failed to create a new run.`,
+            body: `Our servers have failed to create a new run.`,
         });
         setRunStatus("idle");
         return;
@@ -186,6 +186,10 @@ export const handleSubmit = async (
             body: errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
         });
     } finally {
+        // remove uploaded filepaths added in uploadFiles
+        for (const key in files) {
+            formData[key] = [];
+        }
         setRunStatus("idle");
     }
 };
