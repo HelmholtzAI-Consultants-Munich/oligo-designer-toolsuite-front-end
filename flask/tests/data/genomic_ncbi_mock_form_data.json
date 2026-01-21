@@ -1,0 +1,18 @@
+{
+  "source": "NCBI",
+  "source_params": {
+    "taxon": "9606",
+    "species": "Homo_sapiens",
+    "annotation_release": "110"
+  },
+  "genomic_regions": {
+    "gene": "true",
+    "intergenic": "false",
+    "exon": "true",
+    "exon_exon_junction": "false",
+    "utr": "false",
+    "cds": "false",
+    "intron": "false"
+  },
+  "exon_exon_junction_block_size": "75"
+}

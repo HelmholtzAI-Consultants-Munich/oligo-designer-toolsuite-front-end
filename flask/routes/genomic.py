@@ -39,15 +39,15 @@ def _validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | No
 
     if not form_data:
         raise ValueError("Invalid input: form data is required")
-    if "source" not in form_data or "value" not in form_data.get("source", {}):
+    if "source" not in form_data:
         raise ValueError("Invalid input: source is required")
-    if form_data["source"]["value"] not in allowed_sources:
+    if form_data["source"] not in allowed_sources:
         raise ValueError(
             f"Invalid input: source must be one of {', '.join(repr(s) for s in allowed_sources)}"
         )
     if "genomic_regions" not in form_data:
         raise ValueError("Invalid input: genomic_regions is required")
-    if form_data["source"]["value"] == "Custom" and not form_data.get("file_regions", {}).get("value"):
+    if form_data["source"] == "Custom" and "file_regions" not in form_data:
         raise ValueError("Invalid input: file_regions is required for Custom source")
 
 

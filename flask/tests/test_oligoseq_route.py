@@ -61,7 +61,7 @@ def test_oligoseq_route_propagates_pipeline_runner_errors(client, run_id, authen
     """Test oligoseq route propagates PipelineRunner errors correctly."""
     # Test with empty run ID to trigger PipelineRunner error
     form_with_empty_runid = {
-        "formdata": {"file_regions": {"value": "Gene1"}},
+        "formdata": {"file_regions": "Gene1"},
         "runid": "",
     }
 

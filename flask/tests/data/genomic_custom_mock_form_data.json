@@ -1,0 +1,13 @@
+{
+  "source": "Custom",
+  "file_regions": "test.fna",
+  "genomic_regions": {
+    "gene": "true",
+    "intergenic": "false",
+    "exon": "false",
+    "exon_exon_junction": "false",
+    "utr": "false",
+    "cds": "false",
+    "intron": "false"
+  }
+}
