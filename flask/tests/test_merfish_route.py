@@ -34,8 +34,6 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    # Actual pipeline execution by a worker is mocked
-
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()
     assert data["state"] == "success"
@@ -55,8 +53,6 @@ def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
-
-    # Actual pipeline execution by a worker is mocked
 
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()

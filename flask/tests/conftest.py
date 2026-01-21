@@ -1,3 +1,12 @@
+"""
+This file configures reusable code blocks ("fixtures") that can be used by tests for setup and utility functions.
+
+Important Note:
+    Pytest currently only tests code that is part of the Flask server.
+    The Celery worker, including the actual pipeline execution using ODT, is not being tested.
+    Instead, the function calls used to start tasks on Celery workers is mocked.
+"""
+
 import os
 import sys
 from unittest.mock import patch
