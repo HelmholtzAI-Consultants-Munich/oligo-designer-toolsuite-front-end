@@ -66,7 +66,9 @@ const RunDetail = () => {
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
-    const [genomicRegions, setGenomicRegions] = useState<{ [key: string]: GenomicRegions } | null>(null);
+    const [genomicRegions, setGenomicRegions] = useState<{
+        [key: string]: GenomicRegions;
+    } | null>(null);
 
     const definition = ComponentDefinition[
         pipeline as keyof typeof ComponentDefinition
@@ -137,7 +139,9 @@ const RunDetail = () => {
                     { withCredentials: true, responseType: "text" }
                 )
                 .then((response) => {
-                    const regions = YAML.load(response.data) as { [key: string]: GenomicRegions };
+                    const regions = YAML.load(response.data) as {
+                        [key: string]: GenomicRegions;
+                    };
                     setGenomicRegions(regions);
                 })
                 .catch((error) => {
@@ -834,7 +838,11 @@ const RunDetail = () => {
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
                                             genomicRegions={
-                                                genomicRegions ? genomicRegions[selectedGene] : null
+                                                genomicRegions
+                                                    ? genomicRegions[
+                                                          selectedGene
+                                                      ]
+                                                    : null
                                             }
                                         />
                                     </div>
