@@ -3,7 +3,12 @@ import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 import Navbar from "../modules/nav";
-import type { FileState, Status, Modal } from "../components/types";
+import type {
+    FileState,
+    Status,
+    Modal,
+    RJSFFormData,
+} from "../components/types";
 import { handleSubmit } from "../components/helpers";
 import FieldTemplate from "../components/fieldTemplate";
 import { TabsLayout } from "../components/tabs";
@@ -25,7 +30,7 @@ const Pipeline_Template: React.FC<Props> = ({
     schema,
     uiSchema,
 }) => {
-    const [formData, setFormData] = useState<FormData>(new FormData());
+    const [formData, setFormData] = useState<RJSFFormData>({});
     const validator = customizeValidator({ AjvClass: Ajv2020 });
 
     const [files, setFiles] = useState<FileState>({
