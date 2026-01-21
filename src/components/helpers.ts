@@ -164,7 +164,7 @@ export const handleSubmit = async (
     try {
         setRunStatus("running");
 
-        const response = await axios.post(
+        await axios.post(
             `http://localhost:5000/api/${pipeline}`,
             { formdata: formData, runid: newId },
             {
