@@ -1,3 +1,5 @@
+import json
+import os
 import pytest
 
 from conftest import assert_error_sanitized
@@ -5,42 +7,26 @@ from conftest import assert_error_sanitized
 
 @pytest.fixture
 def dummy_form_ncbi():
-    return {
-        "source": {"value": "NCBI"},
-        "source_params": {
-            "taxon": {"value": "9606"},
-            "species": {"value": "Homo_sapiens"},
-            "annotation_release": {"value": "110"},
-        },
-        "genomic_regions": {
-            "gene": {"value": "true"},
-            "intergenic": {"value": "false"},
-            "exon": {"value": "true"},
-            "exon_exon_junction": {"value": "false"},
-            "utr": {"value": "false"},
-            "cds": {"value": "false"},
-            "intron": {"value": "false"},
-        },
-        "exon_exon_junction_block_size": {"value": "75"},
-    }
+    form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ncbi_mock_form_data.json")
+    with open(form_path) as f:
+        form = json.load(f)
+    return form
 
 
 @pytest.fixture
 def dummy_form_ensembl():
-    return {
-        "source": {"value": "Ensembl"},
-        "source_params": {"species": {"value": "Mus_musculus"}, "annotation_release": {"value": "110"}},
-        "genomic_regions": {
-            "gene": {"value": "true"},
-            "intergenic": {"value": "false"},
-            "exon": {"value": "true"},
-            "exon_exon_junction": {"value": "false"},
-            "utr": {"value": "false"},
-            "cds": {"value": "false"},
-            "intron": {"value": "false"},
-        },
-        "exon_exon_junction_block_size": {"value": "75"},
-    }
+    form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ensembl_mock_form_data.json")
+    with open(form_path) as f:
+        form = json.load(f)
+    return form
+
+
+@pytest.fixture
+def dummy_form_custom():
+    form_path = os.path.join(os.path.dirname(__file__), "data/genomic_custom_mock_form_data.json")
+    with open(form_path) as f:
+        form = json.load(f)
+    return form
 
 
 def test_genomic_cascaded_ncbi(client, dummy_form_ncbi, mock_run, authenticated_user):
@@ -132,7 +118,7 @@ def _assert_genomic_error_response(
 
 def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user):
     """Test genomic_cascaded_ncbi with invalid input returns sanitized error."""
-    invalid_form = {"source": {"value": "Invalid"}}
+    invalid_form = {"source": "Invalid"}
 
     response = client.post("/api/genomic/cascaded/ncbi", json=invalid_form)
     _assert_genomic_error_response(
@@ -159,7 +145,7 @@ def test_genomic_cascaded_ncbi_subprocess_failure(client, dummy_form_ncbi, authe
 
 def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
     """Test genomic_cascaded_ensembl with invalid input returns sanitized error."""
-    invalid_form = {"source": {"value": "Invalid"}}
+    invalid_form = {"source": "Invalid"}
 
     response = client.post("/api/genomic/cascaded/ensembl", json=invalid_form)
     _assert_genomic_error_response(
@@ -185,7 +171,7 @@ def test_genomic_cascaded_ensembl_subprocess_failure(client, dummy_form_ensembl,
 
 def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
     """Test genomic_cascaded_custom with invalid input returns sanitized error."""
-    invalid_form = {"source": {"value": "Custom"}, "file_regions": {"value": ""}}
+    invalid_form = {"source": "Custom", "file_regions": ""}
 
     response = client.post("/api/genomic/cascaded/custom", json=invalid_form)
     _assert_genomic_error_response(
@@ -196,26 +182,12 @@ def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
     )
 
 
-def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user):
+def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user, dummy_form_custom):
     """Test genomic_cascaded_custom with subprocess failure returns sanitized error."""
     from unittest.mock import patch
 
-    custom_form = {
-        "source": {"value": "Custom"},
-        "file_regions": {"value": "test.fna"},
-        "genomic_regions": {
-            "gene": {"value": "true"},
-            "intergenic": {"value": "false"},
-            "exon": {"value": "false"},
-            "exon_exon_junction": {"value": "false"},
-            "utr": {"value": "false"},
-            "cds": {"value": "false"},
-            "intron": {"value": "false"},
-        },
-    }
-
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
-        response = client.post("/api/genomic/cascaded/custom", json=custom_form)
+        response = client.post("/api/genomic/cascaded/custom", json=dummy_form_custom)
         _assert_genomic_error_response(
             response,
             expected_status_codes=500,
@@ -239,7 +211,7 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
         with patch("routes.genomic._prepare_ncbi_cached_assets", side_effect=exc):
             response = client.post(
                 "/api/genomic/cascaded/ncbi",
-                json={"source": {"value": "NCBI"}, "genomic_regions": {"gene": {"value": "true"}}},
+                json={"source": "NCBI", "genomic_regions": {"gene": "true"}},
             )
             data = response.get_json()
             assert data["status"] == "error"

@@ -240,8 +240,8 @@ def mock_schema():
 def form_data():
     """Create test form data for PipelineRunner tests."""
     return {
-        "file_regions": {"value": ""},
-        "test_param": {"value": "123"},
+        "file_regions": "",
+        "test_param": "123",
     }
 
 

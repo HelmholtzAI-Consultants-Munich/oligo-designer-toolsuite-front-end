@@ -149,8 +149,8 @@ class TestPipelineRunnerErrors:
             user_dir.mkdir(parents=True)
 
             form_data_with_regions = {
-                "file_regions": {"value": "gene1,gene2,gene3"},
-                "test_param": {"value": "123"},
+                "file_regions": "gene1,gene2,gene3",
+                "test_param": "123",
             }
 
             with patch("tempfile.NamedTemporaryFile", side_effect=PermissionError("Cannot create temp file")):
