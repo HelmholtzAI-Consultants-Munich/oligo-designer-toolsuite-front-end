@@ -2,7 +2,6 @@ import os
 import uuid
 
 from flask import Blueprint, current_app, jsonify, request
-from routes.validation_helpers import get_run, get_run_id
 
 # Blueprint for all upload-related endpoints
 upload_bp = Blueprint("upload", __name__)
@@ -51,21 +50,11 @@ def upload_file():
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
-    # Step 2.1: Read run ID from request
-    run_id_str = request.form["runid"]
-    # Validation
-    run_id = get_run_id(run_id_str)
-    _ = get_run(run_id)
-
-    # Step 2.2: Create run-specific upload directory if it does not exist already
-    upload_path = os.path.join(current_app.config["UPLOAD_PATH"], run_id_str)
-    os.makedirs(upload_path, exist_ok=True)
-
     # Step 3: Generate a unique filename by prefixing with a UUID
     unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
 
     # Step 4: Build the full path in the uploads directory (from Flask app config)
-    file_path = os.path.join(upload_path, unique_filename)
+    file_path = os.path.join(current_app.config["UPLOAD_PATH"], unique_filename)
 
     # Step 5: Save the file to disk
     file.save(file_path)

@@ -134,7 +134,7 @@ def start_pipeline(pipeline_name: str):
 
     form_data = json.get("formdata")  # Form data from React
 
-    upload_path = os.path.join(current_app.config["UPLOAD_PATH"], run_id_str)
+    upload_path = current_app.config["UPLOAD_PATH"]
 
     # User Directory and Session / User ID Logic
     try:

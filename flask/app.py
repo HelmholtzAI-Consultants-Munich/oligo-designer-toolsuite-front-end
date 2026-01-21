@@ -11,6 +11,12 @@ from flask import Flask
 
 
 def prepare_paths(app: Flask):
+    """Extract and expand relative path definitions in the app's config.
+
+    The initial config contains relative paths which this functions expands to their full absolute paths.
+    The "data access" path points to the directory assumed to be shared by the Flask server and Celery workers.
+    All other relative paths are relative to this directory.
+    """
     relative_data_access_path_key = "RELATIVE_DATA_ACCESS_PATH"
     relative_to_data_access_keys = ["RELATIVE_UPLOAD_PATH", "RELATIVE_USERDATA_PATH"]
 

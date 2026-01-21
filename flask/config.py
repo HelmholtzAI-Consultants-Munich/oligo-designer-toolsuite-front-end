@@ -78,7 +78,7 @@ class Config:
         broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
         result_backend: str = os.environ.get("CELERY_MONGO_URI", "mongodb://localhost:27017/")
         task_track_started: bool = True
-        task_compressen: str = "zlib"
+        task_compression: str = "zlib"
         result_compression: str = "zlib"
         result_expires: timedelta = timedelta(weeks=1)  # non-polled results will be dropped
         worker_send_task_events: bool = True  # enable events to be monitored by Flower
