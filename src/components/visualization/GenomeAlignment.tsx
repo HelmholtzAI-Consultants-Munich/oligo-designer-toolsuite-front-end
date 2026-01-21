@@ -6,9 +6,11 @@ type Props = {
     oligos: Oligo[];
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
-    genomicRegions: GenomicRegions;
+    genomicRegions: GenomicRegions | null;
 };
 
+// This component mainly serves as a wrapper for the D3 visualization.
+// It forwards the React lifecycle methods to the D3 module.
 class GenomeAlignment extends React.Component<Props> {
     private el: SVGSVGElement | null = null;
 
@@ -16,18 +18,31 @@ class GenomeAlignment extends React.Component<Props> {
         GenomeAlignmentD3.create(
             this.el!,
             this.props.oligos,
-            this.props.genomicRegions,
+            this.props.genomicRegions || {},
             this.props.selectedOligo,
             this.props.setSelectedOligo
         );
     }
 
-    componentDidUpdate() {
-        GenomeAlignmentD3.update(
-            this.el!,
-            this.props.oligos,
-            this.props.selectedOligo
-        );
+    componentDidUpdate(prevProps: Props) {
+        // If genomicRegions changed, recreate the entire visualization
+        if (prevProps.genomicRegions !== this.props.genomicRegions) {
+            GenomeAlignmentD3.destroy(this.el!);
+            GenomeAlignmentD3.create(
+                this.el!,
+                this.props.oligos,
+                this.props.genomicRegions || {},
+                this.props.selectedOligo,
+                this.props.setSelectedOligo
+            );
+        } else {
+            // Otherwise just update the selection
+            GenomeAlignmentD3.update(
+                this.el!,
+                this.props.oligos,
+                this.props.selectedOligo
+            );
+        }
     }
 
     componentWillUnmount() {
@@ -35,13 +50,19 @@ class GenomeAlignment extends React.Component<Props> {
     }
 
     render() {
+        if (!this.props.genomicRegions) {
+            return <p>Genomic regions data is not available. Try reloading the page.</p>;
+        }
         return (
             <>
+                {/* SVG element for D3 to hook into */}
                 <svg
                     ref={(el) => {
                         this.el = el;
                     }}
                 ></svg>
+
+                {/* Legend and strand information */}
                 <div className="container mt-2 mb-4">
                     <div className="row">
                         <div className="col col-auto">
@@ -50,7 +71,7 @@ class GenomeAlignment extends React.Component<Props> {
                         {Object.keys(regionColors)
                             .filter((type) => {
                                 return Object.values(
-                                    this.props.genomicRegions
+                                    this.props.genomicRegions!
                                 ).some((regions) =>
                                     regions.some(
                                         (region) => region.regiontype === type

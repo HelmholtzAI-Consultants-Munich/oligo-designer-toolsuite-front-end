@@ -9,7 +9,7 @@ type Props = {
     pipeline: string;
     selectedOligo: number;
     setSelectedOligo: (index: number) => void;
-    genomicRegions: GenomicRegions;
+    genomicRegions: GenomicRegions | null;
 };
 
 const ResultVisualization: React.FC<Props> = ({
