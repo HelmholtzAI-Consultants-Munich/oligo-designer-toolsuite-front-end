@@ -55,9 +55,12 @@ def _parse_uncompressed_checksums(manifest_path):
 
 
 def download_file(ftp_host, remote_dir, filename, local_path):
-        with requests.get(f"https://{ftp_host}/{remote_dir}{filename}", stream=True) as r, open(local_path,mode="wb") as file:        
-            for chunk in r.iter_content(chunk_size=current_app.config["DOWNLOAD_CHUNK_SIZE"]):
-                file.write(chunk)
+    with (
+        requests.get(f"https://{ftp_host}/{remote_dir}{filename}", stream=True) as r,
+        open(local_path, mode="wb") as file,
+    ):
+        for chunk in r.iter_content(chunk_size=current_app.config["DOWNLOAD_CHUNK_SIZE"]):
+            file.write(chunk)
 
 
 def _ensure_file_with_md5(ftp_host, remote_dir, filename, expected_md5, dst_path):
