@@ -1,3 +1,4 @@
+from collections import defaultdict
 import os
 import subprocess
 import tempfile
@@ -292,73 +293,74 @@ class PipelineRunner:
         print("Generating visualization files...")
         regions_file = form_data.get("file_regions", {}).get("value")
         if not regions_file:
+            print("No regions file provided, skipping visualization generation.")
             return
         genes = []
         with open(regions_file, "r") as rf:
-            for line in rf:
-                line = line.strip()
-                genes.append(line)
+            genes = [line.strip() for line in rf]
         fasta_paths = form_data.get("files_fasta_target_probe_database", {}).get("value")
-        print("Fasta path for visualization:", fasta_paths)
         if not fasta_paths:
+            print("No fasta files provided, skipping visualization generation.")
             return
         
-        regions = {gene: {} for gene in genes}
+        regions = {gene: defaultdict(list) for gene in genes}
 
         fasta_parser = FastaParser()
         fasta_files = split_on_newline(fasta_paths)
         for fname in fasta_files:
-            if os.path.exists(fname):
-                seq_record = SeqIO.index(fname, "fasta")
-                for idx in seq_record:
-                    region_name, additional_info, coordinates = fasta_parser.parse_fasta_header(idx)
-                    gene = region_name.lstrip(">")
-                    record = seq_record[idx]
+            if not os.path.exists(fname):
+                print(f"Fasta file {fname} not found, skipping.")
+                continue
+            seq_record = SeqIO.index(fname, "fasta")
+            for idx in seq_record:
+                region_name, additional_info, coordinates = fasta_parser.parse_fasta_header(idx)
+                gene = region_name.lstrip(">")
+                record = seq_record[idx]
 
-                    if gene in genes:
-                        transcript_ids = additional_info.get('transcript_id', ['transcript_unknown'])
-                        for transcript_index, transcript_id in enumerate(transcript_ids):
-                            if not transcript_id in regions[gene]:
-                                regions[gene][transcript_id] = []
+                if not gene in genes:
+                    continue
+                transcript_ids = additional_info.get('transcript_id', ['transcript_unknown'])
+                for transcript_index, transcript_id in enumerate(transcript_ids):
+                    region_type = additional_info['regiontype'][0] if 'regiontype' in additional_info else 'unknown'
+                    total_sequence = str(record.seq)
+                    starts = coordinates['start']
+                    ends = coordinates['end']
+                    start_ends = list(zip(starts, ends))
+                    start_ends.sort(key=lambda x: x[0]) # sort by start position
+                    for i, (start, end) in enumerate(start_ends):
+                        # assume start < end
+                        sequence, total_sequence = total_sequence[: end - start + 1], total_sequence[end - start + 1 :]
+                        regions[gene][transcript_id].append({
+                            "regiontype": region_type,
+                            "exon_number": additional_info['exon_number'][transcript_index] if 'exon_number' in additional_info else None,
+                            "sequence": sequence,
+                            "start": start,
+                            "end": end,
+                            "chromosome": coordinates['chromosome'][i],
+                            "strand": coordinates['strand'][i],
+                        })
 
-                            region_type = additional_info['regiontype'][0] if 'regiontype' in additional_info else 'unknown'
-                            total_sequence = str(record.seq)
-                            starts = coordinates['start']
-                            ends = coordinates['end']
-                            start_ends = list(zip(starts, ends))
-                            start_ends.sort(key=lambda x: x[0]) # sort by start position
-                            for i, (start, end) in enumerate(start_ends):
-                                # assume start < end
-                                sequence, total_sequence = total_sequence[: end - start + 1], total_sequence[end - start + 1 :]
-                                regions[gene][transcript_id].append({
-                                    "regiontype": region_type,
-                                    "exon_number": additional_info['exon_number'][transcript_index] if 'exon_number' in additional_info else None,
-                                    "sequence": sequence,
-                                    "start": start,
-                                    "end": end,
-                                    "chromosome": coordinates['chromosome'][i],
-                                    "strand": coordinates['strand'][i],
-                                })
-
-                            if region_type == 'exonexonjunction':
-                                # add introns between exons
-                                for j in range(len(start_ends) - 1):
-                                    intron_start = start_ends[j][1] + 1
-                                    intron_end = start_ends[j + 1][0] - 1
-                                    regions[gene][transcript_id].append({
-                                        "regiontype": "intron",
-                                        "exon_number": None,
-                                        "sequence": None,
-                                        "start": intron_start,
-                                        "end": intron_end,
-                                        "chromosome": coordinates['chromosome'][0],
-                                        "strand": coordinates['strand'][0],
-                                    })
+                    if region_type == 'exonexonjunction':
+                        # add introns between exons
+                        for j in range(len(start_ends) - 1):
+                            intron_start = start_ends[j][1] + 1
+                            intron_end = start_ends[j + 1][0] - 1
+                            regions[gene][transcript_id].append({
+                                "regiontype": "intron",
+                                "exon_number": None,
+                                "sequence": None,
+                                "start": intron_start,
+                                "end": intron_end,
+                                "chromosome": coordinates['chromosome'][0],
+                                "strand": coordinates['strand'][0],
+                            })
         
         # write regions to a temp file in user_dir
+        # convert defaultdict to normal dict for yaml serialization
+        regions_dict = {gene: dict(transcripts) for gene, transcripts in regions.items()}
         vis_path = os.path.join(context["output_path"], f"genomic_regions.yaml")
         with open(vis_path, "w") as vis_file:
-            yaml.dump(regions, vis_file)
+            yaml.dump(regions_dict, vis_file)
                         
 
     def cleanup_temp_files(self, form_data: dict) -> None:

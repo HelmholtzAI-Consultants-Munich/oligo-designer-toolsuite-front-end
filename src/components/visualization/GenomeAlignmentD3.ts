@@ -13,6 +13,7 @@ export const regionColors: { [key: string]: { color: string; label: string } } =
         unknown: { color: "lightgray", label: "Unknown" },
     };
 
+// Collect one base per position from genomic regions within the specified range
 const collectReferenceBases = (
     regions: GenomicRegions,
     start: number,
@@ -34,7 +35,7 @@ const collectReferenceBases = (
             return; // beyond desired end
         }
 
-        // Start from the max of collectingPosition and region.start
+        // Start collecting from the max of current collecting position or region start
         const regionStartPos = Math.max(collectingPosition, region.start);
         for (let pos = regionStartPos; pos <= region.end && pos <= end; pos++) {
             bases.push({
@@ -56,17 +57,12 @@ const GenomeAlignmentD3 = {
         selectedOligo: number,
         setSelectedOligo: (index: number) => void
     ) => {
+        // Set up SVG dimensions and scales
         const width = 800;
         const height = 200;
         const margin = 20;
         const innerWidth = width - margin * 2;
         const innerHeight = height - margin * 2;
-
-        const oligoPositions = oligos.map((oligo) => ({
-            start: oligo.start[0][0],
-            end: oligo.end[0][0],
-            id: oligo.oligo_id,
-        }));
 
         const svg = d3.select(el) as d3.Selection<
             Element,
@@ -80,6 +76,14 @@ const GenomeAlignmentD3 = {
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;");
 
+        // Prepare oligo positions
+        const oligoPositions = oligos.map((oligo) => ({
+            start: oligo.start[0][0],
+            end: oligo.end[0][0],
+            id: oligo.oligo_id,
+        }));
+
+        // Define x scale based on combined extent of oligos and genomic regions
         const ext = d3.extent([
             ...oligoPositions.flatMap((d) => [d.start, d.end]),
             ...Object.values(genomicRegions)
@@ -92,7 +96,7 @@ const GenomeAlignmentD3 = {
             .range([0, innerWidth]);
         const xAxis = d3.axisBottom(x).ticks(8);
 
-        // Inner plot group with padding
+        // Plot the oligos
         const plot = svg
             .append("g")
             .attr("transform", `translate(${margin},${margin})`);
@@ -102,7 +106,7 @@ const GenomeAlignmentD3 = {
             .selectAll("rect")
             .data(oligoPositions)
             .join("rect")
-            .attr("x", (d) => x(d.start))
+            .attr("x", (d) => x(d.start - 0.5))
             .attr("y", innerHeight * 0.05)
             .attr("width", (d) => x(d.end) - x(d.start))
             .attr("height", innerHeight / 10)
@@ -113,10 +117,11 @@ const GenomeAlignmentD3 = {
                 setSelectedOligo(index);
             });
 
+        // Calculate transcript layout
         const transcriptCount = Object.keys(genomicRegions).length;
         const transcriptHeight = (innerHeight * 0.6) / transcriptCount;
 
-        // Draw genome regions as lines
+        // Draw genomic regions (multiple transcripts)
         const genomeGroup = plot.append("g").attr("class", "genome-regions");
 
         Object.entries(genomicRegions).forEach(([transcriptName, regions]) => {
@@ -129,13 +134,13 @@ const GenomeAlignmentD3 = {
                 .append("g")
                 .attr("transform", `translate(0, ${yOffset})`);
 
-            // Regions
+            // Draw a (bold) line for each region
             tGroup
                 .selectAll("line")
                 .data(regions)
                 .join("line")
-                .attr("x1", (d: GenomicRegion) => x(d.start))
-                .attr("x2", (d: GenomicRegion) => x(d.end + 1))
+                .attr("x1", (d: GenomicRegion) => x(d.start - 0.5))
+                .attr("x2", (d: GenomicRegion) => x(d.end + 0.5))
                 .attr("y1", transcriptHeight / 2)
                 .attr("y2", transcriptHeight / 2)
                 .attr(
@@ -166,6 +171,7 @@ const GenomeAlignmentD3 = {
             [innerWidth, innerHeight],
         ];
 
+        // Set up zoom behavior
         svg.call(
             d3
                 .zoom()
@@ -177,19 +183,23 @@ const GenomeAlignmentD3 = {
         );
 
         function zoomed(event: d3.D3ZoomEvent<Element, unknown>) {
-            const zx = event.transform.rescaleX(x); // zoomed scale
+            // Rescale x axis
+            const zx = event.transform.rescaleX(x);
+
+            // Rescale oligos
             plot.selectAll<SVGRectElement, (typeof oligoPositions)[0]>(
                 ".oligos rect"
             )
-                .attr("x", (d) => zx(d.start))
+                .attr("x", (d) => zx(d.start - 0.5))
                 .attr("width", (d) => zx(d.end) - zx(d.start));
             gX.call(xAxis.scale(zx));
 
+            // Rescale genomic regions
             genomeGroup
                 .selectAll("g")
                 .selectAll<SVGLineElement, GenomicRegion>("line")
-                .attr("x1", (d) => zx(d.start))
-                .attr("x2", (d) => zx(d.end + 1));
+                .attr("x1", (d) => zx(d.start - 0.5))
+                .attr("x2", (d) => zx(d.end + 0.5));
 
             // Calculate visible range
             const domain = zx.domain();
@@ -210,14 +220,14 @@ const GenomeAlignmentD3 = {
                 )
                 .data(bases)
                 .join("text")
-                .attr("x", (d) => zx(d.position + 0.5))
+                .attr("x", (d) => zx(d.position))
                 .attr("y", innerHeight - 10)
                 .attr("font-size", 10)
                 .attr("text-anchor", "middle")
                 .text((d) => d.char);
         }
 
-        // prevent scrolling then apply the default filter
+        // Prevent scrolling the whole page when zooming inside the SVG
         function filter(event: d3.D3ZoomEvent<Element, unknown>) {
             event.sourceEvent?.preventDefault();
             return (
@@ -230,12 +240,14 @@ const GenomeAlignmentD3 = {
     },
 
     update: (el: Element, oligos: Oligo[], selectedOligo: number) => {
+        // Prepare oligo positions
         const oligoPositions = oligos.map((oligo) => ({
             start: oligo.start[0][0],
             end: oligo.end[0][0],
             id: oligo.oligo_id,
         }));
 
+        // Select the SVG element
         const svg = d3.select(el) as d3.Selection<
             Element,
             unknown,
@@ -243,6 +255,7 @@ const GenomeAlignmentD3 = {
             unknown
         >;
 
+        // Update oligo colors based on selection
         svg.selectAll<SVGRectElement, (typeof oligoPositions)[0]>(
             ".oligos rect"
         )
@@ -254,6 +267,7 @@ const GenomeAlignmentD3 = {
     },
 
     destroy: (el: Element) => {
+        // Clean up the SVG element
         d3.select(el).selectAll("*").remove();
     },
 };

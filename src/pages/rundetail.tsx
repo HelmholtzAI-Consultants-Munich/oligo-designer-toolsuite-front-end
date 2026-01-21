@@ -7,7 +7,7 @@ import type { SingleValue } from "react-select";
 import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import type { Oligo } from "../types";
+import type { GenomicRegions, Oligo } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 
@@ -66,7 +66,7 @@ const RunDetail = () => {
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
-    const [genomicRegions, setGenomicRegions] = useState<any>({});
+    const [genomicRegions, setGenomicRegions] = useState<{ [key: string]: GenomicRegions } | null>(null);
 
     const definition = ComponentDefinition[
         pipeline as keyof typeof ComponentDefinition
@@ -137,7 +137,7 @@ const RunDetail = () => {
                     { withCredentials: true, responseType: "text" }
                 )
                 .then((response) => {
-                    const regions = YAML.load(response.data);
+                    const regions = YAML.load(response.data) as { [key: string]: GenomicRegions };
                     setGenomicRegions(regions);
                 })
                 .catch((error) => {
@@ -145,6 +145,7 @@ const RunDetail = () => {
                         "Error fetching genomic regions file:",
                         error
                     );
+                    setGenomicRegions(null);
                     return null;
                 });
         },
@@ -163,7 +164,6 @@ const RunDetail = () => {
                         withCredentials: true,
                     }
                 );
-                console.log("Polled files:", response.data);
                 setFiles(response.data);
 
                 const runResponse = await axios.get(
@@ -834,8 +834,7 @@ const RunDetail = () => {
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
                                             genomicRegions={
-                                                genomicRegions[selectedGene] ||
-                                                []
+                                                genomicRegions ? genomicRegions[selectedGene] : null
                                             }
                                         />
                                     </div>
