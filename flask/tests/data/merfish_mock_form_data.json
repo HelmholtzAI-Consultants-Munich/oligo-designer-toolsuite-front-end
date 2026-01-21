@@ -1,0 +1,199 @@
+{
+  "formdata": {
+    "n_jobs": 4,
+    "dir_output": "output_merfish_probe_designer",
+    "write_intermediate_steps": true,
+    "top_n_sets": 3,
+    "file_regions": "AARS1",
+    "files_fasta_target_probe_database": [
+      "/app/uploads/df11d532ac2c4fb6b4e8c5d01c474950_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ],
+    "files_fasta_reference_database_target_probe": [
+      "/app/uploads/dca53b479de346b9ba3be747975323b0_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ],
+    "target_probe_length_min": 30,
+    "target_probe_length_max": 30,
+    "target_probe_isoform_consensus": 50,
+    "target_probe_GC_content_min": 43,
+    "target_probe_GC_content_opt": 55,
+    "target_probe_GC_content_max": 63,
+    "target_probe_homopolymeric_base_n": { "A": 6, "T": 6, "C": 6, "G": 6 },
+    "target_probe_GC_weight": 1,
+    "set_size_min": 50,
+    "set_size_opt": 50,
+    "distance_between_target_probes": 0,
+    "n_sets": 100,
+    "max_graph_size": 5000,
+    "n_attempts": 100000,
+    "heuristic": true,
+    "heuristic_n_attempts": 100,
+    "target_probe_Tm_min": 66,
+    "target_probe_Tm_opt": 72,
+    "target_probe_Tm_max": 76,
+    "target_probe_T_secondary_structure": 76,
+    "target_probe_secondary_structures_threshold_deltaG": 0,
+    "target_probe_isoform_weight": 2,
+    "target_probe_Tm_weight": 1,
+    "files_fasta_reference_database_readout_probe": [
+      "/app/uploads/4f602af6d9864dfb84d60658ceb0a4d7_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ],
+    "readout_probe_base_probabilities": {
+      "A": 0.25,
+      "T": 0.25,
+      "C": 0,
+      "G": 0.5
+    },
+    "readout_probe_length": 20,
+    "readout_probe_GC_content_min": 40,
+    "readout_probe_GC_content_max": 50,
+    "readout_probe_homopolymeric_base_n": { "G": 3 },
+    "readout_probe_set_size": 16,
+    "readout_probe_homogeneous_properties_weights": {
+      "TmNN": 1,
+      "GC_content": 1
+    },
+    "n_bits": 16,
+    "min_hamming_dist": 4,
+    "hamming_weight": 4,
+    "channels_ids": ["Alexa488", "Cy3b", "Alexa647"],
+    "files_fasta_reference_database_primer": [
+      "/app/uploads/80753b6490de4a089a9432229dbba1d2_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ],
+    "reverse_primer_sequence": "CCCTATAGTGAGTCGTATTA",
+    "primer_length": 20,
+    "primer_base_probabilities": { "A": 0.25, "T": 0.25, "C": 0.25, "G": 0.25 },
+    "primer_GC_content_min": 50,
+    "primer_GC_content_max": 65,
+    "primer_number_GC_GCclamp": 1,
+    "primer_number_three_prime_base_GCclamp": 2,
+    "primer_homopolymeric_base_n": { "A": 4, "T": 4, "C": 4, "G": 4 },
+    "primer_max_len_selfcomplement": 6,
+    "primer_max_len_complement_reverse_primer": 5,
+    "primer_Tm_min": 60,
+    "primer_Tm_max": 75,
+    "primer_T_secondary_structure": 76,
+    "primer_secondary_structures_threshold_deltaG": 0,
+    "target_probe_specificity_blastn_search_parameters": {
+      "perc_identity": 80,
+      "strand": "minus",
+      "word_size": 10,
+      "dust": "no",
+      "soft_masking": "false",
+      "max_target_seqs": 10,
+      "max_hsps": 1000
+    },
+    "target_probe_specificity_blastn_hit_parameters": {
+      "min_alignment_length": 17
+    },
+    "target_probe_cross_hybridization_blastn_search_parameters": {
+      "perc_identity": 80,
+      "strand": "minus",
+      "word_size": 7,
+      "dust": "no",
+      "soft_masking": "false",
+      "max_target_seqs": 10
+    },
+    "target_probe_cross_hybridization_blastn_hit_parameters": {
+      "min_alignment_length": 17
+    },
+    "target_probe_Tm_parameters": {
+      "nn_table": "DNA_NN4",
+      "tmm_table": "DNA_TMM1",
+      "imm_table": "DNA_IMM1",
+      "de_table": "DNA_DE1",
+      "dnac1": 5,
+      "dnac2": 0,
+      "saltcorr": 5,
+      "Na": 300,
+      "K": 0,
+      "Tris": 0,
+      "Mg": 0,
+      "dNTPs": 0
+    },
+    "target_probe_Tm_chem_correction_parameters": null,
+    "target_probe_Tm_salt_correction_parameters": null,
+    "readout_probe_initial_num_sequences": 100000,
+    "readout_probe_specificity_blastn_search_parameters": {
+      "perc_identity": 100,
+      "strand": "minus",
+      "word_size": 7,
+      "dust": "no",
+      "soft_masking": "false",
+      "max_target_seqs": 10,
+      "max_hsps": 1000
+    },
+    "readout_probe_specificity_blastn_hit_parameters": {
+      "min_alignment_length": 11
+    },
+    "readout_probe_cross_hybridization_blastn_search_parameters": {
+      "perc_identity": 100,
+      "strand": "minus",
+      "word_size": 7,
+      "dust": "no",
+      "soft_masking": "false",
+      "max_target_seqs": 10
+    },
+    "readout_probe_cross_hybridization_blastn_hit_parameters": {
+      "min_alignment_length": 11
+    },
+    "readout_probe_Tm_parameters": {
+      "nn_table": "DNA_NN4",
+      "tmm_table": "DNA_TMM1",
+      "imm_table": "DNA_IMM1",
+      "de_table": "DNA_DE1",
+      "dnac1": 25,
+      "dnac2": 25,
+      "saltcorr": 5,
+      "Na": 300,
+      "K": 0,
+      "Tris": 0,
+      "Mg": 0,
+      "dNTPs": 0
+    },
+    "readout_probe_Tm_chem_correction_parameters": null,
+    "readout_probe_Tm_salt_correction_parameters": null,
+    "readout_probe_n_combinations": 100000,
+    "primer_initial_num_sequences": 1000000,
+    "primer_specificity_refrence_blastn_search_parameters": {
+      "perc_identity": 100,
+      "strand": "minus",
+      "word_size": 7,
+      "dust": "no",
+      "soft_masking": "false",
+      "max_target_seqs": 10,
+      "max_hsps": 1000
+    },
+    "primer_specificity_refrence_blastn_hit_parameters": {
+      "min_alignment_length": 14
+    },
+    "primer_specificity_encoding_probes_blastn_search_parameters": {
+      "perc_identity": 100,
+      "strand": "minus",
+      "word_size": 7,
+      "dust": "no",
+      "soft_masking": "false",
+      "max_target_seqs": 10,
+      "max_hsps": 1000
+    },
+    "primer_specificity_encoding_probes_blastn_hit_parameters": {
+      "min_alignment_length": 11
+    },
+    "primer_Tm_parameters": {
+      "nn_table": "DNA_NN4",
+      "tmm_table": "DNA_TMM1",
+      "imm_table": "DNA_IMM1",
+      "de_table": "DNA_DE1",
+      "dnac1": 250,
+      "dnac2": 250,
+      "saltcorr": 5,
+      "Na": 300,
+      "K": 0,
+      "Tris": 0,
+      "Mg": 0,
+      "dNTPs": 0
+    },
+    "primer_Tm_chem_correction_parameters": null,
+    "primer_Tm_salt_correction_parameters": null
+  },
+  "runid": "6970eb970afc42f3c0302511"
+}
