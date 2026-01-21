@@ -51,9 +51,6 @@ const PipelineTemplate: React.FC<Props> = ({
     const closeModal = () => {
         setModal({ ...modal, show: false });
     };
-    const widgets = {
-        fileSelection: FileSelection,
-    };
 
     return (
         <>
@@ -92,7 +89,6 @@ const PipelineTemplate: React.FC<Props> = ({
                             FieldTemplate: FieldTemplate,
                             ObjectFieldTemplate: TabsLayout,
                         }}
-                        widgets={widgets}
                         validator={validator}
                         onChange={(e) => setFormData(e.formData)}
                         onSubmit={() =>
