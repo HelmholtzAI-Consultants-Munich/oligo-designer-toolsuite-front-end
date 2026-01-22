@@ -1,4 +1,4 @@
-import seqfish_schema from "../../flask/worker/runners/schemas/seqfish.schema.json";
+import seqfish_schema from "@schemas/seqfish.schema.json";
 import PipelineTemplate from "./pipelineTemplate";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/tabs";

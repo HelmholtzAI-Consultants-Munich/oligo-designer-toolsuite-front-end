@@ -8,10 +8,10 @@ from typing import Any
 
 import yaml
 from celery import Celery
-from helpers import split_commas_and_newlines, split_on_newline, to_bool, to_int, to_null
 
 from Bio import SeqIO
 from oligo_designer_toolsuite.utils import FastaParser
+
 
 class PipelineRunner:
     """
@@ -35,7 +35,8 @@ class PipelineRunner:
     }
 
     def __init__(self, pipeline_name: str, task: Celery.Task):
-        schema_path = os.path.join(os.path.dirname(__file__), f"schemas/{pipeline_name}.schema.json")
+        # TODO: pass root_dir config to worker, use config for absolute path
+        schema_path = os.path.join(os.path.dirname(__file__), f"../../schemas/{pipeline_name}.schema.json")
         with open(schema_path) as f:
             schema = json.load(f)
 
@@ -64,18 +65,16 @@ class PipelineRunner:
         return ok
 
     def populate_temp_file(self, form_data: dict) -> None:
-        if form_data["file_regions"]["value"] != "":
-            if ".txt" not in form_data["file_regions"]["value"]:
+        if form_data["file_regions"] != "":
+            if ".txt" not in form_data["file_regions"]:
                 with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
                     file_path = temp_file.name
                     # Write each gene on a new line
-                    temp_file.writelines(
-                        gene.strip() + "\n" for gene in form_data["file_regions"]["value"].split(",")
-                    )
+                    temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
                 # Update the path in form_data to point to the temp file
-                form_data["file_regions"]["value"] = file_path
+                form_data["file_regions"] = file_path
         else:
-            form_data["file_regions"]["value"] = None
+            form_data["file_regions"] = None
 
     def write_config_file(self, form_data: dict, output_path: str) -> str:
         config = form_data
@@ -110,13 +109,13 @@ class PipelineRunner:
             print("No regions file provided, skipping visualization generation.")
             return
         genes = []
-        with open(regions_file, "r") as rf:
+        with open(regions_file) as rf:
             genes = [line.strip() for line in rf]
         fasta_paths = form_data.get("files_fasta_target_probe_database", [])
         if not fasta_paths:
             print("No fasta files provided, skipping visualization generation.")
             return
-        
+
         regions = {gene: defaultdict(list) for gene in genes}
 
         fasta_parser = FastaParser()
@@ -130,48 +129,59 @@ class PipelineRunner:
                 gene = region_name.lstrip(">")
                 record = seq_record[idx]
 
-                if not gene in genes:
+                if gene not in genes:
                     continue
-                transcript_ids = additional_info.get('transcript_id', ['transcript_unknown'])
+                transcript_ids = additional_info.get("transcript_id", ["transcript_unknown"])
                 for transcript_index, transcript_id in enumerate(transcript_ids):
-                    region_type = additional_info['regiontype'][0] if 'regiontype' in additional_info else 'unknown'
+                    region_type = (
+                        additional_info["regiontype"][0] if "regiontype" in additional_info else "unknown"
+                    )
                     total_sequence = str(record.seq)
-                    starts = coordinates['start']
-                    ends = coordinates['end']
+                    starts = coordinates["start"]
+                    ends = coordinates["end"]
                     start_ends = list(zip(starts, ends))
-                    start_ends.sort(key=lambda x: x[0]) # sort by start position
+                    start_ends.sort(key=lambda x: x[0])  # sort by start position
                     for i, (start, end) in enumerate(start_ends):
                         # assume start < end
-                        sequence, total_sequence = total_sequence[: end - start + 1], total_sequence[end - start + 1 :]
-                        regions[gene][transcript_id].append({
-                            "regiontype": region_type,
-                            "exon_number": additional_info['exon_number'][transcript_index] if 'exon_number' in additional_info else None,
-                            "sequence": sequence,
-                            "start": start,
-                            "end": end,
-                            "chromosome": coordinates['chromosome'][i],
-                            "strand": coordinates['strand'][i],
-                        })
+                        sequence, total_sequence = (
+                            total_sequence[: end - start + 1],
+                            total_sequence[end - start + 1 :],
+                        )
+                        regions[gene][transcript_id].append(
+                            {
+                                "regiontype": region_type,
+                                "exon_number": additional_info["exon_number"][transcript_index]
+                                if "exon_number" in additional_info
+                                else None,
+                                "sequence": sequence,
+                                "start": start,
+                                "end": end,
+                                "chromosome": coordinates["chromosome"][i],
+                                "strand": coordinates["strand"][i],
+                            }
+                        )
 
-                    if region_type == 'exonexonjunction':
+                    if region_type == "exonexonjunction":
                         # add introns between exons
                         for j in range(len(start_ends) - 1):
                             intron_start = start_ends[j][1] + 1
                             intron_end = start_ends[j + 1][0] - 1
-                            regions[gene][transcript_id].append({
-                                "regiontype": "intron",
-                                "exon_number": None,
-                                "sequence": None,
-                                "start": intron_start,
-                                "end": intron_end,
-                                "chromosome": coordinates['chromosome'][0],
-                                "strand": coordinates['strand'][0],
-                            })
-        
+                            regions[gene][transcript_id].append(
+                                {
+                                    "regiontype": "intron",
+                                    "exon_number": None,
+                                    "sequence": None,
+                                    "start": intron_start,
+                                    "end": intron_end,
+                                    "chromosome": coordinates["chromosome"][0],
+                                    "strand": coordinates["strand"][0],
+                                }
+                            )
+
         # write regions to a temp file in user_dir
         # convert defaultdict to normal dict for yaml serialization
         regions_dict = {gene: dict(transcripts) for gene, transcripts in regions.items()}
-        vis_path = os.path.join(output_path, f"genomic_regions.yaml")
+        vis_path = os.path.join(output_path, "genomic_regions.yaml")
         with open(vis_path, "w") as vis_file:
             yaml.dump(regions_dict, vis_file)
 
@@ -199,7 +209,7 @@ class PipelineRunner:
             for fname in files_list:
                 if os.path.exists(fname):
                     os.remove(fname)
-        
+
         if os.path.exists(config_path):
             os.remove(config_path)
             print("deleted config:", config_path)
