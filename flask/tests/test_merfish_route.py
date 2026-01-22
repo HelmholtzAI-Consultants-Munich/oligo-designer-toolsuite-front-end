@@ -85,7 +85,7 @@ def test_merfish_route_propagates_pipeline_runner_errors(client, run_id, authent
     assert_invalid_run_id_error(response)
 
 
-def test_merfish_session_without_directory(client, run_id, dummy_form, mock_run):
+def test_merfish_session_without_directory(client, run_id, dummy_form, mock_celery):
     """Test merfish with existing session creates directory and succeeds."""
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)

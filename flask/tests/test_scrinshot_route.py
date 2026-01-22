@@ -62,7 +62,7 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, sess
     assert updated["status"] == "success"
 
 
-def test_invalid_session(client, dummy_form, mock_run, run_id):
+def test_invalid_session(client, dummy_form, mock_celery, run_id):
     # Ensure run exists with correct session_id
     from conftest import create_test_run
 
@@ -97,7 +97,7 @@ def test_scrinshot_route_propagates_pipeline_runner_errors(client, run_id, authe
     assert_invalid_run_id_error(response)
 
 
-def test_scrinshot_session_without_directory(client, dummy_form, run_id, mock_run):
+def test_scrinshot_session_without_directory(client, dummy_form, run_id, mock_celery):
     """Test scrinshot with existing session creates directory and succeeds."""
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)

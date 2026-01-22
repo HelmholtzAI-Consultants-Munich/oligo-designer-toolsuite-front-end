@@ -231,23 +231,43 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
 
 def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi, mock_run):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
+    from unittest.mock import patch, MagicMock
+
     dummy_form = dummy_form_ncbi
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)
         session["session_id"] = "existing-session-123"
 
-    # With makedirs mock disabled, directories will be created and request should succeed
-    response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
-    assert response.status_code == 200
+    # Create a mock result that mimics subprocess.CompletedProcess
+    mock_result = MagicMock()
+    mock_result.returncode = 0
+    mock_result.stdout = "success"
+    mock_result.stderr = ""
+
+    # Patch subprocess.run where it's used in genomic routes
+    with patch("routes.genomic.subprocess.run", return_value=mock_result):
+        # With makedirs mock disabled, directories will be created and request should succeed
+        response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
+        assert response.status_code == 200
 
 
 def test_genomic_single_ensembl_session_without_directory(client, dummy_form_ensembl, mock_run):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
+    from unittest.mock import patch, MagicMock
+
     dummy_form = dummy_form_ensembl
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)
         session["session_id"] = "existing-session-123"
 
-    # With makedirs mock disabled, directories will be created and request should succeed
-    response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)
-    assert response.status_code == 200
+    # Create a mock result that mimics subprocess.CompletedProcess
+    mock_result = MagicMock()
+    mock_result.returncode = 0
+    mock_result.stdout = "success"
+    mock_result.stderr = ""
+
+    # Patch subprocess.run where it's used in genomic routes
+    with patch("routes.genomic.subprocess.run", return_value=mock_result):
+        # With makedirs mock disabled, directories will be created and request should succeed
+        response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)
+        assert response.status_code == 200
