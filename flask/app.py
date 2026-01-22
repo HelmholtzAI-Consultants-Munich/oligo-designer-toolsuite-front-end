@@ -1,7 +1,6 @@
 import os
 
 from config import Config
-from dotenv import load_dotenv
 from extensions import celery_app, mongo, oauth
 from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics
@@ -37,9 +36,6 @@ def prepare_paths(app: Flask):
 def create_app():
     app = Flask(__name__)
     PrometheusMetrics(app)
-
-    # Load environment variables from .env file if present
-    load_dotenv()
 
     # Load configuration from Config class
     app.config.from_object(Config)
