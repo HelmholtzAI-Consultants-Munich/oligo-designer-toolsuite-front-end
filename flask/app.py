@@ -76,7 +76,9 @@ def create_app():
     return app
 
 
+# Create app instance for Flask CLI
+app = create_app()
+
+
 if __name__ == "__main__":
-    app = create_app()
-    # Note: If debug is True, Prometheus metrics won't be available
-    app.run(debug=app.config.get("DEBUG", False), host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0")

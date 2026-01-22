@@ -17,4 +17,4 @@ RUN --mount=source=flask/pyproject.toml,target=pyproject.toml \
 WORKDIR /app
 COPY --chown=$MAMBA_USER:$MAMBA_USER flask .
 
-CMD ["python", "app.py"]
+CMD ["flask", "run", "--host=0.0.0.0"]
