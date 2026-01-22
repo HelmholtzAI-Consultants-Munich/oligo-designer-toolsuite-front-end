@@ -1,4 +1,4 @@
-import merfish_schema from "../../flask/routes/runners/schemas/merfish.schema.json";
+import merfish_schema from "@schemas/merfish.schema.json";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import PipelineTemplate from "./pipelineTemplate";
 import { TabsLayout } from "../components/tabs";

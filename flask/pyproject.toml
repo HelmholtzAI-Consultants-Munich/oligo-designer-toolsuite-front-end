@@ -13,9 +13,8 @@ server = [
     "Flask-PyMongo >=3, <4",
     "python-dotenv >=1.2, <2",
     "requests >=2.32, <3",
-    "biopython >=1.86, <2",
 ]
-worker = [{ include-group = "shared" }]
+worker = [{ include-group = "shared" }, "biopython >=1.86, <2"]
 test = [
     { include-group = "server" },
     "coverage >=7.12, <8",

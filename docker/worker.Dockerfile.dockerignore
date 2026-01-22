@@ -1,6 +1,7 @@
-# Ignore everything except the flask directory
+# Ignore everything except the schemas and flask directory
 # see https://docs.docker.com/build/cache/optimize/#keep-the-context-small
 /*
+!/schemas
 !/flask
 
 # Ignore directory contents in the flask directory except for the worker directory

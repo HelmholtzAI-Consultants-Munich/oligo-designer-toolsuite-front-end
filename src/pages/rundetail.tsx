@@ -7,7 +7,7 @@ import type { SingleValue } from "react-select";
 import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import type { Oligo, RunState, GenomicRegions } from "../types";
+import type { GenomicRegions, Oligo, RunState } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 
@@ -196,7 +196,7 @@ const RunDetail = () => {
 
                     // Check for error status and display error message
                     let hasErrorMessage = false;
-                    if (runResponse.data.status === "FAILURE") {
+                    if (runResponse.data.status === "failure") {
                         if (runResponse.data.error_message) {
                             // Display error message to user
                             setLogContent(
@@ -237,6 +237,7 @@ const RunDetail = () => {
                         );
                         setLogContent(logResp.data);
                     }
+                }
             } catch (e) {
                 console.error(e);
             }
