@@ -21,5 +21,11 @@ export default defineConfig({
         globals: true,
         environment: "jsdom",
         setupFiles: ["./src/vitest-setup.ts"],
+        server: {
+            deps: {
+                // Inline @rjsf packages to fix ESM resolution issues
+                inline: [/@rjsf\/.*/],
+            },
+        },
     },
 });
