@@ -158,20 +158,20 @@ def get_users():
         return jsonify({"error": f"Failed to fetch users: {e!s}"}), 500
 
 
-@admin_bp.route("/api/admin/users/<user_id>", methods=["GET"])
+@admin_bp.route("/api/admin/users/<ObjectId:user_id>", methods=["GET"])
 @login_required
 @require_admin
-def get_user(user_id):
+def get_user(user_id: ObjectId):
     """
     Get a single user by ID (admin only).
 
-    :param user_id: The MongoDB ObjectId string of the user
-    :type user_id: str
+    :param user_id: The MongoDB ObjectId of the user
+    :type user_id: ObjectId
     :returns: JSON user object
     :rtype: flask.Response
     """
     try:
-        user = mongo.db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
+        user = mongo.db.users.find_one({"_id": user_id}, {"password": 0})
 
         if not user:
             return jsonify({"error": "User not found"}), 404
@@ -182,17 +182,17 @@ def get_user(user_id):
         return jsonify({"error": f"Failed to fetch user: {e!s}"}), 500
 
 
-@admin_bp.route("/api/admin/users/<user_id>", methods=["PUT"])
+@admin_bp.route("/api/admin/users/<ObjectId:user_id>", methods=["PUT"])
 @login_required
 @require_admin
-def update_user(user_id):
+def update_user(user_id: ObjectId):
     """
     Update a user (admin only).
 
     Allows updating email, name, and role fields.
 
-    :param user_id: The MongoDB ObjectId string of the user
-    :type user_id: str
+    :param user_id: The MongoDB ObjectId of the user
+    :type user_id: ObjectId
     :request json email: Optional email address
     :request json name: Optional name
     :request json role: Optional role ('user' or 'admin')
@@ -219,13 +219,13 @@ def update_user(user_id):
             return jsonify({"error": "No fields to update"}), 400
 
         # Update user
-        result = mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update_doc})
+        result = mongo.db.users.update_one({"_id": user_id}, {"$set": update_doc})
 
         if result.matched_count == 0:
             return jsonify({"error": "User not found"}), 404
 
         # Fetch updated user
-        user = mongo.db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
+        user = mongo.db.users.find_one({"_id": user_id}, {"password": 0})
 
         return jsonify(format_user(user)), 200
 
@@ -233,24 +233,24 @@ def update_user(user_id):
         return jsonify({"error": f"Failed to update user: {e!s}"}), 500
 
 
-@admin_bp.route("/api/admin/users/<user_id>", methods=["DELETE"])
+@admin_bp.route("/api/admin/users/<ObjectId:user_id>", methods=["DELETE"])
 @login_required
 @require_admin
-def delete_user(user_id):
+def delete_user(user_id: ObjectId):
     """
     Delete a user (admin only).
 
-    :param user_id: The MongoDB ObjectId string of the user
-    :type user_id: str
+    :param user_id: The MongoDB ObjectId of the user
+    :type user_id: ObjectId
     :returns: JSON confirmation message
     :rtype: flask.Response
     """
     try:
         # Prevent deleting yourself
-        if str(current_user.id) == user_id:
+        if str(current_user.id) == str(user_id):
             return jsonify({"error": "Cannot delete your own account"}), 400
 
-        result = mongo.db.users.delete_one({"_id": ObjectId(user_id)})
+        result = mongo.db.users.delete_one({"_id": user_id})
 
         if result.deleted_count == 0:
             return jsonify({"error": "User not found"}), 404
@@ -286,17 +286,17 @@ def get_pipeline_runs():
         return jsonify({"error": f"Failed to fetch pipeline runs: {e!s}"}), 500
 
 
-@admin_bp.route("/api/admin/pipelines/<run_id>", methods=["PUT"])
+@admin_bp.route("/api/admin/pipelines/<ObjectId:run_id>", methods=["PUT"])
 @login_required
 @require_admin
-def update_pipeline_status(run_id):
+def update_pipeline_status(run_id: ObjectId):
     """
     Update a pipeline run status (admin only).
 
     Allows updating the status field of a pipeline run.
 
-    :param run_id: The MongoDB ObjectId string of the pipeline run
-    :type run_id: str
+    :param run_id: The MongoDB ObjectId of the pipeline run
+    :type run_id: ObjectId
     :request json status: The new status value
     :returns: JSON updated pipeline run object
     :rtype: flask.Response
@@ -315,13 +315,13 @@ def update_pipeline_status(run_id):
             return jsonify({"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}), 400
 
         # Update pipeline run
-        result = mongo.db.runs.update_one({"_id": ObjectId(run_id)}, {"$set": {"status": status}})
+        result = mongo.db.runs.update_one({"_id": run_id}, {"$set": {"status": status}})
 
         if result.matched_count == 0:
             return jsonify({"error": "Pipeline run not found"}), 404
 
         # Fetch updated run
-        run = mongo.db.runs.find_one({"_id": ObjectId(run_id)})
+        run = mongo.db.runs.find_one({"_id": run_id})
         if not run:
             return jsonify({"error": "Pipeline run not found"}), 404
 
@@ -332,23 +332,23 @@ def update_pipeline_status(run_id):
         return jsonify({"error": f"Failed to update pipeline run: {e!s}"}), 500
 
 
-@admin_bp.route("/api/admin/pipelines/<run_id>", methods=["DELETE"])
+@admin_bp.route("/api/admin/pipelines/<ObjectId:run_id>", methods=["DELETE"])
 @login_required
 @require_admin
-def delete_pipeline_run(run_id):
+def delete_pipeline_run(run_id: ObjectId):
     """
     Delete a pipeline run and its associated output files (admin only).
 
     Removes output files/folders from disk and deletes the corresponding database entry.
 
-    :param run_id: The MongoDB ObjectId string of the pipeline run
-    :type run_id: str
+    :param run_id: The MongoDB ObjectId of the pipeline run
+    :type run_id: ObjectId
     :returns: JSON confirmation message
     :rtype: flask.Response
     """
     try:
         # Admin can delete any run - use shared deletion helper
-        success, error = delete_pipeline_run_files_and_db(mongo, ObjectId(run_id))
+        success, error = delete_pipeline_run_files_and_db(mongo, run_id)
 
         if not success:
             status_code = 404 if error == "Pipeline run not found" else 500

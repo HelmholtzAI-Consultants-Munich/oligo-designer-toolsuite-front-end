@@ -4,6 +4,7 @@ from config import Config
 from extensions import celery_app, mongo, oauth
 from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics
+from flask_pymongo import BSONObjectIdConverter
 from routes import register_blueprints
 from routes.auth import init_login_manager
 
@@ -36,6 +37,9 @@ def prepare_paths(app: Flask):
 def create_app():
     app = Flask(__name__)
     PrometheusMetrics(app)
+
+    # Register custom URL converter for MongoDB ObjectId
+    app.url_map.converters["ObjectId"] = BSONObjectIdConverter
 
     # Load configuration from Config class
     app.config.from_object(Config)
