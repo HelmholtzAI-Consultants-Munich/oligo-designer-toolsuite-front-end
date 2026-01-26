@@ -12,13 +12,13 @@ from datetime import datetime
 
 import yaml
 from extensions import mongo
-from flask_login import current_user
 from helpers import generate_single_region_forms, get_form_cache_key, to_bool, to_int
 
-from flask import Blueprint, current_app, jsonify, request, session
+from flask import Blueprint, current_app, jsonify, request
 
 from .cache_helpers import _prepare_ncbi_cached_assets, _prepare_ensembl_cached_assets
 from .error_handlers import create_user_error_response
+from routes.validation_helpers import get_user_context_with_directory
 
 genomic_bp = Blueprint("genomic", __name__)
 
@@ -96,17 +96,11 @@ def genomic_cascaded_ncbi():
     """
     try:
         # Handle authentication/session to determine user directory
-        if current_user.is_authenticated:
-            user_id = str(current_user.id)
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
+        user_id, session_id, user_dir = get_user_context_with_directory()
+
+        if user_id:
             config_path = os.path.join(user_dir, "config_genomic_ensemble.yaml")
-            session_id = None
         else:
-            user_id = None
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session_id)
             config_path = os.path.join(user_dir, "config.yaml")
         config_genomic = {}
 
@@ -237,16 +231,8 @@ def genomic_cascaded_ensemble():
         7. Update MongoDB status and return result.
     """
     try:
-        if current_user.is_authenticated:
-            user_id = str(current_user.id)
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
-            session_id = None
-        else:
-            user_id = None
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session_id)
+        # Handle authentication/session to determine user directory
+        user_id, session_id, user_dir = get_user_context_with_directory()
 
         form_data = request.json
         _validate_genomic_form_data(form_data)
@@ -358,16 +344,8 @@ def genomic_cascaded_custom():
         9. Update MongoDB status and return result.
     """
     try:
-        if current_user.is_authenticated:
-            user_id = str(current_user.id)
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
-            session_id = None
-        else:
-            user_id = None
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Anonymous session ID not found"}), 403
-            user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session_id)
+        # Handle authentication/session to determine user directory
+        user_id, session_id, user_dir = get_user_context_with_directory()
 
         form_data = request.json
         _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl", "Custom"])

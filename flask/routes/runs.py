@@ -27,7 +27,7 @@ from flask_login import current_user
 from extensions import celery_app, mongo
 from helpers import delete_pipeline_run_files_and_db
 from routes.error_handlers import create_user_error_response
-from routes.validation_helpers import get_run, get_task_id
+from routes.validation_helpers import get_run_or_404, get_task_id, get_user_context
 
 runs_bp = Blueprint("runs", __name__)
 
@@ -51,17 +51,7 @@ def delete_run(run_id: ObjectId):
     """
     try:
         # Check ownership first (users can only delete their own runs)
-        if current_user.is_authenticated:
-            user_id = str(current_user.id)
-            run = mongo.db.runs.find_one({"_id": run_id, "user_id": user_id})
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            run = mongo.db.runs.find_one({"_id": run_id, "session_id": session_id})
-
-        if not run:
-            return jsonify({"error": "Run not found"}), 404
+        get_run_or_404(run_id, require_ownership=True)
 
         # Use shared deletion helper
         success, error = delete_pipeline_run_files_and_db(mongo, run_id)
@@ -86,16 +76,7 @@ def init_run_id():
     :returns: JSON object with new run_id.
     :rtype: flask.Response
     """
-    if current_user.is_authenticated:
-        # Authenticated user: use user-specific directory
-        user_id = str(current_user.id)
-        session_id = None
-    else:
-        # Anonymous user: use session-based directory
-        user_id = None
-        session_id = str(session.get("session_id"))
-        if not session_id:
-            raise ValueError("Anonymous session ID not found in session")
+    user_id, session_id = get_user_context()
 
     run_doc = {
         "status": "pending",
@@ -165,17 +146,7 @@ def get_pipeline_run(run_id: ObjectId):
     """
     try:
         # Auth or session check
-        if current_user.is_authenticated:
-            query = {"_id": run_id, "user_id": str(current_user.id)}
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": run_id, "session_id": session_id}
-
-        run = mongo.db.runs.find_one(query)
-        if not run:
-            return jsonify({"error": "Run not found"}), 404
+        run = get_run_or_404(run_id, require_ownership=True)
 
         formatted_run = {
             "_id": str(run["_id"]),
@@ -217,17 +188,7 @@ def get_run_file(run_id: ObjectId, filename: str):
     """
     try:
         # Auth or session check
-        if current_user.is_authenticated:
-            query = {"_id": run_id, "user_id": str(current_user.id)}
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": run_id, "session_id": session_id}
-
-        run = mongo.db.runs.find_one(query)
-        if not run:
-            return jsonify({"error": "Run not found"}), 404
+        run = get_run_or_404(run_id, require_ownership=True)
 
         # Support subdirs (e.g. "annotation/example.fna")
         file_path = os.path.join(run["output_path"], *filename.split("/"))
@@ -267,23 +228,7 @@ def get_run_files(run_id: ObjectId):
     """
     try:
         # Auth or session check
-        if current_user.is_authenticated:
-            query = {"_id": run_id, "user_id": str(current_user.id)}
-        else:
-            session_id = session.get("session_id")
-            if not session_id:
-                return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": run_id, "session_id": session_id}
-
-        run = mongo.db.runs.find_one(query)
-
-        if not run:
-            # If run doesn't exist, return 404 (this is expected behavior)
-            return jsonify(
-                {
-                    "error": "The run you're looking for doesn't exist or you don't have permission to access it."
-                }
-            ), 404
+        run = get_run_or_404(run_id, require_ownership=True)
 
         output_dir = run["output_path"]
         files = []
@@ -339,7 +284,7 @@ def get_run_status(run_id: ObjectId):
     :returns: Run status or JSON error.
     :rtype: flask.Response
     """
-    run = get_run(run_id)
+    run = get_run_or_404(run_id)
     state = run["status"]
 
     if state in {"success", "failure"}:

@@ -25,6 +25,7 @@ from bson import ObjectId
 from extensions import mongo, oauth
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from routes.validation_helpers import find_user_by_id
 
 from flask import Blueprint, current_app, jsonify, redirect, request, session, url_for
 
@@ -156,7 +157,8 @@ def register():
     ).inserted_id
 
     # Log the user in immediately after registration with "Remember Me" enabled
-    user_doc = mongo.db.users.find_one({"_id": user_id})
+
+    user_doc = find_user_by_id(user_id, exclude_password=False)
     user = User(user_doc)
     _login(user, remember=True)
 

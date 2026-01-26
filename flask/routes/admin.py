@@ -22,6 +22,8 @@ from helpers import (
     validate_and_convert_ids,
     validate_id_array,
 )
+from routes.error_handlers import create_user_error_response
+from routes.validation_helpers import get_run_or_404, get_user_by_id_or_404
 
 from flask import Blueprint, jsonify, request
 
@@ -40,7 +42,9 @@ def is_admin(user):
     if not user or not user.is_authenticated:
         return False
 
-    user_doc = mongo.db.users.find_one({"_id": ObjectId(user.id)})
+    from routes.validation_helpers import find_user_by_id
+
+    user_doc = find_user_by_id(ObjectId(user.id), exclude_password=False)
     if not user_doc:
         return False
 
@@ -171,15 +175,11 @@ def get_user(user_id: ObjectId):
     :rtype: flask.Response
     """
     try:
-        user = mongo.db.users.find_one({"_id": user_id}, {"password": 0})
-
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-
+        user = get_user_by_id_or_404(user_id, exclude_password=True)
         return jsonify(format_user(user)), 200
 
     except Exception as e:
-        return jsonify({"error": f"Failed to fetch user: {e!s}"}), 500
+        return create_user_error_response(e, "submission")
 
 
 @admin_bp.route("/api/admin/users/<ObjectId:user_id>", methods=["PUT"])
@@ -218,6 +218,9 @@ def update_user(user_id: ObjectId):
         if not update_doc:
             return jsonify({"error": "No fields to update"}), 400
 
+        # Verify user exists before updating
+        get_user_by_id_or_404(user_id, exclude_password=True)
+
         # Update user
         result = mongo.db.users.update_one({"_id": user_id}, {"$set": update_doc})
 
@@ -225,7 +228,7 @@ def update_user(user_id: ObjectId):
             return jsonify({"error": "User not found"}), 404
 
         # Fetch updated user
-        user = mongo.db.users.find_one({"_id": user_id}, {"password": 0})
+        user = get_user_by_id_or_404(user_id, exclude_password=True)
 
         return jsonify(format_user(user)), 200
 
@@ -314,6 +317,9 @@ def update_pipeline_status(run_id: ObjectId):
         if status not in valid_statuses:
             return jsonify({"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"}), 400
 
+        # Verify run exists (admin can access any run)
+        get_run_or_404(run_id, require_ownership=False)
+
         # Update pipeline run
         result = mongo.db.runs.update_one({"_id": run_id}, {"$set": {"status": status}})
 
@@ -321,15 +327,13 @@ def update_pipeline_status(run_id: ObjectId):
             return jsonify({"error": "Pipeline run not found"}), 404
 
         # Fetch updated run
-        run = mongo.db.runs.find_one({"_id": run_id})
-        if not run:
-            return jsonify({"error": "Pipeline run not found"}), 404
+        run = get_run_or_404(run_id, require_ownership=False)
 
         # Format and return response
         return jsonify(format_pipeline_run(run)), 200
 
     except Exception as e:
-        return jsonify({"error": f"Failed to update pipeline run: {e!s}"}), 500
+        return create_user_error_response(e, "submission")
 
 
 @admin_bp.route("/api/admin/pipelines/<ObjectId:run_id>", methods=["DELETE"])
