@@ -2,6 +2,7 @@ import os
 import uuid
 
 from flask import Blueprint, current_app, jsonify, request
+from werkzeug.utils import secure_filename
 
 # Blueprint for all upload-related endpoints
 upload_bp = Blueprint("upload", __name__)
@@ -27,10 +28,11 @@ def upload_file():
     Workflow steps:
       1. Checks that a file was provided in the request under the key 'file'.
       2. Validates that a file was actually selected (filename is not empty).
-      3. Generates a unique filename using a UUID prefix to avoid name collisions.
-      4. Builds the full path for storing the file in the configured uploads directory.
-      5. Saves the uploaded file to disk.
-      6. Responds with a JSON object containing the server-side file path.
+      3. Sanitizes the filename using secure_filename to prevent path traversal attacks.
+      4. Generates a unique filename using a UUID prefix to avoid name collisions.
+      5. Builds the full path for storing the file in the configured uploads directory.
+      6. Saves the uploaded file to disk.
+      7. Responds with a JSON object containing the server-side file path.
 
     Example request (using curl):
         curl -F "file=@example.txt" http://localhost:5000/api/upload
@@ -50,14 +52,19 @@ def upload_file():
     if file.filename == "":
         return jsonify({"error": "No selected file"}), 400
 
-    # Step 3: Generate a unique filename by prefixing with a UUID
-    unique_filename = f"{uuid.uuid4().hex}_{file.filename}"
+    # Step 3: Sanitize the filename to prevent path traversal attacks
+    safe_filename = secure_filename(file.filename)
+    if not safe_filename:
+        return jsonify({"error": "Invalid filename"}), 400
 
-    # Step 4: Build the full path in the uploads directory (from Flask app config)
+    # Step 4: Generate a unique filename by prefixing with a UUID
+    unique_filename = f"{uuid.uuid4().hex}_{safe_filename}"
+
+    # Step 5: Build the full path in the uploads directory (from Flask app config)
     file_path = os.path.join(current_app.config["UPLOAD_PATH"], unique_filename)
 
-    # Step 5: Save the file to disk
+    # Step 6: Save the file to disk
     file.save(file_path)
 
-    # Step 6: Respond with the server-side path where the file is stored
+    # Step 7: Respond with the server-side path where the file is stored
     return jsonify({"filePath": file_path}), 200

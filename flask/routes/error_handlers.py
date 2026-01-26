@@ -9,6 +9,35 @@ from flask import current_app, jsonify
 from bson.errors import InvalidId
 
 
+# ============================================================================
+# Custom Exception Classes
+# ============================================================================
+
+
+class NotFoundError(Exception):
+    """Raised when a requested resource is not found."""
+
+    def __init__(self, message: str = "Resource not found"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class ForbiddenError(Exception):
+    """Raised when access to a resource is forbidden."""
+
+    def __init__(self, message: str = "Unauthorized"):
+        self.message = message
+        super().__init__(self.message)
+
+
+class InternalServerError(Exception):
+    """Raised when an internal server error occurs."""
+
+    def __init__(self, message: str = "Internal server error"):
+        self.message = message
+        super().__init__(self.message)
+
+
 def create_user_error_response(exception: Exception, error_type: str = "submission") -> tuple:
     """
     Create a sanitized, user-friendly error response.
@@ -46,6 +75,12 @@ def _sanitize_error_message(exception: Exception) -> str:
     error_str = str(exception).lower()
 
     match exception:
+        case NotFoundError():
+            return exception.message
+        case ForbiddenError():
+            return exception.message
+        case InternalServerError():
+            return exception.message
         case InvalidId():
             return "The run ID you provided is not valid. Please check and try again."
 
@@ -99,6 +134,12 @@ def _get_http_status_code(exception: Exception) -> int:
     Determine appropriate HTTP status code based on exception type.
     """
     match exception:
+        case NotFoundError():
+            return 404
+        case ForbiddenError():
+            return 403
+        case InternalServerError():
+            return 500
         case InvalidId():
             return 400
         case ValueError():
