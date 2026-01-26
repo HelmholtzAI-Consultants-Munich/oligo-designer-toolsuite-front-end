@@ -27,21 +27,21 @@ from flask_login import current_user
 from extensions import celery_app, mongo
 from helpers import delete_pipeline_run_files_and_db
 from routes.error_handlers import create_user_error_response
-from routes.validation_helpers import get_run, get_run_id, get_task_id
+from routes.validation_helpers import get_run, get_task_id
 
 runs_bp = Blueprint("runs", __name__)
 
 
-@runs_bp.route("/api/runs/<run_id>", methods=["DELETE"])
-def delete_run(run_id):
+@runs_bp.route("/api/runs/<ObjectId:run_id>", methods=["DELETE"])
+def delete_run(run_id: ObjectId):
     """
     Delete a pipeline run and its associated output files.
 
     Only allows deletion if the run belongs to the current authenticated user.
     Removes output files/folders from disk and deletes the corresponding database entry.
 
-    :param run_id: The ObjectId string of the run to delete.
-    :type run_id: str
+    :param run_id: The ObjectId of the run to delete.
+    :type run_id: ObjectId
     :returns: JSON message with success or error.
     :rtype: flask.Response
 
@@ -50,23 +50,21 @@ def delete_run(run_id):
         2. Use shared helper to delete files and database entry.
     """
     try:
-        run_id_obj = ObjectId(run_id)
-
         # Check ownership first (users can only delete their own runs)
         if current_user.is_authenticated:
             user_id = str(current_user.id)
-            run = mongo.db.runs.find_one({"_id": run_id_obj, "user_id": user_id})
+            run = mongo.db.runs.find_one({"_id": run_id, "user_id": user_id})
         else:
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
-            run = mongo.db.runs.find_one({"_id": run_id_obj, "session_id": session_id})
+            run = mongo.db.runs.find_one({"_id": run_id, "session_id": session_id})
 
         if not run:
             return jsonify({"error": "Run not found"}), 404
 
         # Use shared deletion helper
-        success, error = delete_pipeline_run_files_and_db(mongo, run_id_obj)
+        success, error = delete_pipeline_run_files_and_db(mongo, run_id)
 
         if not success:
             return jsonify({"error": error}), 500
@@ -149,15 +147,15 @@ def get_pipeline_runs():
         return jsonify({"error": "Failed to fetch pipeline runs"}), 500
 
 
-@runs_bp.route("/api/runs/<run_id>", methods=["GET"])
-def get_pipeline_run(run_id):
+@runs_bp.route("/api/runs/<ObjectId:run_id>", methods=["GET"])
+def get_pipeline_run(run_id: ObjectId):
     """
     Retrieve details of a specific pipeline run.
 
     Checks user/session authorization for the run.
 
-    :param run_id: The ObjectId string of the run.
-    :type run_id: str
+    :param run_id: The ObjectId of the run.
+    :type run_id: ObjectId
     :returns: Run document or JSON error.
     :rtype: flask.Response
 
@@ -168,12 +166,12 @@ def get_pipeline_run(run_id):
     try:
         # Auth or session check
         if current_user.is_authenticated:
-            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
+            query = {"_id": run_id, "user_id": str(current_user.id)}
         else:
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": ObjectId(run_id), "session_id": session_id}
+            query = {"_id": run_id, "session_id": session_id}
 
         run = mongo.db.runs.find_one(query)
         if not run:
@@ -197,16 +195,16 @@ def get_pipeline_run(run_id):
         return jsonify({"error": "Failed to fetch pipeline run"}), 500
 
 
-@runs_bp.route("/api/runs/<run_id>/files/<path:filename>", methods=["GET"])
-def get_run_file(run_id, filename):
+@runs_bp.route("/api/runs/<ObjectId:run_id>/files/<path:filename>", methods=["GET"])
+def get_run_file(run_id: ObjectId, filename: str):
     """
     Download a file for a specific pipeline run.
 
     Checks user/session authorization for the run. Supports nested files (e.g., annotation/ subdirectory).
     Detects mimetype for common bioinformatics file types.
 
-    :param run_id: The ObjectId string of the run.
-    :type run_id: str
+    :param run_id: The ObjectId of the run.
+    :type run_id: ObjectId
     :param filename: The (possibly nested) file path relative to the run's output directory.
     :type filename: str
     :returns: File stream or JSON error.
@@ -220,12 +218,12 @@ def get_run_file(run_id, filename):
     try:
         # Auth or session check
         if current_user.is_authenticated:
-            query = {"_id": ObjectId(run_id), "user_id": str(current_user.id)}
+            query = {"_id": run_id, "user_id": str(current_user.id)}
         else:
             session_id = session.get("session_id")
             if not session_id:
                 return jsonify({"error": "Unauthorized"}), 403
-            query = {"_id": ObjectId(run_id), "session_id": session_id}
+            query = {"_id": run_id, "session_id": session_id}
 
         run = mongo.db.runs.find_one(query)
         if not run:
@@ -250,15 +248,15 @@ def get_run_file(run_id, filename):
         return create_user_error_response(e, "submission")
 
 
-@runs_bp.route("/api/runs/<run_id_str>/files", methods=["GET"])
-def get_run_files(run_id_str):
+@runs_bp.route("/api/runs/<ObjectId:run_id>/files", methods=["GET"])
+def get_run_files(run_id: ObjectId):
     """
     List all output files for a specific pipeline run.
 
     Handles both main output directory and special annotation subdirectory for Genomic Region Generator pipeline.
 
-    :param run_id_str: The ObjectId string of the run.
-    :type run_id_str: str
+    :param run_id: The ObjectId of the run.
+    :type run_id: ObjectId
     :returns: List of file metadata dictionaries (name, type, size).
     :rtype: flask.Response
 
@@ -268,30 +266,16 @@ def get_run_files(run_id_str):
         3. If pipeline is Genomic Region Generator, include files from annotation subdir.
     """
     try:
-        if not run_id_str:
-            return jsonify(
-                {"error": "The run ID you provided is not valid. Please check and try again."}
-            ), 400
-        try:
-            run_id = ObjectId(run_id_str)
-        except Exception as e:
-            return create_user_error_response(e, "submission")
-
         # Auth or session check
-        run = None
-        try:
-            if current_user.is_authenticated:
-                query = {"_id": run_id, "user_id": str(current_user.id)}
-            else:
-                session_id = session.get("session_id")
-                if not session_id:
-                    return jsonify({"error": "Unauthorized"}), 403
-                query = {"_id": run_id, "session_id": session_id}
+        if current_user.is_authenticated:
+            query = {"_id": run_id, "user_id": str(current_user.id)}
+        else:
+            session_id = session.get("session_id")
+            if not session_id:
+                return jsonify({"error": "Unauthorized"}), 403
+            query = {"_id": run_id, "session_id": session_id}
 
-            run = mongo.db.runs.find_one(query)
-        except Exception as e:
-            # Database errors should return 500
-            return create_user_error_response(e, "submission")
+        run = mongo.db.runs.find_one(query)
 
         if not run:
             # If run doesn't exist, return 404 (this is expected behavior)
@@ -342,21 +326,19 @@ def update_run_status_in_DB(run_id: ObjectId, status: str):
     return update_run_in_DB(run_id, {"status": status})
 
 
-@runs_bp.route("/api/runs/<run_id_str>/state", methods=["GET"])
-def get_run_status(run_id_str):
+@runs_bp.route("/api/runs/<ObjectId:run_id>/state", methods=["GET"])
+def get_run_status(run_id: ObjectId):
     """
     Return status of a specific pipeline run.
 
     Queries the Celery result backend for the current state of the run.
     Unpacks results and updates the database if the state changed.
 
-    :param run_id_str: The ObjectId string of the run.
-    :type run_id_str: str
+    :param run_id: The ObjectId of the run.
+    :type run_id: ObjectId
     :returns: Run status or JSON error.
     :rtype: flask.Response
     """
-    run_id = get_run_id(run_id_str)
-
     run = get_run(run_id)
     state = run["status"]
 

@@ -79,10 +79,12 @@ def test_get_files_valid_runid_unused(client):
 
 
 def test_get_files_invalid_runid(client):
+    """Test that invalid ObjectId format returns 404 (URL converter behavior)."""
     run_id = "hallo"
 
     response = client.get(f"/api/runs/{run_id}/files")
-    assert response.status_code == 400
+    # BSONObjectIdConverter returns 404 for invalid ObjectId format
+    assert response.status_code == 404
 
 
 # Error handling tests
@@ -165,12 +167,10 @@ def test_get_run_file_permission_error_sanitized(client, dummy_user, run_id, tmp
 
 
 def test_get_run_files_invalid_run_id_sanitized(client):
-    """Test get_run_files with invalid run ID returns sanitized error."""
+    """Test get_run_files with invalid run ID returns 404 (URL converter behavior)."""
     response = client.get("/api/runs/invalid_id/files")
-    assert response.status_code == 400
-    data = response.get_json()
-    assert "error" in data
-    assert data["error"] == "The run ID you provided is not valid. Please check and try again."
+    # BSONObjectIdConverter returns 404 for invalid ObjectId format
+    assert response.status_code == 404
 
 
 def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id):
@@ -205,13 +205,18 @@ def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id
             assert len(data["error"]) > 0
 
 
-def test_all_errors_use_create_user_error_response(client, dummy_user):
+def test_all_errors_use_create_user_error_response(client, dummy_user, run_id):
     """Test that all errors use create_user_error_response (verify consistent format)."""
+    # Create a run that exists but user doesn't have access to
+    from bson import ObjectId
 
-    # Test that error responses have consistent format
-    response = client.get("/api/runs/invalid_id/files")
-    assert response.status_code == 400
+    other_user_id = ObjectId()
+    create_test_run(run_id, user_id=other_user_id, status="success")
+
+    # Test that error responses have consistent format (run exists but unauthorized)
+    response = client.get(f"/api/runs/{run_id}/files")
+    assert response.status_code == 404  # Not found because user doesn't own the run
     data = response.get_json()
-    # Should have "error" field (from create_user_error_response)
+    # Should have "error" field
     assert "error" in data
     assert isinstance(data["error"], str)
