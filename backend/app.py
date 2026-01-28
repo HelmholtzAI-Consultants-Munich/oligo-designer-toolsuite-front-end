@@ -6,6 +6,7 @@ from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics
 from flask_pymongo import BSONObjectIdConverter
 
+from backend.cli import register_cli_commands
 from backend.config import Config
 from backend.extensions import celery_app, mongo, oauth
 from backend.routes import register_blueprints
@@ -86,6 +87,9 @@ def create_app():
 
     # Register error handlers for centralized error handling
     register_error_handlers(app)
+
+    # Register CLI commands
+    register_cli_commands(app)
 
     return app
 
