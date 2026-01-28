@@ -22,7 +22,7 @@ services:
     ports:
       - 5000:5000
     volumes:
-      - data-access:/app/data-access
+      - data-access:/app/backend/data-access
     environment:
       HOST_URL: ${BACKEND_URL}
       FRONTEND_URL: ${FRONTEND_URL}
@@ -37,7 +37,7 @@ services:
       watch:
         - action: sync
           path: ./backend
-          target: /app
+          target: /app/backend
           initial_sync: true
 
   odt-worker:
@@ -46,7 +46,7 @@ services:
       dockerfile: docker/worker.Dockerfile
     container_name: odt-worker
     volumes:
-      - data-access:/app/data-access
+      - data-access:/app/backend/data-access
     environment:
       CELERY_MONGO_URI: mongodb://odt-db:27017/
       CELERY_BROKER: pyamqp://guest@odt-mq/
@@ -58,7 +58,7 @@ services:
       watch:
         - action: sync+restart
           path: ./backend
-          target: /app
+          target: /app/backend
           initial_sync: true
 
   odt-web:

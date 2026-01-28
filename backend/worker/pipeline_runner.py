@@ -7,6 +7,7 @@ from typing import Any
 
 import yaml
 from celery import Celery
+from celery.utils.log import get_task_logger
 
 from .genomic_regions_file import GenomicRegionFile
 
@@ -42,6 +43,8 @@ class PipelineRunner:
         self.subprocess_name = self.PIPELINE_SUBPROCESS[pipeline_name]  # e.g., 'merfish_probe_designer'
         self.schema = schema  # JSON schema
         self.task = task
+        # Create logger using task name (Celery tasks have a 'name' attribute)
+        self.logger = get_task_logger(getattr(task, "name", __name__))
 
     def run(self, form_data: dict[str, Any], upload_path: str, output_path: str) -> bool:
         # Temp File Creation (if needed)
@@ -82,7 +85,7 @@ class PipelineRunner:
 
         # Write config to YAML file
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
-        self.task.logger.info(f"Writing config to {config_path}")
+        self.logger.info(f"Writing config to {config_path}")
 
         # Ensure parent directory exists
         config_dir = os.path.dirname(config_path)
@@ -94,24 +97,24 @@ class PipelineRunner:
 
     def call_subprocess(self, config_path: str) -> bool:
         result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
-        self.task.logger.debug(f"STDERR: {result.stderr}")
-        self.task.logger.debug(f"STDOUT (partial logs): {result.stdout}")
+        self.logger.debug(f"STDERR: {result.stderr}")
+        self.logger.debug(f"STDOUT (partial logs): {result.stdout}")
         return result.returncode == 0
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
-        self.task.logger.info("Generating visualization files...")
+        self.logger.info("Generating visualization files...")
         regions_file = form_data.get("file_regions", None)
         if not regions_file:
-            self.task.logger.warning("No regions file provided, skipping visualization generation.")
+            self.logger.warning("No regions file provided, skipping visualization generation.")
             return
 
         fasta_paths = form_data.get("files_fasta_target_probe_database", [])
         if not fasta_paths:
-            self.task.logger.warning("No fasta files provided, skipping visualization generation.")
+            self.logger.warning("No fasta files provided, skipping visualization generation.")
             return
 
-        regions_file = GenomicRegionFile(regions_file, fasta_paths, logger=self.task.logger)
+        regions_file = GenomicRegionFile(regions_file, fasta_paths, logger=self.logger)
         regions_file_path = os.path.join(output_path, "genomic_regions.yaml")
         regions_file.yaml_dump(regions_file_path)
 
@@ -121,9 +124,9 @@ class PipelineRunner:
             temp_path = form_data["file_regions"].strip()
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-                self.task.logger.debug(f"deleted temp file_regions: {temp_path}")
+                self.logger.debug(f"deleted temp file_regions: {temp_path}")
             else:
-                self.task.logger.debug(f"file_regions not found, skipped: {temp_path}")
+                self.logger.debug(f"file_regions not found, skipped: {temp_path}")
 
         # Remove temp files for fasta inputs
         fasta_fields = [
@@ -142,6 +145,6 @@ class PipelineRunner:
 
         if os.path.exists(config_path):
             os.remove(config_path)
-            self.task.logger.debug(f"deleted config: {config_path}")
+            self.logger.debug(f"deleted config: {config_path}")
         else:
-            self.task.logger.debug(f"config not found, skipped: {config_path}")
+            self.logger.debug(f"config not found, skipped: {config_path}")
