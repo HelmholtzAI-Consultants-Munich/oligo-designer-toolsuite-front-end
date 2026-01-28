@@ -15,6 +15,8 @@ RUN --mount=source=backend/pyproject.toml,target=pyproject.toml \
 
 # --- Copy Flask server ---
 WORKDIR /app
-COPY --chown=$MAMBA_USER:$MAMBA_USER backend .
+COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
+
+ENV FLASK_APP=backend.app
 
 CMD ["flask", "run", "--host=0.0.0.0"]
