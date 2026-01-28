@@ -2,6 +2,7 @@ import type { FastaForm, FileState, RJSFFormData, Status } from "./types";
 import { copyToClipboard, createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
+import { BACKEND_URL } from "../config";
 
 export const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -35,7 +36,7 @@ export const uploadFiles = async (files: any, formData: RJSFFormData) => {
                 formDataU.append("file", file);
                 try {
                     const response = await axios.post(
-                        "http://localhost:5000/api/upload",
+                        BACKEND_URL + "/api/upload",
                         formDataU,
                         {
                             headers: {
@@ -75,7 +76,7 @@ export const handleSubmitGenomicAll = async (
             }
             try {
                 const response = await axios.post(
-                    `http://localhost:5000/api/genomic/cascaded/${endpoint}`,
+                    BACKEND_URL + `/api/genomic/cascaded/${endpoint}`,
                     payload,
                     {
                         withCredentials: true,
@@ -165,7 +166,7 @@ export const handleSubmit = async (
         setRunStatus("running");
 
         await axios.post(
-            `http://localhost:5000/api/${pipeline}`,
+            BACKEND_URL + `/api/${pipeline}`,
             { formdata: formData, runid: newId },
             {
                 withCredentials: true,

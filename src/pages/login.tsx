@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../modules/nav";
 import { useAuth } from "../modules/auth";
 import { Spinner } from "react-bootstrap";
+import { BACKEND_URL } from "../config";
 
 /**
  * Login component handles user login functionality.
@@ -34,7 +35,7 @@ const Login = () => {
         e.preventDefault();
         try {
             const res = await axios.post(
-                "http://localhost:5000/login",
+                BACKEND_URL + "/login",
                 { email, password, remember_me: rememberMe },
                 { withCredentials: true }
             );
@@ -61,7 +62,7 @@ const Login = () => {
             redirectTo !== "/"
                 ? `?redirect=${encodeURIComponent(redirectTo)}`
                 : "";
-        window.location.href = `http://localhost:5000/login${redirectParam}`;
+        window.location.href = BACKEND_URL + `/login${redirectParam}`;
     };
 
     // Show loading spinner while checking auth status

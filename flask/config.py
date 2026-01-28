@@ -19,6 +19,9 @@ class Config:
     # Flask settings
     SECRET_KEY = os.environ.get("SECRET_KEY", "bi_oligo_gizemi_var")
 
+    # URL settings
+    HOST_URL = os.environ.get("HOST_URL", "http://localhost:5000")
+
     # Directory settings
     # Directory shared between server and worker
     RELATIVE_DATA_ACCESS_PATH = os.environ.get("RELATIVE_DATA_ACCESS_PATH", "data-access")
@@ -58,7 +61,7 @@ class Config:
 
     # OAuth2 settings
     HELMHOLTZ_SCOPE = "openid profile email"
-    HELMHOLTZ_REDIRECT_URI = "http://localhost:5000/auth/callback"
+    HELMHOLTZ_REDIRECT_URI = HOST_URL + "/auth/callback"
 
     @staticmethod
     def validate_oauth_config():

@@ -26,6 +26,7 @@ import {
     vertebrate_otherEntries,
 } from "../forms/refseqSpecies";
 import { ensemblSpecies } from "../forms/ensemblSpecies";
+import { BACKEND_URL } from "../config";
 
 const Genomic: React.FC = () => {
     const [fileReady, setFileReady] = useState(false);
@@ -45,7 +46,7 @@ const Genomic: React.FC = () => {
     const handleDownload = async () => {
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/genomic/ncbi",
+                BACKEND_URL + "/api/genomic/ncbi",
                 FormData,
                 {
                     responseType: "blob", // Important: Treat response as a file
@@ -154,7 +155,7 @@ const Genomic: React.FC = () => {
 
             // Send the request
             const response = await axios.post(
-                "http://localhost:5000/api/genomic/" + selectedSource,
+                BACKEND_URL + "/api/genomic/" + selectedSource,
                 { formdata: finalFormData, runid: runid },
                 {
                     withCredentials: true,
@@ -222,7 +223,7 @@ const Genomic: React.FC = () => {
                         // Perform upload logic here
                         try {
                             const response = await axios.post(
-                                "http://localhost:5000/api/upload",
+                                BACKEND_URL + "/api/upload",
                                 formData,
                                 {
                                     withCredentials: true,
@@ -243,7 +244,7 @@ const Genomic: React.FC = () => {
                     // @ts-ignore
                     try {
                         const response = await axios.post(
-                            "http://localhost:5000/api/upload",
+                            BACKEND_URL + "/api/upload",
                             formData,
                             {
                                 withCredentials: true,
