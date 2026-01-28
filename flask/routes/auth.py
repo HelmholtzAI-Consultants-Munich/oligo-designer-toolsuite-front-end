@@ -27,7 +27,7 @@ from flask_login import LoginManager, UserMixin, current_user, login_required, l
 from werkzeug.security import check_password_hash, generate_password_hash
 from routes.validation_helpers import find_user_by_id
 
-from flask import Blueprint, current_app, jsonify, redirect, request, session, url_for
+from flask import Blueprint, abort, current_app, jsonify, redirect, request, session, url_for
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -138,12 +138,12 @@ def register():
     name = data.get("name", "").strip()
 
     if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
+        abort(400, description="Email and password required")
 
     # Prevent duplicate registrations
     existing_user = mongo.db.users.find_one({"email": email})
     if existing_user:
-        return jsonify({"error": "User already exists"}), 409
+        abort(409, description="User already exists")
 
     hashed_password = generate_password_hash(password)
 
@@ -193,15 +193,15 @@ def login():
     remember_me = data.get("remember_me", True)  # Default to True for backward compatibility
 
     if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
+        abort(400, description="Email and password required")
 
     user_doc = mongo.db.users.find_one({"email": email})
 
     if not user_doc or "password" not in user_doc:
-        return jsonify({"error": "Invalid credentials"}), 401
+        abort(401, description="Invalid credentials")
 
     if not check_password_hash(user_doc["password"], password):
-        return jsonify({"error": "Invalid credentials"}), 401
+        abort(401, description="Invalid credentials")
 
     user = User(user_doc)
     _login(user, remember=remember_me)
@@ -233,71 +233,67 @@ def auth_callback():
       8. Migrate any anonymous session data to authenticated user.
       9. Store access token in session for later revocation.
     """
-    try:
-        # Exchange authorization code for access token
-        token = oauth.helmholtz.authorize_access_token()
+    # Exchange authorization code for access token
+    token = oauth.helmholtz.authorize_access_token()
 
-        # Fetch user information from Helmholtz AAI
-        userinfo = token.get("userinfo")
-        if not userinfo:
-            # If userinfo not in token, fetch it explicitly
-            resp = oauth.helmholtz.get("userinfo")
-            userinfo = resp.json()
+    # Fetch user information from Helmholtz AAI
+    userinfo = token.get("userinfo")
+    if not userinfo:
+        # If userinfo not in token, fetch it explicitly
+        resp = oauth.helmholtz.get("userinfo")
+        userinfo = resp.json()
 
-        helmholtz_sub = userinfo.get("sub")
-        email = userinfo.get("email")
-        name = userinfo.get("name", "")
+    helmholtz_sub = userinfo.get("sub")
+    email = userinfo.get("email")
+    name = userinfo.get("name", "")
 
-        if not helmholtz_sub:
-            return jsonify({"error": "Failed to get user information from Helmholtz AAI"}), 500
+    if not helmholtz_sub:
+        abort(500, description="Failed to get user information from Helmholtz AAI")
 
-        # Check if user exists in database by helmholtz_sub
-        user_doc = mongo.db.users.find_one({"helmholtz_sub": helmholtz_sub})
+    # Check if user exists in database by helmholtz_sub
+    user_doc = mongo.db.users.find_one({"helmholtz_sub": helmholtz_sub})
 
-        if user_doc:
-            # Update existing user's email and name if changed
-            mongo.db.users.update_one({"_id": user_doc["_id"]}, {"$set": {"email": email, "name": name}})
-            user_doc = mongo.db.users.find_one({"_id": user_doc["_id"]})
-        else:
-            # Create new user
-            user_id = mongo.db.users.insert_one(
-                {
-                    "helmholtz_sub": helmholtz_sub,
-                    "email": email,
-                    "name": name,
-                    "role": "user",  # Default role for new users
-                }
-            ).inserted_id
-            user_doc = mongo.db.users.find_one({"_id": user_id})
+    if user_doc:
+        # Update existing user's email and name if changed
+        mongo.db.users.update_one({"_id": user_doc["_id"]}, {"$set": {"email": email, "name": name}})
+        user_doc = mongo.db.users.find_one({"_id": user_doc["_id"]})
+    else:
+        # Create new user
+        user_id = mongo.db.users.insert_one(
+            {
+                "helmholtz_sub": helmholtz_sub,
+                "email": email,
+                "name": name,
+                "role": "user",  # Default role for new users
+            }
+        ).inserted_id
+        user_doc = mongo.db.users.find_one({"_id": user_id})
 
-        # Log user in with "Remember Me" to persist login across browser sessions
-        # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
-        # _login() will create the user directory if it doesn't exist
-        user = User(user_doc)
-        _login(user, remember=True)
+    # Log user in with "Remember Me" to persist login across browser sessions
+    # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
+    # _login() will create the user directory if it doesn't exist
+    user = User(user_doc)
+    _login(user, remember=True)
 
-        # Store access token in session for logout/revocation
-        session["oauth_token"] = token.get("access_token")
+    # Store access token in session for logout/revocation
+    session["oauth_token"] = token.get("access_token")
 
-        # If there is an anonymous session, migrate runs to this user
-        session_id = session.get("session_id")
-        if session_id:
-            mongo.db.runs.update_many(
-                {"session_id": session_id},
-                {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}},
-            )
-            # Clear anonymous session_id
-            session.pop("session_id", None)
+    # If there is an anonymous session, migrate runs to this user
+    session_id = session.get("session_id")
+    if session_id:
+        mongo.db.runs.update_many(
+            {"session_id": session_id},
+            {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}},
+        )
+        # Clear anonymous session_id
+        session.pop("session_id", None)
 
-        # Redirect to frontend - check if there's a preserved redirect URL
-        redirect_path = session.pop("oauth_redirect", None)
-        if redirect_path:
-            return redirect(current_app.config["FRONTEND_URL"] + redirect_path)
-        return redirect(current_app.config["FRONTEND_URL"] + "/")  # Default to homepage
-
-    except Exception as e:
-        current_app.logger.error(f"OAuth callback error: {e!s}")
-        return jsonify({"error": "Authentication failed", "details": str(e)}), 500
+    # Redirect to frontend - check if there's a preserved redirect URL
+    frontend_url = "http://localhost:3000"
+    redirect_path = session.pop("oauth_redirect", None)
+    if redirect_path:
+        return redirect(f"{frontend_url}{redirect_path}")
+    return redirect(f"{frontend_url}/")  # Default to homepage
 
 
 # ---- Check Authentication Status Route ----

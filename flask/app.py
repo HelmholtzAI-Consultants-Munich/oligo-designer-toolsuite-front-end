@@ -7,6 +7,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 from flask_pymongo import BSONObjectIdConverter
 from routes import register_blueprints
 from routes.auth import init_login_manager
+from routes.error_handlers import register_error_handlers
 
 from flask import Flask
 
@@ -76,6 +77,9 @@ def create_app():
 
     # Register all blueprints from the routes package
     register_blueprints(app)
+
+    # Register error handlers for centralized error handling
+    register_error_handlers(app)
 
     return app
 
