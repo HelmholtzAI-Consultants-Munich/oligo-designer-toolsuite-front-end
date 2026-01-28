@@ -8,8 +8,7 @@ from extensions import celery_app, mongo
 from flask_login import current_user
 from flask_login.utils import LocalProxy
 
-from flask import Blueprint, current_app, jsonify, request
-from routes.error_handlers import create_user_error_response
+from flask import Blueprint, abort, current_app, jsonify, request
 from routes.validation_helpers import get_run_id, get_user_context_with_directory
 
 # Blueprint for Merfish endpoints
@@ -113,37 +112,31 @@ def start_pipeline(pipeline_name: str):
 
     """
     if not validate_name(pipeline_name):
-        return jsonify({"error": f'Pipeline "{pipeline_name}" does not exist'}), 400
+        abort(400, description=f'Pipeline "{pipeline_name}" does not exist')
 
     json = request.get_json(silent=True)
     if not json:
-        return jsonify({"error": "Expected JSON"}), 415
+        abort(415, description="Expected JSON")
 
     run_id_str = json.get("runid")  # Run ID from React
-    try:
-        run_id = get_run_id(run_id_str)
-    except Exception as e:
-        return create_user_error_response(e, "submission")
+    run_id = get_run_id(run_id_str)
 
     form_data = json.get("formdata")  # Form data from React
 
     upload_path = current_app.config["UPLOAD_PATH"]
 
     # User Directory and Session / User ID Logic
-    try:
-        context = create_context(pipeline_name, current_user)
-    except Exception as e:
-        return create_user_error_response(e, "submission")
+    context = create_context(pipeline_name, current_user)
 
     if context["output_path"] is None:
-        return jsonify({"error": "Could not infer output directory"}), 500
+        abort(500, description="Could not infer output directory")
 
     result_promise = enqueue_pipeline(pipeline_name, form_data, upload_path, context["output_path"])
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
     if update_result.matched_count == 0:
-        return create_user_error_response(ValueError("Run ID not found"), "submission")
+        abort(404, description="Run ID not found")
 
     # The task state can be polled using get_run_state(run_id_str).
 

@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.utils import secure_filename
 
 # Blueprint for all upload-related endpoints
@@ -44,18 +44,18 @@ def upload_file():
     """
     # Step 1: Check if the request includes a file under the 'file' key
     if "file" not in request.files:
-        return jsonify({"error": "No file part"}), 400
+        abort(400, description="No file part")
 
     file = request.files["file"]
 
     # Step 2: Check if the user actually selected a file (filename should not be empty)
     if file.filename == "":
-        return jsonify({"error": "No selected file"}), 400
+        abort(400, description="No selected file")
 
     # Step 3: Sanitize the filename to prevent path traversal attacks
     safe_filename = secure_filename(file.filename)
     if not safe_filename:
-        return jsonify({"error": "Invalid filename"}), 400
+        abort(400, description="Invalid filename")
 
     # Step 4: Generate a unique filename by prefixing with a UUID
     unique_filename = f"{uuid.uuid4().hex}_{safe_filename}"

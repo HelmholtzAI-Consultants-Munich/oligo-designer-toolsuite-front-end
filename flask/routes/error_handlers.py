@@ -5,7 +5,8 @@ This module provides centralized error handling that sanitizes error messages
 before returning them to users, ensuring sensitive information is never exposed.
 """
 
-from flask import current_app, jsonify
+from flask import Flask, current_app, jsonify, request
+from werkzeug.exceptions import HTTPException
 from bson.errors import InvalidId
 
 
@@ -72,6 +73,12 @@ def _sanitize_error_message(exception: Exception) -> str:
     Maps specific exception types to descriptive, actionable messages
     while concealing sensitive information.
     """
+    # Handle HTTPException from Flask's abort()
+    if isinstance(exception, HTTPException):
+        if hasattr(exception, "description") and exception.description:
+            return exception.description
+        return str(exception)
+
     error_str = str(exception).lower()
 
     match exception:
@@ -133,6 +140,10 @@ def _get_http_status_code(exception: Exception) -> int:
     """
     Determine appropriate HTTP status code based on exception type.
     """
+    # Handle HTTPException from Flask's abort()
+    if isinstance(exception, HTTPException):
+        return exception.code
+
     match exception:
         case NotFoundError():
             return 404
@@ -165,3 +176,74 @@ def _get_http_status_code(exception: Exception) -> int:
         case _:
             # Default to 500 for server errors
             return 500
+
+
+# ============================================================================
+# Flask Error Handler Registration
+# ============================================================================
+
+
+def _handle_http_exception(error: HTTPException):
+    """Handle Flask HTTPException (from abort())."""
+    # HTTPException already has code and description, use sanitization
+    error_message = _sanitize_error_message(error)
+    return jsonify({"error": error_message}), error.code
+
+
+def _handle_custom_exception(error: Exception):
+    """Handle custom exceptions (NotFoundError, ForbiddenError, etc.) and built-in exceptions."""
+    # Check if this is a genomic endpoint that needs special formatting
+    if request.endpoint and "genomic" in request.endpoint:
+        error_response, status_code = create_user_error_response(error, "submission")
+        error_data = error_response.get_json()
+        return jsonify(
+            {
+                "status": "error",
+                "message": "We couldn't process your genomic data. Please check your input and try again.",
+                "error": error_data.get("error", "Something went wrong. Please try again."),
+            }
+        ), status_code
+
+    # Standard error response for all other endpoints
+    return create_user_error_response(error, "submission")
+
+
+def register_error_handlers(app: Flask):
+    """
+    Register error handlers on the Flask application.
+
+    This function registers handlers for:
+    - HTTPException (from Flask's abort() function)
+    - Custom exceptions (NotFoundError, ForbiddenError, InternalServerError)
+    - Built-in exceptions (ValueError, RuntimeError, FileNotFoundError, etc.)
+
+    Args:
+        app: The Flask application instance
+    """
+
+    # Register handler for HTTPException (from abort())
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(error: HTTPException):
+        return _handle_http_exception(error)
+
+    # Register handler for custom exceptions
+    @app.errorhandler(NotFoundError)
+    @app.errorhandler(ForbiddenError)
+    @app.errorhandler(InternalServerError)
+    def handle_custom_exceptions(error: Exception):
+        return _handle_custom_exception(error)
+
+    # Register handler for built-in exceptions
+    @app.errorhandler(ValueError)
+    @app.errorhandler(RuntimeError)
+    @app.errorhandler(FileNotFoundError)
+    @app.errorhandler(PermissionError)
+    @app.errorhandler(KeyError)
+    @app.errorhandler(InvalidId)
+    def handle_builtin_exceptions(error: Exception):
+        return _handle_custom_exception(error)
+
+    # Catch-all handler for any other unhandled exceptions
+    @app.errorhandler(Exception)
+    def handle_generic_exception(error: Exception):
+        return _handle_custom_exception(error)

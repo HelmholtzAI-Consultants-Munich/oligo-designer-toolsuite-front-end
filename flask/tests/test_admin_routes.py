@@ -403,7 +403,7 @@ def test_bulk_update_user_role_self_demotion(admin_client, admin_user):
     # When trying to demote yourself and you're the only user, filtered_user_ids is empty
     # so the endpoint returns 400
     assert response.status_code == 400
-    assert "Cannot demote your own admin account" in response.get_json()["message"]
+    assert "Cannot demote your own admin account" in response.get_json()["error"]
 
 
 def test_bulk_delete_users_unauthorized(regular_client, regular_user):

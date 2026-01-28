@@ -21,12 +21,11 @@ import os
 from datetime import datetime
 
 from bson import ObjectId
-from flask import Blueprint, jsonify, send_file, session
+from flask import Blueprint, abort, jsonify, send_file, session
 from flask_login import current_user
 
 from extensions import celery_app, mongo
 from helpers import delete_pipeline_run_files_and_db
-from routes.error_handlers import create_user_error_response
 from routes.validation_helpers import get_run_or_404, get_task_id, get_user_context
 
 runs_bp = Blueprint("runs", __name__)
@@ -49,21 +48,16 @@ def delete_run(run_id: ObjectId):
         1. Verify ownership (user_id or session_id).
         2. Use shared helper to delete files and database entry.
     """
-    try:
-        # Check ownership first (users can only delete their own runs)
-        get_run_or_404(run_id, require_ownership=True)
+    # Check ownership first (users can only delete their own runs)
+    get_run_or_404(run_id, require_ownership=True)
 
-        # Use shared deletion helper
-        success, error = delete_pipeline_run_files_and_db(mongo, run_id)
+    # Use shared deletion helper
+    success, error = delete_pipeline_run_files_and_db(mongo, run_id)
 
-        if not success:
-            return jsonify({"error": error}), 500
+    if not success:
+        abort(500, description=error)
 
-        return jsonify({"message": "Run deleted successfully"}), 200
-
-    except Exception as e:
-        print(f"Error deleting run: {e!s}")
-        return jsonify({"error": "Failed to delete run"}), 500
+    return jsonify({"message": "Run deleted successfully"}), 200
 
 
 @runs_bp.route("/api/init_run_id", methods=["POST"])
@@ -103,29 +97,24 @@ def get_pipeline_runs():
         2. Query DB for runs by user_id or session_id.
         3. Format and return run info for each run.
     """
-    try:
-        if current_user.is_authenticated:
-            runs = list(mongo.db.runs.find({"user_id": str(current_user.id)}))
-        else:
-            session_id = session.get("session_id")
-            runs = list(mongo.db.runs.find({"session_id": session_id})) if session_id else []
+    if current_user.is_authenticated:
+        runs = list(mongo.db.runs.find({"user_id": str(current_user.id)}))
+    else:
+        session_id = session.get("session_id")
+        runs = list(mongo.db.runs.find({"session_id": session_id})) if session_id else []
 
-        formatted_runs = []
-        for run in runs:
-            formatted = {
-                "_id": str(run["_id"]),
-                "pipeline": run.get("pipeline", "unknown"),
-                "status": run.get("status", "unknown"),
-                "timestamp": run.get("timestamp", "").replace("_", " "),
-                "output_path": run.get("output_path", ""),
-                "user_id": run.get("user_id", "unknown"),
-            }
-            formatted_runs.append(formatted)
-        return jsonify(formatted_runs), 200
-
-    except Exception as e:
-        print(f"Error fetching pipeline runs: {e!s}")
-        return jsonify({"error": "Failed to fetch pipeline runs"}), 500
+    formatted_runs = []
+    for run in runs:
+        formatted = {
+            "_id": str(run["_id"]),
+            "pipeline": run.get("pipeline", "unknown"),
+            "status": run.get("status", "unknown"),
+            "timestamp": run.get("timestamp", "").replace("_", " "),
+            "output_path": run.get("output_path", ""),
+            "user_id": run.get("user_id", "unknown"),
+        }
+        formatted_runs.append(formatted)
+    return jsonify(formatted_runs), 200
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>", methods=["GET"])
@@ -144,26 +133,21 @@ def get_pipeline_run(run_id: ObjectId):
         1. Fetch run for user/session.
         2. Return run details or error if not found.
     """
-    try:
-        # Auth or session check
-        run = get_run_or_404(run_id, require_ownership=True)
+    # Auth or session check
+    run = get_run_or_404(run_id, require_ownership=True)
 
-        formatted_run = {
-            "_id": str(run["_id"]),
-            "pipeline": run.get("pipeline", "unknown"),
-            "status": run.get("status", "unknown"),
-            "timestamp": run.get("timestamp", "").replace("_", " "),
-            "output_path": run.get("output_path", ""),
-            "user_id": run.get("user_id", "unknown"),
-        }
-        # Include error_message if status is failure
-        if run.get("status") == "failure" and run.get("error_message"):
-            formatted_run["error_message"] = run.get("error_message")
-        return jsonify(formatted_run), 200
-
-    except Exception as e:
-        print(f"Error fetching pipeline run: {e!s}")
-        return jsonify({"error": "Failed to fetch pipeline run"}), 500
+    formatted_run = {
+        "_id": str(run["_id"]),
+        "pipeline": run.get("pipeline", "unknown"),
+        "status": run.get("status", "unknown"),
+        "timestamp": run.get("timestamp", "").replace("_", " "),
+        "output_path": run.get("output_path", ""),
+        "user_id": run.get("user_id", "unknown"),
+    }
+    # Include error_message if status is failure
+    if run.get("status") == "failure" and run.get("error_message"):
+        formatted_run["error_message"] = run.get("error_message")
+    return jsonify(formatted_run), 200
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/files/<path:filename>", methods=["GET"])
@@ -186,27 +170,23 @@ def get_run_file(run_id: ObjectId, filename: str):
         2. Resolve the requested file path (with subdir support).
         3. Serve file with correct mimetype, or return error.
     """
-    try:
-        # Auth or session check
-        run = get_run_or_404(run_id, require_ownership=True)
+    # Auth or session check
+    run = get_run_or_404(run_id, require_ownership=True)
 
-        # Support subdirs (e.g. "annotation/example.fna")
-        file_path = os.path.join(run["output_path"], *filename.split("/"))
-        if not os.path.exists(file_path):
-            return jsonify({"error": "File not found"}), 404
+    # Support subdirs (e.g. "annotation/example.fna")
+    file_path = os.path.join(run["output_path"], *filename.split("/"))
+    if not os.path.exists(file_path):
+        abort(404, description="File not found")
 
-        # Return correct mimetype
-        if filename.endswith((".yml", ".yaml")):
-            return send_file(file_path, as_attachment=True)
-        elif filename.endswith((".txt", ".log")):
-            return send_file(file_path, mimetype="text/plain")
-        elif filename.endswith(".fna"):
-            return send_file(file_path, mimetype="application/octet-stream")
-        else:
-            return jsonify({"error": "Unsupported file type"}), 400
-
-    except Exception as e:
-        return create_user_error_response(e, "submission")
+    # Return correct mimetype
+    if filename.endswith((".yml", ".yaml")):
+        return send_file(file_path, as_attachment=True)
+    elif filename.endswith((".txt", ".log")):
+        return send_file(file_path, mimetype="text/plain")
+    elif filename.endswith(".fna"):
+        return send_file(file_path, mimetype="application/octet-stream")
+    else:
+        abort(400, description="Unsupported file type")
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/files", methods=["GET"])
@@ -226,41 +206,37 @@ def get_run_files(run_id: ObjectId):
         2. List files in run output directory.
         3. If pipeline is Genomic Region Generator, include files from annotation subdir.
     """
-    try:
-        # Auth or session check
-        run = get_run_or_404(run_id, require_ownership=True)
+    # Auth or session check
+    run = get_run_or_404(run_id, require_ownership=True)
 
-        output_dir = run["output_path"]
-        files = []
+    output_dir = run["output_path"]
+    files = []
 
-        # Main output dir files
-        for fname in os.listdir(output_dir):
-            if fname.endswith((".yml", ".yaml", ".txt", ".log")):
-                files.append(
-                    {
-                        "name": fname,
-                        "type": "log" if "log" in fname else "config",
-                        "size": os.path.getsize(os.path.join(output_dir, fname)),
-                    }
-                )
+    # Main output dir files
+    for fname in os.listdir(output_dir):
+        if fname.endswith((".yml", ".yaml", ".txt", ".log")):
+            files.append(
+                {
+                    "name": fname,
+                    "type": "log" if "log" in fname else "config",
+                    "size": os.path.getsize(os.path.join(output_dir, fname)),
+                }
+            )
 
-        # Special handling for "Genomic Region Generator" pipeline
-        if run.get("pipeline") == "Genomic Region Generator":
-            output_gen = os.path.join(output_dir, "annotation")
-            if os.path.exists(output_gen):
-                for fname in os.listdir(output_gen):
-                    if fname.endswith((".yml", ".yaml", ".txt", ".log", ".fna")):
-                        files.append(
-                            {
-                                "name": f"annotation/{fname}",
-                                "type": "log" if "log" in fname else "config",
-                                "size": os.path.getsize(os.path.join(output_gen, fname)),
-                            }
-                        )
-        return jsonify(files), 200
-
-    except Exception as e:
-        return create_user_error_response(e, "submission")
+    # Special handling for "Genomic Region Generator" pipeline
+    if run.get("pipeline") == "Genomic Region Generator":
+        output_gen = os.path.join(output_dir, "annotation")
+        if os.path.exists(output_gen):
+            for fname in os.listdir(output_gen):
+                if fname.endswith((".yml", ".yaml", ".txt", ".log", ".fna")):
+                    files.append(
+                        {
+                            "name": f"annotation/{fname}",
+                            "type": "log" if "log" in fname else "config",
+                            "size": os.path.getsize(os.path.join(output_gen, fname)),
+                        }
+                    )
+    return jsonify(files), 200
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
