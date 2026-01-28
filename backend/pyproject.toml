@@ -49,8 +49,8 @@ select = [
     "F",   # Pyflakes
     "RUF", # ruff-specific rules
     "UP",  # pyupgrade
-    # isort is disabled because the 'flask' directory name
-    # causes ruff to think flask imports are local
+    # isort is disabled because the 'backend' directory name
+    # and Flask imports can cause ruff to confuse local vs library imports
     #"I",   # isort
 ]
 

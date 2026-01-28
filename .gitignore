@@ -102,25 +102,25 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Flask stuff:
-flask/instance/
-flask/uploads/
+# Backend stuff:
+backend/instance/
+backend/uploads/
 .webassets-cache
 
-# Flask User Data
+# Backend User Data
 #  This keeps only the empty testing data directories.
 #  todo: separate test data from user data -> ignore all user data
-flask/data-access/**
+backend/data-access/**
 
-!flask/data-access/user_data/
-flask/data-access/user_data/**
+!backend/data-access/user_data/
+backend/data-access/user_data/**
 
-!flask/data-access/user_data/testuser123/
-!flask/data-access/user_data/testuser123/.gitkeep
+!backend/data-access/user_data/testuser123/
+!backend/data-access/user_data/testuser123/.gitkeep
 
-!flask/data-access/user_data/anon/
-!flask/data-access/user_data/anon/anon-session-123/
-!flask/data-access/user_data/anon/anon-session-123/.gitkeep
+!backend/data-access/user_data/anon/
+!backend/data-access/user_data/anon/anon-session-123/
+!backend/data-access/user_data/anon/anon-session-123/.gitkeep
 
 # Ruff stuff:
 .ruff_cache/

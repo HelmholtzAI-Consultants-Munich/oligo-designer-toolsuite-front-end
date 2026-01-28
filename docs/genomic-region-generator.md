@@ -45,7 +45,7 @@ It supports flexible region selection, automatic file retrieval, and efficient c
 5. **Caching mechanism**
    - **First-level cache**: Checks if the exact region FASTA files have already been generated with the same parameters.
    - **Second-level cache**: Reuses downloaded and decompressed genome annotation (.gtf) and sequence (.fna) files from NCBI or Ensembl.
-   - Cached files are stored in `flask/cache/` with unique identifiers based on form parameters.
+   - Cached files are stored in `backend/cache/` with unique identifiers based on form parameters.
    - For more details on caching strategy, cleanup, and configuration, see the [Caching FASTA Files](caching_fasta.md) page.
 
 ## Backend processing (`POST /api/genomic/cascaded/custom`)

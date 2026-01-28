@@ -1,15 +1,15 @@
 import os
 import sys
-
-import pytest
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from unittest.mock import patch
 
-from app import create_app
+import pytest
 from bson import ObjectId
-from extensions import mongo
 from werkzeug.security import generate_password_hash
+
+# Add project root to sys.path so backend module can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from backend.app import create_app
+from backend.extensions import mongo
 
 
 @pytest.fixture(autouse=True)
@@ -69,18 +69,18 @@ def test_login_success(client, monkeypatch, dummy_user):
             return dummy_user
         return None
 
-    monkeypatch.setattr("extensions.mongo.db.users.find_one", mock_find_one)
+    monkeypatch.setattr("backend.extensions.mongo.db.users.find_one", mock_find_one)
     monkeypatch.setattr("werkzeug.security.check_password_hash", lambda hashed, plain: True)
     monkeypatch.setattr("flask_login.login_user", lambda user: None)
 
-    with patch("os.makedirs"), patch("extensions.mongo.db.runs.update_many"):
+    with patch("os.makedirs"), patch("backend.extensions.mongo.db.runs.update_many"):
         response = client.post("/login", json={"email": dummy_user["email"], "password": "mypassword"})
         assert response.status_code == 200
         assert response.get_json()["message"] == "Logged in successfully"
 
 
 def test_login_invalid_credentials(client, monkeypatch):
-    monkeypatch.setattr("extensions.mongo.db.users.find_one", lambda q: None)
+    monkeypatch.setattr("backend.extensions.mongo.db.users.find_one", lambda q: None)
     response = client.post("/login", json={"email": "notfound@example.com", "password": "wrongpass"})
     assert response.status_code == 401
     assert "error" in response.get_json()

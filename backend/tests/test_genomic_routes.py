@@ -2,7 +2,7 @@ import json
 import os
 import pytest
 
-from conftest import assert_error_sanitized
+from .conftest import assert_error_sanitized
 
 
 @pytest.fixture
@@ -208,7 +208,7 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
     ]
 
     for exc in exceptions:
-        with patch("routes.genomic._prepare_ncbi_cached_assets", side_effect=exc):
+        with patch("backend.routes.genomic._prepare_ncbi_cached_assets", side_effect=exc):
             response = client.post(
                 "/api/genomic/cascaded/ncbi",
                 json={"source": "NCBI", "genomic_regions": {"gene": "true"}},
@@ -245,7 +245,7 @@ def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi
     mock_result.stderr = ""
 
     # Patch subprocess.run where it's used in genomic routes
-    with patch("routes.genomic.subprocess.run", return_value=mock_result):
+    with patch("backend.routes.genomic.subprocess.run", return_value=mock_result):
         # With makedirs mock disabled, directories will be created and request should succeed
         response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
         assert response.status_code == 200
@@ -267,7 +267,7 @@ def test_genomic_single_ensembl_session_without_directory(client, dummy_form_ens
     mock_result.stderr = ""
 
     # Patch subprocess.run where it's used in genomic routes
-    with patch("routes.genomic.subprocess.run", return_value=mock_result):
+    with patch("backend.routes.genomic.subprocess.run", return_value=mock_result):
         # With makedirs mock disabled, directories will be created and request should succeed
         response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)
         assert response.status_code == 200

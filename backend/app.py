@@ -1,16 +1,16 @@
 import logging.config
 import os
 
-from config import Config
-from extensions import celery_app, mongo, oauth
+from flask import Flask
 from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics
 from flask_pymongo import BSONObjectIdConverter
-from routes import register_blueprints
-from routes.auth import init_login_manager
-from routes.error_handlers import register_error_handlers
 
-from flask import Flask
+from backend.config import Config
+from backend.extensions import celery_app, mongo, oauth
+from backend.routes import register_blueprints
+from backend.routes.auth import init_login_manager
+from backend.routes.error_handlers import register_error_handlers
 
 
 def prepare_paths(app: Flask):

@@ -14,17 +14,17 @@ Endpoints:
 """
 
 from bson import ObjectId
-from extensions import mongo
+from flask import Blueprint, abort, jsonify, request
 from flask_login import current_user, login_required
-from helpers import (
+
+from backend.extensions import mongo
+from backend.helpers import (
     delete_pipeline_run_files_and_db,
     execute_bulk_pipeline_run_deletion,
     validate_and_convert_ids,
     validate_id_array,
 )
-from routes.validation_helpers import get_run_or_404, get_user_by_id_or_404
-
-from flask import Blueprint, abort, jsonify, request
+from backend.routes.validation_helpers import get_run_or_404, get_user_by_id_or_404
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -41,7 +41,7 @@ def is_admin(user):
     if not user or not user.is_authenticated:
         return False
 
-    from routes.validation_helpers import find_user_by_id
+    from backend.routes.validation_helpers import find_user_by_id
 
     user_doc = find_user_by_id(ObjectId(user.id), exclude_password=False)
     if not user_doc:

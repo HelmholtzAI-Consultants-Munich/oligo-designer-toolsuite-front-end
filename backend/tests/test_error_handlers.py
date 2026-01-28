@@ -11,8 +11,9 @@ from unittest.mock import patch
 
 from bson.errors import InvalidId
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from routes.error_handlers import (
+# Add project root to sys.path so backend module can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from backend.routes.error_handlers import (
     create_user_error_response,
 )
 

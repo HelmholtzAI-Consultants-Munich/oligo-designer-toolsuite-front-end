@@ -3,7 +3,7 @@
 # Start frontend (in the background)
 npm run dev &
 FRONTEND_PID=$!
-cd flask
+cd backend
 # Start celery (in the background)
 celery -A worker worker &
 CELERY_PID=$!

@@ -1,11 +1,10 @@
 from bson import ObjectId
 from bson.errors import InvalidId
-from extensions import mongo
-from flask import current_app
+from flask import current_app, session
 from flask_login import current_user
-from routes.error_handlers import ForbiddenError, InternalServerError, NotFoundError
 
-from flask import session
+from backend.extensions import mongo
+from backend.routes.error_handlers import ForbiddenError, InternalServerError, NotFoundError
 
 
 # ============================================================================

@@ -13,9 +13,10 @@ from unittest.mock import patch
 
 import pytest
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from app import create_app
-from extensions import mongo
+# Add project root to sys.path so backend module can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from backend.app import create_app
+from backend.extensions import mongo
 
 
 # Temporarily disabled - see issue for better directory mocking solution
@@ -87,9 +88,10 @@ def mock_user_dir_exists(monkeypatch):
 
 
 @pytest.fixture
-def run_id():
-    # Insert dummy run
-    return mongo.db.runs.insert_one({"status": "created"}).inserted_id
+def run_id(app):
+    # Insert dummy run - needs app context for mongo to be initialized
+    with app.app_context():
+        return mongo.db.runs.insert_one({"status": "created"}).inserted_id
 
 
 @pytest.fixture
@@ -114,9 +116,9 @@ def mock_celery():
         def get(self):
             return True, b""
 
-    with patch("routes.pipelines.enqueue_pipeline") as mock_pending:
+    with patch("backend.routes.pipelines.enqueue_pipeline") as mock_pending:
         mock_pending.return_value = MockPendingAsyncResult()
-        with patch("extensions.celery_app.AsyncResult") as mock_success:
+        with patch("backend.extensions.celery_app.AsyncResult") as mock_success:
             mock_success.return_value = MockSuccessfulAsyncResult()
             yield mock_success
 
@@ -245,7 +247,7 @@ def create_test_run(run_id, user_id="dummy_user", **kwargs):
     Returns:
         The inserted/updated document
     """
-    from extensions import mongo
+    from backend.extensions import mongo
 
     run_doc = {
         "_id": run_id,

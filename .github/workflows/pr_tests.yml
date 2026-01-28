@@ -35,7 +35,7 @@ jobs:
         run: |
           set -euxo pipefail
           python -m pip install --upgrade pip
-          pip install --group flask/pyproject.toml:test
+          pip install --group backend/pyproject.toml:test
 
       - name: Wait for MongoDB to be ready
         run: |
@@ -54,7 +54,7 @@ jobs:
         id: backend-tests-run
         run: |
           set -euxo pipefail
-          pytest --cov=flask --cov-report=term-missing --cov-report=xml
+          pytest --cov=backend --cov-report=term-missing --cov-report=xml
         continue-on-error: false
 
       - name: Upload coverage reports
