@@ -6,6 +6,7 @@ import re
 import shutil
 
 from bson import ObjectId
+from flask import current_app
 
 
 def get_form_cache_key(form: dict) -> str:
@@ -93,7 +94,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
         try:
             shutil.rmtree(output_path)
         except Exception as e:
-            print(f"Warning: Failed to delete output directory {output_path}: {e!s}")
+            current_app.logger.warning(f"Failed to delete output directory {output_path}: {e!s}")
             # Continue with DB deletion even if file deletion fails
 
     # Remove from database

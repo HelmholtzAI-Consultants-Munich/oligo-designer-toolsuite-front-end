@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 import os
 from Bio import SeqIO
@@ -6,9 +7,10 @@ import yaml
 
 
 class GenomicRegionFile:
-    def __init__(self, regions_path: str, fasta_paths: list[str]):
+    def __init__(self, regions_path: str, fasta_paths: list[str], logger=None):
         self.regions_path = regions_path
         self.fasta_paths = fasta_paths
+        self.logger = logger or logging.getLogger(__name__)
 
         self.genes = self._load_genes()
         self.regions = self._load_regions()
@@ -37,7 +39,7 @@ class GenomicRegionFile:
 
         for fname in self.fasta_paths:
             if not os.path.exists(fname):
-                print(f"Fasta file {fname} not found, skipping.")
+                self.logger.warning(f"Fasta file {fname} not found, skipping.")
                 continue
 
             seq_record = SeqIO.index(fname, "fasta")

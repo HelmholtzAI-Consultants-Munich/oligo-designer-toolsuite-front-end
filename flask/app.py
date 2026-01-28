@@ -1,3 +1,4 @@
+import logging.config
 import os
 
 from config import Config
@@ -36,6 +37,11 @@ def prepare_paths(app: Flask):
 
 
 def create_app():
+    # Configure logging before creating Flask app (as Flask docs recommend)
+    # This ensures logging is configured before app.logger is accessed
+    debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
+    logging.config.dictConfig(Config.get_logging_config(debug=debug_mode))
+
     app = Flask(__name__)
     PrometheusMetrics(app)
 
@@ -89,4 +95,8 @@ app = create_app()
 
 
 if __name__ == "__main__":
+    # When running directly, enable debug mode which will use DEBUG log level
+    app.config["DEBUG"] = True
+    # Reconfigure logging with debug mode
+    logging.config.dictConfig(Config.get_logging_config(debug=True))
     app.run(debug=True, host="0.0.0.0")

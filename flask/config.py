@@ -117,6 +117,38 @@ class Config(BaseConfig):
     CELERY_CONFIG = CeleryConfig()
 
     @staticmethod
+    def get_logging_config(debug: bool = False) -> dict:
+        """Get logging configuration dictionary for Flask application.
+
+        Args:
+            debug: Whether Flask is in debug mode. If True, uses DEBUG log level,
+                   otherwise uses INFO level for production.
+
+        Returns:
+            Dictionary compatible with logging.config.dictConfig()
+        """
+        log_level = "DEBUG" if debug else "INFO"
+        return {
+            "version": 1,
+            "formatters": {
+                "default": {
+                    "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",
+                },
+            },
+            "handlers": {
+                "wsgi": {
+                    "class": "logging.StreamHandler",
+                    "stream": "ext://flask.logging.wsgi_errors_stream",
+                    "formatter": "default",
+                },
+            },
+            "root": {
+                "level": log_level,
+                "handlers": ["wsgi"],
+            },
+        }
+
+    @staticmethod
     def validate_oauth_config():
         """Validate that required OAuth configuration is present.
 
