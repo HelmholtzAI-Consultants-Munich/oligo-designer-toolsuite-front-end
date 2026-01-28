@@ -25,6 +25,7 @@ services:
       - data-access:/app/data-access
     environment:
       HOST_URL: ${BACKEND_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
       MONGO_URI: mongodb://odt-db:27017/oligo_db
       CELERY_MONGO_URI: mongodb://odt-db:27017/
       CELERY_BROKER: pyamqp://guest@odt-mq/

@@ -21,6 +21,7 @@ class Config:
 
     # URL settings
     HOST_URL = os.environ.get("HOST_URL", "http://localhost:5000")
+    FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
     # Directory settings
     # Directory shared between server and worker
