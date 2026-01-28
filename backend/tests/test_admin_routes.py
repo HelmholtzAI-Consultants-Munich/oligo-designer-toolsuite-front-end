@@ -6,8 +6,9 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from extensions import mongo
+# Add project root to sys.path so backend module can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from backend.extensions import mongo
 
 
 @pytest.fixture

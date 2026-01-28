@@ -4,12 +4,12 @@ from typing import Any
 
 from bson import ObjectId
 from celery.result import AsyncResult
-from extensions import celery_app, mongo
+from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from flask_login.utils import LocalProxy
 
-from flask import Blueprint, abort, current_app, jsonify, request
-from routes.validation_helpers import get_run_id, get_user_context_with_directory
+from backend.extensions import celery_app, mongo
+from backend.routes.validation_helpers import get_run_id, get_user_context_with_directory
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)

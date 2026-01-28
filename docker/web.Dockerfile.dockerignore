@@ -8,5 +8,5 @@
 # Non-web files
 /docker
 /docs
-/flask
+/backend
 /tests

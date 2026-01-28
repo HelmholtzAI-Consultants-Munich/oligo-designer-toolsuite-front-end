@@ -7,12 +7,11 @@ Usage: python promote_admin.py <email>
 import os
 import sys
 
-# Add the flask directory to the path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add the project root to the path so backend module can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-
-from app import create_app
-from extensions import mongo
+from backend.app import create_app
+from backend.extensions import mongo
 
 
 def promote_user(email):

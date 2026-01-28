@@ -1,12 +1,12 @@
-# Ignore everything except the schemas and flask directory
+# Ignore everything except the schemas and backend directory
 # see https://docs.docker.com/build/cache/optimize/#keep-the-context-small
 /*
 !/schemas
-!/flask
+!/backend
 
-# Ignore directory contents in the flask directory except for the worker directory
-/flask/*/*
-!/flask/worker/*
+# Ignore directory contents in the backend directory except for the worker directory
+/backend/*/*
+!/backend/worker/*
 
 # Python artifacts
 **/__pycache__

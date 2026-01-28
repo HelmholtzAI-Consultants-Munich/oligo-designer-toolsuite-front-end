@@ -36,7 +36,7 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./flask
+          path: ./backend
           target: /app
           initial_sync: true
 
@@ -57,7 +57,7 @@ services:
     develop:
       watch:
         - action: sync+restart
-          path: ./flask
+          path: ./backend
           target: /app
           initial_sync: true
 

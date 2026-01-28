@@ -5,8 +5,9 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from conftest import create_test_run
+# Add project root to sys.path so backend module can be imported
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+from .conftest import create_test_run
 
 
 @pytest.fixture
@@ -185,7 +186,7 @@ def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id
     create_test_run(run_id, user_id=dummy_user.id, status="success")
 
     for exc in exceptions:
-        with patch("routes.pipelines.os.path.join", side_effect=exc):
+        with patch("backend.routes.pipelines.os.path.join", side_effect=exc):
             response = client.get(f"/api/runs/{run_id}/files/test.txt")
             data = response.get_json()
             assert "error" in data
