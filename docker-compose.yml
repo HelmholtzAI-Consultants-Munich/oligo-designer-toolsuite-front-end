@@ -88,5 +88,71 @@ services:
     restart: no
     profiles: [tests] # don't run unless specified
 
+  odt-mongodb-exporter:
+    image: percona/mongodb_exporter:0.47.2
+    container_name: odt-mongodb-exporter
+    command:
+      - "--mongodb.uri=mongodb://odt-db:27017"
+      - "--collect-all"
+    depends_on:
+      - odt-db
+    restart: unless-stopped
+    profiles: [monitoring]
+
+  odt-node-exporter:
+    image: prom/node-exporter:latest
+    container_name: odt-node-exporter
+    command:
+      - "--path.rootfs=/host"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      # Note: rslave mount propagation is not used here because on Docker Desktop,
+      # Docker runs in a VM and the host's root filesystem (/) is not configured for
+      # shared/slave mounts, causing "path / is mounted on / but it is not a shared or slave mount" errors.
+      # The simpler configuration without rslave works fine for node-exporter's metrics collection.
+      - /:/host:ro
+    restart: unless-stopped
+    profiles: [monitoring]
+
+  odt-cadvisor:
+    image: ghcr.io/google/cadvisor:latest
+    container_name: odt-cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    restart: unless-stopped
+    profiles: [monitoring]
+
+  odt-prometheus:
+    image: prom/prometheus:latest
+    container_name: odt-prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    restart: unless-stopped
+    profiles: [monitoring]
+
+  odt-grafana:
+    image: grafana/grafana:latest
+    container_name: odt-grafana
+    ports:
+      - 3001:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - odt-prometheus
+    restart: unless-stopped
+    profiles: [monitoring]
+
 volumes:
   data-access:
