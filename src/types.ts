@@ -23,6 +23,8 @@ export interface GenomicRegion {
     sequence: string;
     strand?: "+" | "-";
     regiontype?: string;
+    inferred?: boolean;
+    exon_number?: number;
 }
 
 export interface GenomicRegions {

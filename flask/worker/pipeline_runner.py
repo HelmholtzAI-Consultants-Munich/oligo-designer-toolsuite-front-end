@@ -139,6 +139,10 @@ class PipelineRunner:
                     total_sequence = str(record.seq)
                     starts = coordinates["start"]
                     ends = coordinates["end"]
+                    strand = coordinates['strand'][0] if 'strand' in coordinates else '+'
+                    if strand == '-':
+                        # reverse sequence for negative strand
+                        total_sequence = total_sequence[::-1]
                     start_ends = list(zip(starts, ends))
                     start_ends.sort(key=lambda x: x[0])  # sort by start position
                     for i, (start, end) in enumerate(start_ends):
