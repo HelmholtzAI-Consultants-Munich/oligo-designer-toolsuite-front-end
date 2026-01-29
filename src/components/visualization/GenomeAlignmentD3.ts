@@ -76,6 +76,7 @@ const GenomeAlignmentD3 = {
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;");
 
+
         // Prepare oligo positions
         const oligoPositions = oligos.map((oligo) => ({
             start: oligo.start[0][0],
@@ -101,6 +102,52 @@ const GenomeAlignmentD3 = {
             .append("g")
             .attr("transform", `translate(${margin},${margin})`);
 
+        // Location indicator
+        const locationIndicator = plot.append("rect")
+            .attr("id", "location-indicator")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", x(1) - x(0))
+            .attr("height", innerHeight)
+            .attr("fill", "#d4d4d4")
+            .attr("opacity", 0)
+            .attr("visibility", "hidden")
+
+        // Position label above indicator
+        const positionLabel = plot.append("text")
+            .attr("id", "position-label")
+            .attr("y", -5)
+            .attr("text-anchor", "middle")
+            .attr("font-size", 9)
+            .attr("fill", "black")
+            .attr("opacity", 0)
+            .attr("visibility", "hidden");
+
+        // Track current zoom transform
+        let currentZoomTransform: d3.ZoomTransform = d3.zoomIdentity;
+
+        svg
+            .on("mouseenter", () => {
+                locationIndicator.attr("visibility", "visible");
+                positionLabel.attr("visibility", "visible");
+            })
+            .on("mousemove", (event) => {
+                const [xPos] = d3.pointer(event, plot.node());
+                const zx = currentZoomTransform.rescaleX(x);
+                const domainX = zx.invert(xPos);
+                const snapX = Math.floor(domainX + 0.5);
+                locationIndicator
+                    .attr("x", zx(snapX - 0.5))
+                positionLabel
+                    .attr("x", zx(snapX - 0.5))
+                    // insert commas for thousands
+                    .text(snapX.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+            })
+            .on("mouseleave", () => {
+                locationIndicator.attr("visibility", "hidden");
+                positionLabel.attr("visibility", "hidden");
+            });
+
         plot.append("g")
             .attr("class", "oligos")
             .selectAll("rect")
@@ -108,7 +155,7 @@ const GenomeAlignmentD3 = {
             .join("rect")
             .attr("x", (d) => x(d.start - 0.5))
             .attr("y", innerHeight * 0.05)
-            .attr("width", (d) => x(d.end) - x(d.start))
+            .attr("width", (d) => x(d.end + 0.5) - x(d.start - 0.5))
             .attr("height", innerHeight / 10)
             .on("click", (_, data) => {
                 const index = oligoPositions.findIndex(
@@ -116,6 +163,21 @@ const GenomeAlignmentD3 = {
                 );
                 setSelectedOligo(index);
             });
+
+        // Tooltip
+        // TODO: do not append on body
+        const tooltip = d3.select("body")
+            .append("div")
+            .style("opacity", 0)
+            .attr("class", "tooltip")
+            .style("background-color", "white")
+            .style("border", "1px solid black")
+            .style("border-width", "2px")
+            .style("border-radius", "5px")
+            .style("padding", "5px")
+            .style("position", "absolute")
+            .style("pointer-events", "none")
+            .style("z-index", "1000");
 
         // Calculate transcript layout
         const transcriptCount = Object.keys(genomicRegions).length;
@@ -134,26 +196,45 @@ const GenomeAlignmentD3 = {
                 .append("g")
                 .attr("transform", `translate(0, ${yOffset})`);
 
-            // Draw a (bold) line for each region
+            // Draw a rect for each region
             tGroup
-                .selectAll("line")
+                .selectAll("rect")
                 .data(regions)
-                .join("line")
-                .attr("x1", (d: GenomicRegion) => x(d.start - 0.5))
-                .attr("x2", (d: GenomicRegion) => x(d.end + 0.5))
-                .attr("y1", transcriptHeight / 2)
-                .attr("y2", transcriptHeight / 2)
+                .join("rect")
                 .attr(
-                    "stroke",
+                    "width",
+                    (d: GenomicRegion) => x(d.end + 0.5) - x(d.start - 0.5)
+                )
+                .attr("height", (d: GenomicRegion) =>
+                    d.regiontype === "intron"
+                        ? Math.min(transcriptHeight / 10, 2)
+                        : Math.min(transcriptHeight / 2, 10)
+                )
+                .attr("x", (d: GenomicRegion) => x(d.start - 0.5))
+                .attr("y", function (d: GenomicRegion) {
+                    const height = d3.select(this).attr("height");
+                    return transcriptHeight / 2 - Number(height) / 2;
+                })
+                .attr(
+                    "fill",
                     (d: GenomicRegion) =>
                         regionColors[d.regiontype || "unknown"].color ||
                         "lightgray"
                 )
-                .attr("stroke-width", (d: GenomicRegion) =>
-                    d.regiontype === "intron"
-                        ? Math.min(transcriptHeight / 10, 1)
-                        : Math.min(transcriptHeight / 2, 10)
-                );
+                .on("mouseover", function (_, d: GenomicRegion) {
+                    tooltip.style("opacity", 1);
+                    d3.select(this).attr("stroke", "black");
+                })
+                .on("mousemove", (event, d: GenomicRegion) => {
+                    tooltip
+                        .html("Region Type: " + d.regiontype)
+                        .style("left", (event.pageX + 30) + "px")
+                        .style("top", (event.pageY) + "px");
+                })
+                .on("mouseleave", function (_, d: GenomicRegion) {
+                    tooltip.style("opacity", 0);
+                    d3.select(this).attr("stroke", null);
+                });
         });
 
         // Reference sequence
@@ -172,34 +253,47 @@ const GenomeAlignmentD3 = {
         ];
 
         // Set up zoom behavior
-        svg.call(
-            d3
-                .zoom()
-                .scaleExtent([1, (x.domain()[1] - x.domain()[0]) / 100]) // max zoom to 100bp width
-                .translateExtent(extent)
-                .extent(extent)
-                .filter(filter)
-                .on("zoom", zoomed)
-        );
+        const zoomBehavior = d3
+            .zoom()
+            .scaleExtent([1, (x.domain()[1] - x.domain()[0]) / 100]) // max zoom to 100bp width
+            .translateExtent(extent)
+            .extent(extent)
+            .filter(filter)
+            .on("zoom", zoomed);
+
+        svg.call(zoomBehavior);
 
         function zoomed(event: d3.D3ZoomEvent<Element, unknown>) {
+            // Track current zoom transform
+            currentZoomTransform = event.transform;
+            
             // Rescale x axis
             const zx = event.transform.rescaleX(x);
+
+            // Rescale location indicator
+            locationIndicator
+                .attr("width", zx(1) - zx(0));
 
             // Rescale oligos
             plot.selectAll<SVGRectElement, (typeof oligoPositions)[0]>(
                 ".oligos rect"
             )
                 .attr("x", (d) => zx(d.start - 0.5))
-                .attr("width", (d) => zx(d.end) - zx(d.start));
+                .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
             gX.call(xAxis.scale(zx));
 
             // Rescale genomic regions
             genomeGroup
                 .selectAll("g")
-                .selectAll<SVGLineElement, GenomicRegion>("line")
-                .attr("x1", (d) => zx(d.start - 0.5))
-                .attr("x2", (d) => zx(d.end + 0.5));
+                .selectAll<SVGRectElement, GenomicRegion>("rect")
+                .attr("x", (d) => zx(d.start - 0.5))
+                .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
+
+            // Rescale tooltip
+            plot.selectAll<SVGTextElement, GenomicRegion>("#tooltip").attr(
+                "x",
+                (d) => zx((d.start + d.end) / 2)
+            );
 
             // Calculate visible range
             const domain = zx.domain();
@@ -225,6 +319,15 @@ const GenomeAlignmentD3 = {
                 .attr("font-size", 10)
                 .attr("text-anchor", "middle")
                 .text((d) => d.char);
+
+            // Show location when bases are shown
+            if (showBases) {
+                locationIndicator.attr("opacity",1);
+                positionLabel.attr("opacity", 1);
+            } else {
+                locationIndicator.attr("opacity", 0);
+                positionLabel.attr("opacity", 0);
+            }
         }
 
         // Prevent scrolling the whole page when zooming inside the SVG
