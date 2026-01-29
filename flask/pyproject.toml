@@ -11,6 +11,7 @@ server = [
     "flask-cors >=6, <7",
     "Flask-Login >=0.6, <0.7",
     "Flask-PyMongo >=3, <4",
+    "prometheus-flask-exporter >=0.23, <0.24",
     "python-dotenv >=1.2, <2",
     "requests >=2.32, <3",
 ]
