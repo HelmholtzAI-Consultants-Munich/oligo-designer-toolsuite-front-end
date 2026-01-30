@@ -221,13 +221,16 @@ const GenomeAlignmentD3 = {
                         regionColors[d.regiontype || "unknown"].color ||
                         "lightgray"
                 )
-                .on("mouseover", function (_, d: GenomicRegion) {
+                .on("mouseover", function () {
                     tooltip.style("opacity", 1);
                     d3.select(this).attr("stroke", "black");
                 })
                 .on("mousemove", (event, d: GenomicRegion) => {
                     tooltip
-                        .html("Region Type: " + d.regiontype)
+                        // TODO: escape HTML
+                        .html("Region Type: " + d.regiontype + (d.exon_number ?
+                            "<br>Exon " + d.exon_number : "")
+                        )
                         .style("left", (event.pageX + 30) + "px")
                         .style("top", (event.pageY) + "px");
                 })
@@ -236,6 +239,9 @@ const GenomeAlignmentD3 = {
                     d3.select(this).attr("stroke", null);
                 });
         });
+
+        // Strand arrows
+        const arrowGroup = genomeGroup.append("g").attr("class", "strand-arrows");
 
         // Reference sequence
         const baseGroup = plot.append("g").attr("class", "reference-bases");
@@ -319,6 +325,73 @@ const GenomeAlignmentD3 = {
                 .attr("font-size", 10)
                 .attr("text-anchor", "middle")
                 .text((d) => d.char);
+
+            // Generate and render strand arrows
+            if (showBases) {
+                // Calculate arrow spacing based on zoom level
+                // More arrows when zoomed in further
+                const pixelsPerBp = zx(1) - zx(0);
+                const arrowSpacing = pixelsPerBp >= 10 ? 1 : pixelsPerBp >= 5 ? 3 : 5;
+
+                const arrows: Array<{
+                    position: number;
+                    strand: string;
+                    transcriptIndex: number;
+                }> = [];
+
+                const transcriptCount = Object.keys(genomicRegions).length;
+                const transcriptHeight = (innerHeight * 0.6) / transcriptCount;
+                const actualHeight = Math.min(transcriptHeight / 2, 10);
+
+                Object.entries(genomicRegions).forEach(([_, regions], transcriptIndex) => {
+                    regions.forEach((region) => {
+                        // Only show arrows for non-intron regions
+                        if (region.regiontype === "intron") return;
+
+                        // Only include visible regions
+                        if (region.end < domain[0] || region.start > domain[1]) return;
+
+                        // Generate arrow positions within the region
+                        const startPos = Math.max(region.start, Math.floor(domain[0]));
+                        const endPos = Math.min(region.end, Math.ceil(domain[1]));
+
+                        for (let pos = startPos; pos <= endPos; pos += arrowSpacing) {
+                            arrows.push({
+                                position: pos,
+                                strand: region.strand || "+",
+                                transcriptIndex,
+                            });
+                        }
+                    });
+                });
+
+                arrowGroup
+                    .selectAll<
+                        SVGTextElement,
+                        {
+                            position: number;
+                            strand: string;
+                            transcriptIndex: number;
+                        }
+                    >("text")
+                    .data(arrows, (d, i) => `${d.position}-${d.transcriptIndex}`)
+                    .join("text")
+                    .attr("x", (d) => zx(d.position))
+                    .attr("y", (d) => {
+                        const yOffset =
+                            innerHeight / 4 +
+                            d.transcriptIndex * transcriptHeight +
+                            transcriptHeight / 2;
+                        return yOffset + actualHeight / 4;
+                    })
+                    .attr("font-size", actualHeight)
+                    .attr("text-anchor", "middle")
+                    .attr("fill", "white")
+                    .text((d) => (d.strand === "+" || d.strand === "1" ? ">" : "<"));
+            } else {
+                // Clear arrows when zoomed out
+                arrowGroup.selectAll("text").remove();
+            }
 
             // Show location when bases are shown
             if (showBases) {
