@@ -120,56 +120,66 @@ class GenomicRegionFile:
                     if last_region is None:
                         last_region = region
                         continue
+                    overlap_length = last_region["end"] - region["start"] + 1
 
-                    # overlapping or contiguous regions, merge them
-                    if region["start"] <= last_region["end"] - 1:
+                    # overlapping or contiguous regions of same type, merge them
+                    if overlap_length >= 0 and last_region["regiontype"] == region["regiontype"]:
                         last_region["end"] = region["end"]
                         # concatenate sequence without overlap
                         if last_region["sequence"] is not None and region["sequence"] is not None:
-                            start_new_sequence = last_region["end"] - region["start"] + 1
-                            last_region["sequence"] += region["sequence"][start_new_sequence:]
+                            last_region["sequence"] += region["sequence"][overlap_length:]
                         # handle exon-exon junctions
                         if last_region["regiontype"] == "exonexonjunction" and region["regiontype"] == "exonexonjunction":
                             last_region["regiontype"] = "exon"
-                            last_exons = last_region.get("exon_number", []).split("__JUNC__")
-                            region_exons = region.get("exon_number", []).split("__JUNC__")
+                            last_exons = last_region.get("exon_number", "").split("__JUNC__")
+                            region_exons = region.get("exon_number", "").split("__JUNC__")
                             common_exon = list(filter(lambda x: x in region_exons, last_exons))[0]
                             last_region["exon_number"] = common_exon
 
-                    # non-overlapping regions
+                    # non-overlapping region, add last_region to merged list
+                    elif overlap_length < 0:
+                        merged_regions.append(last_region)
+                        gap_start = last_region["end"] + 1
+                        gap_end = region["start"] - 1
+
+                        # fill gap (intron between exons, exon between introns, exon between exon-exon-junctions)
+                        regiontype = "unknown"
+                        exon_number = None
+                        match (last_region["regiontype"], region["regiontype"]):
+                            case ("exon", "exon"):
+                                regiontype = "intron"
+                            case ("intron", "intron"):
+                                regiontype = "exon"
+                            case ("exonexonjunction", "exonexonjunction"):
+                                last_exons = last_region.get("exon_number", []).split("__JUNC__")
+                                region_exons = region.get("exon_number", []).split("__JUNC__")
+                                common_exon = list(filter(lambda x: x in region_exons, last_exons))[0]
+                                last_region["exon_number"] = common_exon
+                                region["exon_number"] = common_exon
+                                exon_number = common_exon
+
+                                last_region["regiontype"] = "exon"
+                                region["regiontype"] = "exon"
+                                regiontype = "exon"
+                        
+                        merged_regions.append(
+                            {
+                                "regiontype": regiontype,
+                                "exon_number": exon_number,
+                                "sequence": None,
+                                "start": gap_start,
+                                "end": gap_end,
+                                "chromosome": last_region["chromosome"],
+                                "strand": last_region["strand"],
+                                "inferred": True,
+                            }
+                        )
+                        last_region = region
+                    
+                    # overlapping regions of different types, keep both
                     else:
-                        # handle exon-exon junctions
-                        if last_region["regiontype"] == "exonexonjunction" and region["regiontype"] == "exonexonjunction":
-                            last_region["regiontype"] = "exon"
-                            last_exons = last_region.get("exon_number", []).split("__JUNC__")
-                            region_exons = region.get("exon_number", []).split("__JUNC__")
-                            common_exon = list(filter(lambda x: x in region_exons, last_exons))[0]
-                            last_region["exon_number"] = common_exon
-                            last_region["end"] = region["end"]
-                            # concatenate sequence without overlap
-                            if last_region["sequence"] is not None and region["sequence"] is not None:
-                                start_new_sequence = last_region["end"] - region["start"] + 1
-                                last_region["sequence"] += region["sequence"][start_new_sequence:]
-
-                        else:
-                            # non-overlapping region, add last_region to merged list
-                            merged_regions.append(last_region)
-                            # fill gap (intron between exons, exon between introns)
-                            gap_start = last_region["end"] + 1
-                            gap_end = region["start"] - 1
-                            merged_regions.append(
-                                {
-                                    "regiontype": "exon" if last_region["regiontype"] == "intron" else "intron",
-                                    "exon_number": None,
-                                    "sequence": None,
-                                    "start": gap_start,
-                                    "end": gap_end,
-                                    "chromosome": last_region["chromosome"],
-                                    "strand": last_region["strand"],
-                                    "inferred": True,
-                                }
-                            )
-                            last_region = region
+                        merged_regions.append(last_region)
+                        last_region = region
                 
                 if last_region is not None:
                     merged_regions.append(last_region)

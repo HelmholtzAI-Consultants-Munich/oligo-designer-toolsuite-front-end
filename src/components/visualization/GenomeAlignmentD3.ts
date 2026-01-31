@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import type { Oligo, GenomicRegions, GenomicRegion } from "../../types";
 
-export const regionColors: { [key: string]: { color: string; label: string } } =
+export const Regions: { [key: string]: { color: string; label: string } } =
     {
         exon: { color: "blue", label: "Exon" },
         intron: { color: "red", label: "Intron" },
@@ -109,7 +109,7 @@ const GenomeAlignmentD3 = {
             .attr("y", 0)
             .attr("width", x(1) - x(0))
             .attr("height", innerHeight)
-            .attr("fill", "#d4d4d4")
+            .attr("fill", "#eaeaea")
             .attr("opacity", 0)
             .attr("visibility", "hidden")
 
@@ -218,25 +218,29 @@ const GenomeAlignmentD3 = {
                 .attr(
                     "fill",
                     (d: GenomicRegion) =>
-                        regionColors[d.regiontype || "unknown"].color ||
+                        Regions[d.regiontype || "unknown"].color ||
                         "lightgray"
                 )
+                .attr("opacity", d => d.inferred === true ? 0.6 : 0.9)
                 .on("mouseover", function () {
                     tooltip.style("opacity", 1);
-                    d3.select(this).attr("stroke", "black");
+                    //d3.select(this).attr("stroke", "black");
+                    d3.select(this).attr("opacity", d => (d as GenomicRegion).inferred === true ? 0.7 : 1.0);
                 })
                 .on("mousemove", (event, d: GenomicRegion) => {
                     tooltip
                         // TODO: escape HTML
-                        .html("Region Type: " + d.regiontype + (d.exon_number ?
-                            "<br>Exon " + d.exon_number : "")
+                        .html(Regions[d.regiontype || "unknown"].label +
+                            (d.exon_number ? " " + d.exon_number : "") +
+                            (d.inferred ? "<br><i>(inferred)</i>" : "")
                         )
                         .style("left", (event.pageX + 30) + "px")
                         .style("top", (event.pageY) + "px");
                 })
                 .on("mouseleave", function (_, d: GenomicRegion) {
                     tooltip.style("opacity", 0);
-                    d3.select(this).attr("stroke", null);
+                    //d3.select(this).attr("stroke", null);
+                    d3.select(this).attr("opacity", d => (d as GenomicRegion).inferred === true ? 0.6 : 0.9);
                 });
         });
 
@@ -259,6 +263,7 @@ const GenomeAlignmentD3 = {
         ];
 
         // Set up zoom behavior
+        // TODO: zoom not centered correctly on mouse position
         const zoomBehavior = d3
             .zoom()
             .scaleExtent([1, (x.domain()[1] - x.domain()[0]) / 100]) // max zoom to 100bp width
@@ -440,6 +445,10 @@ const GenomeAlignmentD3 = {
             .attr("fill", (d, i) =>
                 i === selectedOligo ? "orange" : "steelblue"
             );
+
+        // TODO: zoom to selected oligo
+        const oligo = oligoPositions[selectedOligo];
+        
     },
 
     destroy: (el: Element) => {
