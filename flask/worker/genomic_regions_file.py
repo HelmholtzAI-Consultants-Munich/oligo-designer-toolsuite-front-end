@@ -111,23 +111,32 @@ class GenomicRegionFile:
 
         for gene, transcripts in raw_regions.items():
             for transcript_id, regions in transcripts.items():
-                # sort regions by start position
-                regions.sort(key=lambda x: x["start"])
+                # sort regions by start position (reverse for negative strand)
+                strand = regions[0]["strand"]
+                read_counter = 0
+                regions.sort(key=lambda x: x["start"], reverse=(strand == '-'))
                 merged_regions = []
                 last_region = None
 
                 for region in regions:
                     if last_region is None:
                         last_region = region
+                        last_region["reading_grid_offset"] = 0
                         continue
-                    overlap_length = last_region["end"] - region["start"] + 1
+                    overlap_length = last_region["end"] - region["start"] + 1 if strand == '+' else region["end"] - last_region["start"] + 1
 
                     # overlapping or contiguous regions of same type, merge them
                     if overlap_length >= 0 and last_region["regiontype"] == region["regiontype"]:
-                        last_region["end"] = region["end"]
+                        if strand == '+':
+                            last_region["end"] = region["end"]
+                        else:
+                            last_region["start"] = region["start"]
                         # concatenate sequence without overlap
                         if last_region["sequence"] is not None and region["sequence"] is not None:
-                            last_region["sequence"] += region["sequence"][overlap_length:]
+                            if strand == '+':
+                                last_region["sequence"] += region["sequence"][overlap_length:]
+                            else:
+                                last_region["sequence"] = region["sequence"][: -overlap_length] + last_region["sequence"]
                         # handle exon-exon junctions
                         if last_region["regiontype"] == "exonexonjunction" and region["regiontype"] == "exonexonjunction":
                             last_region["regiontype"] = "exon"
@@ -139,8 +148,10 @@ class GenomicRegionFile:
                     # non-overlapping region, add last_region to merged list
                     elif overlap_length < 0:
                         merged_regions.append(last_region)
-                        gap_start = last_region["end"] + 1
-                        gap_end = region["start"] - 1
+                        if last_region["regiontype"] != "intron":
+                            read_counter += last_region["end"] - last_region["start"] + 1
+                        gap_start = last_region["end"] + 1 if strand == '+' else region["end"] + 1
+                        gap_end = region["start"] - 1 if strand == '+' else last_region["start"] - 1
 
                         # fill gap (intron between exons, exon between introns, exon between exon-exon-junctions)
                         regiontype = "unknown"
@@ -167,6 +178,7 @@ class GenomicRegionFile:
                                 "regiontype": regiontype,
                                 "exon_number": exon_number,
                                 "sequence": None,
+                                "reading_grid_offset": None if regiontype == "intron" else read_counter % 3,
                                 "start": gap_start,
                                 "end": gap_end,
                                 "chromosome": last_region["chromosome"],
@@ -174,12 +186,18 @@ class GenomicRegionFile:
                                 "inferred": True,
                             }
                         )
+                        if regiontype != "intron":
+                            read_counter += (gap_end - gap_start + 1)
                         last_region = region
+                        last_region["reading_grid_offset"] = read_counter % 3
                     
-                    # overlapping regions of different types, keep both
+                    # overlapping or contiguous regions of different types, keep both
                     else:
                         merged_regions.append(last_region)
+                        if last_region["regiontype"] != "intron":
+                            read_counter += last_region["end"] - last_region["start"] + 1
                         last_region = region
+                        last_region["reading_grid_offset"] = read_counter % 3
                 
                 if last_region is not None:
                     merged_regions.append(last_region)
