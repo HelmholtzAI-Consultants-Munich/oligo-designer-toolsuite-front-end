@@ -49,6 +49,11 @@ const collectReferenceBases = (
     return bases;
 };
 
+// TODO: make zoomBehavior, x and innerWidth instance variable
+let zoomBehavior: d3.ZoomBehavior<Element, unknown>;
+let x: d3.ScaleLinear<number, number>;
+let innerWidth: number;
+
 const GenomeAlignmentD3 = {
     create: (
         el: Element,
@@ -61,7 +66,7 @@ const GenomeAlignmentD3 = {
         const width = 800;
         const height = 200;
         const margin = 20;
-        const innerWidth = width - margin * 2;
+        innerWidth = width - margin * 2;
         const innerHeight = height - margin * 2;
 
         const svg = d3.select(el) as d3.Selection<
@@ -91,7 +96,7 @@ const GenomeAlignmentD3 = {
                 .flat()
                 .flatMap((d: GenomicRegion) => [d.start, d.end]),
         ]) as [number, number];
-        const x = d3
+        x = d3
             .scaleLinear()
             .domain([ext[0] - 100, ext[1] + 100])
             .range([0, innerWidth]);
@@ -184,7 +189,7 @@ const GenomeAlignmentD3 = {
         const transcriptHeight = (innerHeight * 0.6) / transcriptCount;
 
         // Draw genomic regions (multiple transcripts)
-        const genomeGroup = plot.append("g").attr("class", "genome-regions");
+        const regionsGroup = plot.append("g").attr("class", "genome-regions");
 
         Object.entries(genomicRegions).forEach(([transcriptName, regions]) => {
             const yOffset =
@@ -192,39 +197,19 @@ const GenomeAlignmentD3 = {
                 Object.keys(genomicRegions).indexOf(transcriptName) *
                     transcriptHeight;
 
-            const tGroup = genomeGroup
+            const transcriptGroup = regionsGroup
                 .append("g")
-                .attr("transform", `translate(0, ${yOffset})`);
+                .attr("transform",`translate(0, ${yOffset})`);
 
-            // Draw a rect for each region
-            tGroup
-                .selectAll("rect")
+            const regionsContainer = transcriptGroup
+                .selectAll("g")
                 .data(regions)
-                .join("rect")
-                .attr(
-                    "width",
-                    (d: GenomicRegion) => x(d.end + 0.5) - x(d.start - 0.5)
-                )
-                .attr("height", (d: GenomicRegion) =>
-                    d.regiontype === "intron"
-                        ? Math.min(transcriptHeight / 10, 2)
-                        : Math.min(transcriptHeight / 2, 10)
-                )
-                .attr("x", (d: GenomicRegion) => x(d.start - 0.5))
-                .attr("y", function (d: GenomicRegion) {
-                    const height = d3.select(this).attr("height");
-                    return transcriptHeight / 2 - Number(height) / 2;
-                })
-                .attr(
-                    "fill",
-                    (d: GenomicRegion) =>
-                        Regions[d.regiontype || "unknown"].color ||
-                        "lightgray"
-                )
+                .join("g")
+                .attr("class", "genomic-region")
+                .attr("transform", (d: GenomicRegion) => `translate(${x(d.start - 0.5)}, 0)`)
                 .attr("opacity", d => d.inferred === true ? 0.6 : 0.9)
                 .on("mouseover", function () {
                     tooltip.style("opacity", 1);
-                    //d3.select(this).attr("stroke", "black");
                     d3.select(this).attr("opacity", d => (d as GenomicRegion).inferred === true ? 0.7 : 1.0);
                 })
                 .on("mousemove", (event, d: GenomicRegion) => {
@@ -239,13 +224,52 @@ const GenomeAlignmentD3 = {
                 })
                 .on("mouseleave", function (_, d: GenomicRegion) {
                     tooltip.style("opacity", 0);
-                    //d3.select(this).attr("stroke", null);
                     d3.select(this).attr("opacity", d => (d as GenomicRegion).inferred === true ? 0.6 : 0.9);
                 });
-        });
 
-        // Strand arrows
-        const arrowGroup = genomeGroup.append("g").attr("class", "strand-arrows");
+            // Draw a rect for each region
+            regionsContainer
+                .append("rect")
+                .attr("class", "region-rect")
+                .attr(
+                    "width",
+                    (d: GenomicRegion) => x(d.end + 0.5) - x(d.start - 0.5)
+                )
+                .attr("height", (d: GenomicRegion) =>
+                    d.regiontype === "intron"
+                        ? Math.min(transcriptHeight / 10, 2)
+                        : Math.min(transcriptHeight / 2, 10)
+                )
+                .attr("x", 0)
+                .attr("y", function (d: GenomicRegion) {
+                    const height = d3.select(this).attr("height");
+                    return transcriptHeight / 2 - Number(height) / 2;
+                })
+                .attr(
+                    "fill",
+                    (d: GenomicRegion) =>
+                        Regions[d.regiontype || "unknown"].color ||
+                        "lightgray"
+                );
+
+            // Padding container for intron hovering
+            regionsContainer
+                .append("rect")
+                .attr("class", "region-hover-pad")
+                .attr(
+                    "width",
+                    (d: GenomicRegion) => x(d.end + 0.5) - x(d.start - 0.5)
+                )
+                .attr("height", Math.min(transcriptHeight / 2, 10))
+                .attr("x", 0)
+                .attr("y", transcriptHeight / 2 - Math.min(transcriptHeight / 2, 10) / 2)
+                .attr("fill", "transparent");
+
+            // Strand arrows
+            regionsContainer
+                .append("g")
+                .attr("class", "strand-arrows")
+        });
 
         // Reference sequence
         const baseGroup = plot.append("g").attr("class", "reference-bases");
@@ -264,7 +288,7 @@ const GenomeAlignmentD3 = {
 
         // Set up zoom behavior
         // TODO: zoom not centered correctly on mouse position
-        const zoomBehavior = d3
+        zoomBehavior = d3
             .zoom()
             .scaleExtent([1, (x.domain()[1] - x.domain()[0]) / 100]) // max zoom to 100bp width
             .translateExtent(extent)
@@ -294,10 +318,14 @@ const GenomeAlignmentD3 = {
             gX.call(xAxis.scale(zx));
 
             // Rescale genomic regions
-            genomeGroup
-                .selectAll("g")
-                .selectAll<SVGRectElement, GenomicRegion>("rect")
-                .attr("x", (d) => zx(d.start - 0.5))
+            regionsGroup
+                .selectAll<SVGGElement, GenomicRegion>(".genomic-region")
+                .attr("transform", (d) => `translate(${zx(d.start - 0.5)}, 0)`);
+            regionsGroup
+                .selectAll<SVGRectElement, GenomicRegion>(".region-rect")
+                .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
+            regionsGroup
+                .selectAll<SVGRectElement, GenomicRegion>(".region-hover-pad")
                 .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
 
             // Rescale tooltip
@@ -333,69 +361,37 @@ const GenomeAlignmentD3 = {
 
             // Generate and render strand arrows
             if (showBases) {
-                // Calculate arrow spacing based on zoom level
-                // More arrows when zoomed in further
-                const pixelsPerBp = zx(1) - zx(0);
-                const arrowSpacing = pixelsPerBp >= 10 ? 1 : pixelsPerBp >= 5 ? 3 : 5;
+                const regions = regionsGroup.selectAll<SVGGElement, GenomicRegion>(".genomic-region") 
+                // only keep visible regions           
+                const visible_regions = regions.filter(d => d.end >= domain[0] && d.start <= domain[1] && (d.regiontype !== "intron"));
+                visible_regions.selectAll<SVGGElement, GenomicRegion>(".strand-arrows").each(function(d) {
+                    const arrowGroup = d3.select(this);
+                    arrowGroup.selectAll("*").remove();
 
-                const arrows: Array<{
-                    position: number;
-                    strand: string;
-                    transcriptIndex: number;
-                }> = [];
+                    // arrows 3 bases apart
+                    const arrowSpacing = 3;
+                    const arrowPath = "M0,-3 L0,3 L5,0 Z"; // simple triangle
+                    const arrowPathInverted = "M0,0 L5,3 L5,-3 Z";
 
-                const transcriptCount = Object.keys(genomicRegions).length;
-                const transcriptHeight = (innerHeight * 0.6) / transcriptCount;
-                const actualHeight = Math.min(transcriptHeight / 2, 10);
+                    const startPos = d.strand === '+' ?
+                        (3 - (d.reading_grid_offset || 0)) % 3 :
+                        ((d.end - d.start) + (d.reading_grid_offset || 0)) % 3;
 
-                Object.entries(genomicRegions).forEach(([_, regions], transcriptIndex) => {
-                    regions.forEach((region) => {
-                        // Only show arrows for non-intron regions
-                        if (region.regiontype === "intron") return;
-
-                        // Only include visible regions
-                        if (region.end < domain[0] || region.start > domain[1]) return;
-
-                        // Generate arrow positions within the region
-                        const startPos = Math.max(region.start, Math.floor(domain[0]));
-                        const endPos = Math.min(region.end, Math.ceil(domain[1]));
-
-                        for (let pos = startPos; pos <= endPos; pos += arrowSpacing) {
-                            arrows.push({
-                                position: pos,
-                                strand: region.strand || "+",
-                                transcriptIndex,
-                            });
-                        }
-                    });
+                    for (let pos = startPos; pos <= d.end - d.start; pos += arrowSpacing) {
+                        arrowGroup
+                            .append("path")
+                            .attr("d", d.strand === '+' ? arrowPath : arrowPathInverted)
+                            .attr("fill", "white")
+                            .attr("transform", `translate(${pos * (zx(1) - zx(0))}, ${transcriptHeight / 2})`);
+                    }
                 });
-
-                arrowGroup
-                    .selectAll<
-                        SVGTextElement,
-                        {
-                            position: number;
-                            strand: string;
-                            transcriptIndex: number;
-                        }
-                    >("text")
-                    .data(arrows, (d, i) => `${d.position}-${d.transcriptIndex}`)
-                    .join("text")
-                    .attr("x", (d) => zx(d.position))
-                    .attr("y", (d) => {
-                        const yOffset =
-                            innerHeight / 4 +
-                            d.transcriptIndex * transcriptHeight +
-                            transcriptHeight / 2;
-                        return yOffset + actualHeight / 4;
-                    })
-                    .attr("font-size", actualHeight)
-                    .attr("text-anchor", "middle")
-                    .attr("fill", "white")
-                    .text((d) => (d.strand === "+" || d.strand === "1" ? ">" : "<"));
             } else {
                 // Clear arrows when zoomed out
-                arrowGroup.selectAll("text").remove();
+                regionsGroup.selectAll<SVGGElement, GenomicRegion>(".genomic-region")
+                    .selectAll<SVGGElement, GenomicRegion>(".strand-arrows")
+                    .each(function() {
+                        d3.select(this).selectAll("*").remove();
+                    });
             }
 
             // Show location when bases are shown
@@ -417,10 +413,10 @@ const GenomeAlignmentD3 = {
             );
         }
 
-        GenomeAlignmentD3.update(el, oligos, selectedOligo);
+        GenomeAlignmentD3.update(el, oligos, selectedOligo, true);
     },
 
-    update: (el: Element, oligos: Oligo[], selectedOligo: number) => {
+    update: (el: Element, oligos: Oligo[], selectedOligo: number, skipZoom: boolean = false) => {
         // Prepare oligo positions
         const oligoPositions = oligos.map((oligo) => ({
             start: oligo.start[0][0],
@@ -446,9 +442,23 @@ const GenomeAlignmentD3 = {
                 i === selectedOligo ? "orange" : "steelblue"
             );
 
-        // TODO: zoom to selected oligo
-        const oligo = oligoPositions[selectedOligo];
-        
+        if (!skipZoom) {
+            const oligo = oligoPositions[selectedOligo];
+            console.log("Reset zoom");
+            svg
+                .transition()
+                .duration(2500)
+            .ease(d3.easeCubicInOut)
+            .call(
+                zoomBehavior.transform,
+                d3.zoomIdentity
+                    .translate(innerWidth / 2, 0)
+                    .scale(
+                        innerWidth / (x(oligo.end + 100) - x(oligo.start - 100))
+                    )
+                    .translate(-((x(oligo.start - 100) + x(oligo.end + 100)) / 2), 0)
+            );
+        }
     },
 
     destroy: (el: Element) => {
