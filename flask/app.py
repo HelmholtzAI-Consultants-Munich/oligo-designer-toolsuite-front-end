@@ -6,6 +6,7 @@ from extensions import celery_app, mongo, oauth
 from flask_cors import CORS
 from routes import register_blueprints
 from routes.auth import init_login_manager
+from routes.genomic_database_helpers import cache_dropdown_options
 
 from flask import Flask
 
@@ -74,6 +75,10 @@ def create_app():
 
     # Register all blueprints from the routes package
     register_blueprints(app)
+
+    # Initial Genomic Dropdown fetching
+    cache_dropdown_options()
+    app.logger.info("Done with prefetch")
 
     return app
 

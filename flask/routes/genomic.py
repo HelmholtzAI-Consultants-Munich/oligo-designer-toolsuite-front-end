@@ -15,7 +15,10 @@ from extensions import mongo
 from flask_login import current_user
 from helpers import generate_single_region_forms, get_form_cache_key, to_bool, to_int
 
-from flask import Blueprint, current_app, jsonify, request, session
+from flask import Blueprint, current_app, jsonify, request, session, abort
+
+from .genomic_database_helpers import NCBIGenomicDataBase
+
 
 from .cache_helpers import _prepare_ncbi_cached_assets, _prepare_ensembl_cached_assets
 from .error_handlers import create_user_error_response
@@ -70,6 +73,26 @@ def _handle_genomic_error(exception: Exception) -> tuple:
             "error": error_data.get("error", "Something went wrong. Please try again."),
         }
     ), status_code
+
+
+@genomic_bp.route("/api/genomic/dropdown", methods=["GET"])
+def genomic_dropdown_dict():
+    dropdown_options = mongo.db.cache.find_one({"_id": 1})
+
+    if dropdown_options is None:
+        abort(404, description="Can't load dropdown options")
+
+    return jsonify(dropdown_options["data"]), 200
+
+
+@genomic_bp.route("/api/genomic/releases/<taxon>/<species>", methods=["GET"])
+def genomic_get_releases(taxon: str, species: str):
+    dirs = NCBIGenomicDataBase().fetch_annotations_releases(taxon, species)
+
+    if dirs is None:
+        abort(404, description=f"Couldn't fetch dirs for Taxon: {taxon} and Species: {species}")
+
+    return jsonify(dirs), 200
 
 
 @genomic_bp.route("/api/genomic/cascaded/ncbi", methods=["POST"])
