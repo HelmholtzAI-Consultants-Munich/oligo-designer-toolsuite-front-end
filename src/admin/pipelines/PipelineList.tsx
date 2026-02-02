@@ -15,6 +15,7 @@ import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
 import { STATUS_CONFIG } from "../shared/types";
+import { BACKEND_URL } from "../../config";
 
 interface PipelineRun {
     id: string;
@@ -63,7 +64,7 @@ const PipelineList: React.FC = () => {
             setIsLoading(true);
             setError(null);
             const response = await axios.get(
-                "http://localhost:5000/api/admin/pipelines",
+                BACKEND_URL + "api/admin/pipelines",
                 {
                     withCredentials: true,
                 }
@@ -102,7 +103,7 @@ const PipelineList: React.FC = () => {
     const handleStatusChange = async (runId: string, newStatus: string) => {
         try {
             const response = await axios.put(
-                `http://localhost:5000/api/admin/pipelines/${runId}`,
+                BACKEND_URL + `/api/admin/pipelines/${runId}`,
                 { status: newStatus },
                 { withCredentials: true }
             );
@@ -130,7 +131,7 @@ const PipelineList: React.FC = () => {
         ) {
             try {
                 await axios.delete(
-                    `http://localhost:5000/api/admin/pipelines/${runId}`,
+                    BACKEND_URL + `/api/admin/pipelines/${runId}`,
                     {
                         withCredentials: true,
                     }
@@ -167,7 +168,7 @@ const PipelineList: React.FC = () => {
         setIsBulkOperationLoading(true);
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/admin/pipelines/bulk-delete",
+                BACKEND_URL + "/api/admin/pipelines/bulk-delete",
                 { run_ids: selectedArray },
                 { withCredentials: true }
             );
@@ -215,7 +216,7 @@ const PipelineList: React.FC = () => {
         setIsBulkOperationLoading(true);
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/admin/pipelines/bulk-update-status",
+                BACKEND_URL + "/api/admin/pipelines/bulk-update-status",
                 { run_ids: selectedArray, status: newStatus },
                 { withCredentials: true }
             );

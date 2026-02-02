@@ -5,6 +5,7 @@ import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import axios from "axios";
 import type { RunState } from "../types";
+import { BACKEND_URL } from "../config";
 
 interface PipelineRun {
     _id: string;
@@ -22,11 +23,13 @@ const Runs = () => {
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
+    console.log(BACKEND_URL + "/api/pipelines");
+
     // Update the imports
 
     useEffect(() => {
         axios
-            .get("http://localhost:5000/api/pipelines", {
+            .get(BACKEND_URL + "/api/pipelines", {
                 withCredentials: true,
             })
             .then((response) => {
@@ -59,7 +62,7 @@ const Runs = () => {
             )
         ) {
             try {
-                await axios.delete(`http://localhost:5000/api/runs/${runId}`, {
+                await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
                     withCredentials: true,
                 });
                 setRuns((prev) => prev.filter((r) => r._id !== runId));

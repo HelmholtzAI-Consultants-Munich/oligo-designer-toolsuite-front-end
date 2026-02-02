@@ -1,9 +1,10 @@
 import axios from "axios";
+import { BACKEND_URL } from "../config";
 
 export async function createRunId() {
     try {
         const response = await axios.post(
-            "http://localhost:5000/api/init_run_id",
+            BACKEND_URL + "/api/init_run_id",
             null,
             {
                 withCredentials: true,

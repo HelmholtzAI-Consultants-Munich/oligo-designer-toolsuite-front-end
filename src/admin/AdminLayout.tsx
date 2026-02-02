@@ -11,6 +11,7 @@ import {
     Speedometer2,
 } from "react-bootstrap-icons";
 import axios from "axios";
+import { BACKEND_URL } from "../config.ts";
 
 interface NavItemConfig {
     path: string;
@@ -108,7 +109,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
     const handleLogout = async () => {
         try {
             await axios.post(
-                "http://localhost:5000/logout",
+                BACKEND_URL + "/logout",
                 {},
                 {
                     withCredentials: true,
