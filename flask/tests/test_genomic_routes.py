@@ -93,7 +93,7 @@ def _assert_genomic_error_response(
         forbidden_strings: List of strings that should NOT be in data["error"] (optional)
         check_sanitized: Whether to call assert_error_sanitized (default: False)
     """
-    if isinstance(expected_status_codes, (list, tuple)):
+    if isinstance(expected_status_codes, list | tuple):
         assert response.status_code in expected_status_codes
     else:
         assert response.status_code == expected_status_codes
