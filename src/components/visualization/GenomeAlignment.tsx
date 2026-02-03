@@ -35,8 +35,16 @@ class GenomeAlignment extends React.Component<Props> {
                 this.props.selectedOligo,
                 this.props.setSelectedOligo
             );
+        } else if (prevProps.selectedOligo !== this.props.selectedOligo) {
+            // If selectedOligo changed, update the visualization and zoom into the oligo
+            GenomeAlignmentD3.update(
+                this.el!,
+                this.props.oligos,
+                this.props.selectedOligo,
+                true
+            );
         } else {
-            // Otherwise just update the selection
+            // Otherwise just update the visualization
             GenomeAlignmentD3.update(
                 this.el!,
                 this.props.oligos,
