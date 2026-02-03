@@ -107,12 +107,12 @@ class PipelineRunner:
         if not regions_file:
             print("No regions file provided, skipping visualization generation.")
             return
-        
+
         fasta_paths = form_data.get("files_fasta_target_probe_database", [])
         if not fasta_paths:
             print("No fasta files provided, skipping visualization generation.")
             return
-        
+
         regions_file = GenomicRegionFile(regions_file, fasta_paths)
         regions_file_path = os.path.join(output_path, "genomic_regions.yaml")
         regions_file.yaml_dump(regions_file_path)
