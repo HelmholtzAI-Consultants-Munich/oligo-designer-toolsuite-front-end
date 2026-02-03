@@ -20,7 +20,7 @@ class GenomicRegionFile:
 
     def _load_genes(self):
         genes = set()
-        with open(self.regions_path, "r") as f:
+        with open(self.regions_path) as f:
             for line in f:
                 genes.add(line.strip())
         return list(genes)
@@ -152,7 +152,7 @@ class GenomicRegionFile:
                             last_region["regiontype"] = "exon"
                             last_exons = last_region.get("exon_number", "").split("__JUNC__")
                             region_exons = region.get("exon_number", "").split("__JUNC__")
-                            common_exon = list(filter(lambda x: x in region_exons, last_exons))[0]
+                            common_exon = next(filter(lambda x: x in region_exons, last_exons))
                             last_region["exon_number"] = common_exon
 
                     # non-overlapping region, add last_region to merged list
@@ -172,9 +172,9 @@ class GenomicRegionFile:
                             case ("intron", "intron"):
                                 regiontype = "exon"
                             case ("exonexonjunction", "exonexonjunction"):
-                                last_exons = last_region.get("exon_number", []).split("__JUNC__")
-                                region_exons = region.get("exon_number", []).split("__JUNC__")
-                                common_exon = list(filter(lambda x: x in region_exons, last_exons))[0]
+                                last_exons = last_region.get("exon_number", "").split("__JUNC__")
+                                region_exons = region.get("exon_number", "").split("__JUNC__")
+                                common_exon = next(filter(lambda x: x in region_exons, last_exons))
                                 last_region["exon_number"] = common_exon
                                 region["exon_number"] = common_exon
                                 exon_number = common_exon
