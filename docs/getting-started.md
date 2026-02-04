@@ -6,87 +6,82 @@ nav_order: 2
 
 # Getting Started
 
-Welcome! This guide will help you set up and run Oligo Designer Toolsuite **Cloud** on your machine.  
-This app lets multiple users run advanced oligo design pipelines (SeqFISH+, Scrinshot, Oligo-Seq, MERFISH, etc.) via a web browser.
+Welcome to **Oligo Designer Toolsuite Cloud**! This guide will help you get started using the web application to run advanced oligo design pipelines.
 
 ---
 
-### Supported platforms
+## Accessing the Application
 
-The project supports Linux and MacOS, both on amd64 and arm64 architectures. Development on Windows is possible using Docker.
+The Oligo Designer Toolsuite Cloud web application is accessible through your web browser. Contact your administrator or check your organization's documentation for the specific URL where the application is hosted.
 
-## Quickstart (using Docker)
+Once you access the application, you can start using it immediately—no account is required for basic usage. However, creating an account allows you to:
 
-This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
+- Access your pipeline runs from any device
+- Keep a permanent history of all your experiments
+- Automatically transfer runs from anonymous sessions to your account
 
-All commands necessary to use Docker are defined in the `package.json`. To launch the frontend, backend and database, run:
-
-```bash
-npm run docker:watch
-```
-
-See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for details on using Docker for this project.
-
-## Manual Installation
-
-### 1. Install the Oligo Designer Command line interface first
-
-Before running the web application, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial to execute the pipelines with ODT Cloud
-
-### 2. Install frontend dependencies
-
-Clone this repo and install dependencies:
-"odt" is the name of conda environment that is created in the first step of the installation.
-Please do not install with the requirements.txt; It is for testing purposes.
-
-```bash
-git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end.git
-cd oligo-designer-frontend
-npm install
-conda activate odt
-conda env update -f flask/environment.yml
-pip install --group flask/pyproject.toml:dev
-```
-
-You can also set up additional environment variables as needed for authentication, proxy, etc.
-
-### 3. Run the frontend
-
-```bash
-./start.sh
-```
-
-The app will open at [http://localhost:3000](http://localhost:3000).
-
-## Supported Pipelines
-
-The following pipelines are available through the web interface:
-
-- **SeqFISH+ Probe Designer**
-- **Scrinshot Probe Designer**
-- **Oligo-Seq Probe Designer**
-- **MERFISH Probe Designer**
-- **Genomic Region Generator** (as a submodule)
-
-See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for details.
+See [Authentication]({{ site.baseurl }}{% link auth.md %}) for more details on creating an account and managing your sessions.
 
 ---
 
-## Troubleshooting
+## Your First Pipeline Run
 
-- If you have issues connecting to the backend, double-check the API URL in `.env`.
-- Make sure your backend is running before starting the frontend.
-- If you run into permission errors on Mac/Linux, you might need to make `start.sh` executable:
-  ```bash
-  chmod +x start.sh
-  ```
+The application provides several specialized probe design pipelines:
+
+- **MERFISH Probe Designer** — Designs encoding probes for highly multiplexed spatial transcriptomics
+- **SeqFISH+ Probe Designer** — Designs probes for sequential fluorescence in situ hybridization
+- **Scrinshot Probe Designer** — Designs padlock probes for single-cell RNA detection
+- **Oligo-Seq Probe Designer** — Designs oligo hybridization probes for targeted sequencing
+- **Genomic Region Generator** — Extracts specific genomic regions from FASTA and GTF files
+
+### Basic Workflow
+
+1. **Navigate to a Pipeline** — Select the pipeline you want to use from the navigation menu
+2. **Configure Parameters** — Fill in the required form fields with your experimental parameters
+3. **Submit** — Click the submit button to start the pipeline execution
+4. **Track Progress** — Monitor your run's status and view results when complete
+
+Each pipeline has its own detailed documentation with specific configuration options and requirements. See the [Pipelines]({{ site.baseurl }}{% link pipelines.md %}) section for an overview, or navigate to individual pipeline guides for detailed instructions.
+
+---
+
+## Managing Your Runs
+
+All your pipeline executions are tracked in the **Runs** section. You can:
+
+- View all runs associated with your session or account
+- Access detailed information about each run, including logs and output files
+- Download results and generated files
+- Track run status (started, running, completed, error, etc.)
+
+See [Runs Management]({{ site.baseurl }}{% link runs.md %}) for complete details on viewing and managing your pipeline executions.
+
+---
+
+## Supported Platforms
+
+The web application works with modern web browsers on:
+
+- **Linux** (amd64 and arm64)
+- **macOS** (amd64 and arm64)
+- **Windows** (via web browser)
+
+No local installation is required—everything runs through your web browser.
 
 ---
 
 ## Citation
 
-If you use this platform, please cite the main [Oligo Designer Toolsuite](https://doi.org/10.5281/zenodo.7823048).
+If you use this platform for your research, please cite the main [Oligo Designer Toolsuite](https://doi.org/10.5281/zenodo.7823048).
 
 ---
 
-For further help or to report issues, please see our [GitHub issues page](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues).
+## Getting Help
+
+- **Pipeline Documentation** — See the [Pipelines]({{ site.baseurl }}{% link pipelines.md %}) section for detailed guides on each pipeline
+- **User Guides** — Check the sidebar for guides on authentication, run management, and more
+- **Support** — For issues or questions, please see our [GitHub issues page](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
+
+---
+
+> **Tip:** Use the sidebar to navigate between different sections of the documentation. Start with the pipeline-specific guides to learn about configuring each type of experiment.
