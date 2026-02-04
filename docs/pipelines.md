@@ -14,19 +14,20 @@ All pipelines share a consistent workflow: **prepare inputs → configure parame
 
 ## Available Pipelines
 
+- **SCRINSHOT** — _src/pages/scrinshot.tsx_  
+  Designs padlock probes with gene-specific 5' and 3' arms that circularize upon hybridization to detect and quantify RNA transcripts at single-cell resolution. These probes enable highly multiplexed and spatially resolved gene expression analysis in tissue samples.
+
 - **MERFISH** — _src/pages/merfish.tsx_  
-  Multiplexed Error-Robust Fluorescence In Situ Hybridization pipeline for designing target probes, readout probes, and primers.
-- **Scrinshot** — _src/pages/scrinshot.tsx_  
-  Spatial transcriptomics probe designer with configurable target, readout, and primer parameters.
+  Designs encoding probes with unique barcodes that enable simultaneous imaging and identification of hundreds of different transcripts within a single sample. This highly multiplexed approach provides detailed, spatially resolved gene expression information at the single-cell level.
 
-- **SeqFISH** — _src/pages/seqfish.tsx_  
-  Sequential FISH probe designer for multi-round hybridization experiments.
+- **SeqFISH+** — _src/pages/seqfish.tsx_  
+  Designs probes for sequential fluorescence in situ hybridization, enabling multiple rounds of hybridization and imaging to visualize and quantify hundreds of RNA targets in a single sample. This technique preserves spatial context while providing high-throughput and single-cell resolution.
 
-- **OligoSeq** — _src/pages/oligoseq.tsx_  
-  Sequencing-based probe designer optimized for NGS detection.
+- **Oligo-Seq** — _src/pages/oligoseq.tsx_  
+  Designs oligo hybridization probes optimized for probe-based targeted sequencing to measure RNA expression. These probes are specifically tailored for next-generation sequencing detection methods.
 
 - **Genomic Region Generator** — _src/modules/FastaGenerateForm.tsx_  
-  Extracts specific genomic regions (genes, exons, introns, UTRs, etc.) from NCBI or Ensembl reference genomes for use in downstream pipelines.
+  Extracts specific genomic regions (intergenic, gene, CDS, exon, intron, 3' UTR, 5' UTR, exon-exon junctions) from FASTA and GTF files, which can be automatically retrieved from NCBI or Ensembl or provided as custom files. The extracted regions are stored in a compressed memory-efficient format that eliminates duplicated sequences from common exons of different gene isoforms while preserving isoform information.
 
 ---
 
