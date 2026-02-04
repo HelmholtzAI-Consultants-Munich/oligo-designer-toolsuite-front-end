@@ -14,13 +14,13 @@ Welcome to **Oligo Designer Toolsuite Cloud**! This guide will help you get star
 
 The Oligo Designer Toolsuite Cloud web application is accessible through your web browser. Contact your administrator or check your organization's documentation for the specific URL where the application is hosted.
 
-Once you access the application, you can start using it immediately—no account is required for basic usage. However, creating an account allows you to:
+Once you access the application, you can start using it immediately—no account is required for basic usage. However, logging in allows you to:
 
 - Access your pipeline runs from any device
 - Keep a permanent history of all your experiments
 - Automatically transfer runs from anonymous sessions to your account
 
-See [Authentication]({{ site.baseurl }}{% link auth.md %}) for more details on creating an account and managing your sessions.
+The application supports authentication via **Helmholtz AAI** for Helmholtz users, providing Single Sign-On (SSO) access. For more information about Helmholtz AAI, visit [hifis.net/aai/](https://hifis.net/aai/).
 
 ---
 
@@ -41,7 +41,7 @@ The application provides several specialized probe design pipelines:
 3. **Submit** — Click the submit button to start the pipeline execution
 4. **Track Progress** — Monitor your run's status and view results when complete
 
-Each pipeline has its own detailed documentation with specific configuration options and requirements. See the [Pipelines]({{ site.baseurl }}{% link pipelines.md %}) section for an overview, or navigate to individual pipeline guides for detailed instructions.
+Each pipeline has its own detailed documentation with specific configuration options and requirements. See the [Pipelines](pipelines.md) section for an overview, or navigate to individual pipeline guides for detailed instructions.
 
 ---
 
@@ -54,7 +54,7 @@ All your pipeline executions are tracked in the **Runs** section. You can:
 - Download results and generated files
 - Track run status (started, running, completed, error, etc.)
 
-See [Runs Management]({{ site.baseurl }}{% link runs.md %}) for complete details on viewing and managing your pipeline executions.
+See [Runs Management](runs.md) for complete details on viewing and managing your pipeline executions.
 
 ---
 
@@ -78,8 +78,8 @@ If you use this platform for your research, please cite the main [Oligo Designer
 
 ## Getting Help
 
-- **Pipeline Documentation** — See the [Pipelines]({{ site.baseurl }}{% link pipelines.md %}) section for detailed guides on each pipeline
-- **User Guides** — Check the sidebar for guides on authentication, run management, and more
+- **Pipeline Documentation** — See the [Pipelines](pipelines.md) section for detailed guides on each pipeline
+- **User Guides** — Check the sidebar for guides on run management and more
 - **Support** — For issues or questions, please see our [GitHub issues page](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
 
 ---

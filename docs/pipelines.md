@@ -47,6 +47,44 @@ Each pipeline page provides:
 
 ---
 
+## FASTA File Input Requirements
+
+All pipelines require FASTA files as input. When uploading custom FASTA files, they must adhere to the following structure:
+
+### Header Format
+
+Each sequence must have a header starting with the `>` character. The header should contain:
+
+- **`region_id`**: A unique identifier for the genomic region (e.g., gene name or ID). This is **mandatory**.
+- **`additional_information`**: Optional metadata fields such as transcript ID or exon number, separated by commas.
+- **`coordinates`**: Genomic location in the format `chrom:start-end(strand)`, which is optional.
+
+The header format uses double colons (`::`) as separators between the region ID, additional information, and coordinates.
+
+### Sequence Content
+
+The sequence follows the header in standard FASTA format (single-letter nucleotide codes: A, T, G, C, N).
+
+### Examples
+
+**With all optional fields:**
+
+```
+>ASR1::transcrip_id=XM456,exon_number=5::16:54552-54786(+)
+AGTTGACAGACCCCAGATTAAAGTGTGTCGCGCAACAC
+```
+
+**With only the mandatory region_id:**
+
+```
+>ASR1
+AGTTGACAGACCCCAGATTAAAGTGTGTCGCGCAACAC
+```
+
+**Note:** When using the Genomic Region Generator to create FASTA files from NCBI or Ensembl, the files are automatically formatted correctly. Only manually uploaded FASTA files need to follow this format.
+
+---
+
 ## Submission Workflow
 
 1. **Select and prepare inputs**  
