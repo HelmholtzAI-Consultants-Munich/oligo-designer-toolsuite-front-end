@@ -112,12 +112,13 @@ class GenomicRegionFile:
 
         for gene, transcripts in raw_regions.items():
             for transcript_id, regions in transcripts.items():
-                # sort regions by start position (reverse for negative strand)
+                # regions can not be empty, otherwise the transcript would not exist
                 strand = regions[0]["strand"]
-                read_counter = 0
-                regions.sort(key=lambda x: x["start"], reverse=(strand == "-"))
+                # sort regions by start position (reverse for negative strand)
+                regions.sort(key=lambda x: x["start"] if strand == "+" else x["end"], reverse=(strand == "-"))
                 merged_regions = []
                 last_region = None
+                read_counter = 0
 
                 for region in regions:
                     if last_region is None:
@@ -152,7 +153,7 @@ class GenomicRegionFile:
                             last_region["regiontype"] = "exon"
                             last_exons = last_region.get("exon_number", "").split("__JUNC__")
                             region_exons = region.get("exon_number", "").split("__JUNC__")
-                            common_exon = next(filter(lambda x: x in region_exons, last_exons))
+                            common_exon = next(filter(lambda x: x in region_exons, last_exons), None)
                             last_region["exon_number"] = common_exon
 
                     # non-overlapping region, add last_region to merged list
@@ -174,7 +175,7 @@ class GenomicRegionFile:
                             case ("exonexonjunction", "exonexonjunction"):
                                 last_exons = last_region.get("exon_number", "").split("__JUNC__")
                                 region_exons = region.get("exon_number", "").split("__JUNC__")
-                                common_exon = next(filter(lambda x: x in region_exons, last_exons))
+                                common_exon = next(filter(lambda x: x in region_exons, last_exons), None)
                                 last_region["exon_number"] = common_exon
                                 region["exon_number"] = common_exon
                                 exon_number = common_exon
