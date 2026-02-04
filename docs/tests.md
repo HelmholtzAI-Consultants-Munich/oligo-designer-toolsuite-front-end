@@ -7,10 +7,11 @@ parent: Development
 
 # Tests
 
-This document explains the test strategy for this software. There are **two** layers:
+This document explains the test strategy for this software. There are **three** layers:
 
 1. **Backend unit & API tests** using **Pytest** for the Flask backend.
-2. **End-to-end (E2E) tests** using **Playwright**, executed in **GitHub Actions** against the hosted app, to validate full pipelines.
+2. **Frontend unit & component tests** using **Vitest** and **React Testing Library** for React components.
+3. **End-to-end (E2E) tests** using **Playwright**, executed in **GitHub Actions** against the hosted app, to validate full pipelines.
 
 ---
 
@@ -38,10 +39,22 @@ pytest flask --cov=flask --cov-report=term-missing
 or if using Docker:
 
 ```bash
-docker compose up odt-db -d
+# Start services with tests profile (optional, but recommended for consistency):
+npm run docker:start:test
+# or for development with hot reloading:
+npm run docker:watch:test
+
+# Then run backend tests:
 docker compose run --rm --build odt-server pytest
 # with coverage:
 docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-missing
+```
+
+Alternatively, you can start just the database and run tests:
+
+```bash
+docker compose up odt-db -d
+docker compose run --rm --build odt-server pytest
 ```
 
 ### Fixtures & notes
@@ -53,7 +66,36 @@ docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-miss
 
 ---
 
-## 2) End-to-End (E2E) Tests (Playwright)
+## 2) Frontend Unit & Component Tests (Vitest)
+
+**Goal:** Verify React components render correctly and handle user interactions as expected (fast, deterministic).
+
+### Scope
+
+- Component rendering and rendering with props.
+- User interactions (clicks, form inputs, navigation).
+- Component state management.
+- Integration between React components.
+- UI behavior and conditional rendering.
+
+### Running locally
+
+```bash
+# Run all frontend tests:
+npm test
+# Run tests in watch mode (for development):
+npm run test:watch
+```
+
+### Fixtures & notes
+
+- Tests use **Vitest** as the test runner with **React Testing Library** for component testing.
+- Tests run in a `jsdom` environment to simulate browser behavior.
+- Test files should be named `*.test.tsx` or `*.test.ts` and placed alongside the components they test.
+
+---
+
+## 3) End-to-End (E2E) Tests (Playwright)
 
 **Goal:** Prove a real user can run a pipeline from the UI to a **successful terminal state** on the deployed app.
 
@@ -75,6 +117,18 @@ npx playwright test --ui
 
 or if using Docker:
 
+The `odt-tests` container is only available when using the tests profile. To start the application with the test container available, use:
+
+```bash
+npm run docker:start:test
+# or for development with hot reloading:
+npm run docker:watch:test
+```
+
+See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for more details on Docker profiles.
+
+Then run Playwright tests:
+
 ```bash
 # run all tests:
 docker compose run --rm odt-tests
@@ -88,7 +142,11 @@ docker compose run --rm odt-tests show-report
 
 ## Continuous Integration (GitHub Actions)
 
-**Backends tests (Pytest)** and **E2E (Playwright)** run on every push/PR.  
+**Backend tests (Pytest)**, **Frontend tests (Vitest)**, and **E2E tests (Playwright)** run on every push/PR.  
 Set `E2E_BASE_URL` as a repository secret to point E2E tests to the hosted app.
 
-You can find the configuration at `.github/backend_tests.yml` and `.github/e2e.yml`.
+You can find the configuration at:
+
+- `.github/workflows/pr_tests.yml` - Backend and Frontend tests
+- `.github/workflows/e2e.yml` - E2E tests
+- `.github/workflows/backend_tests.yml` - Backend tests (legacy)
