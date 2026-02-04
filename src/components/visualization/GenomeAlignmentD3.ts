@@ -166,6 +166,8 @@ const GenomeAlignmentD3 = {
                     (pos) => pos.id === data.id
                 );
                 setSelectedOligo(index);
+                // Zoom into selected oligo (even if already selected)
+                GenomeAlignmentD3.update(el, oligos, index, true);
             });
 
         // Tooltip
