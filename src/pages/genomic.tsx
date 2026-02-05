@@ -12,20 +12,8 @@ import form_Data_Custom from "../forms/genomic_custom_form";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
 import { createRunId } from "../modules/helpers";
-import {
-    vertebrate_mammalianEntries,
-    fungiEntries,
-    archaeaEntries,
-    invertebrateEntries,
-    plastidEntries,
-    plasmidEntries,
-    plantEntries,
-    protozoaEntries,
-    mitochondrionEntries,
-    unknownEntries,
-    vertebrate_otherEntries,
-} from "../forms/refseqSpecies";
-import { ensemblSpecies } from "../forms/ensemblSpecies";
+
+// TODO: broken due to changes in how we get the dropdown options
 
 const Genomic: React.FC = () => {
     const [fileReady, setFileReady] = useState(false);
