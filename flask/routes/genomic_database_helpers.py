@@ -108,6 +108,7 @@ class BaseGenomicDataBase:
 
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
+    # release 116 changes structure => could be a problem once they set this to current
     def __init__(self, host="ftp.ensembl.org", base_path="/pub/", whitelist=None) -> None:
         super().__init__(host, base_path, whitelist)
         self.name = "ensembl"
@@ -252,10 +253,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         # Use 'current' literally if current; else use the numeric/label release
         rel_label = "current" if is_current else str(release)
 
-        # ---------- GTF ----------
         gtf_plain = self.get_plain_file_path(gtf_dir, gtf_gz)
-
-        # ---------- FASTA ----------
         fasta_plain = self.get_plain_file_path(fasta_dir, fasta_gz)
 
         return {
@@ -274,22 +272,31 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str):
         try:
-            return ftp.cwd(f"{self.base_path}/{taxon}/{species}/{dir}")
+            return ftp.cwd(f"/{self.base_path}/{taxon}/{species}/{dir}")
         except ftplib.Error:
             return None
+
+    def _get_releases_dir(self, ftp, taxon, species):
+        possible_dirs = ["annotation_releases", "all_assembly_versions"]
+
+        for dir in possible_dirs:
+            if self._try_change_directory(ftp, taxon, species, dir) is not None:
+                return dir
+
+        return None
 
     def fetch_annotations_releases(self, taxon: str, species: str):
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
-            possible_dirs = ["annotation_releases", "all_assembly_versions"]
+            dir = self._get_releases_dir(ftp, taxon, species)
+            if dir is None:
+                return None
+            dirs = self.get_dirs(ftp)
 
-            for dir in possible_dirs:
-                if self._try_change_directory(ftp, taxon, species, dir) is not None:
-                    dirs = self.get_dirs(ftp)
-                    dirs = [dir.split()[0] for dir in dirs if len(dir.split()) > 1 or dir == "current"]
-                    return sorted(dirs)
-
-            return None
+        dirs = [dir.split()[0] for dir in dirs if len(dir.split()) > 1 or dir == "current"]
+        if dir == "all_assembly_versions":
+            dirs = [dir for dir in dirs if dir != "suppressed"]
+        return sorted(dirs)
 
     def _get_assembly_information(self, rel_dir: str, file_name: str) -> tuple[str | None, str | None]:
         url = f"https://{self.host}/{rel_dir}/{file_name}"
@@ -301,10 +308,10 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         with open(file_path) as file:
             assembly_name, accession = None, None
             for line in file:
-                if line.startswith("ASSEMBLY NAME:"):
-                    assembly_name = line.strip().split("\t")[1]
-                if line.startswith("ASSEMBLY ACCESSION:"):
-                    accession = line.strip().split("\t")[1]
+                if line.startswith("# Assembly name:"):
+                    assembly_name = line.strip().split()[-1]
+                if line.startswith("# RefSeq assembly accession:"):
+                    accession = line.strip().split()[-1]
                     break
             return assembly_name, accession
 
@@ -317,14 +324,17 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         return digest.hexdigest() == expected_checksum
 
     def _resolve_release_and_dir(self, taxon, species, release):
-        base = f"{self.base_path}{taxon}/{species}/annotation_releases/"
-        rel_dir = base + ("current/" if str(release) == "current" else f"{release}/")
-
-        current_app.logger.warning(f"NCBI rel dir: {rel_dir}")
-
         # Resolve "current" to a concrete release; also read README to get assembly/accession
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
+
+            releases_dir = self._get_releases_dir(ftp, taxon, species)
+            if releases_dir is None:
+                raise RuntimeError("Couldn't fetch Release Dir")
+            base = f"/{self.base_path}{taxon}/{species}/{releases_dir}/"
+            rel_dir = base + ("current/" if str(release) == "current" else f"{release}/")
+            current_app.logger.warning(f"NCBI rel dir: {rel_dir}")
+
             ftp.cwd(rel_dir)
             if str(release) == "current":
                 # Be deterministic
@@ -335,12 +345,12 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 rel_dir = base + f"{release}/"
                 ftp.cwd(release)
             # find README
-            readmes = sorted([n for n in ftp.nlst() if n.startswith("README_")])
-            if not readmes:
+            assembly_reports = sorted([n for n in ftp.nlst() if n.endswith("_assembly_report.txt")])
+            if not assembly_reports:
                 raise RuntimeError(f"No README_ found in {rel_dir}")
-            readme = readmes[0]
+            assembly_report = assembly_reports[0]
 
-        assembly_name, accession = self._get_assembly_information(rel_dir, readme)
+        assembly_name, accession = self._get_assembly_information(rel_dir, assembly_report)
         if not assembly_name or not accession:
             raise RuntimeError("Failed to parse assembly/accession from README.")
 
