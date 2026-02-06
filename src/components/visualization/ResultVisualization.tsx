@@ -7,8 +7,8 @@ import GenomeAlignment from "./GenomeAlignment";
 type Props = {
     oligos: Oligo[];
     pipeline: string;
-    selectedOligo: number;
-    setSelectedOligo: (index: number) => void;
+    selectedOligo: string;
+    setSelectedOligo: (id: string) => void;
     genomicRegions: GenomicRegions | null;
 };
 

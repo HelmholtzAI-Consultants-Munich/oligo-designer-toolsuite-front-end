@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import YAML from "js-yaml";
 import Select from "react-select";
 import type { SingleValue } from "react-select";
-import { useAuth } from "../modules/auth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
 import type { GenomicRegions, Oligo, RunState } from "../types";
@@ -54,14 +53,13 @@ function getColumnsFromDefinition(
 
 const RunDetail = () => {
     const { runId } = useParams();
-    const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
     const [pipeline, setPipeline] = useState<string>("");
-    const [selectedOligo, setSelectedOligo] = useState(0);
+    const [selectedOligo, setSelectedOligo] = useState<string>("");
 
     const [parsedYamlData, setParsedYamlData] = useState<any>(null);
     const [selectedGene, setSelectedGene] = useState<string>("");
@@ -79,14 +77,7 @@ const RunDetail = () => {
     const closeFileView = () => {
         setViewingFilename(null);
     };
-    const [parsedYamlFilename, setParsedYamlFilename] = useState<string | null>(
-        null
-    );
     // --- Polling/log state variables ---
-    const [hasYamlFile, setHasYamlFile] = useState(false);
-    const [hasLogFile, setHasLogFile] = useState(false);
-    const [logFilename, setLogFilename] = useState<string | null>(null);
-    const [logContent, setLogContent] = useState<string | null>(null);
     const [runState, setRunState] = useState<RunState>("pending");
     const [polling, setPolling] = useState(true);
     const fetchAndParseRunFiles = useCallback(
@@ -103,7 +94,6 @@ const RunDetail = () => {
                             any
                         >;
                         setParsedYamlData(parsed);
-                        setParsedYamlFilename(yamlFilename);
 
                         const genes = Object.keys(parsed || {});
                         setGeneOptions(
@@ -119,13 +109,14 @@ const RunDetail = () => {
                                   key.startsWith("Oligoset")
                               ) || ""
                             : "";
-
+                        const firstOligo = firstOligoset ?
+                            parsed[firstGene][firstOligoset]["Oligo 1"].oligo_id : "";
                         setSelectedGene(firstGene);
                         setSelectedOligoset(firstOligoset);
+                        setSelectedOligo(firstOligo);
                     } catch (e) {
                         console.error("Error parsing YAML:", e);
                         setParsedYamlData(null);
-                        setParsedYamlFilename(null);
                     }
                 })
                 .catch((error) =>
@@ -139,10 +130,13 @@ const RunDetail = () => {
                     { withCredentials: true, responseType: "text" }
                 )
                 .then((response) => {
-                    const regions = YAML.load(response.data) as {
-                        [key: string]: GenomicRegions;
+                    const regionsYaml = YAML.load(response.data) as {
+                        regions: {
+                            [key: string]: GenomicRegions;
+                        }
+                        //oligos: Oligo[];
                     };
-                    setGenomicRegions(regions);
+                    setGenomicRegions(regionsYaml.regions);
                 })
                 .catch((error) => {
                     console.error(
@@ -198,9 +192,9 @@ const RunDetail = () => {
                     if (runResponse.data.status === "failure") {
                         if (runResponse.data.error_message) {
                             // Display error message to user
-                            setLogContent(
-                                `Pipeline Error: ${runResponse.data.error_message}`
-                            );
+                            // setLogContent(
+                            //     `Pipeline Error: ${runResponse.data.error_message}`
+                            // );
                             hasErrorMessage = true;
                         }
                     }
@@ -211,15 +205,11 @@ const RunDetail = () => {
                             f.name.includes("probes.yml") ||
                             f.name.includes("probesets.yml")
                     );
-                    setHasYamlFile(!!yamlFile);
 
                     // Log check - preserve error message state if no actual log file exists
                     const firstLog = response.data.find(
                         (f: RunFile) => f.type === "log"
                     );
-                    // Set hasLogFile to true if we have either an error message OR an actual log file
-                    setHasLogFile(hasErrorMessage || !!firstLog);
-                    setLogFilename(firstLog?.name || null);
 
                     // If YAML present, stop polling!
                     if (yamlFile) {
@@ -235,7 +225,6 @@ const RunDetail = () => {
                                 `/api/runs/${runId}/files/${firstLog.name}`,
                             { withCredentials: true, responseType: "text" }
                         );
-                        setLogContent(logResp.data);
                     }
                 }
             } catch (e) {
@@ -317,131 +306,6 @@ const RunDetail = () => {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
         link.download = `${selectedGene}_${selectedOligoset}_oligos.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // Download CSV for all genes and oligosets
-    const handleDownloadAllCSV = () => {
-        if (!parsedYamlData) return;
-
-        // Gather all oligos
-        const allOligos: { gene: string; oligoset: string; oligo: Oligo }[] =
-            [];
-        Object.keys(parsedYamlData).forEach((gene) => {
-            const oligosets = getOligosetsForGene(gene);
-            oligosets.forEach((oligoset) => {
-                const oligosetData = parsedYamlData[gene][oligoset];
-                const oligos = Object.entries(oligosetData)
-                    .filter(([key]) => /^Oligo \d+$/.test(key))
-                    .map(([, value]) => value)
-                    .filter(
-                        (oligo) => typeof oligo === "object" && oligo !== null
-                    ) as Oligo[];
-                oligos.forEach((oligo) => {
-                    allOligos.push({ gene, oligoset, oligo });
-                });
-            });
-        });
-
-        const allColumns = getAllOligoColumns(
-            allOligos.map((item) => item.oligo)
-        );
-        const headers = ["Gene", "Oligoset", ...allColumns]
-            .map((col) => `"${col.replace(/_/g, " ")}"`)
-            .join(",");
-
-        const allRows: string[] = [];
-        allOligos.forEach((item) => {
-            const rowData = [
-                item.gene,
-                item.oligoset,
-                ...allColumns.map((col) => formatValue(item.oligo[col])),
-            ];
-            const row = rowData
-                .map((value) => {
-                    if (
-                        typeof value === "string" &&
-                        (value.includes(",") || value.includes('"'))
-                    ) {
-                        return `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value;
-                })
-                .join(",");
-            allRows.push(row);
-        });
-
-        const csvContent = `${headers}\n${allRows.join("\n")}`;
-
-        const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `all_genes_oligos.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // Download CSV for selected gene (all oligosets)
-    const handleDownloadGeneCSV = () => {
-        if (!selectedGene || !parsedYamlData) return;
-
-        // Gather all oligos for the selected gene
-        const geneOligos: { oligoset: string; oligo: Oligo }[] = [];
-        const oligosets = getOligosetsForGene(selectedGene);
-        oligosets.forEach((oligoset) => {
-            const oligosetData = parsedYamlData[selectedGene][oligoset];
-            const oligos = Object.entries(oligosetData)
-                .filter(([key]) => /^Oligo \d+$/.test(key))
-                .map(([, value]) => value)
-                .filter(
-                    (oligo) => typeof oligo === "object" && oligo !== null
-                ) as Oligo[];
-            oligos.forEach((oligo) => {
-                geneOligos.push({ oligoset, oligo });
-            });
-        });
-
-        const allColumns = getAllOligoColumns(
-            geneOligos.map((item) => item.oligo)
-        );
-        const headers = ["Gene", "Oligoset", ...allColumns]
-            .map((col) => `"${col.replace(/_/g, " ")}"`)
-            .join(",");
-
-        const geneRows: string[] = [];
-        geneOligos.forEach((item) => {
-            const rowData = [
-                selectedGene,
-                item.oligoset,
-                ...allColumns.map((col) => formatValue(item.oligo[col])),
-            ];
-            const row = rowData
-                .map((value) => {
-                    if (
-                        typeof value === "string" &&
-                        (value.includes(",") || value.includes('"'))
-                    ) {
-                        return `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value;
-                })
-                .join(",");
-            geneRows.push(row);
-        });
-
-        const csvContent = `${headers}\n${geneRows.join("\n")}`;
-
-        const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${selectedGene}_all_oligosets.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -557,7 +421,6 @@ const RunDetail = () => {
                             any
                         >;
                         setParsedYamlData(parsed);
-                        setParsedYamlFilename(filename);
 
                         const genes = Object.keys(parsed || {});
                         setGeneOptions(
@@ -568,7 +431,6 @@ const RunDetail = () => {
                         );
 
                         const firstGene = genes[0] || "";
-                        // @ts-ignore
                         const firstOligoset = firstGene
                             ? Object.keys(parsed[firstGene] || {}).find((key) =>
                                   key.startsWith("Oligoset")
@@ -580,7 +442,6 @@ const RunDetail = () => {
                     } catch (e) {
                         console.error("Error parsing YAML:", e);
                         setParsedYamlData(null);
-                        setParsedYamlFilename(null);
                     }
                 }
             })
@@ -769,6 +630,7 @@ const RunDetail = () => {
                                                 newValue?.value || ""
                                             );
                                             setSelectedOligoset("Oligoset 1");
+                                            setSelectedOligo(parsedYamlData?.[newValue?.value || ""]?.["Oligoset 1"]?.["Oligo 1"]?.oligo_id || "");
                                         }}
                                         placeholder="Search or select gene..."
                                         isSearchable
@@ -789,7 +651,7 @@ const RunDetail = () => {
                                                 setSelectedOligoset(
                                                     e.target.value
                                                 );
-                                                setSelectedOligo(0);
+                                                setSelectedOligo(parsedYamlData?.[selectedGene]?.[e.target.value]?.["Oligo 1"]?.oligo_id || "");
                                             }}
                                         >
                                             <option value="">
@@ -865,7 +727,7 @@ const RunDetail = () => {
 
                                             <tbody>
                                                 {getOligosForOligoset().map(
-                                                    (oligo, index) => (
+                                                    (oligo) => (
                                                         <tr
                                                             key={oligo.oligo_id}
                                                         >
@@ -875,14 +737,14 @@ const RunDetail = () => {
                                                                         key={`${oligo.oligo_id}-${column}`}
                                                                         className={
                                                                             "text-nowrap " +
-                                                                            (index ===
+                                                                            (oligo.oligo_id ===
                                                                             selectedOligo
                                                                                 ? "table-primary"
                                                                                 : "")
                                                                         }
                                                                         onClick={() =>
                                                                             setSelectedOligo(
-                                                                                index
+                                                                                oligo.oligo_id
                                                                             )
                                                                         }
                                                                     >

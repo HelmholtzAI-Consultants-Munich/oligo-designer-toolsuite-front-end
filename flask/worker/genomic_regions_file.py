@@ -5,18 +5,23 @@ from oligo_designer_toolsuite.utils import FastaParser
 import yaml
 
 
-class GenomicRegionFile:
-    def __init__(self, regions_path: str, fasta_paths: list[str]):
+class GenomicRegionsFile:
+    def __init__(self, regions_path: str, fasta_paths: list[str], probes_path: str):
         self.regions_path = regions_path
         self.fasta_paths = fasta_paths
+        self.probes_path = probes_path
 
         self.genes = self._load_genes()
         self.regions = self._load_regions()
+        self.probes = self._load_probes()
 
     # write regions to a yaml file
     def yaml_dump(self, yaml_path: str):
         with open(yaml_path, "w") as yaml_file:
-            yaml.dump(self.regions, yaml_file)
+            yaml.dump({
+                "regions": self.regions,
+                "probes": self.probes,
+            }, yaml_file)
 
     def _load_genes(self):
         genes = set()
@@ -215,3 +220,35 @@ class GenomicRegionFile:
 
                 processed_regions[gene][transcript_id] = merged_regions
         return processed_regions
+    
+    def _load_probes(self):
+        probes = {gene: defaultdict(list) for gene in self.genes}
+
+        if not os.path.exists(self.probes_path):
+            print(f"Probes file {self.probes_path} not found, skipping probe loading.")
+            return probes
+        
+        with open(self.probes_path) as f:
+            probe_data = yaml.safe_load(f)
+            for gene, oligosets in probe_data.items():
+                if gene not in self.genes:
+                    continue
+                for oligoset_name, oligoset_entries in oligosets.items():
+                    # only keep entries whose key begins with "Oligo "
+                    oligos = filter(lambda x: x[0].startswith("Oligo "), oligoset_entries.items())
+                    for _, oligo_info in oligos:
+                        probes[gene][oligoset_name].append({
+                            "oligo_id": oligo_info.get("oligo_id", ""),
+                            "start": oligo_info.get("start", [])[0][0],
+                            "end": oligo_info.get("end", [])[0][0],
+                            "strand": oligo_info.get("strand", [])[0][0] if "strand" in oligo_info else "+",
+                            "transcript_ids": oligo_info.get("transcript_id", [])[0],
+                            "exon_numbers": oligo_info.get("exon_number", [])[0],
+                            "regiontype": oligo_info.get("regiontype", [])[0][0] if "regiontype" in oligo_info else "unknown",
+                        })
+
+        # convert defaultdict to dict for cleaner output
+        for gene in probes:
+            probes[gene] = dict(probes[gene])
+        return probes
+                

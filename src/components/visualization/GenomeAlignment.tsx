@@ -4,8 +4,8 @@ import GenomeAlignmentD3, { Regions } from "./GenomeAlignmentD3";
 
 type Props = {
     oligos: Oligo[];
-    selectedOligo: number;
-    setSelectedOligo: (index: number) => void;
+    selectedOligo: string;
+    setSelectedOligo: (id: string) => void;
     genomicRegions: GenomicRegions | null;
 };
 

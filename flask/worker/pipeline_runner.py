@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 from celery import Celery
 
-from .genomic_regions_file import GenomicRegionFile
+from .genomic_regions_file import GenomicRegionsFile
 
 
 class PipelineRunner:
@@ -111,8 +111,15 @@ class PipelineRunner:
         if not fasta_paths:
             print("No fasta files provided, skipping visualization generation.")
             return
+        
+        # find output file name containing "probes" or "probeset"
+        output_yaml = next((fname for fname in os.listdir(output_path) if ("probes" in fname or "probeset" in fname) and (fname.endswith(".yml") or fname.endswith(".yaml"))), None)
+        if not output_yaml:
+            print("No output YAML file containing 'probes' or 'probeset' found, skipping visualization generation.")
+            return
+        probes_path = os.path.join(output_path, output_yaml)
 
-        regions_file = GenomicRegionFile(regions_file, fasta_paths)
+        regions_file = GenomicRegionsFile(regions_file, fasta_paths, probes_path)
         regions_file_path = os.path.join(output_path, "genomic_regions.yaml")
         regions_file.yaml_dump(regions_file_path)
 

@@ -58,8 +58,8 @@ const GenomeAlignmentD3 = {
         el: Element,
         oligos: Oligo[],
         genomicRegions: GenomicRegions,
-        selectedOligo: number,
-        setSelectedOligo: (index: number) => void
+        selectedOligo: string,
+        setSelectedOligo: (id: string) => void
     ) => {
         // Set up SVG dimensions and scales
         const width = 800;
@@ -162,12 +162,9 @@ const GenomeAlignmentD3 = {
             .attr("width", (d) => x(d.end + 0.5) - x(d.start - 0.5))
             .attr("height", 20)
             .on("click", (_, data) => {
-                const index = oligoPositions.findIndex(
-                    (pos) => pos.id === data.id
-                );
-                setSelectedOligo(index);
+                setSelectedOligo(data.id);
                 // Zoom into selected oligo (even if already selected)
-                GenomeAlignmentD3.update(el, oligos, index, true);
+                GenomeAlignmentD3.update(el, oligos, data.id, true);
             });
 
         // Tooltip
@@ -460,11 +457,9 @@ const GenomeAlignmentD3 = {
     update: (
         el: Element,
         oligos: Oligo[],
-        selectedOligo: number,
+        selectedOligo: string,
         zoomIntoOligo: boolean = false
     ) => {
-        console.log("Updating GenomeAlignmentD3");
-        console.log(el, oligos, selectedOligo, zoomIntoOligo);
         // Prepare oligo positions
         const oligoPositions = oligos.map((oligo) => ({
             start: oligo.start[0][0],
@@ -486,13 +481,14 @@ const GenomeAlignmentD3 = {
         )
             .data(oligoPositions)
             .join("rect")
-            .attr("fill", (d, i) =>
-                i === selectedOligo ? "orange" : "steelblue"
+            .attr("fill", (d) =>
+                d.id === selectedOligo ? "orange" : "steelblue"
             );
 
         if (zoomIntoOligo) {
-            const oligo = oligoPositions[selectedOligo];
-            svg.transition()
+            const oligo = oligoPositions.find(o => o.id === selectedOligo);
+            if (oligo) {
+                svg.transition()
                 .duration(2500)
                 .ease(d3.easeCubicInOut)
                 .call(
@@ -508,6 +504,7 @@ const GenomeAlignmentD3 = {
                             0
                         )
                 );
+            }
         }
     },
 

@@ -7,8 +7,8 @@ import type { Oligo } from "../../types";
 type Props = {
     oligos: Oligo[];
     pipeline: string;
-    selectedOligo: number;
-    setSelectedOligo: (index: number) => void;
+    selectedOligo: string;
+    setSelectedOligo: (id: string) => void;
 };
 
 type OligoComponentDefinition =
@@ -51,12 +51,14 @@ const OligoComponents: React.FC<Props> = ({
         pipeline as keyof typeof ComponentDefinition
     ] as OligoComponentDefinition[];
 
+    const oligo = oligos.find((o) => o.oligo_id === selectedOligo);
+
     const components: OligoComponent[] = useMemo(() => {
         const comps: OligoComponent[] = [];
-        if (definition) {
+        if (definition && oligo) {
             definition.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
-                    let sequence = oligos[selectedOligo][
+                    let sequence = oligo[
                         componentDef.field as keyof Oligo
                     ] as string | Array<string> | Array<Array<string>>;
                     if (Array.isArray(sequence)) {
@@ -82,7 +84,7 @@ const OligoComponents: React.FC<Props> = ({
             });
         }
         return comps;
-    }, [oligos, selectedOligo, definition]);
+    }, [definition, oligo]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
         return components.flatMap((component) =>
@@ -109,6 +111,11 @@ const OligoComponents: React.FC<Props> = ({
             unknown
         >;
 
+        const svgNode = svg.node() as SVGElement | null;
+        if (!svgNode) {
+            return;
+        }
+
         const group = svg.select("#oligo-components g");
 
         /* clear previous transforms */
@@ -131,12 +138,16 @@ const OligoComponents: React.FC<Props> = ({
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;")
             .call(zoom);
-        const svgBox = (svg.node() as SVGElement).getBoundingClientRect();
+        const svgBox = svgNode.getBoundingClientRect();
         group.attr("y", `${svgBox.height / 2}`);
     }, [components]);
 
     if (!definition) {
         return <div>No visualization available for pipeline {pipeline}</div>;
+    }
+
+    if (!oligo) {
+        return <div>Selected oligo not found.</div>;
     }
 
     return (
@@ -148,10 +159,10 @@ const OligoComponents: React.FC<Props> = ({
                 id="oligoSelect"
                 className="form-select"
                 value={selectedOligo}
-                onChange={(e) => setSelectedOligo(parseInt(e.target.value))}
+                onChange={(e) => setSelectedOligo(e.target.value)}
             >
-                {oligos.map((_, index) => (
-                    <option key={index} value={index}>
+                {oligos.map((oligo, index) => (
+                    <option key={oligo.oligo_id} value={oligo.oligo_id}>
                         Oligo {index + 1}
                     </option>
                 ))}
@@ -163,7 +174,7 @@ const OligoComponents: React.FC<Props> = ({
                             x={(index + 1) * 12}
                             y={base.isBinding ? 55 : 45}
                             style={{ fill: base.color, textAnchor: "middle" }}
-                            key={oligos[selectedOligo].oligo_id + "-" + index}
+                            key={oligo.oligo_id + "-" + index}
                         >
                             {base.char}
                         </text>
