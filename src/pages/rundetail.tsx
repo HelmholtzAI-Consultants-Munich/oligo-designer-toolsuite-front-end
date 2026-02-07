@@ -6,7 +6,7 @@ import Select from "react-select";
 import type { SingleValue } from "react-select";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import type { GenomicRegions, Oligo, RunState } from "../types";
+import type { GenomicRegions, Oligo, Probesets, RunState } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
@@ -67,6 +67,9 @@ const RunDetail = () => {
     const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
     const [genomicRegions, setGenomicRegions] = useState<{
         [key: string]: GenomicRegions;
+    } | null>(null);
+    const [probes, setProbes] = useState<{
+        [key: string]: Probesets;
     } | null>(null);
 
     const definition = ComponentDefinition[
@@ -132,11 +135,14 @@ const RunDetail = () => {
                 .then((response) => {
                     const regionsYaml = YAML.load(response.data) as {
                         regions: {
-                            [key: string]: GenomicRegions;
+                            [gene: string]: GenomicRegions;
                         }
-                        //oligos: Oligo[];
+                        probes: {
+                            [gene: string]: Probesets;
+                        }
                     };
                     setGenomicRegions(regionsYaml.regions);
+                    setProbes(regionsYaml.probes);
                 })
                 .catch((error) => {
                     console.error(
@@ -693,6 +699,7 @@ const RunDetail = () => {
                                     <div className="my-3">
                                         <ResultVisualization
                                             oligos={getOligosForOligoset()}
+                                            probes={probes?.[selectedGene]?.[selectedOligoset] || []}
                                             pipeline={pipeline}
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}

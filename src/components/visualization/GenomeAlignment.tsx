@@ -1,9 +1,9 @@
 import React from "react";
-import type { Oligo, GenomicRegions } from "../../types";
+import type { GenomicRegions, Probe } from "../../types";
 import GenomeAlignmentD3, { Regions } from "./GenomeAlignmentD3";
 
 type Props = {
-    oligos: Oligo[];
+    probes: Probe[];
     selectedOligo: string;
     setSelectedOligo: (id: string) => void;
     genomicRegions: GenomicRegions | null;
@@ -17,7 +17,7 @@ class GenomeAlignment extends React.Component<Props> {
     componentDidMount() {
         GenomeAlignmentD3.create(
             this.el!,
-            this.props.oligos,
+            this.props.probes,
             this.props.genomicRegions || {},
             this.props.selectedOligo,
             this.props.setSelectedOligo
@@ -30,7 +30,7 @@ class GenomeAlignment extends React.Component<Props> {
             GenomeAlignmentD3.destroy(this.el!);
             GenomeAlignmentD3.create(
                 this.el!,
-                this.props.oligos,
+                this.props.probes,
                 this.props.genomicRegions || {},
                 this.props.selectedOligo,
                 this.props.setSelectedOligo
@@ -39,7 +39,7 @@ class GenomeAlignment extends React.Component<Props> {
             // If selectedOligo changed, update the visualization and zoom into the oligo
             GenomeAlignmentD3.update(
                 this.el!,
-                this.props.oligos,
+                this.props.probes,
                 this.props.selectedOligo,
                 true
             );
@@ -47,7 +47,7 @@ class GenomeAlignment extends React.Component<Props> {
             // Otherwise just update the visualization
             GenomeAlignmentD3.update(
                 this.el!,
-                this.props.oligos,
+                this.props.probes,
                 this.props.selectedOligo
             );
         }

@@ -87,6 +87,7 @@ class GenomicRegionsFile:
                                 "end": end,
                                 "chromosome": coordinates["chromosome"][i],
                                 "strand": strand,
+                                "junction_number": exon_number if region_type == "exonexonjunction" else None,
                             }
                         )
 
@@ -237,15 +238,68 @@ class GenomicRegionsFile:
                     # only keep entries whose key begins with "Oligo "
                     oligos = filter(lambda x: x[0].startswith("Oligo "), oligoset_entries.items())
                     for _, oligo_info in oligos:
-                        probes[gene][oligoset_name].append({
-                            "oligo_id": oligo_info.get("oligo_id", ""),
-                            "start": oligo_info.get("start", [])[0][0],
-                            "end": oligo_info.get("end", [])[0][0],
-                            "strand": oligo_info.get("strand", [])[0][0] if "strand" in oligo_info else "+",
-                            "transcript_ids": oligo_info.get("transcript_id", [])[0],
-                            "exon_numbers": oligo_info.get("exon_number", [])[0],
-                            "regiontype": oligo_info.get("regiontype", [])[0][0] if "regiontype" in oligo_info else "unknown",
-                        })
+                        regiontype = oligo_info.get("regiontype", [])[0][0] if "regiontype" in oligo_info else "unknown"
+                        start = oligo_info.get("start", [])[0][0]
+                        end = oligo_info.get("end", [])[0][0]
+                        transcript_ids = oligo_info.get("transcript_id", [])[0]
+                        exon_numbers = oligo_info.get("exon_number", [])[0]
+
+                        if regiontype != "exonexonjunction":
+                            print(f"Processing probe {oligo_info.get('oligo_id', '')} in gene {gene} as single continuous probe...")
+                            print(f"{regiontype}")
+                            # single continous probe, add as single component
+                            probes[gene][oligoset_name].append({
+                                "oligo_id": oligo_info.get("oligo_id", ""),
+                                "components": [
+                                    {
+                                        "start": start,
+                                        "end": end,
+                                        "type": "probe"
+                                    }
+                                ],
+                                "strand": oligo_info.get("strand", [])[0][0] if "strand" in oligo_info else "+",
+                                "transcript_ids": transcript_ids,
+                                "exon_numbers": exon_numbers,
+                                "regiontype": regiontype,
+                            })
+                        else:
+                            # for exon-exon junction probes, add gaps between exons as components
+                            print(f"Processing exon-exon junction probe {oligo_info.get('oligo_id', '')} in gene {gene}...")
+                            canonical_transcript_id = transcript_ids[0]
+                            canonical_exon_number = exon_numbers[0]
+                            canonical_regions = sorted([x for x in self.regions[gene][canonical_transcript_id] if x.get("junction_number", None) == canonical_exon_number], key=lambda x: x["start"])
+                            if canonical_regions is None:
+                                print(f"Warning: Could not find canonical region for probe {oligo_info.get('oligo_id', '')} in gene {gene}, skipping.")
+                                continue
+
+                            print(f"Found canonical regions for probe {oligo_info.get('oligo_id', '')} in gene {gene}: {canonical_regions}")
+
+                            components = []
+                            last_end = None
+                            for region in canonical_regions:
+                                if last_end is not None and region["start"] > last_end + 1:
+                                    # add gap component between exons
+                                    components.append({
+                                        "start": last_end + 1,
+                                        "end": region["start"] - 1,
+                                        "type": "gap"
+                                    })
+                                # add exon component
+                                components.append({
+                                    "start": max(region["start"], start),
+                                    "end": min(region["end"], end),
+                                    "type": "probe"
+                                })
+                                last_end = region["end"]
+                            
+                            probes[gene][oligoset_name].append({
+                                "oligo_id": oligo_info.get("oligo_id", ""),
+                                "components": components,
+                                "strand": oligo_info.get("strand", [])[0][0] if "strand" in oligo_info else "+",
+                                "transcript_ids": transcript_ids,
+                                "exon_numbers": exon_numbers,
+                                "regiontype": oligo_info.get("regiontype", [])[0][0] if "regiontype" in oligo_info else "unknown",
+                            })
 
         # convert defaultdict to dict for cleaner output
         for gene in probes:

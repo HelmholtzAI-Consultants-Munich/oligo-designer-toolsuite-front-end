@@ -29,7 +29,23 @@ export interface GenomicRegion {
 }
 
 export interface GenomicRegions {
-    [key: string]: GenomicRegion[];
+    [transcript_id: string]: GenomicRegion[];
 }
+
+export interface Probe {
+    oligo_id: string;
+    strand: "+" | "-";
+    components: {
+        start: number;
+        end: number;
+        type: "probe" | "gap";
+    }[];
+    transcript_ids: string[];
+}
+
+export interface Probesets {
+    [probeset_name: string]: Probe[];
+}
+    
 
 export type RunState = "started" | "success" | "failure" | "pending";

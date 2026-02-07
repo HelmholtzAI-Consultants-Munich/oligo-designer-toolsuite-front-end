@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import type { Oligo, GenomicRegions, GenomicRegion } from "../../types";
+import type { GenomicRegions, GenomicRegion, Probe } from "../../types";
 
 export const Regions: { [key: string]: { color: string; label: string } } = {
     exon: { color: "blue", label: "Exon" },
@@ -56,11 +56,14 @@ let currentZoomTransform: d3.ZoomTransform = d3.zoomIdentity;
 const GenomeAlignmentD3 = {
     create: (
         el: Element,
-        oligos: Oligo[],
+        probes: Probe[],
         genomicRegions: GenomicRegions,
         selectedOligo: string,
         setSelectedOligo: (id: string) => void
     ) => {
+        console.log("Creating Genome Alignment D3 visualization");
+        console.log("Probes:", probes);
+
         // Set up SVG dimensions and scales
         const width = 800;
         const height = Object.keys(genomicRegions).length * 12 + 150;
@@ -81,12 +84,15 @@ const GenomeAlignmentD3 = {
             .attr("style", "width: 100%; height: auto;");
 
         // Prepare oligo positions
-        const oligoPositions = oligos.map((oligo) => ({
-            start: oligo.start[0][0],
-            end: oligo.end[0][0],
+        const oligoPositions = probes.flatMap((oligo) => oligo.components.map((component) => ({
+            start: component.start,
+            end: component.end,
             id: oligo.oligo_id,
-        }));
-
+            transcript_ids: oligo.transcript_ids,
+            strand: oligo.strand,
+            type: component.type,
+        })));
+        
         // Define x scale based on combined extent of oligos and genomic regions
         const ext = d3.extent([
             ...oligoPositions.flatMap((d) => [d.start, d.end]),
@@ -161,11 +167,24 @@ const GenomeAlignmentD3 = {
             .attr("y", 10)
             .attr("width", (d) => x(d.end + 0.5) - x(d.start - 0.5))
             .attr("height", 20)
+            .attr("opacity", (d) => (d.type === "gap" ? 0.5 : 1.0))
             .on("click", (_, data) => {
                 setSelectedOligo(data.id);
                 // Zoom into selected oligo (even if already selected)
-                GenomeAlignmentD3.update(el, oligos, data.id, true);
+                GenomeAlignmentD3.update(el, probes, data.id, true);
             });
+
+        // Append line to oligo gaps
+        plot.select(".oligos")
+            .selectAll("line")
+            .data(oligoPositions.filter((d) => d.type === "gap"))
+            .join("line")
+            .attr("x1", (d) => x(d.start - 0.5))
+            .attr("x2", (d) => x(d.end + 0.5))
+            .attr("y1", 20)
+            .attr("y2", 20)
+            .attr("stroke-width", 2)
+            .attr("pointer-events", "none"); // allow clicks to pass through to rects
 
         // Tooltip
         const tooltip = d3
@@ -308,8 +327,6 @@ const GenomeAlignmentD3 = {
 
         function zoomed(event: d3.D3ZoomEvent<Element, unknown>) {
             currentZoomTransform = event.transform;
-
-            // Rescale x axis
             const zx = event.transform.rescaleX(x);
 
             // Rescale location indicator
@@ -321,6 +338,14 @@ const GenomeAlignmentD3 = {
             )
                 .attr("x", (d) => zx(d.start - 0.5))
                 .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
+
+            plot.selectAll<SVGLineElement, (typeof oligoPositions)[0]>(
+                ".oligos line"
+            )
+                .attr("x1", (d) => zx(d.start - 0.5))
+                .attr("x2", (d) => zx(d.end + 0.5));
+
+            // Rescale x axis
             gX.call(xAxis.scale(zx));
 
             // Rescale genomic regions
@@ -418,7 +443,7 @@ const GenomeAlignmentD3 = {
                                 .attr("fill", "white")
                                 .attr(
                                     "transform",
-                                    `translate(${pos * columnWidth}, ${transcriptHeight / 2}) scale(${regionHeight / 10})`
+                                    `translate(${pos * columnWidth}, ${transcriptHeight / 2}) scale(${regionHeight / 13})`
                                 );
                         }
                     });
@@ -451,21 +476,24 @@ const GenomeAlignmentD3 = {
             );
         }
 
-        GenomeAlignmentD3.update(el, oligos, selectedOligo);
+        GenomeAlignmentD3.update(el, probes, selectedOligo);
     },
 
     update: (
         el: Element,
-        oligos: Oligo[],
+        probes: Probe[],
         selectedOligo: string,
         zoomIntoOligo: boolean = false
     ) => {
         // Prepare oligo positions
-        const oligoPositions = oligos.map((oligo) => ({
-            start: oligo.start[0][0],
-            end: oligo.end[0][0],
+        const oligoPositions = probes.flatMap((oligo) => oligo.components.map((component) => ({
+            start: component.start,
+            end: component.end,
             id: oligo.oligo_id,
-        }));
+            transcript_ids: oligo.transcript_ids,
+            strand: oligo.strand,
+            type: component.type,
+        })));
 
         // Select the SVG element
         const svg = d3.select(el) as d3.Selection<
@@ -485,10 +513,25 @@ const GenomeAlignmentD3 = {
                 d.id === selectedOligo ? "orange" : "steelblue"
             );
 
+        svg.selectAll<SVGLineElement, (typeof oligoPositions)[0]>(
+            ".oligos line"
+        )
+            .data(oligoPositions.filter((d) => d.type === "gap"))
+            .join("line")
+            .attr("stroke", (d) =>
+                d.id === selectedOligo ? "orange" : "steelblue"
+            );
+
         if (zoomIntoOligo) {
-            const oligo = oligoPositions.find(o => o.id === selectedOligo);
-            if (oligo) {
-                svg.transition()
+            const oligoComponents = oligoPositions.filter((d) => d.id === selectedOligo);
+            if (oligoComponents.length === 0) {
+                return;
+            }
+            // Get the min start and max end of all components of the selected oligo
+            const oligoStart = Math.min(...oligoComponents.map((d) => d.start));
+            const oligoEnd = Math.max(...oligoComponents.map((d) => d.end));
+
+            svg.transition()
                 .duration(2500)
                 .ease(d3.easeCubicInOut)
                 .call(
@@ -497,14 +540,13 @@ const GenomeAlignmentD3 = {
                         .translate(innerWidth / 2, 0)
                         .scale(
                             innerWidth /
-                                (x(oligo.end + 100) - x(oligo.start - 100))
+                                (x(oligoEnd + 100) - x(oligoStart - 100))
                         )
                         .translate(
-                            -((x(oligo.start - 100) + x(oligo.end + 100)) / 2),
+                            -((x(oligoStart - 100) + x(oligoEnd + 100)) / 2),
                             0
                         )
                 );
-            }
         }
     },
 
