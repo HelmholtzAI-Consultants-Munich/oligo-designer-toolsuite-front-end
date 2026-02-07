@@ -84,15 +84,17 @@ const GenomeAlignmentD3 = {
             .attr("style", "width: 100%; height: auto;");
 
         // Prepare oligo positions
-        const oligoPositions = probes.flatMap((oligo) => oligo.components.map((component) => ({
-            start: component.start,
-            end: component.end,
-            id: oligo.oligo_id,
-            transcript_ids: oligo.transcript_ids,
-            strand: oligo.strand,
-            type: component.type,
-        })));
-        
+        const oligoPositions = probes.flatMap((oligo) =>
+            oligo.components.map((component) => ({
+                start: component.start,
+                end: component.end,
+                id: oligo.oligo_id,
+                transcript_ids: oligo.transcript_ids,
+                strand: oligo.strand,
+                type: component.type,
+            }))
+        );
+
         // Define x scale based on combined extent of oligos and genomic regions
         const ext = d3.extent([
             ...oligoPositions.flatMap((d) => [d.start, d.end]),
@@ -216,7 +218,22 @@ const GenomeAlignmentD3 = {
 
             const transcriptGroup = regionsGroup
                 .append("g")
+                .attr("class", "transcript")
                 .attr("transform", `translate(0, ${yOffset})`);
+
+            transcriptGroup
+                .append("rect")
+                .data([{
+                    transcript_id: transcriptName,
+                    start: d3.min(regions, (d) => d.start) || 0,
+                    end: d3.max(regions, (d) => d.end) || 0,
+                }])
+                .attr("class", "transcript-bg")
+                .attr("x", (d) => x(d.start - 0.5))
+                .attr("y", 0)
+                .attr("width", (d) => x(d.end + 0.5) - x(d.start - 0.5))
+                .attr("height", transcriptHeight)
+                .attr("fill", "transparent");
 
             const regionsContainer = transcriptGroup
                 .selectAll("g")
@@ -241,6 +258,7 @@ const GenomeAlignmentD3 = {
                                 (d.exon_number
                                     ? " " + encodeURI(d.exon_number.toString())
                                     : "") +
+                                `<br>Transcript: ${encodeURI(transcriptName)}` +
                                 (d.inferred ? "<br><i>(inferred)</i>" : "")
                         )
                         .style("left", event.pageX + 30 + "px")
@@ -357,6 +375,10 @@ const GenomeAlignmentD3 = {
                 .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
             regionsGroup
                 .selectAll<SVGRectElement, GenomicRegion>(".region-hover-pad")
+                .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
+            regionsGroup
+                .selectAll<SVGRectElement, GenomicRegion>(".transcript-bg")
+                .attr("x", (d) => zx(d.start - 0.5))
                 .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
 
             // Rescale tooltip
@@ -486,14 +508,16 @@ const GenomeAlignmentD3 = {
         zoomIntoOligo: boolean = false
     ) => {
         // Prepare oligo positions
-        const oligoPositions = probes.flatMap((oligo) => oligo.components.map((component) => ({
-            start: component.start,
-            end: component.end,
-            id: oligo.oligo_id,
-            transcript_ids: oligo.transcript_ids,
-            strand: oligo.strand,
-            type: component.type,
-        })));
+        const oligoPositions = probes.flatMap((oligo) =>
+            oligo.components.map((component) => ({
+                start: component.start,
+                end: component.end,
+                id: oligo.oligo_id,
+                transcript_ids: oligo.transcript_ids,
+                strand: oligo.strand,
+                type: component.type,
+            }))
+        );
 
         // Select the SVG element
         const svg = d3.select(el) as d3.Selection<
@@ -522,8 +546,19 @@ const GenomeAlignmentD3 = {
                 d.id === selectedOligo ? "orange" : "steelblue"
             );
 
+        svg.selectAll<SVGRectElement, { transcript_id: string }>(".transcript-bg").attr("fill", (d) => {
+            const selected = probes.find((oligo) => oligo.oligo_id === selectedOligo);
+            if (selected) {
+                const isSelected = selected.transcript_ids.includes(d.transcript_id);
+                return isSelected ? "#caffcc" : "transparent";
+            }
+            return "transparent";
+        });
+
         if (zoomIntoOligo) {
-            const oligoComponents = oligoPositions.filter((d) => d.id === selectedOligo);
+            const oligoComponents = oligoPositions.filter(
+                (d) => d.id === selectedOligo
+            );
             if (oligoComponents.length === 0) {
                 return;
             }

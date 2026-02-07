@@ -12,8 +12,9 @@ class GenomicRegionsFile:
         self.probes_path = probes_path
 
         self.genes = self._load_genes()
-        self.regions = self._load_regions()
+        self.regions = self._collect_regions()
         self.probes = self._load_probes()
+        self.regions = self._process_regions()
 
     # write regions to a yaml file
     def yaml_dump(self, yaml_path: str):
@@ -29,11 +30,6 @@ class GenomicRegionsFile:
             for line in f:
                 genes.add(line.strip())
         return list(genes)
-
-    def _load_regions(self):
-        raw_regions = self._collect_regions()
-        regions = self._process_regions(raw_regions)
-        return regions
 
     # Collect regions from fasta files
     def _collect_regions(self):
@@ -110,7 +106,8 @@ class GenomicRegionsFile:
         return regions
 
     # Process regions to fill gaps and merge overlapping regions
-    def _process_regions(self, raw_regions):
+    def _process_regions(self):
+        raw_regions = self.regions
         # empty copy of raw_regions
         processed_regions = {
             gene: {transcript: [] for transcript in transcripts} for gene, transcripts in raw_regions.items()
