@@ -97,8 +97,8 @@ class BaseGenomicDataBase:
             if os.path.exists(extracted_file_path):
                 return file_path
 
-            with open(file_path, "rb") as archive:
-                with gzip.open(extracted_file_path, "wb") as extract:
+            with gzip.open(file_path, "rb") as archive:
+                with open(extracted_file_path, "wb") as extract:
                     shutil.copyfileobj(archive, extract)
 
         return file_path
@@ -365,17 +365,32 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 final_dir = rel_dir
         return str(release), assembly_name, accession, final_dir
 
+    def _parse_checksums(self, line, filename_idx: int, checksum_idx: int):
+        line = line.strip()
+        if not line:
+            return None
+        line = line.split()
+        if len(line) < 2:
+            return None
+        filename = line[filename_idx].lstrip("./")
+        checksum = line[checksum_idx]
+        return filename, checksum
+
     def _parse_md5checksums(self, md5_text_path):
         # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
+        current_app.logger.warning(md5_text_path)
         m = {}
         with open(md5_text_path) as f:
+            if "uncompressed" in str(md5_text_path):
+                filename_idx = 0
+                checksum_idx = 1
+            else:
+                filename_idx = 1
+                checksum_idx = 0
+
             for line in f:
-                line = line.strip()
-                if not line or "  " not in line:
-                    continue
-                digest, rel = line.split("  ", 1)
-                rel = rel.lstrip("./")
-                m[rel] = digest
+                filename, checksum = self._parse_checksums(line, filename_idx, checksum_idx)
+                m[filename] = checksum
         return m
 
     def _get_md5_for_filename(self, md5map, filename):
@@ -405,8 +420,8 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             # Not all NCBI directories publish this file; proceed without it.
             pass
 
-        file_types = ["gtf", "fna", "report"]
-        file_endings = ["_genomic.gtf.gz", "_genomic.fna.gz", "_assembly_report.txt"]
+        file_types = ["gtf", "fna"]
+        file_endings = ["_genomic.gtf.gz", "_genomic.fna.gz"]
         files = {
             file_type: {"remote_path": f"{accession}_{assembly}{file_ending}"}
             for file_type, file_ending in zip(file_types, file_endings)
@@ -427,16 +442,15 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 raise RuntimeError(f"Checksum for {archive_local_path} doesn't match")
 
             uncompressed_local_path = self.extracted_file_path(archive_local_path)
-            if key != "report":
-                # Optional: verify uncompressed files using uncompressed_checksums.txt (if available)
-                if unc_map:
-                    expected_uncompressed_checksum = self._get_md5_for_filename(
-                        unc_map, files[key]["remote_path"]
-                    )
-                    if files[key]["remote_path"] in unc_map and not self._verify_file(
-                        uncompressed_local_path, expected_uncompressed_checksum
-                    ):
-                        current_app.logger.warning(f"Uncompressed MD5 mismatch for {uncompressed_local_path}")
+
+            # Optional: verify uncompressed files using uncompressed_checksums.txt (if available)
+            if unc_map is not None:
+                current_app.logger.warning("Found uncompressed_map")
+                expected_uncompressed_checksum = self._get_md5_for_filename(
+                    unc_map, files[key]["remote_path"].rstrip(".gz")
+                )
+                if not self._verify_file(uncompressed_local_path, expected_uncompressed_checksum):
+                    current_app.logger.warning(f"Uncompressed MD5 mismatch for {uncompressed_local_path}")
 
             files[key]["local_path"] = str(uncompressed_local_path)
 
@@ -467,7 +481,7 @@ def cache_dropdown_options():
         )
     else:
         if (datetime.datetime.today() - doc["timestamp"]).days >= 1:
-            cache.insert_one(
+            cache.update_one(
                 {"_id": 1},
                 {"$set": {"timestamp": datetime.datetime.today(), "data": prefetch_dropdown_options()}},
             )
