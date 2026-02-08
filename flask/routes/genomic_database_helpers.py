@@ -145,8 +145,9 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         m = {}
         with open(checksums_path) as checksums_file:
             for line in checksums_file:
+                line = line.strip()
                 split_line = line.split()
-                m[split_line[3]] = split_line[0]
+                m[split_line[2]] = split_line[0]
                 current_app.logger.warning(f"{split_line[2]} : {split_line[0]}")
         return m
 
@@ -299,7 +300,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         return sorted(dirs)
 
     def _get_assembly_information(self, rel_dir: str, file_name: str) -> tuple[str | None, str | None]:
-        url = f"https://{self.host}/{rel_dir}/{file_name}"
+        url = f"https://{self.host}{rel_dir}/{file_name}"
         file_path = self.download(url)
 
         if file_path is None:
@@ -332,18 +333,23 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             if releases_dir is None:
                 raise RuntimeError("Couldn't fetch Release Dir")
             base = f"/{self.base_path}{taxon}/{species}/{releases_dir}/"
-            rel_dir = base + ("current/" if str(release) == "current" else f"{release}/")
+            rel_dir = base + f"{release}/"
             current_app.logger.warning(f"NCBI rel dir: {rel_dir}")
 
             ftp.cwd(rel_dir)
-            if str(release) == "current":
+
+            if "GCF" not in release:
                 # Be deterministic
-                listing = sorted(ftp.nlst())
+                listing = sorted(self.get_dirs(ftp))
                 if not listing:
                     raise RuntimeError("Empty 'current' directory at NCBI.")
+
+                old_release = release
                 release = listing[0]
-                rel_dir = base + f"{release}/"
+
+                rel_dir = base + f"{old_release}/{release}"
                 ftp.cwd(release)
+
             # find README
             assembly_reports = sorted([n for n in ftp.nlst() if n.endswith("_assembly_report.txt")])
             if not assembly_reports:
