@@ -1,8 +1,25 @@
 import json
 import os
 import pytest
+import sys
 
 from conftest import assert_error_sanitized
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from routes.genomic_database_helpers import EnsemblGenomicDataBase, NCBIGenomicDataBase
+
+
+@pytest.fixture
+def verify_file_mock(monkeypatch):
+    # mocked return function to replace Path.home
+    # always return '/abc'
+    def mockreturn(a, b, c):
+        return True
+
+    # Application of the monkeypatch to replace Path.home
+    # with the behavior of mockreturn defined above.
+    monkeypatch.setattr(NCBIGenomicDataBase, "_verify_file", mockreturn)
+    monkeypatch.setattr(EnsemblGenomicDataBase, "_verify_file", mockreturn)
 
 
 @pytest.fixture
@@ -37,8 +54,10 @@ def release_queries():
     return form
 
 
-def test_genomic_cascaded_custom(client, dummy_form_custom, mock_run, authenticated_user):
-    dummy_form = dummy_form_custom
+def test_genomic_cascaded_custom_ncbi(
+    client, dummy_form_ncbi, mock_run, authenticated_user, verify_file_mock
+):
+    dummy_form = dummy_form_ncbi
 
     response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
     assert response.status_code == 200
@@ -48,8 +67,36 @@ def test_genomic_cascaded_custom(client, dummy_form_custom, mock_run, authentica
     assert "output" in data
 
 
-def test_genomic_cascaded_custom_unauthenticated(client, dummy_form_custom, mock_run, session_user):
-    dummy_form = dummy_form_custom
+def test_genomic_cascaded_custom_ncbi_unauthenticated(
+    client, dummy_form_ncbi, mock_run, session_user, verify_file_mock
+):
+    dummy_form = dummy_form_ncbi
+
+    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "success"
+    assert "message" in data
+    assert "output" in data
+
+
+def test_genomic_cascaded_custom_single_ensembl(
+    client, dummy_form_ensembl, mock_run, authenticated_user, verify_file_mock
+):
+    dummy_form = dummy_form_ensembl
+
+    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "success"
+    assert "message" in data
+    assert "output" in data
+
+
+def test_genomic_cascaded_custom_single_ensembl_unauthenticated(
+    client, dummy_form_ensembl, mock_run, session_user, verify_file_mock
+):
+    dummy_form = dummy_form_ensembl
 
     response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
     assert response.status_code == 200
@@ -80,28 +127,6 @@ def test_genomic_releases(client, release_queries):
         data = response.get_json()
 
         assert data == entry["result"]
-
-
-def test_genomic_single_ensembl(client, dummy_form_ensembl, mock_run, authenticated_user):
-    dummy_form = dummy_form_ensembl
-
-    response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "success"
-    assert "message" in data
-    assert "output" in data
-
-
-def test_genomic_single_ensembl_unauthenticated(client, dummy_form_ensembl, mock_run, session_user):
-    dummy_form = dummy_form_ensembl
-
-    response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "success"
-    assert "message" in data
-    assert "output" in data
 
 
 # Error handling tests
@@ -147,11 +172,11 @@ def _assert_genomic_error_response(
         assert_error_sanitized(data)
 
 
-def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user):
+def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
     """Test genomic_cascaded_ncbi with invalid input returns sanitized error."""
     invalid_form = {"source": "Invalid"}
 
-    response = client.post("/api/genomic/cascaded/ncbi", json=invalid_form)
+    response = client.post("/api/genomic/cascaded/custom", json=invalid_form)
     _assert_genomic_error_response(
         response,
         expected_status_codes=[400, 500],
@@ -160,12 +185,14 @@ def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user):
     )
 
 
-def test_genomic_cascaded_ncbi_subprocess_failure(client, dummy_form_ncbi, authenticated_user):
+def test_genomic_cascaded_custom_ncbi_subprocess_failure(
+    client, dummy_form_ncbi, authenticated_user, verify_file_mock
+):
     """Test genomic_cascaded_ncbi with subprocess failure returns sanitized error."""
     from unittest.mock import patch
 
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
-        response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form_ncbi)
+        response = client.post("/api/genomic/cascaded/custom", json=dummy_form_ncbi)
         _assert_genomic_error_response(
             response,
             expected_status_codes=500,
@@ -178,32 +205,6 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
     """Test genomic_cascaded_ensembl with invalid input returns sanitized error."""
     invalid_form = {"source": "Invalid"}
 
-    response = client.post("/api/genomic/cascaded/ensembl", json=invalid_form)
-    _assert_genomic_error_response(
-        response,
-        expected_status_codes=[400, 500],
-        expected_message_substring="We couldn't process your genomic data",
-        check_sanitized=True,
-    )
-
-
-def test_genomic_cascaded_ensembl_subprocess_failure(client, dummy_form_ensembl, authenticated_user):
-    """Test genomic_cascaded_ensembl with subprocess failure returns sanitized error."""
-    from unittest.mock import patch
-
-    with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
-        response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form_ensembl)
-        _assert_genomic_error_response(
-            response,
-            expected_status_codes=500,
-            forbidden_strings=["Subprocess failed"],
-        )
-
-
-def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
-    """Test genomic_cascaded_custom with invalid input returns sanitized error."""
-    invalid_form = {"source": "Custom", "file_regions": ""}
-
     response = client.post("/api/genomic/cascaded/custom", json=invalid_form)
     _assert_genomic_error_response(
         response,
@@ -213,12 +214,14 @@ def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
     )
 
 
-def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user, dummy_form_custom):
-    """Test genomic_cascaded_custom with subprocess failure returns sanitized error."""
+def test_genomic_cascaded_custom_ensembl_subprocess_failure(
+    client, dummy_form_ensembl, authenticated_user, verify_file_mock
+):
+    """Test genomic_cascaded_ensembl with subprocess failure returns sanitized error."""
     from unittest.mock import patch
 
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
-        response = client.post("/api/genomic/cascaded/custom", json=dummy_form_custom)
+        response = client.post("/api/genomic/cascaded/custom", json=dummy_form_ensembl)
         _assert_genomic_error_response(
             response,
             expected_status_codes=500,
@@ -226,7 +229,7 @@ def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user, 
         )
 
 
-def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
+def test_genomic_routes_no_str_e_exposed(client, authenticated_user, verify_file_mock):
     """Test that no str(e) is exposed in genomic route error responses."""
     from unittest.mock import patch
 
@@ -239,9 +242,9 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
     ]
 
     for exc in exceptions:
-        with patch("routes.genomic._prepare_ncbi_cached_assets", side_effect=exc):
+        with patch("routes.genomic.NCBIGenomicDataBase.prepare_cached_assets", side_effect=exc):
             response = client.post(
-                "/api/genomic/cascaded/ncbi",
+                "/api/genomic/cascaded/custom",
                 json={"source": "NCBI", "genomic_regions": {"gene": "true"}},
             )
             data = response.get_json()
@@ -260,7 +263,9 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
             assert len(data["error"]) > 0
 
 
-def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi, mock_run):
+def test_genomic_cascaded_custom_ncbi_session_without_directory(
+    client, dummy_form_ncbi, mock_run, verify_file_mock
+):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     from unittest.mock import patch, MagicMock
 
@@ -278,11 +283,13 @@ def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi
     # Patch subprocess.run where it's used in genomic routes
     with patch("routes.genomic.subprocess.run", return_value=mock_result):
         # With makedirs mock disabled, directories will be created and request should succeed
-        response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
+        response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
         assert response.status_code == 200
 
 
-def test_genomic_single_ensembl_session_without_directory(client, dummy_form_ensembl, mock_run):
+def test_genomic_single_custom_ensembl_session_without_directory(
+    client, dummy_form_ensembl, mock_run, verify_file_mock
+):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
     from unittest.mock import patch, MagicMock
 
@@ -300,5 +307,5 @@ def test_genomic_single_ensembl_session_without_directory(client, dummy_form_ens
     # Patch subprocess.run where it's used in genomic routes
     with patch("routes.genomic.subprocess.run", return_value=mock_result):
         # With makedirs mock disabled, directories will be created and request should succeed
-        response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form)
+        response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
         assert response.status_code == 200
