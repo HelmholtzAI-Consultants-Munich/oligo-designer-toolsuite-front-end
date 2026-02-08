@@ -29,10 +29,18 @@ def dummy_form_custom():
     return form
 
 
-def test_genomic_cascaded_ncbi(client, dummy_form_ncbi, mock_run, authenticated_user):
-    dummy_form = dummy_form_ncbi
+@pytest.fixture
+def release_queries():
+    form_path = os.path.join(os.path.dirname(__file__), "data/genomic_releases_queries.json")
+    with open(form_path) as f:
+        form = json.load(f)
+    return form
 
-    response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
+
+def test_genomic_cascaded_custom(client, dummy_form_custom, mock_run, authenticated_user):
+    dummy_form = dummy_form_custom
+
+    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "success"
@@ -40,15 +48,38 @@ def test_genomic_cascaded_ncbi(client, dummy_form_ncbi, mock_run, authenticated_
     assert "output" in data
 
 
-def test_genomic_cascaded_ncbi_unauthenticated(client, dummy_form_ncbi, mock_run, session_user):
-    dummy_form = dummy_form_ncbi
+def test_genomic_cascaded_custom_unauthenticated(client, dummy_form_custom, mock_run, session_user):
+    dummy_form = dummy_form_custom
 
-    response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form)
+    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "success"
     assert "message" in data
     assert "output" in data
+
+
+def test_genomic_dropdown(client):
+    response = client.get("/api/genomic/dropdown")
+    assert response.status_code == 200
+
+    data = response.get_json()
+
+    assert "ncbi" in data
+    assert "ensembl" in data
+    assert len(data["ncbi"]["archaea"]) > 1000
+    assert len(data["ensembl"]) > 100
+
+
+def test_genomic_releases(client, release_queries):
+    for entry in release_queries:
+        response = client.get(f"/api/genomic/releases/{entry['taxon']}/{entry['species']}")
+
+        assert response.status_code == 200
+
+        data = response.get_json()
+
+        assert data == entry["result"]
 
 
 def test_genomic_single_ensembl(client, dummy_form_ensembl, mock_run, authenticated_user):
