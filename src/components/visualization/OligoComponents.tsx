@@ -2,11 +2,10 @@ import * as d3 from "d3";
 import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
 import { reverseComplement } from "./helpers";
-import type { Oligo, Probe } from "../../types";
+import type { Probe } from "../../types";
 
 type Props = {
     probes: Probe[];
-    pipeline: string;
     selectedOligo: string;
     setSelectedOligo: (id: string) => void;
 };
@@ -43,19 +42,16 @@ type OligoBase = {
 
 const OligoComponents: React.FC<Props> = ({
     probes,
-    pipeline,
     selectedOligo,
     setSelectedOligo,
 }) => {
-    const definition = ComponentDefinition[
-        pipeline as keyof typeof ComponentDefinition
-    ] as OligoComponentDefinition[];
-
     const oligo = probes.find((o) => o.oligo_id === selectedOligo);
 
     const components: OligoComponent[] = useMemo(() => {
         const comps: OligoComponent[] = [];
-        if (definition && oligo) {
+        const pipeline = oligo?.pipeline;
+        if (pipeline && Object.keys(ComponentDefinition).includes(pipeline)) {
+            const definition = ComponentDefinition[pipeline as keyof typeof ComponentDefinition] as OligoComponentDefinition[];
             definition.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
                     let sequence = oligo.details[
@@ -81,7 +77,7 @@ const OligoComponents: React.FC<Props> = ({
             });
         }
         return comps;
-    }, [definition, oligo]);
+    }, [oligo]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
         return components.flatMap((component) =>
@@ -139,8 +135,8 @@ const OligoComponents: React.FC<Props> = ({
         group.attr("y", `${svgBox.height / 2}`);
     }, [components]);
 
-    if (!definition) {
-        return <div>No visualization available for pipeline {pipeline}</div>;
+    if (components.length === 0) {
+        return <div>No visualization available for pipeline {oligo?.pipeline}</div>;
     }
 
     if (!oligo) {

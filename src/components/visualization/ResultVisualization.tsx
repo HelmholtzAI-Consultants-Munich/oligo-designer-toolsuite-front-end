@@ -6,7 +6,6 @@ import GenomeAlignment from "./GenomeAlignment";
 
 type Props = {
     probes: Probe[];
-    pipeline: string;
     selectedOligo: string;
     setSelectedOligo: (id: string) => void;
     genomicRegions: GenomicRegions | null;
@@ -14,7 +13,6 @@ type Props = {
 
 const ResultVisualization: React.FC<Props> = ({
     probes,
-    pipeline,
     selectedOligo,
     setSelectedOligo,
     genomicRegions,
@@ -30,7 +28,6 @@ const ResultVisualization: React.FC<Props> = ({
             <Tab eventKey="components" title="Oligo Components">
                 <OligoComponents
                     probes={probes}
-                    pipeline={pipeline}
                     selectedOligo={selectedOligo}
                     setSelectedOligo={setSelectedOligo}
                 />

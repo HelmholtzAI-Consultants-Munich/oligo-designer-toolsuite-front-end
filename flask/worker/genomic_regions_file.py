@@ -1,20 +1,11 @@
 from collections import defaultdict
 import os
-import string
 from Bio import SeqIO
 from oligo_designer_toolsuite.utils import FastaParser
 import yaml
-from collections.abc import Mapping
 
 class GenomicRegionsFile:
-    BASE_DETAILS_FIELDS = ["oligo_id", "start", "end", "chromosome", "source", "species", "annotation_release", "genome_assembly", "strand", "length", "sequence_target", "sequence_target_probe"]
-
-    PROBE_DETAILS_FIELDS: Mapping[str, list[str]] = {
-        "scrinshot": BASE_DETAILS_FIELDS + ["sequence_padlock_probe", "sequence_detection_oligo", "sequence_padlock_arm1", "sequence_padlock_accessory1", "sequence_padlock_ISS_anchor", "barcode", "sequence_padlock_accessory2", "sequence_padlock_arm2", "ligation_site", "Tm_arm1", "Tm_arm2", "Tm_diff_arms", "Tm_detection_oligo", "isoform_consensus"],
-        "seqfish": BASE_DETAILS_FIELDS + ["sequence_seqfish_plus_probe", "sequence_encoding_probe", "sequence_readout_probe_1", "sequence_readout_probe_2", "sequence_readout_probe_3", "sequence_readout_probe_4", "sequence_forward_primer", "sequence_reverse_primer", "GC_content"],
-        "merfish": BASE_DETAILS_FIELDS + ["sequence_merfish_probe", "sequence_encoding_probe", "sequence_readout_probe_1", "sequence_readout_probe_2", "sequence_forward_primer", "sequence_reverse_primer", "GC_content"],
-        "oligoseq": BASE_DETAILS_FIELDS + ["oligo", "target", "GC_content", "TmNN", "num_targeted_transcripts", "number_total_transcripts", "isoform_consensus", "length_selfcomplement"],
-    }
+    LIST_FIELDS = ["trancript_id", "exon_number"]
 
     def __init__(self, regions_path: str, fasta_paths: list[str], probes_path: str, pipeline_name: str):
         self.regions_path = regions_path
@@ -299,9 +290,10 @@ class GenomicRegionsFile:
                             "transcript_ids": transcript_ids,
                             "exon_numbers": exon_numbers,
                             "regiontype": regiontype,
+                            "pipeline": self.pipeline_name,
                             "details": {
-                                **{field: self._recursive_first(oligo_info.get(field, None)) for field in self.PROBE_DETAILS_FIELDS[self.pipeline_name]},
-                                "type": self.pipeline_name,
+                                **{field: self._recursive_first(oligo_info.get(field, None)) for field in oligo_info if field not in self.LIST_FIELDS},
+                                **{field: oligo_info.get(field, [[]])[0] for field in self.LIST_FIELDS if field in oligo_info}
                             },
                         })
 

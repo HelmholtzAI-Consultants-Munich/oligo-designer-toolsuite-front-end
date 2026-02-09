@@ -570,7 +570,6 @@ const RunDetail = () => {
                                     <div className="my-3">
                                         <ResultVisualization
                                             probes={probes[selectedGene][selectedOligoset] || []}
-                                            pipeline={pipeline}
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
                                             genomicRegions={

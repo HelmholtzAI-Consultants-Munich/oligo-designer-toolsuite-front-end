@@ -32,7 +32,7 @@ export interface GenomicRegions {
     [transcript_id: string]: GenomicRegion[];
 }
 
-export interface Probe {
+export interface BaseProbe {
     oligo_id: string;
     components: {
         start: number;
@@ -40,28 +40,27 @@ export interface Probe {
         type: "probe" | "gap";
     }[];
     transcript_ids: string[];
-    details: ProbeDetails;
+    details: BaseProbeDetails;
 }
-
-export type ProbeDetails = ScrinshotProbeDetails | SeqFishProbeDetails | MerfishProbeDetails | OligoSeqProbeDetails;
 
 interface BaseProbeDetails {
     oligo_id: string;
-    start: number;
-    end: number;
-    chromosome: string;
     source: string;
     species: string;
     annotation_release: string;
     genome_assembly: string;
+    regiontype: string;
+    gene_id: string;
+    transcript_id: string[];
+    exon_number: number[];
+    chromosome: string;
+    start: number;
+    end: number;
     strand: "+" | "-";
     length: number;
-    sequence_target: string;
-    sequence_target_probe: string;
 }
 
-interface ScrinshotProbeDetails extends BaseProbeDetails {
-    type: "scrinshot";
+interface ScrinshotProbeDetails {
     sequence_padlock_probe: string;
     sequence_detection_oligo: string;
     sequence_padlock_arm1: string;
@@ -70,6 +69,8 @@ interface ScrinshotProbeDetails extends BaseProbeDetails {
     barcode: string;
     sequence_padlock_accessory2: string;
     sequence_padlock_arm2: string;
+    sequence_target: string;
+    sequence_target_probe: string;
     ligation_site: number;
     Tm_arm1: number;
     Tm_arm2: number;
@@ -78,8 +79,12 @@ interface ScrinshotProbeDetails extends BaseProbeDetails {
     isoform_consensus: number;
 }
 
-interface SeqFishProbeDetails extends BaseProbeDetails {
-    type: "seqfish";
+export type ScrinshotProbe = BaseProbe & {
+    pipeline: "scrinshot";
+    details: ScrinshotProbeDetails;
+}
+
+interface SeqFishProbeDetails {
     sequence_seqfish_plus_probe: string;
     sequence_encoding_probe: string;
     sequence_readout_probe_1: string;
@@ -88,22 +93,34 @@ interface SeqFishProbeDetails extends BaseProbeDetails {
     sequence_readout_probe_4: string;
     sequence_forward_primer: string;
     sequence_reverse_primer: string;
+    sequence_target: string;
+    sequence_target_probe: string;
     GC_content: number;
 }
 
-interface MerfishProbeDetails extends BaseProbeDetails {
-    type: "merfish";
+export type SeqFishProbe = BaseProbe & {
+    pipeline: "seqfish";
+    details: SeqFishProbeDetails;
+}
+
+interface MerfishProbeDetails {
     sequence_merfish_probe: string;
     sequence_encoding_probe: string;
     sequence_readout_probe_1: string;
     sequence_readout_probe_2: string;
     sequence_forward_primer: string;
     sequence_reverse_primer: string;
+    sequence_target: string;
+    sequence_target_probe: string;
     GC_content: number;
 }
 
-interface OligoSeqProbeDetails extends BaseProbeDetails {
-    type: "oligoseq";
+export type MerfishProbe = BaseProbe & {
+    pipeline: "merfish";
+    details: MerfishProbeDetails;
+}
+
+interface OligoSeqProbeDetails {
     oligo: string;
     target: string;
     GC_content: number;
@@ -113,6 +130,14 @@ interface OligoSeqProbeDetails extends BaseProbeDetails {
     isoform_consensus: number;
     length_selfcomplement: number;
 }
+
+export type OligoSeqProbe = BaseProbe & {
+    pipeline: "oligoseq";
+    details: OligoSeqProbeDetails;
+}
+
+export type Probe = ScrinshotProbe | SeqFishProbe | MerfishProbe | OligoSeqProbe;
+export type ProbeDetails = BaseProbeDetails & (ScrinshotProbeDetails | SeqFishProbeDetails | MerfishProbeDetails | OligoSeqProbeDetails);
 
 export interface Probesets {
     [probeset_name: string]: Probe[];
