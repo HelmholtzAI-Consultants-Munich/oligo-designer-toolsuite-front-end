@@ -1,11 +1,10 @@
 import { Tab, Tabs } from "react-bootstrap";
-import type { Oligo, GenomicRegions, Probe } from "../../types";
+import type { GenomicRegions, Probe } from "../../types";
 import OligoComponents from "./OligoComponents";
 import { useState } from "react";
 import GenomeAlignment from "./GenomeAlignment";
 
 type Props = {
-    oligos: Oligo[];
     probes: Probe[];
     pipeline: string;
     selectedOligo: string;
@@ -14,7 +13,6 @@ type Props = {
 };
 
 const ResultVisualization: React.FC<Props> = ({
-    oligos,
     probes,
     pipeline,
     selectedOligo,
@@ -31,7 +29,7 @@ const ResultVisualization: React.FC<Props> = ({
         >
             <Tab eventKey="components" title="Oligo Components">
                 <OligoComponents
-                    oligos={oligos}
+                    probes={probes}
                     pipeline={pipeline}
                     selectedOligo={selectedOligo}
                     setSelectedOligo={setSelectedOligo}
@@ -39,7 +37,7 @@ const ResultVisualization: React.FC<Props> = ({
             </Tab>
             <Tab eventKey="alignment" title="Genomic Regions">
                 <GenomeAlignment
-                    key={oligos.map((o) => o.oligo_id).join(",")} // Force remount on oligos change
+                    key={probes.map((p) => p.oligo_id).join(",")} // Force remount on probes change
                     probes={probes}
                     selectedOligo={selectedOligo}
                     setSelectedOligo={setSelectedOligo}

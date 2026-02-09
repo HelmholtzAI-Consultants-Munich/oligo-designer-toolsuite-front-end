@@ -90,7 +90,6 @@ const GenomeAlignmentD3 = {
                 end: component.end,
                 id: oligo.oligo_id,
                 transcript_ids: oligo.transcript_ids,
-                strand: oligo.strand,
                 type: component.type,
             }))
         );
@@ -514,7 +513,6 @@ const GenomeAlignmentD3 = {
                 end: component.end,
                 id: oligo.oligo_id,
                 transcript_ids: oligo.transcript_ids,
-                strand: oligo.strand,
                 type: component.type,
             }))
         );

@@ -119,7 +119,7 @@ class PipelineRunner:
             return
         probes_path = os.path.join(output_path, output_yaml)
 
-        regions_file = GenomicRegionsFile(regions_file, fasta_paths, probes_path)
+        regions_file = GenomicRegionsFile(regions_file, fasta_paths, probes_path, self.pipeline_name)
         regions_file_path = os.path.join(output_path, "genomic_regions.yaml")
         regions_file.yaml_dump(regions_file_path)
 

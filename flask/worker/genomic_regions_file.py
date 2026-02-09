@@ -1,15 +1,26 @@
 from collections import defaultdict
 import os
+import string
 from Bio import SeqIO
 from oligo_designer_toolsuite.utils import FastaParser
 import yaml
-
+from collections.abc import Mapping
 
 class GenomicRegionsFile:
-    def __init__(self, regions_path: str, fasta_paths: list[str], probes_path: str):
+    BASE_DETAILS_FIELDS = ["oligo_id", "start", "end", "chromosome", "source", "species", "annotation_release", "genome_assembly", "strand", "length", "sequence_target", "sequence_target_probe"]
+
+    PROBE_DETAILS_FIELDS: Mapping[str, list[str]] = {
+        "scrinshot": BASE_DETAILS_FIELDS + ["sequence_padlock_probe", "sequence_detection_oligo", "sequence_padlock_arm1", "sequence_padlock_accessory1", "sequence_padlock_ISS_anchor", "barcode", "sequence_padlock_accessory2", "sequence_padlock_arm2", "ligation_site", "Tm_arm1", "Tm_arm2", "Tm_diff_arms", "Tm_detection_oligo", "isoform_consensus"],
+        "seqfish": BASE_DETAILS_FIELDS + ["sequence_seqfish_plus_probe", "sequence_encoding_probe", "sequence_readout_probe_1", "sequence_readout_probe_2", "sequence_readout_probe_3", "sequence_readout_probe_4", "sequence_forward_primer", "sequence_reverse_primer", "GC_content"],
+        "merfish": BASE_DETAILS_FIELDS + ["sequence_merfish_probe", "sequence_encoding_probe", "sequence_readout_probe_1", "sequence_readout_probe_2", "sequence_forward_primer", "sequence_reverse_primer", "GC_content"],
+        "oligoseq": BASE_DETAILS_FIELDS + ["oligo", "target", "GC_content", "TmNN", "num_targeted_transcripts", "number_total_transcripts", "isoform_consensus", "length_selfcomplement"],
+    }
+
+    def __init__(self, regions_path: str, fasta_paths: list[str], probes_path: str, pipeline_name: str):
         self.regions_path = regions_path
         self.fasta_paths = fasta_paths
         self.probes_path = probes_path
+        self.pipeline_name = pipeline_name
 
         self.genes = self._load_genes()
         self.regions = self._collect_regions()
@@ -241,23 +252,16 @@ class GenomicRegionsFile:
                         transcript_ids = oligo_info.get("transcript_id", [])[0]
                         exon_numbers = oligo_info.get("exon_number", [])[0]
 
+                        components = []
+
                         if regiontype != "exonexonjunction":
                             print(f"Processing probe {oligo_info.get('oligo_id', '')} in gene {gene} as single continuous probe...")
                             print(f"{regiontype}")
                             # single continous probe, add as single component
-                            probes[gene][oligoset_name].append({
-                                "oligo_id": oligo_info.get("oligo_id", ""),
-                                "components": [
-                                    {
-                                        "start": start,
-                                        "end": end,
-                                        "type": "probe"
-                                    }
-                                ],
-                                "strand": oligo_info.get("strand", [])[0][0] if "strand" in oligo_info else "+",
-                                "transcript_ids": transcript_ids,
-                                "exon_numbers": exon_numbers,
-                                "regiontype": regiontype,
+                            components.append({
+                                "start": start,
+                                "end": end,
+                                "type": "probe"
                             })
                         else:
                             # for exon-exon junction probes, add gaps between exons as components
@@ -271,7 +275,6 @@ class GenomicRegionsFile:
 
                             print(f"Found canonical regions for probe {oligo_info.get('oligo_id', '')} in gene {gene}: {canonical_regions}")
 
-                            components = []
                             last_end = None
                             for region in canonical_regions:
                                 if last_end is not None and region["start"] > last_end + 1:
@@ -289,17 +292,27 @@ class GenomicRegionsFile:
                                 })
                                 last_end = region["end"]
                             
-                            probes[gene][oligoset_name].append({
-                                "oligo_id": oligo_info.get("oligo_id", ""),
-                                "components": components,
-                                "strand": oligo_info.get("strand", [])[0][0] if "strand" in oligo_info else "+",
-                                "transcript_ids": transcript_ids,
-                                "exon_numbers": exon_numbers,
-                                "regiontype": oligo_info.get("regiontype", [])[0][0] if "regiontype" in oligo_info else "unknown",
-                            })
+                        # add probe info to probes dict
+                        probes[gene][oligoset_name].append({
+                            "oligo_id": oligo_info.get("oligo_id", ""),
+                            "components": components,
+                            "transcript_ids": transcript_ids,
+                            "exon_numbers": exon_numbers,
+                            "regiontype": regiontype,
+                            "details": {
+                                **{field: self._recursive_first(oligo_info.get(field, None)) for field in self.PROBE_DETAILS_FIELDS[self.pipeline_name]},
+                                "type": self.pipeline_name,
+                            },
+                        })
 
         # convert defaultdict to dict for cleaner output
         for gene in probes:
             probes[gene] = dict(probes[gene])
         return probes
+    
+    def _recursive_first(self, d):
+        if isinstance(d, list):
+            return self._recursive_first(d[0]) if len(d) > 0 else None
+        else:
+            return d
                 

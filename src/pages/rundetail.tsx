@@ -6,7 +6,7 @@ import Select from "react-select";
 import type { SingleValue } from "react-select";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import type { GenomicRegions, Oligo, Probesets, RunState } from "../types";
+import type { GenomicRegions, Oligo, ProbeDetails, Probesets, RunState } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
@@ -76,6 +76,7 @@ const RunDetail = () => {
         pipeline as keyof typeof ComponentDefinition
     ] as OligoComponentDefinition[] | undefined;
     const tableColumns = getColumnsFromDefinition(definition);
+    console.log("Component definition:", definition, "Extracted table columns:", tableColumns);
 
     const closeFileView = () => {
         setViewingFilename(null);
@@ -150,6 +151,7 @@ const RunDetail = () => {
                         error
                     );
                     setGenomicRegions(null);
+                    setProbes(null);
                     return null;
                 });
         },
@@ -483,8 +485,6 @@ const RunDetail = () => {
             ) as Oligo[];
     };
 
-    const oligos = getOligosForOligoset();
-
     const formatValue = (value: any): string => {
         // Handle deeply nested arrays
         const flatten = (arr: any[]): any[] => {
@@ -600,7 +600,7 @@ const RunDetail = () => {
                 )}
 
                 {/* YAML/table logic remains unchanged below */}
-                {parsedYamlData && (
+                {probes && (
                     <div className="card">
                         <div className="card-body">
                             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -636,7 +636,7 @@ const RunDetail = () => {
                                                 newValue?.value || ""
                                             );
                                             setSelectedOligoset("Oligoset 1");
-                                            setSelectedOligo(parsedYamlData?.[newValue?.value || ""]?.["Oligoset 1"]?.["Oligo 1"]?.oligo_id || "");
+                                            setSelectedOligo(probes[newValue?.value || ""]["Oligoset 1"][0].oligo_id || "");
                                         }}
                                         placeholder="Search or select gene..."
                                         isSearchable
@@ -657,7 +657,7 @@ const RunDetail = () => {
                                                 setSelectedOligoset(
                                                     e.target.value
                                                 );
-                                                setSelectedOligo(parsedYamlData?.[selectedGene]?.[e.target.value]?.["Oligo 1"]?.oligo_id || "");
+                                                setSelectedOligo(probes[selectedGene][e.target.value][0].oligo_id || "");
                                             }}
                                         >
                                             <option value="">
@@ -685,7 +685,7 @@ const RunDetail = () => {
                                         <div>
                                             <span className="form-text me-2">
                                                 Showing{" "}
-                                                {getOligosForOligoset().length}{" "}
+                                                {probes[selectedGene][selectedOligoset].length}{" "}
                                                 oligos
                                             </span>
                                             <button
@@ -698,8 +698,7 @@ const RunDetail = () => {
                                     </div>
                                     <div className="my-3">
                                         <ResultVisualization
-                                            oligos={getOligosForOligoset()}
-                                            probes={probes?.[selectedGene]?.[selectedOligoset] || []}
+                                            probes={probes[selectedGene][selectedOligoset] || []}
                                             pipeline={pipeline}
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
@@ -733,8 +732,8 @@ const RunDetail = () => {
                                             </thead>
 
                                             <tbody>
-                                                {getOligosForOligoset().map(
-                                                    (oligo) => (
+                                                {probes[selectedGene][selectedOligoset].map(
+                                                    ({ details: oligo }) => (
                                                         <tr
                                                             key={oligo.oligo_id}
                                                         >
@@ -760,7 +759,7 @@ const RunDetail = () => {
                                                                             ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
                                                                             : formatValue(
                                                                                   oligo[
-                                                                                      column
+                                                                                      column as keyof ProbeDetails
                                                                                   ]
                                                                               )}
                                                                     </td>
@@ -782,15 +781,15 @@ const RunDetail = () => {
                                                             <strong>
                                                                 Source:
                                                             </strong>{" "}
-                                                            {oligos[0]
-                                                                ?.source ??
+                                                            {probes[selectedGene][selectedOligoset][0]
+                                                                .details.source ??
                                                                 "N/A"}
                                                             <br />
                                                             <strong>
                                                                 Species:
                                                             </strong>{" "}
-                                                            {oligos[0]
-                                                                ?.species ??
+                                                            {probes[selectedGene][selectedOligoset][0]
+                                                                .details.species ??
                                                                 "N/A"}
                                                         </div>
                                                     </td>

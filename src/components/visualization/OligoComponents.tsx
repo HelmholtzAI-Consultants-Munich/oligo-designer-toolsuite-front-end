@@ -2,10 +2,10 @@ import * as d3 from "d3";
 import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
 import { reverseComplement } from "./helpers";
-import type { Oligo } from "../../types";
+import type { Oligo, Probe } from "../../types";
 
 type Props = {
-    oligos: Oligo[];
+    probes: Probe[];
     pipeline: string;
     selectedOligo: string;
     setSelectedOligo: (id: string) => void;
@@ -42,7 +42,7 @@ type OligoBase = {
 };
 
 const OligoComponents: React.FC<Props> = ({
-    oligos,
+    probes,
     pipeline,
     selectedOligo,
     setSelectedOligo,
@@ -51,19 +51,22 @@ const OligoComponents: React.FC<Props> = ({
         pipeline as keyof typeof ComponentDefinition
     ] as OligoComponentDefinition[];
 
-    const oligo = oligos.find((o) => o.oligo_id === selectedOligo);
+    const oligo = probes.find((o) => o.oligo_id === selectedOligo);
 
     const components: OligoComponent[] = useMemo(() => {
         const comps: OligoComponent[] = [];
         if (definition && oligo) {
             definition.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
-                    let sequence = oligo[
-                        componentDef.field as keyof Oligo
-                    ] as string | Array<string> | Array<Array<string>>;
-                    if (Array.isArray(sequence)) {
-                        sequence = sequence.flat(Infinity).join("");
-                    }
+                    console.log(
+                        "Processing component definition:",
+                        componentDef,
+                        "with oligo data:",
+                        oligo
+                    );
+                    let sequence = oligo.details[
+                        componentDef.field as keyof Probe["details"]
+                    ] as string;
                     if (componentDef.isReverseComplement) {
                         sequence = reverseComplement(sequence);
                     }
@@ -83,10 +86,12 @@ const OligoComponents: React.FC<Props> = ({
                 }
             });
         }
+        console.log("Parsed components:", comps);
         return comps;
     }, [definition, oligo]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
+        console.log("Converting components to bases:", components);
         return components.flatMap((component) =>
             [...component.sequence].map((char) => {
                 return {
@@ -161,7 +166,7 @@ const OligoComponents: React.FC<Props> = ({
                 value={selectedOligo}
                 onChange={(e) => setSelectedOligo(e.target.value)}
             >
-                {oligos.map((oligo, index) => (
+                {probes.map((oligo, index) => (
                     <option key={oligo.oligo_id} value={oligo.oligo_id}>
                         Oligo {index + 1}
                     </option>
