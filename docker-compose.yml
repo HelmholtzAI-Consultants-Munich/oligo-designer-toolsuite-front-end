@@ -37,6 +37,20 @@ services:
           path: ./flask
           target: /app
           initial_sync: true
+  odt-beat:
+    image: odt-server
+    build:
+      dockerfile: docker/server.Dockerfile
+    container_name: odt-beat
+    environment:
+      CELERY_MONGO_URI: mongodb://odt-db:27017/
+      CELERY_BROKER: pyamqp://guest@odt-mq/
+    depends_on:
+      - odt-db
+      - odt-mq
+      - odt-worker
+    restart: on-failure
+    command: celery -A beat beat
 
   odt-worker:
     image: odt-worker
@@ -46,6 +60,7 @@ services:
     volumes:
       - data-access:/app/data-access
     environment:
+      MONGO_URI: mongodb://odt-db:27017/
       CELERY_MONGO_URI: mongodb://odt-db:27017/
       CELERY_BROKER: pyamqp://guest@odt-mq/
     depends_on:

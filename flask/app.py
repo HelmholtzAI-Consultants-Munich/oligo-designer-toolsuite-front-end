@@ -1,3 +1,4 @@
+import time
 import os
 
 from config import Config
@@ -6,7 +7,6 @@ from extensions import celery_app, mongo, oauth
 from flask_cors import CORS
 from routes import register_blueprints
 from routes.auth import init_login_manager
-from routes.genomic_database_helpers import cache_dropdown_options
 
 from flask import Flask
 
@@ -32,6 +32,15 @@ def prepare_paths(app: Flask):
     for relative_key in relative_to_data_access_keys:
         path = os.path.join(data_access_path, app.config[relative_key])
         _update_and_mkdir(relative_key, path)
+
+
+# TODO: investigate double execution due to server restart in development mode
+def initial_dropdown_prefetch(celery_app, app):
+    time.sleep(5)
+    app.logger.warning("start dropdown prefetch")
+    celery_app.send_task(
+        "worker.tasks.fetch_dropdown_options",
+    )
 
 
 def create_app():
@@ -73,12 +82,10 @@ def create_app():
     # Initialize Celery configuration
     celery_app.config_from_object(Config.CELERY_CONFIG)
 
+    initial_dropdown_prefetch(celery_app, app)
+
     # Register all blueprints from the routes package
     register_blueprints(app)
-
-    # Initial Genomic Dropdown fetching
-    cache_dropdown_options()
-    app.logger.info("Done with prefetch")
 
     return app
 

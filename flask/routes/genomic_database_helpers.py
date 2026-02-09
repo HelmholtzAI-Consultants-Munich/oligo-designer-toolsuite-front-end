@@ -10,10 +10,7 @@ import re
 import shutil
 import subprocess
 
-from flask import current_app
 import requests
-
-from extensions import mongo
 
 
 class BaseGenomicDataBase:
@@ -136,7 +133,6 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         try:
             result = subprocess.run(["sum", file_path], capture_output=True, check=True, text=True)
             computed_checksum = result.stdout.split()[0]
-            current_app.logger.warning(f"exp: {expected_checksum} comp: {computed_checksum}")
             return computed_checksum == expected_checksum
         except subprocess.CalledProcessError:
             return False
@@ -148,7 +144,6 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
                 line = line.strip()
                 split_line = line.split()
                 m[split_line[2]] = split_line[0]
-                current_app.logger.warning(f"{split_line[2]} : {split_line[0]}")
         return m
 
     def _release_dirs(self, release: str | int):
@@ -169,7 +164,6 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         choose one .gtf.gz and one .fa.gz. Prefer primary_assembly for FASTA; fallback to toplevel.
         Returns (gtf_filename, fasta_filename, assembly_name).
         """
-        current_app.logger.warning(f"{self.host}, {gtf_dir}, {fasta_dir}")
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
 
@@ -249,7 +243,6 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
         # Pick filenames and assembly
         gtf_gz, fasta_gz, assembly = self._pick_files(gtf_dir, fasta_dir)
-        current_app.logger.warning(f"{gtf_gz}, {fasta_gz}, {assembly}")
 
         # Use 'current' literally if current; else use the numeric/label release
         rel_label = "current" if is_current else str(release)
@@ -320,8 +313,6 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         with open(file_path, "rb") as f:
             digest = hashlib.file_digest(f, "md5")
 
-        current_app.logger.warning(f"{file_path}: exp: {expected_checksum} comp: {digest.hexdigest()}")
-
         return digest.hexdigest() == expected_checksum
 
     def _resolve_release_and_dir(self, taxon, species, release):
@@ -334,7 +325,6 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 raise RuntimeError("Couldn't fetch Release Dir")
             base = f"/{self.base_path}{taxon}/{species}/{releases_dir}/"
             rel_dir = base + f"{release}/"
-            current_app.logger.warning(f"NCBI rel dir: {rel_dir}")
 
             ftp.cwd(rel_dir)
 
@@ -384,7 +374,6 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
     def _parse_md5checksums(self, md5_text_path):
         # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
-        current_app.logger.warning(md5_text_path)
         m = {}
         with open(md5_text_path) as f:
             if "uncompressed" in str(md5_text_path):
@@ -450,14 +439,13 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             uncompressed_local_path = self.extracted_file_path(archive_local_path)
 
             # Optional: verify uncompressed files using uncompressed_checksums.txt (if available)
+            # possibly not necessary
             if unc_map is not None:
-                current_app.logger.warning("Found uncompressed_map")
                 expected_uncompressed_checksum = self._get_md5_for_filename(
                     unc_map, files[key]["remote_path"].rstrip(".gz")
                 )
                 if not self._verify_file(uncompressed_local_path, expected_uncompressed_checksum):
-                    current_app.logger.warning(f"Uncompressed MD5 mismatch for {uncompressed_local_path}")
-
+                    pass
             files[key]["local_path"] = str(uncompressed_local_path)
 
         return {
@@ -467,30 +455,6 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             "genome_assembly": assembly,
             "accession": accession,
         }
-
-
-def cache_dropdown_options():
-    if "cache" not in mongo.db.list_collection_names():
-        mongo.db.create_collection("cache")
-        mongo.db["cache"].insert_one(
-            {"_id": 1, "data": prefetch_dropdown_options(), "timestamp": datetime.datetime.today()}
-        )
-        return
-
-    cache = mongo.db["cache"]
-
-    doc = cache.find_one({"_id": 1})
-
-    if doc is None:
-        cache.insert_one(
-            {"_id": 1, "data": prefetch_dropdown_options(), "timestamp": datetime.datetime.today()}
-        )
-    else:
-        if (datetime.datetime.today() - doc["timestamp"]).days >= 1:
-            cache.update_one(
-                {"_id": 1},
-                {"$set": {"timestamp": datetime.datetime.today(), "data": prefetch_dropdown_options()}},
-            )
 
 
 def prefetch_dropdown_options():

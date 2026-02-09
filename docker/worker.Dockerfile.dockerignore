@@ -7,6 +7,7 @@
 # Ignore directory contents in the flask directory except for the worker directory
 /flask/*/*
 !/flask/worker/*
+!/flask/routes/genomic_database_helpers.py
 
 # Python artifacts
 **/__pycache__

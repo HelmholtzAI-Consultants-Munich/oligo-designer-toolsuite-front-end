@@ -79,7 +79,7 @@ def genomic_dropdown_dict():
     dropdown_options = mongo.db.cache.find_one({"_id": 1})
 
     if dropdown_options is None:
-        abort(404, description="Can't load dropdown options")
+        abort(Response("Have not fetched dropdown options yet", 404))
 
     return jsonify(dropdown_options["data"]), 200
 
@@ -89,7 +89,7 @@ def genomic_get_releases(taxon: str, species: str):
     dirs = NCBIGenomicDataBase().fetch_annotations_releases(taxon, species)
 
     if dirs is None:
-        abort(404, description=f"Couldn't fetch dirs for Taxon: {taxon} and Species: {species}")
+        abort(Response(f"Couldn't fetch dirs for Taxon: {taxon} and Species: {species}", 404))
 
     return jsonify(dirs), 200
 
