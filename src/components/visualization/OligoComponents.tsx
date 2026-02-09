@@ -58,12 +58,6 @@ const OligoComponents: React.FC<Props> = ({
         if (definition && oligo) {
             definition.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
-                    console.log(
-                        "Processing component definition:",
-                        componentDef,
-                        "with oligo data:",
-                        oligo
-                    );
                     let sequence = oligo.details[
                         componentDef.field as keyof Probe["details"]
                     ] as string;
@@ -86,12 +80,10 @@ const OligoComponents: React.FC<Props> = ({
                 }
             });
         }
-        console.log("Parsed components:", comps);
         return comps;
     }, [definition, oligo]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
-        console.log("Converting components to bases:", components);
         return components.flatMap((component) =>
             [...component.sequence].map((char) => {
                 return {

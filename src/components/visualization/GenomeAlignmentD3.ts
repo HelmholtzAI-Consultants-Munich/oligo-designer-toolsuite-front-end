@@ -61,8 +61,6 @@ const GenomeAlignmentD3 = {
         selectedOligo: string,
         setSelectedOligo: (id: string) => void
     ) => {
-        console.log("Creating Genome Alignment D3 visualization");
-        console.log("Probes:", probes);
 
         // Set up SVG dimensions and scales
         const width = 800;
