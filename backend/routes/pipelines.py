@@ -4,12 +4,13 @@ from typing import Any
 
 from bson import ObjectId
 from celery.result import AsyncResult
-from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from flask_login.utils import LocalProxy
 
 from backend.extensions import celery_app, mongo
-from backend.routes.validation_helpers import get_run_id, get_user_context_with_directory
+from backend.routes.route_helpers import get_user_context_with_directory
+from backend.utilities.validation import parse_run_id
+from flask import Blueprint, abort, current_app, jsonify, request
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -34,7 +35,8 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
     user_id, session_id, user_dir = get_user_context_with_directory()
 
     if not os.path.exists(user_dir):
-        raise RuntimeError(f"Expected user directory at {user_dir} to exist")
+        current_app.logger.error(f"Expected user directory at {user_dir} to exist")
+        abort(500, description="Unable to access your data directory. Please try again or contact support.")
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}")
@@ -119,7 +121,7 @@ def start_pipeline(pipeline_name: str):
         abort(415, description="Expected JSON")
 
     run_id_str = json.get("runid")  # Run ID from React
-    run_id = get_run_id(run_id_str)
+    run_id = parse_run_id(run_id_str)
 
     form_data = json.get("formdata")  # Form data from React
 

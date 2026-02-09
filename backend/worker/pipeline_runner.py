@@ -2,10 +2,12 @@ import json
 import os
 import subprocess
 import tempfile
+from collections import defaultdict
 from collections.abc import Mapping
 from typing import Any
 
 import yaml
+from Bio import SeqIO
 from celery import Celery
 from celery.utils.log import get_task_logger
 

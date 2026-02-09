@@ -27,10 +27,8 @@ RUN --mount=source=backend/pyproject.toml,target=pyproject.toml \
 # --- Copy Celery worker ---
 # schemas are copied to /app/schemas to match the relative path in pipeline_runner.py
 WORKDIR /app
-# Copy only what's needed for the worker while maintaining package structure
-COPY --chown=$MAMBA_USER:$MAMBA_USER backend/__init__.py backend/
-COPY --chown=$MAMBA_USER:$MAMBA_USER backend/config.py backend/
-COPY --chown=$MAMBA_USER:$MAMBA_USER backend/worker backend/worker
+# Copy the entire backend directory
+COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 COPY --chown=$MAMBA_USER:$MAMBA_USER schemas schemas
 
 

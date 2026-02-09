@@ -20,12 +20,12 @@ from datetime import datetime
 from typing import Any
 
 from bson import ObjectId
-from flask import Blueprint, abort, jsonify, send_file, session
 from flask_login import current_user
 
 from backend.extensions import celery_app, mongo
-from backend.helpers import delete_pipeline_run_files_and_db
-from backend.routes.validation_helpers import get_run_or_404, get_task_id, get_user_context
+from backend.routes.route_helpers import get_run_or_404, get_task_id, get_user_context
+from backend.utilities.pipeline import delete_pipeline_run_files_and_db
+from flask import Blueprint, abort, jsonify, send_file, session
 
 runs_bp = Blueprint("runs", __name__)
 
@@ -50,11 +50,8 @@ def delete_run(run_id: ObjectId):
     # Check ownership first (users can only delete their own runs)
     get_run_or_404(run_id, require_ownership=True)
 
-    # Use shared deletion helper
-    success, error = delete_pipeline_run_files_and_db(mongo, run_id)
-
-    if not success:
-        abort(500, description=error)
+    # Delete files and DB entry (aborts with 404/500 on failure)
+    delete_pipeline_run_files_and_db(mongo, run_id)
 
     return jsonify({"message": "Run deleted successfully"}), 200
 

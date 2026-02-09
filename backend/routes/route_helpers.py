@@ -1,94 +1,54 @@
+import os
+from http import HTTPStatus
+
 from bson import ObjectId
-from bson.errors import InvalidId
-from flask import current_app, session
 from flask_login import current_user
 
 from backend.extensions import mongo
-from backend.routes.error_handlers import ForbiddenError, InternalServerError, NotFoundError
-
+from flask import abort, current_app, session
 
 # ============================================================================
 # User Context Helpers
 # ============================================================================
 
 
-def require_user_context() -> dict[str, str]:
+def get_user_context() -> tuple[str | None, str | None]:
     """Get user context (user_id and session_id) based on authentication status.
 
-    Returns a dictionary with user_id and session_id based on whether the user
-    is authenticated or anonymous. For authenticated users, user_id is set and
-    session_id is None. For anonymous users, user_id is None and session_id
-    is retrieved from session.
-
-    :returns: Dictionary with 'user_id' and 'session_id' keys (both strings)
-    :rtype: dict[str, str]
-    :raises ValueError: If anonymous user has no session_id
-    """
-    if current_user.is_authenticated:
-        return {"user_id": str(current_user.id), "session_id": None}
-    else:
-        session_id = session.get("session_id")
-        if not session_id:
-            raise ValueError("Anonymous session ID not found in session")
-        return {"user_id": None, "session_id": session_id}
-
-
-def get_user_context() -> tuple[str | None, str]:
-    """Get user context as unpacked tuple.
-
-    Convenience wrapper around require_user_context() that returns
-    unpacked values for easier assignment.
+    For authenticated users, user_id is set and session_id is None.
+    For anonymous users, user_id is None and session_id is retrieved from session.
 
     :returns: Tuple of (user_id, session_id)
-    :rtype: tuple[str | None, str]
-    :raises ValueError: If anonymous user has no session_id
+    :rtype: tuple[str | None, str | None]
+    :raises: 401 if anonymous user has no session_id
     """
-    context = require_user_context()
-    return context["user_id"], context["session_id"]
+    if current_user.is_authenticated:
+        return str(current_user.id), None
+    session_id = session.get("session_id")
+    if not session_id:
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description="Your session has expired. Please refresh the page and try again.",
+        )
+    return None, session_id
 
 
-def get_user_directory(userdata_path: str) -> dict[str, str]:
-    """Get user context and determine the user directory path.
+def get_user_context_with_directory() -> tuple[str | None, str | None, str]:
+    """Get user context and the user's data directory path.
 
-    Combines require_user_context() with user directory determination.
-    Returns user_id, session_id, and the computed user_dir path.
-
-    :param userdata_path: The base path for user data (from app config)
-    :type userdata_path: str
-    :returns: Dictionary with 'user_id', 'session_id', and 'user_dir' keys
-    :rtype: dict[str, str]
-    :raises ValueError: If anonymous user has no session_id
+    :returns: Tuple of (user_id, session_id, user_dir)
+    :rtype: tuple[str | None, str | None, str]
+    :raises: 401 if anonymous user has no session_id
     """
-    import os
-
-    context = require_user_context()
-    user_id = context["user_id"]
-    session_id = context["session_id"]
+    user_id, session_id = get_user_context()
+    userdata_path = current_app.config["USERDATA_PATH"]
 
     if user_id:
         user_dir = os.path.join(userdata_path, user_id)
     else:
         user_dir = os.path.join(userdata_path, "anon", session_id)
 
-    return {
-        "user_id": user_id,
-        "session_id": session_id,
-        "user_dir": user_dir,
-    }
-
-
-def get_user_context_with_directory() -> tuple[str | None, str, str]:
-    """Get user context and directory using current_app config.
-
-    Convenience wrapper around get_user_directory() that automatically
-    extracts USERDATA_PATH from current_app.config and returns unpacked values.
-
-    :returns: Tuple of (user_id, session_id, user_dir)
-    :rtype: tuple[str | None, str, str]
-    :raises ValueError: If anonymous user has no session_id
-    """
-    context = get_user_directory(current_app.config["USERDATA_PATH"])
-    return context["user_id"], context["session_id"], context["user_dir"]
+    return user_id, session_id, user_dir
 
 
 # ============================================================================
@@ -110,7 +70,7 @@ def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | 
     :returns: User document or None if not found
     :rtype: dict | None
     """
-    projection = {"password": 0} if exclude_password else {}
+    projection = {"password": False} if exclude_password else {}
     return mongo.db.users.find_one({"_id": user_id}, projection)
 
 
@@ -130,7 +90,7 @@ def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> d
     """
     user = find_user_by_id(user_id, exclude_password=exclude_password)
     if not user:
-        raise NotFoundError("User not found")
+        abort(HTTPStatus.NOT_FOUND)
     return user
 
 
@@ -162,7 +122,7 @@ def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
         else:
             session_id = session.get("session_id")
             if not session_id:
-                raise ForbiddenError("Unauthorized")
+                abort(HTTPStatus.FORBIDDEN)
             query["session_id"] = session_id
     return query
 
@@ -186,29 +146,8 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     query = build_run_query(run_id, require_ownership=require_ownership)
     run = mongo.db.runs.find_one(query)
     if not run:
-        raise NotFoundError("Run not found")
+        abort(HTTPStatus.NOT_FOUND)
     return run
-
-
-def get_run_id(run_id_str: str | None) -> ObjectId:
-    """Convert a run_id string from JSON body to ObjectId.
-
-    Use this for validating run_id from request JSON body (e.g., pipelines.py).
-    For URL path parameters, use the ObjectId URL converter instead:
-        @app.route("/api/runs/<ObjectId:run_id>")
-
-    :param run_id_str: The ObjectId string from request JSON
-    :type run_id_str: str | None
-    :returns: The validated ObjectId
-    :rtype: ObjectId
-    :raises InvalidId: If the string is empty or not a valid ObjectId format
-    """
-    if not run_id_str:
-        raise InvalidId("Run ID is required")
-    try:
-        return ObjectId(run_id_str)
-    except Exception as e:
-        raise InvalidId(f"Invalid run ID format: {run_id_str}") from e
 
 
 def get_task_id(run) -> str:
@@ -221,5 +160,5 @@ def get_task_id(run) -> str:
     """
     task_id = run.get("task_id")
     if not task_id:
-        raise InternalServerError("Corresponding task not found")
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR)
     return task_id

@@ -1,13 +1,10 @@
 import os
-import sys
 from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
 
-# Add project root to sys.path so backend module can be imported
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-from .conftest import create_test_run
+from backend.tests.conftest import create_test_run
 
 
 @pytest.fixture
@@ -163,7 +160,7 @@ def test_get_run_file_permission_error_sanitized(client, dummy_user, run_id, tmp
         assert "error" in data
         assert (
             data["error"]
-            == "Something went wrong while accessing files. Please try again or contact support if the problem persists."
+            == "Something went wrong. Please try again or contact support if the problem persists."
         )
 
 
@@ -209,7 +206,6 @@ def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id
 def test_all_errors_use_create_user_error_response(client, dummy_user, run_id):
     """Test that all errors use create_user_error_response (verify consistent format)."""
     # Create a run that exists but user doesn't have access to
-    from bson import ObjectId
 
     other_user_id = ObjectId()
     create_test_run(run_id, user_id=other_user_id, status="success")
