@@ -1,8 +1,9 @@
 import json
 import os
+
 import pytest
 
-from .conftest import assert_error_sanitized
+from backend.tests.conftest import assert_error_sanitized
 
 
 @pytest.fixture
@@ -123,8 +124,8 @@ def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user):
     response = client.post("/api/genomic/cascaded/ncbi", json=invalid_form)
     _assert_genomic_error_response(
         response,
-        expected_status_codes=[400, 500],
-        expected_message_substring="We couldn't process your genomic data",
+        expected_status_codes=400,
+        expected_message_substring="Invalid input",
         check_sanitized=True,
     )
 
@@ -138,7 +139,6 @@ def test_genomic_cascaded_ncbi_subprocess_failure(client, dummy_form_ncbi, authe
         _assert_genomic_error_response(
             response,
             expected_status_codes=500,
-            expected_error_message="The pipeline failed to execute. Please check your input and try again.",
             forbidden_strings=["Subprocess failed"],
         )
 
@@ -150,8 +150,8 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
     response = client.post("/api/genomic/cascaded/ensembl", json=invalid_form)
     _assert_genomic_error_response(
         response,
-        expected_status_codes=[400, 500],
-        expected_message_substring="We couldn't process your genomic data",
+        expected_status_codes=400,
+        expected_message_substring="Invalid input",
         check_sanitized=True,
     )
 
@@ -176,22 +176,26 @@ def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
     response = client.post("/api/genomic/cascaded/custom", json=invalid_form)
     _assert_genomic_error_response(
         response,
-        expected_status_codes=[400, 500],
-        expected_message_substring="We couldn't process your genomic data",
+        expected_status_codes=400,
+        expected_message_substring="Invalid input",
         check_sanitized=True,
     )
 
 
 def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user, dummy_form_custom):
-    """Test genomic_cascaded_custom with subprocess failure returns sanitized error."""
+    """Test genomic_cascaded_custom with missing source_params returns 400 validation error.
+
+    The fixture data has source='Custom' but no source_params, so the route correctly
+    aborts with 400 before reaching subprocess.run.
+    """
     from unittest.mock import patch
 
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
         response = client.post("/api/genomic/cascaded/custom", json=dummy_form_custom)
         _assert_genomic_error_response(
             response,
-            expected_status_codes=500,
-            forbidden_strings=["Subprocess failed"],
+            expected_status_codes=400,
+            expected_message_substring="requires",
         )
 
 
@@ -231,7 +235,7 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
 
 def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi, mock_run):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     dummy_form = dummy_form_ncbi
     with client.session_transaction() as session:
@@ -253,7 +257,7 @@ def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi
 
 def test_genomic_single_ensembl_session_without_directory(client, dummy_form_ensembl, mock_run):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import MagicMock, patch
 
     dummy_form = dummy_form_ensembl
     with client.session_transaction() as session:
