@@ -1,13 +1,16 @@
 import copy
 import hashlib
 import json
+import logging
 import os
 import shutil
 from http import HTTPStatus
 
 from bson import ObjectId
 
-from flask import abort, current_app
+from flask import abort
+
+logger = logging.getLogger(__name__)
 
 
 def get_form_cache_key(form: dict) -> str:
@@ -72,7 +75,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
         try:
             shutil.rmtree(output_path)
         except Exception as e:
-            current_app.logger.warning(f"Failed to delete output directory {output_path}: {e!s}")
+            logger.warning(f"Failed to delete output directory {output_path}: {e!s}")
             # Continue with DB deletion even if file deletion fails
 
     # Remove from database
