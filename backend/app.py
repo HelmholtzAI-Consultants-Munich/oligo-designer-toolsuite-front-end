@@ -1,17 +1,17 @@
 import logging.config
 import os
 
-from flask import Flask
 from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics
 from flask_pymongo import BSONObjectIdConverter
 
 from backend.cli import register_cli_commands
-from backend.config import Config
+from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app, mongo, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
+from flask import Flask
 
 
 def prepare_paths(app: Flask):
@@ -49,12 +49,13 @@ def create_app():
     # Register custom URL converter for MongoDB ObjectId
     app.url_map.converters["ObjectId"] = BSONObjectIdConverter
 
-    # Load configuration from Config class
+    # Load default configuration, then override with FLASK_-prefixed environment variables
     app.config.from_object(Config)
+    app.config.from_prefixed_env()
 
     # Validate OAuth configuration
     try:
-        Config.validate_oauth_config()
+        Config.validate_oauth_config(app.config)
     except ValueError as e:
         app.logger.warning(f"OAuth configuration incomplete: {e}")
         app.logger.warning("Helmholtz AAI authentication will not be available.")
@@ -79,8 +80,8 @@ def create_app():
         },
     )
 
-    # Initialize Celery configuration
-    celery_app.config_from_object(Config.CELERY_CONFIG)
+    # Initialize Celery configuration (separate from Flask config)
+    celery_app.config_from_object(CeleryConfig)
 
     # Register all blueprints from the routes package
     register_blueprints(app)

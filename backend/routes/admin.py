@@ -14,17 +14,18 @@ Endpoints:
 """
 
 from bson import ObjectId
-from flask import Blueprint, abort, jsonify, request
 from flask_login import current_user, login_required
 
 from backend.extensions import mongo
-from backend.helpers import (
+from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
+from backend.utilities.formatting import format_pipeline_run, format_user
+from backend.utilities.pipeline import (
     delete_pipeline_run_files_and_db,
     execute_bulk_pipeline_run_deletion,
-    validate_and_convert_ids,
-    validate_id_array,
+    get_valid_pipeline_statuses,
 )
-from backend.routes.validation_helpers import get_run_or_404, get_user_by_id_or_404
+from backend.utilities.validation import validate_and_convert_ids, validate_id_array
+from flask import Blueprint, abort, jsonify, request
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -40,8 +41,6 @@ def is_admin(user):
     """
     if not user or not user.is_authenticated:
         return False
-
-    from backend.routes.validation_helpers import find_user_by_id
 
     user_doc = find_user_by_id(ObjectId(user.id), exclude_password=False)
     if not user_doc:
@@ -62,79 +61,11 @@ def require_admin(f):
 
     def decorated_function(*args, **kwargs):
         if not is_admin(current_user):
-            return jsonify({"error": "Unauthorized. Admin access required."}), 403
+            abort(403, description="Unauthorized. Admin access required.")
         return f(*args, **kwargs)
 
     decorated_function.__name__ = f.__name__
     return decorated_function
-
-
-def format_user(user):
-    """
-    Format a user document for API response.
-
-    Converts MongoDB user document to JSON-serializable format.
-
-    :param user: The user document from MongoDB
-    :type user: dict
-    :returns: Formatted user dictionary
-    :rtype: dict
-    """
-    return {
-        "id": str(user["_id"]),
-        "email": user.get("email", ""),
-        "name": user.get("name", ""),
-        "role": user.get("role", "user"),
-        "helmholtz_sub": user.get("helmholtz_sub"),
-        "created_at": user.get("_id").generation_time.isoformat() if user.get("_id") else None,
-    }
-
-
-def format_pipeline_run(run):
-    """
-    Format a pipeline run document for API response.
-
-    Converts MongoDB document to JSON-serializable format and includes user information.
-
-    :param run: The pipeline run document from MongoDB
-    :type run: dict
-    :returns: Formatted pipeline run dictionary
-    :rtype: dict
-    """
-    user_id = run.get("user_id")
-    user_info = None
-
-    # Fetch user information if user_id exists
-    if user_id:
-        try:
-            user = mongo.db.users.find_one({"_id": ObjectId(user_id)}, {"email": 1})
-            if user:
-                user_info = {"id": str(user["_id"]), "email": user.get("email", "Unknown")}
-        except Exception:
-            pass
-
-    return {
-        "id": str(run["_id"]),
-        "pipeline": run.get("pipeline", "unknown"),
-        "status": run.get("status", "unknown"),
-        "timestamp": run.get("timestamp", ""),
-        "created_at": run.get("created_at").isoformat() if run.get("created_at") else None,
-        "output_path": run.get("output_path", ""),
-        "user_id": user_id,
-        "user": user_info,
-        "session_id": run.get("session_id"),
-        "transferred_from_anon": run.get("transferred_from_anon", False),
-    }
-
-
-def get_valid_pipeline_statuses():
-    """
-    Get the list of valid pipeline run statuses.
-
-    :returns: List of valid status strings
-    :rtype: list[str]
-    """
-    return ["pending", "started", "success", "failure"]
 
 
 @admin_bp.route("/api/admin/users", methods=["GET"])
@@ -212,10 +143,7 @@ def update_user(user_id: ObjectId):
     get_user_by_id_or_404(user_id, exclude_password=True)
 
     # Update user
-    result = mongo.db.users.update_one({"_id": user_id}, {"$set": update_doc})
-
-    if result.matched_count == 0:
-        abort(404, description="User not found")
+    mongo.db.users.update_one({"_id": user_id}, {"$set": update_doc})
 
     # Fetch updated user
     user = get_user_by_id_or_404(user_id, exclude_password=True)
@@ -326,11 +254,7 @@ def delete_pipeline_run(run_id: ObjectId):
     :rtype: flask.Response
     """
     # Admin can delete any run - use shared deletion helper
-    success, error = delete_pipeline_run_files_and_db(mongo, run_id)
-
-    if not success:
-        status_code = 404 if error == "Pipeline run not found" else 500
-        abort(status_code, description=error)
+    delete_pipeline_run_files_and_db(mongo, run_id)
 
     return jsonify({"message": "Pipeline run deleted successfully"}), 200
 
@@ -395,9 +319,7 @@ def bulk_delete_users():
     :rtype: flask.Response
     """
     data = request.get_json() or {}
-    user_ids, error = validate_id_array(data, "user_ids")
-    if error:
-        abort(error[1], description=error[0]["error"])
+    user_ids = validate_id_array(data, "user_ids")
 
     # Filter out current user's ID (prevent self-deletion)
     current_user_id = str(current_user.id)
@@ -446,9 +368,7 @@ def bulk_update_user_role():
     :rtype: flask.Response
     """
     data = request.get_json() or {}
-    user_ids, error = validate_id_array(data, "user_ids")
-    if error:
-        abort(error[1], description=error[0]["error"])
+    user_ids = validate_id_array(data, "user_ids")
 
     role = data.get("role", "").strip().lower()
 
@@ -508,9 +428,7 @@ def bulk_delete_pipeline_runs():
     :rtype: flask.Response
     """
     data = request.get_json() or {}
-    run_ids, error = validate_id_array(data, "run_ids")
-    if error:
-        abort(error[1], description=error[0]["error"])
+    run_ids = validate_id_array(data, "run_ids")
 
     # Convert to ObjectIds and validate
     object_ids, invalid_ids = validate_and_convert_ids(run_ids)
@@ -555,9 +473,7 @@ def bulk_update_pipeline_status():
     :rtype: flask.Response
     """
     data = request.get_json() or {}
-    run_ids, error = validate_id_array(data, "run_ids")
-    if error:
-        abort(error[1], description=error[0]["error"])
+    run_ids = validate_id_array(data, "run_ids")
 
     status = data.get("status", "").strip().lower()
 

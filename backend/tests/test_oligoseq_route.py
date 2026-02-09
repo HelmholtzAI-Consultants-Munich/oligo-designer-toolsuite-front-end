@@ -1,13 +1,10 @@
 import json
 import os
-import sys
 
 import pytest
 
-# Add project root to sys.path so backend module can be imported
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 from backend.extensions import mongo
-from .conftest import assert_invalid_run_id_error
+from backend.tests.conftest import assert_invalid_run_id_error
 
 
 @pytest.fixture
@@ -22,7 +19,7 @@ def dummy_form(run_id):
 
 def test_oligoseq_authenticated(client, run_id, dummy_form, mock_celery, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
-    from .conftest import create_test_run
+    from backend.tests.conftest import create_test_run
 
     create_test_run(run_id, user_id="test_user_id", status="created")
 

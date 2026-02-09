@@ -4,9 +4,14 @@
 !/schemas
 !/backend
 
-# Ignore directory contents in the backend directory except for the worker directory
-/backend/*/*
-!/backend/worker/*
+# Ignore directory contents in the backend directory except for specific files and directories
+/backend/*
+!/backend/__init__.py
+!/backend/config.py
+!/backend/extensions.py
+!/backend/pyproject.toml
+!/backend/worker_environment.yml
+!/backend/worker
 
 # Python artifacts
 **/__pycache__

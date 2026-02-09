@@ -23,12 +23,9 @@ services:
       - 5000:5000
     volumes:
       - data-access:/app/backend/data-access
-    environment:
-      HOST_URL: ${BACKEND_URL}
-      FRONTEND_URL: ${FRONTEND_URL}
-      MONGO_URI: mongodb://odt-db:27017/oligo_db
-      CELERY_MONGO_URI: mongodb://odt-db:27017/
-      CELERY_BROKER: pyamqp://guest@odt-mq/
+    env_file:
+      - .env # Shared settings (secrets, OAuth, Flask config)
+      - .env.docker # Docker overrides (service hostnames instead of localhost)
     depends_on:
       - odt-db
       - odt-mq
@@ -47,9 +44,9 @@ services:
     container_name: odt-worker
     volumes:
       - data-access:/app/backend/data-access
-    environment:
-      CELERY_MONGO_URI: mongodb://odt-db:27017/
-      CELERY_BROKER: pyamqp://guest@odt-mq/
+    env_file:
+      - .env # Shared settings (secrets, Celery config)
+      - .env.docker # Docker overrides (service hostnames instead of localhost)
     depends_on:
       - odt-db
       - odt-mq

@@ -11,11 +11,12 @@ import subprocess
 from datetime import datetime
 
 import yaml
-from flask import Blueprint, current_app, jsonify, request
 
 from backend.extensions import mongo
-from backend.helpers import generate_single_region_forms, get_form_cache_key, to_bool, to_int
-from backend.routes.validation_helpers import get_user_context_with_directory
+from backend.routes.route_helpers import get_user_context_with_directory
+from backend.utilities.converters import to_bool, to_int
+from backend.utilities.pipeline import generate_single_region_forms, get_form_cache_key
+from flask import Blueprint, abort, current_app, jsonify, request
 
 from .cache_helpers import _prepare_ensembl_cached_assets, _prepare_ncbi_cached_assets
 
@@ -31,23 +32,24 @@ def _validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | No
         allowed_sources: List of allowed source values. Defaults to ["NCBI", "Ensembl"]
 
     Raises:
-        ValueError: If validation fails
+        400: If validation fails
     """
     if allowed_sources is None:
         allowed_sources = ["NCBI", "Ensembl"]
 
     if not form_data:
-        raise ValueError("Invalid input: form data is required")
+        abort(400, description="Invalid input: form data is required")
     if "source" not in form_data:
-        raise ValueError("Invalid input: source is required")
+        abort(400, description="Invalid input: source is required")
     if form_data["source"] not in allowed_sources:
-        raise ValueError(
-            f"Invalid input: source must be one of {', '.join(repr(s) for s in allowed_sources)}"
+        abort(
+            400,
+            description=f"Invalid input: source must be one of {', '.join(repr(s) for s in allowed_sources)}",
         )
     if "genomic_regions" not in form_data:
-        raise ValueError("Invalid input: genomic_regions is required")
+        abort(400, description="Invalid input: genomic_regions is required")
     if form_data["source"] == "Custom" and "file_regions" not in form_data:
-        raise ValueError("Invalid input: file_regions is required for Custom source")
+        abort(400, description="Invalid input: file_regions is required for Custom source")
 
 
 @genomic_bp.route("/api/genomic/cascaded/ncbi", methods=["POST"])
@@ -105,7 +107,7 @@ def genomic_cascaded_ncbi():
     )  # creates a list of forms with only one region set to true
 
     if not single_region_forms:
-        raise ValueError("Invalid input: no valid genomic regions specified")
+        abort(400, description="Invalid input: no valid genomic regions specified")
 
     all_fna_files = []
     cached_skips = []
@@ -151,7 +153,8 @@ def genomic_cascaded_ncbi():
         status = "completed" if result.returncode == 0 else "error"
 
         if result.returncode != 0:
-            raise RuntimeError(f"Pipeline failed: {result.stderr}")
+            current_app.logger.error(f"NCBI pipeline failed: {result.stderr}")
+            abort(500, description="The pipeline failed to execute. Please check your input and try again.")
 
         # Collect output .fna files (ignore GCF/GCA)
         if os.path.exists(output_gen):
@@ -163,9 +166,6 @@ def genomic_cascaded_ncbi():
         mongo.db.runs.update_one({"_id": run_id}, {"$set": {"status": status}})
         if os.path.exists(config_path):
             os.remove(config_path)
-
-        if result.returncode != 0:
-            raise RuntimeError(f"Pipeline failed: {result.stderr}")
 
     return jsonify(
         {
@@ -222,7 +222,7 @@ def genomic_cascaded_ensemble():
     single_region_forms = generate_single_region_forms(form_data)
 
     if not single_region_forms:
-        raise ValueError("Invalid input: no valid genomic regions specified")
+        abort(400, description="Invalid input: no valid genomic regions specified")
 
     all_fna_files = []
     cached_skips = []
@@ -263,7 +263,8 @@ def genomic_cascaded_ensemble():
         status = "completed" if result.returncode == 0 else "error"
 
         if result.returncode != 0:
-            raise RuntimeError(f"Pipeline failed: {result.stderr}")
+            current_app.logger.error(f"Ensembl pipeline failed: {result.stderr}")
+            abort(500, description="The pipeline failed to execute. Please check your input and try again.")
 
         if os.path.exists(output_gen):
             for fname in os.listdir(output_gen):
@@ -332,7 +333,7 @@ def genomic_cascaded_custom():
     single_region_forms = generate_single_region_forms(form_data)
 
     if not single_region_forms:
-        raise ValueError("Invalid input: no valid genomic regions specified")
+        abort(400, description="Invalid input: no valid genomic regions specified")
 
     all_fna_files = []
     cached_skips = []
@@ -365,8 +366,9 @@ def genomic_cascaded_custom():
             species = source_params.get("species")
             ann_rel = source_params.get("annotation_release")
             if not species or ann_rel is None:
-                raise RuntimeError(
-                    "Custom genomic (Ensembl) requires 'species' and 'annotation_release' in source_params."
+                abort(
+                    400,
+                    description="Custom genomic (Ensembl) requires 'species' and 'annotation_release' in source_params.",
                 )
             cache_info = _prepare_ensembl_cached_assets(cache_dir, species, ann_rel)
             genome_assembly = cache_info["genome_assembly"]
@@ -380,8 +382,9 @@ def genomic_cascaded_custom():
             species = source_params.get("species")
             ann_rel = source_params.get("annotation_release")
             if not species or ann_rel is None:
-                raise RuntimeError(
-                    "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
+                abort(
+                    400,
+                    description="Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params.",
                 )
             cache_info = _prepare_ncbi_cached_assets(cache_dir, taxon, species, ann_rel)
             genome_assembly = cache_info["genome_assembly"]
@@ -416,7 +419,8 @@ def genomic_cascaded_custom():
         status = "completed" if result.returncode == 0 else "error"
 
         if result.returncode != 0:
-            raise RuntimeError(f"Pipeline failed: {result.stderr}")
+            current_app.logger.error(f"Custom pipeline failed: {result.stderr}")
+            abort(500, description="The pipeline failed to execute. Please check your input and try again.")
 
         # Collect output .fna files (ignore raw genome)
         if os.path.exists(output_gen):
