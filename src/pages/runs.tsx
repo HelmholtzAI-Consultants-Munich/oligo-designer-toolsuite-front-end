@@ -1,7 +1,7 @@
 // Updated React component (src/pages/Runs.tsx)
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../modules/auth";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../modules/useAuth";
 import Navbar from "../modules/nav";
 import axios from "axios";
 import type { RunState } from "../types";
@@ -18,7 +18,7 @@ interface PipelineRun {
 }
 
 const Runs = () => {
-    const { user, loading } = useAuth();
+    const { loading } = useAuth();
     const [runs, setRuns] = useState<PipelineRun[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
@@ -50,7 +50,7 @@ const Runs = () => {
             return new Date(
                 `${year}-${month}-${day}T${hour}:${minute}:${second}`
             ).toLocaleString();
-        } catch (e) {
+        } catch {
             return timestamp;
         }
     };

@@ -1,20 +1,14 @@
-import React, { useEffect } from "react";
+import React from "react";
 import Navbar from "../modules/nav";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../modules/auth";
+import { Link } from "react-router-dom";
+import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";
 import seqfish from "../images/seqfish.jpg";
 import oligoseq from "../images/oligoseq.jpg";
 
-const pipelines: React.FC = () => {
-    // @ts-ignore
-    // @ts-ignore
-    // @ts-ignore
-    // eslint-disable-next-line react-hooks/rules-of-hooks
+const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const navigate = useNavigate(); // Define useNavigate correctly
 
     if (loading) return <div>Loading...</div>;
 
@@ -106,4 +100,4 @@ const pipelines: React.FC = () => {
     );
 };
 
-export default pipelines;
+export default Pipelines;

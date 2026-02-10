@@ -42,7 +42,6 @@ const PipelineTemplate: React.FC<Props> = ({
 
     const [runId, setRunId] = useState<string | null>(null);
     const [runStatus, setRunStatus] = useState<Status>("idle");
-    const [idCopySuccess, setIdCopySuccess] = useState<boolean>(false);
     const [modal, setModal] = useState<Modal>({
         show: false,
         title: "",
@@ -102,7 +101,6 @@ const PipelineTemplate: React.FC<Props> = ({
                                 setModal,
                                 files,
                                 formData,
-                                setIdCopySuccess,
                                 pipeline
                             )
                         }

@@ -24,7 +24,6 @@ const UserList: React.FC = () => {
     // Use shared bulk selection hook
     const {
         selectedItems,
-        isSelectAll,
         handleSelectItem,
         handleSelectAll,
         clearSelection,
@@ -44,8 +43,14 @@ const UserList: React.FC = () => {
                 withCredentials: true,
             });
             setUsers(response.data);
-        } catch (err: any) {
-            setError(err.response?.data?.error || "Failed to load users");
+        } catch (err: unknown) {
+            const axiosError = err as {
+                response?: { data?: { error?: string } };
+                message?: string;
+            };
+            setError(
+                axiosError.response?.data?.error || "Failed to load users"
+            );
             console.error("Error fetching users:", err);
         } finally {
             setIsLoading(false);
@@ -62,9 +67,13 @@ const UserList: React.FC = () => {
                 });
                 // Refresh the list
                 fetchUsers();
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const axiosError = err as {
+                    response?: { data?: { error?: string } };
+                    message?: string;
+                };
                 alert(
-                    `Failed to delete user: ${err.response?.data?.error || err.message}`
+                    `Failed to delete user: ${axiosError.response?.data?.error || axiosError.message || "Unknown error"}`
                 );
             }
         }
@@ -100,9 +109,13 @@ const UserList: React.FC = () => {
             alert(message);
             clearSelection();
             fetchUsers();
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const axiosError = err as {
+                response?: { data?: { error?: string } };
+                message?: string;
+            };
             alert(
-                `Failed to delete users: ${err.response?.data?.error || err.message}`
+                `Failed to delete users: ${axiosError.response?.data?.error || axiosError.message || "Unknown error"}`
             );
         } finally {
             setIsBulkOperationLoading(false);
@@ -140,9 +153,13 @@ const UserList: React.FC = () => {
             alert(message);
             clearSelection();
             fetchUsers();
-        } catch (err: any) {
+        } catch (err: unknown) {
+            const axiosError = err as {
+                response?: { data?: { error?: string } };
+                message?: string;
+            };
             alert(
-                `Failed to update roles: ${err.response?.data?.error || err.message}`
+                `Failed to update roles: ${axiosError.response?.data?.error || axiosError.message || "Unknown error"}`
             );
         } finally {
             setIsBulkOperationLoading(false);
