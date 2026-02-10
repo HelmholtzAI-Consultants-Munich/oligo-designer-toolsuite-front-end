@@ -132,7 +132,7 @@ def mock_run():
         yield mock_run
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def app():
     """Create Flask app for testing (for direct function testing)."""
     app = create_app()

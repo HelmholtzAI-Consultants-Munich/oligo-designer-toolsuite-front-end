@@ -1,3 +1,4 @@
+from flask import current_app
 import datetime
 from email.utils import formatdate, parsedate_to_datetime
 import ftplib
@@ -67,7 +68,7 @@ class BaseGenomicDataBase:
         filename = url.split("/")[-1]
 
         file_name = f"{url_hash}-{filename}"
-        file_path = pathlib.Path(f"./cache/{file_name}").resolve()
+        file_path = pathlib.Path(f"{os.path.join(current_app.root_path, 'cache')}/{file_name}").resolve()
 
         if os.path.exists(file_path):
             mtime = os.path.getmtime(file_path)

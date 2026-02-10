@@ -6,7 +6,6 @@ import pytest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from unittest.mock import patch
 
-from app import create_app
 from bson import ObjectId
 from extensions import mongo
 from werkzeug.security import generate_password_hash
@@ -19,11 +18,7 @@ def mock_make_dir():
 
 
 @pytest.fixture
-def client(monkeypatch):
-    app = create_app()
-    app.config["TESTING"] = True
-    app.secret_key = "test-key"
-
+def client(monkeypatch, app):
     class AnonymousUser:
         is_authenticated = False
 

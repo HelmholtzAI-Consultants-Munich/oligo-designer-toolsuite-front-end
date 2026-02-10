@@ -11,15 +11,16 @@ from routes.genomic_database_helpers import EnsemblGenomicDataBase, NCBIGenomicD
 
 @pytest.fixture
 def verify_file_mock(monkeypatch):
-    # mocked return function to replace Path.home
-    # always return '/abc'
-    def mockreturn(a, b, c):
+    def mock_return(a, b, c):
         return True
 
-    # Application of the monkeypatch to replace Path.home
-    # with the behavior of mockreturn defined above.
-    monkeypatch.setattr(NCBIGenomicDataBase, "_verify_file", mockreturn)
-    monkeypatch.setattr(EnsemblGenomicDataBase, "_verify_file", mockreturn)
+    monkeypatch.setattr(NCBIGenomicDataBase, "_verify_file", mock_return)
+    monkeypatch.setattr(EnsemblGenomicDataBase, "_verify_file", mock_return)
+
+
+@pytest.fixture
+def cache_dir_mock(monkeypatch, app):
+    return monkeypatch.setattr(app, "root_path", os.path.join(os.path.dirname(__file__), "data/"))
 
 
 @pytest.fixture
@@ -55,7 +56,7 @@ def release_queries():
 
 
 def test_genomic_cascaded_custom_ncbi(
-    client, dummy_form_ncbi, mock_run, authenticated_user, verify_file_mock
+    client, dummy_form_ncbi, mock_run, authenticated_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
@@ -68,7 +69,7 @@ def test_genomic_cascaded_custom_ncbi(
 
 
 def test_genomic_cascaded_custom_ncbi_unauthenticated(
-    client, dummy_form_ncbi, mock_run, session_user, verify_file_mock
+    client, dummy_form_ncbi, mock_run, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
@@ -81,7 +82,7 @@ def test_genomic_cascaded_custom_ncbi_unauthenticated(
 
 
 def test_genomic_cascaded_custom_single_ensembl(
-    client, dummy_form_ensembl, mock_run, authenticated_user, verify_file_mock
+    client, dummy_form_ensembl, mock_run, authenticated_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ensembl
 
@@ -94,7 +95,7 @@ def test_genomic_cascaded_custom_single_ensembl(
 
 
 def test_genomic_cascaded_custom_single_ensembl_unauthenticated(
-    client, dummy_form_ensembl, mock_run, session_user, verify_file_mock
+    client, dummy_form_ensembl, mock_run, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ensembl
 
@@ -186,7 +187,7 @@ def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
 
 
 def test_genomic_cascaded_custom_ncbi_subprocess_failure(
-    client, dummy_form_ncbi, authenticated_user, verify_file_mock
+    client, dummy_form_ncbi, authenticated_user, verify_file_mock, cache_dir_mock
 ):
     """Test genomic_cascaded_ncbi with subprocess failure returns sanitized error."""
     from unittest.mock import patch
@@ -215,7 +216,7 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
 
 
 def test_genomic_cascaded_custom_ensembl_subprocess_failure(
-    client, dummy_form_ensembl, authenticated_user, verify_file_mock
+    client, dummy_form_ensembl, authenticated_user, verify_file_mock, cache_dir_mock
 ):
     """Test genomic_cascaded_ensembl with subprocess failure returns sanitized error."""
     from unittest.mock import patch
@@ -229,7 +230,7 @@ def test_genomic_cascaded_custom_ensembl_subprocess_failure(
         )
 
 
-def test_genomic_routes_no_str_e_exposed(client, authenticated_user, verify_file_mock):
+def test_genomic_routes_no_str_e_exposed(client, authenticated_user, cache_dir_mock):
     """Test that no str(e) is exposed in genomic route error responses."""
     from unittest.mock import patch
 
@@ -264,7 +265,7 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user, verify_file
 
 
 def test_genomic_cascaded_custom_ncbi_session_without_directory(
-    client, dummy_form_ncbi, mock_run, verify_file_mock
+    client, dummy_form_ncbi, mock_run, verify_file_mock, cache_dir_mock
 ):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     from unittest.mock import patch, MagicMock
@@ -288,7 +289,7 @@ def test_genomic_cascaded_custom_ncbi_session_without_directory(
 
 
 def test_genomic_single_custom_ensembl_session_without_directory(
-    client, dummy_form_ensembl, mock_run, verify_file_mock
+    client, dummy_form_ensembl, mock_run, verify_file_mock, cache_dir_mock
 ):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
     from unittest.mock import patch, MagicMock
