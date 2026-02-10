@@ -12,11 +12,6 @@ export interface AuthContextType {
     logout: () => void;
 }
 
-export interface Oligo {
-    oligo_id: string;
-    [key: string]: any;
-}
-
 export interface GenomicRegion {
     start: number;
     end: number;

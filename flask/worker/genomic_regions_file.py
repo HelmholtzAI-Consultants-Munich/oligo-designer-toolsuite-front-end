@@ -40,7 +40,7 @@ class GenomicRegionsFile:
 
         for fname in self.fasta_paths:
             if not os.path.exists(fname):
-                print(f"Fasta file {fname} not found, skipping.")
+                print(f"Warning: Fasta file {fname} not found, skipping.")
                 continue
 
             seq_record = SeqIO.index(fname, "fasta")
@@ -51,25 +51,29 @@ class GenomicRegionsFile:
                 if gene not in self.genes:
                     continue
 
+                region_type = (
+                    additional_info["regiontype"][0] if "regiontype" in additional_info else "unknown"
+                )
+                total_sequence = str(record.seq)
+
+                starts = coordinates["start"]
+                ends = coordinates["end"]
+                start_ends = list(zip(starts, ends))
+                start_ends.sort(key=lambda x: x[0])  # sort by start position
+
+                strand = coordinates["strand"][0] if "strand" in coordinates else "+"
                 transcript_ids = additional_info.get("transcript_id", ["transcript_unknown"])
+
                 for transcript_index, transcript_id in enumerate(transcript_ids):
-                    region_type = (
-                        additional_info["regiontype"][0] if "regiontype" in additional_info else "unknown"
-                    )
-                    total_sequence = str(record.seq)
-                    exon_number = (
-                        additional_info["exon_number"][transcript_index]
-                        if "exon_number" in additional_info
-                        else None
-                    )
-                    starts = coordinates["start"]
-                    ends = coordinates["end"]
-                    strand = coordinates["strand"][0] if "strand" in coordinates else "+"
-                    if strand == "-":
-                        # reverse sequence for negative strand
-                        total_sequence = total_sequence[::-1]
-                    start_ends = list(zip(starts, ends))
-                    start_ends.sort(key=lambda x: x[0])  # sort by start position
+                    if region_type == "exonexonjunction":
+                        exon_numbers = additional_info.get("exon_number", [""])[transcript_index].split("__JUNC__")
+                    else:
+                        exon_numbers = [additional_info.get("exon_number", [None])[transcript_index]]
+                    
+                    if len(exon_numbers) != len(start_ends):
+                        print(f"Warning: Number of exon numbers does not match number of components for record {idx} in gene {gene}, skipping  processing.")
+                        continue
+
                     for i, (start, end) in enumerate(start_ends):
                         # assume start < end
                         sequence, total_sequence = (
@@ -79,13 +83,13 @@ class GenomicRegionsFile:
                         regions[gene][transcript_id].append(
                             {
                                 "regiontype": region_type,
-                                "exon_number": exon_number,
+                                "exon_number": exon_numbers[i],
                                 "sequence": sequence,
                                 "start": start,
                                 "end": end,
                                 "chromosome": coordinates["chromosome"][i],
                                 "strand": strand,
-                                "junction_number": exon_number if region_type == "exonexonjunction" else None,
+                                "junction_number": additional_info.get("exon_number", [None])[transcript_index] if region_type == "exonexonjunction" else None,
                             }
                         )
 
@@ -106,126 +110,13 @@ class GenomicRegionsFile:
                                 }
                             )
         return regions
-
-    # Process regions to fill gaps and merge overlapping regions
-    def _process_regions(self):
-        raw_regions = self.regions
-        # empty copy of raw_regions
-        processed_regions = {
-            gene: {transcript: [] for transcript in transcripts} for gene, transcripts in raw_regions.items()
-        }
-
-        for gene, transcripts in raw_regions.items():
-            for transcript_id, regions in transcripts.items():
-                # regions can not be empty, otherwise the transcript would not exist
-                strand = regions[0]["strand"]
-                # sort regions by start position (reverse for negative strand)
-                regions.sort(key=lambda x: x["start"] if strand == "+" else x["end"], reverse=(strand == "-"))
-                merged_regions = []
-                last_region = None
-                read_counter = 0
-
-                for region in regions:
-                    if last_region is None:
-                        last_region = region
-                        last_region["reading_grid_offset"] = 0
-                        continue
-                    overlap_length = (
-                        last_region["end"] - region["start"] + 1
-                        if strand == "+"
-                        else region["end"] - last_region["start"] + 1
-                    )
-
-                    # overlapping or contiguous regions of same type, merge them
-                    if overlap_length >= 0 and last_region["regiontype"] == region["regiontype"]:
-                        if strand == "+":
-                            last_region["end"] = region["end"]
-                        else:
-                            last_region["start"] = region["start"]
-                        # concatenate sequence without overlap
-                        if last_region["sequence"] is not None and region["sequence"] is not None:
-                            if strand == "+":
-                                last_region["sequence"] += region["sequence"][overlap_length:]
-                            else:
-                                last_region["sequence"] = (
-                                    region["sequence"][:-overlap_length] + last_region["sequence"]
-                                )
-                        # handle exon-exon junctions
-                        if (
-                            last_region["regiontype"] == "exonexonjunction"
-                            and region["regiontype"] == "exonexonjunction"
-                        ):
-                            last_region["regiontype"] = "exon"
-                            last_exons = last_region.get("exon_number", "").split("__JUNC__")
-                            region_exons = region.get("exon_number", "").split("__JUNC__")
-                            common_exon = next(filter(lambda x: x in region_exons, last_exons), None)
-                            last_region["exon_number"] = common_exon
-
-                    # non-overlapping region, add last_region to merged list
-                    elif overlap_length < 0:
-                        merged_regions.append(last_region)
-                        if last_region["regiontype"] != "intron":
-                            read_counter += last_region["end"] - last_region["start"] + 1
-                        gap_start = last_region["end"] + 1 if strand == "+" else region["end"] + 1
-                        gap_end = region["start"] - 1 if strand == "+" else last_region["start"] - 1
-
-                        # fill gap (intron between exons, exon between introns, exon between exon-exon-junctions)
-                        regiontype = "unknown"
-                        exon_number = None
-                        match (last_region["regiontype"], region["regiontype"]):
-                            case ("exon", "exon"):
-                                regiontype = "intron"
-                            case ("intron", "intron"):
-                                regiontype = "exon"
-                            case ("exonexonjunction", "exonexonjunction"):
-                                last_exons = last_region.get("exon_number", "").split("__JUNC__")
-                                region_exons = region.get("exon_number", "").split("__JUNC__")
-                                common_exon = next(filter(lambda x: x in region_exons, last_exons), None)
-                                last_region["exon_number"] = common_exon
-                                region["exon_number"] = common_exon
-                                exon_number = common_exon
-
-                                last_region["regiontype"] = "exon"
-                                region["regiontype"] = "exon"
-                                regiontype = "exon"
-
-                        merged_regions.append(
-                            {
-                                "regiontype": regiontype,
-                                "exon_number": exon_number,
-                                "sequence": None,
-                                "reading_grid_offset": None if regiontype == "intron" else read_counter % 3,
-                                "start": gap_start,
-                                "end": gap_end,
-                                "chromosome": last_region["chromosome"],
-                                "strand": last_region["strand"],
-                                "inferred": True,
-                            }
-                        )
-                        if regiontype != "intron":
-                            read_counter += gap_end - gap_start + 1
-                        last_region = region
-                        last_region["reading_grid_offset"] = read_counter % 3
-
-                    # overlapping or contiguous regions of different types, keep both
-                    else:
-                        merged_regions.append(last_region)
-                        if last_region["regiontype"] != "intron":
-                            read_counter += last_region["end"] - last_region["start"] + 1
-                        last_region = region
-                        last_region["reading_grid_offset"] = read_counter % 3
-
-                if last_region is not None:
-                    merged_regions.append(last_region)
-
-                processed_regions[gene][transcript_id] = merged_regions
-        return processed_regions
     
+    # Load probes from probes yaml file and match them to regions, filling gaps for exon-exon junction probes
     def _load_probes(self):
         probes = {gene: defaultdict(list) for gene in self.genes}
 
         if not os.path.exists(self.probes_path):
-            print(f"Probes file {self.probes_path} not found, skipping probe loading.")
+            print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
             return probes
         
         with open(self.probes_path) as f:
@@ -246,8 +137,6 @@ class GenomicRegionsFile:
                         components = []
 
                         if regiontype != "exonexonjunction":
-                            print(f"Processing probe {oligo_info.get('oligo_id', '')} in gene {gene} as single continuous probe...")
-                            print(f"{regiontype}")
                             # single continous probe, add as single component
                             components.append({
                                 "start": start,
@@ -256,15 +145,12 @@ class GenomicRegionsFile:
                             })
                         else:
                             # for exon-exon junction probes, add gaps between exons as components
-                            print(f"Processing exon-exon junction probe {oligo_info.get('oligo_id', '')} in gene {gene}...")
                             canonical_transcript_id = transcript_ids[0]
                             canonical_exon_number = exon_numbers[0]
                             canonical_regions = sorted([x for x in self.regions[gene][canonical_transcript_id] if x.get("junction_number", None) == canonical_exon_number], key=lambda x: x["start"])
                             if canonical_regions is None:
                                 print(f"Warning: Could not find canonical region for probe {oligo_info.get('oligo_id', '')} in gene {gene}, skipping.")
                                 continue
-
-                            print(f"Found canonical regions for probe {oligo_info.get('oligo_id', '')} in gene {gene}: {canonical_regions}")
 
                             last_end = None
                             for region in canonical_regions:
@@ -301,7 +187,126 @@ class GenomicRegionsFile:
         for gene in probes:
             probes[gene] = dict(probes[gene])
         return probes
+
+    # Process regions to fill gaps and merge overlapping regions
+    def _process_regions(self):
+        raw_regions = self.regions
+        # empty copy of raw_regions
+        processed_regions = {
+            gene: {transcript: [] for transcript in transcripts} for gene, transcripts in raw_regions.items()
+        }
+
+        for gene, transcripts in raw_regions.items():
+            for transcript_id, regions in transcripts.items():
+                # regions can not be empty, otherwise the transcript would not exist
+                strand = regions[0]["strand"]
+                # sort regions by start position (reverse for negative strand)
+                regions.sort(key=lambda x: x["start"] if strand == "+" else x["end"], reverse=(strand == "-"))
+                merged_regions = []
+                last_region = None
+                read_counter = 0
+
+                for region in regions:
+                    if last_region is None:
+                        last_region = region
+                        last_region["reading_grid_offset"] = 0
+                        continue
+                    overlap_length = (
+                        last_region["end"] - region["start"] + 1
+                        if strand == "+"
+                        else region["end"] - last_region["start"] + 1
+                    )
+
+                    # overlapping or contiguous regions of mergeable type, merge them
+                    if overlap_length >= 0 and self._mergable_regions(last_region, region):
+                        if strand == "+":
+                            last_region["end"] = region["end"]
+                        else:
+                            last_region["start"] = region["start"]
+                        # concatenate sequence without overlap
+                        if last_region["sequence"] is not None and region["sequence"] is not None:
+                            if strand == "+":
+                                last_region["sequence"] += region["sequence"][overlap_length:]
+                            else:
+                                last_region["sequence"] = (
+                                    region["sequence"][:-overlap_length] + last_region["sequence"]
+                                )
+                        # handle exon-exon junctions
+                        if (last_region["regiontype"] == "exonexonjunction"):
+                            last_region["regiontype"] = "exon"
+
+                    # non-overlapping region, add last_region to merged list
+                    elif overlap_length < 0:
+                        merged_regions.append(last_region)
+                        if last_region["regiontype"] != "intron":
+                            read_counter += last_region["end"] - last_region["start"] + 1
+                        gap_start = last_region["end"] + 1 if strand == "+" else region["end"] + 1
+                        gap_end = region["start"] - 1 if strand == "+" else last_region["start"] - 1
+
+                        # fill gap (exon between same exon_number, intron between exons, exon between introns)
+                        regiontype = "unknown"
+                        exon_number = None
+
+                        if (last_region["exon_number"] is not None and region["exon_number"] is not None and last_region["exon_number"] == region["exon_number"]):
+                            last_region["regiontype"] = "exon"
+                            region["regiontype"] = "exon"
+                            regiontype = "exon"
+                            exon_number = last_region["exon_number"]
+                        else:
+                            match (last_region["regiontype"], region["regiontype"]):
+                                case ("exon", "exon"):
+                                    regiontype = "intron"
+                                case ("intron", "intron"):
+                                    regiontype = "exon"
+
+                        merged_regions.append(
+                            {
+                                "regiontype": regiontype,
+                                "exon_number": exon_number,
+                                "sequence": None,
+                                "reading_grid_offset": None if regiontype == "intron" else read_counter % 3,
+                                "start": gap_start,
+                                "end": gap_end,
+                                "chromosome": last_region["chromosome"],
+                                "strand": last_region["strand"],
+                                "inferred": True,
+                            }
+                        )
+                        if regiontype != "intron":
+                            read_counter += gap_end - gap_start + 1
+                        last_region = region
+                        last_region["reading_grid_offset"] = read_counter % 3
+
+                    # overlapping or contiguous regions of different types, keep both
+                    else:
+                        merged_regions.append(last_region)
+                        if last_region["regiontype"] != "intron":
+                            read_counter += last_region["end"] - last_region["start"] + 1
+                        last_region = region
+                        last_region["reading_grid_offset"] = read_counter % 3
+
+                if last_region is not None:
+                    merged_regions.append(last_region)
+
+                processed_regions[gene][transcript_id] = merged_regions
+        return processed_regions
     
+    
+    def _mergable_regions(self, region1, region2):
+        if region1["exon_number"] != region2["exon_number"]:
+            return False
+        
+        type1 = region1["regiontype"]
+        type2 = region2["regiontype"]
+        if type1 == type2:
+            return True
+        
+        mergable_types = [
+            ("exon", "exonexonjunction"),
+            ("exonexonjunction", "exon"),
+        ]
+        return (type1, type2) in mergable_types
+
     def _recursive_first(self, d):
         if isinstance(d, list):
             return self._recursive_first(d[0]) if len(d) > 0 else None
