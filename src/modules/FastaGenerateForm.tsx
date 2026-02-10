@@ -23,15 +23,12 @@ import {
 } from "../forms/refseqSpecies";
 import { ensemblSpecies } from "../forms/ensemblSpecies";
 import { ncbiAnnotationReleases } from "../forms/ncbiAnnotationReleases";
+import type { FastaForm } from "../components/types";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
-    form: {
-        selectedSource: string;
-        formDataNcbi: any;
-        formDataEns: any;
-    };
-    onChange: (newForm: FastaGenerateFormProps["form"]) => void;
+    form: FastaForm;
+    onChange: (newForm: FastaForm) => void;
     onRemove?: () => void;
     disableRemove?: boolean;
 }
@@ -58,14 +55,21 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     };
 
     // Handles changes to NCBI-specific form fields and checkboxes
-    const handleNcbiChange = (e: React.ChangeEvent<any>) => {
-        const { name, value, type, checked } = e.target;
+    const handleNcbiChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target;
+        const checked =
+            "checked" in e.target
+                ? (e.target as HTMLInputElement).checked
+                : false;
         // Checkboxes for genomic regions
         if (name in form.formDataNcbi.genomic_regions) {
+            const key = name as keyof typeof form.formDataNcbi.genomic_regions;
             const newGenomicRegions = {
                 ...form.formDataNcbi.genomic_regions,
-                [name]: {
-                    ...form.formDataNcbi.genomic_regions[name],
+                [key]: {
+                    ...form.formDataNcbi.genomic_regions[key],
                     value: checked ? "true" : "false",
                 },
             };
@@ -93,7 +97,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
         }
         // Nested source_params
         if (name.startsWith("source_params.")) {
-            const key = name.split(".")[1];
+            const key = name.split(
+                "."
+            )[1] as keyof typeof form.formDataNcbi.source_params;
             onChange({
                 ...form,
                 formDataNcbi: {
@@ -112,13 +118,20 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     };
 
     // Handles changes to Ensembl-specific form fields and checkboxes
-    const handleEnsChange = (e: React.ChangeEvent<any>) => {
-        const { name, value, type, checked } = e.target;
+    const handleEnsChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target;
+        const checked =
+            "checked" in e.target
+                ? (e.target as HTMLInputElement).checked
+                : false;
         if (name in form.formDataEns.genomic_regions) {
+            const key = name as keyof typeof form.formDataEns.genomic_regions;
             const newGenomicRegions = {
                 ...form.formDataEns.genomic_regions,
-                [name]: {
-                    ...form.formDataEns.genomic_regions[name],
+                [key]: {
+                    ...form.formDataEns.genomic_regions[key],
                     value: checked ? "true" : "false",
                 },
             };
@@ -146,7 +159,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
         }
         // Nested source_params
         if (name.startsWith("source_params.")) {
-            const key = name.split(".")[1];
+            const key = name.split(
+                "."
+            )[1] as keyof typeof form.formDataEns.source_params;
             onChange({
                 ...form,
                 formDataEns: {
@@ -726,15 +741,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                 {/* Genomic regions checkboxes */}
                                 <h6 className="pt-3">Genomic Regions</h6>
                                 <div className="row g-3">
-                                    {[
-                                        "gene",
-                                        "intergenic",
-                                        "exon",
-                                        "utr",
-                                        "cds",
-                                        "intron",
-                                        "exon_exon_junction",
-                                    ].map((region) => (
+                                    {(
+                                        [
+                                            "gene",
+                                            "intergenic",
+                                            "exon",
+                                            "utr",
+                                            "cds",
+                                            "intron",
+                                            "exon_exon_junction",
+                                        ] as const
+                                    ).map((region) => (
                                         <div key={region} className="col-md-4">
                                             <div className="d-flex align-items-center">
                                                 <input
@@ -1004,15 +1021,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                 {/* Genomic regions checkboxes */}
                                 <h5 className="pt-3">Genomic Regions</h5>
                                 <div className="row g-3">
-                                    {[
-                                        "gene",
-                                        "intergenic",
-                                        "exon",
-                                        "utr",
-                                        "cds",
-                                        "intron",
-                                        "exon_exon_junction",
-                                    ].map((region) => (
+                                    {(
+                                        [
+                                            "gene",
+                                            "intergenic",
+                                            "exon",
+                                            "utr",
+                                            "cds",
+                                            "intron",
+                                            "exon_exon_junction",
+                                        ] as const
+                                    ).map((region) => (
                                         <div key={region} className="col-md-4">
                                             <div className="d-flex align-items-center">
                                                 <input
@@ -1058,7 +1077,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                                     form
                                                                         .formDataEns
                                                                         .genomic_regions[
-                                                                        region
+                                                                        region as keyof typeof form.formDataEns.genomic_regions
                                                                     ].comment
                                                                 }
                                                             </Popover.Body>

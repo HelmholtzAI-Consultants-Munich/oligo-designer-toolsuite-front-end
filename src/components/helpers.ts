@@ -18,7 +18,10 @@ export const handleFileChange = (
     }));
 };
 
-export const allFilesUploaded = (files: any, required_files: string[]) => {
+export const allFilesUploaded = (
+    files: FileState,
+    required_files: string[]
+) => {
     let uploaded = true;
     for (const file of required_files) {
         if (files[file].length == 0) {
@@ -28,7 +31,7 @@ export const allFilesUploaded = (files: any, required_files: string[]) => {
     return uploaded;
 };
 
-export const uploadFiles = async (files: any, formData: RJSFFormData) => {
+export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
     for (const key in files) {
         if (files[key]) {
             for (const file of files[key]) {
@@ -130,8 +133,8 @@ export const handleSubmit = async (
     >,
     files: FileState,
     formData: RJSFFormData,
-    setIdCopySuccess: React.Dispatch<React.SetStateAction<boolean>>,
-    pipeline: string
+    pipeline: string,
+    setIdCopySuccess?: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     if (runStatus !== "idle") return;
     setRunStatus("submitting");
@@ -160,7 +163,8 @@ export const handleSubmit = async (
     }
 
     setRunId(newId);
-    setIdCopySuccess(await copyToClipboard(newId));
+    const copySuccess = await copyToClipboard(newId);
+    setIdCopySuccess?.(copySuccess);
 
     try {
         setRunStatus("running");

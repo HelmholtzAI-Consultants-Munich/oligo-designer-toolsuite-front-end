@@ -41,9 +41,7 @@ def fetch_entries(url):
         files = [
             link.get("href")
             for link in soup.find_all("a")
-            if link.get("href")
-            and link.get("href") != "../"
-            and not link.get("href").endswith("/")
+            if link.get("href") and link.get("href") != "../" and not link.get("href").endswith("/")
         ]
 
         return files

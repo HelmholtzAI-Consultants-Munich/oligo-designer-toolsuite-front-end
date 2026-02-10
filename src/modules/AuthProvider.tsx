@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import type { User, AuthContextType } from "../types";
+import React, { useState, useEffect } from "react";
+import type { User } from "../types";
 import { BACKEND_URL } from "../config";
-
-const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+import { AuthContext } from "./authContext";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
@@ -29,7 +28,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const logout = () => {
-        // Add your logout API call here if needed
         setUser(null);
     };
 
@@ -39,5 +37,3 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         </AuthContext.Provider>
     );
 }
-
-export const useAuth = () => useContext(AuthContext);

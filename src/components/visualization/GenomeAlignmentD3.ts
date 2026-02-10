@@ -80,12 +80,18 @@ const GenomeAlignmentD3 = {
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;");
 
-        // Prepare oligo positions
-        const oligoPositions = oligos.map((oligo) => ({
-            start: oligo.start[0][0],
-            end: oligo.end[0][0],
-            id: oligo.oligo_id,
-        }));
+        // Prepare oligo positions (fallback to 0 if start/end missing).
+        // Oligo uses OligoValue for dynamic keys, so start/end are typed broadly;
+        // at runtime they are [[number]] from the pipeline YAML output.
+        const oligoPositions = oligos.map((oligo) => {
+            const startArr = oligo.start as number[][] | null;
+            const endArr = oligo.end as number[][] | null;
+            return {
+                start: startArr?.[0]?.[0] ?? 0,
+                end: endArr?.[0]?.[0] ?? 0,
+                id: oligo.oligo_id,
+            };
+        });
 
         // Define x scale based on combined extent of oligos and genomic regions
         const ext = d3.extent([
@@ -230,10 +236,10 @@ const GenomeAlignmentD3 = {
                         .style("left", event.pageX + 30 + "px")
                         .style("top", event.pageY + "px");
                 })
-                .on("mouseleave", function (_, d: GenomicRegion) {
+                .on("mouseleave", function () {
                     tooltip.style("opacity", 0);
-                    d3.select(this).attr("opacity", (d) =>
-                        (d as GenomicRegion).inferred === true ? 0.6 : 0.9
+                    d3.select(this).attr("opacity", (_d) =>
+                        (_d as GenomicRegion).inferred === true ? 0.6 : 0.9
                     );
                 });
 
@@ -251,7 +257,7 @@ const GenomeAlignmentD3 = {
                         : Math.min(transcriptHeight / 2, 10)
                 )
                 .attr("x", 0)
-                .attr("y", function (d: GenomicRegion) {
+                .attr("y", function () {
                     const height = d3.select(this).attr("height");
                     return transcriptHeight / 2 - Number(height) / 2;
                 })
@@ -465,12 +471,18 @@ const GenomeAlignmentD3 = {
     ) => {
         console.log("Updating GenomeAlignmentD3");
         console.log(el, oligos, selectedOligo, zoomIntoOligo);
-        // Prepare oligo positions
-        const oligoPositions = oligos.map((oligo) => ({
-            start: oligo.start[0][0],
-            end: oligo.end[0][0],
-            id: oligo.oligo_id,
-        }));
+        // Prepare oligo positions (fallback to 0 if start/end missing).
+        // Oligo uses OligoValue for dynamic keys, so start/end are typed broadly;
+        // at runtime they are [[number]] from the pipeline YAML output.
+        const oligoPositions = oligos.map((oligo) => {
+            const startArr = oligo.start as number[][] | null;
+            const endArr = oligo.end as number[][] | null;
+            return {
+                start: startArr?.[0]?.[0] ?? 0,
+                end: endArr?.[0]?.[0] ?? 0,
+                id: oligo.oligo_id,
+            };
+        });
 
         // Select the SVG element
         const svg = d3.select(el) as d3.Selection<

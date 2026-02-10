@@ -47,7 +47,6 @@ const PipelineList: React.FC = () => {
     // Use shared bulk selection hook
     const {
         selectedItems,
-        isSelectAll,
         handleSelectItem,
         handleSelectAll,
         clearSelection,
@@ -70,10 +69,14 @@ const PipelineList: React.FC = () => {
                 }
             );
             setRuns(response.data);
-        } catch (err: any) {
-            setError(
-                err.response?.data?.error || "Failed to load pipeline runs"
-            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                setError(
+                    err.response?.data?.error || "Failed to load pipeline runs"
+                );
+            } else {
+                setError("Failed to load pipeline runs");
+            }
             console.error("Error fetching pipeline runs:", err);
         } finally {
             setIsLoading(false);
@@ -115,10 +118,14 @@ const PipelineList: React.FC = () => {
 
             // Remove from editing state
             cancelEditingStatus(runId);
-        } catch (err: any) {
-            alert(
-                `Failed to update status: ${err.response?.data?.error || err.message}`
-            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                alert(
+                    `Failed to update status: ${err.response?.data?.error || err.message}`
+                );
+            } else {
+                alert("Failed to update status");
+            }
             console.error("Error updating status:", err);
         }
     };
@@ -146,10 +153,14 @@ const PipelineList: React.FC = () => {
                 if (selectedItems.has(runId)) {
                     handleSelectItem(runId);
                 }
-            } catch (err: any) {
-                alert(
-                    `Failed to delete pipeline run: ${err.response?.data?.error || err.message}`
-                );
+            } catch (err: unknown) {
+                if (axios.isAxiosError(err)) {
+                    alert(
+                        `Failed to delete pipeline run: ${err.response?.data?.error || err.message}`
+                    );
+                } else {
+                    alert("Failed to delete pipeline run");
+                }
                 console.error("Error deleting pipeline run:", err);
             }
         }
@@ -192,10 +203,14 @@ const PipelineList: React.FC = () => {
                 clearSelection,
                 fetchPipelineRuns
             );
-        } catch (err: any) {
-            alert(
-                `Failed to delete pipeline runs: ${err.response?.data?.error || err.message}`
-            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                alert(
+                    `Failed to delete pipeline runs: ${err.response?.data?.error || err.message}`
+                );
+            } else {
+                alert("Failed to delete pipeline runs");
+            }
         } finally {
             setIsBulkOperationLoading(false);
         }
@@ -231,10 +246,14 @@ const PipelineList: React.FC = () => {
                 clearSelection,
                 fetchPipelineRuns
             );
-        } catch (err: any) {
-            alert(
-                `Failed to update status: ${err.response?.data?.error || err.message}`
-            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                alert(
+                    `Failed to update status: ${err.response?.data?.error || err.message}`
+                );
+            } else {
+                alert("Failed to update status");
+            }
         } finally {
             setIsBulkOperationLoading(false);
         }

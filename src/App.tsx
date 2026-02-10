@@ -5,7 +5,6 @@ import Contacts from "./pages/contacs";
 import Pipelines from "./pages/pipelines";
 import Scrinshot from "./pages/scrinshot";
 import Runs from "./pages/runs";
-import Genomic from "./pages/genomic";
 import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
@@ -25,7 +24,6 @@ function App() {
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
-                <Route path="/pipelines/genomic" element={<Genomic />} />
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/" element={<Pipelines />} />
                 <Route path="/faq" element={<FAQ />} />
