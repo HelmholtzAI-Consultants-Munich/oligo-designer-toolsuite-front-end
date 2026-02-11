@@ -1,4 +1,3 @@
-from flask import current_app
 import datetime
 from email.utils import formatdate, parsedate_to_datetime
 import ftplib
@@ -15,12 +14,18 @@ import requests
 
 
 class BaseGenomicDataBase:
-    def __init__(self, host: str = "", base_path: str = "", whitelist: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        host: str = "",
+        base_path: str = "",
+        whitelist: list[str] | None = None,
+        cache_dir: str | None = None,
+    ) -> None:
         self.host: str = host
         self.base_path: str = base_path
         self.whitelist: list[str] | None = whitelist
         self.name: str = ""
-        pass
+        self.cache_dir = cache_dir
 
     def get_dirs(self, ftp: ftplib.FTP) -> list[str]:
         lines: list[str] = []
@@ -68,7 +73,7 @@ class BaseGenomicDataBase:
         filename = url.split("/")[-1]
 
         file_name = f"{url_hash}-{filename}"
-        file_path = pathlib.Path(f"{os.path.join(current_app.root_path, 'cache')}/{file_name}").resolve()
+        file_path = pathlib.Path(f"{self.cache_dir}/{file_name}").resolve()
 
         if os.path.exists(file_path):
             mtime = os.path.getmtime(file_path)
@@ -107,8 +112,8 @@ class BaseGenomicDataBase:
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
     # release 116 changes structure => could be a problem once they set this to current
-    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", whitelist=None) -> None:
-        super().__init__(host, base_path, whitelist)
+    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", whitelist=None, cache_dir=None) -> None:
+        super().__init__(host, base_path, whitelist, cache_dir)
         self.name = "ensembl"
         self.orig_top_dirs = [""]
 
@@ -118,6 +123,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         return super()._get_species_dirs(dirs, ftp)
 
     def _build_directory_dict(self, top_dirs, species_dirs):
+        self.orig_top_dirs = [dir[-3:] for dir in self.orig_top_dirs]
         return self.reverse_dict(super()._build_directory_dict(self.orig_top_dirs, species_dirs))
 
     def reverse_dict(self, directories):
@@ -144,7 +150,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             for line in checksums_file:
                 line = line.strip()
                 split_line = line.split()
-                m[split_line[2]] = split_line[0]
+                m[split_line[len(split_line) - 1]] = split_line[0]
         return m
 
     def _release_dirs(self, release: str | int):
@@ -261,8 +267,10 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
 
 class NCBIGenomicDataBase(BaseGenomicDataBase):
-    def __init__(self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", whitelist=None) -> None:
-        super().__init__(host, base_path, whitelist)
+    def __init__(
+        self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", whitelist=None, cache_dir=None
+    ) -> None:
+        super().__init__(host, base_path, whitelist, cache_dir)
         self.name = "ncbi"
 
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str):

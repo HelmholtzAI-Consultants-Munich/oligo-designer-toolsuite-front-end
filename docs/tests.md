@@ -38,7 +38,7 @@ pytest flask --cov=flask --cov-report=term-missing
 or if using Docker:
 
 ```bash
-docker compose up odt-db -d
+docker compose up --build odt-db odt-worker -d
 docker compose run --rm --build odt-server pytest
 # with coverage:
 docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-missing

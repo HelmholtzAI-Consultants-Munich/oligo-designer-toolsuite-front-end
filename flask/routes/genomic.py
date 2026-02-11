@@ -6,6 +6,8 @@ they generate genomic regions and pass the locations of created files/directorie
 Other endpoints are standalone: they run the full pipeline and return the output directly to the user.
 """
 
+import time
+
 import os
 import subprocess
 from datetime import datetime
@@ -76,10 +78,17 @@ def _handle_genomic_error(exception: Exception) -> tuple[Response, int]:
 
 @genomic_bp.route("/api/genomic/dropdown", methods=["GET"])
 def genomic_dropdown_dict():
-    dropdown_options = mongo.db.cache.find_one({"_id": 1})
+    dropdown_options = None
+    for i in range(3):
+        dropdown_options = mongo.db.cache.find_one({"_id": 1})
+
+        if dropdown_options is not None:
+            break
+
+        time.sleep(5)
 
     if dropdown_options is None:
-        abort(Response("Have not fetched dropdown options yet", 404))
+        abort(Response("Could not read dropdown options from database", 404))
 
     return jsonify(dropdown_options["data"]), 200
 
@@ -193,7 +202,9 @@ def genomic_cascaded_custom():
                     raise RuntimeError(
                         "Custom genomic (Ensembl) requires 'species' and 'annotation_release' in source_params."
                     )
-                cache_info = EnsemblGenomicDataBase().prepare_cached_assets(species, ann_rel)
+                cache_info = EnsemblGenomicDataBase(cache_dir=cache_dir).prepare_cached_assets(
+                    species, ann_rel
+                )
                 genome_assembly = cache_info["genome_assembly"]
                 resolved_rel = cache_info["annotation_release"]
                 annotation_file = cache_info["annotation_file"]
@@ -208,7 +219,9 @@ def genomic_cascaded_custom():
                     raise RuntimeError(
                         "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
                     )
-                cache_info = NCBIGenomicDataBase().prepare_cached_assets(taxon, species, ann_rel)
+                cache_info = NCBIGenomicDataBase(cache_dir=cache_dir).prepare_cached_assets(
+                    taxon, species, ann_rel
+                )
                 genome_assembly = cache_info["genome_assembly"]
                 resolved_rel = cache_info["annotation_release"]
                 annotation_file = cache_info["annotation_file"]
