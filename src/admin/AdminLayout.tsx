@@ -44,6 +44,7 @@ const AdminNavItem: React.FC<AdminNavItemProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: collapsed ? "center" : "flex-start",
+        whiteSpace: "nowrap",
     };
 
     return (
@@ -68,8 +69,8 @@ const AdminNavItem: React.FC<AdminNavItemProps> = ({
  */
 const navItems: NavItemConfig[] = [
     { path: "/admin/dashboard", label: "Dashboard", icon: Speedometer2 },
-    { path: "/admin/users", label: "Users", icon: People },
-    { path: "/admin/pipelines", label: "Pipelines", icon: Gear },
+    { path: "/admin/users", label: "User Management", icon: People },
+    { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
 ];
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
