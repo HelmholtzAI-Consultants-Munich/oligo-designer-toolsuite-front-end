@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
@@ -36,7 +37,10 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
 
     if not os.path.exists(user_dir):
         current_app.logger.error(f"Expected user directory at {user_dir} to exist")
-        abort(500, description="Unable to access your data directory. Please try again or contact support.")
+        abort(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            description="Unable to access your data directory. Please try again or contact support.",
+        )
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}")
@@ -114,7 +118,7 @@ def start_pipeline(pipeline_name: str):
 
     """
     if not validate_name(pipeline_name):
-        abort(400, description=f'Pipeline "{pipeline_name}" does not exist')
+        abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
     json = request.get_json(silent=True)
     if not json:
@@ -131,14 +135,14 @@ def start_pipeline(pipeline_name: str):
     context = create_context(pipeline_name, current_user)
 
     if context["output_path"] is None:
-        abort(500, description="Could not infer output directory")
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Could not infer output directory")
 
     result_promise = enqueue_pipeline(pipeline_name, form_data, upload_path, context["output_path"])
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
     if update_result.matched_count == 0:
-        abort(404, description="Run ID not found")
+        abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
     # The task state can be polled using get_run_state(run_id_str).
 

@@ -5,6 +5,7 @@ import re
 import shutil
 import requests
 from ftplib import FTP, error_perm
+from http import HTTPStatus
 from pathlib import Path
 from flask import current_app
 
@@ -44,7 +45,7 @@ def _get_md5_for_filename(md5map, filename):
         if os.path.basename(relpath) == filename:
             return md5
     current_app.logger.error(f"'{filename}' not found in md5checksums.txt")
-    abort(500, description="Required file not found in md5checksums.txt")
+    abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Required file not found in md5checksums.txt")
 
 
 def _parse_uncompressed_checksums(manifest_path):
@@ -76,7 +77,10 @@ def _ensure_file_with_md5(ftp_host, remote_dir, filename, expected_md5, dst_path
     got = _md5sum(dst_path)
     if got != expected_md5:
         current_app.logger.error(f"MD5 mismatch for {filename}: expected {expected_md5}, got {got}")
-        abort(500, description="Data integrity error: MD5 verification failed. Please try again.")
+        abort(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            description="Data integrity error: MD5 verification failed. Please try again.",
+        )
     return dst_path, True
 
 
@@ -102,7 +106,10 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
             listing = sorted(ftp.nlst())
             if not listing:
                 current_app.logger.error(f"Empty 'current' directory at NCBI: {rel_dir}")
-                abort(500, description="Unable to resolve current release from NCBI. Please try again later.")
+                abort(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    description="Unable to resolve current release from NCBI. Please try again later.",
+                )
             release = listing[0]
             rel_dir = base + f"{release}/"
             ftp.cwd(release)
@@ -110,7 +117,10 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
         readmes = sorted([n for n in ftp.nlst() if n.startswith("README_")])
         if not readmes:
             current_app.logger.error(f"No README_ found in {rel_dir}")
-            abort(500, description="Unable to read release information from NCBI. Please try again later.")
+            abort(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                description="Unable to read release information from NCBI. Please try again later.",
+            )
         readme = readmes[0]
 
     # download README temporarily to parse assembly + accession
@@ -129,7 +139,10 @@ def _resolve_ncbi_release_and_dir(taxon, species, release):
         current_app.logger.error(
             f"Failed to parse assembly/accession from README for {species} release {release}"
         )
-        abort(500, description="Unable to parse genome assembly information. Please try again later.")
+        abort(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            description="Unable to parse genome assembly information. Please try again later.",
+        )
 
     nested = f"{rel_dir}{accession}_{assembly_name}/"
     with FTP(host) as ftp:
@@ -190,10 +203,16 @@ def _prepare_ncbi_cached_assets(cache_root, taxon, species, release):
             fna_base = os.path.basename(fna_path)
             if gtf_base in unc_map and _md5sum(gtf_path) != unc_map[gtf_base]:
                 current_app.logger.error(f"Uncompressed MD5 mismatch for {gtf_base}")
-                abort(500, description="Data integrity error: decompressed file verification failed.")
+                abort(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    description="Data integrity error: decompressed file verification failed.",
+                )
             if fna_base in unc_map and _md5sum(fna_path) != unc_map[fna_base]:
                 current_app.logger.error(f"Uncompressed MD5 mismatch for {fna_base}")
-                abort(500, description="Data integrity error: decompressed file verification failed.")
+                abort(
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                    description="Data integrity error: decompressed file verification failed.",
+                )
     except HTTPException:
         raise  # Let abort() propagate
     except Exception:
@@ -261,7 +280,7 @@ def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir):
         if not gtf_gz:
             current_app.logger.error(f"No .gtf.gz found in {gtf_dir}")
             abort(
-                500,
+                HTTPStatus.INTERNAL_SERVER_ERROR,
                 description="Required annotation file not found at Ensembl. Please verify species/release.",
             )
 
@@ -294,7 +313,8 @@ def _ensembl_pick_files(ftp_host, gtf_dir, fasta_dir):
                 "(tried primary_assembly and toplevel, with dna_sm and dna)."
             )
             abort(
-                500, description="Required sequence file not found at Ensembl. Please verify species/release."
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                description="Required sequence file not found at Ensembl. Please verify species/release.",
             )
 
         # Try to parse assembly from FASTA filename: Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
@@ -316,12 +336,14 @@ def _read_single_line_md5(md5_file_path):
         line = f.readline().strip()
         if not line:
             current_app.logger.error(f"Empty md5 sidecar file: {md5_file_path}")
-            abort(500, description="Data integrity error: empty checksum file.")
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Data integrity error: empty checksum file.")
         # handle formats: 'abcd123  filename' or just 'abcd123'
         token = line.split()[0]
         if len(token) < 16:  # sanity
             current_app.logger.error(f"Malformed md5 content in {md5_file_path}: {line}")
-            abort(500, description="Data integrity error: malformed checksum file.")
+            abort(
+                HTTPStatus.INTERNAL_SERVER_ERROR, description="Data integrity error: malformed checksum file."
+            )
         return token
 
 

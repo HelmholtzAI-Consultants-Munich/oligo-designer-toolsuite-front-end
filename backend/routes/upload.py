@@ -1,5 +1,6 @@
 import os
 import uuid
+from http import HTTPStatus
 
 from werkzeug.utils import secure_filename
 
@@ -45,18 +46,18 @@ def upload_file():
     """
     # Step 1: Check if the request includes a file under the 'file' key
     if "file" not in request.files:
-        abort(400, description="No file part")
+        abort(HTTPStatus.BAD_REQUEST, description="No file part")
 
     file = request.files["file"]
 
     # Step 2: Check if the user actually selected a file (filename should not be empty)
     if file.filename == "":
-        abort(400, description="No selected file")
+        abort(HTTPStatus.BAD_REQUEST, description="No selected file")
 
     # Step 3: Sanitize the filename to prevent path traversal attacks
     safe_filename = secure_filename(file.filename)
     if not safe_filename:
-        abort(400, description="Invalid filename")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid filename")
 
     # Step 4: Generate a unique filename by prefixing with a UUID
     unique_filename = f"{uuid.uuid4().hex}_{safe_filename}"
@@ -68,4 +69,4 @@ def upload_file():
     file.save(file_path)
 
     # Step 7: Respond with the server-side path where the file is stored
-    return jsonify({"filePath": file_path}), 200
+    return jsonify({"filePath": file_path}), HTTPStatus.OK
