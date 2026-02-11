@@ -4,6 +4,7 @@ import pytest
 import sys
 
 from conftest import assert_error_sanitized
+from extensions import mongo
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from routes.genomic_database_helpers import EnsemblGenomicDataBase, NCBIGenomicDataBase
@@ -16,6 +17,21 @@ def verify_file_mock(monkeypatch):
 
     monkeypatch.setattr(NCBIGenomicDataBase, "_verify_file", mock_return)
     monkeypatch.setattr(EnsemblGenomicDataBase, "_verify_file", mock_return)
+
+
+@pytest.fixture
+def dropdown_mock(monkeypatch):
+    mongo.db.cache.insert_one(
+        {
+            "_id": 1,
+            "data": {
+                "ncbi": {"archaea": {f"{k}": 1 for k in range(1500)}},
+                "ensembl": [1 for _ in range(150)],
+            },
+        }
+    )
+    yield
+    mongo.db.cache.delete_one({"_id": 1})
 
 
 @pytest.fixture
@@ -107,7 +123,7 @@ def test_genomic_cascaded_custom_single_ensembl_unauthenticated(
     assert "output" in data
 
 
-def test_genomic_dropdown(client):
+def test_genomic_dropdown(client, dropdown_mock):
     response = client.get("/api/genomic/dropdown")
     assert response.status_code == 200
 
@@ -115,6 +131,7 @@ def test_genomic_dropdown(client):
 
     assert "ncbi" in data
     assert "ensembl" in data
+    assert "archaea" in data["ncbi"]
     assert len(data["ncbi"]["archaea"]) > 1000
     assert len(data["ensembl"]) > 100
 

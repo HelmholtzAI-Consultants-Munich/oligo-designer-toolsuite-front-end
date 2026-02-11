@@ -133,7 +133,14 @@ def mock_run():
 
 
 @pytest.fixture(scope="session")
-def app():
+def mock_initial():
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr("app.initial_dropdown_prefetch", lambda x, y: ())
+        yield
+
+
+@pytest.fixture(scope="session")
+def app(mock_initial):
     """Create Flask app for testing (for direct function testing)."""
     app = create_app()
     app.config["TESTING"] = True
@@ -284,11 +291,3 @@ def form_data():
         "file_regions": "",
         "test_param": "123",
     }
-
-
-# @pytest.fixture
-# def pipeline_runner(mock_schema):
-#     """Create PipelineRunner instance for testing."""
-#     from routes.runners.pipeline_runner import PipelineRunner
-
-#     return PipelineRunner("test_pipeline", "test_probe_designer", mock_schema)
