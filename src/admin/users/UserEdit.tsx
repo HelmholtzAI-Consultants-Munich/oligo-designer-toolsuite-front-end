@@ -9,6 +9,7 @@ import {
     Spinner,
     FormSelect,
 } from "react-bootstrap";
+import { BACKEND_URL } from "../../config";
 
 interface User {
     id: string;
@@ -44,7 +45,7 @@ const UserEdit: React.FC = () => {
             setIsLoading(true);
             setError(null);
             const response = await axios.get(
-                `http://localhost:5000/api/admin/users/${id}`,
+                BACKEND_URL + `/api/admin/users/${id}`,
                 {
                     withCredentials: true,
                 }
@@ -76,16 +77,12 @@ const UserEdit: React.FC = () => {
 
         try {
             setIsSaving(true);
-            await axios.put(
-                `http://localhost:5000/api/admin/users/${id}`,
-                formData,
-                {
-                    withCredentials: true,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
+            await axios.put(BACKEND_URL + `/api/admin/users/${id}`, formData, {
+                withCredentials: true,
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
             setSuccess(true);
             setTimeout(() => {
                 navigate("/admin/users");

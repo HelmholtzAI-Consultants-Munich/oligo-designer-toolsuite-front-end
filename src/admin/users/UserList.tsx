@@ -4,6 +4,7 @@ import axios from "axios";
 import { Table, Button, Badge, Spinner, Alert, Form } from "react-bootstrap";
 import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
+import { BACKEND_URL } from "../../config";
 
 interface User {
     id: string;
@@ -39,12 +40,9 @@ const UserList: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await axios.get(
-                "http://localhost:5000/api/admin/users",
-                {
-                    withCredentials: true,
-                }
-            );
+            const response = await axios.get(BACKEND_URL + "/api/admin/users", {
+                withCredentials: true,
+            });
             setUsers(response.data);
         } catch (err: any) {
             setError(err.response?.data?.error || "Failed to load users");
@@ -59,12 +57,9 @@ const UserList: React.FC = () => {
             window.confirm(`Are you sure you want to delete user ${userEmail}?`)
         ) {
             try {
-                await axios.delete(
-                    `http://localhost:5000/api/admin/users/${userId}`,
-                    {
-                        withCredentials: true,
-                    }
-                );
+                await axios.delete(BACKEND_URL + `/api/admin/users/${userId}`, {
+                    withCredentials: true,
+                });
                 // Refresh the list
                 fetchUsers();
             } catch (err: any) {
@@ -88,7 +83,7 @@ const UserList: React.FC = () => {
         setIsBulkOperationLoading(true);
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/admin/users/bulk-delete",
+                BACKEND_URL + "/api/admin/users/bulk-delete",
                 { user_ids: selectedArray },
                 { withCredentials: true }
             );
@@ -128,7 +123,7 @@ const UserList: React.FC = () => {
         setIsBulkOperationLoading(true);
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/admin/users/bulk-update-role",
+                BACKEND_URL + "/api/admin/users/bulk-update-role",
                 { user_ids: selectedArray, role: newRole },
                 { withCredentials: true }
             );

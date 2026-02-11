@@ -10,6 +10,7 @@ import * as XLSX from "xlsx";
 import type { GenomicRegions, Oligo, RunState } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
+import { BACKEND_URL } from "../config";
 
 interface RunFile {
     name: string;
@@ -91,13 +92,10 @@ const RunDetail = () => {
     const fetchAndParseRunFiles = useCallback(
         (yamlFilename: string) => {
             axios
-                .get(
-                    `http://localhost:5000/api/runs/${runId}/files/${yamlFilename}`,
-                    {
-                        withCredentials: true,
-                        responseType: "text",
-                    }
-                )
+                .get(BACKEND_URL + `/api/runs/${runId}/files/${yamlFilename}`, {
+                    withCredentials: true,
+                    responseType: "text",
+                })
                 .then((response) => {
                     try {
                         const parsed = YAML.load(response.data) as Record<
@@ -136,7 +134,8 @@ const RunDetail = () => {
 
             axios
                 .get(
-                    `http://localhost:5000/api/runs/${runId}/files/genomic_regions.yaml`,
+                    BACKEND_URL +
+                        `/api/runs/${runId}/files/genomic_regions.yaml`,
                     { withCredentials: true, responseType: "text" }
                 )
                 .then((response) => {
@@ -164,7 +163,7 @@ const RunDetail = () => {
         const poll = async () => {
             try {
                 const response = await axios.get(
-                    `http://localhost:5000/api/runs/${runId}/state`,
+                    BACKEND_URL + `/api/runs/${runId}/state`,
                     {
                         withCredentials: true,
                     }
@@ -179,7 +178,7 @@ const RunDetail = () => {
                     setPolling(false);
                     if (interval) clearInterval(interval);
                     const response = await axios.get(
-                        `http://localhost:5000/api/runs/${runId}/files`,
+                        BACKEND_URL + `/api/runs/${runId}/files`,
                         {
                             withCredentials: true,
                         }
@@ -187,7 +186,7 @@ const RunDetail = () => {
                     setFiles(response.data);
 
                     const runResponse = await axios.get(
-                        `http://localhost:5000/api/runs/${runId}`,
+                        BACKEND_URL + `/api/runs/${runId}`,
                         {
                             withCredentials: true,
                         }
@@ -232,7 +231,8 @@ const RunDetail = () => {
                         // If log file is present and we don't have an error message, get its content
                         // (Don't overwrite error message with log file content)
                         const logResp = await axios.get(
-                            `http://localhost:5000/api/runs/${runId}/files/${firstLog.name}`,
+                            BACKEND_URL +
+                                `/api/runs/${runId}/files/${firstLog.name}`,
                             { withCredentials: true, responseType: "text" }
                         );
                         setLogContent(logResp.data);
@@ -260,7 +260,7 @@ const RunDetail = () => {
             )
         ) {
             try {
-                await axios.delete(`http://localhost:5000/api/runs/${runId}`, {
+                await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
                     withCredentials: true,
                 });
                 // Navigate back to admin panel if we came from there, otherwise go to runs page
@@ -538,7 +538,7 @@ const RunDetail = () => {
         }
 
         axios
-            .get(`http://localhost:5000/api/runs/${runId}/files/${filename}`, {
+            .get(BACKEND_URL + `/api/runs/${runId}/files/${filename}`, {
                 withCredentials: true,
                 responseType: "text",
             })
@@ -591,7 +591,7 @@ const RunDetail = () => {
 
     const downloadFile = (filename: string) => {
         window.open(
-            `http://localhost:5000/api/runs/${runId}/files/${filename}`,
+            BACKEND_URL + `/api/runs/${runId}/files/${filename}`,
             "_blank"
         );
     };

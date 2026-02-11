@@ -5,6 +5,7 @@ from config import Config
 from dotenv import load_dotenv
 from extensions import celery_app, mongo, oauth
 from flask_cors import CORS
+from prometheus_flask_exporter import PrometheusMetrics
 from routes import register_blueprints
 from routes.auth import init_login_manager
 
@@ -45,6 +46,7 @@ def initial_dropdown_prefetch(celery_app, app):
 
 def create_app():
     app = Flask(__name__)
+    PrometheusMetrics(app)
 
     # Load environment variables from .env file if present
     load_dotenv()
@@ -92,4 +94,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, host="0.0.0.0")
+    # Note: If debug is True, Prometheus metrics won't be available
+    app.run(debug=app.config.get("DEBUG", False), host="0.0.0.0")

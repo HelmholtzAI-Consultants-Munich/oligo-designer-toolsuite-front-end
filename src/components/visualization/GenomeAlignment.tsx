@@ -1,6 +1,6 @@
 import React from "react";
 import type { Oligo, GenomicRegions } from "../../types";
-import GenomeAlignmentD3, { regionColors } from "./GenomeAlignmentD3";
+import GenomeAlignmentD3, { Regions } from "./GenomeAlignmentD3";
 
 type Props = {
     oligos: Oligo[];
@@ -35,8 +35,16 @@ class GenomeAlignment extends React.Component<Props> {
                 this.props.selectedOligo,
                 this.props.setSelectedOligo
             );
+        } else if (prevProps.selectedOligo !== this.props.selectedOligo) {
+            // If selectedOligo changed, update the visualization and zoom into the oligo
+            GenomeAlignmentD3.update(
+                this.el!,
+                this.props.oligos,
+                this.props.selectedOligo,
+                true
+            );
         } else {
-            // Otherwise just update the selection
+            // Otherwise just update the visualization
             GenomeAlignmentD3.update(
                 this.el!,
                 this.props.oligos,
@@ -73,7 +81,7 @@ class GenomeAlignment extends React.Component<Props> {
                         <div className="col col-auto">
                             <strong>Legend:</strong>
                         </div>
-                        {Object.keys(regionColors)
+                        {Object.keys(Regions)
                             .filter((type) => {
                                 return Object.values(
                                     this.props.genomicRegions!
@@ -92,12 +100,12 @@ class GenomeAlignment extends React.Component<Props> {
                                                 width: "12px",
                                                 height: "12px",
                                                 backgroundColor:
-                                                    regionColors[type].color ||
+                                                    Regions[type].color ||
                                                     "lightgray",
                                                 marginRight: "5px",
                                             }}
                                         ></span>
-                                        {regionColors[type].label}
+                                        {Regions[type].label}
                                     </div>
                                 );
                             })}

@@ -288,11 +288,10 @@ def auth_callback():
             session.pop("session_id", None)
 
         # Redirect to frontend - check if there's a preserved redirect URL
-        frontend_url = "http://localhost:3000"
         redirect_path = session.pop("oauth_redirect", None)
         if redirect_path:
-            return redirect(f"{frontend_url}{redirect_path}")
-        return redirect(f"{frontend_url}/")  # Default to homepage
+            return redirect(current_app.config["FRONTEND_URL"] + redirect_path)
+        return redirect(current_app.config["FRONTEND_URL"] + "/")  # Default to homepage
 
     except Exception as e:
         current_app.logger.error(f"OAuth callback error: {e!s}")

@@ -3,6 +3,7 @@ import axios from "axios";
 import Navbar from "../modules/nav";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/auth";
+import { BACKEND_URL } from "../config";
 
 const Register = () => {
     const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ const Register = () => {
         e.preventDefault();
         try {
             const res = await axios.post(
-                "http://localhost:5000/register",
+                BACKEND_URL + "/register",
                 {
                     email,
                     password,

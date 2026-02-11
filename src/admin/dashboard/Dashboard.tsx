@@ -4,6 +4,7 @@ import { Card, Spinner, Alert, Button, Row, Col } from "react-bootstrap";
 import { People, PersonBadge, Person, Folder2 } from "react-bootstrap-icons";
 import type { Icon } from "react-bootstrap-icons";
 import { STATUS_CONFIG } from "../shared/types";
+import { BACKEND_URL } from "../../config";
 
 /**
  * Calculate percentage with one decimal place
@@ -86,7 +87,7 @@ const Dashboard: React.FC = () => {
             setIsLoading(true);
             setError(null);
             const response = await axios.get(
-                "http://localhost:5000/api/admin/dashboard",
+                BACKEND_URL + "/api/admin/dashboard",
                 {
                     withCredentials: true,
                 }
