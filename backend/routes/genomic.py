@@ -9,6 +9,7 @@ Other endpoints are standalone: they run the full pipeline and return the output
 import os
 import subprocess
 from datetime import datetime
+from http import HTTPStatus
 
 import yaml
 
@@ -38,18 +39,18 @@ def _validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | No
         allowed_sources = ["NCBI", "Ensembl"]
 
     if not form_data:
-        abort(400, description="Invalid input: form data is required")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: form data is required")
     if "source" not in form_data:
-        abort(400, description="Invalid input: source is required")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: source is required")
     if form_data["source"] not in allowed_sources:
         abort(
-            400,
+            HTTPStatus.BAD_REQUEST,
             description=f"Invalid input: source must be one of {', '.join(repr(s) for s in allowed_sources)}",
         )
     if "genomic_regions" not in form_data:
-        abort(400, description="Invalid input: genomic_regions is required")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic_regions is required")
     if form_data["source"] == "Custom" and "file_regions" not in form_data:
-        abort(400, description="Invalid input: file_regions is required for Custom source")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: file_regions is required for Custom source")
 
 
 @genomic_bp.route("/api/genomic/cascaded/ncbi", methods=["POST"])
@@ -107,7 +108,7 @@ def genomic_cascaded_ncbi():
     )  # creates a list of forms with only one region set to true
 
     if not single_region_forms:
-        abort(400, description="Invalid input: no valid genomic regions specified")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: no valid genomic regions specified")
 
     all_fna_files = []
     cached_skips = []
@@ -154,7 +155,10 @@ def genomic_cascaded_ncbi():
 
         if result.returncode != 0:
             current_app.logger.error(f"NCBI pipeline failed: {result.stderr}")
-            abort(500, description="The pipeline failed to execute. Please check your input and try again.")
+            abort(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                description="The pipeline failed to execute. Please check your input and try again.",
+            )
 
         # Collect output .fna files (ignore GCF/GCA)
         if os.path.exists(output_gen):
@@ -174,7 +178,7 @@ def genomic_cascaded_ncbi():
             "output": all_fna_files,
             "cached": cached_skips,
         }
-    ), 200
+    ), HTTPStatus.OK
 
 
 @genomic_bp.route("/api/genomic/cascaded/ensembl", methods=["POST"])
@@ -222,7 +226,7 @@ def genomic_cascaded_ensemble():
     single_region_forms = generate_single_region_forms(form_data)
 
     if not single_region_forms:
-        abort(400, description="Invalid input: no valid genomic regions specified")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: no valid genomic regions specified")
 
     all_fna_files = []
     cached_skips = []
@@ -264,7 +268,10 @@ def genomic_cascaded_ensemble():
 
         if result.returncode != 0:
             current_app.logger.error(f"Ensembl pipeline failed: {result.stderr}")
-            abort(500, description="The pipeline failed to execute. Please check your input and try again.")
+            abort(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                description="The pipeline failed to execute. Please check your input and try again.",
+            )
 
         if os.path.exists(output_gen):
             for fname in os.listdir(output_gen):
@@ -282,7 +289,7 @@ def genomic_cascaded_ensemble():
             "output": all_fna_files,
             "cached": cached_skips,
         }
-    ), 200
+    ), HTTPStatus.OK
 
 
 @genomic_bp.route("/api/genomic/cascaded/custom", methods=["POST"])
@@ -333,7 +340,7 @@ def genomic_cascaded_custom():
     single_region_forms = generate_single_region_forms(form_data)
 
     if not single_region_forms:
-        abort(400, description="Invalid input: no valid genomic regions specified")
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: no valid genomic regions specified")
 
     all_fna_files = []
     cached_skips = []
@@ -367,7 +374,7 @@ def genomic_cascaded_custom():
             ann_rel = source_params.get("annotation_release")
             if not species or ann_rel is None:
                 abort(
-                    400,
+                    HTTPStatus.BAD_REQUEST,
                     description="Custom genomic (Ensembl) requires 'species' and 'annotation_release' in source_params.",
                 )
             cache_info = _prepare_ensembl_cached_assets(cache_dir, species, ann_rel)
@@ -383,7 +390,7 @@ def genomic_cascaded_custom():
             ann_rel = source_params.get("annotation_release")
             if not species or ann_rel is None:
                 abort(
-                    400,
+                    HTTPStatus.BAD_REQUEST,
                     description="Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params.",
                 )
             cache_info = _prepare_ncbi_cached_assets(cache_dir, taxon, species, ann_rel)
@@ -420,7 +427,10 @@ def genomic_cascaded_custom():
 
         if result.returncode != 0:
             current_app.logger.error(f"Custom pipeline failed: {result.stderr}")
-            abort(500, description="The pipeline failed to execute. Please check your input and try again.")
+            abort(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                description="The pipeline failed to execute. Please check your input and try again.",
+            )
 
         # Collect output .fna files (ignore raw genome)
         if os.path.exists(output_gen):
@@ -440,4 +450,4 @@ def genomic_cascaded_custom():
             "output": all_fna_files,
             "cached": cached_skips,
         }
-    ), 200
+    ), HTTPStatus.OK

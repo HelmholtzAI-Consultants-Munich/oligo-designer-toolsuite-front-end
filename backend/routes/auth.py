@@ -19,6 +19,7 @@ Main features:
 
 import os
 import uuid
+from http import HTTPStatus
 
 import requests
 from bson import ObjectId
@@ -138,12 +139,12 @@ def register():
     name = data.get("name", "").strip()
 
     if not email or not password:
-        abort(400, description="Email and password required")
+        abort(HTTPStatus.BAD_REQUEST, description="Email and password required")
 
     # Prevent duplicate registrations
     existing_user = mongo.db.users.find_one({"email": email})
     if existing_user:
-        abort(409, description="User already exists")
+        abort(HTTPStatus.CONFLICT, description="User already exists")
 
     hashed_password = generate_password_hash(password)
 
@@ -162,7 +163,7 @@ def register():
     user = User(user_doc)
     _login(user, remember=True)
 
-    return jsonify({"message": "User registered successfully"}), 201
+    return jsonify({"message": "User registered successfully"}), HTTPStatus.CREATED
 
 
 # ---- Login Route (OAuth GET + Legacy POST) ----
@@ -193,20 +194,20 @@ def login():
     remember_me = data.get("remember_me", True)  # Default to True for backward compatibility
 
     if not email or not password:
-        abort(400, description="Email and password required")
+        abort(HTTPStatus.BAD_REQUEST, description="Email and password required")
 
     user_doc = mongo.db.users.find_one({"email": email})
 
     if not user_doc or "password" not in user_doc:
-        abort(401, description="Invalid credentials")
+        abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
 
     if not check_password_hash(user_doc["password"], password):
-        abort(401, description="Invalid credentials")
+        abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
 
     user = User(user_doc)
     _login(user, remember=remember_me)
 
-    return jsonify({"message": "Logged in successfully"}), 200
+    return jsonify({"message": "Logged in successfully"}), HTTPStatus.OK
 
 
 # ---- OAuth Callback Route ----
@@ -248,7 +249,9 @@ def auth_callback():
     name = userinfo.get("name", "")
 
     if not helmholtz_sub:
-        abort(500, description="Failed to get user information from Helmholtz AAI")
+        abort(
+            HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
+        )
 
     # Check if user exists in database by helmholtz_sub
     user_doc = mongo.db.users.find_one({"helmholtz_sub": helmholtz_sub})
@@ -323,7 +326,7 @@ def check_auth():
                 },
             }
         )
-    return jsonify({"authenticated": False}), 200
+    return jsonify({"authenticated": False}), HTTPStatus.OK
 
 
 # ---- Logout Route ----
@@ -351,7 +354,7 @@ def logout():
             data = {"token": oauth_token, "client_id": client_id, "token_type_hint": "access_token"}
 
             response = requests.post(revocation_url, data=data)
-            if response.status_code != 200:
+            if response.status_code != HTTPStatus.OK:
                 current_app.logger.warning(f"Token revocation failed: {response.status_code}")
         except Exception as e:
             current_app.logger.error(f"Error revoking token: {e!s}")
@@ -361,7 +364,7 @@ def logout():
 
     # Log out user
     logout_user()
-    return jsonify({"message": "Logged out"}), 200
+    return jsonify({"message": "Logged out"}), HTTPStatus.OK
 
 
 # ---- Before Request Handler to Assign Anonymous Session ID ----

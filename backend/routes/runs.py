@@ -17,6 +17,7 @@ Features:
 
 import os
 from datetime import datetime
+from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
@@ -53,7 +54,7 @@ def delete_run(run_id: ObjectId):
     # Delete files and DB entry (aborts with 404/500 on failure)
     delete_pipeline_run_files_and_db(mongo, run_id)
 
-    return jsonify({"message": "Run deleted successfully"}), 200
+    return jsonify({"message": "Run deleted successfully"}), HTTPStatus.OK
 
 
 @runs_bp.route("/api/init_run_id", methods=["POST"])
@@ -110,7 +111,7 @@ def get_pipeline_runs():
             "user_id": run.get("user_id", "unknown"),
         }
         formatted_runs.append(formatted)
-    return jsonify(formatted_runs), 200
+    return jsonify(formatted_runs), HTTPStatus.OK
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>", methods=["GET"])
@@ -143,7 +144,7 @@ def get_pipeline_run(run_id: ObjectId):
     # Include error_message if status is failure
     if run.get("status") == "failure" and run.get("error_message"):
         formatted_run["error_message"] = run.get("error_message")
-    return jsonify(formatted_run), 200
+    return jsonify(formatted_run), HTTPStatus.OK
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/files/<path:filename>", methods=["GET"])
@@ -172,7 +173,7 @@ def get_run_file(run_id: ObjectId, filename: str):
     # Support subdirs (e.g. "annotation/example.fna")
     file_path = os.path.join(run["output_path"], *filename.split("/"))
     if not os.path.exists(file_path):
-        abort(404, description="File not found")
+        abort(HTTPStatus.NOT_FOUND, description="File not found")
 
     # Return correct mimetype
     if filename.endswith((".yml", ".yaml")):
@@ -182,7 +183,7 @@ def get_run_file(run_id: ObjectId, filename: str):
     elif filename.endswith(".fna"):
         return send_file(file_path, mimetype="application/octet-stream")
     else:
-        abort(400, description="Unsupported file type")
+        abort(HTTPStatus.BAD_REQUEST, description="Unsupported file type")
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/files", methods=["GET"])
@@ -232,7 +233,7 @@ def get_run_files(run_id: ObjectId):
                             "size": os.path.getsize(os.path.join(output_gen, fname)),
                         }
                     )
-    return jsonify(files), 200
+    return jsonify(files), HTTPStatus.OK
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
@@ -277,4 +278,4 @@ def get_run_status(run_id: ObjectId):
     if run["status"] != state:
         update_run_status_in_DB(run_id, state)
 
-    return jsonify({"state": state}), 200
+    return jsonify({"state": state}), HTTPStatus.OK

@@ -6,6 +6,8 @@ This module registers centralized error handlers that ensure all HTTP errors
 Sensitive information is never exposed to clients.
 """
 
+from http import HTTPStatus
+
 from werkzeug.exceptions import HTTPException
 
 from flask import Flask, current_app, jsonify, request
@@ -60,4 +62,4 @@ def register_error_handlers(app: Flask):
             exc_info=True,
         )
         message = "Something went wrong. Please try again or contact support if the problem persists."
-        return _make_error_response(message, 500)
+        return _make_error_response(message, HTTPStatus.INTERNAL_SERVER_ERROR)
