@@ -32,7 +32,10 @@ export const TabsLayout = (props: TabsLayoutProps) => {
                             {tab.fields.map((entry: string | string[]) => {
                                 if (Array.isArray(entry)) {
                                     return (
-                                        <div className="d-flex gap-3">
+                                        <div
+                                            key={entry.join("-")}
+                                            className="d-flex gap-3"
+                                        >
                                             {entry.map((field) => {
                                                 const found =
                                                     props.properties.find(
