@@ -4,8 +4,9 @@ from Bio import SeqIO
 from oligo_designer_toolsuite.utils import FastaParser
 import yaml
 
+
 class GenomicRegionsFile:
-    LIST_FIELDS = ["trancript_id", "exon_number"]
+    LIST_FIELDS = ("trancript_id", "exon_number")
 
     def __init__(self, regions_path: str, fasta_paths: list[str], probes_path: str, pipeline_name: str):
         self.regions_path = regions_path
@@ -21,10 +22,13 @@ class GenomicRegionsFile:
     # write regions to a yaml file
     def yaml_dump(self, yaml_path: str):
         with open(yaml_path, "w") as yaml_file:
-            yaml.dump({
-                "regions": self.regions,
-                "probes": self.probes,
-            }, yaml_file)
+            yaml.dump(
+                {
+                    "regions": self.regions,
+                    "probes": self.probes,
+                },
+                yaml_file,
+            )
 
     def _load_genes(self):
         genes = set()
@@ -66,12 +70,16 @@ class GenomicRegionsFile:
 
                 for transcript_index, transcript_id in enumerate(transcript_ids):
                     if region_type == "exonexonjunction":
-                        exon_numbers = additional_info.get("exon_number", [""])[transcript_index].split("__JUNC__")
+                        exon_numbers = additional_info.get("exon_number", [""])[transcript_index].split(
+                            "__JUNC__"
+                        )
                     else:
                         exon_numbers = [additional_info.get("exon_number", [None])[transcript_index]]
-                    
+
                     if len(exon_numbers) != len(start_ends):
-                        print(f"Warning: Number of exon numbers does not match number of components for record {idx} in gene {gene}, skipping  processing.")
+                        print(
+                            f"Warning: Number of exon numbers does not match number of components for record {idx} in gene {gene}, skipping  processing."
+                        )
                         continue
 
                     for i, (start, end) in enumerate(start_ends):
@@ -89,7 +97,11 @@ class GenomicRegionsFile:
                                 "end": end,
                                 "chromosome": coordinates["chromosome"][i],
                                 "strand": strand,
-                                "junction_number": additional_info.get("exon_number", [None])[transcript_index] if region_type == "exonexonjunction" else None,
+                                "junction_number": additional_info.get("exon_number", [None])[
+                                    transcript_index
+                                ]
+                                if region_type == "exonexonjunction"
+                                else None,
                             }
                         )
 
@@ -110,7 +122,7 @@ class GenomicRegionsFile:
                                 }
                             )
         return regions
-    
+
     # Load probes from probes yaml file and match them to regions, filling gaps for exon-exon junction probes
     def _load_probes(self):
         probes = {gene: defaultdict(list) for gene in self.genes}
@@ -118,7 +130,7 @@ class GenomicRegionsFile:
         if not os.path.exists(self.probes_path):
             print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
             return probes
-        
+
         with open(self.probes_path) as f:
             probe_data = yaml.safe_load(f)
             for gene, oligosets in probe_data.items():
@@ -128,7 +140,11 @@ class GenomicRegionsFile:
                     # only keep entries whose key begins with "Oligo "
                     oligos = filter(lambda x: x[0].startswith("Oligo "), oligoset_entries.items())
                     for _, oligo_info in oligos:
-                        regiontype = oligo_info.get("regiontype", [])[0][0] if "regiontype" in oligo_info else "unknown"
+                        regiontype = (
+                            oligo_info.get("regiontype", [])[0][0]
+                            if "regiontype" in oligo_info
+                            else "unknown"
+                        )
                         start = oligo_info.get("start", [])[0][0]
                         end = oligo_info.get("end", [])[0][0]
                         transcript_ids = oligo_info.get("transcript_id", [])[0]
@@ -138,50 +154,65 @@ class GenomicRegionsFile:
 
                         if regiontype != "exonexonjunction":
                             # single continous probe, add as single component
-                            components.append({
-                                "start": start,
-                                "end": end,
-                                "type": "probe"
-                            })
+                            components.append({"start": start, "end": end, "type": "probe"})
                         else:
                             # for exon-exon junction probes, add gaps between exons as components
                             canonical_transcript_id = transcript_ids[0]
                             canonical_exon_number = exon_numbers[0]
-                            canonical_regions = sorted([x for x in self.regions[gene][canonical_transcript_id] if x.get("junction_number", None) == canonical_exon_number], key=lambda x: x["start"])
+                            canonical_regions = sorted(
+                                [
+                                    x
+                                    for x in self.regions[gene][canonical_transcript_id]
+                                    if x.get("junction_number", None) == canonical_exon_number
+                                ],
+                                key=lambda x: x["start"],
+                            )
                             if canonical_regions is None:
-                                print(f"Warning: Could not find canonical region for probe {oligo_info.get('oligo_id', '')} in gene {gene}, skipping.")
+                                print(
+                                    f"Warning: Could not find canonical region for probe {oligo_info.get('oligo_id', '')} in gene {gene}, skipping."
+                                )
                                 continue
 
                             last_end = None
                             for region in canonical_regions:
                                 if last_end is not None and region["start"] > last_end + 1:
                                     # add gap component between exons
-                                    components.append({
-                                        "start": last_end + 1,
-                                        "end": region["start"] - 1,
-                                        "type": "gap"
-                                    })
+                                    components.append(
+                                        {"start": last_end + 1, "end": region["start"] - 1, "type": "gap"}
+                                    )
                                 # add exon component
-                                components.append({
-                                    "start": max(region["start"], start),
-                                    "end": min(region["end"], end),
-                                    "type": "probe"
-                                })
+                                components.append(
+                                    {
+                                        "start": max(region["start"], start),
+                                        "end": min(region["end"], end),
+                                        "type": "probe",
+                                    }
+                                )
                                 last_end = region["end"]
-                            
+
                         # add probe info to probes dict
-                        probes[gene][oligoset_name].append({
-                            "oligo_id": oligo_info.get("oligo_id", ""),
-                            "components": components,
-                            "transcript_ids": transcript_ids,
-                            "exon_numbers": exon_numbers,
-                            "regiontype": regiontype,
-                            "pipeline": self.pipeline_name,
-                            "details": {
-                                **{field: self._recursive_first(oligo_info.get(field, None)) for field in oligo_info if field not in self.LIST_FIELDS},
-                                **{field: oligo_info.get(field, [[]])[0] for field in self.LIST_FIELDS if field in oligo_info}
-                            },
-                        })
+                        probes[gene][oligoset_name].append(
+                            {
+                                "oligo_id": oligo_info.get("oligo_id", ""),
+                                "components": components,
+                                "transcript_ids": transcript_ids,
+                                "exon_numbers": exon_numbers,
+                                "regiontype": regiontype,
+                                "pipeline": self.pipeline_name,
+                                "details": {
+                                    **{
+                                        field: self._recursive_first(oligo_info.get(field, None))
+                                        for field in oligo_info
+                                        if field not in self.LIST_FIELDS
+                                    },
+                                    **{
+                                        field: oligo_info.get(field, [[]])[0]
+                                        for field in self.LIST_FIELDS
+                                        if field in oligo_info
+                                    },
+                                },
+                            }
+                        )
 
         # convert defaultdict to dict for cleaner output
         for gene in probes:
@@ -232,7 +263,7 @@ class GenomicRegionsFile:
                                     region["sequence"][:-overlap_length] + last_region["sequence"]
                                 )
                         # handle exon-exon junctions
-                        if (last_region["regiontype"] == "exonexonjunction"):
+                        if last_region["regiontype"] == "exonexonjunction":
                             last_region["regiontype"] = "exon"
 
                     # non-overlapping region, add last_region to merged list
@@ -247,7 +278,11 @@ class GenomicRegionsFile:
                         regiontype = "unknown"
                         exon_number = None
 
-                        if (last_region["exon_number"] is not None and region["exon_number"] is not None and last_region["exon_number"] == region["exon_number"]):
+                        if (
+                            last_region["exon_number"] is not None
+                            and region["exon_number"] is not None
+                            and last_region["exon_number"] == region["exon_number"]
+                        ):
                             last_region["regiontype"] = "exon"
                             region["regiontype"] = "exon"
                             regiontype = "exon"
@@ -290,17 +325,16 @@ class GenomicRegionsFile:
 
                 processed_regions[gene][transcript_id] = merged_regions
         return processed_regions
-    
-    
+
     def _mergable_regions(self, region1, region2):
         if region1["exon_number"] != region2["exon_number"]:
             return False
-        
+
         type1 = region1["regiontype"]
         type2 = region2["regiontype"]
         if type1 == type2:
             return True
-        
+
         mergable_types = [
             ("exon", "exonexonjunction"),
             ("exonexonjunction", "exon"),
@@ -312,4 +346,3 @@ class GenomicRegionsFile:
             return self._recursive_first(d[0]) if len(d) > 0 else None
         else:
             return d
-                

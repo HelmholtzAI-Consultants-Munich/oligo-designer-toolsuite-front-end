@@ -77,7 +77,7 @@ interface ScrinshotProbeDetails {
 export type ScrinshotProbe = BaseProbe & {
     pipeline: "scrinshot";
     details: ScrinshotProbeDetails;
-}
+};
 
 interface SeqFishProbeDetails {
     sequence_seqfish_plus_probe: string;
@@ -96,7 +96,7 @@ interface SeqFishProbeDetails {
 export type SeqFishProbe = BaseProbe & {
     pipeline: "seqfish";
     details: SeqFishProbeDetails;
-}
+};
 
 interface MerfishProbeDetails {
     sequence_merfish_probe: string;
@@ -113,7 +113,7 @@ interface MerfishProbeDetails {
 export type MerfishProbe = BaseProbe & {
     pipeline: "merfish";
     details: MerfishProbeDetails;
-}
+};
 
 interface OligoSeqProbeDetails {
     oligo: string;
@@ -129,10 +129,20 @@ interface OligoSeqProbeDetails {
 export type OligoSeqProbe = BaseProbe & {
     pipeline: "oligoseq";
     details: OligoSeqProbeDetails;
-}
+};
 
-export type Probe = ScrinshotProbe | SeqFishProbe | MerfishProbe | OligoSeqProbe;
-export type ProbeDetails = BaseProbeDetails & (ScrinshotProbeDetails | SeqFishProbeDetails | MerfishProbeDetails | OligoSeqProbeDetails);
+export type Probe =
+    | ScrinshotProbe
+    | SeqFishProbe
+    | MerfishProbe
+    | OligoSeqProbe;
+export type ProbeDetails = BaseProbeDetails &
+    (
+        | ScrinshotProbeDetails
+        | SeqFishProbeDetails
+        | MerfishProbeDetails
+        | OligoSeqProbeDetails
+    );
 
 export interface Probesets {
     [probeset_name: string]: Probe[];

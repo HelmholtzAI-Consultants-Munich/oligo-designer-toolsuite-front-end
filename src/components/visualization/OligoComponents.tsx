@@ -51,7 +51,9 @@ const OligoComponents: React.FC<Props> = ({
         const comps: OligoComponent[] = [];
         const pipeline = oligo?.pipeline;
         if (pipeline && Object.keys(ComponentDefinition).includes(pipeline)) {
-            const definition = ComponentDefinition[pipeline as keyof typeof ComponentDefinition] as OligoComponentDefinition[];
+            const definition = ComponentDefinition[
+                pipeline as keyof typeof ComponentDefinition
+            ] as OligoComponentDefinition[];
             definition.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
                     let sequence = oligo.details[
@@ -136,7 +138,9 @@ const OligoComponents: React.FC<Props> = ({
     }, [components]);
 
     if (components.length === 0) {
-        return <div>No visualization available for pipeline {oligo?.pipeline}</div>;
+        return (
+            <div>No visualization available for pipeline {oligo?.pipeline}</div>
+        );
     }
 
     if (!oligo) {

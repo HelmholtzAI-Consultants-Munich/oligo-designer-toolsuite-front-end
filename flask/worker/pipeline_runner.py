@@ -111,11 +111,21 @@ class PipelineRunner:
         if not fasta_paths:
             print("No fasta files provided, skipping visualization generation.")
             return
-        
+
         # find output file name containing "probes" or "probeset"
-        output_yaml = next((fname for fname in os.listdir(output_path) if ("probes" in fname or "probeset" in fname) and (fname.endswith(".yml") or fname.endswith(".yaml"))), None)
+        output_yaml = next(
+            (
+                fname
+                for fname in os.listdir(output_path)
+                if ("probes" in fname or "probeset" in fname)
+                and (fname.endswith(".yml") or fname.endswith(".yaml"))
+            ),
+            None,
+        )
         if not output_yaml:
-            print("No output YAML file containing 'probes' or 'probeset' found, skipping visualization generation.")
+            print(
+                "No output YAML file containing 'probes' or 'probeset' found, skipping visualization generation."
+            )
             return
         probes_path = os.path.join(output_path, output_yaml)
 
