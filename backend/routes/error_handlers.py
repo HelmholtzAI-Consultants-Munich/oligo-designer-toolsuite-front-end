@@ -8,9 +8,8 @@ Sensitive information is never exposed to clients.
 
 from http import HTTPStatus
 
-from werkzeug.exceptions import HTTPException
-
 from flask import Flask, current_app, jsonify, request
+from werkzeug.exceptions import HTTPException
 
 
 def _is_genomic_endpoint() -> bool:
@@ -52,7 +51,8 @@ def register_error_handlers(app: Flask):
     def handle_http_exception(error: HTTPException):
         """Handle Flask HTTPException (from abort())."""
         message = error.description or "Something went wrong."
-        return _make_error_response(message, error.code)
+        status_code = error.code or HTTPStatus.INTERNAL_SERVER_ERROR
+        return _make_error_response(message, status_code)
 
     @app.errorhandler(Exception)
     def handle_generic_exception(error: Exception):

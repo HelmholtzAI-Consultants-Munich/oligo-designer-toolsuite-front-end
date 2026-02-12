@@ -7,7 +7,9 @@ Important Note:
     Instead, the function calls used to start tasks on Celery workers is mocked.
 """
 
-from unittest.mock import patch
+import builtins
+import os
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -29,9 +31,6 @@ def mock_user_dir_exists(monkeypatch):
     This allows pipeline route tests to succeed without creating actual directories.
     Tests that specifically test missing directories can override this with their own patch.
     """
-    import builtins
-    import os
-
     original_exists = os.path.exists
     original_makedirs = os.makedirs
     original_open = builtins.open
@@ -61,8 +60,6 @@ def mock_user_dir_exists(monkeypatch):
 
     def mock_open(file_path, mode="r", *args, **kwargs):
         """Mock open() to succeed for config files in test user directories."""
-        from unittest.mock import MagicMock
-
         path_str = str(file_path)
         if "/user_data/" in path_str and any(
             user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]
@@ -243,8 +240,6 @@ def create_test_run(run_id, user_id="dummy_user", **kwargs):
     Returns:
         The inserted/updated document
     """
-    from backend.extensions import mongo
-
     run_doc = {
         "_id": run_id,
         "pipeline": kwargs.get("pipeline", "TestPipeline"),

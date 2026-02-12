@@ -4,7 +4,7 @@ import os
 import pytest
 
 from backend.extensions import mongo
-from backend.tests.conftest import assert_invalid_run_id_error
+from backend.tests.conftest import assert_invalid_run_id_error, create_test_run
 
 
 @pytest.fixture
@@ -19,8 +19,6 @@ def dummy_form(run_id):
 
 def test_oligoseq_authenticated(client, run_id, dummy_form, mock_celery, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
-    from backend.tests.conftest import create_test_run
-
     create_test_run(run_id, user_id="test_user_id", status="created")
 
     response = client.post("/api/oligoseq", json=dummy_form)

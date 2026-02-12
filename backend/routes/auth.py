@@ -23,12 +23,12 @@ from http import HTTPStatus
 
 import requests
 from bson import ObjectId
+from flask import Blueprint, abort, current_app, jsonify, redirect, request, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from backend.extensions import mongo, oauth
 from backend.routes.route_helpers import find_user_by_id
-from flask import Blueprint, abort, current_app, jsonify, redirect, request, session, url_for
 
 auth_bp = Blueprint("auth", __name__)
 

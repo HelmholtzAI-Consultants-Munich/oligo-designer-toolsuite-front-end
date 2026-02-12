@@ -2,8 +2,8 @@ from typing import Any
 
 from celery import Celery
 
-from .celery import app
-from .pipeline_runner import PipelineRunner
+from backend.worker.celery import app
+from backend.worker.pipeline_runner import PipelineRunner
 
 
 @app.task(bind=True)
