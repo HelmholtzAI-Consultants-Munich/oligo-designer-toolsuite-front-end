@@ -1,9 +1,9 @@
-from .admin import admin_bp
-from .auth import auth_bp
-from .genomic import genomic_bp
-from .pipelines import pipelines_bp
-from .runs import runs_bp
-from .upload import upload_bp
+from backend.routes.admin import admin_bp
+from backend.routes.auth import auth_bp
+from backend.routes.genomic import genomic_bp
+from backend.routes.pipelines import pipelines_bp
+from backend.routes.runs import runs_bp
+from backend.routes.upload import upload_bp
 
 
 def register_blueprints(app):

@@ -2,9 +2,8 @@ import os
 import uuid
 from http import HTTPStatus
 
-from werkzeug.utils import secure_filename
-
 from flask import Blueprint, abort, current_app, jsonify, request
+from werkzeug.utils import secure_filename
 
 # Blueprint for all upload-related endpoints
 upload_bp = Blueprint("upload", __name__)

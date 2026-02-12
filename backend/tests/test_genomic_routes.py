@@ -1,5 +1,6 @@
 import json
 import os
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -132,8 +133,6 @@ def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user):
 
 def test_genomic_cascaded_ncbi_subprocess_failure(client, dummy_form_ncbi, authenticated_user):
     """Test genomic_cascaded_ncbi with subprocess failure returns sanitized error."""
-    from unittest.mock import patch
-
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
         response = client.post("/api/genomic/cascaded/ncbi", json=dummy_form_ncbi)
         _assert_genomic_error_response(
@@ -158,8 +157,6 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
 
 def test_genomic_cascaded_ensembl_subprocess_failure(client, dummy_form_ensembl, authenticated_user):
     """Test genomic_cascaded_ensembl with subprocess failure returns sanitized error."""
-    from unittest.mock import patch
-
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
         response = client.post("/api/genomic/cascaded/ensembl", json=dummy_form_ensembl)
         _assert_genomic_error_response(
@@ -188,8 +185,6 @@ def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user, 
     The fixture data has source='Custom' but no source_params, so the route correctly
     aborts with 400 before reaching subprocess.run.
     """
-    from unittest.mock import patch
-
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
         response = client.post("/api/genomic/cascaded/custom", json=dummy_form_custom)
         _assert_genomic_error_response(
@@ -201,8 +196,6 @@ def test_genomic_cascaded_custom_subprocess_failure(client, authenticated_user, 
 
 def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
     """Test that no str(e) is exposed in genomic route error responses."""
-    from unittest.mock import patch
-
     # Test with various exception types
     exceptions = [
         ValueError("Invalid input"),
@@ -235,8 +228,6 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user):
 
 def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi, mock_run):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
-    from unittest.mock import MagicMock, patch
-
     dummy_form = dummy_form_ncbi
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)
@@ -257,8 +248,6 @@ def test_genomic_cascaded_ncbi_session_without_directory(client, dummy_form_ncbi
 
 def test_genomic_single_ensembl_session_without_directory(client, dummy_form_ensembl, mock_run):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
-    from unittest.mock import MagicMock, patch
-
     dummy_form = dummy_form_ensembl
     with client.session_transaction() as session:
         # Set a session_id (simulating an existing permanent session)
