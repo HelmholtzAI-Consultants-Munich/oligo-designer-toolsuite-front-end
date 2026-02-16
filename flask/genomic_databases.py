@@ -350,7 +350,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 ftp.cwd(release)
 
             # find README
-            assembly_report = min([n for n in ftp.nlst() if n.endswith("_assembly_report.txt")], default=None)
+            assembly_report = min((n for n in ftp.nlst() if n.endswith("_assembly_report.txt")), default=None)
             if not assembly_report:
                 raise RuntimeError(f"No assembly report found in {rel_dir}")
 
@@ -411,7 +411,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         try:
             uncompressed_local = self.download(f"https://{self.host}/{final_dir}/uncompressed_checksums.txt")
             uncompressed_checksum_map = self._parse_md5checksums(uncompressed_local)
-        except Exception:
+        except requests.exceptions.HTTPError:
             uncompressed_checksum_map = None
             # Not all NCBI directories publish this file; proceed without it.
             pass

@@ -31,4 +31,5 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER flask/*.py .
 COPY --chown=$MAMBA_USER:$MAMBA_USER flask/worker worker
 COPY --chown=$MAMBA_USER:$MAMBA_USER schemas /schemas
 
+
 CMD ["celery", "-A", "worker", "worker", "-l", "INFO"]
