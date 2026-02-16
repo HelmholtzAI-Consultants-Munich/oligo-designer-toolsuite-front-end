@@ -211,25 +211,6 @@ const setupElements = (
             .attr("class", "transcript")
             .attr("transform", `translate(0, ${yOffset})`);
 
-        transcriptGroup
-            .append("rect")
-            .data([
-                {
-                    transcript_id: transcriptName,
-                    start: d3.min(regions, (d) => d.start) || 0,
-                    end: d3.max(regions, (d) => d.end) || 0,
-                },
-            ])
-            .attr("class", "transcript-bg")
-            .attr("x", (d) => ctx.xScale(d.start - 0.5))
-            .attr("y", 0)
-            .attr(
-                "width",
-                (d) => ctx.xScale(d.end + 0.5) - ctx.xScale(d.start - 0.5)
-            )
-            .attr("height", transcriptHeight)
-            .attr("fill", "transparent");
-
         const regionsContainer = transcriptGroup
             .selectAll("g")
             .data(regions)
@@ -311,6 +292,17 @@ const setupElements = (
 
         // Strand arrows
         regionsContainer.append("g").attr("class", "strand-arrows");
+
+        // Marker for transcript match with oligo
+        transcriptGroup
+            .append("rect")
+            .data([transcriptName])
+            .attr("class", "transcript-match-marker")
+            .attr("x", -ctx.margin)
+            .attr("y", 0)
+            .attr("width", ctx.margin / 4)
+            .attr("height", transcriptHeight)
+            .attr("fill", "transparent");
     });
 
     ctx.baseGroup.attr("class", "reference-bases");
@@ -420,10 +412,6 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
             .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
         ctx.regionsGroup
             .selectAll<SVGRectElement, GenomicRegion>(".region-hover-pad")
-            .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
-        ctx.regionsGroup
-            .selectAll<SVGRectElement, GenomicRegion>(".transcript-bg")
-            .attr("x", (d) => zx(d.start - 0.5))
             .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
 
         // Calculate visible range
@@ -622,19 +610,14 @@ const GenomeAlignmentD3 = {
             );
 
         ctx.svg
-            .selectAll<
-                SVGRectElement,
-                { transcript_id: string }
-            >(".transcript-bg")
+            .selectAll<SVGRectElement, string>(".transcript-match-marker")
             .attr("fill", (d) => {
                 const selected = probes.find(
                     (oligo) => oligo.oligo_id === selectedOligo
                 );
                 if (selected) {
-                    const isSelected = selected.transcript_ids.includes(
-                        d.transcript_id
-                    );
-                    return isSelected ? "#caffcc" : "transparent";
+                    const isSelected = selected.transcript_ids.includes(d);
+                    return isSelected ? "#22bd28" : "transparent";
                 }
                 return "transparent";
             });

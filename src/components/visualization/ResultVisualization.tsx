@@ -17,7 +17,7 @@ const ResultVisualization: React.FC<Props> = ({
     setSelectedOligo,
     genomicRegions,
 }) => {
-    const [key, setKey] = useState("components");
+    const [key, setKey] = useState("alignment");
 
     return (
         <Tabs
@@ -25,13 +25,6 @@ const ResultVisualization: React.FC<Props> = ({
             activeKey={key}
             onSelect={(k) => k && setKey(k)}
         >
-            <Tab eventKey="components" title="Oligo Components">
-                <OligoComponents
-                    probes={probes}
-                    selectedOligo={selectedOligo}
-                    setSelectedOligo={setSelectedOligo}
-                />
-            </Tab>
             <Tab eventKey="alignment" title="Genomic Regions">
                 <GenomeAlignment
                     key={probes.map((p) => p.oligo_id).join(",")} // Force remount on probes change
@@ -39,6 +32,13 @@ const ResultVisualization: React.FC<Props> = ({
                     selectedOligo={selectedOligo}
                     setSelectedOligo={setSelectedOligo}
                     genomicRegions={genomicRegions}
+                />
+            </Tab>
+            <Tab eventKey="components" title="Oligo Components">
+                <OligoComponents
+                    probes={probes}
+                    selectedOligo={selectedOligo}
+                    setSelectedOligo={setSelectedOligo}
                 />
             </Tab>
         </Tabs>
