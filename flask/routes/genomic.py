@@ -19,7 +19,7 @@ from helpers import generate_single_region_forms, get_form_cache_key, to_bool, t
 
 from flask import Blueprint, current_app, jsonify, request, session, abort, Response
 
-from .genomic_database_helpers import EnsemblGenomicDataBase, NCBIGenomicDataBase
+from genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 
 
 from .error_handlers import create_user_error_response
@@ -98,7 +98,7 @@ def genomic_get_releases(taxon: str, species: str):
     dirs = NCBIGenomicDataBase().fetch_annotations_releases(taxon, species)
 
     if dirs is None:
-        abort(Response(f"Couldn't fetch dirs for Taxon: {taxon} and Species: {species}", 404))
+        abort(Response(f'Could not fetch releases for taxon: "{taxon}" and species: "{species}"', 404))
 
     return jsonify(dirs), 200
 
@@ -142,8 +142,6 @@ def genomic_cascaded_custom():
         form_data = request.json
         _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl"])
 
-        current_app.logger.warning(f"Form data: {form_data}")
-
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         genomic_type = form_data["source"]
         run_output_path = os.path.join(user_dir, f"output_genomic_{genomic_type}_{timestamp}")
@@ -159,8 +157,6 @@ def genomic_cascaded_custom():
         run_result = mongo.db.runs.insert_one(run_doc)
         run_id = run_result.inserted_id
 
-        current_app.logger.warning("Run doc created")
-
         single_region_forms = generate_single_region_forms(form_data)
 
         if not single_region_forms:
@@ -169,8 +165,6 @@ def genomic_cascaded_custom():
         all_fna_files = []
         cached_skips = []
         cache_dir = os.path.join(current_app.root_path, "cache")
-
-        current_app.logger.warning("Single region forms created")
 
         for single_form in single_region_forms:
             cache_key = get_form_cache_key(single_form)
@@ -227,7 +221,7 @@ def genomic_cascaded_custom():
                 annotation_file = cache_info["annotation_file"]
                 sequence_file = cache_info["sequence_file"]
                 files_source = "NCBI"
-            current_app.logger.warning("Preparing done")
+
             # Build custom config pointing to cached decompressed files (BASIC PARAMETERS spec)
             config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
             config_genomic = {
@@ -249,10 +243,6 @@ def genomic_cascaded_custom():
 
             with open(config_path, "w") as yaml_file:
                 yaml.dump(config_genomic, yaml_file)
-
-            current_app.logger.warning(f"Config done written to: {config_path}")
-
-            current_app.logger.warning("start genomic region generator")
 
             result = subprocess.run(
                 ["genomic_region_generator", "-c", config_path], capture_output=True, text=True

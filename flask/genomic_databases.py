@@ -1,3 +1,4 @@
+from collections import defaultdict
 import datetime
 from email.utils import formatdate, parsedate_to_datetime
 import ftplib
@@ -18,12 +19,12 @@ class BaseGenomicDataBase:
         self,
         host: str = "",
         base_path: str = "",
-        whitelist: list[str] | None = None,
+        allowlist: list[str] | None = None,
         cache_dir: str | None = None,
     ) -> None:
         self.host: str = host
         self.base_path: str = base_path
-        self.whitelist: list[str] | None = whitelist
+        self.allowlist: set[str] | None = set(allowlist) if allowlist is not None else None
         self.name: str = ""
         self.cache_dir = cache_dir
 
@@ -38,11 +39,11 @@ class BaseGenomicDataBase:
                 continue
             if parts[0][0] == "d" or parts[0][0] == "l":
                 entries.append(parts[8])
-        return entries
+        return sorted(entries)
 
-    def _filter_whitelist(self, dirs: list[str]):
-        if self.whitelist is not None:
-            return [dir for dir in dirs if dir in self.whitelist]
+    def _filter_allowlist(self, dirs: list[str]):
+        if self.allowlist is not None:
+            return list(set(dirs).intersection(self.allowlist))
         return dirs
 
     def _get_species_dirs(self, dirs, ftp):
@@ -55,14 +56,14 @@ class BaseGenomicDataBase:
         return all_species_dirs
 
     def _build_directory_dict(self, top_dirs, species_dirs):
-        return {top_dir: species_dirs for top_dir, species_dirs in zip(top_dirs, species_dirs)}
+        return dict(zip(top_dirs, species_dirs))
 
     def fetch_ftp_directories(self):
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
             ftp.cwd(self.base_path)
             top_dirs = self.get_dirs(ftp)
-            top_dirs = self._filter_whitelist(top_dirs)
+            top_dirs = self._filter_allowlist(top_dirs)
             species_dirs = self._get_species_dirs(top_dirs, ftp)
         return self.name, self._build_directory_dict(top_dirs, species_dirs)
 
@@ -70,7 +71,7 @@ class BaseGenomicDataBase:
         headers: dict[str, str] = {}
 
         url_hash = hashlib.md5(url.encode()).hexdigest()
-        filename = url.split("/")[-1]
+        _, filename = url.rsplit("/", maxsplit=1)
 
         file_name = f"{url_hash}-{filename}"
         file_path = pathlib.Path(f"{self.cache_dir}/{file_name}").resolve()
@@ -95,7 +96,7 @@ class BaseGenomicDataBase:
                     os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
 
         if extract_gzip:
-            extracted_file_path = pathlib.Path(str(file_path) + "-extract").resolve()
+            extracted_file_path = self.extracted_file_path(file_path)
 
             if os.path.exists(extracted_file_path):
                 return file_path
@@ -112,8 +113,8 @@ class BaseGenomicDataBase:
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
     # release 116 changes structure => could be a problem once they set this to current
-    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", whitelist=None, cache_dir=None) -> None:
-        super().__init__(host, base_path, whitelist, cache_dir)
+    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, cache_dir=None) -> None:
+        super().__init__(host, base_path, allowlist, cache_dir)
         self.name = "ensembl"
         self.orig_top_dirs = [""]
 
@@ -123,18 +124,16 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         return super()._get_species_dirs(dirs, ftp)
 
     def _build_directory_dict(self, top_dirs, species_dirs):
+        # only use number to list release so e.g. "release-115" -> "115"
         self.orig_top_dirs = [dir[-3:] for dir in self.orig_top_dirs]
         return self.reverse_dict(super()._build_directory_dict(self.orig_top_dirs, species_dirs))
 
     def reverse_dict(self, directories):
-        reversed_directories = {}
+        reversed_directories = defaultdict(list)
         for release, species_dirs in directories.items():
             for species_dir in species_dirs:
-                try:
-                    reversed_directories[species_dir].append(release)
-                except KeyError:
-                    reversed_directories[species_dir] = [release]
-        return reversed_directories
+                reversed_directories[species_dir].append(release)
+        return dict(reversed_directories)
 
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
         try:
@@ -145,13 +144,13 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             return False
 
     def _parse_checksums(self, checksums_path: str | Path):
-        m = {}
+        filename_to_checksum_map = {}
         with open(checksums_path) as checksums_file:
             for line in checksums_file:
                 line = line.strip()
                 split_line = line.split()
-                m[split_line[len(split_line) - 1]] = split_line[0]
-        return m
+                filename_to_checksum_map[split_line[len(split_line) - 1]] = split_line[0]
+        return filename_to_checksum_map
 
     def _release_dirs(self, release: str | int):
         """
@@ -194,13 +193,13 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             fa_listing = sorted(ftp.nlst())
 
             fasta_gz = None
-            preferred_orders = [
+            suffix_precedence = [
                 ".dna_sm.primary_assembly.fa.gz",
                 ".dna.primary_assembly.fa.gz",
                 ".dna_sm.toplevel.fa.gz",
                 ".dna.toplevel.fa.gz",
             ]
-            for suffix in preferred_orders:
+            for suffix in suffix_precedence:
                 for name in fa_listing:
                     if name.endswith(suffix):
                         fasta_gz = name
@@ -226,7 +225,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         checksum_path = self.download(f"https://{self.host}/{dir}/CHECKSUMS")
         checksum = self._parse_checksums(checksum_path)[remote_filename]
 
-        local_path = self.download(f"https://{self.host}/{dir}/{remote_filename}", True)
+        local_path = self.download(f"https://{self.host}/{dir}/{remote_filename}", extract_gzip=True)
 
         if not self._verify_file(local_path, checksum):
             raise RuntimeError(f"Couldn't match checksum for {local_path}")
@@ -235,11 +234,11 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
     def prepare_cached_assets(self, species, release):
         """
-        MD5-aware cache for Ensembl GTF/FASTA.
+        URL based cache for Ensembl GTF/FASTA.
         - Resolves 'current' vs numeric release to the right directories.
         - Selects one .gtf.gz and one DNA FASTA (prefers dna_sm.primary_assembly, then primary_assembly, then toplevel).
         - Attempts to fetch .md5 sidecar for each for MD5 verification.
-        If .md5 is not available, downloads without MD5 verification (Ensembl sometimes only provides CHECKSUMS in cksum format).
+        - verifies checksums parsed from CHECKSUMS file using 'sum' command
         - Gunzips once into 'decompressed' and returns local paths and metadata.
         """
 
@@ -268,9 +267,9 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
 class NCBIGenomicDataBase(BaseGenomicDataBase):
     def __init__(
-        self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", whitelist=None, cache_dir=None
+        self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", allowlist=None, cache_dir=None
     ) -> None:
-        super().__init__(host, base_path, whitelist, cache_dir)
+        super().__init__(host, base_path, allowlist, cache_dir)
         self.name = "ncbi"
 
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str):
@@ -296,10 +295,11 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 return None
             dirs = self.get_dirs(ftp)
 
-        dirs = [dir.split()[0] for dir in dirs if len(dir.split()) > 1 or dir == "current"]
+        # split to avoid including locations that symbolic links point to in the list so "current -> test/4711" -> "current"
+        dirs = [dir.split(maxsplit=1)[0] for dir in dirs]
         if dir == "all_assembly_versions":
             dirs = [dir for dir in dirs if dir != "suppressed"]
-        return sorted(dirs)
+        return dirs
 
     def _get_assembly_information(self, rel_dir: str, file_name: str) -> tuple[str | None, str | None]:
         url = f"https://{self.host}{rel_dir}/{file_name}"
@@ -312,9 +312,9 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             assembly_name, accession = None, None
             for line in file:
                 if line.startswith("# Assembly name:"):
-                    assembly_name = line.strip().split()[-1]
+                    _, assembly_name = line.strip().rsplit(maxsplit=1)
                 if line.startswith("# RefSeq assembly accession:"):
-                    accession = line.strip().split()[-1]
+                    _, accession = line.strip().rsplit(maxsplit=1)
                     break
             return assembly_name, accession
 
@@ -331,7 +331,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
             releases_dir = self._get_releases_dir(ftp, taxon, species)
             if releases_dir is None:
-                raise RuntimeError("Couldn't fetch Release Dir")
+                raise RuntimeError("Could not fetch release dir")
             base = f"/{self.base_path}{taxon}/{species}/{releases_dir}/"
             rel_dir = base + f"{release}/"
 
@@ -339,7 +339,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
             if "GCF" not in release:
                 # Be deterministic
-                listing = sorted(self.get_dirs(ftp))
+                listing = self.get_dirs(ftp)
                 if not listing:
                     raise RuntimeError("Empty 'current' directory at NCBI.")
 
@@ -350,10 +350,9 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 ftp.cwd(release)
 
             # find README
-            assembly_reports = sorted([n for n in ftp.nlst() if n.endswith("_assembly_report.txt")])
-            if not assembly_reports:
-                raise RuntimeError(f"No README_ found in {rel_dir}")
-            assembly_report = assembly_reports[0]
+            assembly_report = min([n for n in ftp.nlst() if n.endswith("_assembly_report.txt")], default=None)
+            if not assembly_report:
+                raise RuntimeError(f"No assembly report found in {rel_dir}")
 
         assembly_name, accession = self._get_assembly_information(rel_dir, assembly_report)
         if not assembly_name or not accession:
@@ -383,7 +382,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
     def _parse_md5checksums(self, md5_text_path):
         # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
-        m = {}
+        filename_to_checksum_map = {}
         with open(md5_text_path) as f:
             if "uncompressed" in str(md5_text_path):
                 filename_idx = 0
@@ -394,15 +393,8 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
             for line in f:
                 filename, checksum = self._parse_checksums(line, filename_idx, checksum_idx)
-                m[filename] = checksum
-        return m
-
-    def _get_md5_for_filename(self, md5map, filename):
-        """
-        Look up the expected MD5 by matching basename against keys in md5map,
-        which may contain nested relative paths from md5checksums.txt.
-        """
-        return md5map[filename]
+                filename_to_checksum_map[filename] = checksum
+        return filename_to_checksum_map
 
     def prepare_cached_assets(self, taxon, species, release):
         """
@@ -414,13 +406,13 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         # md5 manifests (compressed + optional uncompressed)
         md5_local = self.download(f"https://{self.host}/{final_dir}/md5checksums.txt")
 
-        md5map = self._parse_md5checksums(md5_local)
+        compressed_checksum_map = self._parse_md5checksums(md5_local)
 
         try:
-            unc_local = self.download(f"https://{self.host}/{final_dir}/uncompressed_checksums.txt")
-            unc_map = self._parse_md5checksums(unc_local)
+            uncompressed_local = self.download(f"https://{self.host}/{final_dir}/uncompressed_checksums.txt")
+            uncompressed_checksum_map = self._parse_md5checksums(uncompressed_local)
         except Exception:
-            unc_map = None
+            uncompressed_checksum_map = None
             # Not all NCBI directories publish this file; proceed without it.
             pass
 
@@ -434,7 +426,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         # Ensure raw files present & verified (store in our cache /raw regardless of NCBI nesting)
         for key in files.keys():
             try:
-                expected_archive_checksum = self._get_md5_for_filename(md5map, files[key]["remote_path"])
+                expected_archive_checksum = compressed_checksum_map[files[key]["remote_path"]]
             except KeyError as e:
                 raise RuntimeError(f"Required file missing in md5checksums.txt: {e}") from e
 
@@ -449,12 +441,12 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
             # Optional: verify uncompressed files using uncompressed_checksums.txt (if available)
             # possibly not necessary
-            if unc_map is not None:
-                expected_uncompressed_checksum = self._get_md5_for_filename(
-                    unc_map, files[key]["remote_path"].rstrip(".gz")
-                )
+            if uncompressed_checksum_map is not None:
+                expected_uncompressed_checksum = uncompressed_checksum_map[
+                    files[key]["remote_path"].rstrip(".gz")
+                ]
                 if not self._verify_file(uncompressed_local_path, expected_uncompressed_checksum):
-                    pass
+                    raise RuntimeError(f"Checksum for {uncompressed_local_path} doesn't match")
             files[key]["local_path"] = str(uncompressed_local_path)
 
         return {
@@ -467,14 +459,14 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
 
 def prefetch_dropdown_options():
-    # TODO: check whitelists to apply same behaviour like before
+    # TODO: check allowlists to apply same behaviour like before
     return dict(
         [
             NCBIGenomicDataBase(
-                whitelist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
+                allowlist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
             ).fetch_ftp_directories(),
             EnsemblGenomicDataBase(
-                whitelist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
+                allowlist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
             ).fetch_ftp_directories(),
         ]
     )

@@ -38,7 +38,7 @@ def prepare_paths(app: Flask):
 # TODO: investigate double execution due to server restart in development mode
 def initial_dropdown_prefetch(celery_app, app):
     time.sleep(5)
-    app.logger.warning("start dropdown prefetch")
+    app.logger.debug("start dropdown prefetch")
     celery_app.send_task(
         "worker.tasks.fetch_dropdown_options",
     )

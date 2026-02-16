@@ -7,7 +7,19 @@ from conftest import assert_error_sanitized
 from extensions import mongo
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from routes.genomic_database_helpers import EnsemblGenomicDataBase, NCBIGenomicDataBase
+from genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
+
+"""
+This tests the genomic api routes and therefore also the Genomic Database classes.
+Behavior that is mocked:
+- file verification
+- dropdown fetching
+- input forms
+- file downloading
+Behavior that is tested:
+- get release/ actual ftp directory from input form
+- correct behavior for downloaded files
+"""
 
 
 @pytest.fixture
@@ -21,14 +33,17 @@ def verify_file_mock(monkeypatch):
 
 @pytest.fixture
 def dropdown_mock(monkeypatch):
-    mongo.db.cache.insert_one(
+    mongo.db.cache.update_one(
+        {"_id": 1},
         {
-            "_id": 1,
-            "data": {
-                "ncbi": {"archaea": {f"{k}": 1 for k in range(1500)}},
-                "ensembl": [1 for _ in range(150)],
-            },
-        }
+            "$set": {
+                "data": {
+                    "ncbi": {"archaea": {f"{k}": 1 for k in range(1500)}},
+                    "ensembl": [1 for _ in range(150)],
+                }
+            }
+        },
+        upsert=True,
     )
     yield
     mongo.db.cache.delete_one({"_id": 1})

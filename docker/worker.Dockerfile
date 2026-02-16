@@ -30,6 +30,5 @@ WORKDIR /app
 COPY --chown=$MAMBA_USER:$MAMBA_USER flask/*.py .
 COPY --chown=$MAMBA_USER:$MAMBA_USER flask/worker worker
 COPY --chown=$MAMBA_USER:$MAMBA_USER schemas /schemas
-COPY --chown=$MAMBA_USER:$MAMBA_USER flask/routes/genomic_database_helpers.py /app/worker/
 
 CMD ["celery", "-A", "worker", "worker", "-l", "INFO"]

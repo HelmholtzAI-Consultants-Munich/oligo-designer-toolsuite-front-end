@@ -134,8 +134,7 @@ def mock_run():
 
 @pytest.fixture(scope="session")
 def mock_initial():
-    with pytest.MonkeyPatch.context() as monkeypatch:
-        monkeypatch.setattr("app.initial_dropdown_prefetch", lambda x, y: ())
+    with patch("app.initial_dropdown_prefetch"):
         yield
 
 

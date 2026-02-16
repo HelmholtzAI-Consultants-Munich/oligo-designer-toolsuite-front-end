@@ -7,7 +7,7 @@ from celery import Celery
 from .celery import app
 from .pipeline_runner import PipelineRunner
 
-from .genomic_database_helpers import prefetch_dropdown_options
+from genomic_databases import prefetch_dropdown_options
 from pymongo import MongoClient
 
 
