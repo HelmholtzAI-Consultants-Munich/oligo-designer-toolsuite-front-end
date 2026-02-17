@@ -1,9 +1,10 @@
 import logging
-from collections import defaultdict
 import os
+from collections import defaultdict
+
+import yaml
 from Bio import SeqIO
 from oligo_designer_toolsuite.utils import FastaParser
-import yaml
 
 
 class GenomicRegionFile:

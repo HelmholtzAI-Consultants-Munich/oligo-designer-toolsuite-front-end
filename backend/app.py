@@ -3,8 +3,8 @@ import os
 
 from flask import Flask
 from flask_cors import CORS
-from prometheus_flask_exporter import PrometheusMetrics
 from flask_pymongo import BSONObjectIdConverter
+from prometheus_flask_exporter import PrometheusMetrics
 
 from backend.cli import register_cli_commands
 from backend.config import CeleryConfig, Config
