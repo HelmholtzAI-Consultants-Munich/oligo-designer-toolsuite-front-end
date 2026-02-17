@@ -3,12 +3,11 @@ import hashlib
 import os
 import re
 import shutil
-import requests
 from ftplib import FTP, error_perm
 from http import HTTPStatus
 from pathlib import Path
-from flask import current_app
 
+import requests
 from flask import abort, current_app
 from werkzeug.exceptions import HTTPException
 
