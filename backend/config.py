@@ -34,7 +34,7 @@ class Config:
     SECRET_KEY = "change-me-in-production"
 
     # URL settings
-    HOST_URL = os.environ.get("HOST_URL", "http://localhost:5000")
+    BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5000")
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
     # Directory settings
@@ -69,7 +69,7 @@ class Config:
 
     # OAuth2 settings
     HELMHOLTZ_SCOPE = "openid profile email"
-    HELMHOLTZ_REDIRECT_URI = HOST_URL + "/auth/callback"
+    HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))

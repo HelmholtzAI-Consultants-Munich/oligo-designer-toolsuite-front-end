@@ -9,7 +9,7 @@ import yaml
 from celery import Celery
 from celery.utils.log import get_task_logger
 
-from .genomic_regions_file import GenomicRegionFile
+from backend.worker.genomic_regions_file import GenomicRegionFile
 
 
 class PipelineRunner:
