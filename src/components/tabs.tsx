@@ -1,26 +1,16 @@
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 import ObjectTemplate from "./objectTemplate";
+import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 
 interface TabConfig {
     title: string;
     fields: Array<string | string[]>;
 }
 
-interface Property {
-    name: string;
-    content: React.ReactNode;
-}
-
-interface TabsLayoutProps {
-    uiSchema: { "ui:tabs"?: TabConfig[] };
-    fieldPathId: { $id: string };
-    properties: Property[];
-}
-
-export const TabsLayout = (props: TabsLayoutProps) => {
+export const TabsLayout = (props: ObjectFieldTemplateProps) => {
     const { uiSchema } = props;
-    const tabs = uiSchema["ui:tabs"];
+    const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
 
     const isRoot = props.fieldPathId.$id === "root";
     if (isRoot && tabs && tabs.length > 0)
