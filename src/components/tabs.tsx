@@ -23,7 +23,7 @@ export const TabsLayout = (props: TabsLayoutProps) => {
     const tabs = uiSchema["ui:tabs"];
 
     const isRoot = props.fieldPathId.$id === "root";
-    if (isRoot)
+    if (isRoot && tabs && tabs.length > 0)
         return (
             <Tabs defaultActiveKey={tabs[0].title}>
                 {tabs.map((tab) => (

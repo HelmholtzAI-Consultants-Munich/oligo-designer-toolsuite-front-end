@@ -3,6 +3,7 @@ import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 
 export interface FileState {
+    [key: string]: File[];
     files_fasta_target_probe_database: File[];
     files_fasta_reference_database_target_probe: File[];
     files_fasta_reference_database_readout_probe: File[];
