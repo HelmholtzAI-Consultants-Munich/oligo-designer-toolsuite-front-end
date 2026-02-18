@@ -2,8 +2,8 @@ import os
 import time
 
 CACHE_DIRS = [
-    "flask/data-access/user_data/anon",
-    "flask/cache",
+    "backend/data-access/user_data/anon",
+    "backend/cache",
 ]
 DAYS_THRESHOLD = 3
 

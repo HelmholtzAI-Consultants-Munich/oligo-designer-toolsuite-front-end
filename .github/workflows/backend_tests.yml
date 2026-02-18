@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --group flask/pyproject.toml:test
+          pip install --group backend/pyproject.toml:test
 
       - name: Wait for MongoDB to be ready
         run: |
@@ -44,4 +44,4 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=flask --cov-report=term-missing
+          pytest --cov=backend --cov-report=term-missing

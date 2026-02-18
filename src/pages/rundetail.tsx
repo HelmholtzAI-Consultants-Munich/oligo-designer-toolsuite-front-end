@@ -10,6 +10,7 @@ import type {
     GenomicRegions,
     ProbeDetails,
     Probesets,
+    ProbeDetailsValue,
     RunState,
 } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
@@ -49,6 +50,10 @@ function getColumnsFromDefinition(
     }
 
     return columnsEntry.value;
+}
+
+interface LocationState {
+    fromAdmin?: boolean;
 }
 
 const RunDetail = () => {
@@ -195,7 +200,7 @@ const RunDetail = () => {
                     withCredentials: true,
                 });
                 // Navigate back to admin panel if we came from there, otherwise go to runs page
-                const fromAdmin = (location.state as any)?.fromAdmin;
+                const fromAdmin = (location.state as LocationState)?.fromAdmin;
                 navigate(fromAdmin ? "/admin/pipelines" : "/runs");
             } catch (error) {
                 console.error("Error deleting run:", error);
@@ -286,7 +291,7 @@ const RunDetail = () => {
                 ...allColumns.map((col) => col.replace(/_/g, " ")),
             ];
 
-            const geneData: any[] = [];
+            const geneData: (string | number)[][] = [];
             geneData.push(headers);
             geneOligos.forEach((item) => {
                 const row = [
@@ -305,7 +310,7 @@ const RunDetail = () => {
 
             // Sanitize sheet name (Excel has restrictions on sheet names)
             const sanitizedGeneName = gene
-                .replace(/[\\\/\?\*\[\]]/g, "_")
+                .replace(/[\]\\/?*[\]]/g, "_")
                 .substring(0, 31);
 
             XLSX.utils.book_append_sheet(
@@ -319,16 +324,23 @@ const RunDetail = () => {
         XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
     };
 
-    const formatValueForExcel = (value: any): any => {
+    const formatValueForExcel = (value: ProbeDetailsValue): string | number => {
         // Handle deeply nested arrays
-        const flatten = (arr: any[]): any[] => {
-            return arr.reduce(
-                (acc, val) =>
-                    Array.isArray(val)
-                        ? acc.concat(flatten(val))
-                        : acc.concat(val),
-                []
-            );
+        const flatten = (
+            arr: ProbeDetailsValue[],
+            acc: (string | number)[] = []
+        ): (string | number)[] => {
+            let result: (string | number)[] = [...acc];
+            for (const val of arr) {
+                if (Array.isArray(val)) {
+                    result = flatten(val, result);
+                } else if (val !== null && typeof val !== "object") {
+                    result = result.concat(val);
+                } else {
+                    result = result.concat(JSON.stringify(val));
+                }
+            }
+            return result;
         };
 
         if (Array.isArray(value)) {
@@ -337,7 +349,11 @@ const RunDetail = () => {
         if (typeof value === "object" && value !== null) {
             return JSON.stringify(value);
         }
-        return value; // Return raw value for Excel (no string conversion)
+        return value; // Return raw value for Excel
+    };
+
+    const formatValue = (value: ProbeDetailsValue): string => {
+        return String(formatValueForExcel(value));
     };
 
     const viewFileContent = (filename: string) => {
@@ -367,27 +383,6 @@ const RunDetail = () => {
         );
     };
 
-    const formatValue = (value: any): string => {
-        // Handle deeply nested arrays
-        const flatten = (arr: any[]): any[] => {
-            return arr.reduce(
-                (acc, val) =>
-                    Array.isArray(val)
-                        ? acc.concat(flatten(val))
-                        : acc.concat(val),
-                []
-            );
-        };
-
-        if (Array.isArray(value)) {
-            return flatten(value).join(", ");
-        }
-        if (typeof value === "object" && value !== null) {
-            return JSON.stringify(value);
-        }
-        return String(value);
-    };
-
     return (
         <div>
             <Navbar />
@@ -395,14 +390,14 @@ const RunDetail = () => {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <button
                         onClick={() => {
-                            const fromAdmin = (location.state as any)
+                            const fromAdmin = (location.state as LocationState)
                                 ?.fromAdmin;
                             navigate(fromAdmin ? "/admin/pipelines" : "/runs");
                         }}
                         className="btn btn-outline-secondary"
                     >
                         ← Back to{" "}
-                        {(location.state as any)?.fromAdmin
+                        {(location.state as LocationState)?.fromAdmin
                             ? "Admin Panel"
                             : "Runs"}
                     </button>

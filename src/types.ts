@@ -148,4 +148,6 @@ export interface Probesets {
     [probeset_name: string]: Probe[];
 }
 
+export type ProbeDetailsValue = string | number | string[] | number[];
+
 export type RunState = "started" | "success" | "failure" | "pending";

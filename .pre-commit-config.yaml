@@ -16,16 +16,16 @@ repos:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
 
-  # Ruff configuration is found in flask/pyproject.toml
+  # Ruff configuration is found in backend/pyproject.toml
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.6
     hooks:
       # Run the linter.
       - id: ruff-check
-        args: [--fix, --config, flask/pyproject.toml]
+        args: [--fix, --config, backend/pyproject.toml]
       # Run the formatter.
       - id: ruff-format
-        args: [--config, flask/pyproject.toml]
+        args: [--config, backend/pyproject.toml]
 
   - repo: https://github.com/rbubley/mirrors-prettier
     rev: v3.6.2

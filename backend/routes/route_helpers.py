@@ -1,0 +1,164 @@
+import os
+from http import HTTPStatus
+
+from bson import ObjectId
+from flask_login import current_user
+
+from backend.extensions import mongo
+from flask import abort, current_app, session
+
+# ============================================================================
+# User Context Helpers
+# ============================================================================
+
+
+def get_user_context() -> tuple[str | None, str | None]:
+    """Get user context (user_id and session_id) based on authentication status.
+
+    For authenticated users, user_id is set and session_id is None.
+    For anonymous users, user_id is None and session_id is retrieved from session.
+
+    :returns: Tuple of (user_id, session_id)
+    :rtype: tuple[str | None, str | None]
+    :raises: 401 if anonymous user has no session_id
+    """
+    if current_user.is_authenticated:
+        return str(current_user.id), None
+    session_id = session.get("session_id")
+    if not session_id:
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description="Your session has expired. Please refresh the page and try again.",
+        )
+    return None, session_id
+
+
+def get_user_context_with_directory() -> tuple[str | None, str | None, str]:
+    """Get user context and the user's data directory path.
+
+    :returns: Tuple of (user_id, session_id, user_dir)
+    :rtype: tuple[str | None, str | None, str]
+    :raises: 401 if anonymous user has no session_id
+    """
+    user_id, session_id = get_user_context()
+    userdata_path = current_app.config["USERDATA_PATH"]
+
+    if user_id:
+        user_dir = os.path.join(userdata_path, user_id)
+    else:
+        user_dir = os.path.join(userdata_path, "anon", session_id)
+
+    return user_id, session_id, user_dir
+
+
+# ============================================================================
+# User Retrieval Helpers
+# ============================================================================
+
+
+def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | None:
+    """Find a user by ID from the database (returns None if not found).
+
+    Use this when checking if a user exists (e.g., admin checks) where None
+    is a valid state. For API endpoints where missing user should return 404,
+    use get_user_by_id_or_404() instead.
+
+    :param user_id: The MongoDB ObjectId of the user
+    :type user_id: ObjectId
+    :param exclude_password: Whether to exclude password field from result
+    :type exclude_password: bool
+    :returns: User document or None if not found
+    :rtype: dict | None
+    """
+    projection = {"password": False} if exclude_password else {}
+    return mongo.db.users.find_one({"_id": user_id}, projection)
+
+
+def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> dict:
+    """Retrieve a user by ID, raising 404 if not found.
+
+    Use this in API endpoints where a missing user should return 404.
+    For checking if a user exists (e.g., admin checks), use find_user_by_id() instead.
+
+    :param user_id: The MongoDB ObjectId of the user
+    :type user_id: ObjectId
+    :param exclude_password: Whether to exclude password field from result
+    :type exclude_password: bool
+    :returns: User document from MongoDB
+    :rtype: dict
+    :raises: 404 if user not found
+    """
+    user = find_user_by_id(user_id, exclude_password=exclude_password)
+    if not user:
+        abort(HTTPStatus.NOT_FOUND)
+    return user
+
+
+# ============================================================================
+# Run Retrieval Helpers
+# ============================================================================
+
+
+def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
+    """Build MongoDB query for run retrieval with authorization.
+
+    Constructs a query dictionary that includes the run_id and appropriate
+    authorization filter (user_id for authenticated users, session_id for
+    anonymous users). If require_ownership is False, only filters by run_id
+    (useful for admin operations).
+
+    :param run_id: The ObjectId of the run
+    :type run_id: ObjectId
+    :param require_ownership: Whether to include ownership filter
+    :type require_ownership: bool
+    :returns: MongoDB query dictionary
+    :rtype: dict
+    :raises: 403 if unauthorized
+    """
+    query = {"_id": run_id}
+    if require_ownership:
+        if current_user.is_authenticated:
+            query["user_id"] = str(current_user.id)
+        else:
+            session_id = session.get("session_id")
+            if not session_id:
+                abort(HTTPStatus.FORBIDDEN)
+            query["session_id"] = session_id
+    return query
+
+
+def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
+    """Retrieve a run with authorization check, raising 404 if not found.
+
+    Fetches a run from the database with appropriate authorization checks.
+    For authenticated users, checks user_id. For anonymous users, checks
+    session_id. If require_ownership is False, skips ownership check
+    (useful for admin operations).
+
+    :param run_id: The ObjectId of the run
+    :type run_id: ObjectId
+    :param require_ownership: Whether to enforce ownership check
+    :type require_ownership: bool
+    :returns: The run document from MongoDB
+    :rtype: dict
+    :raises: 403 if unauthorized, 404 if not found
+    """
+    query = build_run_query(run_id, require_ownership=require_ownership)
+    run = mongo.db.runs.find_one(query)
+    if not run:
+        abort(HTTPStatus.NOT_FOUND)
+    return run
+
+
+def get_task_id(run) -> str:
+    """Extract task_id from a run document.
+
+    :param run: The run document from MongoDB
+    :returns: The Celery task ID
+    :rtype: str
+    :raises: 500 if task_id is not found
+    """
+    task_id = run.get("task_id")
+    if not task_id:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR)
+    return task_id

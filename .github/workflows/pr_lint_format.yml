@@ -24,13 +24,13 @@ jobs:
         run: |
           set -euxo pipefail
           python -m pip install --upgrade pip
-          pip install --group flask/pyproject.toml:lint
+          pip install --group backend/pyproject.toml:lint
 
       - name: Run Ruff lint check
         id: python-lint-run
         run: |
           set -euxo pipefail
-          ruff check flask --config flask/pyproject.toml
+          ruff check backend --config backend/pyproject.toml
         continue-on-error: false
 
       - name: Lint summary
@@ -41,7 +41,7 @@ jobs:
             echo "✅ Python linting passed" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Python linting failed" >> $GITHUB_STEP_SUMMARY
-            echo "Run 'ruff check flask --config flask/pyproject.toml' to see issues" >> $GITHUB_STEP_SUMMARY
+            echo "Run 'ruff check backend --config backend/pyproject.toml' to see issues" >> $GITHUB_STEP_SUMMARY
           fi
 
   python-format:
@@ -62,13 +62,13 @@ jobs:
         run: |
           set -euxo pipefail
           python -m pip install --upgrade pip
-          pip install --group flask/pyproject.toml:lint
+          pip install --group backend/pyproject.toml:lint
 
       - name: Run Ruff format check
         id: python-format-run
         run: |
           set -euxo pipefail
-          ruff format flask --check --config flask/pyproject.toml
+          ruff format backend --check --config backend/pyproject.toml
         continue-on-error: false
 
       - name: Format summary
@@ -79,7 +79,7 @@ jobs:
             echo "✅ Python formatting is correct" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ Python formatting check failed" >> $GITHUB_STEP_SUMMARY
-            echo "Run 'ruff format flask --config flask/pyproject.toml' to fix" >> $GITHUB_STEP_SUMMARY
+            echo "Run 'ruff format backend --config backend/pyproject.toml' to fix" >> $GITHUB_STEP_SUMMARY
           fi
 
   frontend-lint:
