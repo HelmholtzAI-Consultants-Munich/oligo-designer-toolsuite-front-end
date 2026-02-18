@@ -20,7 +20,7 @@ export const handleFileChange = (
 
 export const allFilesUploaded = (
     files: FileState,
-    required_files: string[]
+    required_files: (keyof FileState)[]
 ) => {
     let uploaded = true;
     for (const file of required_files) {
@@ -32,7 +32,7 @@ export const allFilesUploaded = (
 };
 
 export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
-    for (const key in files) {
+    for (const key of Object.keys(files) as (keyof FileState)[]) {
         if (files[key]) {
             for (const file of files[key]) {
                 const formDataU = new FormData();
@@ -103,7 +103,7 @@ export const handleSubmitGenomicAll = async (
     }
 };
 
-export const getRequiredFiles = (pipeline: string) => {
+export const getRequiredFiles = (pipeline: string): (keyof FileState)[] => {
     if (pipeline === "scrinshot" || pipeline === "oligoseq") {
         return [
             "files_fasta_target_probe_database",
