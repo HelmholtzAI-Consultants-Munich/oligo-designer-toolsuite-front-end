@@ -4,10 +4,10 @@ import axios from "axios";
 import YAML from "js-yaml";
 import Select from "react-select";
 import type { SingleValue } from "react-select";
-import { useAuth } from "../modules/auth";
+import { useAuth } from "../modules/useAuth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import type { GenomicRegions, Oligo, RunState } from "../types";
+import type { GenomicRegions, Oligo, OligoValue, RunState } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
@@ -52,9 +52,19 @@ function getColumnsFromDefinition(
     return columnsEntry.value;
 }
 
+interface LocationState {
+    fromAdmin?: boolean;
+}
+
+/** Parsed YAML structure: gene -> oligoset -> "Oligo N" -> oligo data */
+type ParsedYamlData = Record<
+    string,
+    Record<string, Record<string, OligoValue>>
+>;
+
 const RunDetail = () => {
     const { runId } = useParams();
-    const { user } = useAuth();
+    useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [files, setFiles] = useState<RunFile[]>([]);
@@ -63,7 +73,9 @@ const RunDetail = () => {
     const [pipeline, setPipeline] = useState<string>("");
     const [selectedOligo, setSelectedOligo] = useState(0);
 
-    const [parsedYamlData, setParsedYamlData] = useState<any>(null);
+    const [parsedYamlData, setParsedYamlData] = useState<ParsedYamlData | null>(
+        null
+    );
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
@@ -79,14 +91,6 @@ const RunDetail = () => {
     const closeFileView = () => {
         setViewingFilename(null);
     };
-    const [parsedYamlFilename, setParsedYamlFilename] = useState<string | null>(
-        null
-    );
-    // --- Polling/log state variables ---
-    const [hasYamlFile, setHasYamlFile] = useState(false);
-    const [hasLogFile, setHasLogFile] = useState(false);
-    const [logFilename, setLogFilename] = useState<string | null>(null);
-    const [logContent, setLogContent] = useState<string | null>(null);
     const [runState, setRunState] = useState<RunState>("pending");
     const [polling, setPolling] = useState(true);
     const fetchAndParseRunFiles = useCallback(
@@ -98,12 +102,10 @@ const RunDetail = () => {
                 })
                 .then((response) => {
                     try {
-                        const parsed = YAML.load(response.data) as Record<
-                            string,
-                            any
-                        >;
+                        const parsed = YAML.load(
+                            response.data
+                        ) as ParsedYamlData;
                         setParsedYamlData(parsed);
-                        setParsedYamlFilename(yamlFilename);
 
                         const genes = Object.keys(parsed || {});
                         setGeneOptions(
@@ -125,7 +127,6 @@ const RunDetail = () => {
                     } catch (e) {
                         console.error("Error parsing YAML:", e);
                         setParsedYamlData(null);
-                        setParsedYamlFilename(null);
                     }
                 })
                 .catch((error) =>
@@ -193,49 +194,16 @@ const RunDetail = () => {
                     );
                     setPipeline(runResponse.data.pipeline || "");
 
-                    // Check for error status and display error message
-                    let hasErrorMessage = false;
-                    if (runResponse.data.status === "failure") {
-                        if (runResponse.data.error_message) {
-                            // Display error message to user
-                            setLogContent(
-                                `Pipeline Error: ${runResponse.data.error_message}`
-                            );
-                            hasErrorMessage = true;
-                        }
-                    }
-
-                    // YAML check
                     const yamlFile = response.data.find(
                         (f: RunFile) =>
                             f.name.includes("probes.yml") ||
                             f.name.includes("probesets.yml")
                     );
-                    setHasYamlFile(!!yamlFile);
 
-                    // Log check - preserve error message state if no actual log file exists
-                    const firstLog = response.data.find(
-                        (f: RunFile) => f.type === "log"
-                    );
-                    // Set hasLogFile to true if we have either an error message OR an actual log file
-                    setHasLogFile(hasErrorMessage || !!firstLog);
-                    setLogFilename(firstLog?.name || null);
-
-                    // If YAML present, stop polling!
                     if (yamlFile) {
                         setPolling(false);
                         if (interval) clearInterval(interval);
-                        // Fetch and parse YAML as before
                         fetchAndParseRunFiles(yamlFile.name);
-                    } else if (firstLog && !hasErrorMessage) {
-                        // If log file is present and we don't have an error message, get its content
-                        // (Don't overwrite error message with log file content)
-                        const logResp = await axios.get(
-                            BACKEND_URL +
-                                `/api/runs/${runId}/files/${firstLog.name}`,
-                            { withCredentials: true, responseType: "text" }
-                        );
-                        setLogContent(logResp.data);
                     }
                 }
             } catch (e) {
@@ -264,7 +232,7 @@ const RunDetail = () => {
                     withCredentials: true,
                 });
                 // Navigate back to admin panel if we came from there, otherwise go to runs page
-                const fromAdmin = (location.state as any)?.fromAdmin;
+                const fromAdmin = (location.state as LocationState)?.fromAdmin;
                 navigate(fromAdmin ? "/admin/pipelines" : "/runs");
             } catch (error) {
                 console.error("Error deleting run:", error);
@@ -322,131 +290,6 @@ const RunDetail = () => {
         document.body.removeChild(link);
     };
 
-    // Download CSV for all genes and oligosets
-    const handleDownloadAllCSV = () => {
-        if (!parsedYamlData) return;
-
-        // Gather all oligos
-        const allOligos: { gene: string; oligoset: string; oligo: Oligo }[] =
-            [];
-        Object.keys(parsedYamlData).forEach((gene) => {
-            const oligosets = getOligosetsForGene(gene);
-            oligosets.forEach((oligoset) => {
-                const oligosetData = parsedYamlData[gene][oligoset];
-                const oligos = Object.entries(oligosetData)
-                    .filter(([key]) => /^Oligo \d+$/.test(key))
-                    .map(([, value]) => value)
-                    .filter(
-                        (oligo) => typeof oligo === "object" && oligo !== null
-                    ) as Oligo[];
-                oligos.forEach((oligo) => {
-                    allOligos.push({ gene, oligoset, oligo });
-                });
-            });
-        });
-
-        const allColumns = getAllOligoColumns(
-            allOligos.map((item) => item.oligo)
-        );
-        const headers = ["Gene", "Oligoset", ...allColumns]
-            .map((col) => `"${col.replace(/_/g, " ")}"`)
-            .join(",");
-
-        const allRows: string[] = [];
-        allOligos.forEach((item) => {
-            const rowData = [
-                item.gene,
-                item.oligoset,
-                ...allColumns.map((col) => formatValue(item.oligo[col])),
-            ];
-            const row = rowData
-                .map((value) => {
-                    if (
-                        typeof value === "string" &&
-                        (value.includes(",") || value.includes('"'))
-                    ) {
-                        return `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value;
-                })
-                .join(",");
-            allRows.push(row);
-        });
-
-        const csvContent = `${headers}\n${allRows.join("\n")}`;
-
-        const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `all_genes_oligos.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    // Download CSV for selected gene (all oligosets)
-    const handleDownloadGeneCSV = () => {
-        if (!selectedGene || !parsedYamlData) return;
-
-        // Gather all oligos for the selected gene
-        const geneOligos: { oligoset: string; oligo: Oligo }[] = [];
-        const oligosets = getOligosetsForGene(selectedGene);
-        oligosets.forEach((oligoset) => {
-            const oligosetData = parsedYamlData[selectedGene][oligoset];
-            const oligos = Object.entries(oligosetData)
-                .filter(([key]) => /^Oligo \d+$/.test(key))
-                .map(([, value]) => value)
-                .filter(
-                    (oligo) => typeof oligo === "object" && oligo !== null
-                ) as Oligo[];
-            oligos.forEach((oligo) => {
-                geneOligos.push({ oligoset, oligo });
-            });
-        });
-
-        const allColumns = getAllOligoColumns(
-            geneOligos.map((item) => item.oligo)
-        );
-        const headers = ["Gene", "Oligoset", ...allColumns]
-            .map((col) => `"${col.replace(/_/g, " ")}"`)
-            .join(",");
-
-        const geneRows: string[] = [];
-        geneOligos.forEach((item) => {
-            const rowData = [
-                selectedGene,
-                item.oligoset,
-                ...allColumns.map((col) => formatValue(item.oligo[col])),
-            ];
-            const row = rowData
-                .map((value) => {
-                    if (
-                        typeof value === "string" &&
-                        (value.includes(",") || value.includes('"'))
-                    ) {
-                        return `"${value.replace(/"/g, '""')}"`;
-                    }
-                    return value;
-                })
-                .join(",");
-            geneRows.push(row);
-        });
-
-        const csvContent = `${headers}\n${geneRows.join("\n")}`;
-
-        const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${selectedGene}_all_oligosets.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
     // Download Excel file with each gene as a separate sheet
     const handleDownloadExcel = () => {
         if (!parsedYamlData) return;
@@ -479,7 +322,7 @@ const RunDetail = () => {
                 ...allColumns.map((col) => col.replace(/_/g, " ")),
             ];
 
-            const geneData: any[] = [];
+            const geneData: (string | OligoValue)[][] = [];
             geneData.push(headers);
             geneOligos.forEach((item) => {
                 const row = [
@@ -496,7 +339,7 @@ const RunDetail = () => {
 
             // Sanitize sheet name (Excel has restrictions on sheet names)
             const sanitizedGeneName = gene
-                .replace(/[\\\/\?\*\[\]]/g, "_")
+                .replace(/[\]\\/?*[\]]/g, "_")
                 .substring(0, 31);
 
             XLSX.utils.book_append_sheet(
@@ -510,16 +353,25 @@ const RunDetail = () => {
         XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
     };
 
-    const formatValueForExcel = (value: any): any => {
+    const formatValueForExcel = (
+        value: OligoValue
+    ): string | number | boolean => {
         // Handle deeply nested arrays
-        const flatten = (arr: any[]): any[] => {
-            return arr.reduce(
-                (acc, val) =>
-                    Array.isArray(val)
-                        ? acc.concat(flatten(val))
-                        : acc.concat(val),
-                []
-            );
+        const flatten = (
+            arr: OligoValue[],
+            acc: (string | number | boolean)[] = []
+        ): (string | number | boolean)[] => {
+            let result: (string | number | boolean)[] = [...acc];
+            for (const val of arr) {
+                if (Array.isArray(val)) {
+                    result = flatten(val, result);
+                } else if (val !== null && typeof val !== "object") {
+                    result = result.concat(val);
+                } else {
+                    result = result.concat(JSON.stringify(val));
+                }
+            }
+            return result;
         };
 
         if (Array.isArray(value)) {
@@ -528,7 +380,7 @@ const RunDetail = () => {
         if (typeof value === "object" && value !== null) {
             return JSON.stringify(value);
         }
-        return value; // Return raw value for Excel (no string conversion)
+        return value ?? ""; // Return raw value for Excel (null -> empty string)
     };
 
     const viewFileContent = (filename: string, shouldParseYaml = true) => {
@@ -552,12 +404,10 @@ const RunDetail = () => {
                     (filename.endsWith(".yml") || filename.endsWith(".yaml"))
                 ) {
                     try {
-                        const parsed = YAML.load(response.data) as Record<
-                            string,
-                            any
-                        >;
+                        const parsed = YAML.load(
+                            response.data
+                        ) as ParsedYamlData;
                         setParsedYamlData(parsed);
-                        setParsedYamlFilename(filename);
 
                         const genes = Object.keys(parsed || {});
                         setGeneOptions(
@@ -568,7 +418,6 @@ const RunDetail = () => {
                         );
 
                         const firstGene = genes[0] || "";
-                        // @ts-ignore
                         const firstOligoset = firstGene
                             ? Object.keys(parsed[firstGene] || {}).find((key) =>
                                   key.startsWith("Oligoset")
@@ -580,7 +429,6 @@ const RunDetail = () => {
                     } catch (e) {
                         console.error("Error parsing YAML:", e);
                         setParsedYamlData(null);
-                        setParsedYamlFilename(null);
                     }
                 }
             })
@@ -618,25 +466,8 @@ const RunDetail = () => {
 
     const oligos = getOligosForOligoset();
 
-    const formatValue = (value: any): string => {
-        // Handle deeply nested arrays
-        const flatten = (arr: any[]): any[] => {
-            return arr.reduce(
-                (acc, val) =>
-                    Array.isArray(val)
-                        ? acc.concat(flatten(val))
-                        : acc.concat(val),
-                []
-            );
-        };
-
-        if (Array.isArray(value)) {
-            return flatten(value).join(", ");
-        }
-        if (typeof value === "object" && value !== null) {
-            return JSON.stringify(value);
-        }
-        return String(value);
+    const formatValue = (value: OligoValue): string => {
+        return String(formatValueForExcel(value));
     };
 
     return (
@@ -646,14 +477,14 @@ const RunDetail = () => {
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <button
                         onClick={() => {
-                            const fromAdmin = (location.state as any)
+                            const fromAdmin = (location.state as LocationState)
                                 ?.fromAdmin;
                             navigate(fromAdmin ? "/admin/pipelines" : "/runs");
                         }}
                         className="btn btn-outline-secondary"
                     >
                         ← Back to{" "}
-                        {(location.state as any)?.fromAdmin
+                        {(location.state as LocationState)?.fromAdmin
                             ? "Admin Panel"
                             : "Runs"}
                     </button>
@@ -913,16 +744,20 @@ const RunDetail = () => {
                                                             <strong>
                                                                 Source:
                                                             </strong>{" "}
-                                                            {oligos[0]
-                                                                ?.source ??
-                                                                "N/A"}
+                                                            {formatValue(
+                                                                oligos[0]
+                                                                    ?.source ??
+                                                                    null
+                                                            ) || "N/A"}
                                                             <br />
                                                             <strong>
                                                                 Species:
                                                             </strong>{" "}
-                                                            {oligos[0]
-                                                                ?.species ??
-                                                                "N/A"}
+                                                            {formatValue(
+                                                                oligos[0]
+                                                                    ?.species ??
+                                                                    null
+                                                            ) || "N/A"}
                                                         </div>
                                                     </td>
                                                 </tr>

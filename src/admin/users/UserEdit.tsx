@@ -35,35 +35,37 @@ const UserEdit: React.FC = () => {
     });
 
     useEffect(() => {
-        if (id) {
-            fetchUser();
-        }
-    }, [id]);
-
-    const fetchUser = async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            const response = await axios.get(
-                BACKEND_URL + `/api/admin/users/${id}`,
-                {
-                    withCredentials: true,
+        if (!id) return;
+        const loadUser = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                const response = await axios.get(
+                    BACKEND_URL + `/api/admin/users/${id}`,
+                    { withCredentials: true }
+                );
+                const userData = response.data;
+                setUser(userData);
+                setFormData({
+                    email: userData.email || "",
+                    name: userData.name || "",
+                    role: userData.role || "user",
+                });
+            } catch (err: unknown) {
+                if (axios.isAxiosError(err)) {
+                    setError(
+                        err.response?.data?.error || "Failed to load user"
+                    );
+                } else {
+                    setError("Failed to load user");
                 }
-            );
-            const userData = response.data;
-            setUser(userData);
-            setFormData({
-                email: userData.email || "",
-                name: userData.name || "",
-                role: userData.role || "user",
-            });
-        } catch (err: any) {
-            setError(err.response?.data?.error || "Failed to load user");
-            console.error("Error fetching user:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+                console.error("Error fetching user:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        loadUser();
+    }, [id]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -87,8 +89,12 @@ const UserEdit: React.FC = () => {
             setTimeout(() => {
                 navigate("/admin/users");
             }, 1500);
-        } catch (err: any) {
-            setError(err.response?.data?.error || "Failed to update user");
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.error || "Failed to update user");
+            } else {
+                setError("Failed to update user");
+            }
             console.error("Error updating user:", err);
         } finally {
             setIsSaving(false);
@@ -96,7 +102,9 @@ const UserEdit: React.FC = () => {
     };
 
     const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({

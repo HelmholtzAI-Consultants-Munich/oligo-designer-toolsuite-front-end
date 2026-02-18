@@ -44,8 +44,8 @@ git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-tools
 cd oligo-designer-frontend
 npm install
 conda activate odt
-conda env update -f flask/environment.yml
-pip install --group flask/pyproject.toml:dev
+conda env update -f backend/environment.yml
+pip install --group backend/pyproject.toml:dev
 ```
 
 You can also set up additional environment variables as needed for authentication, proxy, etc.

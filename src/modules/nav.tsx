@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "./auth";
+import { useAuth } from "./useAuth";
 import { BACKEND_URL } from "../config";
 const Navbar: React.FC = () => {
     const { user, logout } = useAuth();

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import Navbar from "../modules/nav";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../modules/auth";
+import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";
 
 const Register = () => {
@@ -27,8 +27,8 @@ const Register = () => {
 
             await checkAuth();
             navigate("/");
-        } catch (err: any) {
-            if (err.response && err.response.status === 409) {
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.status === 409) {
                 alert("Email already in use.");
             } else {
                 console.error(err);

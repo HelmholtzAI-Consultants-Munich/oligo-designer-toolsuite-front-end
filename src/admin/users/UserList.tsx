@@ -24,7 +24,6 @@ const UserList: React.FC = () => {
     // Use shared bulk selection hook
     const {
         selectedItems,
-        isSelectAll,
         handleSelectItem,
         handleSelectAll,
         clearSelection,
@@ -44,8 +43,12 @@ const UserList: React.FC = () => {
                 withCredentials: true,
             });
             setUsers(response.data);
-        } catch (err: any) {
-            setError(err.response?.data?.error || "Failed to load users");
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.error || "Failed to load users");
+            } else {
+                setError("Failed to load users");
+            }
             console.error("Error fetching users:", err);
         } finally {
             setIsLoading(false);
@@ -62,10 +65,14 @@ const UserList: React.FC = () => {
                 });
                 // Refresh the list
                 fetchUsers();
-            } catch (err: any) {
-                alert(
-                    `Failed to delete user: ${err.response?.data?.error || err.message}`
-                );
+            } catch (err: unknown) {
+                if (axios.isAxiosError(err)) {
+                    alert(
+                        `Failed to delete user: ${err.response?.data?.error || err.message || "Unknown error"}`
+                    );
+                } else {
+                    alert("Failed to delete user");
+                }
             }
         }
     };
@@ -100,10 +107,14 @@ const UserList: React.FC = () => {
             alert(message);
             clearSelection();
             fetchUsers();
-        } catch (err: any) {
-            alert(
-                `Failed to delete users: ${err.response?.data?.error || err.message}`
-            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                alert(
+                    `Failed to delete users: ${err.response?.data?.error || err.message || "Unknown error"}`
+                );
+            } else {
+                alert("Failed to delete users");
+            }
         } finally {
             setIsBulkOperationLoading(false);
         }
@@ -140,10 +151,14 @@ const UserList: React.FC = () => {
             alert(message);
             clearSelection();
             fetchUsers();
-        } catch (err: any) {
-            alert(
-                `Failed to update roles: ${err.response?.data?.error || err.message}`
-            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                alert(
+                    `Failed to update roles: ${err.response?.data?.error || err.message || "Unknown error"}`
+                );
+            } else {
+                alert("Failed to update roles");
+            }
         } finally {
             setIsBulkOperationLoading(false);
         }

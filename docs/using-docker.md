@@ -123,13 +123,13 @@ odt-server:
   develop:
     watch:
       - action: sync
-        path: ./flask
-        target: /app
+        path: ./backend
+        target: /app/backend
         initial_sync: true
 #...
 ```
 
-The code contained in the `odt-server` image might be out of date compared to the local filesystem, which is why `initial_sync: true` ensures the `flask` directory is synced into the container on startup. As long as `watch` is active, any changes made to files in the `flask` directory are synced into the `/app` directory inside of the container. The Flask server also watches for file changes and will reload.
+The code contained in the `odt-server` image might be out of date compared to the local filesystem, which is why `initial_sync: true` ensures the `backend` directory is synced into the container on startup. As long as `watch` is active, any changes made to files in the `backend` directory are synced into the `/app/backend` directory inside of the container. The Flask server also watches for file changes and will reload.
 
 ## Additional Tips for using Docker
 

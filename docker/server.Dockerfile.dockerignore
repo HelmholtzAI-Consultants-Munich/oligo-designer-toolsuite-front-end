@@ -1,23 +1,23 @@
-# Ignore everything except the flask directory
+# Ignore everything except the backend directory
 # see https://docs.docker.com/build/cache/optimize/#keep-the-context-small
 /*
-!/flask
+!/backend
 
 # Python artifacts
 **/__pycache__
 **/.pytest_cache
 
 # Data
-/flask/data
-/flask/data-access/*
+/backend/data
+/backend/data-access/*
 
 # Exceptions for test user data (TODO: remove once tests are independent)
-!/flask/data-access/user_data/
-/flask/data-access/user_data/*
+!/backend/data-access/user_data/
+/backend/data-access/user_data/*
 
-!/flask/data-access/user_data/testuser123/
+!/backend/data-access/user_data/testuser123/
 
-!/flask/data-access/user_data/anon/
-/flask/data-access/user_data/anon/*
+!/backend/data-access/user_data/anon/
+/backend/data-access/user_data/anon/*
 
-!/flask/data-access/user_data/anon/anon-session-123/
+!/backend/data-access/user_data/anon/anon-session-123/

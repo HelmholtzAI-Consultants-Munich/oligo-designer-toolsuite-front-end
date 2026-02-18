@@ -2,7 +2,7 @@
 FROM mambaorg/micromamba:2-alpine3.22
 
 # --- Set up environment ---
-RUN --mount=source=flask/worker_environment.yml,target=/tmp/env.yml \
+RUN --mount=source=backend/worker_environment.yml,target=/tmp/env.yml \
     --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
     micromamba install -y -n base -f /tmp/env.yml
 
@@ -20,16 +20,16 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 RUN --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
     pip install git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git
-RUN --mount=source=flask/pyproject.toml,target=pyproject.toml \
+RUN --mount=source=backend/pyproject.toml,target=pyproject.toml \
     --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
     pip install --group worker
 
 # --- Copy Celery worker ---
-# schemas are copied to root dir
+# schemas are copied to /app/schemas to match the relative path in pipeline_runner.py
 WORKDIR /app
-COPY --chown=$MAMBA_USER:$MAMBA_USER flask/*.py .
-COPY --chown=$MAMBA_USER:$MAMBA_USER flask/worker worker
-COPY --chown=$MAMBA_USER:$MAMBA_USER schemas /schemas
+# Copy the entire backend directory
+COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
+COPY --chown=$MAMBA_USER:$MAMBA_USER schemas schemas
 
 
-CMD ["celery", "-A", "worker", "worker", "-l", "INFO"]
+CMD ["celery", "-A", "backend.worker", "worker", "-l", "INFO"]

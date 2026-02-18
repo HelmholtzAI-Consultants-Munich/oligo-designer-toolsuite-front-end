@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Navbar from "../modules/nav";
-import { useAuth } from "../modules/auth";
+import { useAuth } from "../modules/useAuth";
 import { Spinner } from "react-bootstrap";
 import { BACKEND_URL } from "../config";
 
@@ -46,8 +46,8 @@ const Login = () => {
             await checkAuth();
             // Navigate to the redirect URL or home
             navigate(redirectTo);
-        } catch (err: any) {
-            if (err.response && err.response.status === 401) {
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err) && err.response?.status === 401) {
                 alert("Invalid email or password.");
             } else {
                 console.error(err);
