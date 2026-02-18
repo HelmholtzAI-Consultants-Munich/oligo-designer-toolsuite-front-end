@@ -7,7 +7,6 @@ import shutil
 from http import HTTPStatus
 
 from bson import ObjectId
-
 from flask import abort
 
 logger = logging.getLogger(__name__)

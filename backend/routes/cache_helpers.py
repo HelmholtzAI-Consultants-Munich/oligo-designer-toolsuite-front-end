@@ -8,9 +8,8 @@ from http import HTTPStatus
 from pathlib import Path
 
 import requests
-from werkzeug.exceptions import HTTPException
-
 from flask import abort, current_app
+from werkzeug.exceptions import HTTPException
 
 
 def _md5sum(path, chunk=1024 * 1024):

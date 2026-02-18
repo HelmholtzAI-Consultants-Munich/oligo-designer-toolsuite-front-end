@@ -8,9 +8,8 @@ Sensitive information is never exposed to clients.
 
 from http import HTTPStatus
 
-from werkzeug.exceptions import HTTPException
-
 from flask import Flask, current_app, jsonify, request
+from werkzeug.exceptions import HTTPException
 
 
 def _is_genomic_endpoint() -> bool:
