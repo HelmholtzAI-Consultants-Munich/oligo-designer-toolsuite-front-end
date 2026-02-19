@@ -79,7 +79,12 @@ class GenomicRegionsFile:
                             "__JUNC__"
                         )
                     else:
-                        exon_numbers = [additional_info.get("exon_number", [None])[transcript_index]]
+                        exon_number_list = additional_info.get("exon_number", [])
+                        exon_numbers = [
+                            exon_number_list[transcript_index]
+                            if transcript_index < len(exon_number_list)
+                            else None
+                        ]
 
                     if len(exon_numbers) != len(start_ends):
                         print(
@@ -153,7 +158,8 @@ class GenomicRegionsFile:
                         start = oligo_info.get("start", [])[0][0]
                         end = oligo_info.get("end", [])[0][0]
                         transcript_ids = oligo_info.get("transcript_id", [])[0]
-                        exon_numbers = oligo_info.get("exon_number", [])[0]
+                        exon_num_raw = oligo_info.get("exon_number", [None])[0]
+                        exon_numbers = list(exon_num_raw) if isinstance(exon_num_raw, list) else exon_num_raw
 
                         components = []
 
@@ -236,7 +242,7 @@ class GenomicRegionsFile:
             for transcript_id, regions in transcripts.items():
                 # regions can not be empty, otherwise the transcript would not exist
                 strand = regions[0]["strand"]
-                # sort regions by start position (reverse for negative strand)
+                # sort regions by start position (reverse by end position for negative strand)
                 regions.sort(key=lambda x: x["start"] if strand == "+" else x["end"], reverse=(strand == "-"))
                 merged_regions = []
                 last_region = None
@@ -256,9 +262,9 @@ class GenomicRegionsFile:
                     # overlapping or contiguous regions of mergeable type, merge them
                     if overlap_length >= 0 and self._mergable_regions(last_region, region):
                         if strand == "+":
-                            last_region["end"] = region["end"]
+                            last_region["end"] = max(last_region["end"], region["end"])
                         else:
-                            last_region["start"] = region["start"]
+                            last_region["start"] = min(last_region["start"], region["start"])
                         # concatenate sequence without overlap
                         if last_region["sequence"] is not None and region["sequence"] is not None:
                             if strand == "+":

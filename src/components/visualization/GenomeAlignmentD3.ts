@@ -434,7 +434,7 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
             .data(bases)
             .join("text")
             .attr("x", (d) => zx(d.position))
-            .attr("y", innerHeight - 10)
+            .attr("y", ctx.innerHeight - 10)
             .attr("font-size", 10)
             .attr("text-anchor", "middle")
             .text((d) => d.char);
