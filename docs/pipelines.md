@@ -14,19 +14,20 @@ All pipelines share a consistent workflow: **prepare inputs → configure parame
 
 ## Available Pipelines
 
+- **SCRINSHOT** — _src/pages/scrinshot.tsx_  
+  Designs padlock probes with gene-specific 5' and 3' arms that circularize upon hybridization to detect and quantify RNA transcripts at single-cell resolution. These probes enable highly multiplexed and spatially resolved gene expression analysis in tissue samples.
+
 - **MERFISH** — _src/pages/merfish.tsx_  
-  Multiplexed Error-Robust Fluorescence In Situ Hybridization pipeline for designing target probes, readout probes, and primers.
-- **Scrinshot** — _src/pages/scrinshot.tsx_  
-  Spatial transcriptomics probe designer with configurable target, readout, and primer parameters.
+  Designs encoding probes with unique barcodes that enable simultaneous imaging and identification of hundreds of different transcripts within a single sample. This highly multiplexed approach provides detailed, spatially resolved gene expression information at the single-cell level.
 
-- **SeqFISH** — _src/pages/seqfish.tsx_  
-  Sequential FISH probe designer for multi-round hybridization experiments.
+- **SeqFISH+** — _src/pages/seqfish.tsx_  
+  Designs probes for sequential fluorescence in situ hybridization, enabling multiple rounds of hybridization and imaging to visualize and quantify hundreds of RNA targets in a single sample. This technique preserves spatial context while providing high-throughput and single-cell resolution.
 
-- **OligoSeq** — _src/pages/oligoseq.tsx_  
-  Sequencing-based probe designer optimized for NGS detection.
+- **Oligo-Seq** — _src/pages/oligoseq.tsx_  
+  Designs oligo hybridization probes optimized for probe-based targeted sequencing to measure RNA expression. These probes are specifically tailored for next-generation sequencing detection methods.
 
 - **Genomic Region Generator** — _src/modules/FastaGenerateForm.tsx_  
-  Extracts specific genomic regions (genes, exons, introns, UTRs, etc.) from NCBI or Ensembl reference genomes for use in downstream pipelines.
+  Extracts specific genomic regions (intergenic, gene, CDS, exon, intron, 3' UTR, 5' UTR, exon-exon junctions) from FASTA and GTF files, which can be automatically retrieved from NCBI or Ensembl or provided as custom files. The extracted regions are stored in a compressed memory-efficient format that eliminates duplicated sequences from common exons of different gene isoforms while preserving isoform information.
 
 ---
 
@@ -43,6 +44,44 @@ Each pipeline page provides:
 - **Job submission**
   - Generates a unique **Run ID** via the helper API
   - Sends all inputs and settings to the backend for processing
+
+---
+
+## FASTA File Input Requirements
+
+All pipelines require FASTA files as input. When uploading custom FASTA files, they must adhere to the following structure:
+
+### Header Format
+
+Each sequence must have a header starting with the `>` character. The header should contain:
+
+- **`region_id`**: A unique identifier for the genomic region (e.g., gene name or ID). This is **mandatory**.
+- **`additional_information`**: Optional metadata fields such as transcript ID or exon number, separated by commas.
+- **`coordinates`**: Genomic location in the format `chrom:start-end(strand)`, which is optional.
+
+The header format uses double colons (`::`) as separators between the region ID, additional information, and coordinates.
+
+### Sequence Content
+
+The sequence follows the header in standard FASTA format (single-letter nucleotide codes: A, T, G, C, N).
+
+### Examples
+
+**With all optional fields:**
+
+```
+>ASR1::transcrip_id=XM456,exon_number=5::16:54552-54786(+)
+AGTTGACAGACCCCAGATTAAAGTGTGTCGCGCAACAC
+```
+
+**With only the mandatory region_id:**
+
+```
+>ASR1
+AGTTGACAGACCCCAGATTAAAGTGTGTCGCGCAACAC
+```
+
+**Note:** When using the Genomic Region Generator to create FASTA files from NCBI or Ensembl, the files are automatically formatted correctly. Only manually uploaded FASTA files need to follow this format.
 
 ---
 
