@@ -311,9 +311,10 @@ def check_auth():
     :rtype: flask.Response
     """
     if current_user.is_authenticated:
-        # Get user document to include role
+        # Get user document to include role and helmholtz_sub
         user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
         role = user_doc.get("role", "user") if user_doc else "user"
+        helmholtz_sub = user_doc.get("helmholtz_sub") if user_doc else None
 
         return jsonify(
             {
@@ -323,6 +324,7 @@ def check_auth():
                     "email": current_user.email,
                     "name": current_user.name,
                     "role": role,
+                    "helmholtz_sub": helmholtz_sub,
                 },
             }
         )
@@ -351,7 +353,12 @@ def logout():
             client_id = current_app.config.get("HELMHOLTZ_CLIENT_ID")
 
             # According to RFC 7009 and Helmholtz AAI docs, token_type_hint is mandatory
-            data = {"token": oauth_token, "client_id": client_id, "token_type_hint": "access_token"}
+            data = {
+                "token": oauth_token,
+                "client_id": client_id,
+                "token_type_hint": "access_token",
+                "logout": "true",
+            }
 
             response = requests.post(revocation_url, data=data)
             if response.status_code != HTTPStatus.OK:

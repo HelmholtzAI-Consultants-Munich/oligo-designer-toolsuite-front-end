@@ -129,6 +129,47 @@ const Navbar: React.FC = () => {
                                     </a>
                                     <ul className="dropdown-menu-start dropdown-menu">
                                         <li>
+                                            <div className="dropdown-item-text px-3 py-2">
+                                                <small className="text-muted d-block mb-1">
+                                                    User ID
+                                                </small>
+                                                <div
+                                                    className="d-flex align-items-center gap-2"
+                                                    style={{
+                                                        cursor: "pointer",
+                                                    }}
+                                                    onClick={() => {
+                                                        const textToCopy =
+                                                            user.helmholtz_sub ||
+                                                            user.email ||
+                                                            user.name ||
+                                                            user.id;
+                                                        navigator.clipboard.writeText(
+                                                            textToCopy
+                                                        );
+                                                    }}
+                                                    title="Click to copy"
+                                                >
+                                                    <code className="text-break mb-0 flex-grow-1">
+                                                        {user.helmholtz_sub ||
+                                                            user.email ||
+                                                            user.name ||
+                                                            user.id}
+                                                    </code>
+                                                    <i
+                                                        className="bi bi-clipboard"
+                                                        style={{
+                                                            fontSize:
+                                                                "0.875rem",
+                                                        }}
+                                                    ></i>
+                                                </div>
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <hr className="dropdown-divider" />
+                                        </li>
+                                        <li>
                                             <button
                                                 className="dropdown-item"
                                                 onClick={handleLogout}

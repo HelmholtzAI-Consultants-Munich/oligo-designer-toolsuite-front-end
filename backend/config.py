@@ -68,7 +68,7 @@ class Config:
     HELMHOLTZ_CLIENT_SECRET = None
 
     # OAuth2 settings
-    HELMHOLTZ_SCOPE = "openid profile email"
+    HELMHOLTZ_SCOPE = "openid profile email single-logout"
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
     # Performance Settings

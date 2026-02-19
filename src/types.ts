@@ -3,6 +3,7 @@ export interface User {
     email: string;
     name?: string;
     role?: "user" | "admin";
+    helmholtz_sub?: string;
 }
 
 export interface AuthContextType {
