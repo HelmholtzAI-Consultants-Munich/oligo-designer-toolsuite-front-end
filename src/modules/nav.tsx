@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { BACKEND_URL } from "../config";
 const Navbar: React.FC = () => {
     const { user, logout } = useAuth();
+    const [copied, setCopied] = useState(false);
     const handleLogout = () => {
         fetch(BACKEND_URL + "/logout", {
             method: "POST",
@@ -129,41 +130,43 @@ const Navbar: React.FC = () => {
                                     </a>
                                     <ul className="dropdown-menu-start dropdown-menu">
                                         <li>
-                                            <div className="dropdown-item-text px-3 py-2">
+                                            <div
+                                                className="dropdown-item-text px-3 py-2"
+                                                style={{
+                                                    cursor: "pointer",
+                                                }}
+                                                onClick={() => {
+                                                    const textToCopy =
+                                                        user.helmholtz_sub ||
+                                                        user.email ||
+                                                        user.name ||
+                                                        user.id;
+                                                    navigator.clipboard.writeText(
+                                                        textToCopy
+                                                    );
+                                                    setCopied(true);
+                                                    setTimeout(() => {
+                                                        setCopied(false);
+                                                    }, 2000);
+                                                }}
+                                                title="Click to copy"
+                                            >
                                                 <small className="text-muted d-block mb-1">
-                                                    User ID
+                                                    {copied ? (
+                                                        <span className="text-success">
+                                                            <i className="bi bi-check-circle-fill me-1"></i>
+                                                            Copied!
+                                                        </span>
+                                                    ) : (
+                                                        "User ID"
+                                                    )}
                                                 </small>
-                                                <div
-                                                    className="d-flex align-items-center gap-2"
-                                                    style={{
-                                                        cursor: "pointer",
-                                                    }}
-                                                    onClick={() => {
-                                                        const textToCopy =
-                                                            user.helmholtz_sub ||
-                                                            user.email ||
-                                                            user.name ||
-                                                            user.id;
-                                                        navigator.clipboard.writeText(
-                                                            textToCopy
-                                                        );
-                                                    }}
-                                                    title="Click to copy"
-                                                >
-                                                    <code className="text-break mb-0 flex-grow-1">
-                                                        {user.helmholtz_sub ||
-                                                            user.email ||
-                                                            user.name ||
-                                                            user.id}
-                                                    </code>
-                                                    <i
-                                                        className="bi bi-clipboard"
-                                                        style={{
-                                                            fontSize:
-                                                                "0.875rem",
-                                                        }}
-                                                    ></i>
-                                                </div>
+                                                <code className="text-break mb-0 d-block">
+                                                    {user.helmholtz_sub ||
+                                                        user.email ||
+                                                        user.name ||
+                                                        user.id}
+                                                </code>
                                             </div>
                                         </li>
                                         <li>
