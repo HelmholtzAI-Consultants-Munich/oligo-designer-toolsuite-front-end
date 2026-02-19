@@ -113,12 +113,11 @@ def update_user(user_id: ObjectId):
     """
     Update a user (admin only).
 
-    Allows updating email, name, and role fields.
+    Allows updating username (for CLI users) and role fields.
 
     :param user_id: The MongoDB ObjectId of the user
     :type user_id: ObjectId
-    :request json email: Optional email address
-    :request json name: Optional name
+    :request json username: Optional username (for CLI users only)
     :request json role: Optional role ('user' or 'admin')
     :returns: JSON updated user object
     :rtype: flask.Response
@@ -131,10 +130,12 @@ def update_user(user_id: ObjectId):
 
     # Build update document
     update_doc = {}
-    if "email" in data:
-        update_doc["email"] = data["email"].strip().lower()
-    if "name" in data:
-        update_doc["name"] = data["name"].strip()
+    if "username" in data:
+        # Only allow username updates for CLI users (users with username field)
+        user = get_user_by_id_or_404(user_id, exclude_password=True)
+        if not user.get("username"):
+            abort(HTTPStatus.BAD_REQUEST, description="Cannot update username for Helmholtz users")
+        update_doc["username"] = data["username"].strip()
     if "role" in data:
         update_doc["role"] = data["role"]
 

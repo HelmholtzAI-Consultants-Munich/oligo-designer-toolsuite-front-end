@@ -138,8 +138,7 @@ const Navbar: React.FC = () => {
                                                 onClick={() => {
                                                     const textToCopy =
                                                         user.helmholtz_sub ||
-                                                        user.email ||
-                                                        user.name ||
+                                                        user.username ||
                                                         user.id;
                                                     navigator.clipboard.writeText(
                                                         textToCopy
@@ -163,8 +162,7 @@ const Navbar: React.FC = () => {
                                                 </small>
                                                 <code className="text-break mb-0 d-block">
                                                     {user.helmholtz_sub ||
-                                                        user.email ||
-                                                        user.name ||
+                                                        user.username ||
                                                         user.id}
                                                 </code>
                                             </div>
@@ -184,24 +182,14 @@ const Navbar: React.FC = () => {
                                 </li>
                             </>
                         ) : (
-                            <>
-                                <li className="nav-item me-2">
-                                    <Link
-                                        className="btn btn-outline-primary"
-                                        to="/login"
-                                    >
-                                        Login
-                                    </Link>
-                                </li>
-                                <li className="nav-item">
-                                    <Link
-                                        className="btn btn-primary"
-                                        to="/register"
-                                    >
-                                        Register
-                                    </Link>
-                                </li>
-                            </>
+                            <li className="nav-item me-2">
+                                <Link
+                                    className="btn btn-outline-primary"
+                                    to="/login"
+                                >
+                                    Login
+                                </Link>
+                            </li>
                         )}
                     </ul>
                 </div>

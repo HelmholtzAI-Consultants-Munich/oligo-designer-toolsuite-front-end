@@ -25,10 +25,9 @@ import requests
 from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, redirect, request, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
-from backend.routes.route_helpers import find_user_by_id
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -38,22 +37,20 @@ class User(UserMixin):
     """
     Flask-Login User class wrapper for MongoDB user documents.
 
-    Stores user information from Helmholtz AAI OAuth2/OIDC authentication.
+    Stores user information from Helmholtz AAI OAuth2/OIDC authentication or CLI registration.
 
     :param user_doc: The MongoDB user document.
     :type user_doc: dict
 
     :ivar id: User ID, as a string (ObjectId).
     :ivar helmholtz_sub: Helmholtz AAI subject identifier (unique user ID from OAuth).
-    :ivar email: User's email address.
-    :ivar name: User's full name (from Helmholtz AAI).
+    :ivar username: Username for CLI-registered admin users.
     """
 
     def __init__(self, user_doc):
         self.id = str(user_doc["_id"])
         self.helmholtz_sub = user_doc.get("helmholtz_sub")
-        self.email = user_doc.get("email")
-        self.name = user_doc.get("name", "")
+        self.username = user_doc.get("username")
 
 
 def init_login_manager(app):
@@ -120,62 +117,16 @@ def _login(user: User, remember: bool = True):
         session.pop("session_id", None)
 
 
-# ---- Register Route (Legacy Email/Password) ----
-@auth_bp.route("/register", methods=["POST"])
-def register():
-    """
-    Register a new user using legacy email/password authentication.
-
-    :request json email: Email address for registration.
-    :request json password: Plain-text password to hash and store securely.
-    :request json name: Optional display name.
-
-    :returns: JSON message for success or error.
-    :rtype: flask.Response
-    """
-    data = request.get_json() or {}
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password")
-    name = data.get("name", "").strip()
-
-    if not email or not password:
-        abort(HTTPStatus.BAD_REQUEST, description="Email and password required")
-
-    # Prevent duplicate registrations
-    existing_user = mongo.db.users.find_one({"email": email})
-    if existing_user:
-        abort(HTTPStatus.CONFLICT, description="User already exists")
-
-    hashed_password = generate_password_hash(password)
-
-    user_id = mongo.db.users.insert_one(
-        {
-            "email": email,
-            "password": hashed_password,
-            "name": name,
-            "role": "user",  # Default role for new users
-        }
-    ).inserted_id
-
-    # Log the user in immediately after registration with "Remember Me" enabled
-
-    user_doc = find_user_by_id(user_id, exclude_password=False)
-    user = User(user_doc)
-    _login(user, remember=True)
-
-    return jsonify({"message": "User registered successfully"}), HTTPStatus.CREATED
-
-
 # ---- Login Route (OAuth GET + Legacy POST) ----
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     """
-    Handle both Helmholtz AAI OAuth login (GET) and legacy email/password login (POST).
+    Handle both Helmholtz AAI OAuth login (GET) and legacy username/password login (POST).
 
     GET:
         Redirects the user to the Helmholtz AAI authorization endpoint.
     POST:
-        Authenticates user via MongoDB-stored email/password credentials.
+        Authenticates user via MongoDB-stored username/password credentials.
 
     :returns: Redirect response (GET) or JSON message (POST).
     """
@@ -189,14 +140,14 @@ def login():
 
     # POST legacy login
     data = request.get_json() or {}
-    email = (data.get("email") or "").strip().lower()
+    username = (data.get("username") or "").strip()
     password = data.get("password")
     remember_me = data.get("remember_me", True)  # Default to True for backward compatibility
 
-    if not email or not password:
-        abort(HTTPStatus.BAD_REQUEST, description="Email and password required")
+    if not username or not password:
+        abort(HTTPStatus.BAD_REQUEST, description="Username and password required")
 
-    user_doc = mongo.db.users.find_one({"email": email})
+    user_doc = mongo.db.users.find_one({"username": username})
 
     if not user_doc or "password" not in user_doc:
         abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
@@ -227,12 +178,11 @@ def auth_callback():
       1. Exchange authorization code for access token.
       2. Fetch user info from Helmholtz AAI userinfo endpoint.
       3. Check if user exists in MongoDB by helmholtz_sub.
-      4. If new user: create user document with helmholtz_sub, email, name.
-      5. If existing: update email/name if changed.
-      6. Create user data directory if needed.
-      7. Log user in via Flask-Login.
-      8. Migrate any anonymous session data to authenticated user.
-      9. Store access token in session for later revocation.
+      4. If new user: create user document with helmholtz_sub and role: "user".
+      5. Create user data directory if needed.
+      6. Log user in via Flask-Login.
+      7. Migrate any anonymous session data to authenticated user.
+      8. Store access token in session for later revocation.
     """
     # Exchange authorization code for access token
     token = oauth.helmholtz.authorize_access_token()
@@ -245,8 +195,6 @@ def auth_callback():
         userinfo = resp.json()
 
     helmholtz_sub = userinfo.get("sub")
-    email = userinfo.get("email")
-    name = userinfo.get("name", "")
 
     if not helmholtz_sub:
         abort(
@@ -256,18 +204,12 @@ def auth_callback():
     # Check if user exists in database by helmholtz_sub
     user_doc = mongo.db.users.find_one({"helmholtz_sub": helmholtz_sub})
 
-    if user_doc:
-        # Update existing user's email and name if changed
-        mongo.db.users.update_one({"_id": user_doc["_id"]}, {"$set": {"email": email, "name": name}})
-        user_doc = mongo.db.users.find_one({"_id": user_doc["_id"]})
-    else:
-        # Create new user
+    if not user_doc:
+        # Create new user with only helmholtz_sub and role
         user_id = mongo.db.users.insert_one(
             {
                 "helmholtz_sub": helmholtz_sub,
-                "email": email,
-                "name": name,
-                "role": "user",  # Default role for new users
+                "role": "user",  # Default role for Helmholtz users
             }
         ).inserted_id
         user_doc = mongo.db.users.find_one({"_id": user_id})
@@ -311,18 +253,18 @@ def check_auth():
     :rtype: flask.Response
     """
     if current_user.is_authenticated:
-        # Get user document to include role and helmholtz_sub
+        # Get user document to include role, helmholtz_sub, and username
         user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
         role = user_doc.get("role", "user") if user_doc else "user"
         helmholtz_sub = user_doc.get("helmholtz_sub") if user_doc else None
+        username = user_doc.get("username") if user_doc else None
 
         return jsonify(
             {
                 "authenticated": True,
                 "user": {
                     "id": str(current_user.id),
-                    "email": current_user.email,
-                    "name": current_user.name,
+                    "username": username,
                     "role": role,
                     "helmholtz_sub": helmholtz_sub,
                 },

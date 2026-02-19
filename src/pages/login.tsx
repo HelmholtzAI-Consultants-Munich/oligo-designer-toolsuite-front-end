@@ -10,10 +10,10 @@ import { BACKEND_URL } from "../config";
 
 /**
  * Login component handles user login functionality.
- * Provides legacy email/password login and Helmholtz AAI OAuth login.
+ * Provides legacy username/password login and Helmholtz AAI OAuth login.
  */
 const Login = () => {
-    const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
@@ -36,7 +36,7 @@ const Login = () => {
         try {
             const res = await axios.post(
                 BACKEND_URL + "/login",
-                { email, password, remember_me: rememberMe },
+                { username, password, remember_me: rememberMe },
                 { withCredentials: true }
             );
 
@@ -48,7 +48,7 @@ const Login = () => {
             navigate(redirectTo);
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.status === 401) {
-                alert("Invalid email or password.");
+                alert("Invalid username or password.");
             } else {
                 console.error(err);
                 alert("Login failed.");
@@ -114,28 +114,26 @@ const Login = () => {
 
                         <div className="card shadow-sm">
                             <div className="card-body">
-                                <h5 className="card-title">
-                                    Legacy Email Login
-                                </h5>
+                                <h5 className="card-title">Admin Login</h5>
                                 <p className="card-text text-muted">
-                                    Use this option only if you have a local
-                                    account with email/password.
+                                    Use this option if you have an admin account
+                                    with username/password.
                                 </p>
                                 <form onSubmit={handleSubmit}>
                                     <div className="mb-3">
                                         <label
-                                            htmlFor="email"
+                                            htmlFor="username"
                                             className="form-label"
                                         >
-                                            Email address
+                                            Username
                                         </label>
                                         <input
-                                            type="email"
+                                            type="text"
                                             className="form-control"
-                                            id="email"
-                                            value={email}
+                                            id="username"
+                                            value={username}
                                             onChange={(e) =>
-                                                setEmail(e.target.value)
+                                                setUsername(e.target.value)
                                             }
                                             required
                                         />
@@ -179,7 +177,7 @@ const Login = () => {
                                         type="submit"
                                         className="btn btn-secondary w-100"
                                     >
-                                        Login with Email
+                                        Login with Username
                                     </button>
                                 </form>
                             </div>

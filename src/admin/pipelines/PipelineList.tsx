@@ -27,7 +27,7 @@ interface PipelineRun {
     user_id?: string;
     user?: {
         id: string;
-        email: string;
+        identifier?: string;
     };
     session_id?: string;
     transferred_from_anon?: boolean;
@@ -293,10 +293,10 @@ const PipelineList: React.FC = () => {
 
     const getUserDisplay = (run: PipelineRun) => {
         if (run.user) {
-            // User exists - show email with transfer indicator if applicable
+            // User exists - show identifier with transfer indicator if applicable
             return (
                 <div>
-                    <div>{run.user.email}</div>
+                    <div>{run.user.identifier || "Unknown"}</div>
                     {run.transferred_from_anon && (
                         <Badge
                             bg="info"
