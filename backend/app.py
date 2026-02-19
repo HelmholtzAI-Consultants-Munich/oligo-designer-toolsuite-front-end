@@ -2,7 +2,6 @@ import logging.config
 import os
 import time
 
-from flask import Flask
 from flask_cors import CORS
 from flask_pymongo import BSONObjectIdConverter
 from prometheus_flask_exporter import PrometheusMetrics
@@ -13,6 +12,7 @@ from backend.extensions import celery_app, mongo, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
+from flask import Flask
 
 
 def prepare_paths(app: Flask):
@@ -107,11 +107,8 @@ def create_app():
     return app
 
 
-# Create app instance for Flask CLI
-app = create_app()
-
-
 if __name__ == "__main__":
+    app = create_app()
     # When running directly, enable debug mode which will use DEBUG log level
     app.config["DEBUG"] = True
     # Reconfigure logging with debug mode

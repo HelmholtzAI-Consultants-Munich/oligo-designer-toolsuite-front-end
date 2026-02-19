@@ -1,6 +1,5 @@
 import json
 import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -8,9 +7,6 @@ import pytest
 from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.tests.conftest import assert_error_sanitized
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 
 """
 This tests the genomic api routes and therefore also the Genomic Database classes.

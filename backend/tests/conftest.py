@@ -128,7 +128,7 @@ def mock_run():
 
 @pytest.fixture(scope="session")
 def mock_initial():
-    with patch("app.initial_dropdown_prefetch"):
+    with patch("backend.app.initial_dropdown_prefetch"):
         yield
 
 
