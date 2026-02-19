@@ -50,7 +50,7 @@ export function extractErrorMessage(
         }
 
         // Handle HTTP status codes
-        const status = axiosError.response.status;
+        const status = axiosError.response?.status;
         if (status === 400) {
             return "The information you provided is not valid. Please check your input and try again.";
         }

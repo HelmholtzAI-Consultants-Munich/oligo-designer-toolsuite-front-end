@@ -39,6 +39,34 @@ npm run docker:logs odt-web
 npm run docker:logs odt-web odt-server
 ```
 
+## Running with Profiles
+
+ODT Cloud supports Docker Compose profiles for optional services. Currently, two profiles are available:
+
+### Monitoring Profile
+
+To start the application with monitoring services (Prometheus, Grafana, and exporters), use:
+
+```bash
+npm run docker:start:monitoring
+# or for development with hot reloading:
+npm run docker:watch:monitoring
+```
+
+This will start all standard services plus the monitoring stack. See [Monitoring]({{ site.baseurl }}{% link monitoring.md %}) for more details.
+
+### Tests Profile
+
+To start the application with the test container available, use:
+
+```bash
+npm run docker:start:test
+# or for development with hot reloading:
+npm run docker:watch:test
+```
+
+This will start all standard services plus the `odt-tests` container. See [Tests]({{ site.baseurl }}{% link tests.md %}) for more details on running tests.
+
 ---
 
 ## Docker Project Structure
