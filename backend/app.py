@@ -2,6 +2,7 @@ import logging.config
 import os
 import time
 
+import celery
 from flask import Flask
 from flask_cors import CORS
 from flask_pymongo import BSONObjectIdConverter
@@ -40,11 +41,16 @@ def prepare_paths(app: Flask):
 
 # TODO: investigate double execution due to server restart in development mode
 def initial_dropdown_prefetch(celery_app, app):
-    time.sleep(5)
-    app.logger.debug("start dropdown prefetch")
-    celery_app.send_task(
-        "backend.worker.tasks.fetch_dropdown_options",
-    )
+    while True:
+        try:
+            app.logger.debug("try dropdown prefetch")
+            celery_app.send_task(
+                "backend.worker.tasks.fetch_dropdown_options",
+            )
+            app.logger.debug("dropdown prefetch done")
+            break
+        except celery.exceptions.OperationalError:
+            time.sleep(2)
 
 
 def create_app():
