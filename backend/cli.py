@@ -1,189 +1,188 @@
 """
 Flask CLI commands for administrative tasks.
 
-This module provides command-line interface commands using Flask's CLI system
-(which uses Click under the hood). Commands are automatically available via
-the `flask` command-line tool.
-
 Usage:
-    flask admin promote <identifier>  - Promote a user to admin role (by username or helmholtz_sub)
-    flask admin list             - List all admin users
-    flask user register <username> <password>  - Register a new admin user
+    flask admin promote <identifier>  - Promote a user to admin (username or helmholtz_sub)
+    flask admin list                  - List all admin users
+    flask user list                   - List all users
+    flask user register               - Register a new user (interactive)
 """
 
 import os
+import re
 
 import click
+from flask import current_app
 from werkzeug.security import generate_password_hash
 
 from backend.extensions import mongo
 
+# ---- Helpers ----
+
+_PASSWORD_REQUIREMENTS = (
+    "At least 8 characters, one uppercase, one lowercase, one digit, one special character"
+)
+
+_USER_PROJECTION = {"username": 1, "helmholtz_sub": 1, "email": 1, "role": 1, "_id": 0}
+
+
+def _find_user(identifier: str) -> dict | None:
+    """Find a user by username or helmholtz_sub."""
+    return mongo.db.users.find_one({"username": identifier}) or mongo.db.users.find_one(
+        {"helmholtz_sub": identifier}
+    )
+
+
+def _display_id(user: dict, fallback: str = "Unknown") -> str:
+    """Return the most readable identifier for a user."""
+    return user.get("username") or user.get("helmholtz_sub") or user.get("email") or fallback
+
+
+def _format_user(user: dict, show_role: bool = False) -> str:
+    """Format a user document as a display string."""
+    role = user.get("role", "user")
+    role_suffix = f" [{role}]" if show_role else ""
+
+    if username := user.get("username"):
+        return f"  Username: {username}{role_suffix}"
+    if helmholtz_sub := user.get("helmholtz_sub"):
+        return f"  Helmholtz ID: {helmholtz_sub}{role_suffix}"
+    if email := user.get("email"):
+        return f"  Legacy (email: {email}){role_suffix} — needs migration"
+    return f"  Unknown user{role_suffix}"
+
+
+def _print_user_list(users: list, label: str) -> None:
+    """Print a formatted list of users."""
+    if not users:
+        click.echo(f"No {label} found.")
+        return
+    click.echo(f"\nFound {len(users)} {label}:\n")
+    for user in users:
+        click.echo(_format_user(user, show_role=(label == "user(s)")))
+
+
+def _validate_password(password: str) -> tuple[bool, str]:
+    """Validate password strength. Returns (is_valid, error_message)."""
+    checks = [
+        (len(password) >= 8, "at least 8 characters"),
+        (re.search(r"[A-Z]", password), "one uppercase letter"),
+        (re.search(r"[a-z]", password), "one lowercase letter"),
+        (re.search(r"\d", password), "one digit"),
+        (re.search(r'[!@#$%^&*(),.?":{}|<>]', password), "one special character"),
+    ]
+    failed = [msg for passed, msg in checks if not passed]
+    if failed:
+        return False, f"Password must contain: {', '.join(failed)}"
+    return True, ""
+
+
+def _abort(message: str) -> None:
+    """Print an error and abort."""
+    click.echo(f"Error: {message}", err=True)
+    raise click.Abort()
+
+
+# ---- Commands ----
+
 
 def register_cli_commands(app):
-    """Register CLI commands with the Flask application.
-
-    This function should be called from create_app() to make commands available.
-
-    Args:
-        app: Flask application instance
-    """
+    """Register CLI commands with the Flask application."""
 
     @app.cli.group()
     def admin():
         """Admin management commands."""
-        pass
 
     @admin.command()
     @click.argument("identifier")
     def promote(identifier):
         """Promote a user to admin role.
 
-        Args:
-            identifier: Username (for CLI users) or helmholtz_sub (for Helmholtz users)
+        IDENTIFIER can be a username (CLI users) or helmholtz_sub (Helmholtz users).
 
-        Example:
+        \b
+        Examples:
             flask admin promote myuser
             flask admin promote 1fa0f64b-58f5-41f9-abb5-ac6e67456d23
         """
-        # Try username first, then helmholtz_sub
-        user = mongo.db.users.find_one({"username": identifier})
+        user = _find_user(identifier)
         if not user:
-            user = mongo.db.users.find_one({"helmholtz_sub": identifier})
+            _abort(f'User "{identifier}" not found.')
 
-        if not user:
-            click.echo(f'❌ Error: User with identifier "{identifier}" not found.', err=True)
-            raise click.Abort()
+        display_id = _display_id(user, identifier)
 
         if user.get("role") == "admin":
-            display_id = user.get("username") or user.get("helmholtz_sub") or identifier
-            click.echo(f'☑️  User "{display_id}" is already an admin.')
+            click.echo(f'User "{display_id}" is already an admin.')
             return
 
         result = mongo.db.users.update_one({"_id": user["_id"]}, {"$set": {"role": "admin"}})
-
         if result.modified_count > 0:
-            display_id = user.get("username") or user.get("helmholtz_sub") or identifier
-            click.echo(f'✅ Successfully promoted "{display_id}" to admin.')
+            click.echo(f'Successfully promoted "{display_id}" to admin.')
         else:
-            click.echo("❌ Error: Failed to promote user.", err=True)
-            raise click.Abort()
+            _abort("Failed to promote user.")
 
     @admin.command(name="list")
     def list_admins():
         """List all admin users.
 
+        \b
         Example:
             flask admin list
         """
-        admins = list(
-            mongo.db.users.find({"role": "admin"}, {"username": 1, "helmholtz_sub": 1, "email": 1, "_id": 0})
-        )
-
-        if not admins:
-            click.echo("No admin users found.")
-            return
-
-        click.echo(f"\nFound {len(admins)} admin user(s):\n")
-        for admin in admins:
-            username = admin.get("username")
-            helmholtz_sub = admin.get("helmholtz_sub")
-            email = admin.get("email")
-            if username:
-                click.echo(f"  • Username: {username}")
-            elif helmholtz_sub:
-                click.echo(f"  • Helmholtz ID: {helmholtz_sub}")
-            elif email:
-                click.echo(f"  • Legacy user (email: {email}) - needs migration")
-            else:
-                click.echo("  • Unknown user (no identifier found)")
+        projection = {k: v for k, v in _USER_PROJECTION.items() if k != "role"}
+        admins = list(mongo.db.users.find({"role": "admin"}, projection))
+        _print_user_list(admins, "admin user(s)")
 
     @app.cli.group()
     def user():
         """User management commands."""
-        pass
 
     @user.command(name="list")
     def list_users():
         """List all users.
 
+        \b
         Example:
             flask user list
         """
-        users = list(
-            mongo.db.users.find({}, {"username": 1, "helmholtz_sub": 1, "email": 1, "role": 1, "_id": 0})
-        )
-
-        if not users:
-            click.echo("No users found.")
-            return
-
-        click.echo(f"\nFound {len(users)} user(s):\n")
-        for user in users:
-            username = user.get("username")
-            helmholtz_sub = user.get("helmholtz_sub")
-            email = user.get("email")
-            role = user.get("role", "user")
-            role_badge = "👑" if role == "admin" else "👤"
-
-            if username:
-                click.echo(f"  {role_badge} Username: {username} (role: {role})")
-            elif helmholtz_sub:
-                click.echo(f"  {role_badge} Helmholtz ID: {helmholtz_sub} (role: {role})")
-            elif email:
-                click.echo(f"  {role_badge} Legacy user (email: {email}, role: {role}) - needs migration")
-            else:
-                click.echo(f"  {role_badge} Unknown user (no identifier found, role: {role})")
+        users = list(mongo.db.users.find({}, _USER_PROJECTION))
+        _print_user_list(users, "user(s)")
 
     @user.command()
-    @click.argument("username")
-    @click.argument("password")
-    def register(username, password):
-        """Register a new user.
+    def register():
+        """Register a new user (interactive).
 
-        Args:
-            username: Username for registration
-            password: Plain-text password (will be hashed)
+        Both username and password are always prompted. Password input is hidden.
 
+        \b
         Example:
-            flask user register myuser mypassword123
+            flask user register
         """
-        # Normalize username
-        username = username.strip()
+        username = click.prompt("Username").strip()
+        if not username:
+            _abort("Username cannot be empty.")
 
-        if not username or not password:
-            click.echo("❌ Error: Username and password are required.", err=True)
-            raise click.Abort()
+        if mongo.db.users.find_one({"username": username}):
+            _abort(f'Username "{username}" already exists.')
 
-        # Check if user already exists
-        existing_user = mongo.db.users.find_one({"username": username})
-        if existing_user:
-            click.echo(f'❌ Error: User with username "{username}" already exists.', err=True)
-            raise click.Abort()
+        click.echo(f"\nPassword requirements: {_PASSWORD_REQUIREMENTS}\n")
+        password = click.prompt("Password", hide_input=True, confirmation_prompt=True)
 
-        # Hash password
-        hashed_password = generate_password_hash(password)
+        is_valid, error_msg = _validate_password(password)
+        if not is_valid:
+            _abort(error_msg)
 
-        # Create user document
-        user_doc = {
-            "username": username,
-            "password": hashed_password,
-            "role": "user",  # Default role for CLI users
-        }
-
-        # Insert user into database
-        result = mongo.db.users.insert_one(user_doc)
+        result = mongo.db.users.insert_one(
+            {
+                "username": username,
+                "password": generate_password_hash(password),
+                "role": "user",
+            }
+        )
         user_id = str(result.inserted_id)
 
-        # Create user data directory
-        try:
-            # Access app context to get USERDATA_PATH config
-            with app.app_context():
-                userdata_path = app.config["USERDATA_PATH"]
-                user_dir = os.path.join(userdata_path, user_id)
-                os.makedirs(user_dir, exist_ok=True)
-            click.echo(f'✅ Successfully registered user "{username}" (ID: {user_id}).')
-            click.echo(f"   User data directory created at: {user_dir}")
-        except Exception as e:
-            click.echo(f'⚠️  User "{username}" registered, but failed to create user directory: {e}', err=True)
-            click.echo(f"   User ID: {user_id}")
-            raise click.Abort()
+        user_dir = os.path.join(current_app.config["USERDATA_PATH"], user_id)
+        os.makedirs(user_dir, exist_ok=True)
+
+        click.echo(f'\nSuccessfully registered user "{username}" (ID: {user_id}).')
+        click.echo(f"Data directory: {user_dir}")
