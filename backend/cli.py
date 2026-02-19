@@ -40,6 +40,10 @@ def register_cli_commands(app):
 
         Args:
             identifier: Username (for CLI users) or helmholtz_sub (for Helmholtz users)
+
+        Example:
+            flask admin promote myuser
+            flask admin promote 1fa0f64b-58f5-41f9-abb5-ac6e67456d23
         """
         # Try username first, then helmholtz_sub
         user = mongo.db.users.find_one({"username": identifier})
@@ -66,8 +70,14 @@ def register_cli_commands(app):
 
     @admin.command(name="list")
     def list_admins():
-        """List all admin users."""
-        admins = list(mongo.db.users.find({"role": "admin"}, {"username": 1, "helmholtz_sub": 1, "_id": 0}))
+        """List all admin users.
+
+        Example:
+            flask admin list
+        """
+        admins = list(
+            mongo.db.users.find({"role": "admin"}, {"username": 1, "helmholtz_sub": 1, "email": 1, "_id": 0})
+        )
 
         if not admins:
             click.echo("No admin users found.")
@@ -77,30 +87,65 @@ def register_cli_commands(app):
         for admin in admins:
             username = admin.get("username")
             helmholtz_sub = admin.get("helmholtz_sub")
+            email = admin.get("email")
             if username:
                 click.echo(f"  • Username: {username}")
             elif helmholtz_sub:
                 click.echo(f"  • Helmholtz ID: {helmholtz_sub}")
+            elif email:
+                click.echo(f"  • Legacy user (email: {email}) - needs migration")
             else:
-                click.echo("  • Unknown user")
+                click.echo("  • Unknown user (no identifier found)")
 
     @app.cli.group()
     def user():
         """User management commands."""
         pass
 
+    @user.command(name="list")
+    def list_users():
+        """List all users.
+
+        Example:
+            flask user list
+        """
+        users = list(
+            mongo.db.users.find({}, {"username": 1, "helmholtz_sub": 1, "email": 1, "role": 1, "_id": 0})
+        )
+
+        if not users:
+            click.echo("No users found.")
+            return
+
+        click.echo(f"\nFound {len(users)} user(s):\n")
+        for user in users:
+            username = user.get("username")
+            helmholtz_sub = user.get("helmholtz_sub")
+            email = user.get("email")
+            role = user.get("role", "user")
+            role_badge = "👑" if role == "admin" else "👤"
+
+            if username:
+                click.echo(f"  {role_badge} Username: {username} (role: {role})")
+            elif helmholtz_sub:
+                click.echo(f"  {role_badge} Helmholtz ID: {helmholtz_sub} (role: {role})")
+            elif email:
+                click.echo(f"  {role_badge} Legacy user (email: {email}, role: {role}) - needs migration")
+            else:
+                click.echo(f"  {role_badge} Unknown user (no identifier found, role: {role})")
+
     @user.command()
     @click.argument("username")
     @click.argument("password")
     def register(username, password):
-        """Register a new admin user.
+        """Register a new user.
 
         Args:
             username: Username for registration
             password: Plain-text password (will be hashed)
 
         Example:
-            flask user register admin_user mypassword123
+            flask user register myuser mypassword123
         """
         # Normalize username
         username = username.strip()
@@ -118,11 +163,11 @@ def register_cli_commands(app):
         # Hash password
         hashed_password = generate_password_hash(password)
 
-        # Create user document - CLI users are automatically admins
+        # Create user document
         user_doc = {
             "username": username,
             "password": hashed_password,
-            "role": "admin",  # CLI users are automatically admins
+            "role": "user",  # Default role for CLI users
         }
 
         # Insert user into database
@@ -136,7 +181,7 @@ def register_cli_commands(app):
                 userdata_path = app.config["USERDATA_PATH"]
                 user_dir = os.path.join(userdata_path, user_id)
                 os.makedirs(user_dir, exist_ok=True)
-            click.echo(f'✅ Successfully registered admin user "{username}" (ID: {user_id}).')
+            click.echo(f'✅ Successfully registered user "{username}" (ID: {user_id}).')
             click.echo(f"   User data directory created at: {user_dir}")
         except Exception as e:
             click.echo(f'⚠️  User "{username}" registered, but failed to create user directory: {e}', err=True)
