@@ -1,9 +1,10 @@
 from celery import Celery, signature
 from celery.schedules import crontab
-from config import Config
+
+from backend.config import CeleryConfig
 
 app = Celery()
-app.config_from_object(Config.CELERY_CONFIG)
+app.config_from_object(CeleryConfig)
 
 MIDNIGHT_CRON = crontab(minute=0, hour=0)
 
@@ -12,7 +13,7 @@ MIDNIGHT_CRON = crontab(minute=0, hour=0)
 def setup(sender, **kwargs):
     sender.add_periodic_task(
         MIDNIGHT_CRON,
-        signature("worker.tasks.fetch_dropdown_options", args=(Config.MONGO_URI,)),
+        signature("backend.worker.tasks.fetch_dropdown_options"),
         name="fetch-dropdown-options-task",
     )
 
