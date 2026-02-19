@@ -1,14 +1,14 @@
 {
   "source": "NCBI",
   "source_params": {
-    "taxon": "9606",
-    "species": "Homo_sapiens",
-    "annotation_release": "110"
+    "taxon": "archaea",
+    "species": "Acidianus_infernus",
+    "annotation_release": "GCF_009729545.1_ASM972954v1"
   },
   "genomic_regions": {
     "gene": "true",
     "intergenic": "false",
-    "exon": "true",
+    "exon": "false",
     "exon_exon_junction": "false",
     "utr": "false",
     "cds": "false",

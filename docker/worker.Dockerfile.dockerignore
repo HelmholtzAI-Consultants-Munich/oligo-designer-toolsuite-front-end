@@ -9,6 +9,7 @@
 !/backend/__init__.py
 !/backend/config.py
 !/backend/extensions.py
+!/backend/genomic_databases.py
 !/backend/pyproject.toml
 !/backend/worker_environment.yml
 !/backend/worker

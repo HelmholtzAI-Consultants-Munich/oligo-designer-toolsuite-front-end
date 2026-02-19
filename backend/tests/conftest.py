@@ -39,7 +39,7 @@ def mock_user_dir_exists(monkeypatch):
         path_str = str(path)
         # Allow user directories to exist for authenticated users
         # Pattern: .../user_data/test_user_id or .../user_data/dummy_user
-        if "/user_data/" in path_str or path_str.endswith("user_data"):
+        if "/user_data/" in path_str or "cache" in path_str or path_str.endswith("user_data"):
             # Check if it's for a test user
             if any(user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]):
                 # Return True for directory existence checks
@@ -55,6 +55,8 @@ def mock_user_dir_exists(monkeypatch):
             if any(user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]):
                 # Silently succeed for test user directories
                 return
+        if "cache" in path_str:
+            return
         # Use original behavior for other paths
         return original_makedirs(path, mode=mode, exist_ok=exist_ok)
 
@@ -124,8 +126,14 @@ def mock_run():
         yield mock_run
 
 
-@pytest.fixture
-def app():
+@pytest.fixture(scope="session")
+def mock_initial():
+    with patch("backend.app.initial_dropdown_prefetch"):
+        yield
+
+
+@pytest.fixture(scope="session")
+def app(mock_initial):
     """Create Flask app for testing (for direct function testing)."""
     app = create_app()
     app.config["TESTING"] = True
@@ -275,11 +283,3 @@ def form_data():
         "file_regions": "",
         "test_param": "123",
     }
-
-
-# @pytest.fixture
-# def pipeline_runner(mock_schema):
-#     """Create PipelineRunner instance for testing."""
-#     from routes.runners.pipeline_runner import PipelineRunner
-
-#     return PipelineRunner("test_pipeline", "test_probe_designer", mock_schema)
