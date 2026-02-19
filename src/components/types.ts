@@ -1,3 +1,4 @@
+import type { GenericObjectType } from "@rjsf/utils";
 import form_Data_Ncbi from "../forms/genomic_ncbi_form";
 import form_Data_Ens from "../forms/genomic_ens_form";
 
@@ -19,7 +20,7 @@ export const defaultFastaForm: FastaForm = {
     formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
 };
 
-export type RJSFFormData = any;
+export type RJSFFormData = GenericObjectType;
 export type RJSFFormDataKey = string;
 export type Status = "idle" | "submitting" | "running";
 export type Modal = {

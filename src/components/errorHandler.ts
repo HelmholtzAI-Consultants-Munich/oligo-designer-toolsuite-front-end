@@ -63,7 +63,7 @@ export function extractErrorMessage(
         if (status === 500) {
             return "Something went wrong on our end. Please try again in a few moments.";
         }
-        if (status && status >= 500) {
+        if (status != null && status >= 500) {
             return "Our servers are experiencing issues. Please try again later.";
         }
     }

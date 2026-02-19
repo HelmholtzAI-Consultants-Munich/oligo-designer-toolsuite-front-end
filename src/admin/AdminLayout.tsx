@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router-dom";
-import { useAuth } from "../modules/auth";
+import { useAuth } from "../modules/useAuth";
 import { Navbar, Nav, Container, Spinner, Button } from "react-bootstrap";
 import {
     People,

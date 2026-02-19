@@ -62,7 +62,7 @@ jobs:
           set -euxo pipefail
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
-          conda env update -f flask/environment.yml
+          conda env update -f backend/environment.yml
           cd odt_repo
           pip install -e .
           cd ..
@@ -72,7 +72,7 @@ jobs:
           set -euxo pipefail
           source $(conda info --base)/etc/profile.d/conda.sh
           conda activate odt
-          pip install --group flask/pyproject.toml:test
+          pip install --group backend/pyproject.toml:test
 
       - name: Install Frontend Dependencies
         run: |

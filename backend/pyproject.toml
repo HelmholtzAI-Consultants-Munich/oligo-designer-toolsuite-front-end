@@ -1,0 +1,63 @@
+# The ODT Cloud server does not define the [project] table
+# as it is not meant for distribution as a package.
+
+# see https://packaging.python.org/en/latest/specifications/dependency-groups/
+[dependency-groups]
+shared = ["celery >=5.6, <6", "pymongo >=4.15, <5", "PyYAML >=6, <7", "python-dotenv >=1.2, <2"]
+server = [
+    { include-group = "shared" },
+    "Authlib >=1.6, <2",
+    "Flask >=3.1, <4",
+    "flask-cors >=6, <7",
+    "Flask-Login >=0.6, <0.7",
+    "Flask-PyMongo >=3, <4",
+    "prometheus-flask-exporter >=0.23, <0.24",
+    "requests >=2.32, <3",
+]
+worker = [{ include-group = "shared" }, "biopython >=1.86, <2"]
+test = [
+    { include-group = "server" },
+    "coverage >=7.12, <8",
+    "pytest >=9, <10",
+    "pytest-cov >=7, <8",
+    "pytest-mock >=3.15, <4",
+]
+lint = ["pre-commit >=4.5, <5", "ruff >=0.14"]
+dev = [
+    { include-group = "server" },
+    { include-group = "worker" },
+    { include-group = "test" },
+    { include-group = "lint" },
+]
+
+[tool.pytest]
+addopts = ["-q"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+# Rules that Ruff will apply
+# see https://docs.astral.sh/ruff/rules
+select = [
+    "E4",
+    "E7",
+    "E9",
+    "F",   # Pyflakes
+    "RUF", # ruff-specific rules
+    "UP",  # pyupgrade
+    "I",   # isort
+]
+
+[tool.pyright]
+exclude = ["**/node_modules", "**/__pycache__", "**/.*", "**/typings"]
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+
+allowedUntypedLibraries = ["authlib", "flask_login"]
+
+# Pyright rules
+typeCheckingMode = "standard" # todo: set to strict
+reportAny = false

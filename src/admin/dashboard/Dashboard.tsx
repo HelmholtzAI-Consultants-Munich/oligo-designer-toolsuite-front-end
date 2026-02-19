@@ -93,11 +93,15 @@ const Dashboard: React.FC = () => {
                 }
             );
             setStats(response.data);
-        } catch (err: any) {
-            setError(
-                err.response?.data?.error ||
-                    "Failed to load dashboard statistics"
-            );
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                setError(
+                    err.response?.data?.error ||
+                        "Failed to load dashboard statistics"
+                );
+            } else {
+                setError("Failed to load dashboard statistics");
+            }
             console.error("Error fetching dashboard stats:", err);
         } finally {
             setIsLoading(false);

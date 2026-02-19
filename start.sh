@@ -3,12 +3,12 @@
 # Start frontend (in the background)
 npm run dev &
 FRONTEND_PID=$!
-cd flask
+cd backend
 # Start celery (in the background)
 celery -A worker worker &
 CELERY_PID=$!
 # Start backend (in foreground)
-python app.py
+flask run --host=0.0.0.0
 BACKEND_PID=$!
 cd ..
 
