@@ -71,6 +71,9 @@ class GenomicRegionsFile:
                 start_ends.sort(key=lambda x: x[0])  # sort by start position
 
                 strand = coordinates["strand"][0] if "strand" in coordinates else "+"
+                if strand == "-":
+                    # reverse sequence for negative strand
+                    total_sequence = total_sequence[::-1]
                 transcript_ids = additional_info.get("transcript_id", ["transcript_unknown"])
 
                 for transcript_index, transcript_id in enumerate(transcript_ids):
