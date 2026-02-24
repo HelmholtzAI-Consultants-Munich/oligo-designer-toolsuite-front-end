@@ -125,15 +125,7 @@ const Navbar: React.FC = () => {
                                         data-bs-toggle="dropdown"
                                         aria-expanded="false"
                                     >
-                                        {user.role === "admin" ? (
-                                            <span>
-                                                {user.username ||
-                                                    user.helmholtz_sub ||
-                                                    "Admin"}
-                                            </span>
-                                        ) : (
-                                            <i className="bi bi-gear-fill"></i>
-                                        )}
+                                        <i className="bi bi-gear-fill"></i>
                                     </a>
                                     <ul className="dropdown-menu-start dropdown-menu">
                                         <li>

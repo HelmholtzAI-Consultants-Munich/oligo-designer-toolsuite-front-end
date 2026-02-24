@@ -63,7 +63,7 @@ const PipelineList: React.FC = () => {
             setIsLoading(true);
             setError(null);
             const response = await axios.get(
-                BACKEND_URL + "api/admin/pipelines",
+                BACKEND_URL + "/api/admin/pipelines",
                 {
                     withCredentials: true,
                 }
