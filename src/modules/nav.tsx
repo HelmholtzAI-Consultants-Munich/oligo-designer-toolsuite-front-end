@@ -186,7 +186,7 @@ const Navbar: React.FC = () => {
                                     className="btn btn-outline-primary"
                                     to="/login"
                                 >
-                                    Login
+                                    Login/Register
                                 </Link>
                             </li>
                         )}
