@@ -634,6 +634,12 @@ const GenomeAlignmentD3 = {
             const oligoEnd = Math.max(...oligoComponents.map((d) => d.end));
 
             // Smoothly zoom and pan to center the selected oligo
+            const zoomScale = Math.min(
+                (ctx.innerWidth /
+                    (ctx.xScale(oligoEnd) - ctx.xScale(oligoStart))) *
+                    0.9, // add some padding
+                ctx.zoomBehavior.scaleExtent()[1] // don't exceed max zoom
+            );
             ctx.svg
                 .transition()
                 .duration(2500)
@@ -642,15 +648,11 @@ const GenomeAlignmentD3 = {
                     ctx.zoomBehavior.transform,
                     d3.zoomIdentity
                         .translate(ctx.innerWidth / 2, 0)
-                        .scale(
-                            ctx.innerWidth /
-                                (ctx.xScale(oligoEnd + 100) -
-                                    ctx.xScale(oligoStart - 100))
-                        )
+                        .scale(zoomScale)
                         .translate(
                             -(
-                                (ctx.xScale(oligoStart - 100) +
-                                    ctx.xScale(oligoEnd + 100)) /
+                                (ctx.xScale(oligoStart) +
+                                    ctx.xScale(oligoEnd)) /
                                 2
                             ),
                             0
