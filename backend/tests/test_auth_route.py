@@ -77,6 +77,12 @@ def test_login_invalid_credentials(client, monkeypatch):
     assert "error" in response.get_json()
 
 
+def test_login_get_rejects_external_redirect(client):
+    response = client.get("/login?redirect=https://evil.example")
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid redirect path"
+
+
 def test_check_auth_logged_out(client):
     response = client.get("/api/check_auth")
     data = response.get_json()

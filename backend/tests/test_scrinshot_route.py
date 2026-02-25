@@ -1,5 +1,6 @@
 import json
 import os
+from datetime import datetime
 
 import pytest
 
@@ -29,6 +30,8 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
+    assert isinstance(updated["timestamp"], datetime)
+    assert isinstance(updated["output_path"], dict)
 
     response = client.get(f"/api/runs/{run_id}/state")
     data = response.get_json()

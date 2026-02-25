@@ -16,7 +16,6 @@ Features:
 """
 
 import os
-from datetime import datetime
 from http import HTTPStatus
 from typing import Any
 
@@ -27,6 +26,13 @@ from flask_login import current_user
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_run_or_404, get_task_id, get_user_context
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
+from backend.utilities.typed_values import (
+    deserialize_path,
+    path_for_display,
+    safe_join_under,
+    timestamp_for_display,
+    utc_now,
+)
 
 runs_bp = Blueprint("runs", __name__)
 
@@ -73,7 +79,7 @@ def init_run_id():
         "status": "pending",
         "user_id": user_id,
         "session_id": session_id,
-        "created_at": datetime.now(),
+        "created_at": utc_now(),
     }
     run_result = mongo.db.runs.insert_one(run_doc)
     return jsonify({"run_id": str(run_result.inserted_id)})
@@ -106,8 +112,8 @@ def get_pipeline_runs():
             "_id": str(run["_id"]),
             "pipeline": run.get("pipeline", "unknown"),
             "status": run.get("status", "unknown"),
-            "timestamp": run.get("timestamp", "").replace("_", " "),
-            "output_path": run.get("output_path", ""),
+            "timestamp": timestamp_for_display(run.get("timestamp"), separator=" "),
+            "output_path": path_for_display(run.get("output_path")),
             "user_id": run.get("user_id", "unknown"),
         }
         formatted_runs.append(formatted)
@@ -137,8 +143,8 @@ def get_pipeline_run(run_id: ObjectId):
         "_id": str(run["_id"]),
         "pipeline": run.get("pipeline", "unknown"),
         "status": run.get("status", "unknown"),
-        "timestamp": run.get("timestamp", "").replace("_", " "),
-        "output_path": run.get("output_path", ""),
+        "timestamp": timestamp_for_display(run.get("timestamp"), separator=" "),
+        "output_path": path_for_display(run.get("output_path")),
         "user_id": run.get("user_id", "unknown"),
     }
     # Include error_message if status is failure
@@ -170,9 +176,16 @@ def get_run_file(run_id: ObjectId, filename: str):
     # Auth or session check
     run = get_run_or_404(run_id, require_ownership=True)
 
-    # Support subdirs (e.g. "annotation/example.fna")
-    file_path = os.path.join(run["output_path"], *filename.split("/"))
-    if not os.path.exists(file_path):
+    output_dir = deserialize_path(run.get("output_path"))
+    if output_dir is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Run output directory is missing")
+
+    # Support subdirs (e.g. "annotation/example.fna"), but block path traversal.
+    file_path = safe_join_under(output_dir, filename)
+    if file_path is None:
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid file path")
+
+    if not file_path.exists():
         abort(HTTPStatus.NOT_FOUND, description="File not found")
 
     # Return correct mimetype
@@ -206,31 +219,36 @@ def get_run_files(run_id: ObjectId):
     # Auth or session check
     run = get_run_or_404(run_id, require_ownership=True)
 
-    output_dir = run["output_path"]
+    output_dir = deserialize_path(run.get("output_path"))
+    if output_dir is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Run output directory is missing")
+
     files = []
 
     # Main output dir files
     for fname in os.listdir(output_dir):
         if fname.endswith((".yml", ".yaml", ".txt", ".log")):
+            file = output_dir / fname
             files.append(
                 {
                     "name": fname,
                     "type": "log" if "log" in fname else "config",
-                    "size": os.path.getsize(os.path.join(output_dir, fname)),
+                    "size": file.stat().st_size,
                 }
             )
 
     # Special handling for "Genomic Region Generator" pipeline
     if run.get("pipeline") == "Genomic Region Generator":
-        output_gen = os.path.join(output_dir, "annotation")
-        if os.path.exists(output_gen):
+        output_gen = output_dir / "annotation"
+        if output_gen.exists():
             for fname in os.listdir(output_gen):
                 if fname.endswith((".yml", ".yaml", ".txt", ".log", ".fna")):
+                    file = output_gen / fname
                     files.append(
                         {
                             "name": f"annotation/{fname}",
                             "type": "log" if "log" in fname else "config",
-                            "size": os.path.getsize(os.path.join(output_gen, fname)),
+                            "size": file.stat().st_size,
                         }
                     )
     return jsonify(files), HTTPStatus.OK
