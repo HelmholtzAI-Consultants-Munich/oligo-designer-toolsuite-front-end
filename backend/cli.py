@@ -10,6 +10,7 @@ Usage:
 
 import os
 import re
+from typing import Never
 
 import click
 from flask import current_app
@@ -23,7 +24,7 @@ _PASSWORD_REQUIREMENTS = (
     "At least 8 characters, one uppercase, one lowercase, one digit, one special character"
 )
 
-_USER_PROJECTION = {"username": 1, "helmholtz_sub": 1, "email": 1, "role": 1, "_id": 0}
+_USER_PROJECTION = {"username": 1, "helmholtz_sub": 1, "role": 1, "_id": 0}
 
 
 def _find_user(identifier: str) -> dict | None:
@@ -35,7 +36,7 @@ def _find_user(identifier: str) -> dict | None:
 
 def _display_id(user: dict, fallback: str = "Unknown") -> str:
     """Return the most readable identifier for a user."""
-    return user.get("username") or user.get("helmholtz_sub") or user.get("email") or fallback
+    return user.get("username") or user.get("helmholtz_sub") or fallback
 
 
 def _format_user(user: dict, show_role: bool = False) -> str:
@@ -47,8 +48,6 @@ def _format_user(user: dict, show_role: bool = False) -> str:
         return f"  Username: {username}{role_suffix}"
     if helmholtz_sub := user.get("helmholtz_sub"):
         return f"  Helmholtz ID: {helmholtz_sub}{role_suffix}"
-    if email := user.get("email"):
-        return f"  Legacy (email: {email}){role_suffix} — needs migration"
     return f"  Unknown user{role_suffix}"
 
 
@@ -77,7 +76,7 @@ def _validate_password(password: str) -> tuple[bool, str]:
     return True, ""
 
 
-def _abort(message: str) -> None:
+def _abort(message: str) -> Never:
     """Print an error and abort."""
     click.echo(f"Error: {message}", err=True)
     raise click.Abort()

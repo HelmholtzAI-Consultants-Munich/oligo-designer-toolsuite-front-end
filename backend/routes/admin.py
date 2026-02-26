@@ -134,7 +134,10 @@ def update_user(user_id: ObjectId):
         # Only allow username updates for CLI users (users with username field)
         user = get_user_by_id_or_404(user_id, exclude_password=True)
         if not user.get("username"):
-            abort(HTTPStatus.BAD_REQUEST, description="Cannot update username for Helmholtz users")
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                description="Helmholtz users do not have a username to update use helmholtz-sub instead",
+            )
         update_doc["username"] = data["username"].strip()
     if "role" in data:
         update_doc["role"] = data["role"]

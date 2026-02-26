@@ -13,8 +13,7 @@ def admin_user(client):
     user_id = ObjectId()
     user = {
         "_id": user_id,
-        "email": "admin@test.com",
-        "name": "Admin User",
+        "username": "admin_user",
         "role": "admin",
         "password": "hashed_password",
     }
@@ -29,8 +28,7 @@ def regular_user(client):
     user_id = ObjectId()
     user = {
         "_id": user_id,
-        "email": "user@test.com",
-        "name": "Regular User",
+        "username": "regular_user",
         "role": "user",
         "password": "hashed_password",
     }
@@ -313,13 +311,16 @@ def test_get_dashboard_stats_unauthenticated(unauthenticated_client):
 def create_test_user(client):
     """Factory fixture to create test users"""
 
-    def _create_user(user_id=None, email=None, role="user"):
+    def _create_user(user_id=None, role="user"):
         """Helper function to create a test user"""
         if user_id is None:
             user_id = ObjectId()
-        if email is None:
-            email = f"user{user_id}@test.com"
-        user = {"_id": user_id, "email": email, "role": role, "password": "hashed"}
+        user = {
+            "_id": user_id,
+            "username": f"user{user_id}",
+            "role": role,
+            "password": "hashed",
+        }
         mongo.db.users.insert_one(user)
         return user_id
 
