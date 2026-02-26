@@ -59,3 +59,50 @@ def format_pipeline_run(run):
         "session_id": run.get("session_id"),
         "transferred_from_anon": run.get("transferred_from_anon", False),
     }
+
+
+def format_feedback(feedback):
+    """
+    Format a feedback document for API response.
+
+    Converts MongoDB feedback document to JSON-serializable format and
+    optionally includes basic user information.
+
+    :param feedback: The feedback document from MongoDB
+    :type feedback: dict
+    :returns: Formatted feedback dictionary
+    :rtype: dict
+    """
+    user_id = feedback.get("user_id")
+    user_info = None
+
+    if user_id:
+        try:
+            user = find_user_by_id(ObjectId(user_id))
+            if user:
+                user_info = {
+                    "id": str(user["_id"]),
+                    "email": user.get("email", "Unknown"),
+                }
+        except Exception:
+            # If user lookup fails, we still return the feedback without user info
+            pass
+
+    created_at = feedback.get("created_at")
+    if created_at is not None:
+        created_at_value = created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at)
+    else:
+        # Fall back to ObjectId generation time if available
+        feedback_id = feedback.get("_id")
+        created_at_value = (
+            feedback_id.generation_time.isoformat() if isinstance(feedback_id, ObjectId) else None
+        )
+
+    return {
+        "id": str(feedback["_id"]),
+        "message": feedback.get("message", ""),
+        "created_at": created_at_value,
+        "user_id": user_id,
+        "user": user_info,
+        "metadata": feedback.get("metadata") or {},
+    }

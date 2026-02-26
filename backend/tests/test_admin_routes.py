@@ -90,6 +90,20 @@ def pipeline_run(client):
     mongo.db.runs.delete_one({"_id": run_id})
 
 
+@pytest.fixture
+def feedback_document(client):
+    """Create a feedback document for testing"""
+    feedback_id = ObjectId()
+    doc = {
+        "_id": feedback_id,
+        "message": "Test feedback message",
+        "user_id": None,
+    }
+    mongo.db.feedbacks.insert_one(doc)
+    yield doc
+    mongo.db.feedbacks.delete_one({"_id": feedback_id})
+
+
 # ==================== User Management Tests ====================
 
 
@@ -297,6 +311,32 @@ def test_get_dashboard_stats_unauthorized(regular_client):
 def test_get_dashboard_stats_unauthenticated(unauthenticated_client):
     """Test that unauthenticated users cannot access dashboard statistics"""
     response = unauthenticated_client.get("/api/admin/dashboard")
+    assert response.status_code == 401 or response.status_code == 403
+
+
+# ==================== Feedback Tests ====================
+
+
+def test_get_feedbacks_success(admin_client, feedback_document):
+    """Test getting all feedback entries"""
+    response = admin_client.get("/api/admin/feedbacks")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert isinstance(data, list)
+    assert len(data) >= 1
+    ids = [item["id"] for item in data]
+    assert str(feedback_document["_id"]) in ids
+
+
+def test_get_feedbacks_unauthorized(regular_client):
+    """Test that regular users cannot access feedback list"""
+    response = regular_client.get("/api/admin/feedbacks")
+    assert response.status_code == 403
+
+
+def test_get_feedbacks_unauthenticated(unauthenticated_client):
+    """Test that unauthenticated users cannot access feedback list"""
+    response = unauthenticated_client.get("/api/admin/feedbacks")
     assert response.status_code == 401 or response.status_code == 403
 
 
