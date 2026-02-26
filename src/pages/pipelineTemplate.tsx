@@ -15,7 +15,6 @@ import { TabsLayout } from "../components/tabs";
 import FileSelection from "../components/fileSelection";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
 import { InfoModal } from "../components/modal/InfoModal";
-import FeedbackButton from "../components/feedback/FeedbackButton";
 import Ajv2020 from "ajv/dist/2020";
 
 type Props = {
@@ -78,7 +77,6 @@ const PipelineTemplate: React.FC<Props> = ({
                 <div className="d-flex justify-content-center align-items-center mt-3">
                     <h2 className="mb-0">{title}</h2>
                 </div>
-                <FeedbackButton floating context={{ pipeline }} />
                 <div className="container my-4">
                     <Form
                         schema={schema}

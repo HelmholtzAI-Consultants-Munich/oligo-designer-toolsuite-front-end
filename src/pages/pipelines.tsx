@@ -1,7 +1,6 @@
 import React from "react";
 import Navbar from "../modules/nav";
 import { Link } from "react-router-dom";
-import FeedbackButton from "../components/feedback/FeedbackButton";
 import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";
@@ -29,7 +28,6 @@ const Pipelines: React.FC = () => {
                     .
                 </div>
             )}
-            <FeedbackButton floating context={{ page: "pipelines-landing" }} />
             <div className="container mt-5">
                 <h2 className="mb-4">Pipelines</h2>
                 <p className="lead">

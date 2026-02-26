@@ -6,7 +6,6 @@ import Navbar from "../modules/nav";
 import axios from "axios";
 import type { RunState } from "../types";
 import { BACKEND_URL } from "../config";
-import FeedbackButton from "../components/feedback/FeedbackButton";
 
 interface PipelineRun {
     _id: string;
@@ -91,7 +90,6 @@ const Runs = () => {
     return (
         <div>
             <Navbar />
-            <FeedbackButton floating context={{ page: "runs-list" }} />
             <div className="container mt-5">
                 <h2 className="mb-4">Pipeline Runs</h2>
                 <div className="row mb-4">

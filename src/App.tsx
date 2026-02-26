@@ -16,10 +16,12 @@ import Login from "./pages/login";
 import Register from "./pages/register";
 import RunDetail from "./pages/rundetail";
 import AdminApp from "./admin/AdminApp";
+import FeedbackButton from "./components/feedback/FeedbackButton";
 
 function App() {
     return (
         <Router>
+            <FeedbackButton floating />
             <Routes>
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />
