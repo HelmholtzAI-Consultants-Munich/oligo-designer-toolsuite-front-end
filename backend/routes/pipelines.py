@@ -10,7 +10,8 @@ from flask_login import current_user
 from flask_login.utils import LocalProxy
 
 from backend.extensions import celery_app, mongo
-from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.route_helpers import get_user_context, get_user_context_with_directory
+from backend.utilities.formatting import format_feedback
 from backend.utilities.validation import parse_run_id
 
 # Blueprint for Merfish endpoints
@@ -147,3 +148,39 @@ def start_pipeline(pipeline_name: str):
     # The task state can be polled using get_run_state(run_id_str).
 
     return jsonify({"run_id": run_id_str})
+
+
+@pipelines_bp.route("/api/feedbacks", methods=["POST"])
+def create_feedback():
+    """
+    Create a general feedback entry for the current user or anonymous session.
+
+    Accepts a JSON payload with:
+    - message: Required feedback text
+    - metadata: Optional dictionary with additional context
+    """
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    metadata = data.get("metadata") or {}
+
+    if not message:
+        abort(HTTPStatus.BAD_REQUEST, description="Message is required")
+
+    # Associate feedback with either authenticated user or anonymous session
+    user_id, session_id = get_user_context()
+
+    doc: dict[str, Any] = {
+        "message": message,
+        "created_at": datetime.utcnow(),
+        "metadata": metadata,
+    }
+
+    if user_id is not None:
+        doc["user_id"] = user_id
+    if session_id is not None:
+        doc["session_id"] = session_id
+
+    result = mongo.db.feedbacks.insert_one(doc)
+    saved = mongo.db.feedbacks.find_one({"_id": result.inserted_id})
+
+    return jsonify(format_feedback(saved)), HTTPStatus.CREATED

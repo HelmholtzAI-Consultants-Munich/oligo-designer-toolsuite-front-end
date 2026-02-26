@@ -11,6 +11,7 @@ import type { GenomicRegions, Oligo, OligoValue, RunState } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
+import FeedbackButton from "../components/feedback/FeedbackButton";
 
 interface RunFile {
     name: string;
@@ -474,6 +475,10 @@ const RunDetail = () => {
         <div>
             <Navbar />
             <div className="container mt-4">
+                <FeedbackButton
+                    floating
+                    context={{ page: "run-detail", runId }}
+                />
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <button
                         onClick={() => {
