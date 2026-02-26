@@ -44,7 +44,7 @@ class GenomicRegionsFile:
 
     # Collect regions from fasta files
     def _collect_regions(self):
-        regions = {gene: defaultdict(list) for gene in self.genes}
+        regions = defaultdict(lambda: defaultdict(list))
         fasta_parser = FastaParser()
 
         for fname in self.fasta_paths:
@@ -138,7 +138,7 @@ class GenomicRegionsFile:
 
     # Load probes from probes yaml file and match them to regions, filling gaps for exon-exon junction probes
     def _load_probes(self):
-        probes = {gene: defaultdict(list) for gene in self.genes}
+        probes = defaultdict(lambda: defaultdict(list))
 
         if not os.path.exists(self.probes_path):
             print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
@@ -231,7 +231,7 @@ class GenomicRegionsFile:
         # convert defaultdict to dict for cleaner output
         for gene in probes:
             probes[gene] = dict(probes[gene])
-        return probes
+        return dict(probes)
 
     # Process regions to fill gaps and merge overlapping regions
     def _process_regions(self):
