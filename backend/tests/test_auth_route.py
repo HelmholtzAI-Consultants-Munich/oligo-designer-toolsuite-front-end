@@ -4,7 +4,6 @@ import pytest
 from bson import ObjectId
 from werkzeug.security import generate_password_hash
 
-from backend.app import create_app
 from backend.extensions import mongo
 
 
@@ -15,11 +14,7 @@ def mock_make_dir():
 
 
 @pytest.fixture
-def client(monkeypatch):
-    app = create_app()
-    app.config["TESTING"] = True
-    app.secret_key = "test-key"
-
+def client(monkeypatch, app):
     class AnonymousUser:
         is_authenticated = False
 

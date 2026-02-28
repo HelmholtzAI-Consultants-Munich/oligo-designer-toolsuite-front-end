@@ -44,6 +44,7 @@ const AdminNavItem: React.FC<AdminNavItemProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: collapsed ? "center" : "flex-start",
+        whiteSpace: "nowrap",
     };
 
     return (
@@ -81,7 +82,17 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
     const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar collapse state
 
+    const [isLargeScreen, setIsLargeScreen] = useState(
+        window.matchMedia("(min-width: 992px)").matches
+    );
+
     useEffect(() => {
+        // Responsive screen detection using matchMedia
+        const mediaQuery = window.matchMedia("(min-width: 992px)");
+        const handleChange = (e: MediaQueryListEvent) =>
+            setIsLargeScreen(e.matches);
+        mediaQuery.addEventListener("change", handleChange);
+
         // Check if user is authenticated and is admin
         if (!loading) {
             console.log(
@@ -104,6 +115,8 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                 navigate("/");
             }
         }
+
+        return () => mediaQuery.removeEventListener("change", handleChange);
     }, [user, loading, navigate, location.pathname]);
 
     const handleLogout = async () => {
@@ -178,11 +191,9 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
 
             {/* Main Content Area */}
             <div
+                className="d-flex flex-column flex-grow-1"
                 style={{
-                    marginLeft: sidebarWidth,
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
+                    marginLeft: isLargeScreen ? sidebarWidth : 0,
                     transition: "margin-left 0.3s ease",
                 }}
             >

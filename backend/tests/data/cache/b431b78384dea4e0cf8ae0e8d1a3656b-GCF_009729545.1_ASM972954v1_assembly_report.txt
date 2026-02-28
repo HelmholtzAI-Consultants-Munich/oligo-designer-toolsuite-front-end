@@ -1,0 +1,37 @@
+# Assembly name:  ASM972954v1
+# Organism name:  Acidianus infernus (crenarchaeotes)
+# Infraspecific name:  strain=DSM 3191
+# Taxid:          12915
+# BioSample:      SAMN09933090
+# BioProject:     PRJNA488459
+# Submitter:      North Carolina State University
+# Date:           2019-12-04
+# Assembly type:  na
+# Release type:   major
+# Assembly level: Contig
+# Genome representation: full
+# WGS project:    WFIY01
+# Assembly method: Flye v. 2.4.2
+# Expected final version: yes
+# Genome coverage: 348x
+# Sequencing technology: PacBio Sequel
+# Relation to type material: assembly from type material
+# RefSeq category: Reference Genome
+# GenBank assembly accession: GCA_009729545.1
+# RefSeq assembly accession: GCF_009729545.1
+# RefSeq assembly and GenBank assemblies identical: yes
+#
+## Assembly-Units:
+## GenBank Unit Accession	RefSeq Unit Accession	Assembly-Unit name
+## GCA_009729595.1	GCF_009729595.1	Primary Assembly
+#
+# Ordered by chromosome/plasmid; the chromosomes/plasmids are followed by
+# unlocalized scaffolds.
+# Unplaced scaffolds are listed at the end.
+# RefSeq is equal or derived from GenBank object.
+#
+# Sequence-Name	Sequence-Role	Assigned-Molecule	Assigned-Molecule-Location/Type	GenBank-Accn	Relationship	RefSeq-Accn	Assembly-Unit	Sequence-Length	UCSC-style-name
+contig_4	unplaced-scaffold	na	na	WFIY01000001.1	=	NZ_WFIY01000001.1	Primary Assembly	15057	na
+contig_3	unplaced-scaffold	na	na	WFIY01000002.1	=	NZ_WFIY01000002.1	Primary Assembly	3763	na
+contig_2	unplaced-scaffold	na	na	WFIY01000003.1	=	NZ_WFIY01000003.1	Primary Assembly	16994	na
+contig_1	unplaced-scaffold	na	na	WFIY01000004.1	=	NZ_WFIY01000004.1	Primary Assembly	2186600	na

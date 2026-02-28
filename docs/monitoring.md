@@ -13,7 +13,17 @@ ODT Cloud includes a comprehensive monitoring stack using Prometheus and Grafana
 
 ## Accessing Monitoring Tools
 
-After starting the Docker containers with `docker compose up -d`, the following monitoring services are available:
+Monitoring services are only started when using the monitoring profile. To start the application with monitoring enabled, use:
+
+```bash
+npm run docker:start:monitoring
+# or for development with hot reloading:
+npm run docker:watch:monitoring
+```
+
+See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for more details on Docker profiles.
+
+After starting with the monitoring profile, the following monitoring services are available:
 
 | Service              | URL                           | Description                                             |
 | -------------------- | ----------------------------- | ------------------------------------------------------- |

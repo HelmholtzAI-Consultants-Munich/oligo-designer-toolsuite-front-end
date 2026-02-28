@@ -49,7 +49,7 @@ class TestGenomicEndpointFormatting:
 
     def test_genomic_abort_returns_special_envelope(self, client, authenticated_user):
         """Genomic route validation error returns {status, message, error}."""
-        response = client.post("/api/genomic/cascaded/ncbi", json={"source": "Invalid"})
+        response = client.post("/api/genomic/cascaded/custom", json={"source": "Invalid"})
         assert response.status_code == 400
         data = response.get_json()
         assert data["status"] == "error"
@@ -62,7 +62,7 @@ class TestGenomicEndpointFormatting:
             "backend.routes.genomic._validate_genomic_form_data",
             side_effect=RuntimeError("unexpected"),
         ):
-            response = client.post("/api/genomic/cascaded/ncbi", json={"source": "NCBI"})
+            response = client.post("/api/genomic/cascaded/custom", json={"source": "NCBI"})
             assert response.status_code == 500
             data = response.get_json()
             assert data["status"] == "error"
@@ -88,7 +88,7 @@ class TestGenericExceptionHandler:
             "backend.routes.genomic._validate_genomic_form_data",
             side_effect=RuntimeError("secret internal details /user_data/abc123"),
         ):
-            response = client.post("/api/genomic/cascaded/ncbi", json={"source": "NCBI"})
+            response = client.post("/api/genomic/cascaded/custom", json={"source": "NCBI"})
             assert response.status_code == 500
             data = response.get_json()
             assert "Something went wrong" in data["error"]
@@ -103,7 +103,7 @@ class TestGenericExceptionHandler:
             side_effect=ValueError("sensitive error details"),
         ):
             with patch.object(app.logger, "error") as mock_logger:
-                client.post("/api/genomic/cascaded/ncbi", json={"source": "NCBI"})
+                client.post("/api/genomic/cascaded/custom", json={"source": "NCBI"})
                 assert mock_logger.called
                 call_args = str(mock_logger.call_args)
                 assert "sensitive error details" in call_args

@@ -2,6 +2,7 @@
 title: Automated Updates
 layout: default
 nav_order: 7
+parent: Development
 ---
 
 # Automated Updates with GitHub Actions

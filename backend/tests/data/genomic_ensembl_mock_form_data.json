@@ -1,11 +1,11 @@
 {
   "source": "Ensembl",
   "source_params": {
-    "species": "Mus_musculus",
+    "species": "mus_musculus",
     "annotation_release": "110"
   },
   "genomic_regions": {
-    "gene": "true",
+    "gene": "false",
     "intergenic": "false",
     "exon": "true",
     "exon_exon_junction": "false",

@@ -1,0 +1,22 @@
+[
+  {
+    "taxon": "archaea",
+    "species": "Haloferax_denitrificans",
+    "result": ["GCF_000337795.1_ASM33779v1", "GCF_049603145.1_MBLA0123"]
+  },
+  {
+    "taxon": "invertebrate",
+    "species": "Drosophila_virilis",
+    "result": ["103", "GCF_030788295.1-RS_2024_12", "current"]
+  },
+  {
+    "taxon": "plant",
+    "species": "Dendrobium_officinale",
+    "result": ["100", "current"]
+  },
+  {
+    "taxon": "vertebrate_mammalian",
+    "species": "Sagmatias_obliquidens",
+    "result": ["100", "GCF_003676395.1-RS_2025_01", "current"]
+  }
+]

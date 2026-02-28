@@ -36,6 +36,26 @@ services:
           path: ./backend
           target: /app/backend
           initial_sync: true
+  odt-beat:
+    image: odt-server
+    build:
+      dockerfile: docker/server.Dockerfile
+    container_name: odt-beat
+    env_file:
+      - .env # Shared settings (Celery config)
+      - .env.docker # Docker overrides (service hostnames instead of localhost)
+    depends_on:
+      - odt-db
+      - odt-mq
+      - odt-worker
+    restart: on-failure
+    command: celery -A backend.beat beat
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend
+          target: /app/backend
+          initial_sync: true
 
   odt-worker:
     image: odt-worker

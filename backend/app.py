@@ -1,6 +1,8 @@
 import logging.config
 import os
+import time
 
+import celery
 from flask import Flask
 from flask_cors import CORS
 from flask_pymongo import BSONObjectIdConverter
@@ -35,6 +37,20 @@ def prepare_paths(app: Flask):
     for relative_key in relative_to_data_access_keys:
         path = os.path.join(data_access_path, app.config[relative_key])
         _update_and_mkdir(relative_key, path)
+
+
+# TODO: investigate double execution due to server restart in development mode
+def initial_dropdown_prefetch(celery_app, app):
+    while True:
+        try:
+            app.logger.debug("try dropdown prefetch")
+            celery_app.send_task(
+                "backend.worker.tasks.fetch_dropdown_options",
+            )
+            app.logger.debug("dropdown prefetch done")
+            break
+        except celery.exceptions.OperationalError:
+            time.sleep(2)
 
 
 def create_app():
@@ -80,8 +96,10 @@ def create_app():
         },
     )
 
-    # Initialize Celery configuration (separate from Flask config)
+    # Initialize Celery configuration
     celery_app.config_from_object(CeleryConfig)
+
+    initial_dropdown_prefetch(celery_app, app)
 
     # Register all blueprints from the routes package
     register_blueprints(app)
@@ -95,11 +113,8 @@ def create_app():
     return app
 
 
-# Create app instance for Flask CLI
-app = create_app()
-
-
 if __name__ == "__main__":
+    app = create_app()
     # When running directly, enable debug mode which will use DEBUG log level
     app.config["DEBUG"] = True
     # Reconfigure logging with debug mode
