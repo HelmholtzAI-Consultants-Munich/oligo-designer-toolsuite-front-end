@@ -9,7 +9,7 @@ import yaml
 from celery import Celery
 from celery.utils.log import get_task_logger
 
-from backend.worker.genomic_regions_file import GenomicRegionFile
+from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
 class PipelineRunner:
@@ -114,7 +114,26 @@ class PipelineRunner:
             self.logger.warning("No fasta files provided, skipping visualization generation.")
             return
 
-        regions_file = GenomicRegionFile(regions_file, fasta_paths, logger=self.logger)
+        # find output file name containing "probes" or "probeset"
+        output_yaml = next(
+            (
+                fname
+                for fname in os.listdir(output_path)
+                if ("probes" in fname or "probeset" in fname)
+                and (fname.endswith(".yml") or fname.endswith(".yaml"))
+            ),
+            None,
+        )
+        if not output_yaml:
+            print(
+                "No output YAML file containing 'probes' or 'probeset' found, skipping visualization generation."
+            )
+            return
+        probes_path = os.path.join(output_path, output_yaml)
+
+        regions_file = GenomicRegionsFile(
+            regions_file, fasta_paths, probes_path, self.pipeline_name, logger=self.logger
+        )
         regions_file_path = os.path.join(output_path, "genomic_regions.yaml")
         regions_file.yaml_dump(regions_file_path)
 
