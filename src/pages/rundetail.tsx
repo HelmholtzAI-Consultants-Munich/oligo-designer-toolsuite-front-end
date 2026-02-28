@@ -4,7 +4,7 @@ import axios from "axios";
 import YAML from "js-yaml";
 import Select from "react-select";
 import type { SingleValue } from "react-select";
-import Navbar from "../components/ui/Navbar";
+import Navbar from "../components/ui/Topbar";
 import * as XLSX from "xlsx";
 import type {
     GenomicRegions,

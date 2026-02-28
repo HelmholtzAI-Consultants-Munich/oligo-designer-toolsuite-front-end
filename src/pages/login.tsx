@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Navbar from "../components/ui/Navbar";
+import Navbar from "../components/ui/Topbar";
 import { useAuth } from "../modules/useAuth";
 import { Spinner } from "react-bootstrap";
 import { BACKEND_URL } from "../config";

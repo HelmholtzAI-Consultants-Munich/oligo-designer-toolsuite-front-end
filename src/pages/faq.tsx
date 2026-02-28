@@ -1,4 +1,4 @@
-import Navbar from "../components/ui/Navbar";
+import Navbar from "../components/ui/Topbar";
 import { Accordion, Container } from "react-bootstrap";
 
 const faq: React.FC = () => {
@@ -26,9 +26,8 @@ const faq: React.FC = () => {
                             How can I access the documentation?
                         </Accordion.Header>
                         <Accordion.Body>
-                            You can access the documentation by clicking on
-                            the "Docs" link in the navigation menu or
-                            visiting{" "}
+                            You can access the documentation by clicking on the
+                            "Docs" link in the navigation menu or visiting{" "}
                             <a
                                 href="https://oligo-designer-toolsuite.readthedocs.io/en/latest/index.html"
                                 target="_blank"
@@ -44,9 +43,8 @@ const faq: React.FC = () => {
                             Can I create custom pipelines?
                         </Accordion.Header>
                         <Accordion.Body>
-                            Yes, the toolsuite supports the creation of
-                                custom pipelines tailored to your specific
-                                research needs.
+                            Yes, the toolsuite supports the creation of custom
+                            pipelines tailored to your specific research needs.
                         </Accordion.Body>
                     </Accordion.Item>
                 </Accordion>

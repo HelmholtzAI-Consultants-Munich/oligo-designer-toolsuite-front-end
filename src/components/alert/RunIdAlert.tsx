@@ -1,4 +1,5 @@
 import { Alert } from "react-bootstrap";
+import { Link } from "react-router";
 
 export function RunIdAlert({
     runId,
@@ -11,7 +12,7 @@ export function RunIdAlert({
         <div>
             <Alert variant="info">
                 A pipeline run has been initiated with run ID:{" "}
-                <a href={`/runs/${runId}`}>{runId}</a>.
+                <Link to={`/runs/${runId}`}>{runId}</Link>.
                 {idCopySuccess
                     ? " The run ID has been copied to your clipboard."
                     : ""}

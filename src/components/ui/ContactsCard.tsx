@@ -8,12 +8,10 @@ export default function ContactsCard({
     email: string;
 }) {
     return (
-        <Card style={{ width: "18rem" }}>
+        <Card>
             <Card.Body>
                 <Card.Title>{name}</Card.Title>
-                <Card.Link href={`mailto:${email}`}>
-                    {email}
-                </Card.Link>
+                <Card.Link href={`mailto:${email}`}>{email}</Card.Link>
             </Card.Body>
         </Card>
     );
