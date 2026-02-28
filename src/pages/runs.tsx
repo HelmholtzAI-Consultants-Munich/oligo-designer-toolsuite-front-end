@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/useAuth";
-import Navbar from "../modules/nav";
+import Navbar from "../components/ui/Navbar";
 import axios from "axios";
 import type { RunState } from "../types";
 import { BACKEND_URL } from "../config";

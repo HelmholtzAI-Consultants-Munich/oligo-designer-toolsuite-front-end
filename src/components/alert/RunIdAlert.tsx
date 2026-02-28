@@ -1,4 +1,4 @@
-import { AlertComponent } from "./AlertComponent";
+import { Alert } from "react-bootstrap";
 
 export function RunIdAlert({
     runId,
@@ -9,13 +9,13 @@ export function RunIdAlert({
 }) {
     return (
         <div>
-            <AlertComponent variant="info">
+            <Alert variant="info">
                 A pipeline run has been initiated with run ID:{" "}
                 <a href={`/runs/${runId}`}>{runId}</a>.
                 {idCopySuccess
                     ? " The run ID has been copied to your clipboard."
                     : ""}
-            </AlertComponent>
+            </Alert>
         </div>
     );
 }

@@ -1,9 +1,9 @@
 // Login page component for user authentication
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Navbar from "../modules/nav";
+import Navbar from "../components/ui/Navbar";
 import { useAuth } from "../modules/useAuth";
 import { Spinner } from "react-bootstrap";
 import { BACKEND_URL } from "../config";

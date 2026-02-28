@@ -1,5 +1,5 @@
 import React from "react";
-import Navbar from "../modules/nav";
+import Navbar from "../components/ui/Navbar";
 import { Link } from "react-router-dom";
 import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
