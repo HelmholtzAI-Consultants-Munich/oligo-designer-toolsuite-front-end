@@ -16,6 +16,7 @@ import FileSelection from "../components/input/FileSelection";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
 import { InfoModal } from "../components/modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
+import { Container } from "react-bootstrap";
 
 type Props = {
     pipeline: string;
@@ -73,41 +74,38 @@ const PipelineTemplate: React.FC<Props> = ({
                     body={modal.body}
                 />
             )}
-            <div className="mb-3">
-                <div className="d-flex justify-content-center align-items-center mt-3">
-                    <h2 className="mb-0">{title}</h2>
-                </div>
-                <div className="container my-4">
-                    <Form
-                        schema={schema}
-                        uiSchema={uiSchema}
-                        formContext={{
+            <Container>
+                <h2>{title}</h2>
+                <Form
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    formContext={{
+                        files,
+                        setFiles,
+                    }}
+                    formData={formData}
+                    templates={{
+                        FieldTemplate: FieldTemplate,
+                        ObjectFieldTemplate: TabsLayout,
+                    }}
+                    widgets={widgets}
+                    validator={validator}
+                    onChange={(e) => setFormData(e.formData)}
+                    onSubmit={() =>
+                        handleSubmit(
+                            runStatus,
+                            setRunStatus,
+                            setRunId,
+                            setModal,
                             files,
-                            setFiles,
-                        }}
-                        formData={formData}
-                        templates={{
-                            FieldTemplate: FieldTemplate,
-                            ObjectFieldTemplate: TabsLayout,
-                        }}
-                        widgets={widgets}
-                        validator={validator}
-                        onChange={(e) => setFormData(e.formData)}
-                        onSubmit={() =>
-                            handleSubmit(
-                                runStatus,
-                                setRunStatus,
-                                setRunId,
-                                setModal,
-                                files,
-                                formData,
-                                pipeline
-                            )
-                        }
-                    />
-                </div>
-            </div>
+                            formData,
+                            pipeline
+                        )
+                    }
+                />
+            </Container>
         </>
     );
 };
+
 export default PipelineTemplate;

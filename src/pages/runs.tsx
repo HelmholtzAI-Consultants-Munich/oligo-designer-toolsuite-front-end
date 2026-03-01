@@ -111,17 +111,22 @@ const Runs = () => {
                 <h2>Pipeline Runs</h2>
                 <Row>
                     <Col md={6}>
-                        <Form onSubmit={(e) => {e.preventDefault(); goToRun(runIdInput);}}>
+                        <Form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                goToRun(runIdInput);
+                            }}
+                        >
                             <InputGroup>
                                 <Form.Control
                                     placeholder="Enter RunID"
                                     aria-label="RunID"
                                     value={runIdInput}
-                                    onChange={(e) => setRunIdInput(e.target.value)}
+                                    onChange={(e) =>
+                                        setRunIdInput(e.target.value)
+                                    }
                                 />
-                                <Button type="submit">
-                                    Go to Run
-                                </Button>
+                                <Button type="submit">Go to Run</Button>
                             </InputGroup>
                         </Form>
                     </Col>

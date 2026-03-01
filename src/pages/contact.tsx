@@ -1,5 +1,5 @@
 import Navbar from "../components/ui/Topbar";
-import { Col, Container, Row, Stack } from "react-bootstrap";
+import { Col, Container, Row } from "react-bootstrap";
 import ContactsCard from "../components/ui/ContactsCard";
 
 const contact: React.FC = () => {

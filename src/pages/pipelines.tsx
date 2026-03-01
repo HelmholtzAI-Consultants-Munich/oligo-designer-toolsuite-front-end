@@ -84,7 +84,7 @@ const Pipelines: React.FC = () => {
                                     <Card.Text>
                                         {pipeline.description}
                                     </Card.Text>
-                                    <Card.Link href={pipeline.link}>
+                                    <Card.Link as={Link} to={pipeline.link}>
                                         Go to Pipeline
                                     </Card.Link>
                                 </Card.Body>

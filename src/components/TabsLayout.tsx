@@ -1,5 +1,4 @@
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
+import { Col, Row, Tab, Tabs } from "react-bootstrap";
 import ObjectTemplate from "./input/ObjectTemplate";
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 
@@ -18,42 +17,34 @@ export const TabsLayout = (props: ObjectFieldTemplateProps) => {
             <Tabs defaultActiveKey={tabs[0].title}>
                 {tabs.map((tab) => (
                     <Tab eventKey={tab.title} title={tab.title} key={tab.title}>
-                        <div className="p-3">
-                            {tab.fields.map((entry: string | string[]) => {
-                                if (Array.isArray(entry)) {
-                                    return (
-                                        <div
-                                            key={entry.join("-")}
-                                            className="d-flex gap-3"
-                                        >
-                                            {entry.map((field) => {
-                                                const found =
-                                                    props.properties.find(
-                                                        (p) => p.name === field
-                                                    );
-                                                if (!found) return null;
+                        {tab.fields.map((entry: string | string[]) => {
+                            if (Array.isArray(entry)) {
+                                return (
+                                    <Row key={entry.join("-")}>
+                                        {entry.map((field) => {
+                                            const found = props.properties.find(
+                                                (p) => p.name === field
+                                            );
+                                            if (!found) return null;
 
-                                                return (
-                                                    <div key={field}>
-                                                        {found.content}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    );
-                                } else {
-                                    const found = props.properties.find(
-                                        (p) => p.name === entry
-                                    );
+                                            return (
+                                                <Col key={field}>
+                                                    {found.content}
+                                                </Col>
+                                            );
+                                        })}
+                                    </Row>
+                                );
+                            } else {
+                                const found = props.properties.find(
+                                    (p) => p.name === entry
+                                );
 
-                                    if (!found) return null;
+                                if (!found) return null;
 
-                                    return (
-                                        <div key={entry}>{found.content}</div>
-                                    );
-                                }
-                            })}
-                        </div>
+                                return <Col key={entry}>{found.content}</Col>;
+                            }
+                        })}
                     </Tab>
                 ))}
             </Tabs>
