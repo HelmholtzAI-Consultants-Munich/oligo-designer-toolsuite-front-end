@@ -49,7 +49,7 @@ const Pipelines: React.FC = () => {
             <Navbar />
 
             {!user && (
-                <Alert variant="warning" className="text-center">
+                <Alert variant="warning">
                     To keep your runs saved when you close your browser, please{" "}
                     <Link to="/login">log in</Link> or{" "}
                     <Link to="/register">create an account</Link>.

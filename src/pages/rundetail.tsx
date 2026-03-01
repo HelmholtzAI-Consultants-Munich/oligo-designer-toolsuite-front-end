@@ -16,6 +16,8 @@ import type {
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
+import { Alert, Button, Card, Col, Container, ListGroup, Row, Spinner } from "react-bootstrap";
+import { List } from "react-bootstrap-icons";
 
 interface RunFile {
     name: string;
@@ -384,107 +386,108 @@ const RunDetail = () => {
     };
 
     return (
-        <div>
+        <>
             <Navbar />
-            <div className="container mt-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <button
-                        onClick={() => {
-                            const fromAdmin = (location.state as LocationState)
-                                ?.fromAdmin;
-                            navigate(fromAdmin ? "/admin/pipelines" : "/runs");
-                        }}
-                        className="btn btn-outline-secondary"
-                    >
-                        ← Back to{" "}
-                        {(location.state as LocationState)?.fromAdmin
-                            ? "Admin Panel"
-                            : "Runs"}
-                    </button>
-                    <button className="btn btn-danger" onClick={handleDelete}>
-                        Delete Run
-                    </button>
-                </div>
+            <Container>
+                <Row>
+                    <Col>
+                        <Button
+                            variant="outline-secondary"
+                            onClick={() => {
+                                const fromAdmin = (
+                                    location.state as LocationState
+                                )?.fromAdmin;
+                                navigate(
+                                    fromAdmin ? "/admin/pipelines" : "/runs"
+                                );
+                            }}
+                        >
+                            ← Back to{" "}
+                            {(location.state as LocationState)?.fromAdmin
+                                ? "Admin Panel"
+                                : "Runs"}
+                        </Button>
+                    </Col>
+                    <Col xs="auto">
+                        <Button variant="danger" onClick={handleDelete}>
+                            Delete Run
+                        </Button>
+                    </Col>
+                </Row>
 
                 <h3>Run Files</h3>
-                <div className="list-group mb-4">
+                <ListGroup>
                     {files
                         .filter((file) =>
                             file.name.toLowerCase().includes("log")
                         )
                         .map((file) => (
-                            <div
-                                key={file.name}
-                                className="list-group-item d-flex justify-content-between align-items-center"
-                            >
-                                <div>
-                                    {file.name}
-                                    <span className="badge bg-secondary ms-2">
-                                        {Math.round(file.size / 1024)} KB
-                                    </span>
-                                </div>
-                                <div>
-                                    {file.name.endsWith(".txt") && (
-                                        <button
-                                            className="btn btn-sm btn-outline-primary me-2"
+                            <ListGroup.Item key={file.name}>
+                                <Row>
+                                    <Col>
+                                        {file.name}
+                                        <span className="badge bg-secondary ms-2">
+                                            {Math.round(file.size / 1024)} KB
+                                        </span>
+                                    </Col>
+                                    <Col xs="auto">
+                                        {file.name.endsWith(".txt") && (
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                onClick={() =>
+                                                    viewFileContent(file.name)
+                                                }
+                                            >
+                                                View
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="outline-success"
+                                            size="sm"
                                             onClick={() =>
-                                                viewFileContent(file.name)
+                                                downloadFile(file.name)
                                             }
                                         >
-                                            View
-                                        </button>
-                                    )}
-                                    <button
-                                        className="btn btn-sm btn-outline-success"
-                                        onClick={() => downloadFile(file.name)}
-                                    >
-                                        Download
-                                    </button>
-                                </div>
-                            </div>
+                                            Download
+                                        </Button>
+                                    </Col>
+                                </Row>
+                            </ListGroup.Item>
                         ))}
-                </div>
+                </ListGroup>
 
-                {fileContent && viewingFilename && (
-                    <div className="mt-4">
-                        {fileContent &&
-                            viewingFilename &&
-                            viewingFilename.endsWith(".txt") && (
-                                <div className="mt-4">
-                                    <h4>Viewing: {viewingFilename}</h4>
-
-                                    <pre
-                                        className="bg-light p-3 rounded mb-4"
-                                        style={{
-                                            maxHeight: "500px",
-                                            overflow: "auto",
-                                        }}
-                                    >
-                                        {fileContent}
-                                    </pre>
-                                </div>
-                            )}
-                    </div>
+                {fileContent && viewingFilename && viewingFilename.endsWith(".txt") && (
+                    <>
+                        <h4>Viewing: {viewingFilename}</h4>
+                        <pre
+                            className="bg-light p-3 rounded mb-4"
+                            style={{
+                                maxHeight: "500px",
+                                overflow: "auto",
+                            }}
+                        >
+                            {fileContent}
+                        </pre>
+                    </>
                 )}
 
                 {/* Polling/waiting for YAML/log */}
                 {(runState == "pending" || runState == "started") && (
-                    <div className="alert alert-info">
+                    <Alert variant="info">
                         Run is {runState == "pending" ? "pending" : "executing"}
-                        ...
-                        <span className="spinner-border spinner-border-sm ms-2" />
-                    </div>
+                        ... {" "}
+                        <Spinner size="sm" />
+                    </Alert>
                 )}
 
                 {/* YAML/table logic remains unchanged below */}
                 {probes && (
-                    <div className="card">
-                        <div className="card-body">
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h4 className="card-title mb-0">
-                                    Gene Analysis
-                                </h4>
-                                <div className="btn-group">
+                    <Card>
+                        <Card.Body>
+                            <Card.Title className="d-flex">
+                                <Col>Gene Analysis</Col>
+                                <Col xs="auto">
                                     <button
                                         onClick={handleDownloadExcel}
                                         className="btn btn-success"
@@ -492,11 +495,11 @@ const RunDetail = () => {
                                     >
                                         Download All Genes Excel
                                     </button>
-                                </div>
-                            </div>
+                                </Col>
+                            </Card.Title>
 
-                            <div className="row mb-3">
-                                <div className="col-md-6">
+                            <Row>
+                                <Col md={6}>
                                     <label className="form-label">
                                         Select Gene
                                     </label>
@@ -540,7 +543,7 @@ const RunDetail = () => {
                                         className="basic-single"
                                         classNamePrefix="select"
                                     />
-                                </div>
+                                </Col>
 
                                 {selectedGene && (
                                     <div className="col-md-6">
@@ -577,7 +580,7 @@ const RunDetail = () => {
                                         </select>
                                     </div>
                                 )}
-                            </div>
+                            </Row>
 
                             {selectedOligoset && (
                                 <div className="mt-3">
@@ -713,11 +716,11 @@ const RunDetail = () => {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    </div>
+                        </Card.Body>
+                    </Card>
                 )}
-            </div>
-        </div>
+            </Container>
+        </>
     );
 };
 

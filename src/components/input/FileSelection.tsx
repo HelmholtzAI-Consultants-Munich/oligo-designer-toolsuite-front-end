@@ -9,7 +9,7 @@ const FileSelection = ({ id, name, registry }: WidgetProps) => {
             <div className=" d-flex align-items-center">
                 <input
                     type="file"
-                    className="form-control visually-hidden"
+                    className="form-control"
                     id={id}
                     name={name}
                     onChange={(e) => {

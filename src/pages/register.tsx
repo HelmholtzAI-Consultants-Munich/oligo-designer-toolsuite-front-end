@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import Navbar from "../components/ui/Topbar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";
+import { Alert, Button, Col, Container, Form, Row } from "react-bootstrap";
 
 const Register = () => {
     const [email, setEmail] = useState("");
@@ -11,7 +12,7 @@ const Register = () => {
     const navigate = useNavigate();
     const { checkAuth } = useAuth();
 
-    const handleSubmit = async (e: { preventDefault: () => void }) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const res = await axios.post(
@@ -38,62 +39,43 @@ const Register = () => {
     };
 
     return (
-        <div>
+        <>
             <Navbar />
-            <div className="container mt-5">
-                <div className="row justify-content-center">
-                    <div className="col-md-6">
-                        <h2 className="text-center mb-4">Register</h2>
-                        <form onSubmit={handleSubmit}>
-                            <div className="mb-3">
-                                <label htmlFor="email" className="form-label">
-                                    Email address
-                                </label>
-                                <input
+            <Container>
+                <Row className="justify-content-center">
+                    <Col md={6}>
+                        <h2>Register</h2>
+                        <Form onSubmit={handleSubmit}>
+                            <Form.Group controlId="registerEmail">
+                                <Form.Label>Email address</Form.Label>
+                                <Form.Control
                                     type="email"
-                                    className="form-control"
-                                    id="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
                                 />
-                            </div>
-                            <div className="mb-3">
-                                <label
-                                    htmlFor="password"
-                                    className="form-label"
-                                >
-                                    Password
-                                </label>
-                                <input
+                            </Form.Group>
+                            <Form.Group controlId="registerPassword">
+                                <Form.Label>Password</Form.Label>
+                                <Form.Control
                                     type="password"
-                                    className="form-control"
-                                    id="password"
                                     value={password}
                                     onChange={(e) =>
                                         setPassword(e.target.value)
                                     }
                                     required
                                 />
-                            </div>
-                            <div
-                                className="alert alert-warning text-center"
-                                role="alert"
-                            >
+                            </Form.Group>
+                            <Alert variant="warning">
                                 Your pipeline runs will be transferred to your
                                 account when you log in!
-                            </div>
-                            <button
-                                type="submit"
-                                className="btn btn-primary w-100"
-                            >
-                                Register
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+                            </Alert>
+                            <Button type="submit">Register</Button>
+                        </Form>
+                    </Col>
+                </Row>
+            </Container>
+        </>
     );
 };
 

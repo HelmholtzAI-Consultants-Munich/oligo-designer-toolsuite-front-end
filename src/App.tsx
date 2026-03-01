@@ -1,4 +1,3 @@
-import "./App.css";
 import FAQ from "./pages/faq";
 import Contact from "./pages/contact";
 import Pipelines from "./pages/pipelines";

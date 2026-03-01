@@ -9,6 +9,8 @@ import {
     Navbar,
     NavDropdown,
 } from "react-bootstrap";
+import { Link } from "react-router";
+import { GearFill } from "react-bootstrap-icons";
 
 const Topbar: React.FC = () => {
     const { user, logout } = useAuth();
@@ -39,37 +41,53 @@ const Topbar: React.FC = () => {
                     className="justify-content-end"
                 >
                     <Nav>
-                        <Nav.Link href="/">Home</Nav.Link>
+                        <Nav.Link as={Link} to="/">
+                            Home
+                        </Nav.Link>
 
                         <NavDropdown title="Pipelines" id="pipelines-dropdown">
-                            <NavDropdown.Item href="/pipelines/scrinshot">
+                            <NavDropdown.Item
+                                as={Link}
+                                to="/pipelines/scrinshot"
+                            >
                                 Scrinshot Probe
                             </NavDropdown.Item>
-                            <NavDropdown.Item href="/pipelines/merfish">
+                            <NavDropdown.Item as={Link} to="/pipelines/merfish">
                                 Merfish Probe
                             </NavDropdown.Item>
-                            <NavDropdown.Item href="/pipelines/seqfish">
+                            <NavDropdown.Item as={Link} to="/pipelines/seqfish">
                                 SeqFish+ Probe
                             </NavDropdown.Item>
-                            <NavDropdown.Item href="/pipelines/oligoseq">
+                            <NavDropdown.Item
+                                as={Link}
+                                to="/pipelines/oligoseq"
+                            >
                                 Oligo-Seq Probe
                             </NavDropdown.Item>
                         </NavDropdown>
 
-                        <Nav.Link href="/runs">Runs</Nav.Link>
-                        <Nav.Link href="/faq">FAQ</Nav.Link>
-                        <Nav.Link href="/contact">Contact</Nav.Link>
+                        <Nav.Link as={Link} to="/runs">
+                            Runs
+                        </Nav.Link>
+                        <Nav.Link as={Link} to="/faq">
+                            FAQ
+                        </Nav.Link>
+                        <Nav.Link as={Link} to="/contact">
+                            Contact
+                        </Nav.Link>
 
                         {/* Auth  */}
                         {user ? (
                             <>
                                 {user.role === "admin" && (
-                                    <Nav.Link href="/admin">Admin</Nav.Link>
+                                    <Nav.Link as={Link} to="/admin">
+                                        Admin
+                                    </Nav.Link>
                                 )}
                                 <Nav.Item>
                                     <Dropdown>
                                         <Dropdown.Toggle>
-                                            <i className="bi bi-gear-fill" />
+                                            <GearFill />
                                         </Dropdown.Toggle>
                                         <Dropdown.Menu>
                                             <Dropdown.Item
@@ -84,17 +102,16 @@ const Topbar: React.FC = () => {
                         ) : (
                             <>
                                 <Nav.Item>
-                                    <Button
-                                        variant="outline-primary"
-                                        href="/login"
-                                    >
-                                        Login
-                                    </Button>
+                                    <Link to="/login">
+                                        <Button variant="outline-primary">
+                                            Login
+                                        </Button>
+                                    </Link>
                                 </Nav.Item>
                                 <Nav.Item>
-                                    <Button variant="primary" href="/register">
-                                        Register
-                                    </Button>
+                                    <Link to="/register">
+                                        <Button>Register</Button>
+                                    </Link>
                                 </Nav.Item>
                             </>
                         )}

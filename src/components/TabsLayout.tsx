@@ -1,6 +1,6 @@
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
-import ObjectTemplate from "./ObjectTemplate";
+import ObjectTemplate from "./input/ObjectTemplate";
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 
 interface TabConfig {
