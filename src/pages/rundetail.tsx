@@ -1,13 +1,18 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import YAML from "js-yaml";
 import Select from "react-select";
 import type { SingleValue } from "react-select";
-import { useAuth } from "../modules/useAuth";
 import Navbar from "../modules/nav";
 import * as XLSX from "xlsx";
-import type { GenomicRegions, Oligo, OligoValue, RunState } from "../types";
+import type {
+    GenomicRegions,
+    ProbeDetails,
+    Probesets,
+    ProbeDetailsValue,
+    RunState,
+} from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
@@ -19,15 +24,10 @@ interface RunFile {
 }
 
 // Helper to extract all unique columns from an array of oligos
-function getAllOligoColumns(oligos: Oligo[]): string[] {
+function getAllOligoColumns(oligos: ProbeDetails[]): string[] {
     const columns = new Set<string>();
     oligos.forEach((o) => Object.keys(o).forEach((k) => columns.add(k)));
     return Array.from(columns);
-}
-
-interface GeneOption {
-    value: string;
-    label: string;
 }
 
 type OligoComponentDefinition = {
@@ -56,31 +56,23 @@ interface LocationState {
     fromAdmin?: boolean;
 }
 
-/** Parsed YAML structure: gene -> oligoset -> "Oligo N" -> oligo data */
-type ParsedYamlData = Record<
-    string,
-    Record<string, Record<string, OligoValue>>
->;
-
 const RunDetail = () => {
     const { runId } = useParams();
-    useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
     const [pipeline, setPipeline] = useState<string>("");
-    const [selectedOligo, setSelectedOligo] = useState(0);
 
-    const [parsedYamlData, setParsedYamlData] = useState<ParsedYamlData | null>(
-        null
-    );
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
-    const [geneOptions, setGeneOptions] = useState<GeneOption[]>([]);
+    const [selectedOligo, setSelectedOligo] = useState<string>("");
     const [genomicRegions, setGenomicRegions] = useState<{
         [key: string]: GenomicRegions;
+    } | null>(null);
+    const [probes, setProbes] = useState<{
+        [key: string]: Probesets;
     } | null>(null);
 
     const definition = ComponentDefinition[
@@ -91,71 +83,46 @@ const RunDetail = () => {
     const closeFileView = () => {
         setViewingFilename(null);
     };
+    // --- Polling/log state variables ---
     const [runState, setRunState] = useState<RunState>("pending");
     const [polling, setPolling] = useState(true);
-    const fetchAndParseRunFiles = useCallback(
-        (yamlFilename: string) => {
-            axios
-                .get(BACKEND_URL + `/api/runs/${runId}/files/${yamlFilename}`, {
-                    withCredentials: true,
-                    responseType: "text",
-                })
-                .then((response) => {
-                    try {
-                        const parsed = YAML.load(
-                            response.data
-                        ) as ParsedYamlData;
-                        setParsedYamlData(parsed);
-
-                        const genes = Object.keys(parsed || {});
-                        setGeneOptions(
-                            genes.map((gene) => ({
-                                value: gene,
-                                label: gene,
-                            }))
-                        );
-
-                        const firstGene = genes[0] || "";
-                        const firstOligoset = firstGene
-                            ? Object.keys(parsed[firstGene] || {}).find((key) =>
-                                  key.startsWith("Oligoset")
-                              ) || ""
-                            : "";
-
-                        setSelectedGene(firstGene);
-                        setSelectedOligoset(firstOligoset);
-                    } catch (e) {
-                        console.error("Error parsing YAML:", e);
-                        setParsedYamlData(null);
-                    }
-                })
-                .catch((error) =>
-                    console.error("Error fetching padlock file content:", error)
-                );
-
-            axios
-                .get(
-                    BACKEND_URL +
-                        `/api/runs/${runId}/files/genomic_regions.yaml`,
-                    { withCredentials: true, responseType: "text" }
-                )
-                .then((response) => {
-                    const regions = YAML.load(response.data) as {
-                        [key: string]: GenomicRegions;
+    const fetchAndParseRunFiles = useCallback(() => {
+        axios
+            .get(
+                BACKEND_URL + `/api/runs/${runId}/files/genomic_regions.yaml`,
+                { withCredentials: true, responseType: "text" }
+            )
+            .then((response) => {
+                const regionsYaml = YAML.load(response.data) as {
+                    regions: {
+                        [gene: string]: GenomicRegions;
                     };
-                    setGenomicRegions(regions);
-                })
-                .catch((error) => {
-                    console.error(
-                        "Error fetching genomic regions file:",
-                        error
-                    );
-                    setGenomicRegions(null);
-                    return null;
-                });
-        },
-        [runId]
-    );
+                    probes: {
+                        [gene: string]: Probesets;
+                    };
+                };
+
+                const genes = Object.keys(regionsYaml.probes || {});
+                const firstGene = genes[0] || "";
+                const firstOligoset =
+                    Object.keys(regionsYaml.probes?.[firstGene] || {})[0] || "";
+                const firstOligo =
+                    regionsYaml.probes?.[firstGene]?.[firstOligoset][0]
+                        ?.oligo_id || "";
+
+                setGenomicRegions(regionsYaml.regions);
+                setProbes(regionsYaml.probes);
+                setSelectedGene(firstGene);
+                setSelectedOligoset(firstOligoset);
+                setSelectedOligo(firstOligo);
+            })
+            .catch((error) => {
+                console.error("Error fetching genomic regions file:", error);
+                setGenomicRegions(null);
+                setProbes(null);
+                return null;
+            });
+    }, [runId]);
     // Poll for files & log/YAML status
     useEffect(() => {
         if (!runId) return;
@@ -194,16 +161,17 @@ const RunDetail = () => {
                     );
                     setPipeline(runResponse.data.pipeline || "");
 
-                    const yamlFile = response.data.find(
-                        (f: RunFile) =>
-                            f.name.includes("probes.yml") ||
-                            f.name.includes("probesets.yml")
+                    // genomic regions check
+                    const regionsFile = response.data.find(
+                        (f: RunFile) => f.name === "genomic_regions.yaml"
                     );
 
-                    if (yamlFile) {
+                    // If genomic regions file present, stop polling!
+                    if (regionsFile) {
                         setPolling(false);
                         if (interval) clearInterval(interval);
-                        fetchAndParseRunFiles(yamlFile.name);
+                        // Fetch and parse YAML as before
+                        fetchAndParseRunFiles();
                     }
                 }
             } catch (e) {
@@ -243,7 +211,10 @@ const RunDetail = () => {
 
     // Download CSV for current oligoset only
     const handleDownloadCSV = () => {
-        const oligos = getOligosForOligoset();
+        // TODO: include all output fields in details
+        const oligos =
+            probes?.[selectedGene]?.[selectedOligoset]?.map((p) => p.details) ||
+            [];
         if (oligos.length === 0) return;
 
         const allColumns = getAllOligoColumns(oligos);
@@ -258,7 +229,9 @@ const RunDetail = () => {
                 const rowData = [
                     selectedGene,
                     selectedOligoset,
-                    ...allColumns.map((col) => formatValue(oligo[col])),
+                    ...allColumns.map((col) =>
+                        formatValue(oligo[col as keyof ProbeDetails])
+                    ),
                 ];
 
                 return rowData
@@ -292,23 +265,19 @@ const RunDetail = () => {
 
     // Download Excel file with each gene as a separate sheet
     const handleDownloadExcel = () => {
-        if (!parsedYamlData) return;
+        if (!probes) return;
 
         const workbook = XLSX.utils.book_new();
 
         // Iterate through all genes and create a sheet for each
-        Object.keys(parsedYamlData).forEach((gene) => {
+        Object.keys(probes).forEach((gene) => {
             // Gather all oligos for this gene
-            const geneOligos: { oligoset: string; oligo: Oligo }[] = [];
-            const oligosets = getOligosetsForGene(gene);
+            const geneOligos: { oligoset: string; oligo: ProbeDetails }[] = [];
+            const oligosets = Object.keys(probes[gene] || {});
+
             oligosets.forEach((oligoset) => {
-                const oligosetData = parsedYamlData[gene][oligoset];
-                const oligos = Object.entries(oligosetData)
-                    .filter(([key]) => /^Oligo \d+$/.test(key))
-                    .map(([, value]) => value)
-                    .filter(
-                        (oligo) => typeof oligo === "object" && oligo !== null
-                    ) as Oligo[];
+                const oligos =
+                    probes[gene][oligoset].map((p) => p.details) || [];
                 oligos.forEach((oligo) => {
                     geneOligos.push({ oligoset, oligo });
                 });
@@ -322,13 +291,15 @@ const RunDetail = () => {
                 ...allColumns.map((col) => col.replace(/_/g, " ")),
             ];
 
-            const geneData: (string | OligoValue)[][] = [];
+            const geneData: (string | number)[][] = [];
             geneData.push(headers);
             geneOligos.forEach((item) => {
                 const row = [
                     item.oligoset,
                     ...allColumns.map((col) =>
-                        formatValueForExcel(item.oligo[col])
+                        formatValueForExcel(
+                            item.oligo[col as keyof ProbeDetails]
+                        )
                     ),
                 ];
                 geneData.push(row);
@@ -353,15 +324,13 @@ const RunDetail = () => {
         XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
     };
 
-    const formatValueForExcel = (
-        value: OligoValue
-    ): string | number | boolean => {
+    const formatValueForExcel = (value: ProbeDetailsValue): string | number => {
         // Handle deeply nested arrays
         const flatten = (
-            arr: OligoValue[],
-            acc: (string | number | boolean)[] = []
-        ): (string | number | boolean)[] => {
-            let result: (string | number | boolean)[] = [...acc];
+            arr: ProbeDetailsValue[],
+            acc: (string | number)[] = []
+        ): (string | number)[] => {
+            let result: (string | number)[] = [...acc];
             for (const val of arr) {
                 if (Array.isArray(val)) {
                     result = flatten(val, result);
@@ -380,10 +349,14 @@ const RunDetail = () => {
         if (typeof value === "object" && value !== null) {
             return JSON.stringify(value);
         }
-        return value ?? ""; // Return raw value for Excel (null -> empty string)
+        return value; // Return raw value for Excel
     };
 
-    const viewFileContent = (filename: string, shouldParseYaml = true) => {
+    const formatValue = (value: ProbeDetailsValue): string => {
+        return String(formatValueForExcel(value));
+    };
+
+    const viewFileContent = (filename: string) => {
         if (viewingFilename === filename) {
             closeFileView();
             return;
@@ -397,40 +370,6 @@ const RunDetail = () => {
             .then((response) => {
                 setViewingFilename(filename);
                 setFileContent(response.data);
-
-                // Only parse YAML if explicitly requested
-                if (
-                    shouldParseYaml &&
-                    (filename.endsWith(".yml") || filename.endsWith(".yaml"))
-                ) {
-                    try {
-                        const parsed = YAML.load(
-                            response.data
-                        ) as ParsedYamlData;
-                        setParsedYamlData(parsed);
-
-                        const genes = Object.keys(parsed || {});
-                        setGeneOptions(
-                            genes.map((gene) => ({
-                                value: gene,
-                                label: gene,
-                            }))
-                        );
-
-                        const firstGene = genes[0] || "";
-                        const firstOligoset = firstGene
-                            ? Object.keys(parsed[firstGene] || {}).find((key) =>
-                                  key.startsWith("Oligoset")
-                              ) || ""
-                            : "";
-
-                        setSelectedGene(firstGene);
-                        setSelectedOligoset(firstOligoset);
-                    } catch (e) {
-                        console.error("Error parsing YAML:", e);
-                        setParsedYamlData(null);
-                    }
-                }
             })
             .catch((error) =>
                 console.error("Error fetching file content:", error)
@@ -442,32 +381,6 @@ const RunDetail = () => {
             BACKEND_URL + `/api/runs/${runId}/files/${filename}`,
             "_blank"
         );
-    };
-
-    const getOligosetsForGene = (gene: string): string[] => {
-        if (!parsedYamlData || !parsedYamlData[gene]) return [];
-        return Object.keys(parsedYamlData[gene]).filter((key) =>
-            key.startsWith("Oligoset")
-        );
-    };
-
-    const getOligosForOligoset = (): Oligo[] => {
-        if (!selectedGene || !selectedOligoset || !parsedYamlData) return [];
-
-        const oligoset = parsedYamlData[selectedGene][selectedOligoset];
-
-        return Object.entries(oligoset)
-            .filter(([key]) => /^Oligo \d+$/.test(key)) // Strict match for "Oligo X"
-            .map(([, value]) => value)
-            .filter(
-                (oligo) => typeof oligo === "object" && oligo !== null
-            ) as Oligo[];
-    };
-
-    const oligos = getOligosForOligoset();
-
-    const formatValue = (value: OligoValue): string => {
-        return String(formatValueForExcel(value));
     };
 
     return (
@@ -564,7 +477,7 @@ const RunDetail = () => {
                 )}
 
                 {/* YAML/table logic remains unchanged below */}
-                {parsedYamlData && (
+                {probes && (
                     <div className="card">
                         <div className="card-body">
                             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -588,18 +501,39 @@ const RunDetail = () => {
                                         Select Gene
                                     </label>
                                     <Select
-                                        options={geneOptions}
-                                        value={geneOptions.find(
-                                            (option) =>
-                                                option.value === selectedGene
+                                        options={Object.keys(probes).map(
+                                            (gene) => ({
+                                                value: gene,
+                                                label: gene,
+                                            })
                                         )}
+                                        value={
+                                            Object.keys(probes)
+                                                .map((gene) => ({
+                                                    value: gene,
+                                                    label: gene,
+                                                }))
+                                                .find(
+                                                    (option) =>
+                                                        option.value ===
+                                                        selectedGene
+                                                ) || null
+                                        }
                                         onChange={(
-                                            newValue: SingleValue<GeneOption>
+                                            newValue: SingleValue<{
+                                                value: string;
+                                                label: string;
+                                            }>
                                         ) => {
                                             setSelectedGene(
                                                 newValue?.value || ""
                                             );
                                             setSelectedOligoset("Oligoset 1");
+                                            setSelectedOligo(
+                                                probes[newValue?.value || ""][
+                                                    "Oligoset 1"
+                                                ][0].oligo_id || ""
+                                            );
                                         }}
                                         placeholder="Search or select gene..."
                                         isSearchable
@@ -620,14 +554,18 @@ const RunDetail = () => {
                                                 setSelectedOligoset(
                                                     e.target.value
                                                 );
-                                                setSelectedOligo(0);
+                                                setSelectedOligo(
+                                                    probes[selectedGene][
+                                                        e.target.value
+                                                    ]?.[0].oligo_id || ""
+                                                );
                                             }}
                                         >
                                             <option value="">
                                                 Select an Oligoset
                                             </option>
-                                            {getOligosetsForGene(
-                                                selectedGene
+                                            {Object.keys(
+                                                probes[selectedGene] || {}
                                             ).map((oligoset) => (
                                                 <option
                                                     key={oligoset}
@@ -648,7 +586,11 @@ const RunDetail = () => {
                                         <div>
                                             <span className="form-text me-2">
                                                 Showing{" "}
-                                                {getOligosForOligoset().length}{" "}
+                                                {
+                                                    probes[selectedGene][
+                                                        selectedOligoset
+                                                    ].length
+                                                }{" "}
                                                 oligos
                                             </span>
                                             <button
@@ -661,8 +603,11 @@ const RunDetail = () => {
                                     </div>
                                     <div className="my-3">
                                         <ResultVisualization
-                                            oligos={getOligosForOligoset()}
-                                            pipeline={pipeline}
+                                            probes={
+                                                probes[selectedGene][
+                                                    selectedOligoset
+                                                ] || []
+                                            }
                                             selectedOligo={selectedOligo}
                                             setSelectedOligo={setSelectedOligo}
                                             genomicRegions={
@@ -695,42 +640,40 @@ const RunDetail = () => {
                                             </thead>
 
                                             <tbody>
-                                                {getOligosForOligoset().map(
-                                                    (oligo, index) => (
-                                                        <tr
-                                                            key={oligo.oligo_id}
-                                                        >
-                                                            {tableColumns.map(
-                                                                (column) => (
-                                                                    <td
-                                                                        key={`${oligo.oligo_id}-${column}`}
-                                                                        className={
-                                                                            "text-nowrap " +
-                                                                            (index ===
-                                                                            selectedOligo
-                                                                                ? "table-primary"
-                                                                                : "")
-                                                                        }
-                                                                        onClick={() =>
-                                                                            setSelectedOligo(
-                                                                                index
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        {column ===
-                                                                        "location"
-                                                                            ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                                            : formatValue(
-                                                                                  oligo[
-                                                                                      column
-                                                                                  ]
-                                                                              )}
-                                                                    </td>
-                                                                )
-                                                            )}
-                                                        </tr>
-                                                    )
-                                                )}
+                                                {probes[selectedGene][
+                                                    selectedOligoset
+                                                ].map(({ details: oligo }) => (
+                                                    <tr key={oligo.oligo_id}>
+                                                        {tableColumns.map(
+                                                            (column) => (
+                                                                <td
+                                                                    key={`${oligo.oligo_id}-${column}`}
+                                                                    className={
+                                                                        "text-nowrap " +
+                                                                        (oligo.oligo_id ===
+                                                                        selectedOligo
+                                                                            ? "table-primary"
+                                                                            : "")
+                                                                    }
+                                                                    onClick={() =>
+                                                                        setSelectedOligo(
+                                                                            oligo.oligo_id
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {column ===
+                                                                    "location"
+                                                                        ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
+                                                                        : formatValue(
+                                                                              oligo[
+                                                                                  column as keyof ProbeDetails
+                                                                              ]
+                                                                          )}
+                                                                </td>
+                                                            )
+                                                        )}
+                                                    </tr>
+                                                ))}
                                             </tbody>
 
                                             <tfoot>
@@ -744,20 +687,24 @@ const RunDetail = () => {
                                                             <strong>
                                                                 Source:
                                                             </strong>{" "}
-                                                            {formatValue(
-                                                                oligos[0]
-                                                                    ?.source ??
-                                                                    null
-                                                            ) || "N/A"}
+                                                            {probes[
+                                                                selectedGene
+                                                            ][
+                                                                selectedOligoset
+                                                            ][0].details
+                                                                .source ??
+                                                                "N/A"}
                                                             <br />
                                                             <strong>
                                                                 Species:
                                                             </strong>{" "}
-                                                            {formatValue(
-                                                                oligos[0]
-                                                                    ?.species ??
-                                                                    null
-                                                            ) || "N/A"}
+                                                            {probes[
+                                                                selectedGene
+                                                            ][
+                                                                selectedOligoset
+                                                            ][0].details
+                                                                .species ??
+                                                                "N/A"}
                                                         </div>
                                                     </td>
                                                 </tr>

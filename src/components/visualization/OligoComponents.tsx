@@ -2,13 +2,12 @@ import * as d3 from "d3";
 import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
 import { reverseComplement } from "./helpers";
-import type { Oligo } from "../../types";
+import type { Probe } from "../../types";
 
 type Props = {
-    oligos: Oligo[];
-    pipeline: string;
-    selectedOligo: number;
-    setSelectedOligo: (index: number) => void;
+    probes: Probe[];
+    selectedOligo: string;
+    setSelectedOligo: (id: string) => void;
 };
 
 type OligoComponentDefinition =
@@ -42,26 +41,24 @@ type OligoBase = {
 };
 
 const OligoComponents: React.FC<Props> = ({
-    oligos,
-    pipeline,
+    probes,
     selectedOligo,
     setSelectedOligo,
 }) => {
-    const definition = ComponentDefinition[
-        pipeline as keyof typeof ComponentDefinition
-    ] as OligoComponentDefinition[];
+    const oligo = probes.find((o) => o.oligo_id === selectedOligo);
 
     const components: OligoComponent[] = useMemo(() => {
         const comps: OligoComponent[] = [];
-        if (definition) {
+        const pipeline = oligo?.pipeline;
+        if (pipeline && Object.keys(ComponentDefinition).includes(pipeline)) {
+            const definition = ComponentDefinition[
+                pipeline as keyof typeof ComponentDefinition
+            ] as OligoComponentDefinition[];
             definition.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
-                    let sequence = oligos[selectedOligo][
-                        componentDef.field as keyof Oligo
-                    ] as string | Array<string> | Array<Array<string>>;
-                    if (Array.isArray(sequence)) {
-                        sequence = sequence.flat(Infinity).join("");
-                    }
+                    let sequence = oligo.details[
+                        componentDef.field as keyof Probe["details"]
+                    ] as string;
                     if (componentDef.isReverseComplement) {
                         sequence = reverseComplement(sequence);
                     }
@@ -82,7 +79,7 @@ const OligoComponents: React.FC<Props> = ({
             });
         }
         return comps;
-    }, [oligos, selectedOligo, definition]);
+    }, [oligo]);
 
     const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
         return components.flatMap((component) =>
@@ -109,6 +106,11 @@ const OligoComponents: React.FC<Props> = ({
             unknown
         >;
 
+        const svgNode = svg.node() as SVGElement | null;
+        if (!svgNode) {
+            return;
+        }
+
         const group = svg.select("#oligo-components g");
 
         /* clear previous transforms */
@@ -131,12 +133,18 @@ const OligoComponents: React.FC<Props> = ({
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;")
             .call(zoom);
-        const svgBox = (svg.node() as SVGElement).getBoundingClientRect();
+        const svgBox = svgNode.getBoundingClientRect();
         group.attr("y", `${svgBox.height / 2}`);
     }, [components]);
 
-    if (!definition) {
-        return <div>No visualization available for pipeline {pipeline}</div>;
+    if (components.length === 0) {
+        return (
+            <div>No visualization available for pipeline {oligo?.pipeline}</div>
+        );
+    }
+
+    if (!oligo) {
+        return <div>Selected oligo not found.</div>;
     }
 
     return (
@@ -148,10 +156,10 @@ const OligoComponents: React.FC<Props> = ({
                 id="oligoSelect"
                 className="form-select"
                 value={selectedOligo}
-                onChange={(e) => setSelectedOligo(parseInt(e.target.value))}
+                onChange={(e) => setSelectedOligo(e.target.value)}
             >
-                {oligos.map((_, index) => (
-                    <option key={index} value={index}>
+                {probes.map((oligo, index) => (
+                    <option key={oligo.oligo_id} value={oligo.oligo_id}>
                         Oligo {index + 1}
                     </option>
                 ))}
@@ -163,7 +171,7 @@ const OligoComponents: React.FC<Props> = ({
                             x={(index + 1) * 12}
                             y={base.isBinding ? 55 : 45}
                             style={{ fill: base.color, textAnchor: "middle" }}
-                            key={oligos[selectedOligo].oligo_id + "-" + index}
+                            key={oligo.oligo_id + "-" + index}
                         >
                             {base.char}
                         </text>

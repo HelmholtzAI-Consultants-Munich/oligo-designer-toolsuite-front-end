@@ -13,8 +13,7 @@ def admin_user(client):
     user_id = ObjectId()
     user = {
         "_id": user_id,
-        "email": "admin@test.com",
-        "name": "Admin User",
+        "username": "admin_user",
         "role": "admin",
         "password": "hashed_password",
     }
@@ -29,8 +28,7 @@ def regular_user(client):
     user_id = ObjectId()
     user = {
         "_id": user_id,
-        "email": "user@test.com",
-        "name": "Regular User",
+        "username": "regular_user",
         "role": "user",
         "password": "hashed_password",
     }
@@ -114,9 +112,10 @@ def test_get_users_success(admin_client, admin_user, regular_user):
     data = response.get_json()
     assert isinstance(data, list)
     assert len(data) >= 2
-    emails = [user["email"] for user in data]
-    assert admin_user["email"] in emails
-    assert regular_user["email"] in emails
+    # Users have id and either username or helmholtz_sub (no longer email-only)
+    ids = [u["id"] for u in data]
+    assert str(admin_user["_id"]) in ids
+    assert str(regular_user["_id"]) in ids
 
 
 def test_get_users_unauthorized(regular_client):
@@ -137,8 +136,9 @@ def test_get_user_success(admin_client, regular_user):
     assert response.status_code == 200
     data = response.get_json()
     assert data["id"] == str(regular_user["_id"])
-    assert data["email"] == regular_user["email"]
+    assert data["role"] == regular_user["role"]
     assert "password" not in data
+    # Response includes id, role; may include username and/or helmholtz_sub
 
 
 def test_get_user_not_found(admin_client):
@@ -149,15 +149,19 @@ def test_get_user_not_found(admin_client):
 
 
 def test_update_user_success(admin_client, regular_user):
-    """Test updating a user"""
+    """Test updating a user (username and role; CLI users have username)"""
+    # Give regular_user a username so we can update it (CLI user)
+    mongo.db.users.update_one(
+        {"_id": regular_user["_id"]},
+        {"$set": {"username": "original_user"}},
+    )
     response = admin_client.put(
         f"/api/admin/users/{regular_user['_id']}",
-        json={"email": "updated@test.com", "name": "Updated Name", "role": "admin"},
+        json={"username": "updated_user", "role": "admin"},
     )
     assert response.status_code == 200
     data = response.get_json()
-    assert data["email"] == "updated@test.com"
-    assert data["name"] == "Updated Name"
+    assert data.get("username") == "updated_user"
     assert data["role"] == "admin"
 
 
@@ -347,13 +351,16 @@ def test_get_feedbacks_unauthenticated(unauthenticated_client):
 def create_test_user(client):
     """Factory fixture to create test users"""
 
-    def _create_user(user_id=None, email=None, role="user"):
+    def _create_user(user_id=None, role="user"):
         """Helper function to create a test user"""
         if user_id is None:
             user_id = ObjectId()
-        if email is None:
-            email = f"user{user_id}@test.com"
-        user = {"_id": user_id, "email": email, "role": role, "password": "hashed"}
+        user = {
+            "_id": user_id,
+            "username": f"user{user_id}",
+            "role": role,
+            "password": "hashed",
+        }
         mongo.db.users.insert_one(user)
         return user_id
 

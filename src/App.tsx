@@ -13,7 +13,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
 import Login from "./pages/login";
-import Register from "./pages/register";
 import RunDetail from "./pages/rundetail";
 import AdminApp from "./admin/AdminApp";
 import FeedbackButton from "./components/feedback/FeedbackButton";
@@ -25,7 +24,6 @@ function App() {
             <Routes>
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/" element={<Pipelines />} />
                 <Route path="/faq" element={<FAQ />} />

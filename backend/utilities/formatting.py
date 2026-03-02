@@ -16,8 +16,7 @@ def format_user(user):
     """
     return {
         "id": str(user["_id"]),
-        "email": user.get("email", ""),
-        "name": user.get("name", ""),
+        "username": user.get("username"),
         "role": user.get("role", "user"),
         "helmholtz_sub": user.get("helmholtz_sub"),
         "created_at": user.get("_id").generation_time.isoformat() if user.get("_id") else None,
@@ -43,7 +42,9 @@ def format_pipeline_run(run):
         try:
             user = find_user_by_id(ObjectId(user_id))
             if user:
-                user_info = {"id": str(user["_id"]), "email": user.get("email", "Unknown")}
+                # Show username for CLI users, helmholtz_sub for Helmholtz users
+                identifier = user.get("username") or user.get("helmholtz_sub") or "Unknown"
+                user_info = {"id": str(user["_id"]), "identifier": identifier}
         except Exception:
             pass
 
