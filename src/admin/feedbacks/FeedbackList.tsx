@@ -122,6 +122,7 @@ const FeedbackList: React.FC = () => {
             {feedbacks.length === 0 ? (
                 <Alert variant="info">No feedback entries found.</Alert>
             ) : (
+                // TODO: Show ODT Cloud version in this table once version metadata is available in feedback entries.
                 <Table striped bordered hover responsive>
                     <thead>
                         <tr>
