@@ -24,6 +24,11 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    const getRunIdFromPath = () => {
+        const match = window.location.pathname.match(/^\/runs\/([^/]+)$/);
+        return match ? match[1] : null;
+    };
+
     const open = () => {
         setShow(true);
         setError(null);
@@ -49,10 +54,14 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
         setSuccess(null);
 
         try {
-            const metadata = {
+            const metadata: Record<string, unknown> = {
                 ...(context || {}),
                 path: window.location.pathname,
             };
+            const runId = getRunIdFromPath();
+            if (runId) {
+                metadata.run_id = runId;
+            }
 
             await axios.post(
                 BACKEND_URL + "/api/feedbacks",

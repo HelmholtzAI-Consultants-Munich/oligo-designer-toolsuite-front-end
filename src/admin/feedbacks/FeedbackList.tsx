@@ -14,6 +14,7 @@ interface Feedback {
     created_at?: string;
     user_id?: string | null;
     user?: FeedbackUser | null;
+    metadata?: Record<string, unknown>;
 }
 
 const FeedbackList: React.FC = () => {
@@ -73,6 +74,20 @@ const FeedbackList: React.FC = () => {
         return <Badge bg="secondary">Unknown</Badge>;
     };
 
+    const getSourceDisplay = (feedback: Feedback) => {
+        const runId = feedback.metadata?.run_id;
+        if (typeof runId === "string" && runId.trim()) {
+            return <span className="font-monospace">{runId}</span>;
+        }
+
+        const path = feedback.metadata?.path;
+        if (typeof path === "string" && path.trim()) {
+            return <span className="text-muted">{path}</span>;
+        }
+
+        return <span className="text-muted">-</span>;
+    };
+
     if (isLoading) {
         return (
             <div className="d-flex justify-content-center p-5">
@@ -112,6 +127,7 @@ const FeedbackList: React.FC = () => {
                         <tr>
                             <th style={{ width: "200px" }}>Created At</th>
                             <th style={{ width: "220px" }}>User</th>
+                            <th style={{ width: "220px" }}>Run ID / Page</th>
                             <th>Message</th>
                         </tr>
                     </thead>
@@ -120,6 +136,7 @@ const FeedbackList: React.FC = () => {
                             <tr key={fb.id}>
                                 <td>{formatDateTime(fb.created_at)}</td>
                                 <td>{getUserDisplay(fb)}</td>
+                                <td>{getSourceDisplay(fb)}</td>
                                 <td style={{ whiteSpace: "pre-wrap" }}>
                                     {fb.message}
                                 </td>
