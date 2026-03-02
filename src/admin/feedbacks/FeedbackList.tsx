@@ -67,17 +67,10 @@ const FeedbackList: React.FC = () => {
     };
 
     const getUserDisplay = (feedback: Feedback) => {
-        if (feedback.user) {
-            return feedback.user.email;
-        }
         if (feedback.user_id) {
-            return (
-                <span className="text-muted">
-                    User ID: {feedback.user_id.substring(0, 8)}...
-                </span>
-            );
+            return <span className="font-monospace">{feedback.user_id}</span>;
         }
-        return <Badge bg="secondary">Anonymous</Badge>;
+        return <Badge bg="secondary">Unknown</Badge>;
     };
 
     if (isLoading) {
