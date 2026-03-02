@@ -2,10 +2,13 @@
 General feedback API. Not tied to pipelines; available from any page.
 """
 
+import re
+import unicodedata
 from datetime import datetime
 from http import HTTPStatus
 from typing import Any
 
+import bleach
 from flask import Blueprint, abort, jsonify, request
 from flask_login import current_user, login_required
 
@@ -22,6 +25,20 @@ def _feedback_rate_limit_key() -> str:
     return f"user:{current_user.get_id()}"
 
 
+def sanitize_feedback_message(raw_message: str) -> str:
+    normalized = unicodedata.normalize("NFKC", raw_message)
+    sanitized = bleach.clean(
+        normalized,
+        tags=[],
+        attributes={},
+        protocols=[],
+        strip=True,
+        strip_comments=True,
+    )
+    sanitized = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", sanitized)
+    return sanitized.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
 @feedback_bp.route("/api/feedbacks", methods=["POST"])
 @login_required
 @limiter.limit(FEEDBACK_RATE_LIMIT, key_func=_feedback_rate_limit_key)
@@ -34,7 +51,7 @@ def create_feedback():
     - metadata: Optional dict (e.g. path, page). Frontend often sends current path.
     """
     data = request.get_json(silent=True) or {}
-    message = (data.get("message") or "").strip()
+    message = sanitize_feedback_message(str(data.get("message") or ""))
     metadata = data.get("metadata") or {}
 
     if not message:

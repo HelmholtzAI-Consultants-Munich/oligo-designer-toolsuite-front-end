@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import DOMPurify from "dompurify";
 import { useNavigate } from "react-router-dom";
 import { Table, Spinner, Alert, Button, Badge } from "react-bootstrap";
 import { BACKEND_URL } from "../../config";
@@ -103,12 +102,6 @@ const FeedbackList: React.FC = () => {
         return <span className="text-muted">-</span>;
     };
 
-    const sanitizeMessageForDisplay = (message: string) =>
-        DOMPurify.sanitize(message, {
-            ALLOWED_TAGS: [],
-            ALLOWED_ATTR: [],
-        }).trim();
-
     if (isLoading) {
         return (
             <div className="d-flex justify-content-center p-5">
@@ -160,7 +153,7 @@ const FeedbackList: React.FC = () => {
                                 <td>{getUserDisplay(fb)}</td>
                                 <td>{getSourceDisplay(fb)}</td>
                                 <td style={{ whiteSpace: "pre-wrap" }}>
-                                    {sanitizeMessageForDisplay(fb.message)}
+                                    {fb.message}
                                 </td>
                             </tr>
                         ))}
