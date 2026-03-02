@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DOMPurify from "dompurify";
+import { useNavigate } from "react-router-dom";
 import { Table, Spinner, Alert, Button, Badge } from "react-bootstrap";
 import { BACKEND_URL } from "../../config";
 
@@ -19,6 +20,7 @@ interface Feedback {
 }
 
 const FeedbackList: React.FC = () => {
+    const navigate = useNavigate();
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -78,7 +80,19 @@ const FeedbackList: React.FC = () => {
     const getSourceDisplay = (feedback: Feedback) => {
         const runId = feedback.metadata?.run_id;
         if (typeof runId === "string" && runId.trim()) {
-            return <span className="font-monospace">{runId}</span>;
+            return (
+                <Button
+                    variant="link"
+                    className="p-0 font-monospace text-decoration-none"
+                    onClick={() =>
+                        navigate(`/runs/${runId}`, {
+                            state: { fromAdmin: true },
+                        })
+                    }
+                >
+                    {runId}
+                </Button>
+            );
         }
 
         const path = feedback.metadata?.path;

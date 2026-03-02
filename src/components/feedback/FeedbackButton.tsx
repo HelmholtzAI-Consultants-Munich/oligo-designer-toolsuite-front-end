@@ -104,6 +104,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     };
 
     const buttonSizeClass = size === "sm" ? "btn-sm" : "";
+    const isRunDetailPage = Boolean(getRunIdFromPath());
 
     const triggerButton = floating ? (
         <Button
@@ -137,17 +138,24 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
         <>
             {triggerButton}
 
-            <Modal show={show} onHide={close} centered>
+            <Modal show={show} onHide={close} centered size="lg">
                 <Form onSubmit={handleSubmit}>
                     <Modal.Header closeButton>
                         <Modal.Title>Share Your Feedback</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <p className="mb-3 text-muted">
-                            Tell us what works well, what’s confusing, or what
-                            you&apos;d like to see improved for this page or
-                            pipeline.
-                        </p>
+                        {isRunDetailPage ? (
+                            <p className="mb-3 text-muted">
+                                Do you have feedback regarding the output of
+                                this pipeline run?
+                            </p>
+                        ) : (
+                            <p className="mb-3 text-muted">
+                                Tell us what works well, what’s confusing, or
+                                what you&apos;d like to see improved for this
+                                page or pipeline.
+                            </p>
+                        )}
                         {error && (
                             <Alert variant="danger" className="py-2">
                                 {error}

@@ -422,6 +422,7 @@ const PipelineList: React.FC = () => {
                                 />
                             </th>
                             <th style={{ width: "50px" }}></th>
+                            <th style={{ width: "220px" }}>Run ID</th>
                             <th>Pipeline</th>
                             <th>Status</th>
                             <th>Run By</th>
@@ -432,15 +433,7 @@ const PipelineList: React.FC = () => {
                     <tbody>
                         {runs.map((run) => (
                             <React.Fragment key={run.id}>
-                                <tr
-                                    onClick={() =>
-                                        navigate(`/runs/${run.id}`, {
-                                            state: { fromAdmin: true },
-                                        })
-                                    }
-                                    style={{ cursor: "pointer" }}
-                                    className="hover:bg-gray-100 transition-colors"
-                                >
+                                <tr>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         <Form.Check
                                             type="checkbox"
@@ -463,6 +456,21 @@ const PipelineList: React.FC = () => {
                                             ) : (
                                                 <Eye size={16} />
                                             )}
+                                        </Button>
+                                    </td>
+                                    <td>
+                                        <Button
+                                            variant="link"
+                                            className="p-0 font-monospace text-decoration-none"
+                                            onClick={() =>
+                                                navigate(`/runs/${run.id}`, {
+                                                    state: {
+                                                        fromAdmin: true,
+                                                    },
+                                                })
+                                            }
+                                        >
+                                            {run.id}
                                         </Button>
                                     </td>
                                     <td>
@@ -569,7 +577,7 @@ const PipelineList: React.FC = () => {
                                 </tr>
                                 {expandedRows.has(run.id) && (
                                     <tr>
-                                        <td colSpan={7}>
+                                        <td colSpan={8}>
                                             <Card className="m-2">
                                                 <Card.Body>
                                                     <h6 className="mb-3">
