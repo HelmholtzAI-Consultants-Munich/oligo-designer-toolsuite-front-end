@@ -136,7 +136,7 @@ def update_user(user_id: ObjectId):
         if not user.get("username"):
             abort(
                 HTTPStatus.BAD_REQUEST,
-                description="Helmholtz users do not have a username to update use helmholtz-sub instead",
+                description="Helmholtz users do not have a username to update, use helmholtz-sub instead",
             )
         update_doc["username"] = data["username"].strip()
     if "role" in data:
