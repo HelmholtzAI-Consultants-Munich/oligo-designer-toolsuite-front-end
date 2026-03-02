@@ -20,10 +20,6 @@ const Pipelines: React.FC = () => {
                     To keep your runs saved when you close your browser, please{" "}
                     <a href="/login" className="text-primary">
                         log in
-                    </a>{" "}
-                    or{" "}
-                    <a href="/register" className="text-primary">
-                        create an account
                     </a>
                     .
                 </div>

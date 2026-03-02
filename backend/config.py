@@ -46,7 +46,6 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(days=90)
     REMEMBER_COOKIE_DURATION = timedelta(days=90)
 
-    # Cookie security settings
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = "Lax"
     REMEMBER_COOKIE_SECURE = True
@@ -68,7 +67,7 @@ class Config:
     HELMHOLTZ_CLIENT_SECRET = None
 
     # OAuth2 settings
-    HELMHOLTZ_SCOPE = "openid profile email"
+    HELMHOLTZ_SCOPE = "openid single-logout"
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
     # Performance Settings
