@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
+import DOMPurify from "dompurify";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
 import { BACKEND_URL } from "../../config";
@@ -45,11 +46,16 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!message.trim()) {
+        const sanitizedMessage = DOMPurify.sanitize(message, {
+            ALLOWED_TAGS: [],
+            ALLOWED_ATTR: [],
+        }).trim();
+
+        if (!sanitizedMessage) {
             setError("Please enter your feedback before submitting.");
             return;
         }
-        if (message.trim().length > FEEDBACK_MAX_LENGTH) {
+        if (sanitizedMessage.length > FEEDBACK_MAX_LENGTH) {
             setError(
                 `Feedback is too long (max ${FEEDBACK_MAX_LENGTH} characters).`
             );
@@ -72,7 +78,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
             await axios.post(
                 BACKEND_URL + "/api/feedbacks",
-                { message, metadata },
+                { message: sanitizedMessage, metadata },
                 { withCredentials: true }
             );
 
