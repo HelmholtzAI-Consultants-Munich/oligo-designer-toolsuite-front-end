@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import { Table, Spinner, Alert, Button, Badge } from "react-bootstrap";
 import { BACKEND_URL } from "../../config";
+import { formatAdminDateTime } from "../shared/date";
+import RunIdLink from "../shared/RunIdLink";
 
 interface FeedbackUser {
     id: string;
@@ -19,7 +20,6 @@ interface Feedback {
 }
 
 const FeedbackList: React.FC = () => {
-    const navigate = useNavigate();
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -54,21 +54,6 @@ const FeedbackList: React.FC = () => {
         }
     };
 
-    const formatDateTime = (value?: string) => {
-        if (!value) return "N/A";
-        try {
-            const date = new Date(value);
-            const day = date.getDate().toString().padStart(2, "0");
-            const month = (date.getMonth() + 1).toString().padStart(2, "0");
-            const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, "0");
-            const minutes = date.getMinutes().toString().padStart(2, "0");
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        } catch {
-            return value;
-        }
-    };
-
     const getUserDisplay = (feedback: Feedback) => {
         if (feedback.user_id) {
             return <span className="font-monospace">{feedback.user_id}</span>;
@@ -79,19 +64,7 @@ const FeedbackList: React.FC = () => {
     const getSourceDisplay = (feedback: Feedback) => {
         const runId = feedback.metadata?.run_id;
         if (typeof runId === "string" && runId.trim()) {
-            return (
-                <Button
-                    variant="link"
-                    className="p-0 font-monospace text-decoration-none"
-                    onClick={() =>
-                        navigate(`/runs/${runId}`, {
-                            state: { fromAdmin: true },
-                        })
-                    }
-                >
-                    {runId}
-                </Button>
-            );
+            return <RunIdLink runId={runId} />;
         }
 
         const path = feedback.metadata?.path;
@@ -149,7 +122,12 @@ const FeedbackList: React.FC = () => {
                     <tbody>
                         {feedbacks.map((fb) => (
                             <tr key={fb.id}>
-                                <td>{formatDateTime(fb.created_at)}</td>
+                                <td>
+                                    {formatAdminDateTime(
+                                        fb.created_at,
+                                        fb.created_at || "N/A"
+                                    )}
+                                </td>
                                 <td>{getUserDisplay(fb)}</td>
                                 <td>{getSourceDisplay(fb)}</td>
                                 <td style={{ whiteSpace: "pre-wrap" }}>
