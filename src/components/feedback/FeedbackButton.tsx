@@ -11,6 +11,7 @@ interface FeedbackButtonProps {
     /** When true, renders as a fixed floating action button (bottom-right) */
     floating?: boolean;
 }
+const FEEDBACK_MAX_LENGTH = 2000;
 
 const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     context,
@@ -46,6 +47,12 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
         e.preventDefault();
         if (!message.trim()) {
             setError("Please enter your feedback before submitting.");
+            return;
+        }
+        if (message.trim().length > FEEDBACK_MAX_LENGTH) {
+            setError(
+                `Feedback is too long (max ${FEEDBACK_MAX_LENGTH} characters).`
+            );
             return;
         }
 
@@ -154,7 +161,11 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                                 onChange={(e) => setMessage(e.target.value)}
                                 placeholder="Write anything you’d like us to know about your experience..."
                                 disabled={submitting}
+                                maxLength={FEEDBACK_MAX_LENGTH}
                             />
+                            <div className="text-muted small mt-1 text-end">
+                                {message.length}/{FEEDBACK_MAX_LENGTH}
+                            </div>
                         </Form.Group>
                     </Modal.Body>
                     <Modal.Footer>

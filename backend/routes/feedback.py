@@ -6,25 +6,25 @@ from datetime import datetime
 from http import HTTPStatus
 from typing import Any
 
-from flask import Blueprint, abort, jsonify, request, session
-from flask_login import current_user
+from flask import Blueprint, abort, jsonify, request
+from flask_login import current_user, login_required
 
 from backend.extensions import mongo
 from backend.utilities.formatting import format_feedback
 
 feedback_bp = Blueprint("feedback", __name__)
+FEEDBACK_MAX_LENGTH = 2000
 
 
 @feedback_bp.route("/api/feedbacks", methods=["POST"])
+@login_required
 def create_feedback():
     """
-    Create a general feedback entry. Can be submitted from any page.
+    Create a general feedback entry for logged-in users.
 
     Accepts a JSON payload with:
     - message: Required feedback text
     - metadata: Optional dict (e.g. path, page). Frontend often sends current path.
-
-    Works for logged-in users, anonymous users with a session, or fully anonymous.
     """
     data = request.get_json(silent=True) or {}
     message = (data.get("message") or "").strip()
@@ -32,23 +32,20 @@ def create_feedback():
 
     if not message:
         abort(HTTPStatus.BAD_REQUEST, description="Message is required")
+    if len(message) > FEEDBACK_MAX_LENGTH:
+        abort(
+            HTTPStatus.BAD_REQUEST,
+            description=f"Message is too long (max {FEEDBACK_MAX_LENGTH} characters)",
+        )
 
-    user_id = None
-    session_id = None
-    if current_user.is_authenticated:
-        user_id = str(current_user.id)
-    else:
-        session_id = session.get("session_id")
+    user_id = str(current_user.id)
 
     doc: dict[str, Any] = {
         "message": message,
         "created_at": datetime.utcnow(),
         "metadata": metadata,
+        "user_id": user_id,
     }
-    if user_id is not None:
-        doc["user_id"] = user_id
-    if session_id is not None:
-        doc["session_id"] = session_id
 
     result = mongo.db.feedbacks.insert_one(doc)
     saved = mongo.db.feedbacks.find_one({"_id": result.inserted_id})
