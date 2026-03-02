@@ -9,15 +9,22 @@ from typing import Any
 from flask import Blueprint, abort, jsonify, request
 from flask_login import current_user, login_required
 
-from backend.extensions import mongo
+from backend.extensions import limiter, mongo
 from backend.utilities.formatting import format_feedback
 
 feedback_bp = Blueprint("feedback", __name__)
 FEEDBACK_MAX_LENGTH = 2000
+FEEDBACK_RATE_LIMIT = "10 per hour"
+
+
+def _feedback_rate_limit_key() -> str:
+    """Rate-limit feedback submissions per authenticated user."""
+    return f"user:{current_user.get_id()}"
 
 
 @feedback_bp.route("/api/feedbacks", methods=["POST"])
 @login_required
+@limiter.limit(FEEDBACK_RATE_LIMIT, key_func=_feedback_rate_limit_key)
 def create_feedback():
     """
     Create a general feedback entry for logged-in users.
