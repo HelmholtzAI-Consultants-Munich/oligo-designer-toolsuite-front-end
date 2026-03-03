@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
-import { BACKEND_URL } from "../../config";
+import { BACKEND_URL, FEEDBACK_MAX_LENGTH } from "../../config";
 
 interface FeedbackButtonProps {
     context?: Record<string, unknown>;
@@ -11,7 +11,6 @@ interface FeedbackButtonProps {
     /** When true, renders as a fixed floating action button (bottom-right) */
     floating?: boolean;
 }
-const FEEDBACK_MAX_LENGTH = 2000;
 
 const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     context,

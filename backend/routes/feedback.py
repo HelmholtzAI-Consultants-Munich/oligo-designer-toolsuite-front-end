@@ -9,14 +9,13 @@ from http import HTTPStatus
 from typing import Any
 
 import bleach
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
 from backend.extensions import limiter, mongo
 from backend.utilities.formatting import format_feedback
 
 feedback_bp = Blueprint("feedback", __name__)
-FEEDBACK_MAX_LENGTH = 2000
 FEEDBACK_RATE_LIMIT = "10 per hour"
 
 
@@ -53,13 +52,14 @@ def create_feedback():
     data = request.get_json(silent=True) or {}
     message = sanitize_feedback_message(str(data.get("message") or ""))
     metadata = data.get("metadata") or {}
+    feedback_max_length = current_app.config.get("FEEDBACK_MAX_LENGTH", 2000)
 
     if not message:
         abort(HTTPStatus.BAD_REQUEST, description="Message is required")
-    if len(message) > FEEDBACK_MAX_LENGTH:
+    if len(message) > feedback_max_length:
         abort(
             HTTPStatus.BAD_REQUEST,
-            description=f"Message is too long (max {FEEDBACK_MAX_LENGTH} characters)",
+            description=f"Message is too long (max {feedback_max_length} characters)",
         )
 
     user_id = str(current_user.id)
