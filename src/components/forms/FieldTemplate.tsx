@@ -1,4 +1,4 @@
-import { OverlayTrigger, Popover } from "react-bootstrap";
+import { Form, OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
 import type { FieldTemplateProps } from "@rjsf/utils";
 
@@ -6,12 +6,9 @@ const FieldTemplate = (props: FieldTemplateProps) => {
     const { id, label, children, rawDescription } = props;
 
     return (
-        <div className="mt-3">
-            <div className="d-flex align-items-center">
-                <label htmlFor={id} className={"rjsf-label"}>
-                    {label}
-                </label>
-
+        <Form.Group controlId={id}>
+            <Form.Label className="rjsf-label">
+                {label}
                 {rawDescription && (
                     <OverlayTrigger
                         trigger={["focus", "hover"]}
@@ -32,9 +29,9 @@ const FieldTemplate = (props: FieldTemplateProps) => {
                         />
                     </OverlayTrigger>
                 )}
-            </div>
+            </Form.Label>
             {children}
-        </div>
+        </Form.Group>
     );
 };
 

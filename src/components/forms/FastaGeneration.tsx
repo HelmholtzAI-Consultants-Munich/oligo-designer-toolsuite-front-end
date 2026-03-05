@@ -1,7 +1,7 @@
-import { defaultFastaForm } from "./types";
-import type { FastaForm } from "./types";
+import { defaultFastaForm } from "../types";
+import type { FastaForm } from "../types";
 
-import FastaGenerateForm from "../modules/FastaGenerateForm";
+import FastaGenerateForm from "./FastaGenerateForm";
 
 type Props = {
     name: string;

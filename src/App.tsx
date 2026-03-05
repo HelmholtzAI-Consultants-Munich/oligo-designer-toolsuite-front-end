@@ -1,14 +1,12 @@
-import React from "react";
-import "./App.css";
 import FAQ from "./pages/faq";
-import Contacts from "./pages/contacs";
+import Contact from "./pages/contact";
 import Pipelines from "./pages/pipelines";
 import Scrinshot from "./pages/scrinshot";
 import Runs from "./pages/runs";
 import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 
@@ -25,7 +23,7 @@ function App() {
                 <Route path="/runs" element={<Runs />} />
                 <Route path="/" element={<Pipelines />} />
                 <Route path="/faq" element={<FAQ />} />
-                <Route path="/contacts" element={<Contacts />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/pipelines" element={<Pipelines />} />
                 <Route path="/pipelines/scrinshot" element={<Scrinshot />} />
                 <Route path="/pipelines/merfish" element={<Merfish />} />
