@@ -8,8 +8,8 @@ import { BACKEND_URL } from "../../config";
 
 interface User {
     id: string;
-    email: string;
-    name: string;
+    username?: string;
+    helmholtz_sub?: string;
     role: "user" | "admin";
     created_at?: string;
 }
@@ -55,9 +55,11 @@ const UserList: React.FC = () => {
         }
     };
 
-    const handleDelete = async (userId: string, userEmail: string) => {
+    const handleDelete = async (userId: string, userIdentifier: string) => {
         if (
-            window.confirm(`Are you sure you want to delete user ${userEmail}?`)
+            window.confirm(
+                `Are you sure you want to delete user ${userIdentifier}?`
+            )
         ) {
             try {
                 await axios.delete(BACKEND_URL + `/api/admin/users/${userId}`, {
@@ -264,8 +266,7 @@ const UserList: React.FC = () => {
                                     title="Select all"
                                 />
                             </th>
-                            <th>Email</th>
-                            <th>Name</th>
+                            <th>Identifier</th>
                             <th>Role</th>
                             <th>Created</th>
                             <th>Actions</th>
@@ -284,8 +285,15 @@ const UserList: React.FC = () => {
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </td>
-                                <td>{user.email}</td>
-                                <td>{user.name || "N/A"}</td>
+                                <td>
+                                    {user.username ? (
+                                        <>Username: {user.username}</>
+                                    ) : user.helmholtz_sub ? (
+                                        <>Helmholtz ID: {user.helmholtz_sub}</>
+                                    ) : (
+                                        "N/A"
+                                    )}
+                                </td>
                                 <td>
                                     <Badge
                                         bg={
@@ -315,7 +323,12 @@ const UserList: React.FC = () => {
                                         variant="danger"
                                         size="sm"
                                         onClick={() =>
-                                            handleDelete(user.id, user.email)
+                                            handleDelete(
+                                                user.id,
+                                                user.username ||
+                                                    user.helmholtz_sub ||
+                                                    user.id
+                                            )
                                         }
                                     >
                                         Delete

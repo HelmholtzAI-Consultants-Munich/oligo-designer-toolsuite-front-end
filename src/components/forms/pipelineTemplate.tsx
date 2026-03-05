@@ -3,12 +3,7 @@ import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 import Navbar from "../ui/Topbar";
-import type {
-    FileState,
-    Status,
-    Modal,
-    RJSFFormData,
-} from "../types";
+import type { FileState, Status, Modal, RJSFFormData } from "../types";
 import { handleSubmit } from "../helpers";
 import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";

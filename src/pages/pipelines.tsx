@@ -51,8 +51,7 @@ const Pipelines: React.FC = () => {
             {!user && (
                 <Alert variant="warning">
                     To keep your runs saved when you close your browser, please{" "}
-                    <Link to="/login">log in</Link> or{" "}
-                    <Link to="/register">create an account</Link>.
+                    <Link to="/login">log in</Link>.
                 </Alert>
             )}
 

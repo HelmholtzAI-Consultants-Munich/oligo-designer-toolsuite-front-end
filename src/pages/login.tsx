@@ -10,10 +10,10 @@ import { Button, Card, Col, Container, Form, Row } from "react-bootstrap";
 
 /**
  * Login component handles user login functionality.
- * Provides legacy email/password login and Helmholtz AAI OAuth login.
+ * Provides legacy username/password login and Helmholtz AAI OAuth login.
  */
 const Login = () => {
-    const [email, setEmail] = useState("");
+    const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
@@ -36,7 +36,7 @@ const Login = () => {
         try {
             const res = await axios.post(
                 BACKEND_URL + "/login",
-                { email, password, remember_me: rememberMe },
+                { username, password, remember_me: rememberMe },
                 { withCredentials: true }
             );
 
@@ -48,7 +48,7 @@ const Login = () => {
             navigate(redirectTo);
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.status === 401) {
-                alert("Invalid email or password.");
+                alert("Invalid username or password.");
             } else {
                 console.error(err);
                 alert("Login failed.");
@@ -97,19 +97,19 @@ const Login = () => {
 
                         <Card>
                             <Card.Body>
-                                <Card.Title>Legacy Email Login</Card.Title>
+                                <Card.Title>Admin Login</Card.Title>
                                 <Card.Text className="text-muted">
-                                    Use this option only if you have a local
-                                    account with email/password.
+                                    Use this option if you have an admin account
+                                    with username/password.
                                 </Card.Text>
                                 <Form onSubmit={handleSubmit}>
-                                    <Form.Group controlId="loginEmail">
-                                        <Form.Label>Email address</Form.Label>
+                                    <Form.Group controlId="loginUsername">
+                                        <Form.Label>Username</Form.Label>
                                         <Form.Control
-                                            type="email"
-                                            value={email}
+                                            type="text"
+                                            value={username}
                                             onChange={(e) =>
-                                                setEmail(e.target.value)
+                                                setUsername(e.target.value)
                                             }
                                             required
                                         />
@@ -135,7 +135,7 @@ const Login = () => {
                                         }
                                     />
                                     <Button variant="secondary" type="submit">
-                                        Login with Email
+                                        Login with Username
                                     </Button>
                                 </Form>
                             </Card.Body>
