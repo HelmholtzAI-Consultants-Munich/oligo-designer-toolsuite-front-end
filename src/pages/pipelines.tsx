@@ -1,6 +1,6 @@
 import React from "react";
 import Navbar from "../components/ui/Topbar";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";

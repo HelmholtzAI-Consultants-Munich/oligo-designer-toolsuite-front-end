@@ -6,7 +6,7 @@ import Runs from "./pages/runs";
 import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 

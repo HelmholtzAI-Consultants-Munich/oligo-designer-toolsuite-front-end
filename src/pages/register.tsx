@@ -1,7 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import Navbar from "../components/ui/Topbar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";
 import { Alert, Button, Col, Container, Form, Row } from "react-bootstrap";

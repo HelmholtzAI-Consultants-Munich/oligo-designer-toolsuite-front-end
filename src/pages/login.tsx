@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router";
 import Navbar from "../components/ui/Topbar";
 import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";

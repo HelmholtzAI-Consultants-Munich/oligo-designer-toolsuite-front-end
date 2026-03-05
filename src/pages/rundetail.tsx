@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
 import Navbar from "../components/ui/Topbar";

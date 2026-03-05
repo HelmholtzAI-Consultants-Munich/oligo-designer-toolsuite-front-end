@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import Navbar from "../components/ui/Topbar";
 import axios from "axios";
