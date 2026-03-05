@@ -22,7 +22,7 @@ import {
 } from "../forms/refseqSpecies";
 import { ensemblSpecies } from "../forms/ensemblSpecies";
 import { ncbiAnnotationReleases } from "../forms/ncbiAnnotationReleases";
-import type { FastaForm } from "./types";
+import type { FastaForm } from "../types";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {

@@ -1,5 +1,5 @@
 import { Col, Row, Tab, Tabs } from "react-bootstrap";
-import ObjectTemplate from "./input/ObjectTemplate";
+import ObjectTemplate from "./ObjectTemplate";
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 
 interface TabConfig {
