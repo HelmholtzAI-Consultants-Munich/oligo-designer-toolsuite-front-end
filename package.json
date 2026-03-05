@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@fontsource-variable/fustat": "^5.2.7",
     "@popperjs/core": "^2.11.8",
     "@rjsf/core": "^6.2.5",
     "@rjsf/react-bootstrap": "^6.2.5",
@@ -13,7 +14,9 @@
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "d3": "^7.9.0",
+    "i": "^0.3.7",
     "js-yaml": "^4.1.0",
+    "npm": "^11.11.0",
     "react": "^19.2.0",
     "react-bootstrap": "^2.10.10",
     "react-bootstrap-icons": "^1.11.6",

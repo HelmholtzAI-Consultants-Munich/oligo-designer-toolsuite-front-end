@@ -121,14 +121,12 @@ const uiSchema: UiSchema = {
 
 const Merfish: React.FC = () => {
     return (
-        <>
-            <PipelineTemplate
-                pipeline="merfish"
-                title="Merfish Probe Designer"
-                schema={schema}
-                uiSchema={uiSchema}
-            />
-        </>
+        <PipelineTemplate
+            pipeline="merfish"
+            title="Merfish Probe Designer"
+            schema={schema}
+            uiSchema={uiSchema}
+        />
     );
 };
 export default Merfish;

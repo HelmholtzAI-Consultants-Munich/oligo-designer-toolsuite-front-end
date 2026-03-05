@@ -1,4 +1,4 @@
-import Navbar from "../components/ui/Topbar";
+import Navbar from "../components/ui/Sidebar";
 
 const index: React.FC = () => {
     return (

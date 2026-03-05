@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
-import Navbar from "../components/ui/Topbar";
+import Navbar from "../components/ui/Sidebar";
 import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";
 import { Button, Card, Col, Container, Form, Row } from "react-bootstrap";
@@ -74,76 +74,73 @@ const Login = () => {
     }
 
     return (
-        <>
-            <Navbar />
-            <Container>
-                <Row className="justify-content-center">
-                    <Col md={6}>
-                        <h2>Login</h2>
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>
-                                    Login with Helmholtz AAI
-                                </Card.Title>
-                                <Card.Text className="text-muted">
-                                    Recommended for Helmholtz users. You will be
-                                    redirected to the Helmholtz AAI login page.
-                                </Card.Text>
-                                <Button onClick={redirectToHelmholtz}>
-                                    Continue with Helmholtz AAI
-                                </Button>
-                            </Card.Body>
-                        </Card>
+        <Container>
+            <Row className="justify-content-center">
+                <Col md={6}>
+                    <h2>Login</h2>
+                    <Card>
+                        <Card.Body>
+                            <Card.Title>
+                                Login with Helmholtz AAI
+                            </Card.Title>
+                            <Card.Text className="text-muted">
+                                Recommended for Helmholtz users. You will be
+                                redirected to the Helmholtz AAI login page.
+                            </Card.Text>
+                            <Button onClick={redirectToHelmholtz}>
+                                Continue with Helmholtz AAI
+                            </Button>
+                        </Card.Body>
+                    </Card>
 
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>Admin Login</Card.Title>
-                                <Card.Text className="text-muted">
-                                    Use this option if you have an admin account
-                                    with username/password.
-                                </Card.Text>
-                                <Form onSubmit={handleSubmit}>
-                                    <Form.Group controlId="loginUsername">
-                                        <Form.Label>Username</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            value={username}
-                                            onChange={(e) =>
-                                                setUsername(e.target.value)
-                                            }
-                                            required
-                                        />
-                                    </Form.Group>
-                                    <Form.Group controlId="loginPassword">
-                                        <Form.Label>Password</Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) =>
-                                                setPassword(e.target.value)
-                                            }
-                                            required
-                                        />
-                                    </Form.Group>
-                                    <Form.Check
-                                        type="checkbox"
-                                        label="Remember me"
-                                        id="loginRememberMe"
-                                        checked={rememberMe}
+                    <Card>
+                        <Card.Body>
+                            <Card.Title>Admin Login</Card.Title>
+                            <Card.Text className="text-muted">
+                                Use this option if you have an admin account
+                                with username/password.
+                            </Card.Text>
+                            <Form onSubmit={handleSubmit}>
+                                <Form.Group controlId="loginUsername">
+                                    <Form.Label>Username</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={username}
                                         onChange={(e) =>
-                                            setRememberMe(e.target.checked)
+                                            setUsername(e.target.value)
                                         }
+                                        required
                                     />
-                                    <Button variant="secondary" type="submit">
-                                        Login with Username
-                                    </Button>
-                                </Form>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
-            </Container>
-        </>
+                                </Form.Group>
+                                <Form.Group controlId="loginPassword">
+                                    <Form.Label>Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Remember me"
+                                    id="loginRememberMe"
+                                    checked={rememberMe}
+                                    onChange={(e) =>
+                                        setRememberMe(e.target.checked)
+                                    }
+                                />
+                                <Button variant="secondary" type="submit">
+                                    Login with Username
+                                </Button>
+                            </Form>
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 };
 

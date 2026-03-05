@@ -93,14 +93,12 @@ const uiSchema: UiSchema = {
 
 const Scrinshot: React.FC = () => {
     return (
-        <>
-            <PipelineTemplate
-                pipeline="scrinshot"
-                title="Scrinshot Probe Designer"
-                schema={schema}
-                uiSchema={uiSchema}
-            />
-        </>
+        <PipelineTemplate
+            pipeline="scrinshot"
+            title="Scrinshot Probe Designer"
+            schema={schema}
+            uiSchema={uiSchema}
+        />
     );
 };
 export default Scrinshot;

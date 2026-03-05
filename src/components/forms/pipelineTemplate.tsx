@@ -2,7 +2,7 @@ import { useState } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
-import Navbar from "../ui/Topbar";
+import Navbar from "../ui/Sidebar";
 import type { FileState, Status, Modal, RJSFFormData } from "../types";
 import { handleSubmit } from "../helpers";
 import FieldTemplate from "./FieldTemplate";
@@ -52,7 +52,6 @@ const PipelineTemplate: React.FC<Props> = ({
 
     return (
         <>
-            <Navbar />
             {runId ? (
                 <RunLinkModal
                     show={modal.show}

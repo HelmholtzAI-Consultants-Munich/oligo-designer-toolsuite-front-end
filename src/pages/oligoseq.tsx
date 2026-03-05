@@ -83,14 +83,12 @@ const uiSchema: UiSchema = {
 
 const Oligoseq: React.FC = () => {
     return (
-        <>
-            <PipelineTemplate
-                pipeline="oligoseq"
-                title="OligoSeq Probe Designer"
-                schema={schema}
-                uiSchema={uiSchema}
-            />
-        </>
+        <PipelineTemplate
+            pipeline="oligoseq"
+            title="OligoSeq Probe Designer"
+            schema={schema}
+            uiSchema={uiSchema}
+        />
     );
 };
 export default Oligoseq;

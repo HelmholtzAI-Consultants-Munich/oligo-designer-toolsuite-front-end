@@ -1,0 +1,59 @@
+// Variable overrides
+$primary: #003956;
+$secondary: #037B94;
+$success: #128635;
+$warning: #FFBD11;
+$danger: #C91432;
+
+$border-color: #B0B0B0;
+
+$font-family-sans-serif: "Fustat Variable", sans-serif;
+
+// Bootstrap and its default variables
+@import "../../node_modules/bootstrap/scss/bootstrap";
+
+// Custom styles
+
+.navbar-main {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 25rem;
+    padding: 2rem;
+
+    background-color: tint-color($primary, 90%);
+    border-right: 1px solid $border-color;
+
+    flex-direction: column;
+    align-items: start;
+}
+
+.navbar-main .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    font-size: 1.6rem;
+    font-weight: 500;
+    white-space: inherit;
+    line-height: 1.3;
+}
+
+.navbar-main .navbar-collapse {
+    flex-direction: column;
+}
+
+/* Spacing */
+
+.row {
+    margin: 0;
+}
+
+.row > * {
+    padding: 0;
+    margin: 0;
+}
+
+.container {
+    padding: 2rem 3rem;
+}

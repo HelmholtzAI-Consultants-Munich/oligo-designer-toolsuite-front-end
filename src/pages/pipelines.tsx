@@ -1,5 +1,5 @@
 import React from "react";
-import Navbar from "../components/ui/Topbar";
+import Navbar from "../components/ui/Sidebar";
 import { Link } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
@@ -45,9 +45,7 @@ const Pipelines: React.FC = () => {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <>
-            <Navbar />
-
+        <Container>
             {!user && (
                 <Alert variant="warning">
                     To keep your runs saved when you close your browser, please{" "}
@@ -55,44 +53,42 @@ const Pipelines: React.FC = () => {
                 </Alert>
             )}
 
-            <Container>
-                <p className="lead">
-                    Oligo Designer Toolsuite is an open-source framework
-                    designed to streamline the development of custom
-                    oligonucleotide (oligo) design pipelines. Oligos are short
-                    DNA or RNA sequences used in various applications, such as
-                    research, diagnostics, and therapeutics. The Toolsuite
-                    provides modular functionalities like sequence generation,
-                    thermodynamic filtering, and machine learning-based
-                    specificity prediction.
-                </p>
+            <p className="lead">
+                Oligo Designer Toolsuite is an open-source framework
+                designed to streamline the development of custom
+                oligonucleotide (oligo) design pipelines. Oligos are short
+                DNA or RNA sequences used in various applications, such as
+                research, diagnostics, and therapeutics. The Toolsuite
+                provides modular functionalities like sequence generation,
+                thermodynamic filtering, and machine learning-based
+                specificity prediction.
+            </p>
 
-                <h2>Probe Designers</h2>
+            <h2>Probe Designers</h2>
 
-                <Row>
-                    {pipelines.map((pipeline, index) => (
-                        <Col md={3} key={index}>
-                            <Card>
-                                <Card.Img
-                                    variant="top"
-                                    src={pipeline.img}
-                                    alt={pipeline.title}
-                                />
-                                <Card.Body>
-                                    <Card.Title>{pipeline.title}</Card.Title>
-                                    <Card.Text>
-                                        {pipeline.description}
-                                    </Card.Text>
-                                    <Card.Link as={Link} to={pipeline.link}>
-                                        Go to Pipeline
-                                    </Card.Link>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            </Container>
-        </>
+            <Row>
+                {pipelines.map((pipeline, index) => (
+                    <Col md={3} key={index}>
+                        <Card>
+                            <Card.Img
+                                variant="top"
+                                src={pipeline.img}
+                                alt={pipeline.title}
+                            />
+                            <Card.Body>
+                                <Card.Title>{pipeline.title}</Card.Title>
+                                <Card.Text>
+                                    {pipeline.description}
+                                </Card.Text>
+                                <Card.Link as={Link} to={pipeline.link}>
+                                    Go to Pipeline
+                                </Card.Link>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                ))}
+            </Row>
+        </Container>
     );
 };
 

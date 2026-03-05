@@ -124,14 +124,12 @@ const uiSchema: UiSchema = {
 
 const Seqfish: React.FC = () => {
     return (
-        <>
-            <PipelineTemplate
-                pipeline="seqfish"
-                title="Seqfish+ Probe Designer"
-                schema={schema}
-                uiSchema={uiSchema}
-            />
-        </>
+        <PipelineTemplate
+            pipeline="seqfish"
+            title="Seqfish+ Probe Designer"
+            schema={schema}
+            uiSchema={uiSchema}
+        />
     );
 };
 export default Seqfish;
