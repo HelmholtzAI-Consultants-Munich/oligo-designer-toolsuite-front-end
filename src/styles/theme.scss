@@ -14,6 +14,12 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
 
 // Custom styles
 
+.accordion-button {
+    font-weight: 600;
+}
+
+/* Main Navbar (Sidebar) */
+
 .navbar-main {
     position: sticky;
     top: 0;
@@ -41,7 +47,52 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
 
 .navbar-main .navbar-collapse {
     flex-direction: column;
+    align-items: start;
 }
+
+
+/* Nav variant "separated" */
+
+navbar-nav.nav-separated {
+    padding: var(--bs-nav-link-padding-y) 0;
+}
+
+.navbar-nav.nav-separated .nav-link {
+    padding: 0 var(--bs-navbar-nav-link-padding-x);
+}
+
+.navbar-nav.nav-separated *:not(:first-child) {
+    border-left: 1px solid $border-color;
+}
+
+
+/* Nav variant "pipelines" */
+
+.navbar-nav.nav-pipelines {
+    flex-direction: column;
+}
+
+
+/* Header */
+
+.header {
+    border-bottom: 1px solid $border-color;
+}
+
+.header-title {
+    margin-bottom: 0;
+}
+
+
+/* Divider */
+
+.divider {
+    width: 100%;
+    margin: 1rem 0;
+    border-top: 1px solid $border-color;
+    opacity: 1;
+}
+
 
 /* Spacing */
 

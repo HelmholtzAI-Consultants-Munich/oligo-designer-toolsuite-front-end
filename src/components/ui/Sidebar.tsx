@@ -11,6 +11,7 @@ import {
 } from "react-bootstrap";
 import { Link } from "react-router";
 import { GearFill } from "react-bootstrap-icons";
+import Divider from "./Divider";
 
 const Sidebar: React.FC = () => {
     const { user, logout } = useAuth();
@@ -39,7 +40,7 @@ const Sidebar: React.FC = () => {
             <Navbar.Collapse
                 id="navigation-bar"
             >
-                <Nav>
+                <Nav variant="separated">
                     <Nav.Link as={Link} to="/">
                         Home
                     </Nav.Link>
@@ -50,32 +51,36 @@ const Sidebar: React.FC = () => {
                         Contact
                     </Nav.Link>
                 </Nav>
-                <Nav>
-                    <NavDropdown title="Pipelines" id="pipelines-dropdown">
-                        <NavDropdown.Item
-                            as={Link}
-                            to="/pipelines/scrinshot"
-                        >
-                            Scrinshot Probe
-                        </NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="/pipelines/merfish">
-                            Merfish Probe
-                        </NavDropdown.Item>
-                        <NavDropdown.Item as={Link} to="/pipelines/seqfish">
-                            SeqFish+ Probe
-                        </NavDropdown.Item>
-                        <NavDropdown.Item
-                            as={Link}
-                            to="/pipelines/oligoseq"
-                        >
-                            Oligo-Seq Probe
-                        </NavDropdown.Item>
-                    </NavDropdown>
 
-                    <Nav.Link as={Link} to="/runs">
-                        Runs
+                <h5>Pipelines</h5>
+
+                <Nav variant="pipelines">
+                    <Nav.Link as={Link}
+                        to="/pipelines/scrinshot"
+                    >
+                        Scrinshot Probe
+                    </Nav.Link>
+                    <Nav.Link as={Link} to="/pipelines/merfish">
+                        Merfish Probe
+                    </Nav.Link>
+                    <Nav.Link as={Link} to="/pipelines/seqfish">
+                        SeqFish+ Probe
+                    </Nav.Link>
+                    <Nav.Link
+                        as={Link}
+                        to="/pipelines/oligoseq"
+                    >
+                        Oligo-Seq Probe
                     </Nav.Link>
                 </Nav>
+
+                <Divider/>
+
+                <h5>Recent Runs</h5>
+
+                <Link to="/runs">
+                    Runs
+                </Link>
 
                 {/* Auth  */}
                 {user ? (

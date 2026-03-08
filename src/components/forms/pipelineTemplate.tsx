@@ -12,6 +12,8 @@ import { RunLinkModal } from "../modal/RunLinkModal";
 import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
 import { Container } from "react-bootstrap";
+import Header from "../ui/Header";
+import Page from "../ui/Page";
 
 type Props = {
     pipeline: string;
@@ -68,8 +70,10 @@ const PipelineTemplate: React.FC<Props> = ({
                     body={modal.body}
                 />
             )}
-            <Container>
-                <h2>{title}</h2>
+            <Header>
+                <Header.Title>{title}</Header.Title>
+            </Header>
+            <Page>
                 <Form
                     schema={schema}
                     uiSchema={uiSchema}
@@ -97,7 +101,7 @@ const PipelineTemplate: React.FC<Props> = ({
                         )
                     }
                 />
-            </Container>
+            </Page>
         </>
     );
 };

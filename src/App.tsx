@@ -7,7 +7,8 @@ import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
-import "./styles/custom.scss";
+import "./styles/theme.scss";
+import "./styles/utils.scss"
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "@fontsource-variable/fustat";
 

@@ -1,6 +1,8 @@
 import Navbar from "../components/ui/Sidebar";
 import { Col, Container, Row } from "react-bootstrap";
 import ContactsCard from "../components/ui/ContactsCard";
+import Header from "../components/ui/Header";
+import Page from "../components/ui/Page";
 
 const contact: React.FC = () => {
     const teamMembers = [
@@ -17,20 +19,24 @@ const contact: React.FC = () => {
     ];
 
     return (
-        <Container>
-            <h1>Our Team</h1>
+        <>
+            <Header>
+                <Header.Title>Our Team</Header.Title>
+            </Header>
 
-            <Row>
-                {teamMembers.map((member) => (
-                    <Col md={3} key={member.email}>
-                        <ContactsCard
-                            name={member.name}
-                            email={member.email}
-                        />
-                    </Col>
-                ))}
-            </Row>
-        </Container>
+            <Page>
+                <Row>
+                    {teamMembers.map((member) => (
+                        <Col md={3} key={member.email}>
+                            <ContactsCard
+                                name={member.name}
+                                email={member.email}
+                            />
+                        </Col>
+                    ))}
+                </Row>
+            </Page>
+        </>
     );
 };
 

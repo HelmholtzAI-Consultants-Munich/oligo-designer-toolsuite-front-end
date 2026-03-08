@@ -132,7 +132,7 @@ const Login = () => {
                                         setRememberMe(e.target.checked)
                                     }
                                 />
-                                <Button variant="secondary" type="submit">
+                                <Button variant="outline-primary" type="submit">
                                     Login with Username
                                 </Button>
                             </Form>
