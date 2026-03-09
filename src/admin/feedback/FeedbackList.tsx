@@ -3,8 +3,6 @@ import axios from "axios";
 import { Table, Spinner, Alert, Button, Badge } from "react-bootstrap";
 import { BACKEND_URL } from "../../config";
 import { formatAdminDateTime } from "../shared/date";
-import RunIdLink from "../shared/RunIdLink";
-
 interface FeedbackUser {
     id: string;
     email: string;
@@ -64,7 +62,7 @@ const FeedbackList: React.FC = () => {
     const getSourceDisplay = (feedback: Feedback) => {
         const runId = feedback.metadata?.run_id;
         if (typeof runId === "string" && runId.trim()) {
-            return <RunIdLink runId={runId} />;
+            return <span>{runId}</span>;
         }
 
         const path = feedback.metadata?.path;

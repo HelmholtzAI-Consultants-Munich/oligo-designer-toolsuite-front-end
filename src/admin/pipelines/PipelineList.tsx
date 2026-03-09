@@ -14,7 +14,6 @@ import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
 import { formatAdminDateTime } from "../shared/date";
-import RunIdLink from "../shared/RunIdLink";
 import { STATUS_CONFIG } from "../shared/types";
 import { BACKEND_URL } from "../../config";
 
@@ -443,9 +442,7 @@ const PipelineList: React.FC = () => {
                                             )}
                                         </Button>
                                     </td>
-                                    <td>
-                                        <RunIdLink runId={run.id} />
-                                    </td>
+                                    <td>{run.id}</td>
                                     <td>
                                         <strong>
                                             {run.pipeline || "Unknown"}
