@@ -38,7 +38,7 @@ def sanitize_feedback_message(raw_message: str) -> str:
     return sanitized.replace("\r\n", "\n").replace("\r", "\n").strip()
 
 
-@feedback_bp.route("/api/feedbacks", methods=["POST"])
+@feedback_bp.route("/api/feedback", methods=["POST"])
 @login_required
 @limiter.limit(FEEDBACK_RATE_LIMIT, key_func=_feedback_rate_limit_key)
 def create_feedback():
@@ -71,7 +71,7 @@ def create_feedback():
         "user_id": user_id,
     }
 
-    result = mongo.db.feedbacks.insert_one(doc)
-    saved = mongo.db.feedbacks.find_one({"_id": result.inserted_id})
+    result = mongo.db.feedback.insert_one(doc)
+    saved = mongo.db.feedback.find_one({"_id": result.inserted_id})
 
     return jsonify(format_feedback(saved)), HTTPStatus.CREATED

@@ -72,7 +72,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
             }
 
             await axios.post(
-                BACKEND_URL + "/api/feedbacks",
+                BACKEND_URL + "/api/feedback",
                 { message, metadata },
                 { withCredentials: true }
             );

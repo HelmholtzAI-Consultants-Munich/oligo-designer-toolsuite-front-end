@@ -72,7 +72,7 @@ const navItems: NavItemConfig[] = [
     { path: "/admin/dashboard", label: "Dashboard", icon: Speedometer2 },
     { path: "/admin/users", label: "User Management", icon: People },
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
-    { path: "/admin/feedbacks", label: "Feedbacks", icon: ChatDots },
+    { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
 ];
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({

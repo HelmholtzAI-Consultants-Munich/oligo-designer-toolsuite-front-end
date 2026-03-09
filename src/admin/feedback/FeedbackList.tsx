@@ -20,25 +20,25 @@ interface Feedback {
 }
 
 const FeedbackList: React.FC = () => {
-    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+    const [feedbackEntries, setFeedbackEntries] = useState<Feedback[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchFeedbacks();
+        fetchFeedbackEntries();
     }, []);
 
-    const fetchFeedbacks = async () => {
+    const fetchFeedbackEntries = async () => {
         try {
             setIsLoading(true);
             setError(null);
             const response = await axios.get(
-                BACKEND_URL + "/api/admin/feedbacks",
+                BACKEND_URL + "/api/admin/feedback",
                 {
                     withCredentials: true,
                 }
             );
-            setFeedbacks(response.data);
+            setFeedbackEntries(response.data);
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
                 setError(
@@ -88,9 +88,9 @@ const FeedbackList: React.FC = () => {
     if (error) {
         return (
             <Alert variant="danger">
-                <Alert.Heading>Error loading feedbacks</Alert.Heading>
+                <Alert.Heading>Error loading feedback</Alert.Heading>
                 <p>{error}</p>
-                <Button variant="primary" onClick={fetchFeedbacks}>
+                <Button variant="primary" onClick={fetchFeedbackEntries}>
                     Retry
                 </Button>
             </Alert>
@@ -100,13 +100,16 @@ const FeedbackList: React.FC = () => {
     return (
         <div className="container-fluid p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Feedbacks</h2>
-                <Button variant="outline-primary" onClick={fetchFeedbacks}>
+                <h2>Feedback</h2>
+                <Button
+                    variant="outline-primary"
+                    onClick={fetchFeedbackEntries}
+                >
                     Refresh
                 </Button>
             </div>
 
-            {feedbacks.length === 0 ? (
+            {feedbackEntries.length === 0 ? (
                 <Alert variant="info">No feedback entries found.</Alert>
             ) : (
                 // TODO: Show ODT Cloud version in this table once version metadata is available in feedback entries.
@@ -120,7 +123,7 @@ const FeedbackList: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {feedbacks.map((fb) => (
+                        {feedbackEntries.map((fb) => (
                             <tr key={fb.id}>
                                 <td>
                                     {formatAdminDateTime(

@@ -14,6 +14,6 @@ def register_blueprints(app):
     app.register_blueprint(genomic_bp)
     app.register_blueprint(
         feedback_bp
-    )  # before pipelines so /api/feedbacks is not caught by /api/<pipeline_name>
+    )  # before pipelines so /api/feedback is not caught by /api/<pipeline_name>
     app.register_blueprint(pipelines_bp)
     app.register_blueprint(admin_bp)

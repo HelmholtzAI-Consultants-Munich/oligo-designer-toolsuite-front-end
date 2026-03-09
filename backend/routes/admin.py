@@ -313,10 +313,10 @@ def get_dashboard_stats():
     ), HTTPStatus.OK
 
 
-@admin_bp.route("/api/admin/feedbacks", methods=["GET"])
+@admin_bp.route("/api/admin/feedback", methods=["GET"])
 @login_required
 @require_admin
-def get_feedbacks():
+def get_feedback():
     """
     Get all feedback entries (admin only).
 
@@ -325,12 +325,12 @@ def get_feedbacks():
     :returns: JSON list of feedback entries
     :rtype: flask.Response
     """
-    feedback_cursor = mongo.db.feedbacks.find({}).sort("created_at", -1)
-    feedbacks = list(feedback_cursor)
+    feedback_cursor = mongo.db.feedback.find({}).sort("created_at", -1)
+    feedback_entries = list(feedback_cursor)
 
-    formatted_feedbacks = [format_feedback(doc) for doc in feedbacks]
+    formatted_feedback = [format_feedback(doc) for doc in feedback_entries]
 
-    return jsonify(formatted_feedbacks), HTTPStatus.OK
+    return jsonify(formatted_feedback), HTTPStatus.OK
 
 
 @admin_bp.route("/api/admin/users/bulk-delete", methods=["POST"])
