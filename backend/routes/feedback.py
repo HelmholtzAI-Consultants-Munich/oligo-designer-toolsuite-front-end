@@ -40,7 +40,11 @@ def sanitize_feedback_message(raw_message: str) -> str:
 
 @feedback_bp.route("/api/feedback", methods=["POST"])
 @login_required
-@limiter.limit(FEEDBACK_RATE_LIMIT, key_func=_feedback_rate_limit_key)
+@limiter.limit(
+    FEEDBACK_RATE_LIMIT,
+    key_func=_feedback_rate_limit_key,
+    error_message="You have reached the feedback limit. Please wait before submitting again.",
+)
 def create_feedback():
     """
     Create a general feedback entry for logged-in users.
