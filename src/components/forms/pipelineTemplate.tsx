@@ -2,20 +2,16 @@ import { useState } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
-import Navbar from "../modules/nav";
-import type {
-    FileState,
-    Status,
-    Modal,
-    RJSFFormData,
-} from "../components/types";
-import { handleSubmit } from "../components/helpers";
-import FieldTemplate from "../components/fieldTemplate";
-import { TabsLayout } from "../components/tabs";
-import FileSelection from "../components/fileSelection";
-import { RunLinkModal } from "../components/modal/RunLinkModal";
-import { InfoModal } from "../components/modal/InfoModal";
+import Navbar from "../ui/Topbar";
+import type { FileState, Status, Modal, RJSFFormData } from "../types";
+import { handleSubmit } from "../helpers";
+import FieldTemplate from "./FieldTemplate";
+import { TabsLayout } from "./TabsLayout";
+import FileSelection from "./FileSelection";
+import { RunLinkModal } from "../modal/RunLinkModal";
+import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
+import { Container } from "react-bootstrap";
 
 type Props = {
     pipeline: string;
@@ -73,41 +69,38 @@ const PipelineTemplate: React.FC<Props> = ({
                     body={modal.body}
                 />
             )}
-            <div className="mb-3">
-                <div className="d-flex justify-content-center align-items-center mt-3">
-                    <h2 className="mb-0">{title}</h2>
-                </div>
-                <div className="container my-4">
-                    <Form
-                        schema={schema}
-                        uiSchema={uiSchema}
-                        formContext={{
+            <Container>
+                <h2>{title}</h2>
+                <Form
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    formContext={{
+                        files,
+                        setFiles,
+                    }}
+                    formData={formData}
+                    templates={{
+                        FieldTemplate: FieldTemplate,
+                        ObjectFieldTemplate: TabsLayout,
+                    }}
+                    widgets={widgets}
+                    validator={validator}
+                    onChange={(e) => setFormData(e.formData)}
+                    onSubmit={() =>
+                        handleSubmit(
+                            runStatus,
+                            setRunStatus,
+                            setRunId,
+                            setModal,
                             files,
-                            setFiles,
-                        }}
-                        formData={formData}
-                        templates={{
-                            FieldTemplate: FieldTemplate,
-                            ObjectFieldTemplate: TabsLayout,
-                        }}
-                        widgets={widgets}
-                        validator={validator}
-                        onChange={(e) => setFormData(e.formData)}
-                        onSubmit={() =>
-                            handleSubmit(
-                                runStatus,
-                                setRunStatus,
-                                setRunId,
-                                setModal,
-                                files,
-                                formData,
-                                pipeline
-                            )
-                        }
-                    />
-                </div>
-            </div>
+                            formData,
+                            pipeline
+                        )
+                    }
+                />
+            </Container>
         </>
     );
 };
+
 export default PipelineTemplate;

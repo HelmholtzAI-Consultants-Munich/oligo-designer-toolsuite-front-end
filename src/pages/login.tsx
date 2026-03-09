@@ -1,12 +1,12 @@
 // Login page component for user authentication
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import Navbar from "../modules/nav";
+import { useNavigate, useSearchParams } from "react-router";
+import Navbar from "../components/ui/Topbar";
 import { useAuth } from "../modules/useAuth";
-import { Spinner } from "react-bootstrap";
 import { BACKEND_URL } from "../config";
+import { Button, Card, Col, Container, Form, Row } from "react-bootstrap";
 
 /**
  * Login component handles user login functionality.
@@ -66,21 +66,7 @@ const Login = () => {
     };
 
     // Show loading spinner while checking auth status
-    if (loading) {
-        return (
-            <div>
-                <Navbar />
-                <div
-                    className="d-flex justify-content-center align-items-center"
-                    style={{ minHeight: "50vh" }}
-                >
-                    <Spinner animation="border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </Spinner>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <div>Loading...</div>;
 
     // Don't render login form if user is already authenticated (will redirect)
     if (user) {
@@ -88,104 +74,76 @@ const Login = () => {
     }
 
     return (
-        <div>
+        <>
             <Navbar />
-            <div className="container mt-5">
-                <div className="row justify-content-center">
-                    <div className="col-md-6">
-                        <h2 className="text-center mb-4">Login</h2>
-                        <div className="card shadow-sm mb-4">
-                            <div className="card-body">
-                                <h5 className="card-title">
+            <Container>
+                <Row className="justify-content-center">
+                    <Col md={6}>
+                        <h2>Login</h2>
+                        <Card>
+                            <Card.Body>
+                                <Card.Title>
                                     Login with Helmholtz AAI
-                                </h5>
-                                <p className="card-text">
+                                </Card.Title>
+                                <Card.Text className="text-muted">
                                     Recommended for Helmholtz users. You will be
                                     redirected to the Helmholtz AAI login page.
-                                </p>
-                                <button
-                                    className="btn btn-primary w-100"
-                                    onClick={redirectToHelmholtz}
-                                >
+                                </Card.Text>
+                                <Button onClick={redirectToHelmholtz}>
                                     Continue with Helmholtz AAI
-                                </button>
-                            </div>
-                        </div>
+                                </Button>
+                            </Card.Body>
+                        </Card>
 
-                        <div className="card shadow-sm">
-                            <div className="card-body">
-                                <h5 className="card-title">Admin Login</h5>
-                                <p className="card-text text-muted">
+                        <Card>
+                            <Card.Body>
+                                <Card.Title>Admin Login</Card.Title>
+                                <Card.Text className="text-muted">
                                     Use this option if you have an admin account
                                     with username/password.
-                                </p>
-                                <form onSubmit={handleSubmit}>
-                                    <div className="mb-3">
-                                        <label
-                                            htmlFor="username"
-                                            className="form-label"
-                                        >
-                                            Username
-                                        </label>
-                                        <input
+                                </Card.Text>
+                                <Form onSubmit={handleSubmit}>
+                                    <Form.Group controlId="loginUsername">
+                                        <Form.Label>Username</Form.Label>
+                                        <Form.Control
                                             type="text"
-                                            className="form-control"
-                                            id="username"
                                             value={username}
                                             onChange={(e) =>
                                                 setUsername(e.target.value)
                                             }
                                             required
                                         />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label
-                                            htmlFor="password"
-                                            className="form-label"
-                                        >
-                                            Password
-                                        </label>
-                                        <input
+                                    </Form.Group>
+                                    <Form.Group controlId="loginPassword">
+                                        <Form.Label>Password</Form.Label>
+                                        <Form.Control
                                             type="password"
-                                            className="form-control"
-                                            id="password"
                                             value={password}
                                             onChange={(e) =>
                                                 setPassword(e.target.value)
                                             }
                                             required
                                         />
-                                    </div>
-                                    <div className="mb-3 form-check">
-                                        <input
-                                            type="checkbox"
-                                            className="form-check-input"
-                                            id="rememberMe"
-                                            checked={rememberMe}
-                                            onChange={(e) =>
-                                                setRememberMe(e.target.checked)
-                                            }
-                                        />
-                                        <label
-                                            className="form-check-label"
-                                            htmlFor="rememberMe"
-                                        >
-                                            Remember me
-                                        </label>
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-secondary w-100"
-                                    >
+                                    </Form.Group>
+                                    <Form.Check
+                                        type="checkbox"
+                                        label="Remember me"
+                                        id="loginRememberMe"
+                                        checked={rememberMe}
+                                        onChange={(e) =>
+                                            setRememberMe(e.target.checked)
+                                        }
+                                    />
+                                    <Button variant="secondary" type="submit">
                                         Login with Username
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                                    </Button>
+                                </Form>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+            </Container>
+        </>
     );
 };
 

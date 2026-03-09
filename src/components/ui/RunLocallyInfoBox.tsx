@@ -1,5 +1,4 @@
-// src/components/RunLocallyInfoBox.tsx
-import React from "react";
+import { Alert, Container } from "react-bootstrap";
 
 interface RunLocallyInfoBoxProps {
     url?: string;
@@ -10,8 +9,8 @@ const RunLocallyInfoBox: React.FC<RunLocallyInfoBoxProps> = ({
     url = "https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite?tab=readme-ov-file",
     text = "Want to run this pipeline locally?",
 }) => (
-    <div className="container my-4">
-        <div className="alert alert-info mt-5 text-center">
+    <Container>
+        <Alert variant="info">
             <strong>{text} </strong>
             <a
                 href={url}
@@ -21,8 +20,8 @@ const RunLocallyInfoBox: React.FC<RunLocallyInfoBoxProps> = ({
             >
                 View on GitHub
             </a>
-        </div>
-    </div>
+        </Alert>
+    </Container>
 );
 
 export default RunLocallyInfoBox;

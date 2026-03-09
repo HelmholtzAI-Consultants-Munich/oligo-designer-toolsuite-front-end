@@ -1,31 +1,61 @@
 import React from "react";
-import Navbar from "../modules/nav";
-import { Link } from "react-router-dom";
+import Navbar from "../components/ui/Topbar";
+import { Link } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";
 import seqfish from "../images/seqfish.jpg";
 import oligoseq from "../images/oligoseq.jpg";
+import { Alert, Card, Col, Container, Row } from "react-bootstrap";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
 
+    const pipelines = [
+        {
+            title: "Scrinshot Probe",
+            description:
+                "Spatial gene expression analysis using scrinshot technology.",
+            link: "/pipelines/scrinshot",
+            img: scrinshot,
+        },
+        {
+            title: "Merfish Probe",
+            link: "/pipelines/merfish",
+            description:
+                "Highly multiplexed imaging for spatially resolved transcriptomics.",
+            img: merfish,
+        },
+        {
+            title: "SeqFish+ Probe",
+            link: "/pipelines/seqfish",
+            description:
+                "Sequential imaging for probing complex spatial transcriptomes.",
+            img: seqfish,
+        },
+        {
+            title: "Oligo-Seq Probe",
+            link: "/pipelines/oligoseq",
+            description:
+                "High-throughput sequencing tailored for spatial transcriptomics.",
+            img: oligoseq,
+        },
+    ];
+
     if (loading) return <div>Loading...</div>;
 
     return (
-        <div>
+        <>
             <Navbar />
+
             {!user && (
-                <div className="alert alert-warning text-center" role="alert">
+                <Alert variant="warning">
                     To keep your runs saved when you close your browser, please{" "}
-                    <a href="/login" className="text-primary">
-                        log in
-                    </a>
-                    .
-                </div>
+                    <Link to="/login">log in</Link>.
+                </Alert>
             )}
-            <div className="container mt-5">
-                <h2 className="mb-4">Pipelines</h2>
+
+            <Container>
                 <p className="lead">
                     Oligo Designer Toolsuite is an open-source framework
                     designed to streamline the development of custom
@@ -36,64 +66,33 @@ const Pipelines: React.FC = () => {
                     thermodynamic filtering, and machine learning-based
                     specificity prediction.
                 </p>
-                <h2 className="mt-5 mb-4 text-primary">Probe Designers</h2>
-                <div className="row g-4">
-                    {[
-                        {
-                            title: "Scrinshot Probe",
-                            description:
-                                "Spatial gene expression analysis using scrinshot technology.",
-                            link: "/pipelines/scrinshot",
-                            img: scrinshot,
-                        },
-                        {
-                            title: "Merfish Probe",
-                            link: "/pipelines/merfish",
-                            description:
-                                "Highly multiplexed imaging for spatially resolved transcriptomics.",
-                            img: merfish,
-                        },
-                        {
-                            title: "SeqFish+ Probe",
-                            link: "/pipelines/seqfish",
-                            description:
-                                "Sequential imaging for probing complex spatial transcriptomes.",
-                            img: seqfish,
-                        },
-                        {
-                            title: "Oligo-Seq Probe",
-                            link: "/pipelines/OligoSeq",
-                            description:
-                                "High-throughput sequencing tailored for spatial transcriptomics.",
-                            img: oligoseq,
-                        },
-                    ].map((pipeline, index) => (
-                        <div className="col-md-3" key={index}>
-                            <div className="card border-0 shadow-sm h-100">
-                                <Link to={pipeline.link}>
-                                    <div className="card-img-top img-hover d-flex justify-content-center align-items-center">
-                                        <img
-                                            src={pipeline.img}
-                                            alt={pipeline.title}
-                                            className="img-fluid rounded"
-                                            style={{ objectFit: "cover" }}
-                                        />
-                                    </div>
-                                </Link>
-                                <div className="card-body">
-                                    <h6 className="card-title">
-                                        {pipeline.title}
-                                    </h6>
-                                    <p className="card-text">
+
+                <h2>Probe Designers</h2>
+
+                <Row>
+                    {pipelines.map((pipeline, index) => (
+                        <Col md={3} key={index}>
+                            <Card>
+                                <Card.Img
+                                    variant="top"
+                                    src={pipeline.img}
+                                    alt={pipeline.title}
+                                />
+                                <Card.Body>
+                                    <Card.Title>{pipeline.title}</Card.Title>
+                                    <Card.Text>
                                         {pipeline.description}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                                    </Card.Text>
+                                    <Card.Link as={Link} to={pipeline.link}>
+                                        Go to Pipeline
+                                    </Card.Link>
+                                </Card.Body>
+                            </Card>
+                        </Col>
                     ))}
-                </div>
-            </div>
-        </div>
+                </Row>
+            </Container>
+        </>
     );
 };
 

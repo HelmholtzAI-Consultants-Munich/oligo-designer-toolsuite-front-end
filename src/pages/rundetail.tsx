@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
-import Select from "react-select";
-import type { SingleValue } from "react-select";
-import Navbar from "../modules/nav";
+import Navbar from "../components/ui/Topbar";
 import * as XLSX from "xlsx";
 import type {
     GenomicRegions,
@@ -16,6 +14,18 @@ import type {
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
+import {
+    Alert,
+    Button,
+    Card,
+    Col,
+    Container,
+    Form,
+    ListGroup,
+    Row,
+    Spinner,
+    Table,
+} from "react-bootstrap";
 
 interface RunFile {
     name: string;
@@ -384,107 +394,109 @@ const RunDetail = () => {
     };
 
     return (
-        <div>
+        <>
             <Navbar />
-            <div className="container mt-4">
-                <div className="d-flex justify-content-between align-items-center mb-4">
-                    <button
-                        onClick={() => {
-                            const fromAdmin = (location.state as LocationState)
-                                ?.fromAdmin;
-                            navigate(fromAdmin ? "/admin/pipelines" : "/runs");
-                        }}
-                        className="btn btn-outline-secondary"
-                    >
-                        ← Back to{" "}
-                        {(location.state as LocationState)?.fromAdmin
-                            ? "Admin Panel"
-                            : "Runs"}
-                    </button>
-                    <button className="btn btn-danger" onClick={handleDelete}>
-                        Delete Run
-                    </button>
-                </div>
+            <Container>
+                <Row>
+                    <Col>
+                        <Button
+                            variant="outline-secondary"
+                            onClick={() => {
+                                const fromAdmin = (
+                                    location.state as LocationState
+                                )?.fromAdmin;
+                                navigate(
+                                    fromAdmin ? "/admin/pipelines" : "/runs"
+                                );
+                            }}
+                        >
+                            ← Back to{" "}
+                            {(location.state as LocationState)?.fromAdmin
+                                ? "Admin Panel"
+                                : "Runs"}
+                        </Button>
+                    </Col>
+                    <Col xs="auto">
+                        <Button variant="danger" onClick={handleDelete}>
+                            Delete Run
+                        </Button>
+                    </Col>
+                </Row>
 
                 <h3>Run Files</h3>
-                <div className="list-group mb-4">
+                <ListGroup>
                     {files
                         .filter((file) =>
                             file.name.toLowerCase().includes("log")
                         )
                         .map((file) => (
-                            <div
-                                key={file.name}
-                                className="list-group-item d-flex justify-content-between align-items-center"
-                            >
-                                <div>
-                                    {file.name}
-                                    <span className="badge bg-secondary ms-2">
-                                        {Math.round(file.size / 1024)} KB
-                                    </span>
-                                </div>
-                                <div>
-                                    {file.name.endsWith(".txt") && (
-                                        <button
-                                            className="btn btn-sm btn-outline-primary me-2"
+                            <ListGroup.Item key={file.name}>
+                                <Row>
+                                    <Col>
+                                        {file.name}
+                                        <span className="badge bg-secondary ms-2">
+                                            {Math.round(file.size / 1024)} KB
+                                        </span>
+                                    </Col>
+                                    <Col xs="auto">
+                                        {file.name.endsWith(".txt") && (
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                onClick={() =>
+                                                    viewFileContent(file.name)
+                                                }
+                                            >
+                                                View
+                                            </Button>
+                                        )}
+                                        <Button
+                                            variant="outline-success"
+                                            size="sm"
                                             onClick={() =>
-                                                viewFileContent(file.name)
+                                                downloadFile(file.name)
                                             }
                                         >
-                                            View
-                                        </button>
-                                    )}
-                                    <button
-                                        className="btn btn-sm btn-outline-success"
-                                        onClick={() => downloadFile(file.name)}
-                                    >
-                                        Download
-                                    </button>
-                                </div>
-                            </div>
+                                            Download
+                                        </Button>
+                                    </Col>
+                                </Row>
+                            </ListGroup.Item>
                         ))}
-                </div>
+                </ListGroup>
 
-                {fileContent && viewingFilename && (
-                    <div className="mt-4">
-                        {fileContent &&
-                            viewingFilename &&
-                            viewingFilename.endsWith(".txt") && (
-                                <div className="mt-4">
-                                    <h4>Viewing: {viewingFilename}</h4>
-
-                                    <pre
-                                        className="bg-light p-3 rounded mb-4"
-                                        style={{
-                                            maxHeight: "500px",
-                                            overflow: "auto",
-                                        }}
-                                    >
-                                        {fileContent}
-                                    </pre>
-                                </div>
-                            )}
-                    </div>
-                )}
+                {fileContent &&
+                    viewingFilename &&
+                    viewingFilename.endsWith(".txt") && (
+                        <>
+                            <h4>Viewing: {viewingFilename}</h4>
+                            <pre
+                                className="bg-light p-3 rounded mb-4"
+                                style={{
+                                    maxHeight: "500px",
+                                    overflow: "auto",
+                                }}
+                            >
+                                {fileContent}
+                            </pre>
+                        </>
+                    )}
 
                 {/* Polling/waiting for YAML/log */}
                 {(runState == "pending" || runState == "started") && (
-                    <div className="alert alert-info">
+                    <Alert variant="info">
                         Run is {runState == "pending" ? "pending" : "executing"}
-                        ...
-                        <span className="spinner-border spinner-border-sm ms-2" />
-                    </div>
+                        ... <Spinner size="sm" />
+                    </Alert>
                 )}
 
                 {/* YAML/table logic remains unchanged below */}
                 {probes && (
-                    <div className="card">
-                        <div className="card-body">
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h4 className="card-title mb-0">
-                                    Gene Analysis
-                                </h4>
-                                <div className="btn-group">
+                    <Card>
+                        <Card.Body>
+                            <Card.Title className="d-flex">
+                                <Col>Gene Analysis</Col>
+                                <Col xs="auto">
                                     <button
                                         onClick={handleDownloadExcel}
                                         className="btn btn-success"
@@ -492,99 +504,89 @@ const RunDetail = () => {
                                     >
                                         Download All Genes Excel
                                     </button>
-                                </div>
-                            </div>
+                                </Col>
+                            </Card.Title>
 
-                            <div className="row mb-3">
-                                <div className="col-md-6">
-                                    <label className="form-label">
-                                        Select Gene
-                                    </label>
-                                    <Select
-                                        options={Object.keys(probes).map(
-                                            (gene) => ({
-                                                value: gene,
-                                                label: gene,
-                                            })
-                                        )}
-                                        value={
-                                            Object.keys(probes)
-                                                .map((gene) => ({
-                                                    value: gene,
-                                                    label: gene,
-                                                }))
-                                                .find(
-                                                    (option) =>
-                                                        option.value ===
-                                                        selectedGene
-                                                ) || null
-                                        }
-                                        onChange={(
-                                            newValue: SingleValue<{
-                                                value: string;
-                                                label: string;
-                                            }>
-                                        ) => {
-                                            setSelectedGene(
-                                                newValue?.value || ""
-                                            );
-                                            setSelectedOligoset("Oligoset 1");
-                                            setSelectedOligo(
-                                                probes[newValue?.value || ""][
-                                                    "Oligoset 1"
-                                                ][0].oligo_id || ""
-                                            );
-                                        }}
-                                        placeholder="Search or select gene..."
-                                        isSearchable
-                                        className="basic-single"
-                                        classNamePrefix="select"
-                                    />
-                                </div>
-
-                                {selectedGene && (
-                                    <div className="col-md-6">
-                                        <label className="form-label">
-                                            Select Oligoset
-                                        </label>
-                                        <select
-                                            className="form-select"
-                                            value={selectedOligoset}
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group controlId="geneSelect">
+                                        <Form.Label>Select Gene</Form.Label>
+                                        {/* TODO: make this searchable again */}
+                                        <Form.Select
+                                            value={selectedGene}
                                             onChange={(e) => {
+                                                setSelectedGene(e.target.value);
                                                 setSelectedOligoset(
-                                                    e.target.value
+                                                    "Oligoset 1"
                                                 );
                                                 setSelectedOligo(
-                                                    probes[selectedGene][
-                                                        e.target.value
-                                                    ]?.[0].oligo_id || ""
+                                                    probes[
+                                                        e.target.value || ""
+                                                    ]["Oligoset 1"][0]
+                                                        .oligo_id || ""
                                                 );
                                             }}
                                         >
                                             <option value="">
-                                                Select an Oligoset
+                                                Select a gene
                                             </option>
-                                            {Object.keys(
-                                                probes[selectedGene] || {}
-                                            ).map((oligoset) => (
-                                                <option
-                                                    key={oligoset}
-                                                    value={oligoset}
-                                                >
-                                                    {oligoset}
+                                            {Object.keys(probes).map((gene) => (
+                                                <option key={gene} value={gene}>
+                                                    {gene}
                                                 </option>
                                             ))}
-                                        </select>
-                                    </div>
-                                )}
-                            </div>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
 
-                            {selectedOligoset && (
-                                <div className="mt-3">
-                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                        <h5>Oligos in {selectedOligoset}</h5>
-                                        <div>
-                                            <span className="form-text me-2">
+                                {selectedGene && (
+                                    <Col md={6}>
+                                        <Form.Group controlId="oligosetSelect">
+                                            <Form.Label>
+                                                Select Oligoset
+                                            </Form.Label>
+                                            <Form.Select
+                                                value={selectedOligoset}
+                                                onChange={(e) => {
+                                                    setSelectedOligoset(
+                                                        e.target.value
+                                                    );
+                                                    setSelectedOligo(
+                                                        probes[selectedGene][
+                                                            e.target.value
+                                                        ]?.[0].oligo_id || ""
+                                                    );
+                                                }}
+                                            >
+                                                <option value="">
+                                                    Select an Oligoset
+                                                </option>
+                                                {Object.keys(
+                                                    probes[selectedGene]
+                                                ).map((oligoset) => (
+                                                    <option
+                                                        key={oligoset}
+                                                        value={oligoset}
+                                                    >
+                                                        {oligoset}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                )}
+                            </Row>
+
+                            {selectedGene && selectedOligoset && (
+                                <>
+                                    <Row>
+                                        <Col>
+                                            <h5>
+                                                Oligos in {selectedOligoset}
+                                            </h5>
+                                        </Col>
+                                        <Col xs="auto">
+                                            <Form.Text>
                                                 Showing{" "}
                                                 {
                                                     probes[selectedGene][
@@ -592,132 +594,117 @@ const RunDetail = () => {
                                                     ].length
                                                 }{" "}
                                                 oligos
-                                            </span>
-                                            <button
+                                            </Form.Text>
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
                                                 onClick={handleDownloadCSV}
-                                                className="btn btn-sm btn-primary"
                                             >
                                                 Download Oligoset CSV
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="my-3">
-                                        <ResultVisualization
-                                            probes={
-                                                probes[selectedGene][
-                                                    selectedOligoset
-                                                ] || []
-                                            }
-                                            selectedOligo={selectedOligo}
-                                            setSelectedOligo={setSelectedOligo}
-                                            genomicRegions={
-                                                genomicRegions
-                                                    ? genomicRegions[
-                                                          selectedGene
-                                                      ]
-                                                    : null
-                                            }
-                                        />
-                                    </div>
-                                    <div className="table-responsive">
-                                        <table className="table table-bordered table-striped table-hover">
-                                            <thead className="table-light">
-                                                <tr>
+                                            </Button>
+                                        </Col>
+                                    </Row>
+
+                                    <ResultVisualization
+                                        probes={
+                                            probes[selectedGene][
+                                                selectedOligoset
+                                            ]
+                                        }
+                                        selectedOligo={selectedOligo}
+                                        setSelectedOligo={setSelectedOligo}
+                                        genomicRegions={
+                                            genomicRegions
+                                                ? genomicRegions[selectedGene]
+                                                : null
+                                        }
+                                    />
+
+                                    <Table responsive bordered striped hover>
+                                        <thead className="table-light">
+                                            <tr>
+                                                {tableColumns.map((column) => (
+                                                    <th
+                                                        key={column}
+                                                        className="text-nowrap"
+                                                    >
+                                                        {column.replace(
+                                                            /_/g,
+                                                            " "
+                                                        )}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+                                            {probes[selectedGene][
+                                                selectedOligoset
+                                            ].map(({ details: oligo }) => (
+                                                <tr key={oligo.oligo_id}>
                                                     {tableColumns.map(
                                                         (column) => (
-                                                            <th
-                                                                key={column}
-                                                                className="text-nowrap"
+                                                            <td
+                                                                key={`${oligo.oligo_id}-${column}`}
+                                                                className={
+                                                                    "text-nowrap " +
+                                                                    (oligo.oligo_id ===
+                                                                    selectedOligo
+                                                                        ? "table-primary"
+                                                                        : "")
+                                                                }
+                                                                onClick={() =>
+                                                                    setSelectedOligo(
+                                                                        oligo.oligo_id
+                                                                    )
+                                                                }
                                                             >
-                                                                {column.replace(
-                                                                    /_/g,
-                                                                    " "
-                                                                )}
-                                                            </th>
+                                                                {column ===
+                                                                "location"
+                                                                    ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
+                                                                    : formatValue(
+                                                                          oligo[
+                                                                              column as keyof ProbeDetails
+                                                                          ]
+                                                                      )}
+                                                            </td>
                                                         )
                                                     )}
                                                 </tr>
-                                            </thead>
+                                            ))}
+                                        </tbody>
 
-                                            <tbody>
-                                                {probes[selectedGene][
-                                                    selectedOligoset
-                                                ].map(({ details: oligo }) => (
-                                                    <tr key={oligo.oligo_id}>
-                                                        {tableColumns.map(
-                                                            (column) => (
-                                                                <td
-                                                                    key={`${oligo.oligo_id}-${column}`}
-                                                                    className={
-                                                                        "text-nowrap " +
-                                                                        (oligo.oligo_id ===
-                                                                        selectedOligo
-                                                                            ? "table-primary"
-                                                                            : "")
-                                                                    }
-                                                                    onClick={() =>
-                                                                        setSelectedOligo(
-                                                                            oligo.oligo_id
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {column ===
-                                                                    "location"
-                                                                        ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                                        : formatValue(
-                                                                              oligo[
-                                                                                  column as keyof ProbeDetails
-                                                                              ]
-                                                                          )}
-                                                                </td>
-                                                            )
-                                                        )}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-
-                                            <tfoot>
-                                                <tr>
-                                                    <td
-                                                        colSpan={
-                                                            tableColumns.length
-                                                        }
-                                                    >
-                                                        <div className="mt-2">
-                                                            <strong>
-                                                                Source:
-                                                            </strong>{" "}
-                                                            {probes[
-                                                                selectedGene
-                                                            ][
-                                                                selectedOligoset
-                                                            ][0].details
-                                                                .source ??
-                                                                "N/A"}
-                                                            <br />
-                                                            <strong>
-                                                                Species:
-                                                            </strong>{" "}
-                                                            {probes[
-                                                                selectedGene
-                                                            ][
-                                                                selectedOligoset
-                                                            ][0].details
-                                                                .species ??
-                                                                "N/A"}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
-                                    </div>
-                                </div>
+                                        <tfoot>
+                                            <tr>
+                                                <td
+                                                    colSpan={
+                                                        tableColumns.length
+                                                    }
+                                                >
+                                                    <strong>Source:</strong>{" "}
+                                                    {probes[selectedGene][
+                                                        selectedOligoset
+                                                    ][0]?.details.source ??
+                                                        "N/A"}
+                                                    <br />
+                                                    <strong>
+                                                        Species:
+                                                    </strong>{" "}
+                                                    {probes[selectedGene][
+                                                        selectedOligoset
+                                                    ][0]?.details.species ??
+                                                        "N/A"}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </Table>
+                                </>
                             )}
-                        </div>
-                    </div>
+                        </Card.Body>
+                    </Card>
                 )}
-            </div>
-        </div>
+            </Container>
+        </>
     );
 };
 
