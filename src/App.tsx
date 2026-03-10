@@ -20,8 +20,9 @@ import DefaultLayout from "./components/layouts/DefaultLayout";
 function App() {
     return (
         <Router>
-            <DefaultLayout>
-                <Routes>
+            <Routes>
+                <Route path="/admin/*" element={<AdminApp />} />
+                <Route element={<DefaultLayout />}>
                     <Route path="/login" element={<Login />} />
                     <Route path="/runs" element={<Runs />} />
                     <Route path="/" element={<Pipelines />} />
@@ -36,9 +37,8 @@ function App() {
                     <Route path="/pipelines/seqfish" element={<SeqFish />} />
                     <Route path="/pipelines/oligoSeq" element={<OligoSeq />} />
                     <Route path="/runs/:runId" element={<RunDetail />} />
-                    <Route path="/admin/*" element={<AdminApp />} />
-                </Routes>
-            </DefaultLayout>
+                </Route>
+            </Routes>
         </Router>
     );
 }

@@ -1,23 +1,12 @@
-import { useState } from "react";
-import { useAuth } from "../../modules/useAuth";
-import { BACKEND_URL } from "../../config";
-import { Button, Dropdown, Image, Nav, Navbar } from "react-bootstrap";
+import { Image, Nav, Navbar } from "react-bootstrap";
 import { Link, useLocation } from "react-router";
-import { GearFill, LayoutTextWindowReverse } from "react-bootstrap-icons";
+import { LayoutTextWindowReverse } from "react-bootstrap-icons";
 import Divider from "./Divider";
+import RecentRuns from "./RecentRuns";
+import UserDropdown from "./UserDropdown";
 
 const Sidebar: React.FC = () => {
-    const { user, logout } = useAuth();
-    const [copied, setCopied] = useState(false);
     const location = useLocation();
-    const handleLogout = () => {
-        fetch(BACKEND_URL + "/logout", {
-            method: "POST",
-            credentials: "include",
-        }).then(() => {
-            logout();
-        });
-    };
 
     const pipelines = [
         { name: "Scrinshot", path: "/pipelines/scrinshot" },
@@ -71,73 +60,9 @@ const Sidebar: React.FC = () => {
 
                 <h5>Recent Runs</h5>
 
-                <Link to="/runs">Runs</Link>
+                <RecentRuns />
 
-                {/* Auth  */}
-                {user ? (
-                    <>
-                        {user.role === "admin" && (
-                            <Nav.Link as={Link} to="/admin">
-                                Admin
-                            </Nav.Link>
-                        )}
-                        <Nav.Item>
-                            <Dropdown>
-                                <Dropdown.Toggle>
-                                    <GearFill />
-                                </Dropdown.Toggle>
-                                <Dropdown.Menu>
-                                    <Dropdown.Item
-                                        className="dropdown-item-text px-3 py-2"
-                                        style={{
-                                            cursor: "pointer",
-                                        }}
-                                        onClick={() => {
-                                            const textToCopy =
-                                                user.helmholtz_sub ||
-                                                user.username ||
-                                                user.id;
-                                            navigator.clipboard.writeText(
-                                                textToCopy
-                                            );
-                                            setCopied(true);
-                                            setTimeout(() => {
-                                                setCopied(false);
-                                            }, 2000);
-                                        }}
-                                        title="Click to copy"
-                                    >
-                                        <small className="text-muted d-block mb-1">
-                                            {copied ? (
-                                                <span className="text-success">
-                                                    <i className="bi bi-check-circle-fill me-1"></i>
-                                                    Copied!
-                                                </span>
-                                            ) : (
-                                                "User ID"
-                                            )}
-                                        </small>
-                                        <code className="text-break mb-0 d-block">
-                                            {user.helmholtz_sub ||
-                                                user.username ||
-                                                user.id}
-                                        </code>
-                                    </Dropdown.Item>
-                                    <Dropdown.Divider />
-                                    <Dropdown.Item onClick={handleLogout}>
-                                        Logout
-                                    </Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                        </Nav.Item>
-                    </>
-                ) : (
-                    <Nav.Item>
-                        <Link to="/login">
-                            <Button variant="primary">Login/Register</Button>
-                        </Link>
-                    </Nav.Item>
-                )}
+                <UserDropdown />
             </Navbar.Collapse>
         </Navbar>
     );

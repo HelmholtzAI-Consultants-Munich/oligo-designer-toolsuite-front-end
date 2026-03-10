@@ -106,7 +106,7 @@ def get_pipeline_runs():
             "_id": str(run["_id"]),
             "pipeline": run.get("pipeline", "unknown"),
             "status": run.get("status", "unknown"),
-            "timestamp": run.get("timestamp", "").replace("_", " "),
+            "timestamp": run.get("timestamp", ""),
             "output_path": run.get("output_path", ""),
             "user_id": run.get("user_id", "unknown"),
         }
@@ -137,7 +137,7 @@ def get_pipeline_run(run_id: ObjectId):
         "_id": str(run["_id"]),
         "pipeline": run.get("pipeline", "unknown"),
         "status": run.get("status", "unknown"),
-        "timestamp": run.get("timestamp", "").replace("_", " "),
+        "timestamp": run.get("timestamp", ""),
         "output_path": run.get("output_path", ""),
         "user_id": run.get("user_id", "unknown"),
     }

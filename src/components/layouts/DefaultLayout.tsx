@@ -1,12 +1,9 @@
 import { Col, Row } from "react-bootstrap";
+import { Outlet } from "react-router";
 import Sidebar from "../ui/Sidebar";
 import Toasts from "../ui/Toasts";
 
-export default function DefaultLayout({
-    children,
-}: {
-    children: React.ReactNode;
-}) {
+export default function DefaultLayout() {
     return (
         <Row>
             <Col xs="auto">
@@ -14,7 +11,7 @@ export default function DefaultLayout({
             </Col>
             <Col>
                 <Toasts />
-                {children}
+                <Outlet />
             </Col>
         </Row>
     );

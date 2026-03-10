@@ -274,17 +274,6 @@ const PipelineList: React.FC = () => {
         }
     };
 
-    const formatTimestamp = (timestamp?: string) => {
-        if (!timestamp) return "N/A";
-        try {
-            // Handle timestamp format like "2024-01-15_14-30-45"
-            const formatted = timestamp.replace("_", " ").replace(/-/g, "/");
-            return formatted;
-        } catch {
-            return timestamp;
-        }
-    };
-
     const getStatusBadge = (status: string) => {
         const color =
             STATUS_CONFIG.colors[status as keyof typeof STATUS_CONFIG.colors];
@@ -649,9 +638,10 @@ const PipelineList: React.FC = () => {
                                                                     <strong>
                                                                         Timestamp:
                                                                     </strong>{" "}
-                                                                    {formatTimestamp(
+                                                                    {new Date(
                                                                         run.timestamp
-                                                                    )}
+                                                                    ).toLocaleString() ||
+                                                                        "N/A"}
                                                                 </p>
                                                             )}
                                                         </div>

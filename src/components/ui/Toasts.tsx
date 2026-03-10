@@ -37,8 +37,6 @@ export default function Toasts() {
         };
     }, []);
 
-    useEffect(() => console.log(toasts), [toasts]);
-
     return (
         <ToastContainer position="top-end" className="position-absolute">
             {toasts.map((toast) => (

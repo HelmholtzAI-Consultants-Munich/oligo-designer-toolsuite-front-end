@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import axios from "axios";
-import type { RunState } from "../types";
+import type { PipelineRun } from "../types";
 import { BACKEND_URL } from "../config";
 import {
     Badge,
@@ -10,16 +10,6 @@ import {
     Table,
 } from "react-bootstrap";
 import Page from "../components/ui/Page";
-
-interface PipelineRun {
-    _id: string;
-    pipeline: string;
-    status: RunState;
-    timestamp: string;
-    output_path: string;
-    user_id: string;
-    error_message?: string;
-}
 
 const Runs = () => {
     const { loading } = useAuth();
@@ -46,20 +36,6 @@ const Runs = () => {
             });
     }, []);
 
-    const formatTimestamp = (timestamp: string) => {
-        try {
-            const [date, time] = timestamp.split(" ");
-            const [year, month, day] = date.split("-");
-            const [hour, minute, second] = time.split("-");
-            return (
-                new Date(
-                    `${year}-${month}-${day}T${hour}:${minute}:${second}`
-                ).toLocaleString()
-            );
-        } catch {
-            return timestamp;
-        }
-    };
     // Add this handler function
     const handleDeleteRun = async (runId: string) => {
         if (
@@ -147,7 +123,7 @@ const Runs = () => {
                                                 </div>
                                             )}
                                     </td>
-                                    <td>{formatTimestamp(run.timestamp)}</td>
+                                    <td>{new Date(run.timestamp).toLocaleString()}</td>
                                     <td>
                                         <Button
                                             variant="danger"

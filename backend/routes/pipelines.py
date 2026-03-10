@@ -42,7 +42,7 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
             description="Unable to access your data directory. Please try again or contact support.",
         )
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}")
 
     # To prevent overwriting a run, fail if the directory already exists
