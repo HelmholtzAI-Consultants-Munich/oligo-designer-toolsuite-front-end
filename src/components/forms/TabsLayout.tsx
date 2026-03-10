@@ -1,6 +1,7 @@
 import { Col, Row, Tab, Tabs } from "react-bootstrap";
 import ObjectTemplate from "./ObjectTemplate";
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
+import Page from "../ui/Page";
 
 interface TabConfig {
     title: string;
@@ -14,9 +15,9 @@ export const TabsLayout = (props: ObjectFieldTemplateProps) => {
     const isRoot = props.fieldPathId.$id === "root";
     if (isRoot && tabs && tabs.length > 0)
         return (
-            <Tabs defaultActiveKey={tabs[0].title}>
+            <Page.Tabs>
                 {tabs.map((tab) => (
-                    <Tab eventKey={tab.title} title={tab.title} key={tab.title}>
+                    <Page.Tab tabKey={tab.title} key={tab.title}>
                         {tab.fields.map((entry: string | string[]) => {
                             if (Array.isArray(entry)) {
                                 return (
@@ -45,9 +46,9 @@ export const TabsLayout = (props: ObjectFieldTemplateProps) => {
                                 return <Col key={entry}>{found.content}</Col>;
                             }
                         })}
-                    </Tab>
+                    </Page.Tab>
                 ))}
-            </Tabs>
+            </Page.Tabs>
         );
     else {
         return <ObjectTemplate {...props} />;

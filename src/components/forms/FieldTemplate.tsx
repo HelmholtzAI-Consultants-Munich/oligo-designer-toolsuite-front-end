@@ -21,9 +21,9 @@ const FieldTemplate = (props: FieldTemplateProps) => {
                     >
                         <InfoCircle
                             style={{
-                                fontSize: "1.2rem",
+                                fontSize: "1rem",
                                 cursor: "pointer",
-                                color: "#0d6efd",
+                                color: "var(--bs-text-muted)",
                                 marginLeft: "10px",
                             }}
                         />

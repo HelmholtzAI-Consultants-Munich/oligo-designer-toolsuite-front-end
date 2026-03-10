@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
-import Navbar from "../components/ui/Sidebar";
 import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";
-import { Button, Card, Col, Container, Form, Row } from "react-bootstrap";
+import { Button, Card, Col, Form, Row } from "react-bootstrap";
+import Page from "../components/ui/Page";
+import { showToast } from "../modules/toastUtil";
 
 /**
  * Login component handles user login functionality.
@@ -41,17 +42,26 @@ const Login = () => {
             );
 
             console.log(res.data);
-            alert("Login successful!");
+            showToast({
+                type: "success",
+                title: "Login successful!",
+            });
 
             await checkAuth();
             // Navigate to the redirect URL or home
             navigate(redirectTo);
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.status === 401) {
-                alert("Invalid username or password.");
+                showToast({
+                    type: "error",
+                    title: "Invalid username or password.",
+                });
             } else {
                 console.error(err);
-                alert("Login failed.");
+                showToast({
+                    type: "error",
+                    title: "Login failed.",
+                });
             }
         }
     };
@@ -74,15 +84,12 @@ const Login = () => {
     }
 
     return (
-        <Container>
+        <Page title="Login" hideHeader>
             <Row className="justify-content-center">
                 <Col md={6}>
-                    <h2>Login</h2>
                     <Card>
                         <Card.Body>
-                            <Card.Title>
-                                Login with Helmholtz AAI
-                            </Card.Title>
+                            <Card.Title>Login with Helmholtz AAI</Card.Title>
                             <Card.Text className="text-muted">
                                 Recommended for Helmholtz users. You will be
                                 redirected to the Helmholtz AAI login page.
@@ -140,7 +147,7 @@ const Login = () => {
                     </Card>
                 </Col>
             </Row>
-        </Container>
+        </Page>
     );
 };
 

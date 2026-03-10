@@ -1,11 +1,26 @@
+// Import Bootstrap functions first to ensure variables can use them
+@import "../../node_modules/bootstrap/scss/functions";
+
 // Variable overrides
 $primary: #003956;
-$secondary: #037B94;
+$secondary: #037b94;
 $success: #128635;
-$warning: #FFBD11;
-$danger: #C91432;
+$warning: #ffbd11;
+$danger: #c91432;
+$text-muted: #373737;
 
-$border-color: #B0B0B0;
+$primary-bg-subtle: tint-color($primary, 90%);
+$focus-ring-opacity: 0.15;
+
+$border-color: #b0b0b0;
+$border-color-translucent: $border-color;
+
+$border-radius: 0.7rem;
+$border-radius-sm: 0.25rem;
+$border-radius-lg: 0.5rem;
+$border-radius-xl: 1rem;
+$border-radius-xxl: 2rem;
+$border-radius-pill: 50rem;
 
 $font-family-sans-serif: "Fustat Variable", sans-serif;
 
@@ -13,6 +28,10 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
 // Custom styles
+
+:root {
+    --#{$prefix}text-muted: #{$text-muted};
+}
 
 .accordion-button {
     font-weight: 600;
@@ -48,8 +67,8 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
 .navbar-main .navbar-collapse {
     flex-direction: column;
     align-items: start;
+    width: 100%;
 }
-
 
 /* Nav variant "separated" */
 
@@ -65,13 +84,21 @@ navbar-nav.nav-separated {
     border-left: 1px solid $border-color;
 }
 
-
 /* Nav variant "pipelines" */
 
 .navbar-nav.nav-pipelines {
     flex-direction: column;
+    width: 100%;
 }
 
+.navbar-nav.nav-pipelines .nav-link {
+    border-radius: $border-radius;
+}
+
+.navbar-nav.nav-pipelines .nav-link.active {
+    background-color: white;
+    border: 1px solid $border-color;
+}
 
 /* Header */
 
@@ -83,7 +110,6 @@ navbar-nav.nav-separated {
     margin-bottom: 0;
 }
 
-
 /* Divider */
 
 .divider {
@@ -92,7 +118,6 @@ navbar-nav.nav-separated {
     border-top: 1px solid $border-color;
     opacity: 1;
 }
-
 
 /* Spacing */
 
@@ -107,4 +132,23 @@ navbar-nav.nav-separated {
 
 .container {
     padding: 2rem 3rem;
+}
+
+/* Buttons */
+
+.btn-outline-border {
+    @include button-variant(
+        $white,
+        $border-color,
+        $black,
+        tint-color($border-color, 90%),
+        $border-color,
+        $black,
+        tint-color($border-color, 90%),
+        $border-color,
+        $black,
+        transparent,
+        $border-color,
+        $border-color
+    );
 }

@@ -1,20 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
-import Navbar from "../components/ui/Sidebar";
 import axios from "axios";
 import type { RunState } from "../types";
 import { BACKEND_URL } from "../config";
 import {
     Badge,
     Button,
-    Col,
-    Container,
-    Form,
-    InputGroup,
-    Row,
     Table,
 } from "react-bootstrap";
+import Page from "../components/ui/Page";
 
 interface PipelineRun {
     _id: string;
@@ -29,7 +24,6 @@ interface PipelineRun {
 const Runs = () => {
     const { loading } = useAuth();
     const [runs, setRuns] = useState<PipelineRun[]>([]);
-    const [runIdInput, setRunIdInput] = useState("");
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
@@ -60,7 +54,7 @@ const Runs = () => {
             return (
                 new Date(
                     `${year}-${month}-${day}T${hour}:${minute}:${second}`
-                ).toLocaleString() + timestamp
+                ).toLocaleString()
             );
         } catch {
             return timestamp;
@@ -105,35 +99,20 @@ const Runs = () => {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <Container>
-            <h2>Pipeline Runs</h2>
-            <Row>
-                <Col md={6}>
-                    <Form
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            goToRun(runIdInput);
-                        }}
-                    >
-                        <InputGroup>
-                            <Form.Control
-                                placeholder="Enter RunID"
-                                aria-label="RunID"
-                                value={runIdInput}
-                                onChange={(e) =>
-                                    setRunIdInput(e.target.value)
-                                }
-                            />
-                            <Button type="submit">Go to Run</Button>
-                        </InputGroup>
-                    </Form>
-                </Col>
-            </Row>
-            <div>
+        <Page
+            title="Pipeline Runs"
+            actions={[
+                {
+                    type: "search",
+                    label: "Go to Run",
+                    placeholder: "Enter RunID",
+                    onSearch: (query: string) => goToRun(query),
+                },
+            ]}
+        >
+            <>
                 {isLoading ? (
-                    <div className="text-center">
-                        Loading pipeline runs...
-                    </div>
+                    <div className="text-center">Loading pipeline runs...</div>
                 ) : (
                     <Table responsive hover>
                         <thead>
@@ -147,9 +126,7 @@ const Runs = () => {
                             {runs.map((run) => (
                                 <tr
                                     key={run._id}
-                                    onClick={() =>
-                                        navigate(`/runs/${run._id}`)
-                                    }
+                                    onClick={() => navigate(`/runs/${run._id}`)}
                                     style={{ cursor: "pointer" }}
                                     className="hover:bg-gray-100"
                                 >
@@ -170,9 +147,7 @@ const Runs = () => {
                                                 </div>
                                             )}
                                     </td>
-                                    <td>
-                                        {formatTimestamp(run.timestamp)}
-                                    </td>
+                                    <td>{formatTimestamp(run.timestamp)}</td>
                                     <td>
                                         <Button
                                             variant="danger"
@@ -193,16 +168,16 @@ const Runs = () => {
                                         colSpan={4}
                                         className="text-center py-4"
                                     >
-                                        No pipeline runs found. Start your
-                                        first analysis!
+                                        No pipeline runs found. Start your first
+                                        analysis!
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </Table>
                 )}
-            </div>
-        </Container>
+            </>
+        </Page>
     );
 };
 

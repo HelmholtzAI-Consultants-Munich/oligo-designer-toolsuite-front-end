@@ -1,7 +1,7 @@
 import scrinshot_schema from "@schemas/scrinshot.schema.json";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/forms/TabsLayout";
-import PipelineTemplate from "../components/forms/pipelineTemplate";
+import PipelineTemplate from "../components/forms/PipelineTemplate";
 
 const schema = scrinshot_schema as RJSFSchema;
 

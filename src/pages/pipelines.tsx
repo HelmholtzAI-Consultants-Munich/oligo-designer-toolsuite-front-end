@@ -5,7 +5,8 @@ import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";
 import seqfish from "../images/seqfish.jpg";
 import oligoseq from "../images/oligoseq.jpg";
-import { Alert, Card, Col, Container, Row } from "react-bootstrap";
+import { Alert, Card, Col, Row } from "react-bootstrap";
+import Page from "../components/ui/Page";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
@@ -44,7 +45,9 @@ const Pipelines: React.FC = () => {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <Container>
+        <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
+            <h1>Oligo Designer Toolsuite</h1>
+
             {!user && (
                 <Alert variant="warning">
                     To keep your runs saved when you close your browser, please{" "}
@@ -53,14 +56,13 @@ const Pipelines: React.FC = () => {
             )}
 
             <p className="lead">
-                Oligo Designer Toolsuite is an open-source framework
-                designed to streamline the development of custom
-                oligonucleotide (oligo) design pipelines. Oligos are short
-                DNA or RNA sequences used in various applications, such as
-                research, diagnostics, and therapeutics. The Toolsuite
-                provides modular functionalities like sequence generation,
-                thermodynamic filtering, and machine learning-based
-                specificity prediction.
+                Oligo Designer Toolsuite is an open-source framework designed to
+                streamline the development of custom oligonucleotide (oligo)
+                design pipelines. Oligos are short DNA or RNA sequences used in
+                various applications, such as research, diagnostics, and
+                therapeutics. The Toolsuite provides modular functionalities
+                like sequence generation, thermodynamic filtering, and machine
+                learning-based specificity prediction.
             </p>
 
             <h2>Probe Designers</h2>
@@ -76,9 +78,7 @@ const Pipelines: React.FC = () => {
                             />
                             <Card.Body>
                                 <Card.Title>{pipeline.title}</Card.Title>
-                                <Card.Text>
-                                    {pipeline.description}
-                                </Card.Text>
+                                <Card.Text>{pipeline.description}</Card.Text>
                                 <Card.Link as={Link} to={pipeline.link}>
                                     Go to Pipeline
                                 </Card.Link>
@@ -87,7 +87,7 @@ const Pipelines: React.FC = () => {
                     </Col>
                 ))}
             </Row>
-        </Container>
+        </Page>
     );
 };
 

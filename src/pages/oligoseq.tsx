@@ -1,5 +1,5 @@
 import oligoseq_schema from "@schemas/oligoseq.schema.json";
-import PipelineTemplate from "../components/forms/pipelineTemplate";
+import PipelineTemplate from "../components/forms/PipelineTemplate";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/forms/TabsLayout";
 

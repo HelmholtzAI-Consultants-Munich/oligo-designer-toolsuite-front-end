@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
-import Navbar from "../components/ui/Sidebar";
 import * as XLSX from "xlsx";
 import type {
     GenomicRegions,
@@ -26,6 +25,7 @@ import {
     Spinner,
     Table,
 } from "react-bootstrap";
+import Page from "../components/ui/Page";
 
 interface RunFile {
     name: string;
@@ -394,39 +394,24 @@ const RunDetail = () => {
     };
 
     return (
-        <Container>
-            <Row>
-                <Col>
-                    <Button
-                        variant="outline-secondary"
-                        onClick={() => {
-                            const fromAdmin = (
-                                location.state as LocationState
-                            )?.fromAdmin;
-                            navigate(
-                                fromAdmin ? "/admin/pipelines" : "/runs"
-                            );
-                        }}
-                    >
-                        ← Back to{" "}
-                        {(location.state as LocationState)?.fromAdmin
-                            ? "Admin Panel"
-                            : "Runs"}
-                    </Button>
-                </Col>
-                <Col xs="auto">
-                    <Button variant="danger" onClick={handleDelete}>
-                        Delete Run
-                    </Button>
-                </Col>
-            </Row>
+        <Page title={`Run Result - ${runId}`} actions={[{ type: "button", label: "Delete Run", variant: "danger", onClick: handleDelete }]}>
+            <Button
+                variant="outline-secondary"
+                onClick={() => {
+                    const fromAdmin = (location.state as LocationState)
+                        ?.fromAdmin;
+                    navigate(fromAdmin ? "/admin/pipelines" : "/runs");
+                }}
+            >
+                ← Back to{" "}
+                {(location.state as LocationState)?.fromAdmin
+                    ? "Admin Panel"
+                    : "Runs"}
+            </Button>
 
-            <h3>Run Files</h3>
             <ListGroup>
                 {files
-                    .filter((file) =>
-                        file.name.toLowerCase().includes("log")
-                    )
+                    .filter((file) => file.name.toLowerCase().includes("log"))
                     .map((file) => (
                         <ListGroup.Item key={file.name}>
                             <Row>
@@ -451,9 +436,7 @@ const RunDetail = () => {
                                     <Button
                                         variant="outline-success"
                                         size="sm"
-                                        onClick={() =>
-                                            downloadFile(file.name)
-                                        }
+                                        onClick={() => downloadFile(file.name)}
                                     >
                                         Download
                                     </Button>
@@ -514,20 +497,15 @@ const RunDetail = () => {
                                         value={selectedGene}
                                         onChange={(e) => {
                                             setSelectedGene(e.target.value);
-                                            setSelectedOligoset(
-                                                "Oligoset 1"
-                                            );
+                                            setSelectedOligoset("Oligoset 1");
                                             setSelectedOligo(
-                                                probes[
-                                                    e.target.value || ""
-                                                ]["Oligoset 1"][0]
-                                                    .oligo_id || ""
+                                                probes[e.target.value || ""][
+                                                    "Oligoset 1"
+                                                ][0].oligo_id || ""
                                             );
                                         }}
                                     >
-                                        <option value="">
-                                            Select a gene
-                                        </option>
+                                        <option value="">Select a gene</option>
                                         {Object.keys(probes).map((gene) => (
                                             <option key={gene} value={gene}>
                                                 {gene}
@@ -540,9 +518,7 @@ const RunDetail = () => {
                             {selectedGene && (
                                 <Col md={6}>
                                     <Form.Group controlId="oligosetSelect">
-                                        <Form.Label>
-                                            Select Oligoset
-                                        </Form.Label>
+                                        <Form.Label>Select Oligoset</Form.Label>
                                         <Form.Select
                                             value={selectedOligoset}
                                             onChange={(e) => {
@@ -579,9 +555,7 @@ const RunDetail = () => {
                             <>
                                 <Row>
                                     <Col>
-                                        <h5>
-                                            Oligos in {selectedOligoset}
-                                        </h5>
+                                        <h5>Oligos in {selectedOligoset}</h5>
                                     </Col>
                                     <Col xs="auto">
                                         <Form.Text>
@@ -605,9 +579,7 @@ const RunDetail = () => {
 
                                 <ResultVisualization
                                     probes={
-                                        probes[selectedGene][
-                                            selectedOligoset
-                                        ]
+                                        probes[selectedGene][selectedOligoset]
                                     }
                                     selectedOligo={selectedOligo}
                                     setSelectedOligo={setSelectedOligo}
@@ -626,10 +598,7 @@ const RunDetail = () => {
                                                     key={column}
                                                     className="text-nowrap"
                                                 >
-                                                    {column.replace(
-                                                        /_/g,
-                                                        " "
-                                                    )}
+                                                    {column.replace(/_/g, " ")}
                                                 </th>
                                             ))}
                                         </tr>
@@ -640,58 +609,47 @@ const RunDetail = () => {
                                             selectedOligoset
                                         ].map(({ details: oligo }) => (
                                             <tr key={oligo.oligo_id}>
-                                                {tableColumns.map(
-                                                    (column) => (
-                                                        <td
-                                                            key={`${oligo.oligo_id}-${column}`}
-                                                            className={
-                                                                "text-nowrap " +
-                                                                (oligo.oligo_id ===
-                                                                selectedOligo
-                                                                    ? "table-primary"
-                                                                    : "")
-                                                            }
-                                                            onClick={() =>
-                                                                setSelectedOligo(
-                                                                    oligo.oligo_id
-                                                                )
-                                                            }
-                                                        >
-                                                            {column ===
-                                                            "location"
-                                                                ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                                : formatValue(
-                                                                        oligo[
-                                                                            column as keyof ProbeDetails
-                                                                        ]
-                                                                    )}
-                                                        </td>
-                                                    )
-                                                )}
+                                                {tableColumns.map((column) => (
+                                                    <td
+                                                        key={`${oligo.oligo_id}-${column}`}
+                                                        className={
+                                                            "text-nowrap " +
+                                                            (oligo.oligo_id ===
+                                                            selectedOligo
+                                                                ? "table-primary"
+                                                                : "")
+                                                        }
+                                                        onClick={() =>
+                                                            setSelectedOligo(
+                                                                oligo.oligo_id
+                                                            )
+                                                        }
+                                                    >
+                                                        {column === "location"
+                                                            ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
+                                                            : formatValue(
+                                                                  oligo[
+                                                                      column as keyof ProbeDetails
+                                                                  ]
+                                                              )}
+                                                    </td>
+                                                ))}
                                             </tr>
                                         ))}
                                     </tbody>
 
                                     <tfoot>
                                         <tr>
-                                            <td
-                                                colSpan={
-                                                    tableColumns.length
-                                                }
-                                            >
+                                            <td colSpan={tableColumns.length}>
                                                 <strong>Source:</strong>{" "}
                                                 {probes[selectedGene][
                                                     selectedOligoset
-                                                ][0]?.details.source ??
-                                                    "N/A"}
+                                                ][0]?.details.source ?? "N/A"}
                                                 <br />
-                                                <strong>
-                                                    Species:
-                                                </strong>{" "}
+                                                <strong>Species:</strong>{" "}
                                                 {probes[selectedGene][
                                                     selectedOligoset
-                                                ][0]?.details.species ??
-                                                    "N/A"}
+                                                ][0]?.details.species ?? "N/A"}
                                             </td>
                                         </tr>
                                     </tfoot>
@@ -701,7 +659,7 @@ const RunDetail = () => {
                     </Card.Body>
                 </Card>
             )}
-        </Container>
+        </Page>
     );
 };
 

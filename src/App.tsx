@@ -8,7 +8,7 @@ import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
 import { BrowserRouter as Router, Routes, Route } from "react-router";
 import "./styles/theme.scss";
-import "./styles/utils.scss"
+import "./styles/utils.scss";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "@fontsource-variable/fustat";
 
@@ -28,7 +28,10 @@ function App() {
                     <Route path="/faq" element={<FAQ />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/pipelines" element={<Pipelines />} />
-                    <Route path="/pipelines/scrinshot" element={<Scrinshot />} />
+                    <Route
+                        path="/pipelines/scrinshot"
+                        element={<Scrinshot />}
+                    />
                     <Route path="/pipelines/merfish" element={<Merfish />} />
                     <Route path="/pipelines/seqfish" element={<SeqFish />} />
                     <Route path="/pipelines/oligoSeq" element={<OligoSeq />} />

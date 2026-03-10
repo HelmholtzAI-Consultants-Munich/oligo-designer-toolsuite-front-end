@@ -1,6 +1,6 @@
 import merfish_schema from "@schemas/merfish.schema.json";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
-import PipelineTemplate from "../components/forms/pipelineTemplate";
+import PipelineTemplate from "../components/forms/PipelineTemplate";
 import { TabsLayout } from "../components/forms/TabsLayout";
 
 const schema = merfish_schema as RJSFSchema;

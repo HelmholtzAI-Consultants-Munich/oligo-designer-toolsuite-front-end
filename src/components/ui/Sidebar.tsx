@@ -1,21 +1,15 @@
 import { useState } from "react";
 import { useAuth } from "../../modules/useAuth";
 import { BACKEND_URL } from "../../config";
-import {
-    Button,
-    Dropdown,
-    Image,
-    Nav,
-    Navbar,
-    NavDropdown,
-} from "react-bootstrap";
-import { Link } from "react-router";
-import { GearFill } from "react-bootstrap-icons";
+import { Button, Dropdown, Image, Nav, Navbar } from "react-bootstrap";
+import { Link, useLocation } from "react-router";
+import { GearFill, LayoutTextWindowReverse } from "react-bootstrap-icons";
 import Divider from "./Divider";
 
 const Sidebar: React.FC = () => {
     const { user, logout } = useAuth();
     const [copied, setCopied] = useState(false);
+    const location = useLocation();
     const handleLogout = () => {
         fetch(BACKEND_URL + "/logout", {
             method: "POST",
@@ -24,6 +18,13 @@ const Sidebar: React.FC = () => {
             logout();
         });
     };
+
+    const pipelines = [
+        { name: "Scrinshot", path: "/pipelines/scrinshot" },
+        { name: "Merfish", path: "/pipelines/merfish" },
+        { name: "SeqFish+", path: "/pipelines/seqfish" },
+        { name: "Oligo-Seq", path: "/pipelines/oligoseq" },
+    ];
 
     return (
         <Navbar expand="lg" variant="main">
@@ -37,9 +38,7 @@ const Sidebar: React.FC = () => {
                 Oligo Designer Toolsuite
             </Navbar.Brand>
             <Navbar.Toggle aria-controls="navigation-bar" />
-            <Navbar.Collapse
-                id="navigation-bar"
-            >
+            <Navbar.Collapse id="navigation-bar">
                 <Nav variant="separated">
                     <Nav.Link as={Link} to="/">
                         Home
@@ -55,32 +54,24 @@ const Sidebar: React.FC = () => {
                 <h5>Pipelines</h5>
 
                 <Nav variant="pipelines">
-                    <Nav.Link as={Link}
-                        to="/pipelines/scrinshot"
-                    >
-                        Scrinshot Probe
-                    </Nav.Link>
-                    <Nav.Link as={Link} to="/pipelines/merfish">
-                        Merfish Probe
-                    </Nav.Link>
-                    <Nav.Link as={Link} to="/pipelines/seqfish">
-                        SeqFish+ Probe
-                    </Nav.Link>
-                    <Nav.Link
-                        as={Link}
-                        to="/pipelines/oligoseq"
-                    >
-                        Oligo-Seq Probe
-                    </Nav.Link>
+                    {pipelines.map((pipeline) => (
+                        <Nav.Link
+                            key={pipeline.path}
+                            as={Link}
+                            to={pipeline.path}
+                            active={location.pathname.startsWith(pipeline.path)}
+                        >
+                            <LayoutTextWindowReverse size={20} />
+                            {pipeline.name}
+                        </Nav.Link>
+                    ))}
                 </Nav>
 
-                <Divider/>
+                <Divider />
 
                 <h5>Recent Runs</h5>
 
-                <Link to="/runs">
-                    Runs
-                </Link>
+                <Link to="/runs">Runs</Link>
 
                 {/* Auth  */}
                 {user ? (
@@ -133,9 +124,7 @@ const Sidebar: React.FC = () => {
                                         </code>
                                     </Dropdown.Item>
                                     <Dropdown.Divider />
-                                    <Dropdown.Item
-                                        onClick={handleLogout}
-                                    >
+                                    <Dropdown.Item onClick={handleLogout}>
                                         Logout
                                     </Dropdown.Item>
                                 </Dropdown.Menu>
@@ -145,9 +134,7 @@ const Sidebar: React.FC = () => {
                 ) : (
                     <Nav.Item>
                         <Link to="/login">
-                            <Button variant="primary">
-                                Login/Register
-                            </Button>
+                            <Button variant="primary">Login/Register</Button>
                         </Link>
                     </Nav.Item>
                 )}

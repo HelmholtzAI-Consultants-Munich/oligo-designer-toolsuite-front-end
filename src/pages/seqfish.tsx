@@ -1,5 +1,5 @@
 import seqfish_schema from "@schemas/seqfish.schema.json";
-import PipelineTemplate from "../components/forms/pipelineTemplate";
+import PipelineTemplate from "../components/forms/PipelineTemplate";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/forms/TabsLayout";
 

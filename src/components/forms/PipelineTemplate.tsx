@@ -2,7 +2,6 @@ import { useState } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
-import Navbar from "../ui/Sidebar";
 import type { FileState, Status, Modal, RJSFFormData } from "../types";
 import { handleSubmit } from "../helpers";
 import FieldTemplate from "./FieldTemplate";
@@ -11,9 +10,8 @@ import FileSelection from "./FileSelection";
 import { RunLinkModal } from "../modal/RunLinkModal";
 import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
-import { Container } from "react-bootstrap";
-import Header from "../ui/Header";
 import Page from "../ui/Page";
+import { BoxArrowInDown, BoxArrowUp, Send } from "react-bootstrap-icons";
 
 type Props = {
     pipeline: string;
@@ -21,6 +19,11 @@ type Props = {
     schema: RJSFSchema;
     uiSchema: UiSchema;
 };
+
+interface TabConfig {
+    title: string;
+    fields: Array<string | string[]>;
+}
 
 const PipelineTemplate: React.FC<Props> = ({
     pipeline,
@@ -52,6 +55,8 @@ const PipelineTemplate: React.FC<Props> = ({
         fileSelection: FileSelection,
     };
 
+    const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
+
     return (
         <>
             {runId ? (
@@ -70,10 +75,36 @@ const PipelineTemplate: React.FC<Props> = ({
                     body={modal.body}
                 />
             )}
-            <Header>
-                <Header.Title>{title}</Header.Title>
-            </Header>
-            <Page>
+            <Page
+                title={title}
+                tabs={tabs?.map((tab) => ({
+                    label: tab.title,
+                    tabKey: tab.title,
+                }))}
+                actions={[
+                    {
+                        type: "button",
+                        label: "Import Settings",
+                        icon: BoxArrowInDown,
+                        variant: "outline-border",
+                        onClick: () => {},
+                    },
+                    {
+                        type: "button",
+                        label: "Export Settings",
+                        icon: BoxArrowUp,
+                        variant: "outline-border",
+                        onClick: () => {},
+                    },
+                    {
+                        type: "button",
+                        label: "Run Pipeline",
+                        icon: Send,
+                        variant: "primary",
+                        onClick: () => {},
+                    },
+                ]}
+            >
                 <Form
                     schema={schema}
                     uiSchema={uiSchema}
