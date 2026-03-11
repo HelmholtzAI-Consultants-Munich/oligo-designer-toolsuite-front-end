@@ -84,18 +84,19 @@ navbar-nav.nav-separated {
     border-left: 1px solid $border-color;
 }
 
-/* Nav variant "pipelines" */
+/* Nav variant "heavy" */
 
-.navbar-nav.nav-pipelines {
+.navbar-nav.nav-heavy {
     flex-direction: column;
     width: 100%;
 }
 
-.navbar-nav.nav-pipelines .nav-link {
+.navbar-nav.nav-heavy .nav-link {
     border-radius: $border-radius;
+    border: 1px solid transparent;
 }
 
-.navbar-nav.nav-pipelines .nav-link.active {
+.navbar-nav.nav-heavy .nav-link.active {
     background-color: white;
     border: 1px solid $border-color;
 }

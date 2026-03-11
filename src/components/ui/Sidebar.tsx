@@ -42,7 +42,7 @@ const Sidebar: React.FC = () => {
 
                 <h5>Pipelines</h5>
 
-                <Nav variant="pipelines">
+                <Nav variant="heavy">
                     {pipelines.map((pipeline) => (
                         <Nav.Link
                             key={pipeline.path}

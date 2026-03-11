@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
@@ -8,7 +8,6 @@ import type {
     ProbeDetails,
     Probesets,
     ProbeDetailsValue,
-    RunState,
 } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
@@ -25,6 +24,7 @@ import {
     Table,
 } from "react-bootstrap";
 import Page from "../components/ui/Page";
+import { useRuns } from "../modules/useRuns";
 
 interface RunFile {
     name: string;
@@ -69,10 +69,10 @@ const RunDetail = () => {
     const { runId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { runs } = useRuns();
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
-    const [pipeline, setPipeline] = useState<string>("");
 
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
@@ -84,21 +84,30 @@ const RunDetail = () => {
         [key: string]: Probesets;
     } | null>(null);
 
+    const run = useMemo(() => runs.find((r) => r._id === runId), [runs, runId]);
+
     const definition = ComponentDefinition[
-        pipeline as keyof typeof ComponentDefinition
+        run?.pipeline as keyof typeof ComponentDefinition
     ] as OligoComponentDefinition[] | undefined;
     const tableColumns = getColumnsFromDefinition(definition);
 
     const closeFileView = () => {
         setViewingFilename(null);
     };
+
     // --- Polling/log state variables ---
-    const [runState, setRunState] = useState<RunState>("pending");
-    const [polling, setPolling] = useState(true);
-    const fetchAndParseRunFiles = useCallback(() => {
+    const fetchAndParseRunFiles = (id: string) => {
+        // TODO: when to poll run files?
+        axios.get(
+            BACKEND_URL + `/api/runs/${id}/files`,
+            {
+                withCredentials: true,
+            }
+        ).then((response) => setFiles(response.data));
+
         axios
             .get(
-                BACKEND_URL + `/api/runs/${runId}/files/genomic_regions.yaml`,
+                BACKEND_URL + `/api/runs/${id}/files/genomic_regions.yaml`,
                 { withCredentials: true, responseType: "text" }
             )
             .then((response) => {
@@ -131,81 +140,23 @@ const RunDetail = () => {
                 setProbes(null);
                 return null;
             });
-    }, [runId]);
-    // Poll for files & log/YAML status
+    };
+
     useEffect(() => {
-        if (!runId) return;
-        let interval: NodeJS.Timeout;
-
-        const poll = async () => {
-            try {
-                const response = await axios.get(
-                    BACKEND_URL + `/api/runs/${runId}/state`,
-                    {
-                        withCredentials: true,
-                    }
-                );
-                setRunState(response.data.state);
-
-                // If finished, stop polling
-                if (
-                    response.data.state == "success" ||
-                    response.data.state == "failure"
-                ) {
-                    setPolling(false);
-                    if (interval) clearInterval(interval);
-                    const response = await axios.get(
-                        BACKEND_URL + `/api/runs/${runId}/files`,
-                        {
-                            withCredentials: true,
-                        }
-                    );
-                    setFiles(response.data);
-
-                    const runResponse = await axios.get(
-                        BACKEND_URL + `/api/runs/${runId}`,
-                        {
-                            withCredentials: true,
-                        }
-                    );
-                    setPipeline(runResponse.data.pipeline || "");
-
-                    // genomic regions check
-                    const regionsFile = response.data.find(
-                        (f: RunFile) => f.name === "genomic_regions.yaml"
-                    );
-
-                    // If genomic regions file present, stop polling!
-                    if (regionsFile) {
-                        setPolling(false);
-                        if (interval) clearInterval(interval);
-                        // Fetch and parse YAML as before
-                        fetchAndParseRunFiles();
-                    }
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        };
-
-        if (polling) {
-            interval = setInterval(poll, 2000);
-            poll(); // initial
+        if (run) {
+            fetchAndParseRunFiles(run._id);
         }
-
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [runId, polling, fetchAndParseRunFiles]);
+    }, [run]);
 
     const handleDelete = async () => {
+        if (!run) return;
         if (
             window.confirm(
                 "Are you sure you want to delete this run? This action cannot be undone."
             )
         ) {
             try {
-                await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
+                await axios.delete(BACKEND_URL + `/api/runs/${run._id}`, {
                     withCredentials: true,
                 });
                 // Navigate back to admin panel if we came from there, otherwise go to runs page
@@ -393,7 +344,17 @@ const RunDetail = () => {
     };
 
     return (
-        <Page title={`Run Result - ${runId}`} actions={[{ type: "button", label: "Delete Run", variant: "danger", onClick: handleDelete }]}>
+        <Page
+            title={`Run Result - ${runId}`}
+            actions={[
+                {
+                    type: "button",
+                    label: "Delete Run",
+                    variant: "danger",
+                    onClick: handleDelete,
+                },
+            ]}
+        >
             <Button
                 variant="outline-secondary"
                 onClick={() => {
@@ -463,9 +424,9 @@ const RunDetail = () => {
                 )}
 
             {/* Polling/waiting for YAML/log */}
-            {(runState == "pending" || runState == "started") && (
+            {(run?.status == "pending" || run?.status == "started") && (
                 <Alert variant="info">
-                    Run is {runState == "pending" ? "pending" : "executing"}
+                    Run is {run.status == "pending" ? "pending" : "executing"}
                     ... <Spinner size="sm" />
                 </Alert>
             )}

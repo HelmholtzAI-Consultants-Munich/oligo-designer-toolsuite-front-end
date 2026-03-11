@@ -30,7 +30,7 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    response = client.get(f"/api/runs/{run_id}/state")
+    response = client.get(f"/api/runs/{run_id}/status")
     data = response.get_json()
     assert data["state"] == "success"
 
@@ -49,7 +49,7 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, sess
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    response = client.get(f"/api/runs/{run_id}/state")
+    response = client.get(f"/api/runs/{run_id}/status")
     data = response.get_json()
     assert data["state"] == "success"
 

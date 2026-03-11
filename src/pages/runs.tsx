@@ -1,40 +1,15 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import axios from "axios";
-import type { PipelineRun } from "../types";
 import { BACKEND_URL } from "../config";
-import {
-    Badge,
-    Button,
-    Table,
-} from "react-bootstrap";
+import { Badge, Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
+import { useRuns } from "../modules/useRuns";
 
 const Runs = () => {
     const { loading } = useAuth();
-    const [runs, setRuns] = useState<PipelineRun[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { runs, updateRuns } = useRuns();
     const navigate = useNavigate();
-
-    console.log(BACKEND_URL + "/api/pipelines");
-
-    // Update the imports
-
-    useEffect(() => {
-        axios
-            .get(BACKEND_URL + "/api/pipelines", {
-                withCredentials: true,
-            })
-            .then((response) => {
-                setRuns(response.data);
-                setIsLoading(false);
-            })
-            .catch((error) => {
-                console.error("Error fetching pipelines:", error);
-                setIsLoading(false);
-            });
-    }, []);
 
     // Add this handler function
     const handleDeleteRun = async (runId: string) => {
@@ -47,7 +22,7 @@ const Runs = () => {
                 await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
                     withCredentials: true,
                 });
-                setRuns((prev) => prev.filter((r) => r._id !== runId));
+                updateRuns(); // Refresh the list of runs after deletion
                 navigate("/runs");
             } catch (error) {
                 console.error("Error deleting run:", error);
@@ -86,73 +61,72 @@ const Runs = () => {
                 },
             ]}
         >
-            <>
-                {isLoading ? (
-                    <div className="text-center">Loading pipeline runs...</div>
-                ) : (
-                    <Table responsive hover>
-                        <thead>
-                            <tr>
-                                <th>Pipeline</th>
-                                <th>Status</th>
-                                <th>Started</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {runs.map((run) => (
-                                <tr
-                                    key={run._id}
-                                    onClick={() => navigate(`/runs/${run._id}`)}
-                                    style={{ cursor: "pointer" }}
-                                    className="hover:bg-gray-100"
+            
+            <Table responsive hover>
+                <thead>
+                    <tr>
+                        <th>Pipeline</th>
+                        <th>Status</th>
+                        <th>Started</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {runs.map((run) => (
+                        <tr
+                            key={run._id}
+                            onClick={() => navigate(`/runs/${run._id}`)}
+                            style={{ cursor: "pointer" }}
+                            className="hover:bg-gray-100"
+                        >
+                            <td>{run.pipeline}</td>
+                            <td>
+                                <Badge
+                                    bg={
+                                        statusToBadge[run.status] ||
+                                        "secondary"
+                                    }
                                 >
-                                    <td>{run.pipeline}</td>
-                                    <td>
-                                        <Badge
-                                            bg={
-                                                statusToBadge[run.status] ||
-                                                "secondary"
-                                            }
-                                        >
-                                            {run.status}
-                                        </Badge>
-                                        {run.status === "failure" &&
-                                            run.error_message && (
-                                                <div className="text-danger small mt-1">
-                                                    {run.error_message}
-                                                </div>
-                                            )}
-                                    </td>
-                                    <td>{new Date(run.timestamp).toLocaleString()}</td>
-                                    <td>
-                                        <Button
-                                            variant="danger"
-                                            size="sm"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteRun(run._id);
-                                            }}
-                                        >
-                                            Delete
-                                        </Button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {runs.length === 0 && !isLoading && (
-                                <tr>
-                                    <td
-                                        colSpan={4}
-                                        className="text-center py-4"
-                                    >
-                                        No pipeline runs found. Start your first
-                                        analysis!
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </Table>
-                )}
-            </>
+                                    {run.status}
+                                </Badge>
+                                {run.status === "failure" &&
+                                    run.error_message && (
+                                        <div className="text-danger small mt-1">
+                                            {run.error_message}
+                                        </div>
+                                    )}
+                            </td>
+                            <td>
+                                {new Date(
+                                    run.timestamp
+                                ).toLocaleString()}
+                            </td>
+                            <td>
+                                <Button
+                                    variant="danger"
+                                    size="sm"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteRun(run._id);
+                                    }}
+                                >
+                                    Delete
+                                </Button>
+                            </td>
+                        </tr>
+                    ))}
+                    {runs.length === 0 && (
+                        <tr>
+                            <td
+                                colSpan={4}
+                                className="text-center py-4"
+                            >
+                                No pipeline runs found. Start your first
+                                analysis!
+                            </td>
+                        </tr>
+                    )}
+                </tbody>
+            </Table>
         </Page>
     );
 };

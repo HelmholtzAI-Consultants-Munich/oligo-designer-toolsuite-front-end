@@ -1,9 +1,19 @@
-import { useState } from "react";
+import { forwardRef, useState, type Ref } from "react";
 import { BACKEND_URL } from "../../config";
 import { useAuth } from "../../modules/useAuth";
 import { Button, Dropdown, Nav } from "react-bootstrap";
 import { GearFill } from "react-bootstrap-icons";
 import { Link } from "react-router";
+
+const UserDisplay = forwardRef(({ onClick } : { onClick: () => void }, ref: Ref<HTMLSpanElement>) => {
+    const { user } = useAuth();
+    
+    return (
+        <span ref={ref} onClick={onClick}>
+            {user?.username || user?.helmholtz_sub || "Anonymous User"}
+        </span>
+    );
+});
 
 export default function UserDropdown() {
     const { user, logout } = useAuth();
@@ -20,6 +30,12 @@ export default function UserDropdown() {
 
     return (
         <>
+            <Dropdown drop="up-centered">
+                <Dropdown.Toggle as={UserDisplay} id="user-dropdown-toggle" />
+                <Dropdown.Menu>
+                    Test
+                </Dropdown.Menu>
+            </Dropdown>
             {user ? (
                 <>
                     {user.role === "admin" && (
@@ -85,5 +101,5 @@ export default function UserDropdown() {
                 </Nav.Item>
             )}
         </>
-    )
+    );
 }
