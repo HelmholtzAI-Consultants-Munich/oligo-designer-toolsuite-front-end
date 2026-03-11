@@ -13,10 +13,15 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import Login from "./pages/login";
 import RunDetail from "./pages/rundetail";
 import AdminApp from "./admin/AdminApp";
+import FeedbackButton from "./components/feedback/FeedbackButton";
+import { useAuth } from "./modules/useAuth";
 
 function App() {
+    const { user } = useAuth();
+
     return (
         <Router>
+            {user && <FeedbackButton floating />}
             <Routes>
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />
