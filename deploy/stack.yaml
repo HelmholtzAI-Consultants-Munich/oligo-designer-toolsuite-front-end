@@ -1,0 +1,140 @@
+heat_template_version: 2021-04-16
+
+description: >
+  Single VM with a private network, floating IP, and data volume.
+
+parameters:
+  key_name:
+    type: string
+    description: SSH keypair name
+
+  image:
+    type: string
+    default: Ubuntu Jammy 22.04 LTS
+
+  flavor:
+    type: string
+    default: SCS-16L:64:20n
+
+  external_network:
+    type: string
+    default: dmz-jsc-cloud
+
+  ssh_cidr:
+    type: string
+    description: Allowed SSH source CIDR (e.g. 1.2.3.4/32)
+
+  volume_size:
+    type: number
+    default: 200
+
+resources:
+  network:
+    type: OS::Neutron::Net
+
+  subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network: { get_resource: network }
+      cidr: 10.20.0.0/24
+      dns_nameservers:
+        - 134.94.32.3
+        - 134.94.32.4
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: { get_param: external_network }
+
+  router_interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: { get_resource: router }
+      subnet: { get_resource: subnet }
+
+  security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+        - protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+          remote_ip_prefix: { get_param: ssh_cidr }
+        - protocol: tcp
+          port_range_min: 80
+          port_range_max: 80
+        - protocol: tcp
+          port_range_min: 443
+          port_range_max: 443
+
+  port:
+    type: OS::Neutron::Port
+    properties:
+      network: { get_resource: network }
+      fixed_ips:
+        - subnet: { get_resource: subnet }
+      security_groups:
+        - { get_resource: security_group }
+
+  floating_ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: { get_param: external_network }
+
+  floating_ip_assoc:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: { get_resource: floating_ip }
+      port_id: { get_resource: port }
+
+  volume:
+    type: OS::Cinder::Volume
+    deletion_policy: Retain
+    properties:
+      size: { get_param: volume_size }
+
+  server:
+    type: OS::Nova::Server
+    depends_on: router_interface
+    properties:
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      key_name: { get_param: key_name }
+      networks:
+        - port: { get_resource: port }
+      user_data_format: RAW
+      user_data:
+        str_replace:
+          params:
+            $DEVICE: /dev/vdb
+          template: |
+            #!/bin/bash
+            set -euo pipefail
+            for i in $(seq 1 20); do [ -b $DEVICE ] && break; sleep 3; done
+            [ -b $DEVICE ] || exit 1
+            blkid $DEVICE || mkfs.ext4 $DEVICE
+            mkdir -p /data
+            UUID=$(blkid -s UUID -o value $DEVICE)
+            grep -q $UUID /etc/fstab || echo "UUID=$UUID /data ext4 defaults,nofail 0 2" >> /etc/fstab
+            mountpoint -q /data || mount /data
+
+  volume_attachment:
+    type: OS::Cinder::VolumeAttachment
+    properties:
+      instance_uuid: { get_resource: server }
+      volume_id: { get_resource: volume }
+
+outputs:
+  floating_ip:
+    value: { get_attr: [floating_ip, floating_ip_address] }
+
+  private_ip:
+    value: { get_attr: [port, fixed_ips, 0, ip_address] }
+
+  ssh_command:
+    value:
+      str_replace:
+        template: ssh ubuntu@IP
+        params:
+          IP: { get_attr: [floating_ip, floating_ip_address] }
