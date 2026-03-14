@@ -1,12 +1,18 @@
 import { Link, useLocation } from "react-router";
 import { Nav } from "react-bootstrap";
 import { useRuns } from "../../modules/useRuns";
+import { pipelineDisplayNames } from "./utils";
 
-const pipelineDisplayNames: Record<string, string> = {
-    scrinshot: "Scrinshot",
-    merfish: "Merfish",
-    seqfish: "SeqFish+",
-    oligoseq: "Oligo-Seq",
+// TODO: update the timeAgo regularly (e.g. every minute) to keep it accurate without needing a page refresh
+const timeAgo = (timestamp: string) => {
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diff = now.getTime() - past.getTime();
+
+    if (diff < 60000) return "Just now";
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} hr ago`;
+    return `${Math.floor(diff / 86400000)} day(s) ago`;
 };
 
 export default function RecentRuns() {
@@ -23,7 +29,7 @@ export default function RecentRuns() {
                     >
                         <span>{run.status}</span>
                         {pipelineDisplayNames[run.pipeline] || run.pipeline}
-                        <span>{new Date(run.timestamp).toLocaleString()}</span>
+                        <span>{timeAgo(run.timestamp)}</span>
                     </Nav.Link>
                 ))}
                 {runs.length === 0 && <span>No recent runs</span>}

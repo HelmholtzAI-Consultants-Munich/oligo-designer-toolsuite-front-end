@@ -134,7 +134,8 @@ export const handleSubmit = async (
     files: FileState,
     formData: RJSFFormData,
     pipeline: string,
-    setIdCopySuccess?: React.Dispatch<React.SetStateAction<boolean>>
+    updateRuns: () => void,
+    setIdCopySuccess?: React.Dispatch<React.SetStateAction<boolean>>,
 ) => {
     if (runStatus !== "idle") return;
     setRunStatus("submitting");
@@ -196,5 +197,6 @@ export const handleSubmit = async (
             formData[key] = [];
         }
         setRunStatus("idle");
+        updateRuns();
     }
 };

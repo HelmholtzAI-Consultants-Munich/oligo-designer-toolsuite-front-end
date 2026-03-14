@@ -4,6 +4,7 @@ import { LayoutTextWindowReverse } from "react-bootstrap-icons";
 import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";
+import { Vertical } from "./Grid";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
@@ -19,7 +20,7 @@ const Sidebar: React.FC = () => {
         <Navbar expand="lg" variant="main">
             <Navbar.Brand as={Link} to="/">
                 <Image
-                    src="/ODT_logo 1.svg"
+                    src="/ODT_logo.svg"
                     alt="Oligo Designer Toolsuite"
                     width="80"
                     height="80"
@@ -28,41 +29,49 @@ const Sidebar: React.FC = () => {
             </Navbar.Brand>
             <Navbar.Toggle aria-controls="navigation-bar" />
             <Navbar.Collapse id="navigation-bar">
-                <Nav variant="separated">
-                    <Nav.Link as={Link} to="/">
-                        Home
-                    </Nav.Link>
-                    <Nav.Link as={Link} to="/faq">
-                        FAQ
-                    </Nav.Link>
-                    <Nav.Link as={Link} to="/contact">
-                        Contact
-                    </Nav.Link>
-                </Nav>
-
-                <h5>Pipelines</h5>
-
-                <Nav variant="heavy">
-                    {pipelines.map((pipeline) => (
-                        <Nav.Link
-                            key={pipeline.path}
-                            as={Link}
-                            to={pipeline.path}
-                            active={location.pathname.startsWith(pipeline.path)}
-                        >
-                            <LayoutTextWindowReverse size={20} />
-                            {pipeline.name}
+                <Vertical justify="space-between" align="stretch">
+                    <Nav variant="separated">
+                        <Nav.Link as={Link} to="/">
+                            Home
                         </Nav.Link>
-                    ))}
-                </Nav>
+                        <Nav.Link as={Link} to="/faq">
+                            FAQ
+                        </Nav.Link>
+                        <Nav.Link as={Link} to="/contact">
+                            Contact
+                        </Nav.Link>
+                    </Nav>
 
-                <Divider />
+                    <Vertical gap="lg" align="stretch">
+                        <Vertical.Item>
+                            <h5>Pipelines</h5>
 
-                <h5>Recent Runs</h5>
+                            <Nav variant="heavy">
+                                {pipelines.map((pipeline) => (
+                                    <Nav.Link
+                                        key={pipeline.path}
+                                        as={Link}
+                                        to={pipeline.path}
+                                        active={location.pathname.startsWith(pipeline.path)}
+                                    >
+                                        <LayoutTextWindowReverse size={20} />
+                                        {pipeline.name}
+                                    </Nav.Link>
+                                ))}
+                            </Nav>
+                        </Vertical.Item>
 
-                <RecentRuns />
+                        <Divider />
 
-                <UserDropdown />
+                        <Vertical.Item>
+                            <h5>Recent Runs</h5>
+
+                            <RecentRuns />
+                        </Vertical.Item>
+                    </Vertical>
+
+                    <UserDropdown />
+                </Vertical>
             </Navbar.Collapse>
         </Navbar>
     );

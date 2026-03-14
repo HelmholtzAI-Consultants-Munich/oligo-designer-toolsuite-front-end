@@ -5,6 +5,7 @@ import { BACKEND_URL } from "../config";
 import { Badge, Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../modules/useRuns";
+import { pipelineDisplayNames } from "../components/ui/utils";
 
 const Runs = () => {
     const { loading } = useAuth();
@@ -78,7 +79,7 @@ const Runs = () => {
                             style={{ cursor: "pointer" }}
                             className="hover:bg-gray-100"
                         >
-                            <td>{run.pipeline}</td>
+                            <td>{pipelineDisplayNames[run.pipeline] || run.pipeline}</td>
                             <td>
                                 <Badge
                                     bg={

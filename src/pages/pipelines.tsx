@@ -1,15 +1,17 @@
 import React from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";
 import seqfish from "../images/seqfish.jpg";
 import oligoseq from "../images/oligoseq.jpg";
-import { Alert, Card, Col, Row } from "react-bootstrap";
+import { Alert, Button, Card, Col, Row } from "react-bootstrap";
 import Page from "../components/ui/Page";
+import Hero from "../components/ui/Hero";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
+    const navigate = useNavigate();
 
     const pipelines = [
         {
@@ -46,24 +48,7 @@ const Pipelines: React.FC = () => {
 
     return (
         <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
-            <h1>Oligo Designer Toolsuite</h1>
-
-            {!user && (
-                <Alert variant="warning">
-                    To keep your runs saved when you close your browser, please{" "}
-                    <Link to="/login">log in</Link>.
-                </Alert>
-            )}
-
-            <p className="lead">
-                Oligo Designer Toolsuite is an open-source framework designed to
-                streamline the development of custom oligonucleotide (oligo)
-                design pipelines. Oligos are short DNA or RNA sequences used in
-                various applications, such as research, diagnostics, and
-                therapeutics. The Toolsuite provides modular functionalities
-                like sequence generation, thermodynamic filtering, and machine
-                learning-based specificity prediction.
-            </p>
+            <Hero />
 
             <h2>Probe Designers</h2>
 
@@ -71,22 +56,27 @@ const Pipelines: React.FC = () => {
                 {pipelines.map((pipeline, index) => (
                     <Col md={3} key={index}>
                         <Card>
-                            <Card.Img
-                                variant="top"
-                                src={pipeline.img}
-                                alt={pipeline.title}
-                            />
                             <Card.Body>
                                 <Card.Title>{pipeline.title}</Card.Title>
                                 <Card.Text>{pipeline.description}</Card.Text>
+                                <Card.Link as={Button} onClick={() => navigate(pipeline.link)}>
+                                    Use Pipeline
+                                </Card.Link>
                                 <Card.Link as={Link} to={pipeline.link}>
-                                    Go to Pipeline
+                                    Read about {pipeline.title}
                                 </Card.Link>
                             </Card.Body>
                         </Card>
                     </Col>
                 ))}
             </Row>
+
+            {!user && (
+                <Alert variant="warning">
+                    To keep your runs saved when you close your browser, please{" "}
+                    <Link to="/login">log in</Link>.
+                </Alert>
+            )}
         </Page>
     );
 };

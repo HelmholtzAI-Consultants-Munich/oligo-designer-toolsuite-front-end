@@ -10,6 +10,7 @@ import {
     Row,
 } from "react-bootstrap";
 import type { Icon } from "react-bootstrap-icons";
+import { Horizontal } from "./Grid";
 
 interface TabConfig {
     label: string;
@@ -105,8 +106,8 @@ function Header({
                 {(tabs && tabs.length > 0 && (
                     <>
                         <h1 className="header-title">{title}</h1>
-                        <Row>
-                            <Col>
+                        <Horizontal>
+                            <Horizontal.Item grow>
                                 <Nav
                                     defaultActiveKey={
                                         defaultTabKey || tabs[0].tabKey
@@ -120,19 +121,17 @@ function Header({
                                         </Nav.Item>
                                     ))}
                                 </Nav>
-                            </Col>
+                            </Horizontal.Item>
                             {actions &&
                                 actions.map((action, index) => {
                                     return (
-                                        <Col key={index}>
-                                            <HeaderAction
-                                                key={index}
-                                                action={action}
-                                            />
-                                        </Col>
+                                        <HeaderAction
+                                            key={index}
+                                            action={action}
+                                        />
                                     );
                                 })}
-                        </Row>
+                        </Horizontal>
                     </>
                 )) || (
                     <Row>

@@ -12,6 +12,7 @@ import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
 import { BoxArrowInDown, BoxArrowUp, Send } from "react-bootstrap-icons";
+import { useRuns } from "../../modules/useRuns";
 
 type Props = {
     pipeline: string;
@@ -43,6 +44,7 @@ const PipelineTemplate: React.FC<Props> = ({
 
     const [runId, setRunId] = useState<string | null>(null);
     const [runStatus, setRunStatus] = useState<Status>("idle");
+    const { updateRuns } = useRuns();
     const [modal, setModal] = useState<Modal>({
         show: false,
         title: "",
@@ -128,7 +130,8 @@ const PipelineTemplate: React.FC<Props> = ({
                             setModal,
                             files,
                             formData,
-                            pipeline
+                            pipeline,
+                            updateRuns,
                         )
                     }
                 />

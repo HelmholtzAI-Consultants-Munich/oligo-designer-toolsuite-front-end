@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
@@ -8,6 +8,7 @@ import type {
     ProbeDetails,
     Probesets,
     ProbeDetailsValue,
+    RunState,
 } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
@@ -69,7 +70,8 @@ const RunDetail = () => {
     const { runId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
-    const { runs } = useRuns();
+    const { runs, updateRuns } = useRuns();
+    const prevStatus = useRef<RunState | null>(null);
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
@@ -91,62 +93,83 @@ const RunDetail = () => {
     ] as OligoComponentDefinition[] | undefined;
     const tableColumns = getColumnsFromDefinition(definition);
 
-    const closeFileView = () => {
-        setViewingFilename(null);
-    };
-
     // --- Polling/log state variables ---
-    const fetchAndParseRunFiles = (id: string) => {
-        // TODO: when to poll run files?
-        axios.get(
-            BACKEND_URL + `/api/runs/${id}/files`,
-            {
-                withCredentials: true,
-            }
-        ).then((response) => setFiles(response.data));
+    const fetchAndParseRunFiles = useCallback((id: string) => {
+        if (prevStatus.current !== "success") {
+            axios.get(
+                BACKEND_URL + `/api/runs/${id}/files`,
+                {
+                    withCredentials: true,
+                }
+            ).then((response) => setFiles(response.data));
+        }
 
-        axios
-            .get(
-                BACKEND_URL + `/api/runs/${id}/files/genomic_regions.yaml`,
-                { withCredentials: true, responseType: "text" }
-            )
-            .then((response) => {
-                const regionsYaml = YAML.load(response.data) as {
-                    regions: {
-                        [gene: string]: GenomicRegions;
+        if (run?.status === "success" && prevStatus.current !== "success") {
+            axios
+                .get(
+                    BACKEND_URL + `/api/runs/${id}/files/genomic_regions.yaml`,
+                    { withCredentials: true, responseType: "text" }
+                )
+                .then((response) => {
+                    const regionsYaml = YAML.load(response.data) as {
+                        regions: {
+                            [gene: string]: GenomicRegions;
+                        };
+                        probes: {
+                            [gene: string]: Probesets;
+                        };
                     };
-                    probes: {
-                        [gene: string]: Probesets;
-                    };
-                };
 
-                const genes = Object.keys(regionsYaml.probes || {});
-                const firstGene = genes[0] || "";
-                const firstOligoset =
-                    Object.keys(regionsYaml.probes?.[firstGene] || {})[0] || "";
-                const firstOligo =
-                    regionsYaml.probes?.[firstGene]?.[firstOligoset][0]
-                        ?.oligo_id || "";
+                    const genes = Object.keys(regionsYaml.probes || {});
+                    const firstGene = genes[0] || "";
+                    const firstOligoset =
+                        Object.keys(regionsYaml.probes?.[firstGene] || {})[0] || "";
+                    const firstOligo =
+                        regionsYaml.probes?.[firstGene]?.[firstOligoset][0]
+                            ?.oligo_id || "";
 
-                setGenomicRegions(regionsYaml.regions);
-                setProbes(regionsYaml.probes);
-                setSelectedGene(firstGene);
-                setSelectedOligoset(firstOligoset);
-                setSelectedOligo(firstOligo);
-            })
-            .catch((error) => {
-                console.error("Error fetching genomic regions file:", error);
-                setGenomicRegions(null);
-                setProbes(null);
-                return null;
-            });
-    };
+                    setGenomicRegions(regionsYaml.regions);
+                    setProbes(regionsYaml.probes);
+                    setSelectedGene(firstGene);
+                    setSelectedOligoset(firstOligoset);
+                    setSelectedOligo(firstOligo);
+                })
+                .catch((error) => {
+                    console.error("Error fetching genomic regions file:", error);
+                    setGenomicRegions(null);
+                    setProbes(null);
+                    return null;
+                });
+        }
+
+        prevStatus.current = run?.status || null;
+    }, [prevStatus, run?.status]);
 
     useEffect(() => {
         if (run) {
             fetchAndParseRunFiles(run._id);
         }
-    }, [run]);
+    }, [runs, run, fetchAndParseRunFiles]); // runs on every poll event
+
+    const fetchFileContent = useCallback((filename: string) => {
+        axios
+            .get(BACKEND_URL + `/api/runs/${runId}/files/${filename}`, {
+                withCredentials: true,
+                responseType: "text",
+            })
+            .then((response) => {
+                setFileContent(response.data);
+            })
+            .catch((error) =>
+                console.error("Error fetching file content:", error)
+            );
+    }, [runId]);
+
+    useEffect(() => {
+        if (viewingFilename) {
+            fetchFileContent(viewingFilename);
+        }
+    }, [runs, viewingFilename, fetchFileContent]); // runs on every poll event
 
     const handleDelete = async () => {
         if (!run) return;
@@ -159,6 +182,7 @@ const RunDetail = () => {
                 await axios.delete(BACKEND_URL + `/api/runs/${run._id}`, {
                     withCredentials: true,
                 });
+                updateRuns();
                 // Navigate back to admin panel if we came from there, otherwise go to runs page
                 const fromAdmin = (location.state as LocationState)?.fromAdmin;
                 navigate(fromAdmin ? "/admin/pipelines" : "/runs");
@@ -318,22 +342,12 @@ const RunDetail = () => {
 
     const viewFileContent = (filename: string) => {
         if (viewingFilename === filename) {
-            closeFileView();
-            return;
+            setViewingFilename(null);
+            setFileContent(null);
+        } else {
+            setViewingFilename(filename);
+            setFileContent("Loading...");
         }
-
-        axios
-            .get(BACKEND_URL + `/api/runs/${runId}/files/${filename}`, {
-                withCredentials: true,
-                responseType: "text",
-            })
-            .then((response) => {
-                setViewingFilename(filename);
-                setFileContent(response.data);
-            })
-            .catch((error) =>
-                console.error("Error fetching file content:", error)
-            );
     };
 
     const downloadFile = (filename: string) => {
