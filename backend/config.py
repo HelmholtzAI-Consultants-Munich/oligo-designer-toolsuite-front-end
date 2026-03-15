@@ -72,6 +72,7 @@ class Config:
 
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
+    FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:

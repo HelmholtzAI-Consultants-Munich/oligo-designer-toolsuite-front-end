@@ -5,6 +5,7 @@ import { Table, Button, Badge, Spinner, Alert, Form } from "react-bootstrap";
 import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { BACKEND_URL } from "../../config";
+import { formatAdminDateTime } from "../shared/date";
 
 interface User {
     id: string;
@@ -166,19 +167,6 @@ const UserList: React.FC = () => {
         }
     };
 
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return "N/A";
-        try {
-            const date = new Date(dateString);
-            const day = date.getDate().toString().padStart(2, "0");
-            const month = (date.getMonth() + 1).toString().padStart(2, "0");
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        } catch {
-            return "N/A";
-        }
-    };
-
     if (isLoading) {
         return (
             <div className="d-flex justify-content-center p-5">
@@ -305,7 +293,14 @@ const UserList: React.FC = () => {
                                         {user.role || "user"}
                                     </Badge>
                                 </td>
-                                <td>{formatDate(user.created_at)}</td>
+                                <td>
+                                    {
+                                        formatAdminDateTime(
+                                            user.created_at,
+                                            "N/A"
+                                        ).split(" ")[0]
+                                    }
+                                </td>
                                 <td>
                                     <Button
                                         variant="primary"

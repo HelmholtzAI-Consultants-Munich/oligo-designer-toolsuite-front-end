@@ -16,10 +16,15 @@ import Login from "./pages/login";
 import RunDetail from "./pages/rundetail";
 import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
+import FeedbackButton from "./components/feedback/FeedbackButton";
+import { useAuth } from "./modules/useAuth";
 
 function RootLayout() {
+    const { user } = useAuth();
+
     return (
         <>
+            {user && <FeedbackButton floating />}
             <Outlet />
             <ScrollRestoration />
         </>
