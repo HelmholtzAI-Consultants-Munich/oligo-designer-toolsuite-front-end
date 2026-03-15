@@ -1,10 +1,10 @@
 import { Image, Nav, Navbar } from "react-bootstrap";
 import { Link, useLocation } from "react-router";
-import { LayoutTextWindowReverse } from "react-bootstrap-icons";
+import { App, Beaker, BoxArrowUp, BoxArrowUpRight, LayoutTextWindowReverse, Window } from "react-bootstrap-icons";
 import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";
-import { Vertical } from "./Grid";
+import { Horizontal, Vertical } from "./Grid";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
@@ -28,8 +28,8 @@ const Sidebar: React.FC = () => {
                 Oligo Designer Toolsuite
             </Navbar.Brand>
             <Navbar.Toggle aria-controls="navigation-bar" />
-            <Navbar.Collapse id="navigation-bar">
-                <Vertical justify="space-between" align="stretch">
+            <Navbar.Collapse id="navigation-bar" className="mt-2">
+                <Vertical justify="space-between" align="stretch" fillHeight fillWidth>
                     <Nav variant="separated">
                         <Nav.Link as={Link} to="/">
                             Home
@@ -39,6 +39,9 @@ const Sidebar: React.FC = () => {
                         </Nav.Link>
                         <Nav.Link as={Link} to="/contact">
                             Contact
+                        </Nav.Link>
+                        <Nav.Link href="https://oligo-designer-toolsuite.readthedocs.io/en/latest/index.html" target="_blank" active={false}>
+                            Docs <BoxArrowUpRight size={14} className="ms-1" />
                         </Nav.Link>
                     </Nav>
 
@@ -54,8 +57,10 @@ const Sidebar: React.FC = () => {
                                         to={pipeline.path}
                                         active={location.pathname.startsWith(pipeline.path)}
                                     >
-                                        <LayoutTextWindowReverse size={20} />
-                                        {pipeline.name}
+                                        <Horizontal gap="lg" align="center">
+                                            <Beaker size={18} />
+                                            <span>{pipeline.name}</span>
+                                        </Horizontal>
                                     </Nav.Link>
                                 ))}
                             </Nav>

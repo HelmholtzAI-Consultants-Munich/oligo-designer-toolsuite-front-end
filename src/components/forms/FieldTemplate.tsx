@@ -1,13 +1,14 @@
 import { Form, OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
 import type { FieldTemplateProps } from "@rjsf/utils";
+import { Vertical } from "../ui/Grid";
 
 const FieldTemplate = (props: FieldTemplateProps) => {
     const { id, label, children, rawDescription } = props;
 
     return (
-        <Form.Group controlId={id}>
-            <Form.Label className="rjsf-label">
+        <Form.Group controlId={id} as={Vertical} align="stretch" fillHeight>
+            <Form.Label className="rjsf-label" as={Vertical.Item} grow>
                 {label}
                 {rawDescription && (
                     <OverlayTrigger

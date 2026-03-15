@@ -1,6 +1,7 @@
-import { Col, Row } from "react-bootstrap";
+import { Col } from "react-bootstrap";
 import ContactsCard from "../components/ui/ContactsCard";
 import Page from "../components/ui/Page";
+import { Grid } from "../components/ui/Grid";
 
 const contact: React.FC = () => {
     const teamMembers = [
@@ -18,13 +19,11 @@ const contact: React.FC = () => {
 
     return (
         <Page title="Our Team">
-            <Row>
+            <Grid gap="md" itemWidth="250px">
                 {teamMembers.map((member) => (
-                    <Col md={3} key={member.email}>
-                        <ContactsCard name={member.name} email={member.email} />
-                    </Col>
+                    <ContactsCard name={member.name} email={member.email} key={member.email} />
                 ))}
-            </Row>
+            </Grid>
         </Page>
     );
 };

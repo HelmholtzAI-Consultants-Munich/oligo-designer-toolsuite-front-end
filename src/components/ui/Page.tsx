@@ -12,6 +12,7 @@ function Page({
     defaultTabKey,
     actions,
     hideHeader,
+    stickyHeader,
     children,
 }: PageProps) {
     if (!tabs || tabs.length === 0) {
@@ -22,14 +23,18 @@ function Page({
                     metaTitle={metaTitle}
                     actions={actions}
                     hideHeader={hideHeader}
+                    stickyHeader={stickyHeader}
                 />
-                <Container className="page">{children}</Container>
+                <Container className="page flex-grow-1 d-flex flex-column gap-4">{children}</Container>
             </>
         );
     }
 
     return (
-        <Tab.Container defaultActiveKey={defaultTabKey || tabs[0].tabKey}>
+        <Tab.Container
+            defaultActiveKey={defaultTabKey || tabs[0].tabKey}
+            onSelect={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        >
             <Header
                 title={title}
                 metaTitle={metaTitle}
@@ -37,8 +42,9 @@ function Page({
                 defaultTabKey={defaultTabKey}
                 actions={actions}
                 hideHeader={hideHeader}
+                stickyHeader={stickyHeader}
             />
-            <Container className="page">{children}</Container>
+            <Container className="page flex-grow-1 d-flex flex-column gap-4">{children}</Container>
         </Tab.Container>
     );
 }

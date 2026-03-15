@@ -8,6 +8,7 @@ import oligoseq from "../images/oligoseq.jpg";
 import { Alert, Button, Card, Col, Row } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
+import { Grid } from "../components/ui/Grid";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
@@ -50,26 +51,24 @@ const Pipelines: React.FC = () => {
         <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
             <Hero />
 
-            <h2>Probe Designers</h2>
+            <h2>Our Probe Designers</h2>
 
-            <Row>
+            <Grid gap="lg" itemWidth="400px">
                 {pipelines.map((pipeline, index) => (
-                    <Col md={3} key={index}>
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>{pipeline.title}</Card.Title>
-                                <Card.Text>{pipeline.description}</Card.Text>
-                                <Card.Link as={Button} onClick={() => navigate(pipeline.link)}>
-                                    Use Pipeline
-                                </Card.Link>
-                                <Card.Link as={Link} to={pipeline.link}>
-                                    Read about {pipeline.title}
-                                </Card.Link>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+                    <Card key={index}>
+                        <Card.Body>
+                            <Card.Title>{pipeline.title}</Card.Title>
+                            <Card.Text>{pipeline.description}</Card.Text>
+                            <Card.Link as={Button} onClick={() => navigate(pipeline.link)}>
+                                Use Pipeline
+                            </Card.Link>
+                            <Card.Link as={Link} to={pipeline.link}>
+                                Read about {pipeline.title}
+                            </Card.Link>
+                        </Card.Body>
+                    </Card>
                 ))}
-            </Row>
+            </Grid>
 
             {!user && (
                 <Alert variant="warning">

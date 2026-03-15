@@ -8,6 +8,7 @@ import { BACKEND_URL } from "../config";
 import { Button, Card, Col, Form, Row } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../modules/toastUtil";
+import { Vertical } from "../components/ui/Grid";
 
 /**
  * Login component handles user login functionality.
@@ -85,11 +86,11 @@ const Login = () => {
 
     return (
         <Page title="Login" hideHeader>
-            <Row className="justify-content-center">
-                <Col md={6}>
-                    <Card>
-                        <Card.Body>
-                            <Card.Title>Login with Helmholtz AAI</Card.Title>
+            <Vertical gap="xl" align="center" justify="center" grow>
+                <Card style={{ maxWidth: "500px" }}>
+                    <Card.Body>
+                        <Vertical gap="md" align="stretch">
+                            <Card.Title as="h2">Login with Helmholtz AAI</Card.Title>
                             <Card.Text className="text-muted">
                                 Recommended for Helmholtz users. You will be
                                 redirected to the Helmholtz AAI login page.
@@ -97,17 +98,19 @@ const Login = () => {
                             <Button onClick={redirectToHelmholtz}>
                                 Continue with Helmholtz AAI
                             </Button>
-                        </Card.Body>
-                    </Card>
+                        </Vertical>
+                    </Card.Body>
+                </Card>
 
-                    <Card>
-                        <Card.Body>
-                            <Card.Title>Admin Login</Card.Title>
-                            <Card.Text className="text-muted">
-                                Use this option if you have an admin account
-                                with username/password.
-                            </Card.Text>
-                            <Form onSubmit={handleSubmit}>
+                <Card style={{ maxWidth: "500px" }}>
+                    <Card.Body>
+                        <Card.Title>Admin Login</Card.Title>
+                        <Card.Text className="text-muted">
+                            Use this option if you have an admin account
+                            with username/password.
+                        </Card.Text>
+                        <Form onSubmit={handleSubmit}>
+                            <Vertical gap="md" align="stretch">
                                 <Form.Group controlId="loginUsername">
                                     <Form.Label>Username</Form.Label>
                                     <Form.Control
@@ -142,11 +145,11 @@ const Login = () => {
                                 <Button variant="outline-primary" type="submit">
                                     Login with Username
                                 </Button>
-                            </Form>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+                            </Vertical>
+                        </Form>
+                    </Card.Body>
+                </Card>
+            </Vertical>
         </Page>
     );
 };

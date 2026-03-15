@@ -16,11 +16,14 @@ interface HorizontalProps {
     gap?: GapSize;
     align?: Align;
     justify?: Justify;
+    fillWidth?: boolean;
+    fillHeight?: boolean;
+    grow?: boolean;
     className?: string;
     children: React.ReactNode;
 }
 
-function Horizontal({ wrap = false, gap, align = "start", justify = "start", className = "", children }: HorizontalProps) {
+function Horizontal({ wrap = false, gap = "", align = "start", justify = "start", fillWidth = false, fillHeight = false, grow = false, className = "", children }: HorizontalProps) {
     return (
         <div
             style={{
@@ -28,10 +31,11 @@ function Horizontal({ wrap = false, gap, align = "start", justify = "start", cla
                 flexWrap: wrap ? "wrap" : "nowrap",
                 alignItems: align,
                 justifyContent: justify,
-                width: ["stretch", "center", "end", "space-between", "space-around", "space-evenly"].includes(justify) ? "100%" : undefined,
-                height: ["stretch", "center", "end"].includes(align) ? "100%" : undefined,
+                width: fillWidth ? "100%" : undefined,
+                height: fillHeight ? "100%" : undefined,
+                flexGrow: grow ? 1 : undefined,
             }}
-            className={className + ` gap-${gapValues[gap || ""]}`}
+            className={className + ` gap-${gapValues[gap]}`}
         >
             {children}
         </div>
@@ -42,11 +46,14 @@ interface VerticalProps {
     gap?: GapSize;
     align?: Align;
     justify?: Justify;
+    fillWidth?: boolean;
+    fillHeight?: boolean;
+    grow?: boolean;
     className?: string;
     children: React.ReactNode;
 }
 
-function Vertical({ gap, align = "start", justify = "start", className = "", children }: VerticalProps) {
+function Vertical({ gap = "", align = "start", justify = "start", fillWidth = false, fillHeight = false, grow = false, className = "", children }: VerticalProps) {
     return (
         <div
             style={{
@@ -55,35 +62,11 @@ function Vertical({ gap, align = "start", justify = "start", className = "", chi
                 flexWrap: "nowrap",
                 alignItems: align,
                 justifyContent: justify,
-                height: ["stretch", "center", "end", "space-between", "space-around", "space-evenly"].includes(justify) ? "100%" : undefined,
-                width: ["stretch", "center", "end"].includes(align) ? "100%" : undefined,
+                width: fillWidth ? "100%" : undefined,
+                height: fillHeight ? "100%" : undefined,
+                flexGrow: grow ? 1 : undefined,
             }}
-            className={className + ` gap-${gapValues[gap || ""]}`}
-        >
-            {children}
-        </div>
-    )
-}
-
-interface GridProps {
-    gap?: GapSize | { row?: GapSize; column?: GapSize };
-    itemWidth?: number | string;
-    className?: string;
-    children: React.ReactNode;
-
-}
-
-function Grid({ gap, itemWidth, className = "", children }: GridProps) {
-    return (
-        <div
-            style={{
-                display: "flex",
-                flexWrap: "wrap",
-                rowGap: typeof gap === "object" ? gap.row : gap,
-                columnGap: typeof gap === "object" ? gap.column : gap,
-                width: itemWidth
-            }}
-            className={className}
+            className={className + ` gap-${gapValues[gap]}`}
         >
             {children}
         </div>
@@ -93,16 +76,52 @@ function Grid({ gap, itemWidth, className = "", children }: GridProps) {
 interface FlexItemProps {
     selfAlign?: Align;
     grow?: number | boolean;
+    fillWidth?: boolean;
+    fillHeight?: boolean;
+    className?: string;
     children: React.ReactNode;
 }
 
-function FlexItem({ selfAlign, grow, children }: FlexItemProps) {
+function FlexItem({ selfAlign, grow, fillWidth, fillHeight, className, children }: FlexItemProps) {
     return (
         <div
             style={{
                 alignSelf: selfAlign,
-                flexGrow: grow === true ? 1 : typeof grow === "number" ? grow : 0
+                flexGrow: grow === true ? 1 : typeof grow === "number" ? grow : undefined,
+                flexBasis: 0,
+                width: fillWidth ? "100%" : undefined,
+                height: fillHeight ? "100%" : undefined,
             }}
+            className={className}
+        >
+            {children}
+        </div>
+    )
+}
+
+interface GridProps {
+    gap?: GapSize | { row: GapSize; column: GapSize };
+    itemWidth?: number | string;
+    className?: string;
+    children: React.ReactNode;
+
+}
+
+function Grid({ gap = "", itemWidth, className = "", children }: GridProps) {
+    let gapClass = "";
+    if (typeof gap === "string") {
+        gapClass = `gap-${gapValues[gap]}`;
+    } else {
+        gapClass = `row-gap-${gapValues[gap.row]} column-gap-${gapValues[gap.column]}`;
+    }
+
+    return (
+        <div
+            style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(auto-fit, minmax(min(${itemWidth}, 100%), 1fr))`,
+            }}
+            className={className + ' ' + gapClass}
         >
             {children}
         </div>

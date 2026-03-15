@@ -3,7 +3,7 @@ import { Horizontal, Vertical } from "./Grid";
 
 export default function Hero() {
     return (
-        <Horizontal justify="center" className="mt-5 hero">
+        <Horizontal justify="center" className="my-5 hero">
             <Vertical>
                 <Horizontal align="end">
                     <h1>

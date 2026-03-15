@@ -44,6 +44,7 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
     top: 0;
     height: 100vh;
     width: 25rem;
+    flex-shrink: 0;
     padding: 2rem;
 
     background-color: tint-color($primary, 90%);
@@ -84,6 +85,14 @@ navbar-nav.nav-separated {
     border-left: 1px solid $border-color;
 }
 
+.navbar-nav.nav-separated .nav-link:first-child {
+    padding-left: 0;
+}
+
+.navbar-nav.nav-separated .nav-link:last-child {
+    padding-right: 0;
+}
+
 /* Nav variant "heavy" */
 
 .navbar-nav.nav-heavy {
@@ -94,6 +103,7 @@ navbar-nav.nav-separated {
 .navbar-nav.nav-heavy .nav-link {
     border-radius: $border-radius;
     border: 1px solid transparent;
+    padding: 0.75rem 1rem;
 }
 
 .navbar-nav.nav-heavy .nav-link.active {
@@ -105,6 +115,7 @@ navbar-nav.nav-separated {
 
 .header {
     border-bottom: 1px solid $border-color;
+    background-color: $white;
 }
 
 .header-title {
@@ -159,4 +170,40 @@ navbar-nav.nav-separated {
 .hero h1 {
     font-size: 4rem;
     margin-bottom: 0;
+}
+
+/* Pulse */
+
+.pulse {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pulse-outer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: var(--pulse-color);
+    animation: pulse 2s infinite;
+}
+
+.pulse-inner {
+    width: 40%;
+    height: 40%;
+    border-radius: 50%;
+    background-color: var(--pulse-color);
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.4);
+        opacity: 0.75;
+    }
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
 }

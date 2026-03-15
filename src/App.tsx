@@ -6,7 +6,7 @@ import Runs from "./pages/runs";
 import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { createBrowserRouter, Outlet, RouterProvider, ScrollRestoration } from "react-router";
 import "./styles/theme.scss";
 import "./styles/utils.scss";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
@@ -17,30 +17,44 @@ import RunDetail from "./pages/rundetail";
 import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
 
-function App() {
+function RootLayout() {
     return (
-        <Router>
-            <Routes>
-                <Route path="/admin/*" element={<AdminApp />} />
-                <Route element={<DefaultLayout />}>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/runs" element={<Runs />} />
-                    <Route path="/" element={<Pipelines />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/contact" element={<Contact />} />
-                    <Route path="/pipelines" element={<Pipelines />} />
-                    <Route
-                        path="/pipelines/scrinshot"
-                        element={<Scrinshot />}
-                    />
-                    <Route path="/pipelines/merfish" element={<Merfish />} />
-                    <Route path="/pipelines/seqfish" element={<SeqFish />} />
-                    <Route path="/pipelines/oligoSeq" element={<OligoSeq />} />
-                    <Route path="/runs/:runId" element={<RunDetail />} />
-                </Route>
-            </Routes>
-        </Router>
+        <>
+            <Outlet />
+            <ScrollRestoration />
+        </>
     );
+}
+
+const defaultLayoutRoutes = [
+    { path: "/login", element: <Login /> },
+    { path: "/runs", element: <Runs /> },
+    { path: "/", element: <Pipelines /> },
+    { path: "/faq", element: <FAQ /> },
+    { path: "/contact", element: <Contact /> },
+    { path: "/pipelines", element: <Pipelines /> },
+    { path: "/pipelines/scrinshot", element: <Scrinshot /> },
+    { path: "/pipelines/merfish", element: <Merfish /> },
+    { path: "/pipelines/seqfish", element: <SeqFish /> },
+    { path: "/pipelines/oligoSeq", element: <OligoSeq /> },
+    { path: "/runs/:runId", element: <RunDetail /> },
+];
+
+const router = createBrowserRouter([
+    {
+        element: <RootLayout />,
+        children: [
+            { path: "/admin/*", element: <AdminApp /> },
+            {
+                element: <DefaultLayout />,
+                children: defaultLayoutRoutes,
+            },
+        ],
+    },
+]);
+
+function App() {
+    return <RouterProvider router={router} />;
 }
 
 export default App;

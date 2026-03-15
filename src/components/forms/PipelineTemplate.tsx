@@ -103,9 +103,19 @@ const PipelineTemplate: React.FC<Props> = ({
                         label: "Run Pipeline",
                         icon: Send,
                         variant: "primary",
-                        onClick: () => {},
+                        onClick: () => handleSubmit(
+                            runStatus,
+                            setRunStatus,
+                            setRunId,
+                            setModal,
+                            files,
+                            formData,
+                            pipeline,
+                            updateRuns,
+                        ),
                     },
                 ]}
+                stickyHeader
             >
                 <Form
                     schema={schema}

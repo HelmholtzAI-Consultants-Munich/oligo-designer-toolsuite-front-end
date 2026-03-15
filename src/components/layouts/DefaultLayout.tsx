@@ -1,18 +1,16 @@
-import { Col, Row } from "react-bootstrap";
 import { Outlet } from "react-router";
 import Sidebar from "../ui/Sidebar";
 import Toasts from "../ui/Toasts";
+import { Horizontal, Vertical } from "../ui/Grid";
 
 export default function DefaultLayout() {
     return (
-        <Row>
-            <Col xs="auto">
-                <Sidebar />
-            </Col>
-            <Col>
+        <Horizontal>
+            <Sidebar />
+            <Vertical grow className="min-vh-100" align="stretch">
                 <Toasts />
                 <Outlet />
-            </Col>
-        </Row>
+            </Vertical>
+        </Horizontal>
     );
 }

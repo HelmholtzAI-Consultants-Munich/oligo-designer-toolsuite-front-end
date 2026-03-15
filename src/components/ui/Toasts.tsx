@@ -38,7 +38,7 @@ export default function Toasts() {
     }, []);
 
     return (
-        <ToastContainer position="top-end" className="position-absolute">
+        <ToastContainer position="top-end" className="position-absolute p-3">
             {toasts.map((toast) => (
                 <Toast
                     onClose={() => hideToast(toast.id)}
@@ -47,7 +47,7 @@ export default function Toasts() {
                     key={toast.id}
                 >
                     <Toast.Header>
-                        <strong>{toast.title}</strong>
+                        <strong className="me-auto">{toast.title}</strong>
                     </Toast.Header>
                     <Toast.Body>{toast.description}</Toast.Body>
                 </Toast>

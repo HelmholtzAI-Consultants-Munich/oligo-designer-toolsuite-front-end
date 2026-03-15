@@ -2,6 +2,8 @@ import { Link, useLocation } from "react-router";
 import { Nav } from "react-bootstrap";
 import { useRuns } from "../../modules/useRuns";
 import { pipelineDisplayNames } from "./utils";
+import { Horizontal } from "./Grid";
+import RunStatus from "./RunStatus";
 
 // TODO: update the timeAgo regularly (e.g. every minute) to keep it accurate without needing a page refresh
 const timeAgo = (timestamp: string) => {
@@ -27,9 +29,11 @@ export default function RecentRuns() {
                         key={run._id} as={Link} to={`/runs/${run._id}`}
                         active={location.pathname.startsWith(`/runs/${run._id}`)}
                     >
-                        <span>{run.status}</span>
-                        {pipelineDisplayNames[run.pipeline] || run.pipeline}
-                        <span>{timeAgo(run.timestamp)}</span>
+                        <Horizontal gap="lg" align="center">
+                            <RunStatus status={run.status} />
+                            <span>{pipelineDisplayNames[run.pipeline] || run.pipeline}</span>
+                            <span className="small">{timeAgo(run.timestamp)}</span>
+                        </Horizontal>
                     </Nav.Link>
                 ))}
                 {runs.length === 0 && <span>No recent runs</span>}

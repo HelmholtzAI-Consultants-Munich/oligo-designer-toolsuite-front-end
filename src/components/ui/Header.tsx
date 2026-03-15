@@ -1,16 +1,13 @@
 import { useState } from "react";
 import {
     Button,
-    Col,
     Container,
     Form,
-    FormGroup,
     InputGroup,
     Nav,
-    Row,
 } from "react-bootstrap";
 import type { Icon } from "react-bootstrap-icons";
-import { Horizontal } from "./Grid";
+import { Horizontal, Vertical } from "./Grid";
 
 interface TabConfig {
     label: string;
@@ -47,6 +44,7 @@ export interface HeaderProps {
     actions?: Action[];
     backTo?: BackToConfig;
     hideHeader?: boolean;
+    stickyHeader?: boolean;
 }
 
 function HeaderAction({ action }: { action: Action }) {
@@ -54,12 +52,16 @@ function HeaderAction({ action }: { action: Action }) {
 
     if (action.type === "button") {
         return (
-            <FormGroup>
-                {action.icon && <Form.Label>{action.label}</Form.Label>}
-                <Button variant={action.variant} onClick={action.onClick}>
-                    {action.icon ? <action.icon size={20} /> : action.label}
-                </Button>
-            </FormGroup>
+            <Form.Group controlId={`header-action-${action.label}`}>
+                <Vertical align="center">
+                    {action.icon && <Form.Label className="small">{action.label}</Form.Label>}
+                    <Vertical.Item>
+                        <Form.Control as={Button} variant={action.variant} onClick={action.onClick}>
+                            {action.icon ? <action.icon size={20} /> : action.label}
+                        </Form.Control>
+                    </Vertical.Item>
+                </Vertical>
+            </Form.Group>
         );
     } else if (action.type === "search") {
         return (
@@ -92,6 +94,7 @@ function Header({
     actions,
     backTo,
     hideHeader,
+    stickyHeader,
 }: HeaderProps) {
     const extendedTitle = metaTitle || title + " | ODT Cloud";
 
@@ -100,13 +103,13 @@ function Header({
     }
 
     return (
-        <header className="header">
+        <header className={`header ${stickyHeader ? "sticky-top" : ""}`}>
             <title>{extendedTitle}</title>
             <Container>
                 {(tabs && tabs.length > 0 && (
                     <>
                         <h1 className="header-title">{title}</h1>
-                        <Horizontal>
+                        <Horizontal align="end" wrap>
                             <Horizontal.Item grow>
                                 <Nav
                                     defaultActiveKey={
@@ -122,8 +125,28 @@ function Header({
                                     ))}
                                 </Nav>
                             </Horizontal.Item>
-                            {actions &&
-                                actions.map((action, index) => {
+                            {actions && (
+                                <Horizontal gap="md">
+                                    {actions.map((action, index) => {
+                                        return (
+                                            <HeaderAction
+                                                key={index}
+                                                action={action}
+                                            />
+                                        );
+                                    })}
+                                </Horizontal>
+                            )}
+                        </Horizontal>
+                    </>
+                )) || (
+                    <Horizontal align="end" wrap>
+                        <Horizontal.Item grow>
+                            <h1 className="header-title">{title}</h1>
+                        </Horizontal.Item>
+                        {actions && (
+                            <Horizontal gap="md">
+                                {actions.map((action, index) => {
                                     return (
                                         <HeaderAction
                                             key={index}
@@ -131,25 +154,9 @@ function Header({
                                         />
                                     );
                                 })}
-                        </Horizontal>
-                    </>
-                )) || (
-                    <Row>
-                        <Col>
-                            <h1 className="header-title">{title}</h1>
-                        </Col>
-                        {actions &&
-                            actions.map((action, index) => {
-                                return (
-                                    <Col key={index}>
-                                        <HeaderAction
-                                            key={index}
-                                            action={action}
-                                        />
-                                    </Col>
-                                );
-                            })}
-                    </Row>
+                            </Horizontal>
+                        )}
+                    </Horizontal>
                 )}
             </Container>
         </header>
