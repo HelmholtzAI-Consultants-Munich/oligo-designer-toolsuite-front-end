@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
     Table,
@@ -14,6 +13,7 @@ import { Eye, EyeSlash, Trash, Pencil } from "react-bootstrap-icons";
 import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
+import { formatAdminDateTime } from "../shared/date";
 import { STATUS_CONFIG } from "../shared/types";
 import { BACKEND_URL } from "../../config";
 
@@ -27,14 +27,13 @@ interface PipelineRun {
     user_id?: string;
     user?: {
         id: string;
-        email: string;
+        identifier?: string;
     };
     session_id?: string;
     transferred_from_anon?: boolean;
 }
 
 const PipelineList: React.FC = () => {
-    const navigate = useNavigate();
     const [runs, setRuns] = useState<PipelineRun[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -63,7 +62,7 @@ const PipelineList: React.FC = () => {
             setIsLoading(true);
             setError(null);
             const response = await axios.get(
-                BACKEND_URL + "api/admin/pipelines",
+                BACKEND_URL + "/api/admin/pipelines",
                 {
                     withCredentials: true,
                 }
@@ -259,21 +258,6 @@ const PipelineList: React.FC = () => {
         }
     };
 
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return "N/A";
-        try {
-            const date = new Date(dateString);
-            const day = date.getDate().toString().padStart(2, "0");
-            const month = (date.getMonth() + 1).toString().padStart(2, "0");
-            const year = date.getFullYear();
-            const hours = date.getHours().toString().padStart(2, "0");
-            const minutes = date.getMinutes().toString().padStart(2, "0");
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        } catch {
-            return "N/A";
-        }
-    };
-
     const formatTimestamp = (timestamp?: string) => {
         if (!timestamp) return "N/A";
         try {
@@ -293,10 +277,10 @@ const PipelineList: React.FC = () => {
 
     const getUserDisplay = (run: PipelineRun) => {
         if (run.user) {
-            // User exists - show email with transfer indicator if applicable
+            // User exists - show identifier with transfer indicator if applicable
             return (
                 <div>
-                    <div>{run.user.email}</div>
+                    <div>{run.user.identifier || "Unknown"}</div>
                     {run.transferred_from_anon && (
                         <Badge
                             bg="info"
@@ -422,6 +406,7 @@ const PipelineList: React.FC = () => {
                                 />
                             </th>
                             <th style={{ width: "50px" }}></th>
+                            <th style={{ width: "220px" }}>Run ID</th>
                             <th>Pipeline</th>
                             <th>Status</th>
                             <th>Run By</th>
@@ -432,15 +417,7 @@ const PipelineList: React.FC = () => {
                     <tbody>
                         {runs.map((run) => (
                             <React.Fragment key={run.id}>
-                                <tr
-                                    onClick={() =>
-                                        navigate(`/runs/${run.id}`, {
-                                            state: { fromAdmin: true },
-                                        })
-                                    }
-                                    style={{ cursor: "pointer" }}
-                                    className="hover:bg-gray-100 transition-colors"
-                                >
+                                <tr>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         <Form.Check
                                             type="checkbox"
@@ -465,6 +442,7 @@ const PipelineList: React.FC = () => {
                                             )}
                                         </Button>
                                     </td>
+                                    <td>{run.id}</td>
                                     <td>
                                         <strong>
                                             {run.pipeline || "Unknown"}
@@ -550,7 +528,9 @@ const PipelineList: React.FC = () => {
                                         )}
                                     </td>
                                     <td>{getUserDisplay(run)}</td>
-                                    <td>{formatDate(run.created_at)}</td>
+                                    <td>
+                                        {formatAdminDateTime(run.created_at)}
+                                    </td>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         <Button
                                             variant="danger"
@@ -569,7 +549,7 @@ const PipelineList: React.FC = () => {
                                 </tr>
                                 {expandedRows.has(run.id) && (
                                     <tr>
-                                        <td colSpan={7}>
+                                        <td colSpan={8}>
                                             <Card className="m-2">
                                                 <Card.Body>
                                                     <h6 className="mb-3">
@@ -640,7 +620,7 @@ const PipelineList: React.FC = () => {
                                                                 <strong>
                                                                     Created At:
                                                                 </strong>{" "}
-                                                                {formatDate(
+                                                                {formatAdminDateTime(
                                                                     run.created_at
                                                                 )}
                                                             </p>

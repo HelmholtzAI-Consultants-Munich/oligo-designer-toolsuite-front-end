@@ -10,7 +10,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 from backend.cli import register_cli_commands
 from backend.config import CeleryConfig, Config
-from backend.extensions import celery_app, mongo, oauth
+from backend.extensions import celery_app, limiter, mongo, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
@@ -69,6 +69,10 @@ def create_app():
     app.config.from_object(Config)
     app.config.from_prefixed_env()
 
+    # Use the application's MongoDB for Flask-Limiter storage unless explicitly overridden.
+    # This avoids in-memory rate-limit storage in production.
+    app.config.setdefault("RATELIMIT_STORAGE_URI", app.config.get("MONGO_URI"))
+
     # Validate OAuth configuration
     try:
         Config.validate_oauth_config(app.config)
@@ -81,6 +85,7 @@ def create_app():
 
     # Initialize Flask extensions
     mongo.init_app(app)
+    limiter.init_app(app)
     init_login_manager(app)
     CORS(app, supports_credentials=True)
 
