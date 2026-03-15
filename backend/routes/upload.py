@@ -1,6 +1,6 @@
-import os
 import uuid
 from http import HTTPStatus
+from pathlib import Path
 
 from flask import Blueprint, abort, current_app, jsonify, request
 from werkzeug.utils import secure_filename
@@ -62,10 +62,13 @@ def upload_file():
     unique_filename = f"{uuid.uuid4().hex}_{safe_filename}"
 
     # Step 5: Build the full path in the uploads directory (from Flask app config)
-    file_path = os.path.join(current_app.config["UPLOAD_PATH"], unique_filename)
+    upload_root = Path(current_app.config["UPLOAD_PATH"]).resolve(strict=False)
+    file_path = (upload_root / unique_filename).resolve(strict=False)
+    if not file_path.is_relative_to(upload_root):
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid upload path")
 
     # Step 6: Save the file to disk
     file.save(file_path)
 
     # Step 7: Respond with the server-side path where the file is stored
-    return jsonify({"filePath": file_path}), HTTPStatus.OK
+    return jsonify({"filePath": str(file_path)}), HTTPStatus.OK
