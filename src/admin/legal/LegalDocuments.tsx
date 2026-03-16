@@ -146,6 +146,11 @@ const LegalDocuments: React.FC = () => {
             return;
         }
 
+        if (version.id === detail?.published?.id) {
+            handleResetToCurrent();
+            return;
+        }
+
         setSelectedHistoryVersionId(versionId);
         setIsViewingHistoryVersion(true);
         setBody(version.body);
