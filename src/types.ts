@@ -8,6 +8,14 @@ export interface User {
     current_terms_version?: string;
 }
 
+export interface TermsAcceptanceStatus {
+    scope: "user" | "session";
+    current_terms_version: string;
+    accepted_terms_version?: string | null;
+    terms_accepted_at?: string | null;
+    requires_terms_acceptance: boolean;
+}
+
 export interface LegalDocument {
     document: string;
     label: string;
@@ -21,6 +29,11 @@ export interface LegalDocument {
 export interface AuthContextType {
     user: User | null;
     loading: boolean;
+    legal: TermsAcceptanceStatus | null;
+    termsPromptOpen: boolean;
+    ensureTermsAccepted: () => Promise<boolean>;
+    acceptTerms: () => Promise<boolean>;
+    closeTermsPrompt: () => void;
     checkAuth: () => Promise<void>;
     logout: () => void;
 }

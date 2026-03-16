@@ -24,7 +24,11 @@ from flask import Blueprint, abort, jsonify, send_file, session
 from flask_login import current_user
 
 from backend.extensions import celery_app, mongo
-from backend.routes.route_helpers import get_run_or_404, get_task_id, get_user_context
+from backend.routes.route_helpers import (
+    get_run_or_404,
+    get_task_id,
+    require_terms_acceptance_for_current_context,
+)
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
@@ -73,7 +77,7 @@ def init_run_id():
     :returns: JSON object with new run_id.
     :rtype: flask.Response
     """
-    user_id, session_id = get_user_context()
+    user_id, session_id = require_terms_acceptance_for_current_context()
 
     run_doc = {
         "status": "pending",

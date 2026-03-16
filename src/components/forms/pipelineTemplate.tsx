@@ -12,6 +12,7 @@ import { RunLinkModal } from "../modal/RunLinkModal";
 import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
 import { Container } from "react-bootstrap";
+import { useAuth } from "../../modules/useAuth";
 
 type Props = {
     pipeline: string;
@@ -26,6 +27,7 @@ const PipelineTemplate: React.FC<Props> = ({
     schema,
     uiSchema,
 }) => {
+    const { ensureTermsAccepted } = useAuth();
     const [formData, setFormData] = useState<RJSFFormData>({});
     const validator = customizeValidator({ AjvClass: Ajv2020 });
 
@@ -86,8 +88,12 @@ const PipelineTemplate: React.FC<Props> = ({
                     widgets={widgets}
                     validator={validator}
                     onChange={(e) => setFormData(e.formData)}
-                    onSubmit={() =>
-                        handleSubmit(
+                    onSubmit={async () => {
+                        if (!(await ensureTermsAccepted())) {
+                            return;
+                        }
+
+                        await handleSubmit(
                             runStatus,
                             setRunStatus,
                             setRunId,
@@ -95,8 +101,8 @@ const PipelineTemplate: React.FC<Props> = ({
                             files,
                             formData,
                             pipeline
-                        )
-                    }
+                        );
+                    }}
                 />
             </Container>
         </>

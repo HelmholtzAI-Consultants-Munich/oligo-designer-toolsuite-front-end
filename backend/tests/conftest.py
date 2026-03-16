@@ -16,6 +16,7 @@ import pytest
 
 from backend.app import create_app
 from backend.extensions import mongo
+from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
 
 # Temporarily disabled - see issue for better directory mocking solution
@@ -158,17 +159,29 @@ def client(app, monkeypatch):
 
 
 @pytest.fixture
-def authenticated_user(monkeypatch):
+def authenticated_user(app, monkeypatch):
     # Simulate an authenticated user
     class DummyUser:
         is_authenticated = True
         id = "test_user_id"
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
+    with app.app_context():
+        mongo.db.legal_acceptances.insert_one(
+            {
+                "user_id": DummyUser.id,
+                "document": "terms",
+                "terms_version": get_current_terms_version(),
+                "timestamp": utc_now(),
+            }
+        )
+    yield
+    with app.app_context():
+        mongo.db.legal_acceptances.delete_many({"user_id": DummyUser.id})
 
 
 @pytest.fixture()
-def session_user(client, monkeypatch):
+def session_user(client, app, monkeypatch):
     """Simulate an anonymous user with session (works for both HTTP requests and direct method calls)."""
 
     # Monkeypatch Flask-Login for anonymous user
@@ -180,6 +193,18 @@ def session_user(client, monkeypatch):
     # Set up session for HTTP requests
     with client.session_transaction() as sess:
         sess["session_id"] = "anon-session-123"
+    with app.app_context():
+        mongo.db.legal_acceptances.insert_one(
+            {
+                "session_id": "anon-session-123",
+                "document": "terms",
+                "terms_version": get_current_terms_version(),
+                "timestamp": utc_now(),
+            }
+        )
+    yield
+    with app.app_context():
+        mongo.db.legal_acceptances.delete_many({"session_id": "anon-session-123"})
 
 
 def assert_error_sanitized(response_data):

@@ -83,6 +83,8 @@ def test_check_auth_logged_out(client):
     response = client.get("/api/check_auth")
     data = response.get_json()
     assert data["authenticated"] is False
+    assert data["legal"]["scope"] == "session"
+    assert data["legal"]["requires_terms_acceptance"] is True
 
 
 def test_check_auth_logged_in(client, monkeypatch, dummy_user):
@@ -107,6 +109,8 @@ def test_check_auth_logged_in(client, monkeypatch, dummy_user):
         data["user"]["current_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
     )
     assert data["user"]["accepted_terms_version"] is None
+    assert data["legal"]["scope"] == "user"
+    assert data["legal"]["requires_terms_acceptance"] is True
 
 
 def test_logout(client, monkeypatch):
@@ -146,6 +150,19 @@ def test_accept_terms_updates_current_user(client, monkeypatch, dummy_user):
         updated_user["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
     )
     assert updated_user["terms_accepted_at"] is not None
+
+
+def test_accept_terms_updates_current_session(client):
+    with client.session_transaction() as sess:
+        sess["session_id"] = "anon-session-accept"
+
+    response = client.post("/api/legal/terms/accept")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
+    assert data["legal"]["scope"] == "session"
+    assert data["legal"]["requires_terms_acceptance"] is False
 
 
 def test_public_terms_route(client):

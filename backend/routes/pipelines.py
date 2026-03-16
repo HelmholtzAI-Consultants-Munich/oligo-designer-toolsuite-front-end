@@ -10,7 +10,10 @@ from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 
 from backend.extensions import celery_app, mongo
-from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.route_helpers import (
+    get_user_context_with_directory,
+    require_terms_acceptance_for_current_context,
+)
 from backend.utilities.typed_values import (
     sanitize_pipeline_form_paths,
     serialize_path,
@@ -133,6 +136,8 @@ def start_pipeline(pipeline_name: str):
     """
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
+
+    require_terms_acceptance_for_current_context()
 
     json = request.get_json(silent=True)
     if not json:

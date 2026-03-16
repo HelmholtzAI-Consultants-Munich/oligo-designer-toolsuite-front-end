@@ -6,6 +6,7 @@ from flask import abort, current_app, session
 from flask_login import current_user
 
 from backend.extensions import mongo
+from backend.utilities.legal_acceptance import require_current_terms_acceptance
 
 # ============================================================================
 # User Context Helpers
@@ -49,6 +50,12 @@ def get_user_context_with_directory() -> tuple[str | None, str | None, Path]:
         user_dir = userdata_path / "anon" / session_id
 
     return user_id, session_id, user_dir
+
+
+def require_terms_acceptance_for_current_context() -> tuple[str | None, str | None]:
+    user_id, session_id = get_user_context()
+    require_current_terms_acceptance(user_id=user_id, session_id=session_id)
+    return user_id, session_id
 
 
 # ============================================================================

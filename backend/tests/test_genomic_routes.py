@@ -294,14 +294,10 @@ def test_genomic_routes_no_str_e_exposed(client, authenticated_user, cache_dir_m
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_custom_ncbi_session_without_directory(
-    client, dummy_form_ncbi, mock_run, verify_file_mock, cache_dir_mock
+    client, dummy_form_ncbi, mock_run, verify_file_mock, cache_dir_mock, session_user
 ):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ncbi
-    with client.session_transaction() as session:
-        # Set a session_id (simulating an existing permanent session)
-        session["session_id"] = "existing-session-123"
-
     # Create a mock result that mimics subprocess.CompletedProcess
     mock_result = MagicMock()
     mock_result.returncode = 0
@@ -316,14 +312,10 @@ def test_genomic_cascaded_custom_ncbi_session_without_directory(
 
 
 def test_genomic_single_custom_ensembl_session_without_directory(
-    client, dummy_form_ensembl, mock_run, verify_file_mock, cache_dir_mock
+    client, dummy_form_ensembl, mock_run, verify_file_mock, cache_dir_mock, session_user
 ):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ensembl
-    with client.session_transaction() as session:
-        # Set a session_id (simulating an existing permanent session)
-        session["session_id"] = "existing-session-123"
-
     # Create a mock result that mimics subprocess.CompletedProcess
     mock_result = MagicMock()
     mock_result.returncode = 0
@@ -335,3 +327,9 @@ def test_genomic_single_custom_ensembl_session_without_directory(
         # With makedirs mock disabled, directories will be created and request should succeed
         response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
         assert response.status_code == 200
+
+
+def test_genomic_cascaded_custom_requires_terms_acceptance(client, dummy_form_ensembl):
+    response = client.post("/api/genomic/cascaded/custom", json=dummy_form_ensembl)
+    assert response.status_code == 403
+    assert "accept the current Terms of Service and Privacy Policy" in response.get_json()["error"]

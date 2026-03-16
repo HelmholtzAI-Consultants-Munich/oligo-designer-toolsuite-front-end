@@ -17,7 +17,10 @@ from flask import Blueprint, abort, current_app, jsonify, request
 
 from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
-from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.route_helpers import (
+    get_user_context_with_directory,
+    require_terms_acceptance_for_current_context,
+)
 from backend.utilities.converters import to_bool, to_int
 from backend.utilities.pipeline import generate_single_region_forms, get_form_cache_key
 from backend.utilities.typed_values import serialize_path, timestamp_for_display, utc_now
@@ -108,6 +111,8 @@ def genomic_cascaded_custom():
         8. Collect output region FASTAs.
         9. Update MongoDB status and return result.
     """
+    require_terms_acceptance_for_current_context()
+
     # Handle authentication/session to determine user directory
     user_id, session_id, user_dir = get_user_context_with_directory()
 

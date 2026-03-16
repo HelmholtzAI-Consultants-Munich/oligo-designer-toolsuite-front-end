@@ -29,10 +29,14 @@ from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
+from backend.utilities.legal_acceptance import (
+    get_latest_terms_acceptance,
+    has_current_terms_acceptance,
+    record_terms_acceptance,
+)
 from backend.utilities.typed_values import (
     parse_http_url,
     sanitize_relative_redirect_path,
-    utc_now,
 )
 
 auth_bp = Blueprint("auth", __name__)
@@ -139,6 +143,31 @@ def _ensure_user_legal_fields(user_id: ObjectId):
 
     if missing_fields:
         mongo.db.users.update_one({"_id": user_id}, {"$set": missing_fields})
+
+
+def _build_legal_status(user_id: str | None = None, session_id: str | None = None) -> dict:
+    terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
+    latest_acceptance = None
+    accepted_terms_version = None
+    accepted_at = None
+    requires_terms_acceptance = True
+
+    if user_id or session_id:
+        latest_acceptance = get_latest_terms_acceptance(user_id=user_id, session_id=session_id)
+        accepted_terms_version = latest_acceptance.get("terms_version") if latest_acceptance else None
+        accepted_at = latest_acceptance.get("timestamp") if latest_acceptance else None
+        requires_terms_acceptance = not has_current_terms_acceptance(
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+    return {
+        "scope": "user" if user_id else "session",
+        "current_terms_version": terms_doc["version"],
+        "accepted_terms_version": accepted_terms_version,
+        "terms_accepted_at": accepted_at.isoformat() if accepted_at else None,
+        "requires_terms_acceptance": requires_terms_acceptance,
+    }
 
 
 # ---- Login Route (OAuth GET + Legacy POST) ----
@@ -289,8 +318,6 @@ def check_auth():
     :returns: JSON containing authentication status and user info (if authenticated).
     :rtype: flask.Response
     """
-    terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
-
     if current_user.is_authenticated:
         # Get user document to include role, helmholtz_sub, and username
         user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
@@ -300,8 +327,7 @@ def check_auth():
         role = user_doc.get("role", "user") if user_doc else "user"
         helmholtz_sub = user_doc.get("helmholtz_sub") if user_doc else None
         username = user_doc.get("username") if user_doc else None
-        accepted_terms_version = user_doc.get("accepted_terms_version") if user_doc else None
-        terms_accepted_at = user_doc.get("terms_accepted_at") if user_doc else None
+        legal_status = _build_legal_status(user_id=str(current_user.id))
 
         return jsonify(
             {
@@ -311,37 +337,46 @@ def check_auth():
                     "username": username,
                     "role": role,
                     "helmholtz_sub": helmholtz_sub,
-                    "accepted_terms_version": accepted_terms_version,
-                    "terms_accepted_at": terms_accepted_at.isoformat() if terms_accepted_at else None,
-                    "current_terms_version": terms_doc["version"],
+                    "accepted_terms_version": legal_status["accepted_terms_version"],
+                    "terms_accepted_at": legal_status["terms_accepted_at"],
+                    "current_terms_version": legal_status["current_terms_version"],
                 },
+                "legal": legal_status,
             }
         )
-    return jsonify({"authenticated": False}), HTTPStatus.OK
+    return jsonify(
+        {
+            "authenticated": False,
+            "legal": _build_legal_status(session_id=session.get("session_id")),
+        }
+    ), HTTPStatus.OK
 
 
 @auth_bp.route("/api/legal/terms/accept", methods=["POST"])
-@login_required
 def accept_terms():
-    """Record acceptance of the current terms version for the logged-in user."""
-    terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
-    accepted_at = utc_now()
+    """Record acceptance of the current terms version for the current user or session."""
+    user_id = str(current_user.id) if current_user.is_authenticated else None
+    session_id = None if user_id else session.get("session_id")
 
-    mongo.db.users.update_one(
-        {"_id": ObjectId(current_user.id)},
-        {
-            "$set": {
-                "accepted_terms_version": terms_doc["version"],
-                "terms_accepted_at": accepted_at,
-            }
-        },
-    )
+    acceptance = record_terms_acceptance(user_id=user_id, session_id=session_id)
+
+    if user_id:
+        mongo.db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {
+                "$set": {
+                    "accepted_terms_version": acceptance["terms_version"],
+                    "terms_accepted_at": acceptance["timestamp"],
+                }
+            },
+        )
 
     return (
         jsonify(
             {
-                "accepted_terms_version": terms_doc["version"],
-                "terms_accepted_at": accepted_at.isoformat(),
+                "accepted_terms_version": acceptance["terms_version"],
+                "terms_accepted_at": acceptance["timestamp"].isoformat(),
+                "legal": _build_legal_status(user_id=user_id, session_id=session_id),
             }
         ),
         HTTPStatus.OK,

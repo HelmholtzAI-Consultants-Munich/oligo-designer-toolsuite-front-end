@@ -17,6 +17,7 @@ import RunDetail from "./pages/rundetail";
 import AdminApp from "./admin/AdminApp";
 import FeedbackButton from "./components/feedback/FeedbackButton";
 import SiteFooter from "./components/ui/SiteFooter";
+import TermsAcceptanceModal from "./components/ui/TermsAcceptanceModal";
 import { useAuth } from "./modules/useAuth";
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
     return (
         <Router>
             {user && <FeedbackButton floating />}
+            <TermsAcceptanceModal />
             <Routes>
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />
