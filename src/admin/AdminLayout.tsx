@@ -10,6 +10,7 @@ import {
     Gear,
     Speedometer2,
     ChatDots,
+    FileEarmarkText,
 } from "react-bootstrap-icons";
 import axios from "axios";
 import { BACKEND_URL } from "../config.ts";
@@ -73,6 +74,7 @@ const navItems: NavItemConfig[] = [
     { path: "/admin/users", label: "User Management", icon: People },
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
     { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
+    { path: "/admin/legal", label: "Legal Documents", icon: FileEarmarkText },
 ];
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({

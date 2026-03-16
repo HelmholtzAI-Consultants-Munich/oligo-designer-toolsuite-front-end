@@ -3,6 +3,19 @@ export interface User {
     username?: string;
     role?: "user" | "admin";
     helmholtz_sub?: string;
+    accepted_terms_version?: string | null;
+    terms_accepted_at?: string | null;
+    current_terms_version?: string;
+}
+
+export interface LegalDocument {
+    document: string;
+    label: string;
+    title: string;
+    version: string;
+    body: string;
+    status: "published" | "archived";
+    published_at?: string | null;
 }
 
 export interface AuthContextType {

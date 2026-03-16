@@ -22,6 +22,12 @@ from flask_login import current_user, login_required
 from backend.extensions import mongo
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
 from backend.utilities.formatting import format_feedback, format_pipeline_run, format_user
+from backend.utilities.legal import (
+    get_legal_document_admin_view,
+    is_supported_legal_document,
+    list_legal_document_admin_views,
+    publish_legal_document,
+)
 from backend.utilities.pipeline import (
     delete_pipeline_run_files_and_db,
     execute_bulk_pipeline_run_deletion,
@@ -68,6 +74,12 @@ def require_admin(f):
 
     decorated_function.__name__ = f.__name__
     return decorated_function
+
+
+def _validate_legal_document_key(document_key: str) -> str:
+    if not is_supported_legal_document(document_key):
+        abort(HTTPStatus.NOT_FOUND, description="Legal document not found")
+    return document_key
 
 
 @admin_bp.route("/api/admin/users", methods=["GET"])
@@ -179,6 +191,41 @@ def delete_user(user_id: ObjectId):
         abort(HTTPStatus.NOT_FOUND, description="User not found")
 
     return jsonify({"message": "User deleted successfully"}), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/legal-documents", methods=["GET"])
+@login_required
+@require_admin
+def get_legal_documents():
+    """List legal documents with current published status and history."""
+    return jsonify(list_legal_document_admin_views()), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/legal-documents/<document_key>", methods=["GET"])
+@login_required
+@require_admin
+def get_legal_document_detail(document_key: str):
+    """Get the current admin view for a legal document."""
+    return jsonify(get_legal_document_admin_view(_validate_legal_document_key(document_key))), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/legal-documents/<document_key>/publish", methods=["POST"])
+@login_required
+@require_admin
+def publish_admin_legal_document(document_key: str):
+    """Publish a new legal document version."""
+    document_key = _validate_legal_document_key(document_key)
+    data = request.get_json() or {}
+
+    try:
+        document = publish_legal_document(
+            document_key=document_key,
+            body=data.get("body", ""),
+        )
+    except ValueError as exc:
+        abort(HTTPStatus.BAD_REQUEST, description=str(exc))
+
+    return jsonify(get_legal_document_admin_view(document["document"])), HTTPStatus.OK
 
 
 @admin_bp.route("/api/admin/pipelines", methods=["GET"])

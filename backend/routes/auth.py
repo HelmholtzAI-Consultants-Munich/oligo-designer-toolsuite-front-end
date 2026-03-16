@@ -28,7 +28,12 @@ from flask_login import LoginManager, UserMixin, current_user, login_required, l
 from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
-from backend.utilities.typed_values import parse_http_url, sanitize_relative_redirect_path
+from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
+from backend.utilities.typed_values import (
+    parse_http_url,
+    sanitize_relative_redirect_path,
+    utc_now,
+)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -118,6 +123,24 @@ def _login(user: User, remember: bool = True):
         session.pop("session_id", None)
 
 
+def _ensure_user_legal_fields(user_id: ObjectId):
+    """Backfill legal acceptance fields for legacy users."""
+    user_doc = mongo.db.users.find_one(
+        {"_id": user_id}, {"accepted_terms_version": 1, "terms_accepted_at": 1}
+    )
+    if user_doc is None:
+        return
+
+    missing_fields = {}
+    if "accepted_terms_version" not in user_doc:
+        missing_fields["accepted_terms_version"] = None
+    if "terms_accepted_at" not in user_doc:
+        missing_fields["terms_accepted_at"] = None
+
+    if missing_fields:
+        mongo.db.users.update_one({"_id": user_id}, {"$set": missing_fields})
+
+
 # ---- Login Route (OAuth GET + Legacy POST) ----
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
@@ -159,6 +182,7 @@ def login():
     if not check_password_hash(user_doc["password"], password):
         abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
 
+    _ensure_user_legal_fields(user_doc["_id"])
     user = User(user_doc)
     _login(user, remember=remember_me)
 
@@ -214,9 +238,13 @@ def auth_callback():
             {
                 "helmholtz_sub": helmholtz_sub,
                 "role": "user",  # Default role for Helmholtz users
+                "accepted_terms_version": None,
+                "terms_accepted_at": None,
             }
         ).inserted_id
         user_doc = mongo.db.users.find_one({"_id": user_id})
+    else:
+        _ensure_user_legal_fields(user_doc["_id"])
 
     # Log user in with "Remember Me" to persist login across browser sessions
     # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
@@ -261,12 +289,19 @@ def check_auth():
     :returns: JSON containing authentication status and user info (if authenticated).
     :rtype: flask.Response
     """
+    terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
+
     if current_user.is_authenticated:
         # Get user document to include role, helmholtz_sub, and username
         user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
+        if user_doc:
+            _ensure_user_legal_fields(user_doc["_id"])
+            user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
         role = user_doc.get("role", "user") if user_doc else "user"
         helmholtz_sub = user_doc.get("helmholtz_sub") if user_doc else None
         username = user_doc.get("username") if user_doc else None
+        accepted_terms_version = user_doc.get("accepted_terms_version") if user_doc else None
+        terms_accepted_at = user_doc.get("terms_accepted_at") if user_doc else None
 
         return jsonify(
             {
@@ -276,10 +311,41 @@ def check_auth():
                     "username": username,
                     "role": role,
                     "helmholtz_sub": helmholtz_sub,
+                    "accepted_terms_version": accepted_terms_version,
+                    "terms_accepted_at": terms_accepted_at.isoformat() if terms_accepted_at else None,
+                    "current_terms_version": terms_doc["version"],
                 },
             }
         )
     return jsonify({"authenticated": False}), HTTPStatus.OK
+
+
+@auth_bp.route("/api/legal/terms/accept", methods=["POST"])
+@login_required
+def accept_terms():
+    """Record acceptance of the current terms version for the logged-in user."""
+    terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
+    accepted_at = utc_now()
+
+    mongo.db.users.update_one(
+        {"_id": ObjectId(current_user.id)},
+        {
+            "$set": {
+                "accepted_terms_version": terms_doc["version"],
+                "terms_accepted_at": accepted_at,
+            }
+        },
+    )
+
+    return (
+        jsonify(
+            {
+                "accepted_terms_version": terms_doc["version"],
+                "terms_accepted_at": accepted_at.isoformat(),
+            }
+        ),
+        HTTPStatus.OK,
+    )
 
 
 # ---- Logout Route ----
