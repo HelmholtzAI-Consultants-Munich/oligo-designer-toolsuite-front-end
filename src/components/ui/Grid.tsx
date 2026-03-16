@@ -44,7 +44,6 @@ function Horizontal({
     return (
         <div
             style={{
-                display: "flex",
                 flexWrap: wrap ? "wrap" : "nowrap",
                 alignItems: align,
                 justifyContent: justify,
@@ -52,7 +51,7 @@ function Horizontal({
                 height: fillHeight ? "100%" : undefined,
                 flexGrow: grow ? 1 : undefined,
             }}
-            className={className + ` gap-${gapValues[gap]}`}
+            className={className + ` d-flex gap-${gapValues[gap]}`}
         >
             {children}
         </div>
@@ -83,8 +82,6 @@ function Vertical({
     return (
         <div
             style={{
-                display: "flex",
-                flexDirection: "column",
                 flexWrap: "nowrap",
                 alignItems: align,
                 justifyContent: justify,
@@ -92,7 +89,7 @@ function Vertical({
                 height: fillHeight ? "100%" : undefined,
                 flexGrow: grow ? 1 : undefined,
             }}
-            className={className + ` gap-${gapValues[gap]}`}
+            className={className + ` d-flex flex-column gap-${gapValues[gap]}`}
         >
             {children}
         </div>

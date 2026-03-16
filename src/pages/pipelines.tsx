@@ -21,27 +21,35 @@ const Pipelines: React.FC = () => {
             description:
                 "Spatial gene expression analysis using scrinshot technology.",
             link: "/pipelines/scrinshot",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/scrinshot_probe_designer.html",
             img: scrinshot,
         },
         {
             title: "Merfish Probe Designer",
-            link: "/pipelines/merfish",
             description:
                 "Highly multiplexed imaging for spatially resolved transcriptomics.",
+            link: "/pipelines/merfish",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/merfish_probe_designer.html",
             img: merfish,
         },
         {
             title: "SeqFish+ Probe Designer",
-            link: "/pipelines/seqfish",
             description:
                 "Sequential imaging for probing complex spatial transcriptomes.",
+            link: "/pipelines/seqfish",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/seqfishplus_probe_designer.html",
             img: seqfish,
         },
         {
             title: "Oligo-Seq Probe Designer",
-            link: "/pipelines/oligoseq",
             description:
                 "High-throughput sequencing tailored for spatial transcriptomics.",
+            link: "/pipelines/oligoseq",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/oligoseq_probe_designer.html",
             img: oligoseq,
         },
     ];
@@ -75,7 +83,11 @@ const Pipelines: React.FC = () => {
                             >
                                 Use Pipeline
                             </Card.Link>
-                            <Card.Link as={Link} to={pipeline.link}>
+                            <Card.Link
+                                as={Link}
+                                to={pipeline.detailedLink}
+                                target="_blank"
+                            >
                                 Read about {pipeline.title} <ArrowRight />
                             </Card.Link>
                         </Card.Body>

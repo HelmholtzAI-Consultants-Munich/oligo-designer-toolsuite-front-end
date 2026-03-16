@@ -15,7 +15,8 @@ const timeAgo = (timestamp: string) => {
     if (diff < 60000) return "Just now";
     if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)} hr ago`;
-    return `${Math.floor(diff / 86400000)} day(s) ago`;
+    const days = Math.floor(diff / 86400000);
+    return `${days} day${days > 1 ? "s" : ""} ago`;
 };
 
 export default function RecentRuns() {

@@ -110,20 +110,25 @@ function Header({
     );
     const [activeOffset, setActiveOffset] = useState(0);
     const [activeWidth, setActiveWidth] = useState(0);
+    const [animationReady, setAnimationReady] = useState(0);
 
     const navigate = useNavigate();
 
     // Set initial active tab offset and width on mount
     useEffect(() => {
         if (activeWidth === 0 && tabs && tabs.length > 0) {
-            const activeElement = document.querySelector(
-                `.nav-header .nav-link.active`
-            ) as HTMLElement;
-            console.log("Active element:", activeElement);
-            if (activeElement) {
-                setActiveOffset(activeElement.offsetLeft);
-                setActiveWidth(activeElement.offsetWidth);
-            }
+            requestAnimationFrame(() => {
+                const activeElement = document.querySelector(
+                    `.nav-header .nav-link.active`
+                ) as HTMLElement;
+                if (activeElement) {
+                    setActiveOffset(activeElement.offsetLeft);
+                    setActiveWidth(activeElement.offsetWidth);
+                }
+                requestAnimationFrame(() => {
+                    setAnimationReady(1); // Set animation ready flag after initial measurement
+                });
+            });
         }
     }, [tabs, activeWidth]);
 
@@ -157,6 +162,7 @@ function Header({
                                         {
                                             "--active-offset": `${activeOffset}px`,
                                             "--active-width": `${activeWidth}px`,
+                                            "--animation-ready": animationReady,
                                         } as React.CSSProperties
                                     }
                                     onSelect={(selectedKey, event) => {
@@ -200,7 +206,7 @@ function Header({
                         </Horizontal>
                     </>
                 )) || (
-                    <Horizontal align="center" wrap gap="md">
+                    <Horizontal align="end" wrap gap="md">
                         {backTo && (
                             <Button
                                 variant="outline-border"
@@ -213,7 +219,7 @@ function Header({
                             <h1 className="header-title">{title}</h1>
                         </Horizontal.Item>
                         {actions && (
-                            <Horizontal gap="md">
+                            <Grid gap="md">
                                 {actions.map((action, index) => {
                                     return (
                                         <HeaderAction
@@ -222,7 +228,7 @@ function Header({
                                         />
                                     );
                                 })}
-                            </Horizontal>
+                            </Grid>
                         )}
                     </Horizontal>
                 )}

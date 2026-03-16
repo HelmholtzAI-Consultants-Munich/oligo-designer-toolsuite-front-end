@@ -11,6 +11,7 @@ import {
     Outlet,
     RouterProvider,
     ScrollRestoration,
+    useParams,
 } from "react-router";
 import "./styles/theme.scss";
 import "./styles/utils.scss";
@@ -23,6 +24,11 @@ import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
 import FeedbackButton from "./components/feedback/FeedbackButton";
 import { useAuth } from "./modules/useAuth";
+
+function RunDetailWrapper() {
+    const { runId } = useParams();
+    return <RunDetail key={runId} />;
+}
 
 function RootLayout() {
     const { user } = useAuth();
@@ -47,7 +53,7 @@ const defaultLayoutRoutes = [
     { path: "/pipelines/merfish", element: <Merfish /> },
     { path: "/pipelines/seqfish", element: <SeqFish /> },
     { path: "/pipelines/oligoSeq", element: <OligoSeq /> },
-    { path: "/runs/:runId", element: <RunDetail /> },
+    { path: "/runs/:runId", element: <RunDetailWrapper /> },
 ];
 
 const router = createBrowserRouter([

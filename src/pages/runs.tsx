@@ -2,11 +2,12 @@ import { useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
-import { Badge, Button, Table } from "react-bootstrap";
+import { Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../modules/useRuns";
 import { pipelineDisplayNames } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
+import { showToast } from "../modules/toastUtil";
 
 const Runs = () => {
     const { loading } = useAuth();
@@ -29,7 +30,7 @@ const Runs = () => {
             } catch (error) {
                 console.error("Error deleting run:", error);
                 navigate("/runs");
-                alert("Failed to delete run");
+                showToast({ title: "Failed to delete run", type: "error" });
             }
         }
     };
@@ -38,15 +39,8 @@ const Runs = () => {
         if (runId) {
             navigate(`/runs/${runId}`);
         } else {
-            alert("Please enter a RunID");
+            showToast({ title: "Please enter a RunID", type: "error" });
         }
-    };
-
-    const statusToBadge = {
-        started: "primary",
-        success: "success",
-        failure: "danger",
-        pending: "secondary",
     };
 
     if (loading) return <div>Loading...</div>;
@@ -77,7 +71,10 @@ const Runs = () => {
                         <tr
                             key={run._id}
                             onClick={() => navigate(`/runs/${run._id}`)}
-                            style={{ cursor: "pointer" }}
+                            style={{
+                                cursor: "pointer",
+                                verticalAlign: "middle",
+                            }}
                             className="hover:bg-gray-100"
                         >
                             <td>

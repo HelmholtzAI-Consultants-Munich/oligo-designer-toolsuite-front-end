@@ -13,21 +13,19 @@ import type {
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
-import {
-    Alert,
-    Button,
-    Col,
-    Form,
-    ListGroup,
-    Row,
-    Spinner,
-    Table,
-} from "react-bootstrap";
+import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../modules/useRuns";
-import { pipelineDisplayNames } from "../components/ui/utils";
+import {
+    pipelineDisplayNames,
+    visualizationDisplayNames,
+    type VisualizationType,
+} from "../components/ui/utils";
 import Divider from "../components/ui/Divider";
-import { Horizontal } from "../components/ui/Grid";
+import { Horizontal, Vertical } from "../components/ui/Grid";
+import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
+import { showToast } from "../modules/toastUtil";
+import RunStatus from "../components/ui/RunStatus";
 
 interface RunFile {
     name: string;
@@ -81,6 +79,8 @@ const RunDetail = () => {
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [selectedOligo, setSelectedOligo] = useState<string>("");
+    const [selectedVisualization, setSelectedVisualization] =
+        useState<VisualizationType>("alignment");
     const [genomicRegions, setGenomicRegions] = useState<{
         [key: string]: GenomicRegions;
     } | null>(null);
@@ -201,7 +201,7 @@ const RunDetail = () => {
                 navigate(fromAdmin ? "/admin/pipelines" : "/runs");
             } catch (error) {
                 console.error("Error deleting run:", error);
-                alert("Failed to delete run");
+                showToast({ title: "Failed to delete run", type: "error" });
             }
         }
     };
@@ -379,119 +379,134 @@ const RunDetail = () => {
                 // TODO: disable when no probes available
                 {
                     type: "button",
-                    label: "Download All Genes Excel",
-                    variant: "primary",
-                    onClick: handleDownloadExcel,
+                    label: "Delete Run",
+                    variant: "outline-danger",
+                    icon: Trash,
+                    onClick: handleDelete,
                 },
                 {
                     type: "button",
-                    label: "Download Oligoset CSV",
+                    label: "Oligoset CSV",
                     variant: "outline-primary",
+                    icon: CardList,
                     onClick: handleDownloadCSV,
                 },
                 {
                     type: "button",
-                    label: "Delete Run",
-                    variant: "outline-danger",
-                    onClick: handleDelete,
+                    label: "All Genes Excel",
+                    variant: "primary",
+                    icon: FileEarmarkSpreadsheet,
+                    onClick: handleDownloadExcel,
                 },
             ]}
             backTo={{
-                label: "Back to " + (fromAdmin ? "Admin Panel" : "Runs"),
+                label: fromAdmin ? "Admin Panel" : "All Runs",
                 href: fromAdmin ? "/admin/pipelines" : "/runs",
             }}
         >
+            {!run && (
+                <Alert variant="danger">
+                    Run not found. It may have been deleted.
+                </Alert>
+            )}
+
             {/* Polling/waiting for YAML/log */}
             {(run?.status == "pending" || run?.status == "started") && (
-                <Alert variant="info">
-                    Run is {run.status == "pending" ? "pending" : "executing"}
-                    ... <Spinner size="sm" />
-                </Alert>
+                <Vertical align="center" className="my-5">
+                    <RunStatus status={run.status} size={100} />
+                    <h3 className="mt-3">Run {run.status}...</h3>
+                </Vertical>
             )}
 
             {/* YAML/table logic remains unchanged below */}
             {probes && (
                 <>
+                    <h2>Result Visualization</h2>
+
                     <Horizontal gap="md">
-                        <Col md={6}>
-                            <Form.Group controlId="geneSelect">
-                                <Form.Label>Select Gene</Form.Label>
-                                {/* TODO: make this searchable again */}
+                        <Form.Group controlId="geneSelect">
+                            <Form.Label>Select Gene</Form.Label>
+                            {/* TODO: make this searchable again */}
+                            <Form.Select
+                                value={selectedGene}
+                                onChange={(e) => {
+                                    setSelectedGene(e.target.value);
+                                    setSelectedOligoset("Oligoset 1");
+                                    setSelectedOligo(
+                                        probes[e.target.value || ""][
+                                            "Oligoset 1"
+                                        ][0].oligo_id || ""
+                                    );
+                                }}
+                            >
+                                {Object.keys(probes).map((gene) => (
+                                    <option key={gene} value={gene}>
+                                        {gene}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+
+                        {selectedGene && (
+                            <Form.Group controlId="oligosetSelect">
+                                <Form.Label>Select Oligoset</Form.Label>
                                 <Form.Select
-                                    value={selectedGene}
+                                    value={selectedOligoset}
                                     onChange={(e) => {
-                                        setSelectedGene(e.target.value);
-                                        setSelectedOligoset("Oligoset 1");
+                                        setSelectedOligoset(e.target.value);
                                         setSelectedOligo(
-                                            probes[e.target.value || ""][
-                                                "Oligoset 1"
-                                            ][0].oligo_id || ""
+                                            probes[selectedGene][
+                                                e.target.value
+                                            ]?.[0].oligo_id || ""
                                         );
                                     }}
                                 >
-                                    <option value="">Select a gene</option>
-                                    {Object.keys(probes).map((gene) => (
-                                        <option key={gene} value={gene}>
-                                            {gene}
-                                        </option>
-                                    ))}
+                                    {Object.keys(probes[selectedGene]).map(
+                                        (oligoset) => (
+                                            <option
+                                                key={oligoset}
+                                                value={oligoset}
+                                            >
+                                                {oligoset}
+                                            </option>
+                                        )
+                                    )}
                                 </Form.Select>
                             </Form.Group>
-                        </Col>
+                        )}
 
-                        {selectedGene && (
-                            <Col md={6}>
-                                <Form.Group controlId="oligosetSelect">
-                                    <Form.Label>Select Oligoset</Form.Label>
-                                    <Form.Select
-                                        value={selectedOligoset}
-                                        onChange={(e) => {
-                                            setSelectedOligoset(e.target.value);
-                                            setSelectedOligo(
-                                                probes[selectedGene][
-                                                    e.target.value
-                                                ]?.[0].oligo_id || ""
-                                            );
-                                        }}
-                                    >
-                                        <option value="">
-                                            Select an Oligoset
-                                        </option>
-                                        {Object.keys(probes[selectedGene]).map(
-                                            (oligoset) => (
-                                                <option
-                                                    key={oligoset}
-                                                    value={oligoset}
-                                                >
-                                                    {oligoset}
-                                                </option>
-                                            )
-                                        )}
-                                    </Form.Select>
-                                </Form.Group>
-                            </Col>
+                        {selectedGene && selectedOligoset && (
+                            <Form.Group controlId="visualizationSelect">
+                                <Form.Label>Select Visualization</Form.Label>
+                                <Form.Select
+                                    value={selectedVisualization}
+                                    onChange={(e) => {
+                                        setSelectedVisualization(
+                                            e.target.value as VisualizationType
+                                        );
+                                    }}
+                                >
+                                    {Object.keys(visualizationDisplayNames).map(
+                                        (visualization) => (
+                                            <option
+                                                key={visualization}
+                                                value={visualization}
+                                            >
+                                                {
+                                                    visualizationDisplayNames[
+                                                        visualization as VisualizationType
+                                                    ]
+                                                }
+                                            </option>
+                                        )
+                                    )}
+                                </Form.Select>
+                            </Form.Group>
                         )}
                     </Horizontal>
 
                     {selectedGene && selectedOligoset && (
-                        <>
-                            <Row>
-                                <Col>
-                                    <h5>Oligos in {selectedOligoset}</h5>
-                                </Col>
-                                <Col xs="auto">
-                                    <Form.Text>
-                                        Showing{" "}
-                                        {
-                                            probes[selectedGene][
-                                                selectedOligoset
-                                            ].length
-                                        }{" "}
-                                        oligos
-                                    </Form.Text>
-                                </Col>
-                            </Row>
-
+                        <Vertical className="visual-container" align="stretch" gap="lg">
                             <ResultVisualization
                                 probes={probes[selectedGene][selectedOligoset]}
                                 selectedOligo={selectedOligo}
@@ -501,9 +516,9 @@ const RunDetail = () => {
                                         ? genomicRegions[selectedGene]
                                         : null
                                 }
+                                selectedVisualization={selectedVisualization}
                             />
-
-                            <Table responsive bordered striped hover>
+                            <Table responsive bordered hover>
                                 <thead className="table-light">
                                     <tr>
                                         {tableColumns.map((column) => (
@@ -540,10 +555,10 @@ const RunDetail = () => {
                                                         {column === "location"
                                                             ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
                                                             : formatValue(
-                                                                  oligo[
-                                                                      column as keyof ProbeDetails
-                                                                  ]
-                                                              )}
+                                                                oligo[
+                                                                    column as keyof ProbeDetails
+                                                                ]
+                                                            )}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -567,65 +582,81 @@ const RunDetail = () => {
                                     </tr>
                                 </tfoot>
                             </Table>
-                        </>
+                            <span className="text-muted">Click on an oligo in the table to focus it in the visualization.</span>
+                        </Vertical>
                     )}
+                    <Divider />
+
+                    <h2>Result Files</h2>
+
                     <Divider />
                 </>
             )}
 
-            <h2>Run Logs</h2>
-
-            <ListGroup>
-                {files
-                    .filter((file) => file.name.toLowerCase().includes("log"))
-                    .map((file) => (
-                        <ListGroup.Item key={file.name}>
-                            <Row>
-                                <Col>
-                                    {file.name}
-                                    <span className="badge bg-secondary ms-2">
-                                        {Math.round(file.size / 1024)} KB
-                                    </span>
-                                </Col>
-                                <Col xs="auto">
-                                    {file.name.endsWith(".txt") && (
-                                        <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            onClick={() =>
-                                                viewFileContent(file.name)
-                                            }
-                                        >
-                                            View
-                                        </Button>
-                                    )}
-                                    <Button
-                                        variant="outline-success"
-                                        size="sm"
-                                        onClick={() => downloadFile(file.name)}
-                                    >
-                                        Download
-                                    </Button>
-                                </Col>
-                            </Row>
-                        </ListGroup.Item>
-                    ))}
-            </ListGroup>
-
-            {fileContent &&
-                viewingFilename &&
-                viewingFilename.endsWith(".txt") && (
+            {run &&
+                files.filter((file) => file.name.toLowerCase().includes("log"))
+                    .length > 0 && (
                     <>
-                        <h4>Viewing: {viewingFilename}</h4>
-                        <pre
-                            className="bg-light p-3 rounded mb-4"
-                            style={{
-                                maxHeight: "500px",
-                                overflow: "auto",
-                            }}
-                        >
-                            {fileContent}
-                        </pre>
+                        <h2>Run Logs</h2>
+
+                        <ListGroup>
+                            {files
+                                .filter((file) =>
+                                    file.name.toLowerCase().includes("log")
+                                )
+                                .map((file) => (
+                                    <ListGroup.Item key={file.name}>
+                                        <Horizontal gap="md" align="center">
+                                            {file.name}
+                                            <Horizontal.Item grow>
+                                                <span className="badge bg-secondary">
+                                                    {Math.round(
+                                                        file.size / 1024
+                                                    )}{" "}
+                                                    KB
+                                                </span>
+                                            </Horizontal.Item>
+                                            {file.name.endsWith(".txt") && (
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        viewFileContent(
+                                                            file.name
+                                                        )
+                                                    }
+                                                >
+                                                    {viewingFilename ===
+                                                    file.name
+                                                        ? "Hide"
+                                                        : "View"}
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="outline-success"
+                                                size="sm"
+                                                onClick={() =>
+                                                    downloadFile(file.name)
+                                                }
+                                            >
+                                                Download
+                                            </Button>
+                                        </Horizontal>
+                                        {fileContent &&
+                                            viewingFilename === file.name && (
+                                                <pre
+                                                    className="bg-light p-3 rounded mt-2"
+                                                    style={{
+                                                        maxHeight: "500px",
+                                                        overflow: "auto",
+                                                    }}
+                                                >
+                                                    {fileContent}
+                                                </pre>
+                                            )}
+                                    </ListGroup.Item>
+                                ))}
+                        </ListGroup>
                     </>
                 )}
         </Page>

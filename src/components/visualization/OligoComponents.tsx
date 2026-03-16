@@ -8,7 +8,6 @@ import { Horizontal } from "../ui/Grid";
 type Props = {
     probes: Probe[];
     selectedOligo: string;
-    setSelectedOligo: (id: string) => void;
 };
 
 type OligoComponentDefinition =
@@ -44,7 +43,6 @@ type OligoBase = {
 const OligoComponents: React.FC<Props> = ({
     probes,
     selectedOligo,
-    setSelectedOligo,
 }) => {
     const oligo = probes.find((o) => o.oligo_id === selectedOligo);
 
@@ -150,21 +148,6 @@ const OligoComponents: React.FC<Props> = ({
 
     return (
         <>
-            <label className="form-label" htmlFor="oligoSelect">
-                Select Oligo
-            </label>
-            <select
-                id="oligoSelect"
-                className="form-select"
-                value={selectedOligo}
-                onChange={(e) => setSelectedOligo(e.target.value)}
-            >
-                {probes.map((oligo, index) => (
-                    <option key={oligo.oligo_id} value={oligo.oligo_id}>
-                        Oligo {index + 1}
-                    </option>
-                ))}
-            </select>
             <svg id="oligo-components">
                 <g>
                     {componentsToBases(components).map((base, index) => (

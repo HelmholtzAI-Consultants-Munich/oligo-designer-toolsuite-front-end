@@ -19,11 +19,11 @@ const FileSelection = ({ id, name, registry }: WidgetProps) => {
                 }}
                 multiple
             />
-            <p className="text-muted small">
+            <span className="text-muted small">
                 {files[name].length > 0
                     ? `Selected: ${files[name].map((f: File) => f.name).join(", ")}`
                     : "No files selected"}
-            </p>
+            </span>
         </>
     );
 };

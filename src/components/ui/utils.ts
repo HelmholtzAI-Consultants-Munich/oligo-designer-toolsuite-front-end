@@ -4,3 +4,10 @@ export const pipelineDisplayNames: Record<string, string> = {
     seqfish: "SeqFish+",
     oligoseq: "Oligo-Seq",
 };
+
+export const visualizationDisplayNames = {
+    alignment: "Genomic Regions",
+    components: "Oligo Components",
+};
+
+export type VisualizationType = keyof typeof visualizationDisplayNames;
