@@ -4,11 +4,12 @@ import { useRuns } from "../../modules/useRuns";
 import { pipelineDisplayNames } from "./utils";
 import { Horizontal } from "./Grid";
 import RunStatus from "./RunStatus";
+import { ArrowRight } from "react-bootstrap-icons";
 
 // TODO: update the timeAgo regularly (e.g. every minute) to keep it accurate without needing a page refresh
 const timeAgo = (timestamp: string) => {
     const now = new Date();
-    const past = new Date(timestamp);
+    const past = new Date(timestamp); // ensure it's treated as UTC
     const diff = now.getTime() - past.getTime();
 
     if (diff < 60000) return "Just now";
@@ -26,19 +27,32 @@ export default function RecentRuns() {
             <Nav variant="heavy">
                 {runs.slice(0, 3).map((run) => (
                     <Nav.Link
-                        key={run._id} as={Link} to={`/runs/${run._id}`}
-                        active={location.pathname.startsWith(`/runs/${run._id}`)}
+                        key={run._id}
+                        as={Link}
+                        to={`/runs/${run._id}`}
+                        active={location.pathname.startsWith(
+                            `/runs/${run._id}`
+                        )}
                     >
                         <Horizontal gap="lg" align="center">
                             <RunStatus status={run.status} />
-                            <span>{pipelineDisplayNames[run.pipeline] || run.pipeline}</span>
-                            <span className="small">{timeAgo(run.timestamp)}</span>
+                            <span>
+                                {pipelineDisplayNames[run.pipeline] ||
+                                    run.pipeline}
+                            </span>
+                            <span className="small text-muted">
+                                {timeAgo(run.timestamp)}
+                            </span>
                         </Horizontal>
                     </Nav.Link>
                 ))}
-                {runs.length === 0 && <span>No recent runs</span>}
+                {runs.length === 0 && (
+                    <span className="text-muted">No recent runs</span>
+                )}
             </Nav>
-            <Link to="/runs">View All Runs</Link>
+            <Link to="/runs">
+                All Runs <ArrowRight />
+            </Link>
         </>
     );
 }

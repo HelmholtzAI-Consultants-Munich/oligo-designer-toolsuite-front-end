@@ -6,6 +6,7 @@ import { Badge, Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../modules/useRuns";
 import { pipelineDisplayNames } from "../components/ui/utils";
+import RunStatus from "../components/ui/RunStatus";
 
 const Runs = () => {
     const { loading } = useAuth();
@@ -62,13 +63,13 @@ const Runs = () => {
                 },
             ]}
         >
-            
             <Table responsive hover>
                 <thead>
                     <tr>
+                        <th></th>
                         <th>Pipeline</th>
-                        <th>Status</th>
                         <th>Started</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -79,16 +80,8 @@ const Runs = () => {
                             style={{ cursor: "pointer" }}
                             className="hover:bg-gray-100"
                         >
-                            <td>{pipelineDisplayNames[run.pipeline] || run.pipeline}</td>
                             <td>
-                                <Badge
-                                    bg={
-                                        statusToBadge[run.status] ||
-                                        "secondary"
-                                    }
-                                >
-                                    {run.status}
-                                </Badge>
+                                <RunStatus status={run.status} />
                                 {run.status === "failure" &&
                                     run.error_message && (
                                         <div className="text-danger small mt-1">
@@ -97,13 +90,13 @@ const Runs = () => {
                                     )}
                             </td>
                             <td>
-                                {new Date(
-                                    run.timestamp
-                                ).toLocaleString()}
+                                {pipelineDisplayNames[run.pipeline] ||
+                                    run.pipeline}
                             </td>
+                            <td>{new Date(run.timestamp).toLocaleString()}</td>
                             <td>
                                 <Button
-                                    variant="danger"
+                                    variant="outline-danger"
                                     size="sm"
                                     onClick={(e) => {
                                         e.stopPropagation();
@@ -117,10 +110,7 @@ const Runs = () => {
                     ))}
                     {runs.length === 0 && (
                         <tr>
-                            <td
-                                colSpan={4}
-                                className="text-center py-4"
-                            >
+                            <td colSpan={4} className="text-center py-4">
                                 No pipeline runs found. Start your first
                                 analysis!
                             </td>

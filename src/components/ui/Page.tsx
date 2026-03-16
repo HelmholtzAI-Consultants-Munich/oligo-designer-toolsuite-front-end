@@ -11,6 +11,7 @@ function Page({
     tabs,
     defaultTabKey,
     actions,
+    backTo,
     hideHeader,
     stickyHeader,
     children,
@@ -22,10 +23,13 @@ function Page({
                     title={title}
                     metaTitle={metaTitle}
                     actions={actions}
+                    backTo={backTo}
                     hideHeader={hideHeader}
                     stickyHeader={stickyHeader}
                 />
-                <Container className="page flex-grow-1 d-flex flex-column gap-4">{children}</Container>
+                <Container className="page flex-grow-1 d-flex flex-column gap-4">
+                    {children}
+                </Container>
             </>
         );
     }
@@ -40,11 +44,14 @@ function Page({
                 metaTitle={metaTitle}
                 tabs={tabs}
                 defaultTabKey={defaultTabKey}
+                backTo={backTo}
                 actions={actions}
                 hideHeader={hideHeader}
                 stickyHeader={stickyHeader}
             />
-            <Container className="page flex-grow-1 d-flex flex-column gap-4">{children}</Container>
+            <Container className="page flex-grow-1 d-flex flex-column gap-4">
+                {children}
+            </Container>
         </Tab.Container>
     );
 }

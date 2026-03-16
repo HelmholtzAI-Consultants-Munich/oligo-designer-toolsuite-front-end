@@ -33,8 +33,24 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
     --#{$prefix}text-muted: #{$text-muted};
 }
 
+.text-muted {
+    color: $text-muted !important;
+    font-weight: 300;
+}
+
+.navbar-nav,
+.nav {
+    --#{$prefix}navbar-color: #{$text-muted};
+    --#{$prefix}nav-link-font-weight: 300;
+}
+
 .accordion-button {
     font-weight: 600;
+}
+
+a,
+.btn-link {
+    text-decoration: none;
 }
 
 /* Main Navbar (Sidebar) */
@@ -71,6 +87,22 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
     width: 100%;
 }
 
+.navbar-main .user-dropdown {
+    font-weight: 300;
+    padding-left: $btn-padding-y;
+}
+
+.navbar-main .user-dropdown + .dropdown-menu {
+    width: 100%;
+}
+
+.navbar-main .user-dropdown .user-icon {
+    background-color: tint-color($primary, 90%);
+    border-radius: $btn-border-radius;
+    padding: 0.5rem;
+    margin-right: 0.5rem;
+}
+
 /* Nav variant "separated" */
 
 navbar-nav.nav-separated {
@@ -79,6 +111,10 @@ navbar-nav.nav-separated {
 
 .navbar-nav.nav-separated .nav-link {
     padding: 0 var(--bs-navbar-nav-link-padding-x);
+}
+
+.navbar-nav.nav-separated .nav-link.active {
+    font-weight: 400;
 }
 
 .navbar-nav.nav-separated *:not(:first-child) {
@@ -109,6 +145,41 @@ navbar-nav.nav-separated {
 .navbar-nav.nav-heavy .nav-link.active {
     background-color: white;
     border: 1px solid $border-color;
+    font-weight: 400;
+}
+
+/* Nav variant "header" */
+
+.nav-header {
+    position: relative;
+    flex-wrap: nowrap;
+    border: 1px solid $border-color;
+    border-radius: 9999px;
+    width: max-content;
+    padding: $btn-padding-y-sm;
+}
+
+.nav-header::after {
+    content: "";
+    position: absolute;
+    height: calc(100% - 2 * $btn-padding-y-sm);
+    width: var(--active-width);
+    left: var(--active-offset);
+    background-color: $primary;
+    border-radius: 9999px;
+    transition:
+        left 0.3s ease,
+        width 0.3s ease;
+}
+
+.nav-header .nav-link {
+    position: relative;
+    z-index: 1;
+    color: $black;
+}
+
+.nav-header .nav-link.active {
+    color: $white;
 }
 
 /* Header */
@@ -120,6 +191,7 @@ navbar-nav.nav-separated {
 
 .header-title {
     margin-bottom: 0;
+    font-weight: 400;
 }
 
 /* Divider */
@@ -163,6 +235,11 @@ navbar-nav.nav-separated {
         $border-color,
         $border-color
     );
+}
+
+.btn.icon-button {
+    padding: $btn-padding-x;
+    line-height: 1;
 }
 
 /* Hero */

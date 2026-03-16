@@ -6,7 +6,12 @@ import Runs from "./pages/runs";
 import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
-import { createBrowserRouter, Outlet, RouterProvider, ScrollRestoration } from "react-router";
+import {
+    createBrowserRouter,
+    Outlet,
+    RouterProvider,
+    ScrollRestoration,
+} from "react-router";
 import "./styles/theme.scss";
 import "./styles/utils.scss";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";

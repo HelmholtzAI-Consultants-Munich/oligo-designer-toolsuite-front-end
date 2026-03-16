@@ -1,4 +1,4 @@
-import { Image} from "react-bootstrap";
+import { Image } from "react-bootstrap";
 import { Horizontal, Vertical } from "./Grid";
 
 export default function Hero() {
@@ -7,7 +7,7 @@ export default function Hero() {
             <Vertical>
                 <Horizontal align="end">
                     <h1>
-                        Welcome to the <br/>
+                        Welcome to the <br />
                         Oligo Designer
                     </h1>
                     <Image
@@ -18,20 +18,19 @@ export default function Hero() {
                     />
                 </Horizontal>
                 <Horizontal wrap gap="xl">
-                    <h1>
-                        Toolsuite
-                    </h1>
+                    <h1>Toolsuite</h1>
                     <p className="lead fs-6 mt-4" style={{ maxWidth: "500px" }}>
-                        Oligo Designer Toolsuite is an open-source framework designed to
-                        streamline the development of custom oligonucleotide (oligo)
-                        design pipelines. Oligos are short DNA or RNA sequences used in
-                        various applications, such as research, diagnostics, and
-                        therapeutics. The Toolsuite provides modular functionalities
-                        like sequence generation, thermodynamic filtering, and machine
+                        Oligo Designer Toolsuite is an open-source framework
+                        designed to streamline the development of custom
+                        oligonucleotide (oligo) design pipelines. Oligos are
+                        short DNA or RNA sequences used in various applications,
+                        such as research, diagnostics, and therapeutics. The
+                        Toolsuite provides modular functionalities like sequence
+                        generation, thermodynamic filtering, and machine
                         learning-based specificity prediction.
                     </p>
                 </Horizontal>
             </Vertical>
         </Horizontal>
-    )
+    );
 }

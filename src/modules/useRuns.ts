@@ -11,4 +11,4 @@ export const RunsContext = createContext<{
 
 export const useRuns = () => {
     return useContext(RunsContext);
-}
+};

@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
 import { reverseComplement } from "./helpers";
 import type { Probe } from "../../types";
+import { Horizontal } from "../ui/Grid";
 
 type Props = {
     probes: Probe[];
@@ -179,39 +180,33 @@ const OligoComponents: React.FC<Props> = ({
                 </g>
             </svg>
 
-            <div className="container mt-2 mb-4">
-                <div className="row">
-                    <div className="col col-auto">
-                        <strong>Legend:</strong>
-                    </div>
-                    {Array.from(
-                        new Set(
-                            componentsToBases(components).map(
-                                (base) => base.label
-                            )
-                        )
-                    ).map((label, index) => {
-                        const base = componentsToBases(components).find(
-                            (base) => base.label === label
-                        );
-                        if (!base) return null;
-                        return (
-                            <div className="col col-auto" key={index}>
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        width: "12px",
-                                        height: "12px",
-                                        backgroundColor: base.color,
-                                        marginRight: "5px",
-                                    }}
-                                ></span>
-                                {label}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
+            <Horizontal align="center" wrap gap="md">
+                <strong>Legend:</strong>
+                {Array.from(
+                    new Set(
+                        componentsToBases(components).map((base) => base.label)
+                    )
+                ).map((label, index) => {
+                    const base = componentsToBases(components).find(
+                        (base) => base.label === label
+                    );
+                    if (!base) return null;
+                    return (
+                        <Horizontal key={index} align="baseline">
+                            <span
+                                style={{
+                                    display: "inline-block",
+                                    width: "12px",
+                                    height: "12px",
+                                    backgroundColor: base.color,
+                                    marginRight: "5px",
+                                }}
+                            ></span>
+                            {label}
+                        </Horizontal>
+                    );
+                })}
+            </Horizontal>
         </>
     );
 };

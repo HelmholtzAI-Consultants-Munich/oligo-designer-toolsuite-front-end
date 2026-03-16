@@ -3,7 +3,11 @@ import { RunsContext } from "./useRuns";
 import type { PipelineRun } from "../types";
 import { BACKEND_URL } from "../config";
 
-export default function RunsProvider({ children }: { children: React.ReactNode }) {
+export default function RunsProvider({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
     const pollingInterval = 5000; // Poll every 5 seconds
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
     const [runs, setRuns] = useState<PipelineRun[]>([]);
@@ -17,12 +21,11 @@ export default function RunsProvider({ children }: { children: React.ReactNode }
             .then((response) => response.json())
             .then((data: PipelineRun[]) => {
                 setRuns(
-                    data
-                        .sort(
-                            (a, b) =>
-                                new Date(b.timestamp).getTime() -
-                                new Date(a.timestamp).getTime()
-                        )
+                    data.sort(
+                        (a, b) =>
+                            new Date(b.timestamp).getTime() -
+                            new Date(a.timestamp).getTime()
+                    )
                 );
             })
             .catch((error) => {
@@ -43,11 +46,13 @@ export default function RunsProvider({ children }: { children: React.ReactNode }
     }, []);
 
     return (
-        <RunsContext value={{
-            runs,
-            updateRuns: pollRuns,
-        }}>
+        <RunsContext
+            value={{
+                runs,
+                updateRuns: pollRuns,
+            }}
+        >
             {children}
         </RunsContext>
-    )
+    );
 }

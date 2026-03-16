@@ -1,6 +1,7 @@
 import React from "react";
 import type { GenomicRegions, Probe } from "../../types";
 import GenomeAlignmentD3, { Regions } from "./GenomeAlignmentD3";
+import { Horizontal } from "../ui/Grid";
 
 type Props = {
     probes: Probe[];
@@ -76,49 +77,47 @@ class GenomeAlignment extends React.Component<Props> {
                 ></svg>
 
                 {/* Legend and strand information */}
-                <div className="container mt-2 mb-4">
-                    <div className="row">
-                        <div className="col col-auto">
-                            <strong>Legend:</strong>
-                        </div>
-                        {Object.keys(Regions)
-                            .filter((type) => {
-                                return Object.values(
-                                    this.props.genomicRegions!
-                                ).some((regions) =>
-                                    regions.some(
-                                        (region) => region.regiontype === type
-                                    )
-                                );
-                            })
-                            .map((type, index) => {
-                                return (
-                                    <div className="col col-auto" key={index}>
-                                        <span
-                                            style={{
-                                                display: "inline-block",
-                                                width: "12px",
-                                                height: "12px",
-                                                backgroundColor:
-                                                    Regions[type].color ||
-                                                    "lightgray",
-                                                marginRight: "5px",
-                                            }}
-                                        ></span>
-                                        {Regions[type].label}
-                                    </div>
-                                );
-                            })}
-                    </div>
-                    <div className="row">
-                        <div className="col col-auto">
-                            <strong>Strand:</strong>
-                        </div>
-                        {Object.values(this.props.genomicRegions)[0][0][
-                            "strand"
-                        ] || "unknown"}
-                    </div>
-                </div>
+                <Horizontal wrap gap="md">
+                    <strong>Legend:</strong>
+                    {Object.keys(Regions)
+                        .filter((type) => {
+                            return Object.values(
+                                this.props.genomicRegions!
+                            ).some((regions) =>
+                                regions.some(
+                                    (region) => region.regiontype === type
+                                )
+                            );
+                        })
+                        .map((type, index) => {
+                            return (
+                                <Horizontal
+                                    key={index}
+                                    gap="sm"
+                                    align="baseline"
+                                >
+                                    <span
+                                        key={index}
+                                        style={{
+                                            display: "inline-block",
+                                            width: "12px",
+                                            height: "12px",
+                                            backgroundColor:
+                                                Regions[type].color ||
+                                                "lightgray",
+                                            marginRight: "5px",
+                                        }}
+                                    ></span>
+                                    {Regions[type].label}
+                                </Horizontal>
+                            );
+                        })}
+                </Horizontal>
+                <strong>
+                    Strand:{" "}
+                    {Object.values(this.props.genomicRegions)[0][0]["strand"] ||
+                        "unknown"}
+                </strong>
             </>
         );
     }

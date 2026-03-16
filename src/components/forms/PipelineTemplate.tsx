@@ -103,16 +103,17 @@ const PipelineTemplate: React.FC<Props> = ({
                         label: "Run Pipeline",
                         icon: Send,
                         variant: "primary",
-                        onClick: () => handleSubmit(
-                            runStatus,
-                            setRunStatus,
-                            setRunId,
-                            setModal,
-                            files,
-                            formData,
-                            pipeline,
-                            updateRuns,
-                        ),
+                        onClick: () =>
+                            handleSubmit(
+                                runStatus,
+                                setRunStatus,
+                                setRunId,
+                                setModal,
+                                files,
+                                formData,
+                                pipeline,
+                                updateRuns
+                            ),
                     },
                 ]}
                 stickyHeader
@@ -141,7 +142,7 @@ const PipelineTemplate: React.FC<Props> = ({
                             files,
                             formData,
                             pipeline,
-                            updateRuns,
+                            updateRuns
                         )
                     }
                 />

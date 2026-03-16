@@ -1,13 +1,8 @@
-import { useState } from "react";
-import {
-    Button,
-    Container,
-    Form,
-    InputGroup,
-    Nav,
-} from "react-bootstrap";
-import type { Icon } from "react-bootstrap-icons";
-import { Horizontal, Vertical } from "./Grid";
+import { useEffect, useState } from "react";
+import { Button, Container, Form, InputGroup, Nav } from "react-bootstrap";
+import { ArrowLeft, type Icon } from "react-bootstrap-icons";
+import { Grid, Horizontal, Vertical } from "./Grid";
+import { useNavigate } from "react-router";
 
 interface TabConfig {
     label: string;
@@ -54,10 +49,23 @@ function HeaderAction({ action }: { action: Action }) {
         return (
             <Form.Group controlId={`header-action-${action.label}`}>
                 <Vertical align="center">
-                    {action.icon && <Form.Label className="small">{action.label}</Form.Label>}
+                    {action.icon && (
+                        <Form.Label className="small text-muted">
+                            {action.label}
+                        </Form.Label>
+                    )}
                     <Vertical.Item>
-                        <Form.Control as={Button} variant={action.variant} onClick={action.onClick}>
-                            {action.icon ? <action.icon size={20} /> : action.label}
+                        <Form.Control
+                            as={Button}
+                            variant={action.variant}
+                            onClick={action.onClick}
+                            className="icon-button"
+                        >
+                            {action.icon ? (
+                                <action.icon size={20} />
+                            ) : (
+                                action.label
+                            )}
                         </Form.Control>
                     </Vertical.Item>
                 </Vertical>
@@ -97,6 +105,27 @@ function Header({
     stickyHeader,
 }: HeaderProps) {
     const extendedTitle = metaTitle || title + " | ODT Cloud";
+    const [activeTab, setActiveTab] = useState(
+        defaultTabKey || (tabs && tabs[0].tabKey) || ""
+    );
+    const [activeOffset, setActiveOffset] = useState(0);
+    const [activeWidth, setActiveWidth] = useState(0);
+
+    const navigate = useNavigate();
+
+    // Set initial active tab offset and width on mount
+    useEffect(() => {
+        if (activeWidth === 0 && tabs && tabs.length > 0) {
+            const activeElement = document.querySelector(
+                `.nav-header .nav-link.active`
+            ) as HTMLElement;
+            console.log("Active element:", activeElement);
+            if (activeElement) {
+                setActiveOffset(activeElement.offsetLeft);
+                setActiveWidth(activeElement.offsetWidth);
+            }
+        }
+    }, [tabs, activeWidth]);
 
     if (hideHeader) {
         return <title>{extendedTitle}</title>;
@@ -108,17 +137,48 @@ function Header({
             <Container>
                 {(tabs && tabs.length > 0 && (
                     <>
+                        {backTo && (
+                            <Button
+                                variant="outline-border"
+                                onClick={() => navigate(backTo.href)}
+                            >
+                                <ArrowLeft /> {backTo.label}
+                            </Button>
+                        )}
                         <h1 className="header-title">{title}</h1>
                         <Horizontal align="end" wrap>
                             <Horizontal.Item grow>
                                 <Nav
+                                    variant="header"
                                     defaultActiveKey={
                                         defaultTabKey || tabs[0].tabKey
                                     }
+                                    style={
+                                        {
+                                            "--active-offset": `${activeOffset}px`,
+                                            "--active-width": `${activeWidth}px`,
+                                        } as React.CSSProperties
+                                    }
+                                    onSelect={(selectedKey, event) => {
+                                        const target =
+                                            event?.target as HTMLElement;
+                                        if (target) {
+                                            setActiveOffset(target.offsetLeft);
+                                            setActiveWidth(target.offsetWidth);
+                                        }
+                                    }}
                                 >
                                     {tabs.map((tab) => (
                                         <Nav.Item key={tab.tabKey}>
-                                            <Nav.Link eventKey={tab.tabKey}>
+                                            <Nav.Link
+                                                eventKey={tab.tabKey}
+                                                active={
+                                                    tab.tabKey === activeTab
+                                                }
+                                                onClick={() =>
+                                                    setActiveTab(tab.tabKey)
+                                                }
+                                            >
                                                 {tab.label}
                                             </Nav.Link>
                                         </Nav.Item>
@@ -126,7 +186,7 @@ function Header({
                                 </Nav>
                             </Horizontal.Item>
                             {actions && (
-                                <Horizontal gap="md">
+                                <Grid gap="md">
                                     {actions.map((action, index) => {
                                         return (
                                             <HeaderAction
@@ -135,12 +195,20 @@ function Header({
                                             />
                                         );
                                     })}
-                                </Horizontal>
+                                </Grid>
                             )}
                         </Horizontal>
                     </>
                 )) || (
-                    <Horizontal align="end" wrap>
+                    <Horizontal align="center" wrap gap="md">
+                        {backTo && (
+                            <Button
+                                variant="outline-border"
+                                onClick={() => navigate(backTo.href)}
+                            >
+                                <ArrowLeft /> {backTo.label}
+                            </Button>
+                        )}
                         <Horizontal.Item grow>
                             <h1 className="header-title">{title}</h1>
                         </Horizontal.Item>

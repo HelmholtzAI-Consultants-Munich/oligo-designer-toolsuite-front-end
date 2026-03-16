@@ -1,14 +1,21 @@
 type GapSize = "" | "xs" | "sm" | "md" | "lg" | "xl";
 type Align = "start" | "center" | "end" | "stretch" | "baseline";
-type Justify = "start" | "center" | "end" | "space-between" | "space-around" | "space-evenly" | "stretch";
+type Justify =
+    | "start"
+    | "center"
+    | "end"
+    | "space-between"
+    | "space-around"
+    | "space-evenly"
+    | "stretch";
 
 const gapValues: Record<GapSize, string> = {
     "": "0",
-    "xs": "1",
-    "sm": "2",
-    "md": "3",
-    "lg": "4",
-    "xl": "5"
+    xs: "1",
+    sm: "2",
+    md: "3",
+    lg: "4",
+    xl: "5",
 };
 
 interface HorizontalProps {
@@ -23,7 +30,17 @@ interface HorizontalProps {
     children: React.ReactNode;
 }
 
-function Horizontal({ wrap = false, gap = "", align = "start", justify = "start", fillWidth = false, fillHeight = false, grow = false, className = "", children }: HorizontalProps) {
+function Horizontal({
+    wrap = false,
+    gap = "",
+    align = "start",
+    justify = "start",
+    fillWidth = false,
+    fillHeight = false,
+    grow = false,
+    className = "",
+    children,
+}: HorizontalProps) {
     return (
         <div
             style={{
@@ -39,7 +56,7 @@ function Horizontal({ wrap = false, gap = "", align = "start", justify = "start"
         >
             {children}
         </div>
-    )
+    );
 }
 
 interface VerticalProps {
@@ -53,7 +70,16 @@ interface VerticalProps {
     children: React.ReactNode;
 }
 
-function Vertical({ gap = "", align = "start", justify = "start", fillWidth = false, fillHeight = false, grow = false, className = "", children }: VerticalProps) {
+function Vertical({
+    gap = "",
+    align = "start",
+    justify = "start",
+    fillWidth = false,
+    fillHeight = false,
+    grow = false,
+    className = "",
+    children,
+}: VerticalProps) {
     return (
         <div
             style={{
@@ -70,7 +96,7 @@ function Vertical({ gap = "", align = "start", justify = "start", fillWidth = fa
         >
             {children}
         </div>
-    )
+    );
 }
 
 interface FlexItemProps {
@@ -82,12 +108,24 @@ interface FlexItemProps {
     children: React.ReactNode;
 }
 
-function FlexItem({ selfAlign, grow, fillWidth, fillHeight, className, children }: FlexItemProps) {
+function FlexItem({
+    selfAlign,
+    grow,
+    fillWidth,
+    fillHeight,
+    className,
+    children,
+}: FlexItemProps) {
     return (
         <div
             style={{
                 alignSelf: selfAlign,
-                flexGrow: grow === true ? 1 : typeof grow === "number" ? grow : undefined,
+                flexGrow:
+                    grow === true
+                        ? 1
+                        : typeof grow === "number"
+                          ? grow
+                          : undefined,
                 flexBasis: 0,
                 width: fillWidth ? "100%" : undefined,
                 height: fillHeight ? "100%" : undefined,
@@ -96,7 +134,7 @@ function FlexItem({ selfAlign, grow, fillWidth, fillHeight, className, children 
         >
             {children}
         </div>
-    )
+    );
 }
 
 interface GridProps {
@@ -104,7 +142,6 @@ interface GridProps {
     itemWidth?: number | string;
     className?: string;
     children: React.ReactNode;
-
 }
 
 function Grid({ gap = "", itemWidth, className = "", children }: GridProps) {
@@ -119,13 +156,17 @@ function Grid({ gap = "", itemWidth, className = "", children }: GridProps) {
         <div
             style={{
                 display: "grid",
-                gridTemplateColumns: `repeat(auto-fit, minmax(min(${itemWidth}, 100%), 1fr))`,
+                gridAutoColumns: !itemWidth ? "minmax(0, 1fr)" : undefined,
+                gridAutoFlow: !itemWidth ? "column" : undefined,
+                gridTemplateColumns: itemWidth
+                    ? `repeat(auto-fit, minmax(min(${typeof itemWidth === "number" ? `${itemWidth}px` : itemWidth}, 100%), 1fr))`
+                    : undefined,
             }}
-            className={className + ' ' + gapClass}
+            className={className + " " + gapClass}
         >
             {children}
         </div>
-    )
+    );
 }
 
 interface GridItemProps {
@@ -133,11 +174,7 @@ interface GridItemProps {
 }
 
 function GridItem({ children }: GridItemProps) {
-    return (
-        <div>
-            {children}
-        </div>
-    )
+    return <div>{children}</div>;
 }
 
 Vertical.Item = FlexItem;

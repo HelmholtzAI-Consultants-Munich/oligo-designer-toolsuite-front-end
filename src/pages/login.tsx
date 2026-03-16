@@ -90,7 +90,9 @@ const Login = () => {
                 <Card style={{ maxWidth: "500px" }}>
                     <Card.Body>
                         <Vertical gap="md" align="stretch">
-                            <Card.Title as="h2">Login with Helmholtz AAI</Card.Title>
+                            <Card.Title as="h2">
+                                Login with Helmholtz AAI
+                            </Card.Title>
                             <Card.Text className="text-muted">
                                 Recommended for Helmholtz users. You will be
                                 redirected to the Helmholtz AAI login page.
@@ -106,8 +108,8 @@ const Login = () => {
                     <Card.Body>
                         <Card.Title>Admin Login</Card.Title>
                         <Card.Text className="text-muted">
-                            Use this option if you have an admin account
-                            with username/password.
+                            Use this option if you have an admin account with
+                            username/password.
                         </Card.Text>
                         <Form onSubmit={handleSubmit}>
                             <Vertical gap="md" align="stretch">

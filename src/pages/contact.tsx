@@ -21,7 +21,11 @@ const contact: React.FC = () => {
         <Page title="Our Team">
             <Grid gap="md" itemWidth="250px">
                 {teamMembers.map((member) => (
-                    <ContactsCard name={member.name} email={member.email} key={member.email} />
+                    <ContactsCard
+                        name={member.name}
+                        email={member.email}
+                        key={member.email}
+                    />
                 ))}
             </Grid>
         </Page>

@@ -135,7 +135,7 @@ export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
     updateRuns: () => void,
-    setIdCopySuccess?: React.Dispatch<React.SetStateAction<boolean>>,
+    setIdCopySuccess?: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
     if (runStatus !== "idle") return;
     setRunStatus("submitting");

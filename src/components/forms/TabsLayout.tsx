@@ -23,15 +23,23 @@ export const TabsLayout = (props: ObjectFieldTemplateProps) => {
                             {tab.fields.map((entry: string | string[]) => {
                                 if (Array.isArray(entry)) {
                                     return (
-                                        <Horizontal key={entry.join("-")} gap="md" align="stretch">
+                                        <Horizontal
+                                            key={entry.join("-")}
+                                            gap="md"
+                                            align="stretch"
+                                        >
                                             {entry.map((field) => {
-                                                const found = props.properties.find(
-                                                    (p) => p.name === field
-                                                );
+                                                const found =
+                                                    props.properties.find(
+                                                        (p) => p.name === field
+                                                    );
                                                 if (!found) return null;
 
                                                 return (
-                                                    <Horizontal.Item grow key={field}>
+                                                    <Horizontal.Item
+                                                        grow
+                                                        key={field}
+                                                    >
                                                         {found.content}
                                                     </Horizontal.Item>
                                                 );
@@ -45,7 +53,11 @@ export const TabsLayout = (props: ObjectFieldTemplateProps) => {
 
                                     if (!found) return null;
 
-                                    return <Fragment key={entry}>{found.content}</Fragment>;
+                                    return (
+                                        <Fragment key={entry}>
+                                            {found.content}
+                                        </Fragment>
+                                    );
                                 }
                             })}
                         </Vertical>

@@ -1,19 +1,44 @@
 import { forwardRef, useState, type Ref } from "react";
 import { BACKEND_URL } from "../../config";
 import { useAuth } from "../../modules/useAuth";
-import { Button, Dropdown, Nav } from "react-bootstrap";
-import { GearFill } from "react-bootstrap-icons";
+import { Button, Dropdown } from "react-bootstrap";
 import { Link } from "react-router";
+import {
+    CheckCircle,
+    CheckCircleFill,
+    ChevronUp,
+    Person,
+} from "react-bootstrap-icons";
+import { Horizontal } from "./Grid";
 
-const UserDisplay = forwardRef(({ onClick } : { onClick: () => void }, ref: Ref<HTMLSpanElement>) => {
-    const { user } = useAuth();
-    
-    return (
-        <span ref={ref} onClick={onClick}>
-            {user?.username || user?.helmholtz_sub || "Anonymous User"}
-        </span>
-    );
-});
+const UserDisplay = forwardRef(
+    ({ onClick }: { onClick: () => void }, ref: Ref<HTMLButtonElement>) => {
+        const { user } = useAuth();
+
+        return (
+            <Button
+                ref={ref}
+                onClick={onClick}
+                className="w-100 user-dropdown"
+                variant="outline-border"
+            >
+                <Horizontal align="center" gap="sm">
+                    <Horizontal.Item className="user-icon">
+                        <Person size={25} />
+                    </Horizontal.Item>
+                    <Horizontal grow>
+                        <span>
+                            {user?.username ||
+                                user?.helmholtz_sub ||
+                                "anonymous user"}
+                        </span>
+                    </Horizontal>
+                    <ChevronUp size={15} />
+                </Horizontal>
+            </Button>
+        );
+    }
+);
 
 export default function UserDropdown() {
     const { user, logout } = useAuth();
@@ -34,8 +59,8 @@ export default function UserDropdown() {
             <Dropdown.Menu>
                 {user ? (
                     <>
-                        <Dropdown.Item
-                            className="dropdown-item-text px-3 py-2"
+                        <Dropdown.ItemText
+                            className="px-3 py-2"
                             style={{
                                 cursor: "pointer",
                             }}
@@ -44,9 +69,7 @@ export default function UserDropdown() {
                                     user.helmholtz_sub ||
                                     user.username ||
                                     user.id;
-                                navigator.clipboard.writeText(
-                                    textToCopy
-                                );
+                                navigator.clipboard.writeText(textToCopy);
                                 setCopied(true);
                                 setTimeout(() => {
                                     setCopied(false);
@@ -57,7 +80,10 @@ export default function UserDropdown() {
                             <small className="text-muted d-block mb-1">
                                 {copied ? (
                                     <span className="text-success">
-                                        <i className="bi bi-check-circle-fill me-1"></i>
+                                        <CheckCircleFill
+                                            size={14}
+                                            className="me-1"
+                                        />
                                         Copied!
                                     </span>
                                 ) : (
@@ -65,28 +91,24 @@ export default function UserDropdown() {
                                 )}
                             </small>
                             <code className="text-break mb-0 d-block">
-                                {user.helmholtz_sub ||
-                                    user.username ||
-                                    user.id}
+                                {user.helmholtz_sub || user.username || user.id}
                             </code>
-                        </Dropdown.Item>
+                        </Dropdown.ItemText>
                         <Dropdown.Divider />
                         <Dropdown.Item onClick={handleLogout}>
                             Logout
                         </Dropdown.Item>
                     </>
-                    
                 ) : (
                     <>
                         <Dropdown.Header>
-                            You are not logged in. <br/>
+                            You are not logged in. <br />
                             Please log in to keep your runs saved.
                         </Dropdown.Header>
                         <Dropdown.Item as={Link} to="/login">
                             Login or Register
                         </Dropdown.Item>
                     </>
-                    
                 )}
             </Dropdown.Menu>
         </Dropdown>
