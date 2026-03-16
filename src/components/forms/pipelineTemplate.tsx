@@ -11,8 +11,14 @@ import FileSelection from "./FileSelection";
 import { RunLinkModal } from "../modal/RunLinkModal";
 import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
-import { Container } from "react-bootstrap";
+import {
+    Alert,
+    Button,
+    Container,
+    Form as BootstrapForm,
+} from "react-bootstrap";
 import { useAuth } from "../../modules/useAuth";
+import { Link } from "react-router";
 
 type Props = {
     pipeline: string;
@@ -27,7 +33,7 @@ const PipelineTemplate: React.FC<Props> = ({
     schema,
     uiSchema,
 }) => {
-    const { ensureTermsAccepted } = useAuth();
+    const { legal, acceptTerms } = useAuth();
     const [formData, setFormData] = useState<RJSFFormData>({});
     const validator = customizeValidator({ AjvClass: Ajv2020 });
 
@@ -45,11 +51,62 @@ const PipelineTemplate: React.FC<Props> = ({
         title: "",
         body: "",
     });
+    const [showTermsAcceptance, setShowTermsAcceptance] = useState(false);
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+    const [termsError, setTermsError] = useState<string | null>(null);
+    const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
+
     const closeModal = () => {
         setModal({ ...modal, show: false });
     };
     const widgets = {
         fileSelection: FileSelection,
+    };
+
+    const submitPipeline = async () => {
+        await handleSubmit(
+            runStatus,
+            setRunStatus,
+            setRunId,
+            setModal,
+            files,
+            formData,
+            pipeline
+        );
+    };
+
+    const handleFormSubmit = async () => {
+        if (legal?.requires_terms_acceptance) {
+            if (!showTermsAcceptance) {
+                setShowTermsAcceptance(true);
+                setTermsError(null);
+                return;
+            }
+
+            if (!hasAcceptedTerms) {
+                setTermsError(
+                    "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing."
+                );
+                return;
+            }
+
+            setIsAcceptingTerms(true);
+            setTermsError(null);
+            const accepted = await acceptTerms();
+            setIsAcceptingTerms(false);
+
+            if (!accepted) {
+                setTermsError(
+                    "We couldn't record your acceptance. Please try again."
+                );
+                return;
+            }
+
+            setShowTermsAcceptance(true);
+            setHasAcceptedTerms(false);
+        }
+
+        await submitPipeline();
     };
 
     return (
@@ -88,22 +145,62 @@ const PipelineTemplate: React.FC<Props> = ({
                     widgets={widgets}
                     validator={validator}
                     onChange={(e) => setFormData(e.formData)}
-                    onSubmit={async () => {
-                        if (!(await ensureTermsAccepted())) {
-                            return;
-                        }
-
-                        await handleSubmit(
-                            runStatus,
-                            setRunStatus,
-                            setRunId,
-                            setModal,
-                            files,
-                            formData,
-                            pipeline
-                        );
-                    }}
-                />
+                    onSubmit={handleFormSubmit}
+                >
+                    <div className="mt-4">
+                        <Button
+                            type="submit"
+                            disabled={runStatus !== "idle" || isAcceptingTerms}
+                        >
+                            {isAcceptingTerms
+                                ? "Saving..."
+                                : runStatus === "idle"
+                                  ? "Submit"
+                                  : "Submitting..."}
+                        </Button>
+                        {showTermsAcceptance &&
+                            legal?.requires_terms_acceptance && (
+                                <div className="border rounded p-3 mt-3 bg-light">
+                                    <p className="mb-2">
+                                        Before running this pipeline, please
+                                        accept the{" "}
+                                        <Link to="/terms">
+                                            Terms of Service
+                                        </Link>{" "}
+                                        and review the{" "}
+                                        <Link to="/privacy-policy">
+                                            Privacy Policy
+                                        </Link>
+                                        .
+                                    </p>
+                                    {termsError && (
+                                        <Alert
+                                            variant="danger"
+                                            className="mb-3"
+                                        >
+                                            {termsError}
+                                        </Alert>
+                                    )}
+                                    <BootstrapForm.Check
+                                        id={`${pipeline}-terms-acceptance`}
+                                        type="checkbox"
+                                        className="mb-3"
+                                        checked={hasAcceptedTerms}
+                                        onChange={(event) =>
+                                            setHasAcceptedTerms(
+                                                event.target.checked
+                                            )
+                                        }
+                                        label="I accept the Terms of Service and acknowledge the Privacy Policy."
+                                    />
+                                    <div className="text-muted small">
+                                        Check the box above, then press Submit
+                                        again.
+                                    </div>
+                                </div>
+                            )}
+                    </div>
+                </Form>
             </Container>
         </>
     );

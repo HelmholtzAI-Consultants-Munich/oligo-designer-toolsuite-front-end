@@ -30,10 +30,7 @@ export interface AuthContextType {
     user: User | null;
     loading: boolean;
     legal: TermsAcceptanceStatus | null;
-    termsPromptOpen: boolean;
-    ensureTermsAccepted: () => Promise<boolean>;
     acceptTerms: () => Promise<boolean>;
-    closeTermsPrompt: () => void;
     checkAuth: () => Promise<void>;
     logout: () => void;
 }

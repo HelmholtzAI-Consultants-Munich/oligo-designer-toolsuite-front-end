@@ -7,7 +7,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [legal, setLegal] = useState<TermsAcceptanceStatus | null>(null);
     const [loading, setLoading] = useState(true);
-    const [termsPromptOpen, setTermsPromptOpen] = useState(false);
 
     const loadAuth = async (showLoading: boolean) => {
         if (showLoading) {
@@ -20,11 +19,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const data = await response.json();
             setUser(data.authenticated ? data.user : null);
             setLegal(data.legal ?? null);
-            setTermsPromptOpen(
-                Boolean(
-                    data.authenticated && data.legal?.requires_terms_acceptance
-                )
-            );
         } catch (error) {
             console.error("Auth check failed:", error);
             setUser(null);
@@ -45,21 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const logout = () => {
-        setTermsPromptOpen(false);
         void loadAuth(false);
-    };
-
-    const ensureTermsAccepted = async () => {
-        if (!legal?.requires_terms_acceptance) {
-            return true;
-        }
-
-        setTermsPromptOpen(true);
-        return false;
-    };
-
-    const closeTermsPrompt = () => {
-        setTermsPromptOpen(false);
     };
 
     const acceptTerms = async () => {
@@ -76,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
 
             await loadAuth(false);
-            setTermsPromptOpen(false);
             return true;
         } catch (error) {
             console.error("Terms acceptance failed:", error);
@@ -90,10 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 user,
                 loading,
                 legal,
-                termsPromptOpen,
-                ensureTermsAccepted,
                 acceptTerms,
-                closeTermsPrompt,
                 checkAuth,
                 logout,
             }}
