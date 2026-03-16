@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -10,6 +11,7 @@ from backend.utilities.legal import (
     TERMS_DOCUMENT_KEY,
     get_published_legal_document,
 )
+from backend.utilities.typed_values import serialize_path, utc_now
 
 
 @pytest.fixture(autouse=True)
@@ -87,14 +89,9 @@ def test_check_auth_logged_out(client):
     assert data["legal"]["requires_terms_acceptance"] is True
 
 
-def test_check_auth_logged_in(client, monkeypatch, dummy_user):
+def test_check_auth_logged_in(client, authenticate_as_user, dummy_user):
     mongo.db.users.insert_one(dummy_user)
-
-    class DummyCurrentUser:
-        is_authenticated = True
-        id = str(dummy_user["_id"])
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyCurrentUser())
+    authenticate_as_user(str(dummy_user["_id"]))
 
     with client.session_transaction() as sess:
         sess["_user_id"] = str(dummy_user["_id"])
@@ -113,9 +110,9 @@ def test_check_auth_logged_in(client, monkeypatch, dummy_user):
     assert data["legal"]["requires_terms_acceptance"] is True
 
 
-def test_logout(client, monkeypatch):
+def test_logout(client, monkeypatch, authenticate_as_user):
     monkeypatch.setattr("flask_login.logout_user", lambda: None)
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: type("User", (), {"is_authenticated": True})())
+    authenticate_as_user("123")
 
     client.post("/login", json={"username": "fake", "password": "fake"})
     with client.session_transaction() as sess:
@@ -126,14 +123,9 @@ def test_logout(client, monkeypatch):
     assert response.get_json()["message"] == "Logged out"
 
 
-def test_accept_terms_updates_current_user(client, monkeypatch, dummy_user):
+def test_accept_terms_updates_current_user(client, authenticate_as_user, dummy_user):
     mongo.db.users.insert_one(dummy_user)
-
-    class DummyCurrentUser:
-        is_authenticated = True
-        id = str(dummy_user["_id"])
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyCurrentUser())
+    authenticate_as_user(str(dummy_user["_id"]))
 
     with client.session_transaction() as sess:
         sess["_user_id"] = str(dummy_user["_id"])
@@ -163,6 +155,66 @@ def test_accept_terms_updates_current_session(client):
     assert data["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
     assert data["legal"]["scope"] == "session"
     assert data["legal"]["requires_terms_acceptance"] is False
+
+
+def test_delete_account_removes_user_data(client, authenticate_as_user, dummy_user, tmp_path):
+    mongo.db.users.insert_one(dummy_user)
+    authenticate_as_user(str(dummy_user["_id"]))
+
+    upload_root = tmp_path / "uploads"
+    upload_root.mkdir()
+    userdata_root = tmp_path / "user_data"
+    user_dir = userdata_root / str(dummy_user["_id"])
+    user_dir.mkdir(parents=True)
+    (user_dir / "profile.txt").write_text("sensitive")
+
+    output_dir = user_dir / "output_scrinshot_probe_designer_test"
+    output_dir.mkdir()
+    (output_dir / "result.txt").write_text("output")
+
+    upload_file = upload_root / "upload.txt"
+    upload_file.write_text("upload")
+
+    mongo.db.runs.insert_one(
+        {
+            "_id": ObjectId(),
+            "user_id": str(dummy_user["_id"]),
+            "pipeline": "scrinshot",
+            "status": "success",
+            "timestamp": utc_now(),
+            "output_path": serialize_path(output_dir),
+        }
+    )
+    mongo.db.uploads.insert_one({"user_id": str(dummy_user["_id"]), "path": str(upload_file)})
+    mongo.db.feedback.insert_one(
+        {"user_id": str(dummy_user["_id"]), "message": "feedback", "created_at": utc_now()}
+    )
+    mongo.db.legal_acceptances.insert_one(
+        {
+            "user_id": str(dummy_user["_id"]),
+            "document": TERMS_DOCUMENT_KEY,
+            "terms_version": get_published_legal_document(TERMS_DOCUMENT_KEY)["version"],
+            "timestamp": utc_now(),
+        }
+    )
+
+    client.application.config["UPLOAD_PATH"] = str(upload_root)
+    client.application.config["USERDATA_PATH"] = str(userdata_root)
+
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(dummy_user["_id"])
+
+    response = client.delete("/api/account")
+
+    assert response.status_code == 200
+    assert response.get_json()["message"] == "Your account and associated data have been deleted."
+    assert mongo.db.users.find_one({"_id": dummy_user["_id"]}) is None
+    assert mongo.db.runs.find_one({"user_id": str(dummy_user["_id"])}) is None
+    assert mongo.db.uploads.find_one({"user_id": str(dummy_user["_id"])}) is None
+    assert mongo.db.feedback.find_one({"user_id": str(dummy_user["_id"])}) is None
+    assert mongo.db.legal_acceptances.find_one({"user_id": str(dummy_user["_id"])}) is None
+    assert not Path(upload_file).exists()
+    assert not user_dir.exists()
 
 
 def test_public_terms_route(client):

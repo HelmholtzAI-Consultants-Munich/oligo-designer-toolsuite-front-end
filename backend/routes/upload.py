@@ -2,8 +2,12 @@ import uuid
 from http import HTTPStatus
 from pathlib import Path
 
-from flask import Blueprint, abort, current_app, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request, session
+from flask_login import current_user
 from werkzeug.utils import secure_filename
+
+from backend.extensions import mongo
+from backend.utilities.typed_values import utc_now
 
 # Blueprint for all upload-related endpoints
 upload_bp = Blueprint("upload", __name__)
@@ -69,6 +73,15 @@ def upload_file():
 
     # Step 6: Save the file to disk
     file.save(file_path)
+
+    mongo.db.uploads.insert_one(
+        {
+            "path": str(file_path),
+            "created_at": utc_now(),
+            "user_id": str(current_user.id) if current_user.is_authenticated else None,
+            "session_id": None if current_user.is_authenticated else session.get("session_id"),
+        }
+    )
 
     # Step 7: Respond with the server-side path where the file is stored
     return jsonify({"filePath": str(file_path)}), HTTPStatus.OK

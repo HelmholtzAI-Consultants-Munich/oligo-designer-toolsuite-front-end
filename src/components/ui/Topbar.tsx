@@ -10,12 +10,14 @@ import {
     Navbar,
     NavDropdown,
 } from "react-bootstrap";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { GearFill } from "react-bootstrap-icons";
 
 const Topbar: React.FC = () => {
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [copied, setCopied] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
     const handleLogout = () => {
         fetch(BACKEND_URL + "/logout", {
             method: "POST",
@@ -23,6 +25,42 @@ const Topbar: React.FC = () => {
         }).then(() => {
             logout();
         });
+    };
+
+    const handleDeleteAccount = async () => {
+        if (
+            !window.confirm(
+                "Are you sure you want to permanently delete your account and all associated data? This cannot be undone."
+            )
+        ) {
+            return;
+        }
+
+        try {
+            setIsDeletingAccount(true);
+            const response = await fetch(BACKEND_URL + "/api/account", {
+                method: "DELETE",
+                credentials: "include",
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || "Failed to delete account");
+            }
+
+            logout();
+            navigate("/");
+            alert(data.message);
+        } catch (error) {
+            console.error("Delete account failed:", error);
+            alert(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to delete account."
+            );
+        } finally {
+            setIsDeletingAccount(false);
+        }
     };
 
     return (
@@ -127,6 +165,16 @@ const Topbar: React.FC = () => {
                                                         user.username ||
                                                         user.id}
                                                 </code>
+                                            </Dropdown.Item>
+                                            <Dropdown.Divider />
+                                            <Dropdown.Item
+                                                onClick={handleDeleteAccount}
+                                                className="text-danger"
+                                                disabled={isDeletingAccount}
+                                            >
+                                                {isDeletingAccount
+                                                    ? "Deleting Account..."
+                                                    : "Delete My Account"}
                                             </Dropdown.Item>
                                             <Dropdown.Divider />
                                             <Dropdown.Item

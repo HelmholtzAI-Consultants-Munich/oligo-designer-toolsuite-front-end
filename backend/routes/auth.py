@@ -28,6 +28,7 @@ from flask_login import LoginManager, UserMixin, current_user, login_required, l
 from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
+from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 from backend.utilities.legal_acceptance import (
     get_latest_terms_acceptance,
@@ -122,6 +123,10 @@ def _login(user: User, remember: bool = True):
         mongo.db.runs.update_many(
             {"session_id": session_id},
             {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}},
+        )
+        mongo.db.uploads.update_many(
+            {"session_id": session_id},
+            {"$set": {"user_id": user.id, "session_id": None}},
         )
         # Clear anonymous session_id from session
         session.pop("session_id", None)
@@ -427,6 +432,23 @@ def logout():
     # Log out user
     logout_user()
     return jsonify({"message": "Logged out"}), HTTPStatus.OK
+
+
+@auth_bp.route("/api/account", methods=["DELETE"])
+@login_required
+def delete_account():
+    """Delete the current account and the user's associated data."""
+    user_id = str(current_user.id)
+
+    delete_user_account_data(
+        user_id=user_id,
+        upload_root=current_app.config["UPLOAD_PATH"],
+        userdata_root=current_app.config["USERDATA_PATH"],
+    )
+
+    session.clear()
+    logout_user()
+    return jsonify({"message": "Your account and associated data have been deleted."}), HTTPStatus.OK
 
 
 # ---- Before Request Handler to Assign Anonymous Session ID ----

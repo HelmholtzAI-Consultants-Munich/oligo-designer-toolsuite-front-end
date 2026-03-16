@@ -158,6 +158,13 @@ def client(app, monkeypatch):
             yield client
 
 
+class TestAuthenticatedUser:
+    is_authenticated = True
+
+    def __init__(self, user_id: str):
+        self.id = user_id
+
+
 @pytest.fixture
 def authenticated_user(app, monkeypatch):
     # Simulate an authenticated user
@@ -178,6 +185,16 @@ def authenticated_user(app, monkeypatch):
     yield
     with app.app_context():
         mongo.db.legal_acceptances.delete_many({"user_id": DummyUser.id})
+
+
+@pytest.fixture
+def authenticate_as_user(monkeypatch):
+    def _authenticate(user_id: str) -> TestAuthenticatedUser:
+        user = TestAuthenticatedUser(user_id)
+        monkeypatch.setattr("flask_login.utils._get_user", lambda: user)
+        return user
+
+    return _authenticate
 
 
 @pytest.fixture()
