@@ -132,7 +132,7 @@ export const handleSubmit = async (
         showToast({
             title: "Submission Failed",
             content: "Please upload all required files before submitting.",
-            type: "error",
+            type: "danger",
         });
         return;
     }
@@ -143,7 +143,7 @@ export const handleSubmit = async (
         showToast({
             title: "Pipeline Failed",
             content: "Our servers have failed to create a new run.",
-            type: "error",
+            type: "danger",
         });
         return;
     }
@@ -180,7 +180,7 @@ export const handleSubmit = async (
                     <Link to={`/runs/${newId}`}>View the run here.</Link>
                 </p>
             ),
-            type: "error",
+            type: "danger",
         });
     } finally {
         // remove uploaded filepaths added in uploadFiles

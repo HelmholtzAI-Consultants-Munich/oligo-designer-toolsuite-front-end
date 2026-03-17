@@ -11,6 +11,7 @@ import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
 import { BoxArrowInDown, BoxArrowUp, Send } from "react-bootstrap-icons";
 import { useRuns } from "../../modules/useRuns";
+import { Button } from "react-bootstrap";
 
 type Props = {
     pipeline: string;
@@ -99,7 +100,11 @@ const PipelineTemplate: React.FC<Props> = ({
                 onSubmit={() =>
                     handleSubmit(files, formData, pipeline, updateRuns)
                 }
-            />
+            >
+                <Button type="submit" variant="primary">
+                    Run Pipeline <Send className="ms-2" />
+                </Button>
+            </Form>
         </Page>
     );
 };

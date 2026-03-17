@@ -214,7 +214,7 @@ const RunDetail = () => {
                             title: "Failed to delete run",
                             content:
                                 "An error occurred while trying to delete the run. Please try again later.",
-                            type: "error",
+                            type: "danger",
                         });
                     }
                 },

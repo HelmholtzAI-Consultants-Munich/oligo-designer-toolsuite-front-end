@@ -21,12 +21,18 @@ $border-radius-sm: 0.5rem;
 $border-radius-lg: 1rem;
 $border-radius-xl: 2rem;
 $border-radius-xxl: 3rem;
-$border-radius-pill: 50rem;
 
 $font-family-sans-serif: "Fustat Variable", sans-serif;
 
 $toast-background-color: #fff;
-$toast-header-background-color: #fff;
+
+$card-spacer-x: 1.5rem;
+$card-spacer-y: 1.5rem;
+
+$table-cell-padding-y: .75rem !default;
+$table-cell-padding-x: .75rem !default;
+$table-cell-padding-y-sm: .5rem;
+$table-cell-padding-x-sm: .5rem;
 
 // Bootstrap and its default variables
 @import "../../node_modules/bootstrap/scss/bootstrap";
@@ -84,6 +90,12 @@ a,
 
     flex-direction: column;
     align-items: start;
+
+    z-index: 1000;
+}
+
+.navbar-main ~ * {
+    z-index: 0;
 }
 
 .navbar-main .navbar-brand {
@@ -105,6 +117,7 @@ a,
 
 .navbar-main .user-dropdown {
     font-weight: 300;
+    color: $black;
     padding-left: $btn-padding-y;
 }
 
@@ -207,6 +220,23 @@ navbar-nav.nav-separated {
 .header {
     border-bottom: 1px solid $border-color;
     background-color: $white;
+    transition: box-shadow 0.3s ease;
+}
+
+.header.scrolled {
+    box-shadow: $box-shadow-lg;
+    .header-title {
+        font-size: 0;
+    }
+    label {
+        height: 0;
+        opacity: 0;
+        margin-bottom: 0;
+    }
+    .container {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
 }
 
 .header-title {
@@ -244,7 +274,7 @@ navbar-nav.nav-separated {
     @include button-variant(
         $white,
         $border-color,
-        $black,
+        $text-muted,
         tint-color($border-color, 90%),
         $border-color,
         $black,
@@ -305,12 +335,22 @@ navbar-nav.nav-separated {
     }
 }
 
+/* Toasts */
+
+.toast {
+    overflow: hidden;
+}
+
+.toast-body {
+    background-color: $toast-background-color;
+}
+
 /* Visualization */
 
 .visual-container {
     border: 1px solid $border-color;
     border-radius: $border-radius;
-    padding: 1rem;
+    padding: 1.5rem;
     background-color: tint-color($primary, 95%);
 }
 

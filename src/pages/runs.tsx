@@ -39,7 +39,7 @@ const Runs = () => {
                             title: "Failed to delete run",
                             content:
                                 "An error occurred while trying to delete the run. Please try again later.",
-                            type: "error",
+                            type: "danger",
                         });
                     }
                 },
@@ -55,7 +55,7 @@ const Runs = () => {
                 title: "Please enter a RunID",
                 content:
                     "The RunID cannot be empty. Please enter a valid RunID.",
-                type: "error",
+                type: "danger",
             });
         }
     };
@@ -144,7 +144,7 @@ const Runs = () => {
                     ))}
                     {runs.length === 0 && (
                         <tr>
-                            <td colSpan={4} className="text-center py-4">
+                            <td colSpan={4} className="text-center py-4 text-muted">
                                 No pipeline runs found. Start your first
                                 analysis!
                             </td>

@@ -12,7 +12,7 @@ function ToastIcon({ type }: { type: string }) {
     switch (type) {
         case "success":
             return <CheckCircleFill className="text-success" />;
-        case "error":
+        case "danger":
             return <XCircleFill className="text-danger" />;
         case "info":
             return <InfoCircleFill className="text-info" />;
@@ -64,6 +64,7 @@ export default function Toasts() {
                     delay={3000}
                     autohide
                     key={toast.id}
+                    bg={toast.type}
                 >
                     <Toast.Header>
                         <Horizontal align="center" gap="sm" fillWidth>

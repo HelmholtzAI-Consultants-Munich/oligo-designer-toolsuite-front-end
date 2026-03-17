@@ -26,6 +26,7 @@ const faq: React.FC = () => {
                         <a
                             href="https://oligo-designer-toolsuite.readthedocs.io/en/latest/index.html"
                             target="_blank"
+                            className="text-decoration-underline"
                         >
                             this link
                         </a>

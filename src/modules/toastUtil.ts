@@ -1,6 +1,6 @@
 export interface ToastProps {
     id: number;
-    type: "success" | "error" | "info";
+    type: "success" | "danger" | "info";
     title: string;
     content: React.ReactNode;
 }

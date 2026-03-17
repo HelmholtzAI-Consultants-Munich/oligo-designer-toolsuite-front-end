@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Container, Form, InputGroup, Nav } from "react-bootstrap";
 import { ArrowLeft, type Icon } from "react-bootstrap-icons";
 import { Grid, Horizontal, Vertical } from "./Grid";
@@ -111,6 +111,8 @@ function Header({
     const [activeOffset, setActiveOffset] = useState(0);
     const [activeWidth, setActiveWidth] = useState(0);
     const [animationReady, setAnimationReady] = useState(0);
+    const headerRef = useRef<HTMLDivElement | null>(null);
+    const detectorRef = useRef<HTMLDivElement | null>(null);
 
     const navigate = useNavigate();
 
@@ -132,19 +134,106 @@ function Header({
         }
     }, [tabs, activeWidth]);
 
+    useEffect(() => {
+        if (stickyHeader) {
+            // TODO: make this logic more robust (and possibly efficient using IntersectionObserver)
+            const handleScroll = () => {
+                if (headerRef.current) {;
+                    if (window.scrollY > 250) {
+                        headerRef.current.classList.add("scrolled");
+                    } else if (window.scrollY < 100) {
+                        headerRef.current.classList.remove("scrolled");
+                    }
+                }
+            }
+
+            window.addEventListener("scroll", handleScroll);
+
+            return () => {
+                window.removeEventListener("scroll", handleScroll);
+            }
+        }
+    }, [stickyHeader]);
+
     if (hideHeader) {
         return <title>{extendedTitle}</title>;
     }
 
     return (
-        <header className={`header ${stickyHeader ? "sticky-top" : ""}`}>
-            <title>{extendedTitle}</title>
-            <Container>
-                {(tabs && tabs.length > 0 && (
-                    <>
-                        <h1 className="header-title">{title}</h1>
-                        <Horizontal align="end" wrap>
-                            <Horizontal grow gap="md" align="center">
+        <>
+            {stickyHeader && <div className="scroll-detector" ref={detectorRef}></div>}
+            <header ref={headerRef} className={`header ${stickyHeader ? "sticky-top" : ""}`}>
+                <title>{extendedTitle}</title>
+                <Container>
+                    {(tabs && tabs.length > 0 && (
+                        <>
+                            <h1 className="header-title">{title}</h1>
+                            <Horizontal align="end" wrap>
+                                <Horizontal grow gap="md" align="center">
+                                    {backTo && (
+                                        <Button
+                                            variant="outline-border"
+                                            onClick={() => navigate(backTo.href)}
+                                        >
+                                            <ArrowLeft /> {backTo.label}
+                                        </Button>
+                                    )}
+                                    <Nav
+                                        variant="header"
+                                        defaultActiveKey={
+                                            defaultTabKey || tabs[0].tabKey
+                                        }
+                                        style={
+                                            {
+                                                "--active-offset": `${activeOffset}px`,
+                                                "--active-width": `${activeWidth}px`,
+                                                "--animation-ready": animationReady,
+                                            } as React.CSSProperties
+                                        }
+                                        onSelect={(selectedKey, event) => {
+                                            const target =
+                                                event?.target as HTMLElement;
+                                            if (target) {
+                                                setActiveOffset(target.offsetLeft);
+                                                setActiveWidth(target.offsetWidth);
+                                            }
+                                        }}
+                                    >
+                                        {tabs.map((tab) => (
+                                            <Nav.Item key={tab.tabKey}>
+                                                <Nav.Link
+                                                    eventKey={tab.tabKey}
+                                                    active={
+                                                        tab.tabKey === activeTab
+                                                    }
+                                                    onClick={() =>
+                                                        setActiveTab(tab.tabKey)
+                                                    }
+                                                >
+                                                    {tab.label}
+                                                </Nav.Link>
+                                            </Nav.Item>
+                                        ))}
+                                    </Nav>
+                                </Horizontal>
+                                {actions && (
+                                    <Grid gap="md">
+                                        {actions.map((action, index) => {
+                                            return (
+                                                <HeaderAction
+                                                    key={index}
+                                                    action={action}
+                                                />
+                                            );
+                                        })}
+                                    </Grid>
+                                )}
+                            </Horizontal>
+                        </>
+                    )) || (
+                        <Horizontal align="end" wrap gap="md">
+                            <Vertical gap="md" grow>
+                                <h1 className="header-title">{title}</h1>
                                 {backTo && (
                                     <Button
                                         variant="outline-border"
@@ -153,44 +242,7 @@ function Header({
                                         <ArrowLeft /> {backTo.label}
                                     </Button>
                                 )}
-                                <Nav
-                                    variant="header"
-                                    defaultActiveKey={
-                                        defaultTabKey || tabs[0].tabKey
-                                    }
-                                    style={
-                                        {
-                                            "--active-offset": `${activeOffset}px`,
-                                            "--active-width": `${activeWidth}px`,
-                                            "--animation-ready": animationReady,
-                                        } as React.CSSProperties
-                                    }
-                                    onSelect={(selectedKey, event) => {
-                                        const target =
-                                            event?.target as HTMLElement;
-                                        if (target) {
-                                            setActiveOffset(target.offsetLeft);
-                                            setActiveWidth(target.offsetWidth);
-                                        }
-                                    }}
-                                >
-                                    {tabs.map((tab) => (
-                                        <Nav.Item key={tab.tabKey}>
-                                            <Nav.Link
-                                                eventKey={tab.tabKey}
-                                                active={
-                                                    tab.tabKey === activeTab
-                                                }
-                                                onClick={() =>
-                                                    setActiveTab(tab.tabKey)
-                                                }
-                                            >
-                                                {tab.label}
-                                            </Nav.Link>
-                                        </Nav.Item>
-                                    ))}
-                                </Nav>
-                            </Horizontal>
+                            </Vertical>
                             {actions && (
                                 <Grid gap="md">
                                     {actions.map((action, index) => {
@@ -204,36 +256,10 @@ function Header({
                                 </Grid>
                             )}
                         </Horizontal>
-                    </>
-                )) || (
-                    <Horizontal align="end" wrap gap="md">
-                        <Vertical gap="md" grow>
-                            <h1 className="header-title">{title}</h1>
-                            {backTo && (
-                                <Button
-                                    variant="outline-border"
-                                    onClick={() => navigate(backTo.href)}
-                                >
-                                    <ArrowLeft /> {backTo.label}
-                                </Button>
-                            )}
-                        </Vertical>
-                        {actions && (
-                            <Grid gap="md">
-                                {actions.map((action, index) => {
-                                    return (
-                                        <HeaderAction
-                                            key={index}
-                                            action={action}
-                                        />
-                                    );
-                                })}
-                            </Grid>
-                        )}
-                    </Horizontal>
-                )}
-            </Container>
-        </header>
+                    )}
+                </Container>
+            </header>
+        </>
     );
 }
 

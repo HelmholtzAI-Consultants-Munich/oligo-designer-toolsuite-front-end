@@ -57,7 +57,7 @@ const Login = () => {
                 showToast({
                     title: "Invalid username or password.",
                     content: "Please check your credentials and try again.",
-                    type: "error",
+                    type: "danger",
                 });
             } else {
                 console.error(err);
@@ -65,7 +65,7 @@ const Login = () => {
                     title: "Login failed.",
                     content:
                         "An error occurred during login. Please try again later.",
-                    type: "error",
+                    type: "danger",
                 });
             }
         }
