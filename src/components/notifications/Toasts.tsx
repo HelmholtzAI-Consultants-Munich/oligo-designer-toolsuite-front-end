@@ -1,6 +1,25 @@
 import { Toast, ToastContainer } from "react-bootstrap";
 import { hideToast, type ToastProps } from "../../modules/toastUtil";
 import { useEffect, useState } from "react";
+import {
+    CheckCircleFill,
+    InfoCircleFill,
+    XCircleFill,
+} from "react-bootstrap-icons";
+import { Horizontal } from "../ui/Grid";
+
+function ToastIcon({ type }: { type: string }) {
+    switch (type) {
+        case "success":
+            return <CheckCircleFill className="text-success" />;
+        case "error":
+            return <XCircleFill className="text-danger" />;
+        case "info":
+            return <InfoCircleFill className="text-info" />;
+        default:
+            return null;
+    }
+}
 
 export default function Toasts() {
     const [toasts, setToasts] = useState<ToastProps[]>([]);
@@ -38,18 +57,21 @@ export default function Toasts() {
     }, []);
 
     return (
-        <ToastContainer position="top-end" className="position-absolute p-3">
+        <ToastContainer position="top-end" className="position-fixed p-3">
             {toasts.map((toast) => (
                 <Toast
                     onClose={() => hideToast(toast.id)}
-                    autohide
                     delay={3000}
+                    autohide
                     key={toast.id}
                 >
                     <Toast.Header>
-                        <strong className="me-auto">{toast.title}</strong>
+                        <Horizontal align="center" gap="sm" fillWidth>
+                            <ToastIcon type={toast.type} />
+                            <strong>{toast.title}</strong>
+                        </Horizontal>
                     </Toast.Header>
-                    <Toast.Body>{toast.description}</Toast.Body>
+                    <Toast.Body>{toast.content}</Toast.Body>
                 </Toast>
             ))}
         </ToastContainer>

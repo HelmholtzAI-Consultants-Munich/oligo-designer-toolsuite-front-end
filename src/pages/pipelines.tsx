@@ -5,10 +5,10 @@ import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";
 import seqfish from "../images/seqfish.jpg";
 import oligoseq from "../images/oligoseq.jpg";
-import { Alert, Button, Card, Col, Row } from "react-bootstrap";
+import { Alert, Button, Card } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
-import { Grid } from "../components/ui/Grid";
+import { Grid, Vertical } from "../components/ui/Grid";
 import { ArrowRight } from "react-bootstrap-icons";
 
 const Pipelines: React.FC = () => {
@@ -17,7 +17,7 @@ const Pipelines: React.FC = () => {
 
     const pipelines = [
         {
-            title: "Scrinshot Probe Designer",
+            title: "Scrinshot",
             description:
                 "Spatial gene expression analysis using scrinshot technology.",
             link: "/pipelines/scrinshot",
@@ -26,7 +26,7 @@ const Pipelines: React.FC = () => {
             img: scrinshot,
         },
         {
-            title: "Merfish Probe Designer",
+            title: "Merfish",
             description:
                 "Highly multiplexed imaging for spatially resolved transcriptomics.",
             link: "/pipelines/merfish",
@@ -35,7 +35,7 @@ const Pipelines: React.FC = () => {
             img: merfish,
         },
         {
-            title: "SeqFish+ Probe Designer",
+            title: "SeqFish+",
             description:
                 "Sequential imaging for probing complex spatial transcriptomes.",
             link: "/pipelines/seqfish",
@@ -44,7 +44,7 @@ const Pipelines: React.FC = () => {
             img: seqfish,
         },
         {
-            title: "Oligo-Seq Probe Designer",
+            title: "Oligo-Seq",
             description:
                 "High-throughput sequencing tailored for spatial transcriptomics.",
             link: "/pipelines/oligoseq",
@@ -60,40 +60,47 @@ const Pipelines: React.FC = () => {
         <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
             <Hero />
 
-            <h2>Our Probe Designers</h2>
+            <Vertical className="tight-container" gap="lg" align="stretch">
+                {!user && (
+                    <Alert variant="warning">
+                        To keep your runs saved when you close your browser,
+                        please <Link to="/login">log in</Link>.
+                    </Alert>
+                )}
 
-            {!user && (
-                <Alert variant="warning">
-                    To keep your runs saved when you close your browser, please{" "}
-                    <Link to="/login">log in</Link>.
-                </Alert>
-            )}
-
-            <Grid gap="lg" itemWidth="400px">
-                {pipelines.map((pipeline, index) => (
-                    <Card key={index}>
-                        <Card.Body>
-                            <Card.Title>{pipeline.title}</Card.Title>
-                            <Card.Text className="text-muted">
-                                {pipeline.description}
-                            </Card.Text>
-                            <Card.Link
-                                as={Button}
-                                onClick={() => navigate(pipeline.link)}
-                            >
-                                Use Pipeline
-                            </Card.Link>
-                            <Card.Link
-                                as={Link}
-                                to={pipeline.detailedLink}
-                                target="_blank"
-                            >
-                                Read about {pipeline.title} <ArrowRight />
-                            </Card.Link>
-                        </Card.Body>
-                    </Card>
-                ))}
-            </Grid>
+                <Grid gap="lg" itemWidth="25rem">
+                    {pipelines.map((pipeline, index) => (
+                        <Card key={index}>
+                            <Card.Body as={Vertical} gap="md">
+                                <Card.Title as="h4" className="mb-0">
+                                    {pipeline.title} Probe Designer
+                                </Card.Title>
+                                <Vertical.Item grow>
+                                    <Card.Text className="text-muted">
+                                        {pipeline.description}
+                                    </Card.Text>
+                                </Vertical.Item>
+                                <Vertical.Item>
+                                    <Card.Link
+                                        as={Button}
+                                        onClick={() => navigate(pipeline.link)}
+                                    >
+                                        Use Pipeline
+                                    </Card.Link>
+                                    <Card.Link
+                                        as={Link}
+                                        to={pipeline.detailedLink}
+                                        target="_blank"
+                                    >
+                                        Read about {pipeline.title}{" "}
+                                        <ArrowRight />
+                                    </Card.Link>
+                                </Vertical.Item>
+                            </Card.Body>
+                        </Card>
+                    ))}
+                </Grid>
+            </Vertical>
         </Page>
     );
 };

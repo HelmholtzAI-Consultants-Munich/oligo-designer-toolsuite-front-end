@@ -142,17 +142,17 @@ function Header({
             <Container>
                 {(tabs && tabs.length > 0 && (
                     <>
-                        {backTo && (
-                            <Button
-                                variant="outline-border"
-                                onClick={() => navigate(backTo.href)}
-                            >
-                                <ArrowLeft /> {backTo.label}
-                            </Button>
-                        )}
                         <h1 className="header-title">{title}</h1>
                         <Horizontal align="end" wrap>
-                            <Horizontal.Item grow>
+                            <Horizontal grow gap="md" align="center">
+                                {backTo && (
+                                    <Button
+                                        variant="outline-border"
+                                        onClick={() => navigate(backTo.href)}
+                                    >
+                                        <ArrowLeft /> {backTo.label}
+                                    </Button>
+                                )}
                                 <Nav
                                     variant="header"
                                     defaultActiveKey={
@@ -190,7 +190,7 @@ function Header({
                                         </Nav.Item>
                                     ))}
                                 </Nav>
-                            </Horizontal.Item>
+                            </Horizontal>
                             {actions && (
                                 <Grid gap="md">
                                     {actions.map((action, index) => {
@@ -207,17 +207,17 @@ function Header({
                     </>
                 )) || (
                     <Horizontal align="end" wrap gap="md">
-                        {backTo && (
-                            <Button
-                                variant="outline-border"
-                                onClick={() => navigate(backTo.href)}
-                            >
-                                <ArrowLeft /> {backTo.label}
-                            </Button>
-                        )}
-                        <Horizontal.Item grow>
+                        <Vertical gap="md" grow>
                             <h1 className="header-title">{title}</h1>
-                        </Horizontal.Item>
+                            {backTo && (
+                                <Button
+                                    variant="outline-border"
+                                    onClick={() => navigate(backTo.href)}
+                                >
+                                    <ArrowLeft /> {backTo.label}
+                                </Button>
+                            )}
+                        </Vertical>
                         {actions && (
                             <Grid gap="md">
                                 {actions.map((action, index) => {

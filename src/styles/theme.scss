@@ -7,6 +7,7 @@ $secondary: #037b94;
 $success: #128635;
 $warning: #ffbd11;
 $danger: #c91432;
+$info: $secondary;
 $text-muted: #373737;
 
 $primary-bg-subtle: tint-color($primary, 90%);
@@ -16,13 +17,16 @@ $border-color: #b0b0b0;
 $border-color-translucent: $border-color;
 
 $border-radius: 0.7rem;
-$border-radius-sm: 0.25rem;
-$border-radius-lg: 0.5rem;
-$border-radius-xl: 1rem;
-$border-radius-xxl: 2rem;
+$border-radius-sm: 0.5rem;
+$border-radius-lg: 1rem;
+$border-radius-xl: 2rem;
+$border-radius-xxl: 3rem;
 $border-radius-pill: 50rem;
 
 $font-family-sans-serif: "Fustat Variable", sans-serif;
+
+$toast-background-color: #fff;
+$toast-header-background-color: #fff;
 
 // Bootstrap and its default variables
 @import "../../node_modules/bootstrap/scss/bootstrap";
@@ -31,10 +35,6 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
 
 :root {
     --#{$prefix}text-muted: #{$text-muted};
-}
-
-html {
-    scrollbar-gutter: stable;
 }
 
 .text-muted {
@@ -55,6 +55,18 @@ html {
 a,
 .btn-link {
     text-decoration: none;
+}
+
+/* Page */
+
+.page {
+    padding-bottom: 5rem !important;
+}
+
+/* RJSF */
+
+.rjsf button[type="submit"] {
+    margin-top: 3rem;
 }
 
 /* Main Navbar (Sidebar) */
@@ -299,5 +311,24 @@ navbar-nav.nav-separated {
     border: 1px solid $border-color;
     border-radius: $border-radius;
     padding: 1rem;
-    background-color: tint-color($primary, 90%);
+    background-color: tint-color($primary, 95%);
+}
+
+/* Utility classes */
+
+.tight-container {
+    width: 100%;
+    max-width: 60rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Scrollgutter */
+
+html {
+    scrollbar-gutter: stable;
+}
+
+body.modal-open {
+    padding-right: 0 !important;
 }

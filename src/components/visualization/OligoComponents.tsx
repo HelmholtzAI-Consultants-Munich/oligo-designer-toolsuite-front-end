@@ -40,10 +40,7 @@ type OligoBase = {
     isBinding: boolean;
 };
 
-const OligoComponents: React.FC<Props> = ({
-    probes,
-    selectedOligo,
-}) => {
+const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
     const oligo = probes.find((o) => o.oligo_id === selectedOligo);
 
     const components: OligoComponent[] = useMemo(() => {

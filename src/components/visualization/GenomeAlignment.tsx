@@ -78,7 +78,6 @@ class GenomeAlignment extends React.Component<Props> {
 
                 {/* Legend and strand information */}
                 <Vertical>
-
                     <Horizontal wrap gap="md">
                         <strong>Legend:</strong>
                         {Object.keys(Regions)
@@ -117,8 +116,9 @@ class GenomeAlignment extends React.Component<Props> {
                     </Horizontal>
                     <strong>
                         Strand:{" "}
-                        {Object.values(this.props.genomicRegions)[0][0]["strand"] ||
-                            "unknown"}
+                        {Object.values(this.props.genomicRegions)[0][0][
+                            "strand"
+                        ] || "unknown"}
                     </strong>
                 </Vertical>
             </>

@@ -5,7 +5,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";
-import { Button, Card, Col, Form, Row } from "react-bootstrap";
+import { Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../modules/toastUtil";
 import { Vertical } from "../components/ui/Grid";
@@ -44,8 +44,9 @@ const Login = () => {
 
             console.log(res.data);
             showToast({
-                type: "success",
                 title: "Login successful!",
+                content: "You have been logged in successfully.",
+                type: "success",
             });
 
             await checkAuth();
@@ -54,14 +55,17 @@ const Login = () => {
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.status === 401) {
                 showToast({
-                    type: "error",
                     title: "Invalid username or password.",
+                    content: "Please check your credentials and try again.",
+                    type: "error",
                 });
             } else {
                 console.error(err);
                 showToast({
-                    type: "error",
                     title: "Login failed.",
+                    content:
+                        "An error occurred during login. Please try again later.",
+                    type: "error",
                 });
             }
         }

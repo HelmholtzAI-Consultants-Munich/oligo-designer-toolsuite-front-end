@@ -2,7 +2,7 @@ export interface ToastProps {
     id: number;
     type: "success" | "error" | "info";
     title: string;
-    description?: string;
+    content: React.ReactNode;
 }
 
 export const showToast = (toast: Omit<ToastProps, "id">) => {

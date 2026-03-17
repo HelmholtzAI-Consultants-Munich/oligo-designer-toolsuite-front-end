@@ -3,12 +3,7 @@ import { BACKEND_URL } from "../../config";
 import { useAuth } from "../../modules/useAuth";
 import { Button, Dropdown } from "react-bootstrap";
 import { Link } from "react-router";
-import {
-    CheckCircle,
-    CheckCircleFill,
-    ChevronUp,
-    Person,
-} from "react-bootstrap-icons";
+import { CheckCircleFill, ChevronUp, Person } from "react-bootstrap-icons";
 import { Horizontal } from "./Grid";
 
 const UserDisplay = forwardRef(

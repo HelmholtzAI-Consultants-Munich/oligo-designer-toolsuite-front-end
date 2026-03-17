@@ -1,6 +1,6 @@
 import { Image, Nav, Navbar } from "react-bootstrap";
 import { Link, useLocation } from "react-router";
-import { App, BoxArrowUpRight, Window } from "react-bootstrap-icons";
+import { BoxArrowUpRight, Window } from "react-bootstrap-icons";
 import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";

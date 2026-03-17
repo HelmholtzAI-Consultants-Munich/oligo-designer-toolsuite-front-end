@@ -76,6 +76,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
             showToast({
                 title: "Thank you for your feedback!",
+                content: "Your feedback has been submitted successfully.",
                 type: "success",
             });
             setMessage("");
@@ -171,7 +172,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                     </Modal.Body>
                     <Modal.Footer>
                         <Button
-                            variant="secondary"
+                            variant="outline-secondary"
                             onClick={close}
                             disabled={submitting}
                         >

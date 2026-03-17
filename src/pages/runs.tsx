@@ -8,6 +8,8 @@ import { useRuns } from "../modules/useRuns";
 import { pipelineDisplayNames } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../modules/toastUtil";
+import { Horizontal } from "../components/ui/Grid";
+import { confirmWithModal } from "../modules/modalUtil";
 
 const Runs = () => {
     const { loading } = useAuth();
@@ -16,30 +18,45 @@ const Runs = () => {
 
     // Add this handler function
     const handleDeleteRun = async (runId: string) => {
-        if (
-            window.confirm(
-                "Are you sure you want to delete this run? This action cannot be undone."
-            )
-        ) {
-            try {
-                await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
-                    withCredentials: true,
-                });
-                updateRuns(); // Refresh the list of runs after deletion
-                navigate("/runs");
-            } catch (error) {
-                console.error("Error deleting run:", error);
-                navigate("/runs");
-                showToast({ title: "Failed to delete run", type: "error" });
-            }
-        }
+        confirmWithModal({
+            title: "Confirm Deletion",
+            content:
+                "Are you sure you want to delete this run? This action cannot be undone.",
+            primaryAction: {
+                label: "Delete",
+                variant: "danger",
+                callback: async () => {
+                    try {
+                        await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
+                            withCredentials: true,
+                        });
+                        updateRuns(); // Refresh the list of runs after deletion
+                        navigate("/runs");
+                    } catch (error) {
+                        console.error("Error deleting run:", error);
+                        navigate("/runs");
+                        showToast({
+                            title: "Failed to delete run",
+                            content:
+                                "An error occurred while trying to delete the run. Please try again later.",
+                            type: "error",
+                        });
+                    }
+                },
+            },
+        });
     };
 
     const goToRun = (runId: string) => {
         if (runId) {
             navigate(`/runs/${runId}`);
         } else {
-            showToast({ title: "Please enter a RunID", type: "error" });
+            showToast({
+                title: "Please enter a RunID",
+                content:
+                    "The RunID cannot be empty. Please enter a valid RunID.",
+                type: "error",
+            });
         }
     };
 
@@ -90,18 +107,38 @@ const Runs = () => {
                                 {pipelineDisplayNames[run.pipeline] ||
                                     run.pipeline}
                             </td>
-                            <td>{new Date(run.timestamp).toLocaleString()}</td>
                             <td>
-                                <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteRun(run._id);
-                                    }}
-                                >
-                                    Delete
-                                </Button>
+                                {new Date(run.timestamp).toLocaleString(
+                                    "en-US",
+                                    {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                    }
+                                )}
+                            </td>
+                            <td>
+                                <Horizontal gap="md">
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={() => {}}
+                                    >
+                                        View
+                                    </Button>
+                                    <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteRun(run._id);
+                                        }}
+                                    >
+                                        Delete
+                                    </Button>
+                                </Horizontal>
                             </td>
                         </tr>
                     ))}

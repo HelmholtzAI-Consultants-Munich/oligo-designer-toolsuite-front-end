@@ -30,10 +30,7 @@ const ResultVisualization: React.FC<Props> = ({
         );
     } else if (selectedVisualization === "components") {
         return (
-            <OligoComponents
-                probes={probes}
-                selectedOligo={selectedOligo}
-            />
+            <OligoComponents probes={probes} selectedOligo={selectedOligo} />
         );
     }
 };

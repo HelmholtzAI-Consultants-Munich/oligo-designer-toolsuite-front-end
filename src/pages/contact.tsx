@@ -1,4 +1,3 @@
-import { Col } from "react-bootstrap";
 import ContactsCard from "../components/ui/ContactsCard";
 import Page from "../components/ui/Page";
 import { Grid } from "../components/ui/Grid";
