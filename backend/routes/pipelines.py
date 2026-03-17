@@ -1,16 +1,22 @@
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any
 
 from bson import ObjectId
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
-from flask_login import current_user
-from flask_login.utils import LocalProxy
 
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
+from backend.utilities.typed_values import (
+    sanitize_pipeline_form_paths,
+    serialize_path,
+    timestamp_for_display,
+    utc_now,
+)
 from backend.utilities.validation import parse_run_id
 
 # Blueprint for Merfish endpoints
@@ -31,7 +37,16 @@ def validate_name(pipeline_name: str) -> bool:
     return pipeline_name in EXISTING_PIPELINES
 
 
-def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> dict[str, str | None]:
+@dataclass(frozen=True)
+class RunContext:
+    user_id: str | None
+    session_id: str | None
+    user_dir: Path
+    timestamp: datetime
+    output_path: Path
+
+
+def create_context(pipeline_name: str) -> RunContext:
     # Get user context and directory
     user_id, session_id, user_dir = get_user_context_with_directory()
 
@@ -42,21 +57,20 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
             description="Unable to access your data directory. Please try again or contact support.",
         )
 
-    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}")
+    timestamp = utc_now()
+    run_label = timestamp_for_display(timestamp, separator="_")
+    output_path = user_dir / f"output_{pipeline_name}_probe_designer_{run_label}"
 
     # To prevent overwriting a run, fail if the directory already exists
     os.makedirs(output_path, exist_ok=False)
 
-    context = {
-        "user_id": user_id,
-        "session_id": session_id,
-        "user_dir": user_dir,
-        "timestamp": timestamp,
-        "output_path": output_path,
-    }
-
-    return context
+    return RunContext(
+        user_id=user_id,
+        session_id=session_id,
+        user_dir=user_dir,
+        timestamp=timestamp,
+        output_path=output_path,
+    )
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
@@ -66,16 +80,16 @@ def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
 def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
-    context: dict[str, str | None],
+    context: RunContext,
     task_id: str | None,
 ):
     return update_run_in_DB(
         run_id,
         {
-            "session_id": context.get("session_id"),
-            "user_id": context.get("user_id"),
-            "timestamp": context.get("timestamp"),
-            "output_path": context.get("output_path"),
+            "session_id": context.session_id,
+            "user_id": context.user_id,
+            "timestamp": context.timestamp,
+            "output_path": serialize_path(context.output_path),
             "status": "pending",
             "pipeline": pipeline_name,
             "task_id": task_id,
@@ -86,12 +100,12 @@ def write_run_to_DB(
 def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
-    upload_path: str,
-    output_path: str,
+    upload_path: Path,
+    output_path: Path,
 ) -> AsyncResult:
     return celery_app.send_task(
         "backend.worker.tasks.run_pipeline",
-        (pipeline_name, form_data, upload_path, output_path),
+        (pipeline_name, form_data, str(upload_path), str(output_path)),
     )
 
 
@@ -128,16 +142,25 @@ def start_pipeline(pipeline_name: str):
     run_id = parse_run_id(run_id_str)
 
     form_data = json.get("formdata")  # Form data from React
+    if not isinstance(form_data, dict):
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
 
-    upload_path = current_app.config["UPLOAD_PATH"]
+    upload_path = Path(current_app.config["UPLOAD_PATH"])
+    allowed_roots = [
+        upload_path,
+        Path("/app/uploads"),
+        Path(current_app.root_path) / "cache",
+        Path(current_app.config["USERDATA_PATH"]),
+    ]
+    try:
+        sanitized_form_data = sanitize_pipeline_form_paths(form_data, allowed_roots)
+    except ValueError as error:
+        abort(HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}")
 
     # User Directory and Session / User ID Logic
-    context = create_context(pipeline_name, current_user)
+    context = create_context(pipeline_name)
 
-    if context["output_path"] is None:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Could not infer output directory")
-
-    result_promise = enqueue_pipeline(pipeline_name, form_data, upload_path, context["output_path"])
+    result_promise = enqueue_pipeline(pipeline_name, sanitized_form_data, upload_path, context.output_path)
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
