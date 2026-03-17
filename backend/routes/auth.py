@@ -35,6 +35,7 @@ from backend.utilities.legal_acceptance import (
     has_current_terms_acceptance,
     record_terms_acceptance,
 )
+from backend.utilities.session_activity import delete_anonymous_session, touch_anonymous_session
 from backend.utilities.typed_values import (
     parse_http_url,
     sanitize_relative_redirect_path,
@@ -128,6 +129,8 @@ def _login(user: User, remember: bool = True):
             {"session_id": session_id},
             {"$set": {"user_id": user.id, "session_id": None}},
         )
+        mongo.db.legal_acceptances.delete_many({"session_id": session_id})
+        delete_anonymous_session(session_id)
         # Clear anonymous session_id from session
         session.pop("session_id", None)
 
@@ -288,16 +291,6 @@ def auth_callback():
 
     # Store access token in session for logout/revocation
     session["oauth_token"] = token.get("access_token")
-
-    # If there is an anonymous session, migrate runs to this user
-    session_id = session.get("session_id")
-    if session_id:
-        mongo.db.runs.update_many(
-            {"session_id": session_id},
-            {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}},
-        )
-        # Clear anonymous session_id
-        session.pop("session_id", None)
 
     # Redirect to frontend - check if there's a preserved redirect URL
     frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
@@ -472,6 +465,7 @@ def assign_session_id():
         session.permanent = True
         if "session_id" not in session:
             session["session_id"] = str(uuid.uuid4())
+        touch_anonymous_session(session.get("session_id"))
         # Ensure directory for anonymous user data associated with this session exists
         user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session["session_id"])
         os.makedirs(user_dir, exist_ok=True)

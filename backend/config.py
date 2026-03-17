@@ -12,12 +12,24 @@ See .env.sample for available configuration options.
 
 import os
 from datetime import timedelta
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 # This ensures environment variables are available for both from_prefixed_env() and CeleryConfig
 load_dotenv()
+
+
+def _env_or_default(name: str, default: str, prefixed_name: str | None = None) -> str:
+    if prefixed_name and os.environ.get(prefixed_name):
+        return os.environ[prefixed_name]
+    return os.environ.get(name, default)
+
+
+def _mongo_database_name_from_uri(uri: str, fallback: str = "oligo_db") -> str:
+    path = urlparse(uri).path.lstrip("/")
+    return path or fallback
 
 
 class Config:
@@ -52,7 +64,8 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
-    MONGO_URI = "mongodb://localhost:27017/oligo_db"
+    MONGO_URI = _env_or_default("MONGO_URI", "mongodb://localhost:27017/oligo_db", "FLASK_MONGO_URI")
+    MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", _mongo_database_name_from_uri(MONGO_URI))
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"
@@ -73,6 +86,7 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
@@ -140,3 +154,4 @@ class CeleryConfig:
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
+    anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))

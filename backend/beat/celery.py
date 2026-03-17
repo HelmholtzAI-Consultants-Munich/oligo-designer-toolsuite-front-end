@@ -16,6 +16,11 @@ def setup(sender, **kwargs):
         signature("backend.worker.tasks.fetch_dropdown_options"),
         name="fetch-dropdown-options-task",
     )
+    sender.add_periodic_task(
+        MIDNIGHT_CRON,
+        signature("backend.worker.tasks.cleanup_anonymous_data"),
+        name="cleanup-anonymous-data-task",
+    )
 
 
 if __name__ == "main":
