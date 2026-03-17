@@ -23,12 +23,12 @@ from http import HTTPStatus
 
 import requests
 from bson import ObjectId
-from flask import Blueprint, abort, current_app, jsonify, redirect, request, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
 from backend.utilities.typed_values import parse_http_url, sanitize_relative_redirect_path
+from flask import Blueprint, abort, current_app, jsonify, redirect, request, session, url_for
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -279,7 +279,7 @@ def check_auth():
                 },
             }
         )
-    return jsonify({"authenticated": False}), HTTPStatus.OK
+    return jsonify({"authenticated": False})
 
 
 # ---- Logout Route ----

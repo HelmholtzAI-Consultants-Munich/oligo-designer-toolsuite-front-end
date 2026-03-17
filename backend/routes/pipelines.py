@@ -7,10 +7,11 @@ from typing import Any
 
 from bson import ObjectId
 from celery.result import AsyncResult
-from flask import Blueprint, abort, current_app, jsonify, request
 
 from backend.extensions import celery_app, mongo
+from backend.routes.auth import check_auth
 from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.runs import delete_run
 from backend.utilities.typed_values import (
     sanitize_pipeline_form_paths,
     serialize_path,
@@ -18,6 +19,7 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import parse_run_id
+from flask import Blueprint, abort, current_app, jsonify, request
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -98,14 +100,25 @@ def write_run_to_DB(
 
 
 def enqueue_pipeline(
-    pipeline_name: str,
-    form_data: dict[str, Any],
-    upload_path: Path,
-    output_path: Path,
+    pipeline_name: str, form_data: dict[str, Any], upload_path: Path, output_path: Path, run_id: ObjectId
 ) -> AsyncResult:
+    authenticated = check_auth().get_json()["authenticated"]
+    if not authenticated:
+        queue = "standard"
+        gene_count = 0
+        for gene in form_data["file_regions"].split(","):
+            gene_count += 1
+
+        if gene_count > 10:
+            delete_run(run_id)
+            abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
+
+    else:
+        queue = "priority"
     return celery_app.send_task(
-        "backend.worker.tasks.run_pipeline",
+        "worker.tasks.run_pipeline",
         (pipeline_name, form_data, str(upload_path), str(output_path)),
+        queue=queue,
     )
 
 
@@ -160,7 +173,9 @@ def start_pipeline(pipeline_name: str):
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    result_promise = enqueue_pipeline(pipeline_name, sanitized_form_data, upload_path, context.output_path)
+    result_promise = enqueue_pipeline(
+        pipeline_name, sanitized_form_data, upload_path, context.output_path, run_id
+    )
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)

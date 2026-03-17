@@ -185,11 +185,21 @@ export const handleSubmit = async (
         });
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
-        setModal({
-            show: true,
-            title: "Pipeline Failed",
-            body: errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
-        });
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+            setRunId(null);
+            setModal({
+                show: true,
+                title: "Pipeline Not Started",
+                body: errorMessage,
+            });
+        } else {
+            setModal({
+                show: true,
+                title: "Pipeline Failed",
+                body:
+                    errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
+            });
+        }
     } finally {
         // remove uploaded filepaths added in uploadFiles
         for (const key in files) {
