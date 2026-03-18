@@ -144,7 +144,10 @@ const Runs = () => {
                     ))}
                     {runs.length === 0 && (
                         <tr>
-                            <td colSpan={4} className="text-center py-4 text-muted">
+                            <td
+                                colSpan={4}
+                                className="text-center py-4 text-muted"
+                            >
                                 No pipeline runs found. Start your first
                                 analysis!
                             </td>

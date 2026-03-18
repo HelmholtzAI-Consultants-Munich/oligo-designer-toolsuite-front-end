@@ -61,7 +61,7 @@ export default function Toasts() {
             {toasts.map((toast) => (
                 <Toast
                     onClose={() => hideToast(toast.id)}
-                    delay={3000}
+                    delay={4000}
                     autohide
                     key={toast.id}
                     bg={toast.type}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import type { User } from "../types";
 import { BACKEND_URL } from "../config";
 import { AuthContext } from "./useAuth";
+import { useRuns } from "./useRuns";
 
 export default function AuthProvider({
     children,
@@ -10,6 +11,7 @@ export default function AuthProvider({
 }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const { updateRuns } = useRuns();
 
     const checkAuth = async () => {
         setLoading(true);
@@ -33,11 +35,12 @@ export default function AuthProvider({
 
     const logout = () => {
         setUser(null);
+        updateRuns();
     };
 
     return (
         <AuthContext.Provider value={{ user, loading, checkAuth, logout }}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 }

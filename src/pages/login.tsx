@@ -9,6 +9,7 @@ import { Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../modules/toastUtil";
 import { Vertical } from "../components/ui/Grid";
+import { useRuns } from "../modules/useRuns";
 
 /**
  * Login component handles user login functionality.
@@ -21,6 +22,7 @@ const Login = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { user, loading, checkAuth } = useAuth();
+    const { updateRuns } = useRuns();
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get("redirect") || "/";
@@ -50,6 +52,7 @@ const Login = () => {
             });
 
             await checkAuth();
+            updateRuns(); // Refresh runs after login
             // Navigate to the redirect URL or home
             navigate(redirectTo);
         } catch (err: unknown) {

@@ -138,20 +138,20 @@ function Header({
         if (stickyHeader) {
             // TODO: make this logic more robust (and possibly efficient using IntersectionObserver)
             const handleScroll = () => {
-                if (headerRef.current) {;
+                if (headerRef.current) {
                     if (window.scrollY > 250) {
                         headerRef.current.classList.add("scrolled");
                     } else if (window.scrollY < 100) {
                         headerRef.current.classList.remove("scrolled");
                     }
                 }
-            }
+            };
 
             window.addEventListener("scroll", handleScroll);
 
             return () => {
                 window.removeEventListener("scroll", handleScroll);
-            }
+            };
         }
     }, [stickyHeader]);
 
@@ -161,8 +161,13 @@ function Header({
 
     return (
         <>
-            {stickyHeader && <div className="scroll-detector" ref={detectorRef}></div>}
-            <header ref={headerRef} className={`header ${stickyHeader ? "sticky-top" : ""}`}>
+            {stickyHeader && (
+                <div className="scroll-detector" ref={detectorRef}></div>
+            )}
+            <header
+                ref={headerRef}
+                className={`header ${stickyHeader ? "sticky-top" : ""}`}
+            >
                 <title>{extendedTitle}</title>
                 <Container>
                     {(tabs && tabs.length > 0 && (
@@ -173,7 +178,9 @@ function Header({
                                     {backTo && (
                                         <Button
                                             variant="outline-border"
-                                            onClick={() => navigate(backTo.href)}
+                                            onClick={() =>
+                                                navigate(backTo.href)
+                                            }
                                         >
                                             <ArrowLeft /> {backTo.label}
                                         </Button>
@@ -187,15 +194,20 @@ function Header({
                                             {
                                                 "--active-offset": `${activeOffset}px`,
                                                 "--active-width": `${activeWidth}px`,
-                                                "--animation-ready": animationReady,
+                                                "--animation-ready":
+                                                    animationReady,
                                             } as React.CSSProperties
                                         }
                                         onSelect={(selectedKey, event) => {
                                             const target =
                                                 event?.target as HTMLElement;
                                             if (target) {
-                                                setActiveOffset(target.offsetLeft);
-                                                setActiveWidth(target.offsetWidth);
+                                                setActiveOffset(
+                                                    target.offsetLeft
+                                                );
+                                                setActiveWidth(
+                                                    target.offsetWidth
+                                                );
                                             }
                                         }}
                                     >
