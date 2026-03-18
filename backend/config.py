@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
+from kombu import Queue
 
 # Load environment variables from .env file
 # This ensures environment variables are available for both from_prefixed_env() and CeleryConfig
@@ -140,3 +141,7 @@ class CeleryConfig:
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
+    task_queues = (
+        Queue("priority"),
+        Queue("standard"),
+    )

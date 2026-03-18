@@ -116,7 +116,7 @@ def enqueue_pipeline(
     else:
         queue = "priority"
     return celery_app.send_task(
-        "worker.tasks.run_pipeline",
+        "backend.worker.tasks.run_pipeline",
         (pipeline_name, form_data, str(upload_path), str(output_path)),
         queue=queue,
     )
