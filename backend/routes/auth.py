@@ -282,6 +282,7 @@ def auth_callback():
         user_doc = mongo.db.users.find_one({"_id": user_id})
     else:
         _ensure_user_legal_fields(user_doc["_id"])
+        user_doc = mongo.db.users.find_one({"_id": user_doc["_id"]})
 
     # Log user in with "Remember Me" to persist login across browser sessions
     # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow

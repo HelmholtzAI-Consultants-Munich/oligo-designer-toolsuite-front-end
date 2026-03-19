@@ -53,6 +53,8 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
+    # Read env here as well because Celery worker tasks import Config directly and do not
+    # go through Flask's app.config.from_prefixed_env() override step.
     MONGO_URI = os.environ.get("FLASK_MONGO_URI") or os.environ.get(
         "MONGO_URI", "mongodb://localhost:27017/oligo_db"
     )

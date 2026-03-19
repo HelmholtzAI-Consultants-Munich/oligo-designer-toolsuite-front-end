@@ -102,7 +102,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 return;
             }
 
-            setShowTermsAcceptance(true);
+            setShowTermsAcceptance(false);
             setHasAcceptedTerms(false);
         }
 
