@@ -49,7 +49,6 @@ def _serialize_legal_document(document: dict | None) -> dict | None:
     return {
         "id": str(document["_id"]),
         "document": document["document"],
-        "label": LEGAL_DOCUMENT_LABELS[document["document"]],
         "title": derive_legal_title(document["document"], body),
         "body": body,
         "version": document["version"],
@@ -125,6 +124,7 @@ def get_legal_document_admin_view(document_key: str) -> dict:
     if not is_supported_legal_document(document_key):
         raise ValueError(f"Unsupported legal document: {document_key}")
 
+    published_document = _serialize_legal_document(ensure_published_legal_document(document_key))
     history = list(
         mongo.db.legal_documents.find(
             {
@@ -136,8 +136,8 @@ def get_legal_document_admin_view(document_key: str) -> dict:
 
     return {
         "document": document_key,
-        "label": LEGAL_DOCUMENT_LABELS[document_key],
-        "published": _serialize_legal_document(ensure_published_legal_document(document_key)),
+        "title": published_document["title"],
+        "published": published_document,
         "history": [_serialize_legal_document(item) for item in history],
     }
 

@@ -21,17 +21,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def _env_or_default(name: str, default: str, prefixed_name: str | None = None) -> str:
-    if prefixed_name and os.environ.get(prefixed_name):
-        return os.environ[prefixed_name]
-    return os.environ.get(name, default)
-
-
-def _mongo_database_name_from_uri(uri: str, fallback: str = "oligo_db") -> str:
-    path = urlparse(uri).path.lstrip("/")
-    return path or fallback
-
-
 class Config:
     """Flask configuration with default values.
 
@@ -64,8 +53,10 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
-    MONGO_URI = _env_or_default("MONGO_URI", "mongodb://localhost:27017/oligo_db", "FLASK_MONGO_URI")
-    MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", _mongo_database_name_from_uri(MONGO_URI))
+    MONGO_URI = os.environ.get("FLASK_MONGO_URI") or os.environ.get(
+        "MONGO_URI", "mongodb://localhost:27017/oligo_db"
+    )
+    MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", urlparse(MONGO_URI).path.lstrip("/") or "oligo_db")
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"

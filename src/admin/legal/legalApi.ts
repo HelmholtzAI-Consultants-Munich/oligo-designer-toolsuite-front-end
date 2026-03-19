@@ -5,7 +5,7 @@ import { BACKEND_URL } from "../../config";
 export interface LegalDocumentVersion {
     id: string;
     document: string;
-    label: string;
+    title: string;
     body: string;
     version: string;
     status: "published" | "archived";
@@ -14,7 +14,7 @@ export interface LegalDocumentVersion {
 
 export interface LegalDocumentAdminView {
     document: string;
-    label: string;
+    title: string;
     published: LegalDocumentVersion | null;
     history: LegalDocumentVersion[];
 }

@@ -18,7 +18,6 @@ export interface TermsAcceptanceStatus {
 
 export interface LegalDocument {
     document: string;
-    label: string;
     title: string;
     version: string;
     body: string;

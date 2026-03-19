@@ -213,7 +213,7 @@ const LegalDocuments: React.FC = () => {
                                 <div className="d-flex justify-content-between align-items-start">
                                     <div>
                                         <Card.Title>
-                                            {document.label}
+                                            {document.title}
                                         </Card.Title>
                                         <div className="text-muted small">
                                             Published:{" "}
@@ -249,7 +249,7 @@ const LegalDocuments: React.FC = () => {
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                     <div>
                                         <Card.Title className="mb-1">
-                                            Edit {detail.label}
+                                            Edit {detail.title}
                                         </Card.Title>
                                         <div className="text-muted small">
                                             Published version:{" "}

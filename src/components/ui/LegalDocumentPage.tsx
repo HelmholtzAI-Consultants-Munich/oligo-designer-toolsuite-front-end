@@ -68,10 +68,7 @@ const LegalDocumentPage: React.FC<LegalDocumentPageProps> = ({ endpoint }) => {
                             <p className="text-muted mb-2">
                                 Version {document.version}
                             </p>
-                            <LegalMarkdown
-                                body={document.body}
-                                documentKey={document.document}
-                            />
+                            <LegalMarkdown body={document.body} />
                         </Card.Body>
                     </Card>
                 )}
