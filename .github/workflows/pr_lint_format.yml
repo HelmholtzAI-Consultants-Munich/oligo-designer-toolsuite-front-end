@@ -1,4 +1,4 @@
-name: PR Lint & Format
+name: PR Lint, Format & Typecheck
 
 on:
   pull_request:
@@ -154,4 +154,41 @@ jobs:
           else
             echo "❌ Frontend formatting check failed" >> $GITHUB_STEP_SUMMARY
             echo "Run 'npm run format:fix' to fix" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  frontend-typecheck:
+    name: Frontend TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Install dependencies
+        run: |
+          set -euxo pipefail
+          npm ci
+
+      - name: Run TypeScript typecheck
+        id: frontend-typecheck-run
+        run: |
+          set -euxo pipefail
+          npm run typecheck
+        continue-on-error: false
+
+      - name: TypeScript summary
+        if: always()
+        run: |
+          echo "## Frontend TypeScript Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.frontend-typecheck-run.outcome }}" == "success" ]; then
+            echo "✅ Frontend TypeScript typecheck passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Frontend TypeScript typecheck failed" >> $GITHUB_STEP_SUMMARY
+            echo "Run 'npm run typecheck' to reproduce locally" >> $GITHUB_STEP_SUMMARY
           fi
