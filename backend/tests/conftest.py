@@ -165,6 +165,21 @@ class TestAuthenticatedUser:
         self.id = user_id
 
 
+def _insert_terms_acceptance(**query):
+    mongo.db.legal_acceptances.insert_one(
+        {
+            **query,
+            "document": "terms",
+            "terms_version": get_current_terms_version(),
+            "timestamp": utc_now(),
+        }
+    )
+
+
+def _delete_terms_acceptance(**query):
+    mongo.db.legal_acceptances.delete_many(query)
+
+
 @pytest.fixture
 def authenticated_user(app, monkeypatch):
     # Simulate an authenticated user
@@ -174,17 +189,10 @@ def authenticated_user(app, monkeypatch):
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
     with app.app_context():
-        mongo.db.legal_acceptances.insert_one(
-            {
-                "user_id": DummyUser.id,
-                "document": "terms",
-                "terms_version": get_current_terms_version(),
-                "timestamp": utc_now(),
-            }
-        )
+        _insert_terms_acceptance(user_id=DummyUser.id)
     yield
     with app.app_context():
-        mongo.db.legal_acceptances.delete_many({"user_id": DummyUser.id})
+        _delete_terms_acceptance(user_id=DummyUser.id)
 
 
 @pytest.fixture
@@ -211,17 +219,10 @@ def session_user(client, app, monkeypatch):
     with client.session_transaction() as sess:
         sess["session_id"] = "anon-session-123"
     with app.app_context():
-        mongo.db.legal_acceptances.insert_one(
-            {
-                "session_id": "anon-session-123",
-                "document": "terms",
-                "terms_version": get_current_terms_version(),
-                "timestamp": utc_now(),
-            }
-        )
+        _insert_terms_acceptance(session_id="anon-session-123")
     yield
     with app.app_context():
-        mongo.db.legal_acceptances.delete_many({"session_id": "anon-session-123"})
+        _delete_terms_acceptance(session_id="anon-session-123")
 
 
 def assert_error_sanitized(response_data):
