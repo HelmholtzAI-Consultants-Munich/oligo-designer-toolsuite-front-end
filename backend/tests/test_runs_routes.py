@@ -78,7 +78,7 @@ def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_
     assert response.get_json()["error"] == "Invalid file path"
 
 
-def test_runid_null(client, mock_celery):
+def test_runid_null(client, mock_celery, session_user):
     form = {"runid": None}
 
     response = client.post("/api/scrinshot", json=form)
