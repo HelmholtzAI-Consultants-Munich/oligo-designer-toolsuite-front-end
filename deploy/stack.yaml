@@ -28,6 +28,14 @@ parameters:
     type: number
     default: 200
 
+  existing_floating_ip_id:
+    type: string
+    description: ID of the already allocated floating IP to attach
+
+  existing_floating_ip_address:
+    type: string
+    description: Address of the already allocated floating IP, used for outputs
+
 resources:
   network:
     type: OS::Neutron::Net
@@ -77,15 +85,10 @@ resources:
       security_groups:
         - { get_resource: security_group }
 
-  floating_ip:
-    type: OS::Neutron::FloatingIP
-    properties:
-      floating_network: { get_param: external_network }
-
   floating_ip_assoc:
     type: OS::Neutron::FloatingIPAssociation
     properties:
-      floatingip_id: { get_resource: floating_ip }
+      floatingip_id: { get_param: existing_floating_ip_id }
       port_id: { get_resource: port }
 
   volume:
@@ -127,7 +130,7 @@ resources:
 
 outputs:
   floating_ip:
-    value: { get_attr: [floating_ip, floating_ip_address] }
+    value: { get_param: existing_floating_ip_address }
 
   private_ip:
     value: { get_attr: [port, fixed_ips, 0, ip_address] }
@@ -137,4 +140,4 @@ outputs:
       str_replace:
         template: ssh ubuntu@IP
         params:
-          IP: { get_attr: [floating_ip, floating_ip_address] }
+          IP: { get_param: existing_floating_ip_address }
