@@ -72,7 +72,7 @@ const Pipelines: React.FC = () => {
                     {pipelines.map((pipeline, index) => (
                         <Card key={index}>
                             <Card.Body as={Vertical} gap="md">
-                                <Card.Title as="h4" className="mb-0">
+                                <Card.Title as="h4">
                                     {pipeline.title} Probe Designer
                                 </Card.Title>
                                 <Vertical.Item grow>

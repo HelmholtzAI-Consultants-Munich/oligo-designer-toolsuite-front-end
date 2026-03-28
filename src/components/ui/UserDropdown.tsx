@@ -2,18 +2,24 @@ import { forwardRef, useState, type Ref } from "react";
 import { BACKEND_URL } from "../../config";
 import { useAuth } from "../../modules/useAuth";
 import { Button, Dropdown } from "react-bootstrap";
-import { Link } from "react-router";
-import { CheckCircleFill, ChevronUp, Person } from "react-bootstrap-icons";
+import {
+    ArrowRight,
+    CheckCircleFill,
+    ChevronUp,
+    Person,
+} from "react-bootstrap-icons";
 import { Horizontal } from "./Grid";
+import { useNavigate } from "react-router";
 
 const UserDisplay = forwardRef(
     ({ onClick }: { onClick: () => void }, ref: Ref<HTMLButtonElement>) => {
         const { user } = useAuth();
+        const navigate = useNavigate();
 
         return (
             <Button
                 ref={ref}
-                onClick={onClick}
+                onClick={user ? onClick : () => navigate("/login")}
                 className="w-100 user-dropdown"
                 variant="outline-border"
             >
@@ -22,13 +28,11 @@ const UserDisplay = forwardRef(
                         <Person size={25} />
                     </Horizontal.Item>
                     <Horizontal grow>
-                        <span>
-                            {user?.username ||
-                                user?.helmholtz_sub ||
-                                "anonymous user"}
-                        </span>
+                        {user
+                            ? user.username || user.helmholtz_sub
+                            : "Login / Register"}
                     </Horizontal>
-                    <ChevronUp size={15} />
+                    {user ? <ChevronUp size={15} /> : <ArrowRight size={15} />}
                 </Horizontal>
             </Button>
         );
@@ -52,7 +56,7 @@ export default function UserDropdown() {
         <Dropdown drop="up-centered">
             <Dropdown.Toggle as={UserDisplay} id="user-dropdown-toggle" />
             <Dropdown.Menu>
-                {user ? (
+                {user && (
                     <>
                         <Dropdown.ItemText
                             className="px-3 py-2"
@@ -92,16 +96,6 @@ export default function UserDropdown() {
                         <Dropdown.Divider />
                         <Dropdown.Item onClick={handleLogout}>
                             Logout
-                        </Dropdown.Item>
-                    </>
-                ) : (
-                    <>
-                        <Dropdown.Header>
-                            You are not logged in. <br />
-                            Please log in to keep your runs saved.
-                        </Dropdown.Header>
-                        <Dropdown.Item as={Link} to="/login">
-                            Login or Register
                         </Dropdown.Item>
                     </>
                 )}

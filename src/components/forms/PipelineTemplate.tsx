@@ -9,7 +9,7 @@ import { TabsLayout } from "./TabsLayout";
 import FileSelection from "./FileSelection";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
-import { BoxArrowInDown, BoxArrowUp, Send } from "react-bootstrap-icons";
+import { BoxArrowInDown, BoxArrowUp, Braces, BracesAsterisk, CodeSlash, CodeSquare, Gear, Send } from "react-bootstrap-icons";
 import { useRuns } from "../../modules/useRuns";
 import { Button } from "react-bootstrap";
 
@@ -55,6 +55,7 @@ const PipelineTemplate: React.FC<Props> = ({
             tabs={tabs?.map((tab) => ({
                 label: tab.title,
                 tabKey: tab.title,
+                icon: tab.title === "Developer Settings" ? CodeSlash : undefined,
             }))}
             actions={[
                 {

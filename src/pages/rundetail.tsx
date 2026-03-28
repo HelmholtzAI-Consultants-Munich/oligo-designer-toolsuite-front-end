@@ -27,6 +27,7 @@ import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
 import { showToast } from "../modules/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../modules/modalUtil";
+import type { Action } from "../components/ui/Header";
 
 interface RunFile {
     name: string;
@@ -185,7 +186,7 @@ const RunDetail = () => {
         }
     }, [runs, viewingFilename, fetchFileContent]); // runs on every poll event
 
-    const handleDelete = async () => {
+    const handleDelete = useCallback(async () => {
         if (!run) return;
 
         confirmWithModal({
@@ -220,10 +221,48 @@ const RunDetail = () => {
                 },
             },
         });
-    };
+    }, [run, navigate, location.state, updateRuns]);
+
+    const formatValueForExcel = useCallback(
+        (value: ProbeDetailsValue): string | number => {
+            // Handle deeply nested arrays
+            const flatten = (
+                arr: ProbeDetailsValue[],
+                acc: (string | number)[] = []
+            ): (string | number)[] => {
+                let result: (string | number)[] = [...acc];
+                for (const val of arr) {
+                    if (Array.isArray(val)) {
+                        result = flatten(val, result);
+                    } else if (val !== null && typeof val !== "object") {
+                        result = result.concat(val);
+                    } else {
+                        result = result.concat(JSON.stringify(val));
+                    }
+                }
+                return result;
+            };
+
+            if (Array.isArray(value)) {
+                return flatten(value).join(", ");
+            }
+            if (typeof value === "object" && value !== null) {
+                return JSON.stringify(value);
+            }
+            return value; // Return raw value for Excel
+        },
+        []
+    );
+
+    const formatValue = useCallback(
+        (value: ProbeDetailsValue): string => {
+            return String(formatValueForExcel(value));
+        },
+        [formatValueForExcel]
+    );
 
     // Download CSV for current oligoset only
-    const handleDownloadCSV = () => {
+    const handleDownloadCSV = useCallback(() => {
         // TODO: include all output fields in details
         const oligos =
             probes?.[selectedGene]?.[selectedOligoset]?.map((p) => p.details) ||
@@ -274,10 +313,10 @@ const RunDetail = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+    }, [probes, selectedGene, selectedOligoset, formatValue]);
 
     // Download Excel file with each gene as a separate sheet
-    const handleDownloadExcel = () => {
+    const handleDownloadExcel = useCallback(() => {
         if (!probes) return;
 
         const workbook = XLSX.utils.book_new();
@@ -335,39 +374,7 @@ const RunDetail = () => {
 
         // Write file
         XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
-    };
-
-    const formatValueForExcel = (value: ProbeDetailsValue): string | number => {
-        // Handle deeply nested arrays
-        const flatten = (
-            arr: ProbeDetailsValue[],
-            acc: (string | number)[] = []
-        ): (string | number)[] => {
-            let result: (string | number)[] = [...acc];
-            for (const val of arr) {
-                if (Array.isArray(val)) {
-                    result = flatten(val, result);
-                } else if (val !== null && typeof val !== "object") {
-                    result = result.concat(val);
-                } else {
-                    result = result.concat(JSON.stringify(val));
-                }
-            }
-            return result;
-        };
-
-        if (Array.isArray(value)) {
-            return flatten(value).join(", ");
-        }
-        if (typeof value === "object" && value !== null) {
-            return JSON.stringify(value);
-        }
-        return value; // Return raw value for Excel
-    };
-
-    const formatValue = (value: ProbeDetailsValue): string => {
-        return String(formatValueForExcel(value));
-    };
+    }, [probes, formatValueForExcel]);
 
     const viewFileContent = (filename: string) => {
         if (viewingFilename === filename) {
@@ -388,33 +395,44 @@ const RunDetail = () => {
 
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
 
+    const actions = useMemo(() => {
+        if (!run) return undefined;
+
+        const deleteAction = {
+            type: "button",
+            label: "Delete Run",
+            variant: "outline-danger",
+            icon: Trash,
+            onClick: handleDelete,
+        };
+
+        const downloadCSVAction = {
+            type: "button",
+            label: "Oligoset CSV",
+            variant: "outline-primary",
+            icon: CardList,
+            onClick: handleDownloadCSV,
+        };
+
+        const downloadExcelAction = {
+            type: "button",
+            label: "All Genes Excel",
+            variant: "outline-primary",
+            icon: FileEarmarkSpreadsheet,
+            onClick: handleDownloadExcel,
+        };
+
+        if (probes) {
+            return [deleteAction, downloadCSVAction, downloadExcelAction];
+        } else {
+            return [deleteAction];
+        }
+    }, [run, probes, handleDelete, handleDownloadCSV, handleDownloadExcel]);
+
     return (
         <Page
             title={`Run Result - ${run ? pipelineDisplayNames[run?.pipeline] : "Unknown Pipeline"}`}
-            actions={[
-                // TODO: disable when no probes available
-                {
-                    type: "button",
-                    label: "Delete Run",
-                    variant: "outline-danger",
-                    icon: Trash,
-                    onClick: handleDelete,
-                },
-                {
-                    type: "button",
-                    label: "Oligoset CSV",
-                    variant: "outline-primary",
-                    icon: CardList,
-                    onClick: handleDownloadCSV,
-                },
-                {
-                    type: "button",
-                    label: "All Genes Excel",
-                    variant: "outline-primary",
-                    icon: FileEarmarkSpreadsheet,
-                    onClick: handleDownloadExcel,
-                },
-            ]}
+            actions={actions as Action[] | undefined}
             backTo={{
                 label: fromAdmin ? "Admin Panel" : "All Runs",
                 href: fromAdmin ? "/admin/pipelines" : "/runs",
@@ -432,6 +450,12 @@ const RunDetail = () => {
                     <RunStatus status={run.status} size={100} />
                     <h3 className="mt-3">Run {run.status}...</h3>
                 </Vertical>
+            )}
+
+            {run?.status === "failure" && (
+                <Alert variant="danger">
+                    Run failed. Please check the logs for more details.
+                </Alert>
             )}
 
             {/* YAML/table logic remains unchanged below */}
@@ -679,7 +703,7 @@ const RunDetail = () => {
                                                     className="bg-light p-3 rounded mt-2"
                                                     style={{
                                                         maxHeight: "500px",
-                                                        overflow: "auto",
+                                                        whiteSpace: "pre-wrap",
                                                     }}
                                                 >
                                                     {fileContent}

@@ -1,10 +1,11 @@
 import type { FastaForm, FileState, RJSFFormData } from "./types";
-import { copyToClipboard, createRunId } from "../modules/helpers";
+import { createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { showToast } from "../modules/toastUtil";
 import { Link } from "react-router";
+import { ArrowRight } from "react-bootstrap-icons";
 
 export const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -148,8 +149,6 @@ export const handleSubmit = async (
         return;
     }
 
-    await copyToClipboard(newId);
-
     try {
         await axios.post(
             BACKEND_URL + `/api/${pipeline}`,
@@ -163,10 +162,10 @@ export const handleSubmit = async (
         showToast({
             title: "Pipeline Enqueued",
             content: (
-                <p>
-                    The pipeline run was successfully added to the queue.{" "}
-                    <Link to={`/runs/${newId}`}>View the run here.</Link>
-                </p>
+                <>
+                    <p>The pipeline run was successfully added to the queue.</p>
+                    <Link to={`/runs/${newId}`}>View the run here <ArrowRight /></Link>
+                </>
             ),
             type: "success",
         });
@@ -175,10 +174,10 @@ export const handleSubmit = async (
         showToast({
             title: "Pipeline Failed",
             content: (
-                <p>
-                    {errorMessage} <br />
-                    <Link to={`/runs/${newId}`}>View the run here.</Link>
-                </p>
+                <>
+                    <p>{errorMessage}</p>
+                    <Link className="mt-2" to={`/runs/${newId}`}>View the run here <ArrowRight /></Link>
+                </>
             ),
             type: "danger",
         });

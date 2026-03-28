@@ -19,19 +19,20 @@ const Sidebar: React.FC = () => {
     return (
         <Navbar expand="lg" variant="main">
             <Navbar.Brand as={Link} to="/">
-                <Image
-                    src="/ODT_logo.svg"
-                    alt="Oligo Designer Toolsuite"
-                    width="80"
-                    height="80"
-                />
-                Oligo Designer Toolsuite
+                <Horizontal gap="lg" align="center">
+                    <Image
+                        src="/ODT_logo.svg"
+                        alt="Oligo Designer Toolsuite"
+                    />
+                    Oligo Designer <br /> Toolsuite
+                </Horizontal>
             </Navbar.Brand>
             <Navbar.Toggle aria-controls="navigation-bar" />
             <Navbar.Collapse id="navigation-bar" className="mt-2">
                 <Vertical
                     justify="space-between"
                     align="stretch"
+                    gap="lg"
                     fillHeight
                     fillWidth
                 >
@@ -66,7 +67,7 @@ const Sidebar: React.FC = () => {
                         </Nav.Link>
                     </Nav>
 
-                    <Vertical gap="md" align="stretch">
+                    <Vertical gap="sm" align="stretch">
                         <h5>Pipelines</h5>
 
                         <Nav variant="heavy">
