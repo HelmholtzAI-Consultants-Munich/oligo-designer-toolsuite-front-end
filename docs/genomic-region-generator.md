@@ -112,23 +112,3 @@ It supports flexible region selection, automatic file retrieval, and efficient c
       "cached": ["cache_key1", "cache_key2"]
     }
     ```
-
-## Frontend component (`FastaGenerateForm.tsx`)
-
-The `FastaGenerateForm` component provides the user interface for configuring genomic region generation:
-
-- **Dynamic source switching**: UI adapts based on NCBI vs. Ensembl selection
-- **Cascading dropdowns**: Species lists update based on selected taxon (NCBI only)
-- **Controlled inputs**: All form state is managed by parent components and passed via props
-- **Inline help**: Info icons with Bootstrap popovers explain each parameter
-- **Conditional fields**: Block size input appears only when Exon-Exon Junction is selected
-- **Remove functionality**: Forms can be removed in multi-form contexts (e.g., when generating multiple FASTA groups)
-
-The component is reusable across multiple pipelines (OligoSeq, MERFISH, seqFISH+, Scrinshot) and supports both standalone usage and integration into larger form workflows.
-
-## Use cases
-
-1. **Probe design pipelines**: Generate target and reference databases for ISH probe design
-2. **Custom sequence extraction**: Extract specific genomic features for analysis
-3. **Multi-species workflows**: Process annotations from different organisms in parallel
-4. **Version-controlled analyses**: Use specific annotation releases for reproducible research
