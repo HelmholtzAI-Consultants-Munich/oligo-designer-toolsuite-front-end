@@ -8,6 +8,9 @@ import type {
     Status,
     Modal,
     RJSFFormData,
+    defaultFastaForm,
+    FastaForm,
+    FastaFormState,
 } from "../components/types";
 import { handleSubmit } from "../components/helpers";
 import FieldTemplate from "../components/fieldTemplate";
@@ -16,6 +19,8 @@ import FileSelection from "../components/fileSelection";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
 import { InfoModal } from "../components/modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
+import FastaGeneration from "../components/fastaGeneration";
+import FileOrGenerator from "../components/fileorGenerator";
 
 type Props = {
     pipeline: string;
@@ -32,6 +37,13 @@ const PipelineTemplate: React.FC<Props> = ({
 }) => {
     const [formData, setFormData] = useState<RJSFFormData>({});
     const validator = customizeValidator({ AjvClass: Ajv2020 });
+
+    const [fastaForms, setFastaForms] = useState<FastaFormState>({
+        files_fasta_target_probe_database: [],
+        files_fasta_reference_database_target_probe: [],
+        files_fasta_reference_database_readout_probe: [],
+        files_fasta_reference_database_primer: [],
+    });
 
     const [files, setFiles] = useState<FileState>({
         files_fasta_target_probe_database: [],
@@ -51,7 +63,7 @@ const PipelineTemplate: React.FC<Props> = ({
         setModal({ ...modal, show: false });
     };
     const widgets = {
-        fileSelection: FileSelection,
+        fileSelection: FileOrGenerator,
     };
 
     return (
@@ -84,6 +96,8 @@ const PipelineTemplate: React.FC<Props> = ({
                         formContext={{
                             files,
                             setFiles,
+                            fastaForms,
+                            setFastaForms,
                         }}
                         formData={formData}
                         templates={{
@@ -100,6 +114,7 @@ const PipelineTemplate: React.FC<Props> = ({
                                 setRunId,
                                 setModal,
                                 files,
+                                fastaForms,
                                 formData,
                                 pipeline
                             )

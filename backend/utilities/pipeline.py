@@ -12,6 +12,15 @@ from flask import abort
 logger = logging.getLogger(__name__)
 
 
+def strip_description_from_field(form: dict) -> dict:
+    for key, val in form.items():
+        if val.get("value") is not None:
+            form[key] = val["value"]
+        else:
+            form[key] = strip_description_from_field(form[key])
+    return form
+
+
 def get_form_cache_key(form: dict) -> str:
     relevant_part = {
         "source": form.get("source"),

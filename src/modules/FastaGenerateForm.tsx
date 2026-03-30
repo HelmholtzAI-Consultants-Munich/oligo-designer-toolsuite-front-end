@@ -5,25 +5,14 @@
  * It allows users to select the data source, species, taxon, annotation release, genomic regions, and additional options.
  * The form is controlled via props and notifies parent components of changes.
  */
-import React from "react";
-import { OverlayTrigger, Popover } from "react-bootstrap";
+import React, { useEffect, useState } from "react";
+import { OverlayTrigger, Popover, Spinner } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
-import {
-    archaeaEntries,
-    fungiEntries,
-    invertebrateEntries,
-    mitochondrionEntries,
-    plantEntries,
-    plasmidEntries,
-    plastidEntries,
-    protozoaEntries,
-    unknownEntries,
-    vertebrate_mammalianEntries,
-    vertebrate_otherEntries,
-} from "../forms/refseqSpecies";
-import { ensemblSpecies } from "../forms/ensemblSpecies";
-import { ncbiAnnotationReleases } from "../forms/ncbiAnnotationReleases";
 import type { FastaForm } from "../components/types";
+import { BACKEND_URL } from "../config";
+import axios from "axios";
+
+const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
@@ -32,6 +21,108 @@ interface FastaGenerateFormProps {
     onRemove?: () => void;
     disableRemove?: boolean;
 }
+
+interface DropDownOptionProps {
+    form: FastaForm;
+    handleNcbiChange: any;
+    dropDown: DropDown;
+}
+
+interface NcbiAnnotationReleasesProps {
+    form: FastaForm;
+}
+
+interface RawDropDown {
+    ncbi: any;
+    ensembl: any;
+}
+
+interface DropDown {
+    ncbi: Map<string, string[]>;
+    ensembl: Map<string, string[]>;
+}
+
+const DropDownOption: React.FC<DropDownOptionProps> = ({
+    form,
+    handleNcbiChange,
+    dropDown,
+}) => {
+    return (
+        <select
+            name="source_params.species"
+            className="form-select"
+            id="source_params.species"
+            value={form.formDataNcbi.source_params.species.value}
+            onChange={handleNcbiChange}
+        >
+            <option value="">Select a species</option>
+            {dropDown.ncbi
+                ?.get(
+                    form.formDataNcbi.source_params.taxon.value.toLowerCase()
+                )!
+                .map((entry) => (
+                    <option key={entry} value={entry}>
+                        {replaceUnderscore(entry)}
+                    </option>
+                ))}
+        </select>
+    );
+};
+
+const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
+    form,
+}) => {
+    const [releases, setReleases] = useState<string[]>();
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const kingdom = form.formDataNcbi.source_params.taxon.value;
+    const species = form.formDataNcbi.source_params.species.value;
+
+    useEffect(() => {
+        fetchPipelineRuns(species);
+    }, [species]);
+
+    const fetchPipelineRuns = async (species: string) => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const DROPDOWN_URL =
+                BACKEND_URL + `/api/genomic/releases/${kingdom}/${species}`;
+            console.log(DROPDOWN_URL);
+            const response = await axios.get(DROPDOWN_URL, {
+                withCredentials: true,
+            });
+            console.log(response.data);
+            setReleases(response.data);
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                setError(
+                    err.response?.data?.error ||
+                        "Failed to load Annotation Releases"
+                );
+            } else {
+                setError("Failed to load Annotation Releases");
+            }
+            console.error("Error fetching Annotation Releases:", err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    console.log("Hallo Annotation Releases");
+    if (isLoading) {
+        return <option>Loading annotation releases...</option>;
+    }
+
+    if (error || !releases) {
+        return <option>Error while loading annotation releases!</option>;
+    }
+
+    return releases.map((release) => (
+        <option value={release}>{release}</option>
+    ));
+};
 
 /**
  * FastaGenerateForm
@@ -45,6 +136,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     onRemove,
     disableRemove,
 }) => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [dropDown, setDropDown] = useState<DropDown>();
     // Handles changes to the source selector (NCBI/Ensembl)
     const handleSourceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newSource = e.target.value;
@@ -52,6 +146,44 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
             ...form,
             selectedSource: newSource,
         });
+    };
+
+    useEffect(() => {
+        fetchPipelineRuns();
+    }, []);
+
+    const parseDropDown = (data: RawDropDown) => {
+        console.log("Parsing: ... ");
+        console.log(data);
+        return {
+            ncbi: new Map<string, string[]>(Object.entries(data.ncbi)),
+            ensembl: new Map<string, string[]>(Object.entries(data.ensembl)),
+        } as DropDown;
+    };
+
+    const fetchPipelineRuns = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const DROPDOWN_URL = BACKEND_URL + `/api/genomic/dropdown`;
+            const response = await axios.get(DROPDOWN_URL, {
+                withCredentials: true,
+            });
+            console.log(response.data);
+            setDropDown(parseDropDown(response.data));
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                setError(
+                    err.response?.data?.error ||
+                        "Failed to load Dropdown Options"
+                );
+            } else {
+                setError("Failed to load Dropdown Options");
+            }
+            console.error("Error fetching dropdown options:", err);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     // Handles changes to NCBI-specific form fields and checkboxes
@@ -121,6 +253,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     const handleEnsChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
+        console.log(form.formDataEns.source_params.species.value);
         const { name, value } = e.target;
         const checked =
             "checked" in e.target
@@ -179,6 +312,16 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="d-flex justify-content-center p-5">
+                <Spinner animation="border" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </Spinner>
+            </div>
+        );
+    }
+
     return (
         <div className="border border-primary rounded p-3 mb-3 bg-white">
             <div className="d-flex align-items-center ">
@@ -229,49 +372,20 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 }
                                                 onChange={handleNcbiChange}
                                             >
-                                                <option value="vertebrate_mammalian">
-                                                    Vertebrate Mammalian
-                                                </option>
-                                                <option value="archaea">
-                                                    Archaea
-                                                </option>
-                                                <option value="bacteria">
-                                                    Bacteria
-                                                </option>
-                                                <option value="fungi">
-                                                    Fungi
-                                                </option>
-                                                <option value="invertebrate">
-                                                    Invertebrate
-                                                </option>
-                                                <option value="metagenomes">
-                                                    Metagenomes
-                                                </option>
-                                                <option value="mitochondrion">
-                                                    Mitochondrion
-                                                </option>
-                                                <option value="plant">
-                                                    Plant
-                                                </option>
-                                                <option value="plasmid">
-                                                    Plasmid
-                                                </option>
-                                                <option value="plastid">
-                                                    Plastid
-                                                </option>
-                                                <option value="protozoa">
-                                                    Protozoa
-                                                </option>
-                                                <option value="unknown">
-                                                    Unknown
-                                                </option>
-                                                <option value="vertebrate_other">
-                                                    Vertebrate Other
-                                                </option>
-                                                <option value="viral">
-                                                    Viral
-                                                </option>
+                                                {Array.from(
+                                                    dropDown!.ncbi.keys()
+                                                ).map((k) => (
+                                                    <option value={k}>
+                                                        {replaceUnderscore(
+                                                            [
+                                                                k[0].toLocaleUpperCase(),
+                                                                ...k.slice(1),
+                                                            ].join("")
+                                                        )}
+                                                    </option>
+                                                ))}
                                             </select>
+
                                             <OverlayTrigger
                                                 trigger="hover"
                                                 placement="top"
@@ -310,340 +424,14 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                             Species
                                         </label>
                                         <div className="d-flex align-items-center">
-                                            {form.formDataNcbi.source_params
-                                                .taxon.value ===
-                                            "vertebrate_mammalian" ? (
-                                                <select
-                                                    name="source_params.species"
-                                                    className="form-select"
-                                                    id="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {vertebrate_mammalianEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value === "archaea" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {archaeaEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value ===
-                                              "bacteria" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value === "fungi" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {fungiEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value ===
-                                              "invertebrate" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {invertebrateEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value ===
-                                              "mitochondrion" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {mitochondrionEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value === "plant" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {plantEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value === "plasmid" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    {plasmidEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value === "plastid" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {plastidEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value ===
-                                              "protozoa" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {protozoaEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value === "unknown" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {unknownEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value ===
-                                              "vertebrate_other" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    name="source_params.species"
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                    {vertebrate_otherEntries.map(
-                                                        (entry) => (
-                                                            <option
-                                                                key={entry}
-                                                                value={entry}
-                                                            >
-                                                                {entry}
-                                                            </option>
-                                                        )
-                                                    )}
-                                                </select>
-                                            ) : form.formDataNcbi.source_params
-                                                  .taxon.value === "viral" ? (
-                                                <select
-                                                    className="form-control"
-                                                    id="source_params.species"
-                                                    name="source_params.species"
-                                                    value={
-                                                        form.formDataNcbi
-                                                            .source_params
-                                                            .species.value
-                                                    }
-                                                    onChange={handleNcbiChange}
-                                                >
-                                                    <option value="">
-                                                        Select a species
-                                                    </option>
-                                                </select>
-                                            ) : null}
+                                            <DropDownOption
+                                                key={0}
+                                                form={form}
+                                                handleNcbiChange={
+                                                    handleNcbiChange
+                                                }
+                                                dropDown={dropDown!}
+                                            />
                                             <OverlayTrigger
                                                 trigger="hover"
                                                 placement="top"
@@ -697,16 +485,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 <option value="">
                                                     Select a release
                                                 </option>
-                                                {ncbiAnnotationReleases.map(
-                                                    (release) => (
-                                                        <option
-                                                            key={release}
-                                                            value={release}
-                                                        >
-                                                            {release}
-                                                        </option>
-                                                    )
-                                                )}
+                                                <NcbiAnnotationReleases
+                                                    form={form}
+                                                />
                                             </select>
                                             <OverlayTrigger
                                                 trigger="hover"
@@ -917,12 +698,16 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 }
                                                 onChange={handleEnsChange}
                                             >
-                                                {ensemblSpecies.map((entry) => (
-                                                    <option
-                                                        key={entry}
-                                                        value={entry}
-                                                    >
-                                                        {entry}
+                                                {Array.from(
+                                                    dropDown!.ensembl.keys()
+                                                ).map((k) => (
+                                                    <option value={k}>
+                                                        {replaceUnderscore(
+                                                            [
+                                                                k[0].toLocaleUpperCase(),
+                                                                ...k.slice(1),
+                                                            ].join("")
+                                                        )}
                                                     </option>
                                                 ))}
                                             </select>
@@ -978,16 +763,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 <option value="">
                                                     Select a release
                                                 </option>
-                                                {ncbiAnnotationReleases.map(
-                                                    (release) => (
-                                                        <option
-                                                            key={release}
-                                                            value={release}
-                                                        >
+                                                {dropDown!.ensembl
+                                                    .get(
+                                                        form.formDataEns
+                                                            .source_params
+                                                            .species.value
+                                                    )!
+                                                    .map((release) => (
+                                                        <option value={release}>
                                                             {release}
                                                         </option>
-                                                    )
-                                                )}
+                                                    ))}
                                             </select>
                                             <OverlayTrigger
                                                 trigger="hover"

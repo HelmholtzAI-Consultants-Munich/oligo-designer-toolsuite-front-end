@@ -1,9 +1,16 @@
 import type { WidgetProps } from "@rjsf/utils";
 import { handleFileChange } from "./helpers";
+import type { Props } from "react-select";
+import type { FileState } from "./types";
 
-const FileSelection = ({ id, name, registry }: WidgetProps) => {
-    const { files, setFiles } = registry.formContext;
+type Props = {
+    name: string;
+    id: string;
+    setFiles: React.Dispatch<React.SetStateAction<FileState>>;
+    files: FileState[];
+};
 
+const FileSelection: React.FC<Props> = ({ name, id, setFiles, files }) => {
     return (
         <div className="flex-grow-1">
             <div className=" d-flex align-items-center">

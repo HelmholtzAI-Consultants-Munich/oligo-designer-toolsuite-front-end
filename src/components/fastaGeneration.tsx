@@ -1,13 +1,14 @@
 import { defaultFastaForm } from "./types";
-import type { FastaForm } from "./types";
+import type { FastaForm, FastaFormState } from "./types";
 
 import FastaGenerateForm from "../modules/FastaGenerateForm";
+import { addFastaGenerationForm } from "./helpers";
 
 type Props = {
-    name: string;
+    name: keyof FastaFormState;
     id: string;
-    setFastaForms: React.Dispatch<React.SetStateAction<FastaForm[]>>;
-    fastaForms: FastaForm[];
+    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>;
+    fastaForms: FastaFormState;
 };
 
 const FastaGeneration: React.FC<Props> = ({
@@ -16,6 +17,7 @@ const FastaGeneration: React.FC<Props> = ({
     setFastaForms,
     fastaForms,
 }) => {
+    console.log(fastaForms[name]);
     return (
         <div className="flex-grow-1">
             <label htmlFor={id} className="form-label">
@@ -24,39 +26,40 @@ const FastaGeneration: React.FC<Props> = ({
             <button
                 type="button"
                 className="btn btn-outline-primary w-100"
-                onClick={() =>
-                    setFastaForms((forms: FastaForm[]) => [
-                        ...forms,
-                        { ...defaultFastaForm },
-                    ])
-                }
+                name={name}
+                onClick={(e) => addFastaGenerationForm(e, setFastaForms)}
             >
                 Generate FASTA+
             </button>
             {/* TODO handleSubmit einfügen */}
-            <form onSubmit={() => {}}>
-                {fastaForms.map((form, idx) => (
+            <div>
+                {fastaForms[name].map((form, idx) => (
                     <FastaGenerateForm
-                        key={idx}
+                        key={`${id} ${idx}`}
                         form={form}
-                        onChange={(updatedForm: FastaForm) =>
-                            setFastaForms((forms: FastaForm[]) =>
-                                forms.map((f, i) =>
+                        onChange={(updatedForm: FastaForm) => {
+                            setFastaForms((prevForms: FastaFormState) => ({
+                                ...prevForms,
+                                [name]: prevForms[name].map((f, i) =>
                                     i === idx ? updatedForm : f
-                                )
-                            )
-                        }
+                                ),
+                            }));
+                        }}
                         onRemove={() =>
-                            setFastaForms((forms: FastaForm[]) =>
-                                forms.length === 0
-                                    ? forms
-                                    : forms.filter((_, i) => i !== idx)
-                            )
+                            setFastaForms((prevForms: FastaFormState) => ({
+                                ...prevForms,
+                                [name]:
+                                    prevForms[name].length === 0
+                                        ? prevForms[name]
+                                        : prevForms[name].filter(
+                                              (_, i) => i !== idx
+                                          ),
+                            }))
                         }
-                        disableRemove={fastaForms.length === 0}
+                        disableRemove={fastaForms[name].length === 0}
                     />
                 ))}
-            </form>
+            </div>
         </div>
     );
 };

@@ -14,6 +14,13 @@ export interface FastaForm {
     formDataEns: typeof form_Data_Ens;
 }
 
+export interface FastaFormState {
+    files_fasta_target_probe_database: FastaForm[];
+    files_fasta_reference_database_target_probe: FastaForm[];
+    files_fasta_reference_database_readout_probe: FastaForm[];
+    files_fasta_reference_database_primer: FastaForm[];
+}
+
 export const defaultFastaForm: FastaForm = {
     selectedSource: "ncbi",
     formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),

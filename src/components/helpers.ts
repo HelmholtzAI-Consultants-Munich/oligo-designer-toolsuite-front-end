@@ -1,4 +1,11 @@
-import type { FastaForm, FileState, RJSFFormData, Status } from "./types";
+import {
+    defaultFastaForm,
+    type FastaForm,
+    type FastaFormState,
+    type FileState,
+    type RJSFFormData,
+    type Status,
+} from "./types";
 import { copyToClipboard, createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
@@ -18,7 +25,19 @@ export const handleFileChange = (
     }));
 };
 
-export const allFilesUploaded = (
+export const addFastaGenerationForm = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>
+) => {
+    const name = e.target.name as keyof FastaFormState;
+
+    setFastaForms((prevForms) => ({
+        ...prevForms,
+        [name]: [...prevForms[name], defaultFastaForm], // Multiple files (always an array)
+    }));
+};
+
+export const allFieldsFilled = (
     files: FileState,
     required_files: (keyof FileState)[]
 ) => {
@@ -51,6 +70,9 @@ export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
                     formData[key].push(response.data.filePath);
                 } catch (error) {
                     console.error(`Error uploading ${key}:`, error);
+                    throw new Error(
+                        `Error uploading ${file.name} for field ${key}`
+                    );
                 }
             }
         }
@@ -58,52 +80,48 @@ export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
 };
 
 export const handleSubmitGenomicAll = async (
-    forms: FastaForm[], // Accept forms as argument
-    e?: React.FormEvent
-): Promise<string> => {
-    e?.preventDefault();
-    try {
-        let results = "";
-        for (let i = 0; i < forms.length; ++i) {
-            const form = forms[i];
-            let payload;
-            let endpoint;
-            if (form.selectedSource === "ncbi") {
-                payload = form.formDataNcbi;
-                endpoint = "custom ";
-            } else if (form.selectedSource === "ensembl") {
-                payload = form.formDataEns;
-                endpoint = "custom";
-            } else {
-                continue; // skip unknown
-            }
-            try {
-                const response = await axios.post(
-                    BACKEND_URL + `/api/genomic/cascaded/${endpoint}`,
-                    payload,
-                    {
-                        withCredentials: true,
-                        headers: { "Content-Type": "application/json" },
-                    }
-                );
-                if (results === "") {
-                    results = response.data.output;
+    fastaForms: FastaFormState,
+    formData: RJSFFormData // Accept forms as argument
+) => {
+    for (const key of Object.keys(fastaForms) as (keyof FileState)[]) {
+        if (fastaForms[key]) {
+            for (const form of fastaForms[key]) {
+                let payload;
+                if (form.selectedSource === "ncbi") {
+                    payload = form.formDataNcbi;
+                    payload["source"]["value"] = "NCBI";
+                } else if (form.selectedSource === "ensembl") {
+                    payload = form.formDataEns;
+                    payload["source"]["value"] = "Ensembl";
                 } else {
-                    results += "\n" + response.data.output;
+                    continue; // skip unknown
                 }
-            } catch (error) {
-                console.error("Error submitting genomic form:", error);
-                return "error";
+                console.log("Payload");
+                console.log(payload);
+                try {
+                    const response = await axios.post(
+                        BACKEND_URL + `/api/genomic/cascaded/custom`,
+                        payload,
+                        {
+                            withCredentials: true,
+                            headers: { "Content-Type": "application/json" },
+                        }
+                    );
+                    formData[key].push(response.data.output[0]);
+                } catch (error) {
+                    console.error("Error submitting genomic form:", error);
+                    throw new Error(
+                        `Error uploading Genomic Region Generator for field ${key}`
+                    );
+                }
             }
         }
-        return results;
-    } catch (error) {
-        console.error("Error in batch FASTA submission:", error);
-        return "error";
     }
 };
 
-export const getRequiredFiles = (pipeline: string): (keyof FileState)[] => {
+export const getRequiredFields = (
+    pipeline: string
+): (keyof FileState & keyof FastaFormState)[] => {
     if (pipeline === "scrinshot" || pipeline === "oligoseq") {
         return [
             "files_fasta_target_probe_database",
@@ -119,6 +137,34 @@ export const getRequiredFiles = (pipeline: string): (keyof FileState)[] => {
     }
 };
 
+export function validateInput(
+    pipeline: string,
+    files: FileState,
+    fastaForms: FastaFormState
+): [boolean, string] {
+    console.log("Files");
+    console.log(files);
+    console.log("FastaForms");
+    console.log(fastaForms);
+    for (const field of getRequiredFields(pipeline)) {
+        if (files[field].length != 0 && fastaForms[field].length != 0) {
+            return [
+                false,
+                "You should either provide a file or use the genomic region generator, not both",
+            ];
+        } else if (
+            files[field].length === 0 &&
+            fastaForms[field].length === 0
+        ) {
+            return [
+                false,
+                "You should either provide a file or use the genomic region generator!",
+            ];
+        }
+    }
+    return [true, ""];
+}
+
 export const handleSubmit = async (
     runStatus: Status,
     setRunStatus: React.Dispatch<React.SetStateAction<Status>>,
@@ -132,6 +178,7 @@ export const handleSubmit = async (
         }>
     >,
     files: FileState,
+    fastaForms: FastaFormState,
     formData: RJSFFormData,
     pipeline: string,
     setIdCopySuccess?: React.Dispatch<React.SetStateAction<boolean>>
@@ -140,16 +187,31 @@ export const handleSubmit = async (
     setRunStatus("submitting");
     setRunId(null);
 
-    if (!allFilesUploaded(files, getRequiredFiles(pipeline))) {
+    const [isInputValid, error] = validateInput(pipeline, files, fastaForms);
+
+    if (!isInputValid) {
         setModal({
             show: true,
             title: "Submission Failed",
-            body: `Please upload all required files before submitting.`,
+            body: error,
         });
         setRunStatus("idle");
         return;
     }
-    await uploadFiles(files, formData);
+
+    try {
+        await uploadFiles(files, formData);
+        await handleSubmitGenomicAll(fastaForms, formData);
+    } catch (error) {
+        console.log("error catched");
+        setModal({
+            show: true,
+            title: "Submission Failed",
+            body: `${error}`,
+        });
+        setRunStatus("idle");
+        return;
+    }
 
     const newId = await createRunId();
     if (!newId) {
