@@ -37,15 +37,8 @@ jobs:
             echo "PLAYWRIGHT_SUITE=full" >> "$GITHUB_ENV"
           fi
 
-      - name: Upgrade Docker Compose plugin
-        run: |
-          set -euxo pipefail
-          COMPOSE_VERSION=v2.36.1
-          PLUGIN_DIR="${HOME}/.docker/cli-plugins"
-          mkdir -p "${PLUGIN_DIR}"
-          curl -SL "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-linux-x86_64" -o "${PLUGIN_DIR}/docker-compose"
-          chmod +x "${PLUGIN_DIR}/docker-compose"
-          docker compose version
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v2
 
       - name: Prepare Docker env files
         run: |
