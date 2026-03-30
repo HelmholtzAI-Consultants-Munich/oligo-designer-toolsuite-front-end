@@ -39,6 +39,8 @@ jobs:
 
       - name: Set up Docker Compose
         uses: docker/setup-compose-action@v2
+        with:
+          version: latest
 
       - name: Prepare Docker env files
         run: |
