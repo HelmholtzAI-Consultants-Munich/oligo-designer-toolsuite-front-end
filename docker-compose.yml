@@ -35,7 +35,6 @@ services:
         - action: sync
           path: ./backend
           target: /app/backend
-          initial_sync: true
   odt-beat:
     image: odt-server
     build:
@@ -55,7 +54,6 @@ services:
         - action: sync+restart
           path: ./backend
           target: /app/backend
-          initial_sync: true
 
   odt-worker:
     image: odt-worker
@@ -76,7 +74,6 @@ services:
         - action: sync+restart
           path: ./backend
           target: /app/backend
-          initial_sync: true
 
   odt-web:
     image: odt-web
@@ -94,7 +91,6 @@ services:
         - action: sync
           path: .
           target: /app
-          initial_sync: true
 
   odt-tests:
     image: odt-tests
