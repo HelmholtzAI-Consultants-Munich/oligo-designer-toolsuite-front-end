@@ -19,7 +19,7 @@ const GENOMIC_REGIONS_DIR = path.resolve(
     "backend/data/genomic_regions"
 );
 
-const FASTA_FIXTURES = {
+export const FASTA_FIXTURES = {
     utr: path.join(
         GENOMIC_REGIONS_DIR,
         "utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
@@ -29,8 +29,6 @@ const FASTA_FIXTURES = {
         "cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
     ),
 } as const;
-
-const SMALLEST_FASTA_PAIR = [FASTA_FIXTURES.cds, FASTA_FIXTURES.utr] as const;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -42,45 +40,13 @@ export type PipelineDefinition = {
     pipeline: string;
     expectedTabs: RegExp[];
     representativeFieldChecks?: Array<{ tab: RegExp; label: RegExp }>;
-    needsReadoutProbe?: boolean;
-    needsPrimer?: boolean;
-};
-
-type PipelineFastaFixtureSet = {
-    target: string[];
-    referenceTarget: string[];
-    readout?: string[];
-    primer?: string[];
 };
 
 type RunFile = { name: string; type: string; size: number };
 
 // ---------------------------------------------------------------------------
-// Pipeline fixture mappings & definitions
+// Pipeline definitions (used by the smoke test)
 // ---------------------------------------------------------------------------
-
-const PIPELINE_FASTA_FIXTURES: Record<string, PipelineFastaFixtureSet> = {
-    scrinshot: {
-        target: [FASTA_FIXTURES.utr],
-        referenceTarget: [FASTA_FIXTURES.utr],
-    },
-    oligoseq: {
-        target: [...SMALLEST_FASTA_PAIR],
-        referenceTarget: [...SMALLEST_FASTA_PAIR],
-    },
-    merfish: {
-        target: [...SMALLEST_FASTA_PAIR],
-        referenceTarget: [...SMALLEST_FASTA_PAIR],
-        readout: [...SMALLEST_FASTA_PAIR],
-        primer: [...SMALLEST_FASTA_PAIR],
-    },
-    seqfish: {
-        target: [...SMALLEST_FASTA_PAIR],
-        referenceTarget: [...SMALLEST_FASTA_PAIR],
-        readout: [...SMALLEST_FASTA_PAIR],
-        primer: [...SMALLEST_FASTA_PAIR],
-    },
-};
 
 export const SCRINSHOT_PIPELINE: PipelineDefinition = {
     route: "/pipelines/scrinshot",
@@ -119,8 +85,6 @@ export const MERFISH_PIPELINE: PipelineDefinition = {
     representativeFieldChecks: [
         { tab: /Target Probe Parameters/i, label: /File Regions/i },
     ],
-    needsReadoutProbe: true,
-    needsPrimer: true,
 };
 
 export const SEQFISH_PIPELINE: PipelineDefinition = {
@@ -136,8 +100,6 @@ export const SEQFISH_PIPELINE: PipelineDefinition = {
     representativeFieldChecks: [
         { tab: /Target Probe Parameters/i, label: /File Regions/i },
     ],
-    needsReadoutProbe: true,
-    needsPrimer: true,
 };
 
 export const ALL_PIPELINES: PipelineDefinition[] = [
@@ -153,7 +115,7 @@ export const ALL_PIPELINES: PipelineDefinition[] = [
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const clickTab = async (page: Page, name: RegExp) => {
+export const clickTab = async (page: Page, name: RegExp) => {
     await page.getByRole("tab", { name }).click();
 };
 
@@ -190,60 +152,9 @@ export const expectPipelineFields = async (
     }
 };
 
-// Reduce computation-heavy params to keep E2E runtime reasonable.
-const applyPipelineE2EOverrides = async (
-    page: Page,
-    pipeline: PipelineDefinition
-) => {
-    await clickTab(page, /Developer Settings/i);
-    await page.getByLabel(/Max Graph Size/i).fill("2500");
-    await page.getByLabel(/^N Attempts$/i).fill("30000");
-
-    if (pipeline.pipeline === "merfish") {
-        await clickTab(page, /Target Probe Parameters/i);
-        await page.getByLabel(/Set Size Min/i).fill("24");
-        await page.getByLabel(/Set Size Opt/i).fill("24");
-        return;
-    }
-
-    if (pipeline.pipeline === "seqfish") {
-        await page
-            .getByLabel(/Readout Probe Initial Num Sequences/i)
-            .fill("10000");
-        await page.getByLabel(/Primer Initial Num Sequences/i).fill("50000");
-    }
-};
-
-export const uploadStandardPipelineInputs = async (
-    page: Page,
-    pipeline: PipelineDefinition
-) => {
-    const fixtures = PIPELINE_FASTA_FIXTURES[pipeline.pipeline];
-
-    await page.getByLabel(/File Regions/i).fill("AARS1");
-    await page
-        .getByLabel(/Files Fasta Target Probe Database/i)
-        .setInputFiles(fixtures.target);
-    await page
-        .getByLabel(/Files Fasta Reference Database Target Probe/i)
-        .setInputFiles(fixtures.referenceTarget);
-
-    if (pipeline.needsReadoutProbe) {
-        await clickTab(page, /Readout Probe Parameters/i);
-        await page
-            .getByLabel(/Files Fasta Reference Database Readout Probe/i)
-            .setInputFiles(fixtures.readout ?? fixtures.referenceTarget);
-    }
-
-    if (pipeline.needsPrimer) {
-        await clickTab(page, /Primer Parameters/i);
-        await page
-            .getByLabel(/Files Fasta Reference Database Primer/i)
-            .setInputFiles(fixtures.primer ?? fixtures.referenceTarget);
-    }
-
-    await applyPipelineE2EOverrides(page, pipeline);
-};
+// ---------------------------------------------------------------------------
+// Submission & consent
+// ---------------------------------------------------------------------------
 
 export const submitPipelineAndOpenRun = async (page: Page) => {
     const submitButton = page.getByRole("button", { name: /submit/i });
@@ -353,7 +264,7 @@ export const waitForSuccessfulRun = async (
     timeoutMs: number = RUN_TIMEOUT_MS
 ) => {
     const deadline = Date.now() + timeoutMs;
-    await pollRunState(page, runId, deadline - Date.now());
+    await pollRunState(page, runId, timeoutMs);
     return pollRunFiles(page, runId, deadline - Date.now());
 };
 

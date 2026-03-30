@@ -3,6 +3,8 @@ name: PR Tests
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  schedule:
+    - cron: "0 2 1 * *"
   workflow_dispatch: # Allow manual runs for testing
 
 jobs:
