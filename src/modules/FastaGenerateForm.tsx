@@ -89,12 +89,9 @@ const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
             setError(null);
             const DROPDOWN_URL =
                 BACKEND_URL + `/api/genomic/releases/${kingdom}/${species}`;
-            console.log(DROPDOWN_URL);
             const response = await axios.get(DROPDOWN_URL, {
                 withCredentials: true,
             });
-            console.log(response.data);
-            setReleases(response.data);
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
                 setError(
@@ -110,7 +107,6 @@ const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
         }
     };
 
-    console.log("Hallo Annotation Releases");
     if (isLoading) {
         return <option>Loading annotation releases...</option>;
     }
@@ -119,8 +115,10 @@ const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
         return <option>Error while loading annotation releases!</option>;
     }
 
-    return releases.map((release) => (
-        <option value={release}>{release}</option>
+    return releases.map((release, idx) => (
+        <option key={idx} value={release}>
+            {release}
+        </option>
     ));
 };
 
@@ -153,8 +151,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     }, []);
 
     const parseDropDown = (data: RawDropDown) => {
-        console.log("Parsing: ... ");
-        console.log(data);
         return {
             ncbi: new Map<string, string[]>(Object.entries(data.ncbi)),
             ensembl: new Map<string, string[]>(Object.entries(data.ensembl)),
@@ -169,7 +165,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
             const response = await axios.get(DROPDOWN_URL, {
                 withCredentials: true,
             });
-            console.log(response.data);
             setDropDown(parseDropDown(response.data));
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
@@ -180,7 +175,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
             } else {
                 setError("Failed to load Dropdown Options");
             }
-            console.error("Error fetching dropdown options:", err);
         } finally {
             setIsLoading(false);
         }
@@ -253,7 +247,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
     const handleEnsChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => {
-        console.log(form.formDataEns.source_params.species.value);
         const { name, value } = e.target;
         const checked =
             "checked" in e.target
@@ -345,8 +338,14 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                             value={form.selectedSource}
                                             onChange={handleSourceChange}
                                         >
-                                            <option value="ncbi"> NCBI</option>
-                                            <option value="ensembl">
+                                            <option key={"ncbi"} value="ncbi">
+                                                {" "}
+                                                NCBI
+                                            </option>
+                                            <option
+                                                key={"ensembl"}
+                                                value="ensembl"
+                                            >
                                                 {" "}
                                                 Ensembl
                                             </option>
@@ -374,8 +373,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                             >
                                                 {Array.from(
                                                     dropDown!.ncbi.keys()
-                                                ).map((k) => (
-                                                    <option value={k}>
+                                                ).map((k, idx) => (
+                                                    <option key={idx} value={k}>
                                                         {replaceUnderscore(
                                                             [
                                                                 k[0].toLocaleUpperCase(),
@@ -387,7 +386,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                             </select>
 
                                             <OverlayTrigger
-                                                trigger="hover"
+                                                trigger={["hover", "focus"]}
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="dir_output">
@@ -433,7 +432,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 dropDown={dropDown!}
                                             />
                                             <OverlayTrigger
-                                                trigger="hover"
+                                                trigger={["hover", "focus"]}
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="dir_output">
@@ -490,7 +489,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 />
                                             </select>
                                             <OverlayTrigger
-                                                trigger="hover"
+                                                trigger={["hover", "focus"]}
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="dir_output">
@@ -567,7 +566,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                               )}
                                                 </label>
                                                 <OverlayTrigger
-                                                    trigger="hover"
+                                                    trigger={["hover", "focus"]}
                                                     placement="top"
                                                     overlay={
                                                         <Popover
@@ -622,7 +621,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 placeholder="50"
                                             />
                                             <OverlayTrigger
-                                                trigger="hover"
+                                                trigger={["hover", "focus"]}
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="dir_output">
@@ -671,8 +670,14 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                             value={form.selectedSource}
                                             onChange={handleSourceChange}
                                         >
-                                            <option value="ncbi"> NCBI</option>
-                                            <option value="ensembl">
+                                            <option key="ncbi" value="ncbi">
+                                                {" "}
+                                                NCBI
+                                            </option>
+                                            <option
+                                                key="ensembl"
+                                                value="ensembl"
+                                            >
                                                 {" "}
                                                 Ensembl
                                             </option>
@@ -700,8 +705,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                             >
                                                 {Array.from(
                                                     dropDown!.ensembl.keys()
-                                                ).map((k) => (
-                                                    <option value={k}>
+                                                ).map((k, idx) => (
+                                                    <option key={idx} value={k}>
                                                         {replaceUnderscore(
                                                             [
                                                                 k[0].toLocaleUpperCase(),
@@ -712,7 +717,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 ))}
                                             </select>
                                             <OverlayTrigger
-                                                trigger="hover"
+                                                trigger={["hover", "focus"]}
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="dir_output">
@@ -769,14 +774,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                             .source_params
                                                             .species.value
                                                     )!
-                                                    .map((release) => (
-                                                        <option value={release}>
+                                                    .map((release, idx) => (
+                                                        <option
+                                                            key={idx}
+                                                            value={release}
+                                                        >
                                                             {release}
                                                         </option>
                                                     ))}
                                             </select>
                                             <OverlayTrigger
-                                                trigger="hover"
+                                                trigger={["hover", "focus"]}
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="dir_output">
@@ -852,7 +860,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                               )}
                                                 </label>
                                                 <OverlayTrigger
-                                                    trigger="hover"
+                                                    trigger={["hover", "focus"]}
                                                     placement="top"
                                                     overlay={
                                                         <Popover
@@ -907,7 +915,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 placeholder="50"
                                             />
                                             <OverlayTrigger
-                                                trigger="hover"
+                                                trigger={["hover", "focus"]}
                                                 placement="top"
                                                 overlay={
                                                     <Popover id="dir_output">

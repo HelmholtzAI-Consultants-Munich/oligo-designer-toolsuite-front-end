@@ -15,12 +15,10 @@ import type {
 import { handleSubmit } from "../components/helpers";
 import FieldTemplate from "../components/fieldTemplate";
 import { TabsLayout } from "../components/tabs";
-import FileSelection from "../components/fileSelection";
 import { RunLinkModal } from "../components/modal/RunLinkModal";
 import { InfoModal } from "../components/modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
-import FastaGeneration from "../components/fastaGeneration";
-import FileOrGenerator from "../components/fileorGenerator";
+import GenomicSourceSelector from "../components/genomicSourceSelector";
 
 type Props = {
     pipeline: string;
@@ -63,7 +61,7 @@ const PipelineTemplate: React.FC<Props> = ({
         setModal({ ...modal, show: false });
     };
     const widgets = {
-        fileSelection: FileOrGenerator,
+        fileSelection: GenomicSourceSelector,
     };
 
     return (
@@ -120,6 +118,7 @@ const PipelineTemplate: React.FC<Props> = ({
                             )
                         }
                     />
+                    {runStatus === "submitting" && <p>Submitting...</p>}
                 </div>
             </div>
         </>

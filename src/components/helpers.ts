@@ -1,6 +1,4 @@
 import {
-    defaultFastaForm,
-    type FastaForm,
     type FastaFormState,
     type FileState,
     type RJSFFormData,
@@ -10,32 +8,6 @@ import { copyToClipboard, createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
-
-export const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFiles: React.Dispatch<React.SetStateAction<FileState>>
-) => {
-    const { name, files: selectedFiles } = e.target;
-    if (!selectedFiles) return;
-
-    setFiles((prevFiles) => ({
-        ...prevFiles,
-
-        [name]: Array.from(selectedFiles), // Multiple files (always an array)
-    }));
-};
-
-export const addFastaGenerationForm = (
-    e: React.MouseEvent<HTMLButtonElement>,
-    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>
-) => {
-    const name = e.target.name as keyof FastaFormState;
-
-    setFastaForms((prevForms) => ({
-        ...prevForms,
-        [name]: [...prevForms[name], defaultFastaForm], // Multiple files (always an array)
-    }));
-};
 
 export const allFieldsFilled = (
     files: FileState,
@@ -96,8 +68,6 @@ export const handleSubmitGenomicAll = async (
                 } else {
                     continue; // skip unknown
                 }
-                console.log("Payload");
-                console.log(payload);
                 try {
                     const response = await axios.post(
                         BACKEND_URL + `/api/genomic/cascaded/custom`,
@@ -107,7 +77,7 @@ export const handleSubmitGenomicAll = async (
                             headers: { "Content-Type": "application/json" },
                         }
                     );
-                    formData[key].push(response.data.output[0]);
+                    formData[key] = response.data.output;
                 } catch (error) {
                     console.error("Error submitting genomic form:", error);
                     throw new Error(
@@ -142,10 +112,6 @@ export function validateInput(
     files: FileState,
     fastaForms: FastaFormState
 ): [boolean, string] {
-    console.log("Files");
-    console.log(files);
-    console.log("FastaForms");
-    console.log(fastaForms);
     for (const field of getRequiredFields(pipeline)) {
         if (files[field].length != 0 && fastaForms[field].length != 0) {
             return [
@@ -203,7 +169,6 @@ export const handleSubmit = async (
         await uploadFiles(files, formData);
         await handleSubmitGenomicAll(fastaForms, formData);
     } catch (error) {
-        console.log("error catched");
         setModal({
             show: true,
             title: "Submission Failed",
