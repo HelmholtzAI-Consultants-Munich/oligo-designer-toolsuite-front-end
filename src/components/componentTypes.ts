@@ -1,6 +1,6 @@
 import type { GenericObjectType } from "@rjsf/utils";
-import form_Data_Ncbi from "../forms/genomic_ncbi_form";
-import form_Data_Ens from "../forms/genomic_ens_form";
+import formDataNcbi from "./forms/schemas/genomicNcbiForm";
+import formDataEns from "./forms/schemas/genomicEnsForm";
 
 export interface FileState {
     files_fasta_target_probe_database: File[];
@@ -10,14 +10,14 @@ export interface FileState {
 }
 export interface FastaForm {
     selectedSource: string;
-    formDataNcbi: typeof form_Data_Ncbi;
-    formDataEns: typeof form_Data_Ens;
+    formDataNcbi: typeof formDataNcbi;
+    formDataEns: typeof formDataEns;
 }
 
 export const defaultFastaForm: FastaForm = {
     selectedSource: "ncbi",
-    formDataNcbi: JSON.parse(JSON.stringify(form_Data_Ncbi)),
-    formDataEns: JSON.parse(JSON.stringify(form_Data_Ens)),
+    formDataNcbi: JSON.parse(JSON.stringify(formDataNcbi)),
+    formDataEns: JSON.parse(JSON.stringify(formDataEns)),
 };
 
 export type RJSFFormData = GenericObjectType;

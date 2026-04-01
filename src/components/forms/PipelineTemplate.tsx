@@ -2,8 +2,8 @@ import { useState } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
-import type { FileState, RJSFFormData } from "../types";
-import { handleSubmit } from "../helpers";
+import type { FileState, RJSFFormData } from "../componentTypes";
+import { handleSubmit } from "../componentHelpers";
 import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";
 import FileSelection from "./FileSelection";
@@ -15,7 +15,7 @@ import {
     CodeSlash,
     Send,
 } from "react-bootstrap-icons";
-import { useRuns } from "../../modules/useRuns";
+import { useRuns } from "../../hooks/useRuns";
 import { Button } from "react-bootstrap";
 
 type Props = {

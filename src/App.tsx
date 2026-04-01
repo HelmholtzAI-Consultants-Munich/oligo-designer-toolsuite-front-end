@@ -1,18 +1,18 @@
-import FAQ from "./pages/faq";
-import Contact from "./pages/contact";
-import Pipelines from "./pages/pipelines";
-import Scrinshot from "./pages/scrinshot";
-import Runs from "./pages/runs";
-import Merfish from "./pages/merfish";
-import SeqFish from "./pages/seqfish";
-import OligoSeq from "./pages/oligoseq";
-import Login from "./pages/login";
-import RunDetail from "./pages/rundetail";
+import FAQ from "./pages/Faq";
+import Contact from "./pages/Contact";
+import Pipelines from "./pages/Pipelines";
+import Scrinshot from "./pages/Scrinshot";
+import Runs from "./pages/Runs";
+import Merfish from "./pages/Merfish";
+import SeqFish from "./pages/SeqFish";
+import OligoSeq from "./pages/OligoSeq";
+import Login from "./pages/Login";
+import RunDetail from "./pages/RunDetail";
 import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
 import FeedbackButton from "./components/feedback/FeedbackButton";
 import NotFound from "./pages/404";
-import { useAuth } from "./modules/useAuth";
+import { useAuth } from "./hooks/useAuth";
 import {
     createBrowserRouter,
     Outlet,

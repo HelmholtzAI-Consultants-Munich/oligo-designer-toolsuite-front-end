@@ -15,7 +15,7 @@ import ResultVisualization from "../components/visualization/ResultVisualization
 import { BACKEND_URL } from "../config";
 import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
-import { useRuns } from "../modules/useRuns";
+import { useRuns } from "../hooks/useRuns";
 import {
     pipelineDisplayNames,
     visualizationDisplayNames,
@@ -24,9 +24,9 @@ import {
 import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
 import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
-import { showToast } from "../modules/toastUtil";
+import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
-import { confirmWithModal } from "../modules/modalUtil";
+import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
 
 interface RunFile {

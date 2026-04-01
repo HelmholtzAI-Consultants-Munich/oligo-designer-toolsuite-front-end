@@ -3,7 +3,7 @@ import axios from "axios";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
 import { BACKEND_URL, FEEDBACK_MAX_LENGTH } from "../../config";
-import { showToast } from "../../modules/toastUtil";
+import { showToast } from "../../utils/toastUtil";
 
 interface FeedbackButtonProps {
     context?: Record<string, unknown>;

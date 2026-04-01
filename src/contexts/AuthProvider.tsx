@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import type { User } from "../types";
 import { BACKEND_URL } from "../config";
-import { AuthContext } from "./useAuth";
-import { useRuns } from "./useRuns";
+import { AuthContext } from "../hooks/useAuth";
+import { useRuns } from "../hooks/useRuns";
 
 export default function AuthProvider({
     children,

@@ -1,6 +1,6 @@
 import { forwardRef, useState, type Ref } from "react";
 import { BACKEND_URL } from "../../config";
-import { useAuth } from "../../modules/useAuth";
+import { useAuth } from "../../hooks/useAuth";
 import { Button, Dropdown } from "react-bootstrap";
 import {
     ArrowRight,
