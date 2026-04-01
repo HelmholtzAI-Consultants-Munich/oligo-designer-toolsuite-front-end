@@ -2,7 +2,6 @@ import { defaultFastaForm } from "./types";
 import type { FastaForm, FastaFormState } from "./types";
 
 import FastaGenerateForm from "../modules/FastaGenerateForm";
-import { addFastaGenerationForm } from "./helpers";
 
 type Props = {
     name: keyof FastaFormState;
@@ -11,18 +10,26 @@ type Props = {
     fastaForms: FastaFormState;
 };
 
+const addFastaGenerationForm = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>
+) => {
+    const name = e.target.name as keyof FastaFormState;
+
+    setFastaForms((prevForms) => ({
+        ...prevForms,
+        [name]: [...prevForms[name], defaultFastaForm], // Multiple files (always an array)
+    }));
+};
+
 const FastaGeneration: React.FC<Props> = ({
     name,
     id,
     setFastaForms,
     fastaForms,
 }) => {
-    console.log(fastaForms[name]);
     return (
-        <div className="flex-grow-1">
-            <label htmlFor={id} className="form-label">
-                {name}
-            </label>
+        <div className="flex-grow-1 my-1">
             <button
                 type="button"
                 className="btn btn-outline-primary w-100"
