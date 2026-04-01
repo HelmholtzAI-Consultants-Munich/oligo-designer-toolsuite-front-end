@@ -406,14 +406,6 @@ const RunDetail = () => {
             onClick: handleDelete,
         };
 
-        const downloadCSVAction = {
-            type: "button",
-            label: "Oligoset CSV",
-            variant: "outline-primary",
-            icon: CardList,
-            onClick: handleDownloadCSV,
-        };
-
         const downloadExcelAction = {
             type: "button",
             label: "All Genes Excel",
@@ -422,8 +414,16 @@ const RunDetail = () => {
             onClick: handleDownloadExcel,
         };
 
+        const downloadCSVAction = {
+            type: "button",
+            label: "Oligoset CSV",
+            variant: "outline-primary",
+            icon: CardList,
+            onClick: handleDownloadCSV,
+        };
+
         if (probes) {
-            return [deleteAction, downloadCSVAction, downloadExcelAction];
+            return [deleteAction, downloadExcelAction, downloadCSVAction];
         } else {
             return [deleteAction];
         }
@@ -661,7 +661,7 @@ const RunDetail = () => {
                                 )
                                 .map((file) => (
                                     <ListGroup.Item key={file.name}>
-                                        <Horizontal gap="md" align="center">
+                                        <Horizontal gap="md" align="center" wrap>
                                             {file.name}
                                             <Horizontal.Item grow>
                                                 <span className="badge bg-secondary">

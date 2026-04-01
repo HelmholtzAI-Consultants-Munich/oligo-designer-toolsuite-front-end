@@ -9,9 +9,9 @@ export default function DefaultLayout() {
     const { user } = useAuth();
 
     return (
-        <div id="app-layout">
+        <div id="app-layout" className="min-vh-100">
             <Sidebar />
-            <Vertical grow className="min-vh-100" align="stretch" fillWidth>
+            <Vertical align="stretch" fillWidth>
                 <Toasts />
                 <Modal />
                 <Outlet key={user?.id} /> {/* Force remount on user change */}

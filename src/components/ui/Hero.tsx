@@ -6,7 +6,7 @@ export default function Hero() {
         <Horizontal justify="center" className="my-5 hero">
             <Vertical>
                 <Horizontal align="end">
-                    <h1 style={{fontSize: "4rem"}}>
+                    <h1>
                         Welcome to the <br />
                         Oligo Designer
                     </h1>
@@ -18,7 +18,7 @@ export default function Hero() {
                     />
                 </Horizontal>
                 <Horizontal wrap gap="xl">
-                    <h1 style={{fontSize: "4rem"}}>Toolsuite</h1>
+                    <h1>Toolsuite</h1>
                     <p className="lead fs-6 mt-4" style={{ maxWidth: "500px" }}>
                         Oligo Designer Toolsuite is an open-source framework
                         designed to streamline the development of custom

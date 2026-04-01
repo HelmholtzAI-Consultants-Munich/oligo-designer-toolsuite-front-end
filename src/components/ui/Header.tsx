@@ -48,29 +48,27 @@ function HeaderAction({ action }: { action: Action }) {
 
     if (action.type === "button") {
         return (
-            <Form.Group controlId={`header-action-${action.label}`}>
-                <Vertical align="center" justify="end" fillHeight>
-                    {action.icon && (
-                        <Form.Label className="small text-muted text-center">
-                            {action.label}
-                        </Form.Label>
-                    )}
-                    <Vertical.Item>
-                        <Form.Control
-                            as={Button}
-                            variant={action.variant}
-                            onClick={action.onClick}
-                            className="icon-button"
-                        >
-                            {action.icon ? (
-                                <action.icon size={20} />
-                            ) : (
-                                action.label
-                            )}
-                        </Form.Control>
-                    </Vertical.Item>
-                </Vertical>
-            </Form.Group>
+            <Vertical align="center" justify="end" fillHeight>
+                {action.icon && (
+                    <Form.Label className="small text-muted text-center" for={`action-${action.label.replace(/\s+/g, '-')}`}>
+                        {action.label}
+                    </Form.Label>
+                )}
+                <Vertical.Item>
+                    <Button
+                        id={`action-${action.label.replace(/\s+/g, '-')}`}
+                        variant={action.variant}
+                        onClick={action.onClick}
+                        className="icon-button"
+                    >
+                        {action.icon ? (
+                            <action.icon size={20} />
+                        ) : (
+                            action.label
+                        )}
+                    </Button>
+                </Vertical.Item>
+            </Vertical>
         );
     } else if (action.type === "search") {
         return (
