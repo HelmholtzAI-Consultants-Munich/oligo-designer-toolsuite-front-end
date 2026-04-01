@@ -11,8 +11,11 @@ import { InfoCircle } from "react-bootstrap-icons";
 import type { FastaForm } from "../components/types";
 import { BACKEND_URL } from "../config";
 import axios from "axios";
-
-const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
+import type { DropDown } from "../components/fastaGenerateForm/types";
+import { replaceUnderscore } from "../components/fastaGenerateForm/helpers";
+import { ToolTip } from "../components/fastaGenerateForm/tooltip";
+import { DropDownOption } from "../components/fastaGenerateForm/dropdown";
+import { NcbiAnnotationReleases } from "../components/fastaGenerateForm/ncbiAnnotationReleases";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
@@ -22,105 +25,10 @@ interface FastaGenerateFormProps {
     disableRemove?: boolean;
 }
 
-interface DropDownOptionProps {
-    form: FastaForm;
-    handleNcbiChange: any;
-    dropDown: DropDown;
-}
-
-interface NcbiAnnotationReleasesProps {
-    form: FastaForm;
-}
-
 interface RawDropDown {
     ncbi: any;
     ensembl: any;
 }
-
-interface DropDown {
-    ncbi: Map<string, string[]>;
-    ensembl: Map<string, string[]>;
-}
-
-const DropDownOption: React.FC<DropDownOptionProps> = ({
-    form,
-    handleNcbiChange,
-    dropDown,
-}) => {
-    return (
-        <select
-            name="source_params.species"
-            className="form-select"
-            id="source_params.species"
-            value={form.formDataNcbi.source_params.species.value}
-            onChange={handleNcbiChange}
-        >
-            <option value="">Select a species</option>
-            {dropDown.ncbi
-                ?.get(
-                    form.formDataNcbi.source_params.taxon.value.toLowerCase()
-                )!
-                .map((entry) => (
-                    <option key={entry} value={entry}>
-                        {replaceUnderscore(entry)}
-                    </option>
-                ))}
-        </select>
-    );
-};
-
-const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
-    form,
-}) => {
-    const [releases, setReleases] = useState<string[]>();
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const kingdom = form.formDataNcbi.source_params.taxon.value;
-    const species = form.formDataNcbi.source_params.species.value;
-
-    useEffect(() => {
-        fetchPipelineRuns(species);
-    }, [species]);
-
-    const fetchPipelineRuns = async (species: string) => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            const DROPDOWN_URL =
-                BACKEND_URL + `/api/genomic/releases/${kingdom}/${species}`;
-            const response = await axios.get(DROPDOWN_URL, {
-                withCredentials: true,
-            });
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.error ||
-                        "Failed to load Annotation Releases"
-                );
-            } else {
-                setError("Failed to load Annotation Releases");
-            }
-            console.error("Error fetching Annotation Releases:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    if (isLoading) {
-        return <option>Loading annotation releases...</option>;
-    }
-
-    if (error || !releases) {
-        return <option>Error while loading annotation releases!</option>;
-    }
-
-    return releases.map((release, idx) => (
-        <option key={idx} value={release}>
-            {release}
-        </option>
-    ));
-};
 
 /**
  * FastaGenerateForm
@@ -385,32 +293,14 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 ))}
                                             </select>
 
-                                            <OverlayTrigger
-                                                trigger={["hover", "focus"]}
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="dir_output">
-                                                        <Popover.Body>
-                                                            {
-                                                                form
-                                                                    .formDataNcbi
-                                                                    .source_params
-                                                                    .taxon
-                                                                    .comment
-                                                            }
-                                                        </Popover.Body>
-                                                    </Popover>
+                                            <ToolTip
+                                                id="dir_output"
+                                                tip={
+                                                    form.formDataNcbi
+                                                        .source_params.taxon
+                                                        .comment
                                                 }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px",
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
+                                            />
                                         </div>
                                     </div>
 
@@ -424,39 +314,20 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                         </label>
                                         <div className="d-flex align-items-center">
                                             <DropDownOption
-                                                key={0}
                                                 form={form}
                                                 handleNcbiChange={
                                                     handleNcbiChange
                                                 }
                                                 dropDown={dropDown!}
                                             />
-                                            <OverlayTrigger
-                                                trigger={["hover", "focus"]}
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="dir_output">
-                                                        <Popover.Body>
-                                                            {
-                                                                form
-                                                                    .formDataNcbi
-                                                                    .source_params
-                                                                    .species
-                                                                    .comment
-                                                            }
-                                                        </Popover.Body>
-                                                    </Popover>
+                                            <ToolTip
+                                                id="dir_output"
+                                                tip={
+                                                    form.formDataNcbi
+                                                        .source_params.species
+                                                        .comment
                                                 }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px",
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
+                                            />
                                         </div>
                                     </div>
 
@@ -488,32 +359,15 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                     form={form}
                                                 />
                                             </select>
-                                            <OverlayTrigger
-                                                trigger={["hover", "focus"]}
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="dir_output">
-                                                        <Popover.Body>
-                                                            {
-                                                                form
-                                                                    .formDataNcbi
-                                                                    .source_params
-                                                                    .annotation_release
-                                                                    .comment
-                                                            }
-                                                        </Popover.Body>
-                                                    </Popover>
+                                            <ToolTip
+                                                id="dir_output"
+                                                tip={
+                                                    form.formDataNcbi
+                                                        .source_params
+                                                        .annotation_release
+                                                        .comment
                                                 }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px",
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -565,33 +419,15 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                                   "-"
                                                               )}
                                                 </label>
-                                                <OverlayTrigger
-                                                    trigger={["hover", "focus"]}
-                                                    placement="top"
-                                                    overlay={
-                                                        <Popover
-                                                            id={`popover-${region}`}
-                                                        >
-                                                            <Popover.Body>
-                                                                {
-                                                                    form
-                                                                        .formDataNcbi
-                                                                        .genomic_regions[
-                                                                        region
-                                                                    ].comment
-                                                                }
-                                                            </Popover.Body>
-                                                        </Popover>
+                                                <ToolTip
+                                                    id={`popover-${region}`}
+                                                    tip={
+                                                        form.formDataNcbi
+                                                            .genomic_regions[
+                                                            region
+                                                        ].comment
                                                     }
-                                                >
-                                                    <InfoCircle
-                                                        style={{
-                                                            fontSize: "1.2rem",
-                                                            cursor: "pointer",
-                                                            color: "#0d6efd",
-                                                        }}
-                                                    />
-                                                </OverlayTrigger>
+                                                />
                                             </div>
                                         </div>
                                     ))}
@@ -620,36 +456,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 onChange={handleNcbiChange}
                                                 placeholder="50"
                                             />
-                                            <OverlayTrigger
-                                                trigger={["hover", "focus"]}
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="dir_output">
-                                                        <Popover.Body>
-                                                            {
-                                                                form
-                                                                    .formDataNcbi
-                                                                    .exon_exon_junction_block_size
-                                                                    .comment
-                                                            }
-                                                        </Popover.Body>
-                                                    </Popover>
+                                            <ToolTip
+                                                id="dir_output"
+                                                tip={
+                                                    form.formDataNcbi
+                                                        .exon_exon_junction_block_size
+                                                        .comment
                                                 }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px",
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
+                                            />
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Removed <form> wrapper, handled in parent */}
                             </div>
                         )}
                         {form.selectedSource === "ensembl" && (
@@ -716,31 +533,14 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                     </option>
                                                 ))}
                                             </select>
-                                            <OverlayTrigger
-                                                trigger={["hover", "focus"]}
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="dir_output">
-                                                        <Popover.Body>
-                                                            {
-                                                                form.formDataEns
-                                                                    .source_params
-                                                                    .species
-                                                                    .comment
-                                                            }
-                                                        </Popover.Body>
-                                                    </Popover>
+                                            <ToolTip
+                                                id="dir_output"
+                                                tip={
+                                                    form.formDataEns
+                                                        .source_params.species
+                                                        .comment
                                                 }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px",
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
+                                            />
                                         </div>
                                     </div>
 
@@ -783,31 +583,15 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                         </option>
                                                     ))}
                                             </select>
-                                            <OverlayTrigger
-                                                trigger={["hover", "focus"]}
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="dir_output">
-                                                        <Popover.Body>
-                                                            {
-                                                                form.formDataEns
-                                                                    .source_params
-                                                                    .annotation_release
-                                                                    .comment
-                                                            }
-                                                        </Popover.Body>
-                                                    </Popover>
+                                            <ToolTip
+                                                id="dir_output"
+                                                tip={
+                                                    form.formDataEns
+                                                        .source_params
+                                                        .annotation_release
+                                                        .comment
                                                 }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px",
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -859,33 +643,15 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                                   "-"
                                                               )}
                                                 </label>
-                                                <OverlayTrigger
-                                                    trigger={["hover", "focus"]}
-                                                    placement="top"
-                                                    overlay={
-                                                        <Popover
-                                                            id={`popover-${region}`}
-                                                        >
-                                                            <Popover.Body>
-                                                                {
-                                                                    form
-                                                                        .formDataEns
-                                                                        .genomic_regions[
-                                                                        region as keyof typeof form.formDataEns.genomic_regions
-                                                                    ].comment
-                                                                }
-                                                            </Popover.Body>
-                                                        </Popover>
+                                                <ToolTip
+                                                    id={`popover-${region}`}
+                                                    tip={
+                                                        form.formDataEns
+                                                            .genomic_regions[
+                                                            region as keyof typeof form.formDataEns.genomic_regions
+                                                        ].comment
                                                     }
-                                                >
-                                                    <InfoCircle
-                                                        style={{
-                                                            fontSize: "1.2rem",
-                                                            cursor: "pointer",
-                                                            color: "#0d6efd",
-                                                        }}
-                                                    />
-                                                </OverlayTrigger>
+                                                />
                                             </div>
                                         </div>
                                     ))}
@@ -914,35 +680,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = ({
                                                 onChange={handleEnsChange}
                                                 placeholder="50"
                                             />
-                                            <OverlayTrigger
-                                                trigger={["hover", "focus"]}
-                                                placement="top"
-                                                overlay={
-                                                    <Popover id="dir_output">
-                                                        <Popover.Body>
-                                                            {
-                                                                form.formDataEns
-                                                                    .exon_exon_junction_block_size
-                                                                    .comment
-                                                            }
-                                                        </Popover.Body>
-                                                    </Popover>
+                                            <ToolTip
+                                                id="dir_output"
+                                                tip={
+                                                    form.formDataEns
+                                                        .exon_exon_junction_block_size
+                                                        .comment
                                                 }
-                                            >
-                                                <InfoCircle
-                                                    style={{
-                                                        fontSize: "1.2rem",
-                                                        cursor: "pointer",
-                                                        color: "#0d6efd",
-                                                        marginLeft: "10px",
-                                                    }}
-                                                />
-                                            </OverlayTrigger>
+                                            />
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Removed <form> wrapper, handled in parent */}
                             </div>
                         )}
                     </div>
