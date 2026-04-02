@@ -18,10 +18,10 @@ export const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
     const species = form.formDataNcbi.source_params.species.value;
 
     useEffect(() => {
-        fetchPipelineRuns(species);
+        fetchAnnotaionReleasesNCBI(species);
     }, [species]);
 
-    const fetchPipelineRuns = async (species: string) => {
+    const fetchAnnotaionReleasesNCBI = async (species: string) => {
         try {
             setIsLoading(true);
             setError(null);

@@ -6,19 +6,20 @@
  * The form is controlled via props and notifies parent components of changes.
  */
 import React, { memo, useEffect, useState } from "react";
-import { OverlayTrigger, Popover, Spinner } from "react-bootstrap";
-import { InfoCircle } from "react-bootstrap-icons";
 import type { FastaForm } from "../components/types";
 import { BACKEND_URL } from "../config";
 import axios from "axios";
 import type { DropDown } from "../components/fastaGenerateForm/types";
 import { replaceUnderscore } from "../components/fastaGenerateForm/helpers";
-import { ToolTip } from "../components/fastaGenerateForm/tooltip";
-import { DropDownOption } from "../components/fastaGenerateForm/dropdown";
 import { NcbiAnnotationReleases } from "../components/fastaGenerateForm/ncbiAnnotationReleases";
 import { GenomicRegionSelect } from "../components/fastaGenerateForm/genomicRegionSelect";
-import { GenomicDropDown } from "../components/fastaGenerateForm/genomicDropDown";
+import {
+    AnnotationSelect,
+    SpeciesSelect,
+    TaxonSelect,
+} from "../components/fastaGenerateForm/genomicDropDown";
 import { SourceSelect } from "../components/fastaGenerateForm/sourceSelector";
+import { Spinner } from "react-bootstrap";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
@@ -46,7 +47,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [dropDown, setDropDown] = useState<DropDown>();
 
         useEffect(() => {
-            fetchPipelineRuns();
+            fetchDropDownData();
         }, []);
 
         const parseDropDown = (data: RawDropDown) => {
@@ -58,7 +59,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             } as DropDown;
         };
 
-        const fetchPipelineRuns = async () => {
+        const fetchDropDownData = async () => {
             try {
                 setIsLoading(true);
                 setError(null);
@@ -230,25 +231,16 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                             form={form}
                                             onChange={onChange}
                                         />
-                                        {/* Taxon selector */}
-                                        <GenomicDropDown
-                                            label={{
-                                                htmlFor: "taxon",
-                                                text: "Taxon",
-                                            }}
-                                            select={{
-                                                nameAndId:
-                                                    "source_params.taxon",
-                                                value: form.formDataNcbi
-                                                    .source_params.taxon.value,
-                                                handleChange: handleNcbiChange,
-                                            }}
-                                            tooltip={{
-                                                id: "dir_output",
-                                                tip: form.formDataNcbi
-                                                    .source_params.taxon
-                                                    .comment,
-                                            }}
+                                        <TaxonSelect
+                                            tooltip={
+                                                form.formDataNcbi.source_params
+                                                    .taxon.comment
+                                            }
+                                            value={
+                                                form.formDataNcbi.source_params
+                                                    .taxon.value
+                                            }
+                                            handleChange={handleNcbiChange}
                                         >
                                             {Array.from(
                                                 dropDown!.ncbi.keys()
@@ -262,27 +254,18 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                     )}
                                                 </option>
                                             ))}
-                                        </GenomicDropDown>
+                                        </TaxonSelect>
                                         {/* Species selector */}
-                                        <GenomicDropDown
-                                            label={{
-                                                htmlFor: "species",
-                                                text: "Species",
-                                            }}
-                                            select={{
-                                                nameAndId:
-                                                    "source_params.species",
-                                                value: form.formDataNcbi
-                                                    .source_params.species
-                                                    .value,
-                                                handleChange: handleNcbiChange,
-                                            }}
-                                            tooltip={{
-                                                id: "dir_output",
-                                                tip: form.formDataNcbi
-                                                    .source_params.species
-                                                    .comment,
-                                            }}
+                                        <SpeciesSelect
+                                            tooltip={
+                                                form.formDataNcbi.source_params
+                                                    .species.comment
+                                            }
+                                            value={
+                                                form.formDataNcbi.source_params
+                                                    .species.value
+                                            }
+                                            handleChange={handleNcbiChange}
                                         >
                                             {dropDown!.ncbi
                                                 ?.get(
@@ -298,27 +281,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                         )}
                                                     </option>
                                                 ))}
-                                        </GenomicDropDown>
-                                        {/* Annotation release selector */}
-                                        <GenomicDropDown
-                                            label={{
-                                                htmlFor: "annotation_release",
-                                                text: "Annotation Release",
-                                            }}
-                                            select={{
-                                                nameAndId:
-                                                    "source_params.annotation_release",
-                                                value: form.formDataNcbi
-                                                    .source_params
-                                                    .annotation_release.value,
-                                                handleChange: handleNcbiChange,
-                                            }}
-                                            tooltip={{
-                                                id: "dir_output",
-                                                tip: form.formDataNcbi
-                                                    .source_params
-                                                    .annotation_release.comment,
-                                            }}
+                                        </SpeciesSelect>
+                                        <AnnotationSelect
+                                            tooltip={
+                                                form.formDataNcbi.source_params
+                                                    .annotation_release.comment
+                                            }
+                                            value={
+                                                form.formDataNcbi.source_params
+                                                    .annotation_release.value
+                                            }
+                                            handleChange={handleNcbiChange}
                                         >
                                             <option value="">
                                                 Select a release
@@ -326,7 +299,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                             <NcbiAnnotationReleases
                                                 form={form}
                                             />
-                                        </GenomicDropDown>
+                                        </AnnotationSelect>
                                     </div>
                                     <GenomicRegionSelect
                                         exon_exon_junction_block_size={
@@ -349,25 +322,16 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                             onChange={onChange}
                                         />
                                         {/* Species selector */}
-                                        <GenomicDropDown
-                                            label={{
-                                                htmlFor: "species",
-                                                text: "Species",
-                                            }}
-                                            select={{
-                                                nameAndId:
-                                                    "source_params.species",
-                                                value: form.formDataEns
-                                                    .source_params.species
-                                                    .value,
-                                                handleChange: handleEnsChange,
-                                            }}
-                                            tooltip={{
-                                                id: "dir_output",
-                                                tip: form.formDataEns
-                                                    .source_params.species
-                                                    .comment,
-                                            }}
+                                        <SpeciesSelect
+                                            tooltip={
+                                                form.formDataEns.source_params
+                                                    .species.comment
+                                            }
+                                            value={
+                                                form.formDataEns.source_params
+                                                    .species.value
+                                            }
+                                            handleChange={handleNcbiChange}
                                         >
                                             {Array.from(
                                                 dropDown!.ensembl.keys()
@@ -381,28 +345,22 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                     )}
                                                 </option>
                                             ))}
-                                        </GenomicDropDown>
+                                        </SpeciesSelect>
                                         {/* Annotation release selector */}
-                                        <GenomicDropDown
-                                            label={{
-                                                htmlFor: "annotation_release",
-                                                text: "Annotation Release",
-                                            }}
-                                            select={{
-                                                nameAndId:
-                                                    "source_params.annotation_release",
-                                                value: form.formDataEns
-                                                    .source_params
-                                                    .annotation_release.value,
-                                                handleChange: handleEnsChange,
-                                            }}
-                                            tooltip={{
-                                                id: "dir_output",
-                                                tip: form.formDataEns
-                                                    .source_params
-                                                    .annotation_release.comment,
-                                            }}
+                                        <AnnotationSelect
+                                            tooltip={
+                                                form.formDataEns.source_params
+                                                    .annotation_release.comment
+                                            }
+                                            value={
+                                                form.formDataEns.source_params
+                                                    .annotation_release.value
+                                            }
+                                            handleChange={handleEnsChange}
                                         >
+                                            <option value="">
+                                                Select a release
+                                            </option>
                                             {dropDown!.ensembl
                                                 .get(
                                                     form.formDataEns
@@ -417,7 +375,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                         {release}
                                                     </option>
                                                 ))}
-                                        </GenomicDropDown>
+                                        </AnnotationSelect>
                                     </div>
                                     <GenomicRegionSelect
                                         exon_exon_junction_block_size={
