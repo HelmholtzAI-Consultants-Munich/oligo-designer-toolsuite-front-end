@@ -1,4 +1,5 @@
 import {
+    type FastaForm,
     type FastaFormState,
     type FileState,
     type RJSFFormData,
@@ -51,6 +52,19 @@ export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
     }
 };
 
+const stripComments = (fastaForm: FastaForm) => {
+    for (let property of Object.keys(fastaForm) as unknown as keyof FastaForm) {
+        if (typeof fastaForm[property] === "object") {
+            if (Object.keys(fastaForm[property]).includes("value")) {
+                fastaForm[property] = fastaForm[property]["value"];
+            } else {
+                fastaForm[property] = stripComments(fastaForm[property]);
+            }
+        }
+    }
+    return fastaForm;
+};
+
 export const handleSubmitGenomicAll = async (
     fastaForms: FastaFormState,
     formData: RJSFFormData // Accept forms as argument
@@ -58,13 +72,13 @@ export const handleSubmitGenomicAll = async (
     for (const key of Object.keys(fastaForms) as (keyof FileState)[]) {
         if (fastaForms[key]) {
             for (const form of fastaForms[key]) {
-                let payload;
+                let payload = stripComments(form);
                 if (form.selectedSource === "ncbi") {
-                    payload = form.formDataNcbi;
-                    payload["source"]["value"] = "NCBI";
+                    payload = payload.formDataNcbi;
+                    payload["source"] = "NCBI";
                 } else if (form.selectedSource === "ensembl") {
-                    payload = form.formDataEns;
-                    payload["source"]["value"] = "Ensembl";
+                    payload = payload.formDataEns;
+                    payload["source"] = "Ensembl";
                 } else {
                     continue; // skip unknown
                 }

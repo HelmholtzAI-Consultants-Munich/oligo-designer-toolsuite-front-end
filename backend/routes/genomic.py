@@ -22,7 +22,6 @@ from backend.utilities.converters import to_bool, to_int
 from backend.utilities.pipeline import (
     generate_single_region_forms,
     get_form_cache_key,
-    strip_description_from_field,
 )
 
 genomic_bp = Blueprint("genomic", __name__)
@@ -115,7 +114,6 @@ def genomic_cascaded_custom():
     user_id, session_id, user_dir = get_user_context_with_directory()
 
     form_data = request.json
-    form_data = strip_description_from_field(form_data)
     _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl", "Custom"])
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
