@@ -2,6 +2,7 @@ import { defaultFastaForm } from "./types";
 import type { FastaForm, FastaFormState } from "./types";
 
 import FastaGenerateForm from "../modules/FastaGenerateForm";
+import { useMemo } from "react";
 
 type Props = {
     name: keyof FastaFormState;
@@ -28,6 +29,31 @@ const FastaGeneration: React.FC<Props> = ({
     setFastaForms,
     fastaForms,
 }) => {
+    const onChangeFunctions = useMemo(
+        () =>
+            fastaForms[name].map((_, idx) => (updatedForm: FastaForm) => {
+                setFastaForms((prevForms: FastaFormState) => ({
+                    ...prevForms,
+                    [name]: prevForms[name].map((f, i) =>
+                        i === idx ? updatedForm : f
+                    ),
+                }));
+            }),
+        [fastaForms[name].length]
+    );
+    const onRemoveFunctions = useMemo(
+        () =>
+            fastaForms[name].map((_, idx) => () => {
+                setFastaForms((prevForms: FastaFormState) => ({
+                    ...prevForms,
+                    [name]:
+                        prevForms[name].length === 0
+                            ? prevForms[name]
+                            : prevForms[name].filter((_, i) => i !== idx),
+                }));
+            }),
+        [fastaForms[name].length]
+    );
     return (
         <div className="flex-grow-1 my-1">
             <button
@@ -44,25 +70,8 @@ const FastaGeneration: React.FC<Props> = ({
                     <FastaGenerateForm
                         key={`${id} ${idx}`}
                         form={form}
-                        onChange={(updatedForm: FastaForm) => {
-                            setFastaForms((prevForms: FastaFormState) => ({
-                                ...prevForms,
-                                [name]: prevForms[name].map((f, i) =>
-                                    i === idx ? updatedForm : f
-                                ),
-                            }));
-                        }}
-                        onRemove={() =>
-                            setFastaForms((prevForms: FastaFormState) => ({
-                                ...prevForms,
-                                [name]:
-                                    prevForms[name].length === 0
-                                        ? prevForms[name]
-                                        : prevForms[name].filter(
-                                              (_, i) => i !== idx
-                                          ),
-                            }))
-                        }
+                        onChange={onChangeFunctions[idx]}
+                        onRemove={onRemoveFunctions[idx]}
                         disableRemove={fastaForms[name].length === 0}
                     />
                 ))}

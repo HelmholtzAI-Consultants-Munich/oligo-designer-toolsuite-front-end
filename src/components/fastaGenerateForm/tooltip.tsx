@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
+import type { OverlayTriggerType } from "react-bootstrap/esm/OverlayTrigger";
 
 interface ToolTipProps {
     id: string;
@@ -7,10 +9,14 @@ interface ToolTipProps {
 }
 
 export const ToolTip: React.FC<ToolTipProps> = ({ id, tip }) => {
+    const triggerArray = useMemo<OverlayTriggerType[]>(
+        () => ["hover", "focus"],
+        []
+    );
     if (tip === "") return;
     return (
         <OverlayTrigger
-            trigger={["hover", "focus"]}
+            trigger={triggerArray}
             placement="top"
             overlay={
                 <Popover id={id}>
