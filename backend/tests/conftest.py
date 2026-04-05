@@ -9,12 +9,14 @@ Important Note:
 
 import builtins
 import os
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from backend.app import create_app
 from backend.extensions import mongo
+from backend.utilities.typed_values import serialize_path, utc_now
 
 # Temporarily disabled - see issue for better directory mocking solution
 # @pytest.fixture(autouse=True)
@@ -248,12 +250,16 @@ def create_test_run(run_id, user_id="dummy_user", **kwargs):
     Returns:
         The inserted/updated document
     """
+    output_path = kwargs.get("output_path", Path("/tmp/fake"))
+    if isinstance(output_path, str):
+        output_path = Path(output_path)
+
     run_doc = {
         "_id": run_id,
         "pipeline": kwargs.get("pipeline", "TestPipeline"),
         "status": kwargs.get("status", "success"),
-        "timestamp": kwargs.get("timestamp", "2025_08_20"),
-        "output_path": kwargs.get("output_path", "/tmp/fake"),
+        "timestamp": kwargs.get("timestamp", utc_now()),
+        "output_path": serialize_path(output_path),
         **{k: v for k, v in kwargs.items() if k not in ["pipeline", "status", "timestamp", "output_path"]},
     }
 

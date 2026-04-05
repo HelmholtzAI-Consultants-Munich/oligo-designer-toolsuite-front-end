@@ -1,5 +1,5 @@
-import type { FastaForm } from "../types";
 import { GenomicDropDown } from "./genomicDropDown";
+import type { FastaForm } from "./types";
 
 interface SourceSelectProps {
     form: FastaForm;

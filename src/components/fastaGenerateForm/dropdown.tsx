@@ -1,6 +1,5 @@
-import type { FastaForm } from "../types";
 import { replaceUnderscore } from "./helpers";
-import type { DropDown } from "./types";
+import type { DropDown, FastaForm } from "./types";
 
 interface DropDownOptionProps {
     form: FastaForm;

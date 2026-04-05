@@ -9,8 +9,8 @@ Other endpoints are standalone: they run the full pipeline and return the output
 import os
 import subprocess
 import time
-from datetime import datetime
 from http import HTTPStatus
+from pathlib import Path
 
 import yaml
 from flask import Blueprint, abort, current_app, jsonify, request
@@ -23,6 +23,7 @@ from backend.utilities.pipeline import (
     generate_single_region_forms,
     get_form_cache_key,
 )
+from backend.utilities.typed_values import serialize_path, timestamp_for_display, utc_now
 
 genomic_bp = Blueprint("genomic", __name__)
 
@@ -116,15 +117,17 @@ def genomic_cascaded_custom():
     form_data = request.json
     _validate_genomic_form_data(form_data, allowed_sources=["NCBI", "Ensembl", "Custom"])
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = utc_now()
     genomic_type = form_data["source"]
-    run_output_path = os.path.join(user_dir, f"output_genomic_{genomic_type}_{timestamp}")
+    run_output_path = (
+        user_dir / f"output_genomic_{genomic_type}_{timestamp_for_display(timestamp, separator='_')}"
+    )
 
     run_doc = {
         "session_id": session_id,
         "user_id": user_id,
         "timestamp": timestamp,
-        "output_path": run_output_path,
+        "output_path": serialize_path(run_output_path),
         "status": "started",
         "pipeline": "Genomic Region Generator",
     }
@@ -136,29 +139,29 @@ def genomic_cascaded_custom():
     if not single_region_forms:
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: no valid genomic regions specified")
 
-    all_fna_files = []
+    all_fna_files: list[Path] = []
     cached_skips = []
-    cache_dir = os.path.join(current_app.root_path, "cache")
+    cache_dir = Path(current_app.root_path) / "cache"
 
     for single_form in single_region_forms:
         cache_key = get_form_cache_key(single_form)
-        output_path = os.path.join(cache_dir, f"cached_genomic_{cache_key}")
-        output_gen = os.path.join(output_path, "annotation")
+        output_path = cache_dir / f"cached_genomic_{cache_key}"
+        output_gen = output_path / "annotation"
 
         # ---------------------------------------------
         # First-line cache: region FASTAs already built?
         # ---------------------------------------------
-        if os.path.exists(output_gen) and any(fname.endswith(".fna") for fname in os.listdir(output_gen)):
+        if output_gen.exists() and any(fname.endswith(".fna") for fname in os.listdir(output_gen)):
             for fname in os.listdir(output_gen):
                 if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
-                    all_fna_files.append(os.path.join(output_gen, fname))
+                    all_fna_files.append(output_gen / fname)
             cached_skips.append(cache_key)
             continue
 
         # ---------------------------------------------
         # Determine which upstream (NCBI or Ensembl) we are caching from, then always run in custom mode
         # ---------------------------------------------
-        os.makedirs(cache_dir, exist_ok=True)
+        cache_dir.mkdir(parents=True, exist_ok=True)
         source_params = single_form.get("source_params", {})
         source_val = single_form.get("source", "").lower()
 
@@ -187,7 +190,7 @@ def genomic_cascaded_custom():
                     HTTPStatus.BAD_REQUEST,
                     description="Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params.",
                 )
-            cache_info = cache_info = NCBIGenomicDataBase(cache_dir=cache_dir).prepare_cached_assets(
+            cache_info = NCBIGenomicDataBase(cache_dir=cache_dir).prepare_cached_assets(
                 taxon, species, ann_rel
             )
             genome_assembly = cache_info["genome_assembly"]
@@ -197,9 +200,9 @@ def genomic_cascaded_custom():
             files_source = "NCBI"
 
         # Build custom config pointing to cached decompressed files (BASIC PARAMETERS spec)
-        config_path = os.path.join(cache_dir, f"config_genomic_{cache_key}.yaml")
+        config_path = cache_dir / f"config_genomic_{cache_key}.yaml"
         config_genomic = {
-            "dir_output": output_path,
+            "dir_output": str(output_path),
             "source": "custom",
             "source_params": {
                 "file_annotation": annotation_file,  # required: GTF
@@ -217,7 +220,7 @@ def genomic_cascaded_custom():
             yaml.dump(config_genomic, yaml_file)
 
         result = subprocess.run(
-            ["genomic_region_generator", "-c", config_path], capture_output=True, text=True
+            ["genomic_region_generator", "-c", str(config_path)], capture_output=True, text=True
         )
         status = "completed" if result.returncode == 0 else "error"
 
@@ -229,21 +232,21 @@ def genomic_cascaded_custom():
             )
 
         # Collect output .fna files (ignore raw genome)
-        if os.path.exists(output_gen):
+        if output_gen.exists():
             for fname in os.listdir(output_gen):
                 if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
-                    all_fna_files.append(os.path.join(output_gen, fname))
+                    all_fna_files.append(output_gen / fname)
 
         # Update run status in MongoDB and clean temp config
         mongo.db.runs.update_one({"_id": run_id}, {"$set": {"status": status}})
-        if os.path.exists(config_path):
-            os.remove(config_path)
+        if config_path.exists():
+            config_path.unlink()
 
     return jsonify(
         {
             "status": "success",
             "message": f"Genomic processing completed successfully. {len(cached_skips)} used from cache.",
-            "output": all_fna_files,
+            "output": [str(path) for path in all_fna_files],
             "cached": cached_skips,
         }
     ), HTTPStatus.OK

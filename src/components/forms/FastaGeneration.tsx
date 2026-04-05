@@ -1,7 +1,9 @@
-import { defaultFastaForm } from "./types";
-import type { FastaForm, FastaFormState } from "./types";
-
-import FastaGenerateForm from "../modules/FastaGenerateForm";
+import {
+    defaultFastaForm,
+    type FastaForm,
+    type FastaFormState,
+} from "../fastaGenerateForm/types";
+import FastaGenerateForm from "./FastaGenerateForm";
 import { useMemo } from "react";
 
 type Props = {

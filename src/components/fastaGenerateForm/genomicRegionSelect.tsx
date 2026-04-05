@@ -1,5 +1,4 @@
 import type form_Data_Ncbi from "../../forms/genomic_ncbi_form";
-import type { FastaForm } from "../types";
 import { ToolTip } from "./tooltip";
 
 interface GenomicRegionSelectProps {

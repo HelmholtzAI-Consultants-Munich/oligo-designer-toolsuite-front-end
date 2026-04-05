@@ -21,7 +21,7 @@ from flask_login import current_user, login_required
 
 from backend.extensions import mongo
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
-from backend.utilities.formatting import format_pipeline_run, format_user
+from backend.utilities.formatting import format_feedback, format_pipeline_run, format_user
 from backend.utilities.pipeline import (
     delete_pipeline_run_files_and_db,
     execute_bulk_pipeline_run_deletion,
@@ -113,12 +113,11 @@ def update_user(user_id: ObjectId):
     """
     Update a user (admin only).
 
-    Allows updating email, name, and role fields.
+    Allows updating username (for CLI users) and role fields.
 
     :param user_id: The MongoDB ObjectId of the user
     :type user_id: ObjectId
-    :request json email: Optional email address
-    :request json name: Optional name
+    :request json username: Optional username (for CLI users only)
     :request json role: Optional role ('user' or 'admin')
     :returns: JSON updated user object
     :rtype: flask.Response
@@ -131,10 +130,15 @@ def update_user(user_id: ObjectId):
 
     # Build update document
     update_doc = {}
-    if "email" in data:
-        update_doc["email"] = data["email"].strip().lower()
-    if "name" in data:
-        update_doc["name"] = data["name"].strip()
+    if "username" in data:
+        # Only allow username updates for CLI users (users with username field)
+        user = get_user_by_id_or_404(user_id, exclude_password=True)
+        if not user.get("username"):
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                description="Helmholtz users do not have a username to update, use helmholtz-sub instead",
+            )
+        update_doc["username"] = data["username"].strip()
     if "role" in data:
         update_doc["role"] = data["role"]
 
@@ -307,6 +311,26 @@ def get_dashboard_stats():
             },
         }
     ), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/feedback", methods=["GET"])
+@login_required
+@require_admin
+def get_feedback():
+    """
+    Get all feedback entries (admin only).
+
+    Returns list of feedback documents with optional user information.
+
+    :returns: JSON list of feedback entries
+    :rtype: flask.Response
+    """
+    feedback_cursor = mongo.db.feedback.find({}).sort("created_at", -1)
+    feedback_entries = list(feedback_cursor)
+
+    formatted_feedback = [format_feedback(doc) for doc in feedback_entries]
+
+    return jsonify(formatted_feedback), HTTPStatus.OK
 
 
 @admin_bp.route("/api/admin/users/bulk-delete", methods=["POST"])

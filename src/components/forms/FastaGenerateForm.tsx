@@ -6,20 +6,19 @@
  * The form is controlled via props and notifies parent components of changes.
  */
 import React, { memo, useEffect, useState } from "react";
-import type { FastaForm } from "../components/types";
-import { BACKEND_URL } from "../config";
 import axios from "axios";
-import type { DropDown } from "../components/fastaGenerateForm/types";
-import { replaceUnderscore } from "../components/fastaGenerateForm/helpers";
-import { NcbiAnnotationReleases } from "../components/fastaGenerateForm/ncbiAnnotationReleases";
-import { GenomicRegionSelect } from "../components/fastaGenerateForm/genomicRegionSelect";
+import { Alert, Spinner } from "react-bootstrap";
+import type { DropDown, FastaForm } from "../fastaGenerateForm/types";
+import { BACKEND_URL } from "../../config";
+import { SourceSelect } from "../fastaGenerateForm/sourceSelector";
 import {
     AnnotationSelect,
     SpeciesSelect,
     TaxonSelect,
-} from "../components/fastaGenerateForm/genomicDropDown";
-import { SourceSelect } from "../components/fastaGenerateForm/sourceSelector";
-import { Spinner } from "react-bootstrap";
+} from "../fastaGenerateForm/genomicDropDown";
+import { replaceUnderscore } from "../fastaGenerateForm/helpers";
+import { NcbiAnnotationReleases } from "../fastaGenerateForm/ncbiAnnotationReleases";
+import { GenomicRegionSelect } from "../fastaGenerateForm/genomicRegionSelect";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
@@ -216,6 +215,15 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                         <span className="visually-hidden">Loading...</span>
                     </Spinner>
                 </div>
+            );
+        }
+
+        if (error || !dropDown) {
+            console.error("Could not fetch dropdown data: ", error);
+            return (
+                <Alert key="warning" variant="warning">
+                    Could not fetch required data. Please try again.
+                </Alert>
             );
         }
 

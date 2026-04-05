@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config";
 import axios from "axios";
-import type { FastaForm } from "../types";
+import type { FastaForm } from "./types";
 
 interface NcbiAnnotationReleasesProps {
     form: FastaForm;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Outlet, Link, useLocation } from "react-router-dom";
+import { useNavigate, Outlet, Link, useLocation } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import { Navbar, Nav, Container, Spinner, Button } from "react-bootstrap";
 import {
@@ -9,6 +9,7 @@ import {
     List,
     Gear,
     Speedometer2,
+    ChatDots,
 } from "react-bootstrap-icons";
 import axios from "axios";
 import { BACKEND_URL } from "../config.ts";
@@ -71,6 +72,7 @@ const navItems: NavItemConfig[] = [
     { path: "/admin/dashboard", label: "Dashboard", icon: Speedometer2 },
     { path: "/admin/users", label: "User Management", icon: People },
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
+    { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
 ];
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router";
 import axios from "axios";
 import {
     Form,
@@ -13,8 +13,8 @@ import { BACKEND_URL } from "../../config";
 
 interface User {
     id: string;
-    email: string;
-    name: string;
+    username?: string;
+    helmholtz_sub?: string;
     role: "user" | "admin";
 }
 
@@ -29,8 +29,7 @@ const UserEdit: React.FC = () => {
     const [success, setSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
-        email: "",
-        name: "",
+        username: "",
         role: "user" as "user" | "admin",
     });
 
@@ -47,8 +46,7 @@ const UserEdit: React.FC = () => {
                 const userData = response.data;
                 setUser(userData);
                 setFormData({
-                    email: userData.email || "",
-                    name: userData.name || "",
+                    username: userData.username || "",
                     role: userData.role || "user",
                 });
             } catch (err: unknown) {
@@ -171,26 +169,33 @@ const UserEdit: React.FC = () => {
                     )}
 
                     <Form onSubmit={handleSubmit}>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Email</Form.Label>
-                            <Form.Control
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                            />
-                        </Form.Group>
-
-                        <Form.Group className="mb-3">
-                            <Form.Label>Name</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleChange}
-                            />
-                        </Form.Group>
+                        {user?.helmholtz_sub && (
+                            <Alert variant="info" className="mb-3">
+                                This is a Helmholtz user. Username cannot be
+                                changed. Helmholtz ID: {user.helmholtz_sub}
+                            </Alert>
+                        )}
+                        {user?.username && (
+                            <Form.Group className="mb-3">
+                                <Form.Label>Username</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="username"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                    disabled={!!user.helmholtz_sub}
+                                />
+                                <Form.Text className="text-muted">
+                                    Only editable for CLI-registered admin
+                                    users.
+                                </Form.Text>
+                            </Form.Group>
+                        )}
+                        {!user?.username && !user?.helmholtz_sub && (
+                            <Alert variant="warning" className="mb-3">
+                                User has no identifier set.
+                            </Alert>
+                        )}
 
                         <Form.Group className="mb-3">
                             <Form.Label>Role</Form.Label>

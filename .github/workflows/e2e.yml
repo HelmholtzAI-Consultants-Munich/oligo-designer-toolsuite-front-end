@@ -79,6 +79,21 @@ jobs:
           set -euxo pipefail
           npm ci
 
+      - name: Wait for MongoDB to be ready
+        run: |
+          set -euxo pipefail
+          echo "Waiting for MongoDB connection..."
+          for i in {1..10}; do
+            if nc -z localhost 27017; then
+              echo "✅ MongoDB is ready!"
+              exit 0
+            fi
+            echo "⏳ Waiting for MongoDB... (attempt $i/10)"
+            sleep 3
+          done
+          echo "MongoDB did not become available after 10 retries."
+          exit 1
+
       - name: Start Full App (Frontend + Backend)
         run: |
           set -euxo pipefail

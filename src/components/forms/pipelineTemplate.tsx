@@ -2,23 +2,16 @@ import { useState } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
-import Navbar from "../modules/nav";
-import type {
-    FileState,
-    Status,
-    Modal,
-    RJSFFormData,
-    defaultFastaForm,
-    FastaForm,
-    FastaFormState,
-} from "../components/types";
-import { handleSubmit } from "../components/helpers";
-import FieldTemplate from "../components/fieldTemplate";
-import { TabsLayout } from "../components/tabs";
-import { RunLinkModal } from "../components/modal/RunLinkModal";
-import { InfoModal } from "../components/modal/InfoModal";
+import type { Status, Modal, RJSFFormData } from "../types";
+import FieldTemplate from "./FieldTemplate";
+import { TabsLayout } from "./TabsLayout";
+import { RunLinkModal } from "../modal/RunLinkModal";
+import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
-import GenomicSourceSelector from "../components/genomicSourceSelector";
+import { Navbar } from "react-bootstrap";
+import type { FastaFormState, FileState } from "../fastaGenerateForm/types";
+import fileorGenerator from "../fastaGenerateForm/genomicSourceSelector";
+import { handleSubmit } from "../fastaGenerateForm/helpers";
 
 type Props = {
     pipeline: string;
@@ -61,7 +54,7 @@ const PipelineTemplate: React.FC<Props> = ({
         setModal({ ...modal, show: false });
     };
     const widgets = {
-        fileSelection: GenomicSourceSelector,
+        fileSelection: fileorGenerator,
     };
 
     return (
@@ -124,4 +117,5 @@ const PipelineTemplate: React.FC<Props> = ({
         </>
     );
 };
+
 export default PipelineTemplate;

@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import axios from "axios";
 import { Table, Button, Badge, Spinner, Alert, Form } from "react-bootstrap";
 import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { BACKEND_URL } from "../../config";
+import { formatAdminDateTime } from "../shared/date";
 
 interface User {
     id: string;
-    email: string;
-    name: string;
+    username?: string;
+    helmholtz_sub?: string;
     role: "user" | "admin";
     created_at?: string;
 }
@@ -55,9 +56,11 @@ const UserList: React.FC = () => {
         }
     };
 
-    const handleDelete = async (userId: string, userEmail: string) => {
+    const handleDelete = async (userId: string, userIdentifier: string) => {
         if (
-            window.confirm(`Are you sure you want to delete user ${userEmail}?`)
+            window.confirm(
+                `Are you sure you want to delete user ${userIdentifier}?`
+            )
         ) {
             try {
                 await axios.delete(BACKEND_URL + `/api/admin/users/${userId}`, {
@@ -164,19 +167,6 @@ const UserList: React.FC = () => {
         }
     };
 
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return "N/A";
-        try {
-            const date = new Date(dateString);
-            const day = date.getDate().toString().padStart(2, "0");
-            const month = (date.getMonth() + 1).toString().padStart(2, "0");
-            const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
-        } catch {
-            return "N/A";
-        }
-    };
-
     if (isLoading) {
         return (
             <div className="d-flex justify-content-center p-5">
@@ -264,8 +254,7 @@ const UserList: React.FC = () => {
                                     title="Select all"
                                 />
                             </th>
-                            <th>Email</th>
-                            <th>Name</th>
+                            <th>Identifier</th>
                             <th>Role</th>
                             <th>Created</th>
                             <th>Actions</th>
@@ -284,8 +273,15 @@ const UserList: React.FC = () => {
                                         onClick={(e) => e.stopPropagation()}
                                     />
                                 </td>
-                                <td>{user.email}</td>
-                                <td>{user.name || "N/A"}</td>
+                                <td>
+                                    {user.username ? (
+                                        <>Username: {user.username}</>
+                                    ) : user.helmholtz_sub ? (
+                                        <>Helmholtz ID: {user.helmholtz_sub}</>
+                                    ) : (
+                                        "N/A"
+                                    )}
+                                </td>
                                 <td>
                                     <Badge
                                         bg={
@@ -297,7 +293,14 @@ const UserList: React.FC = () => {
                                         {user.role || "user"}
                                     </Badge>
                                 </td>
-                                <td>{formatDate(user.created_at)}</td>
+                                <td>
+                                    {
+                                        formatAdminDateTime(
+                                            user.created_at,
+                                            "N/A"
+                                        ).split(" ")[0]
+                                    }
+                                </td>
                                 <td>
                                     <Button
                                         variant="primary"
@@ -315,7 +318,12 @@ const UserList: React.FC = () => {
                                         variant="danger"
                                         size="sm"
                                         onClick={() =>
-                                            handleDelete(user.id, user.email)
+                                            handleDelete(
+                                                user.id,
+                                                user.username ||
+                                                    user.helmholtz_sub ||
+                                                    user.id
+                                            )
                                         }
                                     >
                                         Delete

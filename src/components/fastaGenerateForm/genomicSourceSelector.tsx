@@ -1,7 +1,7 @@
 import type { WidgetProps } from "@rjsf/utils";
 import { type FastaFormState, type FileState } from "./types";
-import FastaGeneration from "./fastaGeneration";
 import FileSelection from "./fileSelection";
+import FastaGeneration from "../forms/FastaGeneration";
 
 const fileorGenerator = ({ id, name, registry }: WidgetProps) => {
     const { files, setFiles, fastaForms, setFastaForms } = registry.formContext;
