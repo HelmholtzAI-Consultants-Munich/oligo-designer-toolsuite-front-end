@@ -164,7 +164,9 @@ export const handleSubmit = async (
             content: (
                 <>
                     <p>The pipeline run was successfully added to the queue.</p>
-                    <Link to={`/runs/${newId}`}>View the run here <ArrowRight /></Link>
+                    <Link to={`/runs/${newId}`}>
+                        View the run here <ArrowRight />
+                    </Link>
                 </>
             ),
             type: "success",
@@ -176,7 +178,9 @@ export const handleSubmit = async (
             content: (
                 <>
                     <p>{errorMessage}</p>
-                    <Link className="mt-2" to={`/runs/${newId}`}>View the run here <ArrowRight /></Link>
+                    <Link className="mt-2" to={`/runs/${newId}`}>
+                        View the run here <ArrowRight />
+                    </Link>
                 </>
             ),
             type: "danger",

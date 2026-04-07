@@ -661,7 +661,11 @@ const RunDetail = () => {
                                 )
                                 .map((file) => (
                                     <ListGroup.Item key={file.name}>
-                                        <Horizontal gap="md" align="center" wrap>
+                                        <Horizontal
+                                            gap="md"
+                                            align="center"
+                                            wrap
+                                        >
                                             {file.name}
                                             <Horizontal.Item grow>
                                                 <span className="badge bg-secondary">

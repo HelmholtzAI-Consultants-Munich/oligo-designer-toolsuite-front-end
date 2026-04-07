@@ -11,6 +11,7 @@ export default function RunsProvider({
     const pollingInterval = 5000; // Poll every 5 seconds
     const pollingRef = useRef<NodeJS.Timeout | null>(null);
     const [runs, setRuns] = useState<PipelineRun[]>([]);
+    const [loading, setLoading] = useState(true);
 
     const pollRuns = () => {
         const url = `${BACKEND_URL}/api/runs`;
@@ -30,6 +31,9 @@ export default function RunsProvider({
             })
             .catch((error) => {
                 console.error("Error fetching recent runs:", error);
+            })
+            .finally(() => {
+                setLoading(false);
             });
     };
 
@@ -49,6 +53,7 @@ export default function RunsProvider({
         <RunsContext
             value={{
                 runs,
+                loading,
                 updateRuns: pollRuns,
             }}
         >

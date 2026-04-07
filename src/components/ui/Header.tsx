@@ -50,22 +50,22 @@ function HeaderAction({ action }: { action: Action }) {
         return (
             <Vertical align="center" justify="end" fillHeight>
                 {action.icon && (
-                    <Form.Label className="small text-muted text-center" for={`action-${action.label.replace(/\s+/g, '-')}`}>
+                    <Form.Label
+                        className="small text-muted text-center"
+                        for={`action-${action.label.replace(/\s+/g, "-")}`}
+                    >
                         {action.label}
                     </Form.Label>
                 )}
                 <Vertical.Item>
                     <Button
-                        id={`action-${action.label.replace(/\s+/g, '-')}`}
+                        id={`action-${action.label.replace(/\s+/g, "-")}`}
                         variant={action.variant}
                         onClick={action.onClick}
                         className="icon-button"
+                        title={action.label}
                     >
-                        {action.icon ? (
-                            <action.icon size={20} />
-                        ) : (
-                            action.label
-                        )}
+                        {action.icon ? <action.icon size={20} /> : action.label}
                     </Button>
                 </Vertical.Item>
             </Vertical>
@@ -121,8 +121,14 @@ function Header({
                     `.nav-header .nav-link.active`
                 ) as HTMLElement;
                 if (activeElement) {
-                    setActiveOffset([activeElement.offsetLeft, activeElement.offsetTop]);
-                    setActiveSize([activeElement.offsetWidth, activeElement.offsetHeight]);
+                    setActiveOffset([
+                        activeElement.offsetLeft,
+                        activeElement.offsetTop,
+                    ]);
+                    setActiveSize([
+                        activeElement.offsetWidth,
+                        activeElement.offsetHeight,
+                    ]);
                 }
                 requestAnimationFrame(() => {
                     setAnimationReady(1); // Set animation ready flag after initial measurement
@@ -130,6 +136,28 @@ function Header({
             });
         }
     }, [tabs, activeSize]);
+
+    useEffect(() => {
+        window.addEventListener("resize", () => {
+            const activeElement = document.querySelector(
+                `.nav-header .nav-link.active`
+            ) as HTMLElement;
+            setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
+            if (activeElement) {
+                setActiveOffset([
+                    activeElement.offsetLeft,
+                    activeElement.offsetTop,
+                ]);
+                setActiveSize([
+                    activeElement.offsetWidth,
+                    activeElement.offsetHeight,
+                ]);
+            }
+            requestAnimationFrame(() => {
+                setAnimationReady(1); // Set animation ready flag after measurement
+            });
+        });
+    }, []);
 
     if (hideHeader) {
         return <title>{extendedTitle}</title>;
@@ -145,7 +173,9 @@ function Header({
             <header className={`header ${stickyHeader ? "sticky-header" : ""}`}>
                 <div id="header-background">
                     <title>{extendedTitle}</title>
-                    <Container className={stickyHeader ? "sticky-header-content" : ""}>
+                    <Container
+                        className={stickyHeader ? "sticky-header-content" : ""}
+                    >
                         {(tabs && tabs.length > 0 && (
                             <>
                                 {!stickyHeader && (
@@ -179,11 +209,20 @@ function Header({
                                                 } as React.CSSProperties
                                             }
                                             onSelect={(_, event) => {
-                                                const target =
-                                                    (event?.target as HTMLElement).closest('.nav-link') as HTMLElement;
+                                                const target = (
+                                                    event?.target as HTMLElement
+                                                ).closest(
+                                                    ".nav-link"
+                                                ) as HTMLElement;
                                                 if (target) {
-                                                    setActiveOffset([target.offsetLeft, target.offsetTop]);
-                                                    setActiveSize([target.offsetWidth, target.offsetHeight]);
+                                                    setActiveOffset([
+                                                        target.offsetLeft,
+                                                        target.offsetTop,
+                                                    ]);
+                                                    setActiveSize([
+                                                        target.offsetWidth,
+                                                        target.offsetHeight,
+                                                    ]);
                                                 }
                                             }}
                                         >
@@ -206,7 +245,9 @@ function Header({
                                                             <tab.icon
                                                                 size={16}
                                                             />
-                                                        ) : tab.label}
+                                                        ) : (
+                                                            tab.label
+                                                        )}
                                                     </Nav.Link>
                                                 </Nav.Item>
                                             ))}

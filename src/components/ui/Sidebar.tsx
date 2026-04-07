@@ -20,10 +20,7 @@ const Sidebar: React.FC = () => {
         <Navbar expand="lg" variant="main">
             <Navbar.Brand as={Link} to="/">
                 <Horizontal gap="lg" align="center">
-                    <Image
-                        src="/ODT_logo.svg"
-                        alt="Oligo Designer Toolsuite"
-                    />
+                    <Image src="/ODT_logo.svg" alt="Oligo Designer Toolsuite" />
                     Oligo Designer <br /> Toolsuite
                 </Horizontal>
             </Navbar.Brand>
