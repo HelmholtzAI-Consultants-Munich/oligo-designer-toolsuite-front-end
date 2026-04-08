@@ -112,8 +112,8 @@ services:
       - odt-mq
       - odt-db
     volumes:
-      - ./playwright-report:/app/playwright-report
-      - ./test-results:/app/test-results
+      - ./playwright/report:/app/playwright-report
+      - ./playwright/results:/app/test-results
     restart: no
     profiles: [tests] # don't run unless specified
 

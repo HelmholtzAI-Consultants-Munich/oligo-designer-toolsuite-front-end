@@ -130,7 +130,7 @@ npx playwright test --grep @smoke
 or if using Docker:
 
 ```bash
-npm run docker:test          # builds the stack, runs all Playwright tests, then exits
+npm run docker:test          # builds the stack, runs full suite, then exits
 npm run docker:test:smoke    # smoke suite only (requires a running stack)
 npm run docker:test:full     # full suite only (requires a running stack)
 

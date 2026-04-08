@@ -115,7 +115,7 @@ It supports flexible region selection, automatic file retrieval, and efficient c
 
 ## Frontend configuration
 
-Genomic region jobs are configured through JSON Schema form definitions in `src/forms/genomic_custom_form.ts`, `src/forms/genomic_ncbi_form.ts`, and `src/forms/genomic_ens_form.ts` (maintained via the YAML-to-TypeScript automation described in [Automated Updates]({{ site.baseurl }}{% link automated-updates.md %})). The React app renders those schemas with **react-jsonschema-form**, so behavior such as dynamic fields and validation follows the generated schema rather than a dedicated FASTA form component.
+Genomic region jobs are configured through JSON Schema form definitions in `src/forms/genomic_custom_form.ts`, `src/forms/genomic_ncbi_form.ts`, and `src/forms/genomic_ens_form.ts` (maintained via the YAML-to-TypeScript automation described in [Automated Updates](automated-updates.md)). The React app renders those schemas with **react-jsonschema-form**, so behavior such as dynamic fields and validation follows the generated schema rather than a dedicated FASTA form component.
 
 ## Use cases
 

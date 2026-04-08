@@ -113,19 +113,6 @@ See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.
   - Conda for environment setup
   - MongoDB as database
 
-Playwright commands:
-
-```bash
-npm run test:e2e:smoke
-npm run test:e2e:full
-npm run docker:test
-```
-
-- `test:e2e:smoke`: smaller PR-oriented suite for quick confidence.
-- `test:e2e:full`: broader monthly/manual suite that exercises all Playwright-covered pipelines.
-
----
-
 ## License
 
 Released under the [MIT License](https://opensource.org/licenses/MIT).
