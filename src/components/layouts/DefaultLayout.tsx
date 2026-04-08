@@ -1,7 +1,7 @@
 import { Outlet } from "react-router";
 import Sidebar from "../ui/Sidebar";
 import Toasts from "../notifications/Toasts";
-import { Vertical } from "../ui/Grid";
+import { Vertical } from "../ui/Alignment";
 import Modal from "../notifications/Modal";
 import { useAuth } from "../../modules/useAuth";
 import { useRuns } from "../../modules/useRuns";

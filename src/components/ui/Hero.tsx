@@ -1,5 +1,5 @@
 import { Image } from "react-bootstrap";
-import { Horizontal, Vertical } from "./Grid";
+import { Horizontal, Vertical } from "./Alignment";
 
 export default function Hero() {
     return (

@@ -8,7 +8,7 @@ import { BACKEND_URL } from "../config";
 import { Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../modules/toastUtil";
-import { Vertical } from "../components/ui/Grid";
+import { Vertical } from "../components/ui/Alignment";
 import { useRuns } from "../modules/useRuns";
 
 /**

@@ -8,7 +8,7 @@ import {
     ChevronUp,
     Person,
 } from "react-bootstrap-icons";
-import { Horizontal } from "./Grid";
+import { Horizontal } from "./Alignment";
 import { useNavigate } from "react-router";
 
 const UserDisplay = forwardRef(

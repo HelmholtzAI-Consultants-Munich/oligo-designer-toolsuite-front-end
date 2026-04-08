@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router";
 import { Nav } from "react-bootstrap";
 import { useRuns } from "../../modules/useRuns";
 import { pipelineDisplayNames } from "./utils";
-import { Horizontal } from "./Grid";
+import { Horizontal } from "./Alignment";
 import RunStatus from "./RunStatus";
 import { ArrowRight } from "react-bootstrap-icons";
 

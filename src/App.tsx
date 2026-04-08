@@ -14,7 +14,6 @@ import {
     useParams,
 } from "react-router";
 import "./styles/theme.scss";
-import "./styles/utils.scss";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "@fontsource-variable/fustat";
 

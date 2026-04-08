@@ -8,7 +8,7 @@ import oligoseq from "../images/oligoseq.jpg";
 import { Alert, Button, Card } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
-import { Grid, Vertical } from "../components/ui/Grid";
+import { Grid, Vertical } from "../components/ui/Alignment";
 import { ArrowRight } from "react-bootstrap-icons";
 
 const Pipelines: React.FC = () => {

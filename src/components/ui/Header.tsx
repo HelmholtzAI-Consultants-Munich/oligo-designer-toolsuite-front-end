@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Container, Form, InputGroup, Nav } from "react-bootstrap";
 import { ArrowLeft, type Icon } from "react-bootstrap-icons";
-import { Grid, Horizontal, Vertical } from "./Grid";
+import { Grid, Horizontal, Vertical } from "./Alignment";
 import { useNavigate } from "react-router";
 
 interface TabConfig {
@@ -138,7 +138,9 @@ function Header({
     }, [tabs, activeSize]);
 
     useEffect(() => {
-        window.addEventListener("resize", () => {
+        if (!tabs || tabs.length === 0) return; // No tabs, no need to set up resize listener
+
+        const handleResize = () => {
             const activeElement = document.querySelector(
                 `.nav-header .nav-link.active`
             ) as HTMLElement;
@@ -156,8 +158,14 @@ function Header({
             requestAnimationFrame(() => {
                 setAnimationReady(1); // Set animation ready flag after measurement
             });
-        });
-    }, []);
+        };
+
+        window.addEventListener("resize", handleResize);
+
+        return () => {
+            window.removeEventListener("resize", handleResize);
+        };
+    }, [tabs]);
 
     if (hideHeader) {
         return <title>{extendedTitle}</title>;
@@ -181,7 +189,7 @@ function Header({
                                 {!stickyHeader && (
                                     <h1 className="header-title">{title}</h1>
                                 )}
-                                <Horizontal align="end" wrap gap="md">
+                                <Horizontal align="end" wrap gap="lg">
                                     <Horizontal grow gap="md" align="center">
                                         {backTo && (
                                             <Button

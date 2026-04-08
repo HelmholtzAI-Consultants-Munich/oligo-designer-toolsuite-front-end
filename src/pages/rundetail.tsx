@@ -22,7 +22,7 @@ import {
     type VisualizationType,
 } from "../components/ui/utils";
 import Divider from "../components/ui/Divider";
-import { Horizontal, Vertical } from "../components/ui/Grid";
+import { Horizontal, Vertical } from "../components/ui/Alignment";
 import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
 import { showToast } from "../modules/toastUtil";
 import RunStatus from "../components/ui/RunStatus";

@@ -10,11 +10,13 @@ $danger: #c91432;
 $info: $secondary;
 $text-muted: #373737;
 
-$primary-bg-subtle: tint-color($primary, 90%);
-$focus-ring-opacity: 0.15;
+$font-family-sans-serif: "Fustat Variable", sans-serif;
 
+$toast-background-color: #fff;
 $border-color: #b0b0b0;
 $border-color-translucent: $border-color;
+$focus-ring-opacity: 0.15;
+$primary-bg-subtle: tint-color($primary, 90%);
 
 $border-radius: 0.7rem;
 $border-radius-sm: 0.5rem;
@@ -22,17 +24,14 @@ $border-radius-lg: 1rem;
 $border-radius-xl: 2rem;
 $border-radius-xxl: 3rem;
 
-$font-family-sans-serif: "Fustat Variable", sans-serif;
-
-$toast-background-color: #fff;
+$table-cell-padding-y: 0.75rem;
+$table-cell-padding-x: 0.75rem;
+$table-cell-padding-y-sm: 0.5rem;
+$table-cell-padding-x-sm: 0.5rem;
 
 $card-spacer-x: 1.5rem;
 $card-spacer-y: 1.5rem;
-
-$table-cell-padding-y: 0.75rem !default;
-$table-cell-padding-x: 0.75rem !default;
-$table-cell-padding-y-sm: 0.5rem;
-$table-cell-padding-x-sm: 0.5rem;
+$input-btn-padding-y-sm: 0.5rem;
 
 // Bootstrap and its default variables
 @import "../../node_modules/bootstrap/scss/bootstrap";
@@ -42,42 +41,20 @@ $table-cell-padding-x-sm: 0.5rem;
     --#{$prefix}text-muted: #{$text-muted};
 }
 
-.navbar-nav,
-.nav {
+.navbar-nav {
     --#{$prefix}navbar-color: #{$text-muted};
+}
+
+.nav {
     --#{$prefix}nav-link-font-weight: 300;
 }
 
-.accordion-button {
-    font-weight: 600;
+html {
+    scrollbar-gutter: stable;
 }
 
-a,
-.btn-link {
-    text-decoration: none;
-}
-
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-    margin-bottom: 0 !important;
-}
-
-.container {
-    padding: 2rem 3rem;
-}
-
-/* RJSF */
-form.rjsf {
-    display: flex;
-    flex-direction: column;
-
-    button[type="submit"] {
-        margin-top: 3rem;
-    }
+body.modal-open {
+    padding-right: 0 !important;
 }
 
 /* App Layout */
@@ -86,10 +63,29 @@ form.rjsf {
     flex-direction: column;
     align-items: stretch;
     justify-content: start;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin-bottom: 0;
+    }
 }
 @include media-breakpoint-up(lg) {
     #app-layout {
         flex-direction: row;
+    }
+}
+
+/* Container */
+.container {
+    padding: 2rem;
+}
+@include media-breakpoint-up(md) {
+    .container {
+        padding: 2rem 3rem;
     }
 }
 
@@ -147,8 +143,8 @@ form.rjsf {
 @include media-breakpoint-up(lg) {
     .navbar-main {
         height: 100vh;
-        padding: 2rem;
         overflow-y: auto;
+        padding: 2rem;
         width: 25rem;
         flex-direction: column;
         align-items: start;
@@ -175,22 +171,22 @@ form.rjsf {
 
     .nav-link {
         padding: 0 var(--bs-navbar-nav-link-padding-x);
-    }
 
-    .nav-link.active {
-        font-weight: 400;
-    }
+        &.active {
+            font-weight: 400;
+        }
 
-    *:not(:first-child) {
-        border-left: 1px solid $border-color;
-    }
+        &:not(:first-child) {
+            border-left: 1px solid $border-color;
+        }
 
-    .nav-link:first-child {
-        padding-left: 0;
-    }
+        &:first-child {
+            padding-left: 0;
+        }
 
-    .nav-link:last-child {
-        padding-right: 0;
+        &:last-child {
+            padding-right: 0;
+        }
     }
 }
 
@@ -203,12 +199,12 @@ form.rjsf {
         border-radius: $border-radius;
         border: 1px solid transparent;
         padding: 0.75rem 1rem;
-    }
 
-    .nav-link.active {
-        background-color: white;
-        border: 1px solid $border-color;
-        font-weight: 400;
+        &.active {
+            background-color: white;
+            border: 1px solid $border-color;
+            font-weight: 400;
+        }
     }
 }
 
@@ -219,7 +215,8 @@ form.rjsf {
     border: 1px solid $border-color;
     border-radius: $border-radius-lg;
     width: 100%;
-    padding: $btn-padding-y-sm * 0.5;
+    padding: $btn-padding-y-sm * 0.4;
+    margin-top: 1rem;
 
     &::after {
         content: "";
@@ -240,6 +237,7 @@ form.rjsf {
         position: relative;
         z-index: 1;
         color: $black;
+        text-align: center;
 
         &.active {
             color: $white;
@@ -250,7 +248,7 @@ form.rjsf {
         }
     }
 }
-@include media-breakpoint-up(lg) {
+@include media-breakpoint-up(xl) {
     .nav-header {
         flex-direction: row;
         border-radius: 9999px;
@@ -263,11 +261,15 @@ form.rjsf {
 }
 
 /* Header */
-.header .sticky-header-content {
-    padding-top: 0rem;
-    margin-top: -1rem;
+.header {
+    z-index: 100;
+
+    .sticky-header-content {
+        padding-top: 0rem;
+        margin-top: -1rem;
+    }
 }
-@include media-breakpoint-up(lg) {
+@include media-breakpoint-up(xl) {
     .header {
         &.sticky-header {
             position: sticky;
@@ -280,12 +282,12 @@ form.rjsf {
             }
         }
 
-        .sticky-header-content {
-            margin-top: -2rem;
-        }
-
         .header-title {
             font-weight: 400;
+        }
+
+        .sticky-header-content {
+            margin-top: -2rem;
         }
     }
 }
@@ -295,17 +297,21 @@ form.rjsf {
 }
 @container scroll-state(stuck: top) {
     #header-background {
+        box-shadow: $box-shadow-lg;
+
         label {
             height: 0;
             opacity: 0;
             margin-bottom: 0;
         }
 
-        box-shadow: $box-shadow-lg;
-
         .container {
             padding-top: 1rem;
             padding-bottom: 1rem;
+            margin-top: 0;
+        }
+
+        .nav-header {
             margin-top: 0;
         }
     }
@@ -338,6 +344,38 @@ footer,
 .btn.icon-button {
     padding: $btn-padding-x;
     line-height: 1;
+}
+
+.accordion-button {
+    font-weight: 600;
+}
+
+.btn-sm {
+    line-height: 1;
+}
+
+a,
+.btn-link {
+    text-decoration: none;
+}
+
+/* Toasts */
+.toast {
+    overflow: hidden;
+
+    .toast-body {
+        background-color: $toast-background-color;
+    }
+}
+
+/* RJSF */
+form.rjsf {
+    display: flex;
+    flex-direction: column;
+
+    button[type="submit"] {
+        margin-top: 3rem;
+    }
 }
 
 /* Pulse */
@@ -374,15 +412,6 @@ footer,
     }
 }
 
-/* Toasts */
-.toast {
-    overflow: hidden;
-
-    .toast-body {
-        background-color: $toast-background-color;
-    }
-}
-
 /* Utility classes */
 .tight-container {
     width: 100%;
@@ -401,13 +430,4 @@ footer,
 .text-muted {
     color: $text-muted !important;
     font-weight: 300;
-}
-
-/* Scrollgutter */
-html {
-    scrollbar-gutter: stable;
-}
-
-body.modal-open {
-    padding-right: 0 !important;
 }

@@ -4,7 +4,7 @@ import { BoxArrowUpRight, Window } from "react-bootstrap-icons";
 import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";
-import { Horizontal, Vertical } from "./Grid";
+import { Horizontal, Vertical } from "./Alignment";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();

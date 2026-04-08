@@ -50,8 +50,9 @@ function Horizontal({
                 width: fillWidth ? "100%" : undefined,
                 height: fillHeight ? "100%" : undefined,
                 flexGrow: grow ? 1 : undefined,
+                minWidth: 0, // Prevent overflow when used inside flex containers
             }}
-            className={className + ` d-flex gap-${gapValues[gap]}`}
+            className={className + ` horizontal d-flex gap-${gapValues[gap]}`}
         >
             {children}
         </div>
@@ -88,8 +89,11 @@ function Vertical({
                 width: fillWidth ? "100%" : undefined,
                 height: fillHeight ? "100%" : undefined,
                 flexGrow: grow ? 1 : undefined,
+                minWidth: 0, // Prevent overflow when used inside flex containers
             }}
-            className={className + ` d-flex flex-column gap-${gapValues[gap]}`}
+            className={
+                className + ` vertical d-flex flex-column gap-${gapValues[gap]}`
+            }
         >
             {children}
         </div>

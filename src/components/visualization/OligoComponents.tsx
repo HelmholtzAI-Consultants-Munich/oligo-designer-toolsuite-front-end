@@ -3,7 +3,7 @@ import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
 import { reverseComplement } from "./helpers";
 import type { Probe } from "../../types";
-import { Horizontal } from "../ui/Grid";
+import { Horizontal } from "../ui/Alignment";
 
 type Props = {
     probes: Probe[];

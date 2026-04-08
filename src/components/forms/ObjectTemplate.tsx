@@ -1,4 +1,4 @@
-import { Horizontal } from "../ui/Grid";
+import { Horizontal } from "../ui/Alignment";
 
 interface ObjectProperty {
     name: string;

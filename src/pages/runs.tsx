@@ -8,7 +8,7 @@ import { useRuns } from "../modules/useRuns";
 import { pipelineDisplayNames } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../modules/toastUtil";
-import { Horizontal } from "../components/ui/Grid";
+import { Horizontal } from "../components/ui/Alignment";
 import { confirmWithModal } from "../modules/modalUtil";
 
 const Runs = () => {

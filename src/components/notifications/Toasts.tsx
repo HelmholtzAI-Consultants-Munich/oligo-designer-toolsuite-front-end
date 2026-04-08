@@ -6,7 +6,7 @@ import {
     InfoCircleFill,
     XCircleFill,
 } from "react-bootstrap-icons";
-import { Horizontal } from "../ui/Grid";
+import { Horizontal } from "../ui/Alignment";
 
 function ToastIcon({ type }: { type: string }) {
     switch (type) {

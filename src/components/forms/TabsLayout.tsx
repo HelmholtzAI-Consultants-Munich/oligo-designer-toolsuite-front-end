@@ -1,7 +1,7 @@
 import ObjectTemplate from "./ObjectTemplate";
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import Page from "../ui/Page";
-import { Horizontal, Vertical } from "../ui/Grid";
+import { Horizontal, Vertical } from "../ui/Alignment";
 import { Fragment } from "react/jsx-runtime";
 
 interface TabConfig {

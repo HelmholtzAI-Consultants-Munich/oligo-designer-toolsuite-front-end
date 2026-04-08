@@ -1,6 +1,6 @@
 import ContactsCard from "../components/ui/ContactsCard";
 import Page from "../components/ui/Page";
-import { Grid } from "../components/ui/Grid";
+import { Grid } from "../components/ui/Alignment";
 
 const contact: React.FC = () => {
     const teamMembers = [
@@ -13,6 +13,26 @@ const contact: React.FC = () => {
         {
             name: "Jonas Hagenberg",
             email: "jonas.hagenberg@helmholtz-munich.de",
+        },
+        {
+            name: "Simon Ament",
+            email: "simon.ament@student.hpi.uni-potsdam.de",
+        },
+        {
+            name: "Felix Dille",
+            email: "felix.dille@student.hpi.uni-potsdam.de",
+        },
+        {
+            name: "Louisa Mölm",
+            email: "louisa.moelm@student.hpi.uni-potsdam.de",
+        },
+        {
+            name: "Erin Sommer",
+            email: "erin.sommer@student.hpi.uni-potsdam.de",
+        },
+        {
+            name: "Max Timmermann",
+            email: "max.timmermann@student.hpi.uni-potsdam.de",
         },
     ];
 
