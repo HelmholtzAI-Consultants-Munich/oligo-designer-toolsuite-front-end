@@ -11,6 +11,37 @@ const POLL_INTERVAL_MS = 2_000;
 const RUN_TIMEOUT_MS = 15 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
+// Generic polling utility
+// ---------------------------------------------------------------------------
+
+/**
+ * Polls a condition function until it succeeds or times out.
+ *
+ * @param options.condition - Async function that returns true when done, false to keep polling
+ * @param options.timeoutMs - Maximum time to wait in milliseconds
+ * @param options.intervalMs - Polling interval in milliseconds
+ * @param options.timeoutMessage - Error message if timeout occurs
+ */
+export const pollUntil = async <T = void>(options: {
+    condition: () => Promise<T | false | null | undefined>;
+    timeoutMs: number;
+    intervalMs: number;
+    timeoutMessage: string;
+}): Promise<T> => {
+    const deadline = Date.now() + options.timeoutMs;
+
+    while (Date.now() < deadline) {
+        const result = await options.condition();
+        if (result !== false && result !== null && result !== undefined) {
+            return result as T;
+        }
+        await new Promise((r) => setTimeout(r, options.intervalMs));
+    }
+
+    throw new Error(options.timeoutMessage);
+};
+
+// ---------------------------------------------------------------------------
 // FASTA fixtures — only the smallest bundled files (~4.8 MB + ~6.4 MB)
 // ---------------------------------------------------------------------------
 
@@ -113,8 +144,6 @@ export const ALL_PIPELINES: PipelineDefinition[] = [
 // UI helpers
 // ---------------------------------------------------------------------------
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 export const clickTab = async (page: Page, name: RegExp) => {
     await page.getByRole("tab", { name }).click();
 };
@@ -183,40 +212,29 @@ export const submitPipelineAndOpenRun = async (page: Page) => {
     return runId as string;
 };
 
-// ---------------------------------------------------------------------------
-// Backend API polling via page.request
-//
-// page.request is Playwright's built-in APIRequestContext that automatically
-// shares cookies with the browser context. Requests run in Node.js — never
-// inside the browser's JS heap — which prevents Chromium OOM crashes during
-// long-running pipeline polls.
-//
-// https://playwright.dev/docs/api-testing#sending-api-requests-from-ui-tests
-// ---------------------------------------------------------------------------
-
 const backendGet = (page: Page, apiPath: string) =>
     page.request.get(`${BACKEND_URL}${apiPath}`);
 
 const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
-    const deadline = Date.now() + timeoutMs;
+    return pollUntil({
+        condition: async () => {
+            const res = await backendGet(page, `/api/runs/${runId}/state`);
+            expect(
+                res.ok(),
+                `Run state: ${res.status()} ${res.statusText()}`
+            ).toBeTruthy();
 
-    while (Date.now() < deadline) {
-        const res = await backendGet(page, `/api/runs/${runId}/state`);
-        expect(
-            res.ok(),
-            `Run state: ${res.status()} ${res.statusText()}`
-        ).toBeTruthy();
-
-        const { state } = await res.json();
-        if (state === "success") return;
-        if (state === "failure") {
-            throw new Error(`Pipeline run ${runId} finished with failure.`);
-        }
-
-        await sleep(POLL_INTERVAL_MS);
-    }
-
-    throw new Error(`Timed out waiting for pipeline run ${runId} to succeed.`);
+            const { state } = await res.json();
+            if (state === "success") return true;
+            if (state === "failure") {
+                throw new Error(`Pipeline run ${runId} finished with failure.`);
+            }
+            return false;
+        },
+        timeoutMs,
+        intervalMs: POLL_INTERVAL_MS,
+        timeoutMessage: `Timed out waiting for pipeline run ${runId} to succeed.`,
+    });
 };
 
 const pollRunFiles = async (
@@ -224,29 +242,28 @@ const pollRunFiles = async (
     runId: string,
     timeoutMs: number
 ): Promise<RunFile[]> => {
-    const deadline = Date.now() + timeoutMs;
+    return pollUntil({
+        condition: async () => {
+            const res = await backendGet(page, `/api/runs/${runId}/files`);
+            expect(
+                res.ok(),
+                `Run files: ${res.status()} ${res.statusText()}`
+            ).toBeTruthy();
 
-    while (Date.now() < deadline) {
-        const res = await backendGet(page, `/api/runs/${runId}/files`);
-        expect(
-            res.ok(),
-            `Run files: ${res.status()} ${res.statusText()}`
-        ).toBeTruthy();
+            const files: RunFile[] = await res.json();
+            const hasGenomic = files.some(
+                (f) => f.name === "genomic_regions.yaml"
+            );
+            const hasConfig = files.some((f) =>
+                /\.(?:ya?ml|txt|log)$/i.test(f.name)
+            );
 
-        const files: RunFile[] = await res.json();
-        const hasGenomic = files.some((f) => f.name === "genomic_regions.yaml");
-        const hasConfig = files.some((f) =>
-            /\.(?:ya?ml|txt|log)$/i.test(f.name)
-        );
-
-        if (hasGenomic && hasConfig) return files;
-
-        await sleep(POLL_INTERVAL_MS);
-    }
-
-    throw new Error(
-        `Timed out waiting for run ${runId} to expose genomic and config artifacts.`
-    );
+            return hasGenomic && hasConfig ? files : false;
+        },
+        timeoutMs,
+        intervalMs: POLL_INTERVAL_MS,
+        timeoutMessage: `Timed out waiting for run ${runId} to expose genomic and config artifacts.`,
+    });
 };
 
 export const waitForSuccessfulRun = async (
