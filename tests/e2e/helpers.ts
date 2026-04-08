@@ -28,7 +28,7 @@ export const FASTA_FIXTURES = {
         GENOMIC_REGIONS_DIR,
         "cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
     ),
-} as const;
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -136,15 +136,6 @@ export const expectPipelineFields = async (
     for (const tab of pipeline.expectedTabs) {
         await expect(page.getByRole("tab", { name: tab })).toBeVisible();
     }
-
-    await clickTab(page, /Target Probe Parameters/i);
-    await expect(page.getByLabel(/File Regions/i)).toBeVisible();
-    await expect(
-        page.getByLabel(/Files Fasta Target Probe Database/i)
-    ).toBeVisible();
-    await expect(
-        page.getByLabel(/Files Fasta Reference Database Target Probe/i)
-    ).toBeVisible();
 
     for (const check of pipeline.representativeFieldChecks ?? []) {
         await clickTab(page, check.tab);
@@ -278,4 +269,89 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
     await expect(page.getByText("Gene Analysis")).toBeVisible({
         timeout: 60_000,
     });
+};
+
+// ---------------------------------------------------------------------------
+// Form filling helpers
+// ---------------------------------------------------------------------------
+
+export const fillTargetProbeParameters = async (
+    page: Page,
+    options: {
+        fileRegions: string;
+        fastaTargetFiles: string[];
+        fastaReferenceFiles: string[];
+    }
+) => {
+    await page.getByLabel(/File Regions/i).fill(options.fileRegions);
+    await page
+        .getByLabel(/Files Fasta Target Probe Database/i)
+        .setInputFiles(options.fastaTargetFiles);
+    await page
+        .getByLabel(/Files Fasta Reference Database Target Probe/i)
+        .setInputFiles(options.fastaReferenceFiles);
+};
+
+export const fillReadoutProbeParameters = async (
+    page: Page,
+    options: {
+        fastaReferenceFiles: string[];
+    }
+) => {
+    await clickTab(page, /Readout Probe Parameters/i);
+    await page
+        .getByLabel(/Files Fasta Reference Database Readout Probe/i)
+        .setInputFiles(options.fastaReferenceFiles);
+};
+
+export const fillPrimerParameters = async (
+    page: Page,
+    options: {
+        fastaReferenceFiles: string[];
+    }
+) => {
+    await clickTab(page, /Primer Parameters/i);
+    await page
+        .getByLabel(/Files Fasta Reference Database Primer/i)
+        .setInputFiles(options.fastaReferenceFiles);
+};
+
+export const fillDeveloperSettings = async (
+    page: Page,
+    options: {
+        maxGraphSize?: string;
+        nAttempts?: string;
+        readoutProbeInitialNumSequences?: string;
+        primerInitialNumSequences?: string;
+        setSizeMin?: string;
+        setSizeOpt?: string;
+    }
+) => {
+    await clickTab(page, /Developer Settings/i);
+
+    if (options.maxGraphSize) {
+        await page.getByLabel(/Max Graph Size/i).fill(options.maxGraphSize);
+    }
+    if (options.nAttempts) {
+        await page.getByLabel(/^N Attempts$/i).fill(options.nAttempts);
+    }
+    if (options.readoutProbeInitialNumSequences) {
+        await page
+            .getByLabel(/Readout Probe Initial Num Sequences/i)
+            .fill(options.readoutProbeInitialNumSequences);
+    }
+    if (options.primerInitialNumSequences) {
+        await page
+            .getByLabel(/Primer Initial Num Sequences/i)
+            .fill(options.primerInitialNumSequences);
+    }
+    if (options.setSizeMin || options.setSizeOpt) {
+        await clickTab(page, /Target Probe Parameters/i);
+        if (options.setSizeMin) {
+            await page.getByLabel(/Set Size Min/i).fill(options.setSizeMin);
+        }
+        if (options.setSizeOpt) {
+            await page.getByLabel(/Set Size Opt/i).fill(options.setSizeOpt);
+        }
+    }
 };

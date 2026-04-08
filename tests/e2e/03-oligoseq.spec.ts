@@ -2,8 +2,9 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     OLIGOSEQ_PIPELINE,
-    clickTab,
     expectRunDetailToRenderResults,
+    fillDeveloperSettings,
+    fillTargetProbeParameters,
     openPipeline,
     submitPipelineAndOpenRun,
     waitForSuccessfulRun,
@@ -12,19 +13,16 @@ import {
 test("@full oligoseq run completes and exposes artifacts", async ({ page }) => {
     await openPipeline(page, OLIGOSEQ_PIPELINE);
 
-    // Fill target inputs
-    await page.getByLabel(/File Regions/i).fill("AARS1");
-    await page
-        .getByLabel(/Files Fasta Target Probe Database/i)
-        .setInputFiles([FASTA_FIXTURES.cds, FASTA_FIXTURES.utr]);
-    await page
-        .getByLabel(/Files Fasta Reference Database Target Probe/i)
-        .setInputFiles([FASTA_FIXTURES.cds, FASTA_FIXTURES.utr]);
+    await fillTargetProbeParameters(page, {
+        fileRegions: "AARS1",
+        fastaTargetFiles: [FASTA_FIXTURES.cds, FASTA_FIXTURES.utr],
+        fastaReferenceFiles: [FASTA_FIXTURES.cds, FASTA_FIXTURES.utr],
+    });
 
-    // E2E overrides
-    await clickTab(page, /Developer Settings/i);
-    await page.getByLabel(/Max Graph Size/i).fill("2500");
-    await page.getByLabel(/^N Attempts$/i).fill("30000");
+    await fillDeveloperSettings(page, {
+        maxGraphSize: "2500",
+        nAttempts: "30000",
+    });
 
     const runId = await submitPipelineAndOpenRun(page);
     await waitForSuccessfulRun(page, runId);
