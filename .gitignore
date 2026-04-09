@@ -31,7 +31,7 @@ yarn-error.log*
 
 # Playwright
 node_modules/
-playwright
+playwright/
 blob-report
 **/playwright/.cache/
 
