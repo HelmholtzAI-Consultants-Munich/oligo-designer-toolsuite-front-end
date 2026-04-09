@@ -87,14 +87,15 @@ const PipelineList: React.FC = () => {
         }
     };
 
-    const toggleRow = (runId: string) => {
+    const toggleRow = (runId: string, status: string) => {
         const newExpanded = new Set(expandedRows);
         if (newExpanded.has(runId)) {
             newExpanded.delete(runId);
         } else {
             newExpanded.add(runId);
-            // Lazy-fetch metrics when expanding a row (only if not already fetched)
-            if (!(runId in runMetrics)) {
+            // Lazy-fetch metrics only for completed runs and only if not already fetched
+            const isCompleted = status === "success" || status === "failure";
+            if (isCompleted && !(runId in runMetrics)) {
                 axios
                     .get(
                         BACKEND_URL + `/api/admin/pipelines/${runId}/metrics`,
@@ -457,7 +458,9 @@ const PipelineList: React.FC = () => {
                                             variant="link"
                                             size="sm"
                                             className="p-0"
-                                            onClick={() => toggleRow(run.id)}
+                                            onClick={() =>
+                                                toggleRow(run.id, run.status)
+                                            }
                                             style={{ color: "inherit" }}
                                         >
                                             {expandedRows.has(run.id) ? (
