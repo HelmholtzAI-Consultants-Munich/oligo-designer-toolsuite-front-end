@@ -215,15 +215,19 @@ export const submitPipelineAndOpenRun = async (page: Page) => {
 const backendGet = (page: Page, apiPath: string) =>
     page.request.get(`${BACKEND_URL}${apiPath}`);
 
+const backendGetOk = async (page: Page, apiPath: string) => {
+    const res = await backendGet(page, apiPath);
+    expect(
+        res.ok(),
+        `${apiPath}: ${res.status()} ${res.statusText()}`
+    ).toBeTruthy();
+    return res;
+};
+
 const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGet(page, `/api/runs/${runId}/state`);
-            expect(
-                res.ok(),
-                `Run state: ${res.status()} ${res.statusText()}`
-            ).toBeTruthy();
-
+            const res = await backendGetOk(page, `/api/runs/${runId}/state`);
             const { state } = await res.json();
             if (state === "success") return true;
             if (state === "failure") {
@@ -244,12 +248,7 @@ const pollRunFiles = async (
 ): Promise<RunFile[]> => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGet(page, `/api/runs/${runId}/files`);
-            expect(
-                res.ok(),
-                `Run files: ${res.status()} ${res.statusText()}`
-            ).toBeTruthy();
-
+            const res = await backendGetOk(page, `/api/runs/${runId}/files`);
             const files: RunFile[] = await res.json();
             const hasGenomic = files.some(
                 (f) => f.name === "genomic_regions.yaml"
@@ -274,6 +273,12 @@ export const waitForSuccessfulRun = async (
     const deadline = Date.now() + timeoutMs;
     await pollRunState(page, runId, timeoutMs);
     return pollRunFiles(page, runId, deadline - Date.now());
+};
+
+export const submitAndVerifyRun = async (page: Page) => {
+    const runId = await submitPipelineAndOpenRun(page);
+    await waitForSuccessfulRun(page, runId);
+    await expectRunDetailToRenderResults(page);
 };
 
 export const expectRunDetailToRenderResults = async (page: Page) => {

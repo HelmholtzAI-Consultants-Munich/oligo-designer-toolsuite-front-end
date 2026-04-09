@@ -2,14 +2,12 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     SEQFISH_PIPELINE,
-    expectRunDetailToRenderResults,
     fillDeveloperSettings,
     fillPrimerParameters,
     fillReadoutProbeParameters,
     fillTargetProbeParameters,
     openPipeline,
-    submitPipelineAndOpenRun,
-    waitForSuccessfulRun,
+    submitAndVerifyRun,
 } from "./helpers";
 
 test("@full seqfish run completes and exposes artifacts", async ({ page }) => {
@@ -36,7 +34,5 @@ test("@full seqfish run completes and exposes artifacts", async ({ page }) => {
         primerInitialNumSequences: "50000",
     });
 
-    const runId = await submitPipelineAndOpenRun(page);
-    await waitForSuccessfulRun(page, runId);
-    await expectRunDetailToRenderResults(page);
+    await submitAndVerifyRun(page);
 });

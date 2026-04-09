@@ -2,14 +2,12 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     MERFISH_PIPELINE,
-    expectRunDetailToRenderResults,
     fillDeveloperSettings,
     fillPrimerParameters,
     fillReadoutProbeParameters,
     fillTargetProbeParameters,
     openPipeline,
-    submitPipelineAndOpenRun,
-    waitForSuccessfulRun,
+    submitAndVerifyRun,
 } from "./helpers";
 
 test("@full merfish run completes and exposes artifacts", async ({ page }) => {
@@ -36,7 +34,5 @@ test("@full merfish run completes and exposes artifacts", async ({ page }) => {
         setSizeOpt: "24",
     });
 
-    const runId = await submitPipelineAndOpenRun(page);
-    await waitForSuccessfulRun(page, runId);
-    await expectRunDetailToRenderResults(page);
+    await submitAndVerifyRun(page);
 });
