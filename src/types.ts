@@ -151,3 +151,14 @@ export interface Probesets {
 export type ProbeDetailsValue = string | number | string[] | number[];
 
 export type RunState = "started" | "success" | "failure" | "pending";
+
+export type MetricSample = [number, number]; // [elapsed_seconds, value]
+
+export interface RunMetrics {
+    runtime_seconds: number;
+    peak_memory_mb: number;
+    memory_samples: MetricSample[]; // [elapsed_s, rss_mb]
+    cpu_samples: MetricSample[]; // [elapsed_s, cpu_pct]
+    total_read_mb: number;
+    total_write_mb: number;
+}

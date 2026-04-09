@@ -16,6 +16,8 @@ import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
 import { formatAdminDateTime } from "../shared/date";
 import { STATUS_CONFIG } from "../shared/types";
 import { BACKEND_URL } from "../../config";
+import RunMetrics from "../../components/RunMetrics";
+import type { RunMetrics as RunMetricsType } from "../../types";
 
 interface PipelineRun {
     id: string;
@@ -31,6 +33,7 @@ interface PipelineRun {
     };
     session_id?: string;
     transferred_from_anon?: boolean;
+    metrics?: RunMetricsType;
 }
 
 const PipelineList: React.FC = () => {
@@ -638,6 +641,11 @@ const PipelineList: React.FC = () => {
                                                     </div>
                                                 </Card.Body>
                                             </Card>
+                                            {run.metrics && (
+                                                <RunMetrics
+                                                    metrics={run.metrics}
+                                                />
+                                            )}
                                         </td>
                                     </tr>
                                 )}

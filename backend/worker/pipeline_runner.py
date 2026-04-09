@@ -2,14 +2,41 @@ import json
 import os
 import subprocess
 import tempfile
+import threading
+import time
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 from typing import Any
 
+import psutil
 import yaml
 from celery import Celery
 from celery.utils.log import get_task_logger
 
 from backend.worker.genomic_regions_file import GenomicRegionsFile
+
+DEFAULT_SAMPLE_INTERVAL = 0.5  # seconds
+MAX_SAMPLES = 3_600  # ~30 min at 0.5s; older samples roll off after this
+
+
+@dataclass
+class PipelineMetrics:
+    runtime_seconds: float = 0.0
+    peak_memory_mb: float = 0.0
+    memory_samples: list[list[float]] = field(default_factory=list)  # [[elapsed_s, rss_mb], ...]
+    cpu_samples: list[list[float]] = field(default_factory=list)  # [[elapsed_s, cpu_pct], ...]
+    total_read_mb: float = 0.0
+    total_write_mb: float = 0.0
+
+    def to_dict(self) -> dict:
+        return {
+            "runtime_seconds": self.runtime_seconds,
+            "peak_memory_mb": self.peak_memory_mb,
+            "memory_samples": self.memory_samples,
+            "cpu_samples": self.cpu_samples,
+            "total_read_mb": self.total_read_mb,
+            "total_write_mb": self.total_write_mb,
+        }
 
 
 class PipelineRunner:
@@ -46,15 +73,17 @@ class PipelineRunner:
         # Create logger using task name (Celery tasks have a 'name' attribute)
         self.logger = get_task_logger(getattr(task, "name", __name__))
 
-    def run(self, form_data: dict[str, Any], upload_path: str, output_path: str) -> bool:
+    def run(
+        self, form_data: dict[str, Any], upload_path: str, output_path: str
+    ) -> tuple[bool, PipelineMetrics]:
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
 
         # Build Config and Write to YAML
         config_path = self.write_config_file(form_data, output_path)
 
-        # Subprocess Call
-        ok = self.call_subprocess(config_path)
+        # Subprocess Call with metrics collection
+        ok, metrics = self.call_subprocess_with_metrics(config_path)
 
         # Generate Visualization Files
         self.generate_genomic_regions_file(form_data, output_path)
@@ -63,7 +92,7 @@ class PipelineRunner:
         self.cleanup_temp_files(form_data, config_path)
 
         # Response
-        return ok
+        return ok, metrics
 
     def populate_temp_file(self, form_data: dict) -> None:
         if form_data["file_regions"] != "":
@@ -95,11 +124,102 @@ class PipelineRunner:
             yaml.dump(config, f, sort_keys=False)
         return config_path
 
-    def call_subprocess(self, config_path: str) -> bool:
-        result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
-        self.logger.debug(f"STDERR: {result.stderr}")
-        self.logger.debug(f"STDOUT (partial logs): {result.stdout}")
-        return result.returncode == 0
+    @staticmethod
+    def _sample_metrics(
+        pid: int, stop_event: threading.Event, metrics: PipelineMetrics, start_time: float
+    ) -> None:
+        try:
+            proc = psutil.Process(pid)
+        except psutil.NoSuchProcess:
+            return
+
+        proc.cpu_percent(interval=None)  # prime the CPU counter; first value is always 0.0
+
+        while not stop_event.is_set():
+            try:
+                children = proc.children(recursive=True)
+
+                # Memory (RSS including children)
+                rss_bytes = proc.memory_info().rss
+                for child in children:
+                    try:
+                        rss_bytes += child.memory_info().rss
+                    except psutil.NoSuchProcess:
+                        pass
+                rss_mb = rss_bytes / (1024 * 1024)
+
+                # CPU (process + children)
+                cpu_pct = proc.cpu_percent(interval=None)
+                for child in children:
+                    try:
+                        cpu_pct += child.cpu_percent(interval=None)
+                    except psutil.NoSuchProcess:
+                        pass
+
+                elapsed = round(time.monotonic() - start_time, 2)
+
+                # Memory samples (rolling window)
+                if len(metrics.memory_samples) >= MAX_SAMPLES:
+                    metrics.memory_samples.pop(0)
+                metrics.memory_samples.append([elapsed, round(rss_mb, 2)])
+                if rss_mb > metrics.peak_memory_mb:
+                    metrics.peak_memory_mb = round(rss_mb, 2)
+
+                # CPU samples (rolling window)
+                if len(metrics.cpu_samples) >= MAX_SAMPLES:
+                    metrics.cpu_samples.pop(0)
+                metrics.cpu_samples.append([elapsed, round(cpu_pct, 1)])
+
+                # Disk I/O — update cumulative totals
+                try:
+                    io = proc.io_counters()
+                    read_mb = io.read_bytes / (1024 * 1024)
+                    write_mb = io.write_bytes / (1024 * 1024)
+                    for child in children:
+                        try:
+                            child_io = child.io_counters()
+                            read_mb += child_io.read_bytes / (1024 * 1024)
+                            write_mb += child_io.write_bytes / (1024 * 1024)
+                        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
+                            pass
+                    metrics.total_read_mb = round(read_mb, 2)
+                    metrics.total_write_mb = round(write_mb, 2)
+                except (psutil.AccessDenied, AttributeError):
+                    pass  # io_counters not available on all platforms
+
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                break
+
+            stop_event.wait(DEFAULT_SAMPLE_INTERVAL)
+
+    def call_subprocess_with_metrics(self, config_path: str) -> tuple[bool, PipelineMetrics]:
+        metrics = PipelineMetrics()
+        stop_event = threading.Event()
+        start_time = time.monotonic()
+        try:
+            proc = subprocess.Popen(
+                [self.subprocess_name, "-c", config_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+        except FileNotFoundError:
+            return False, metrics
+        sampler = threading.Thread(
+            target=self._sample_metrics,
+            args=(proc.pid, stop_event, metrics, start_time),
+            daemon=True,
+        )
+        sampler.start()
+        try:
+            stdout_raw, stderr_raw = proc.communicate()
+        finally:
+            stop_event.set()
+            sampler.join(timeout=5.0)
+        metrics.runtime_seconds = round(time.monotonic() - start_time, 3)
+        self.logger.debug(f"STDERR: {stderr_raw}")
+        self.logger.debug(f"STDOUT (partial logs): {stdout_raw[:500]}")
+        return proc.returncode == 0, metrics
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
@@ -154,10 +274,10 @@ class PipelineRunner:
             "files_fasta_reference_database_readout_probe",
             "files_fasta_reference_database_primer",
         ]
-        for field in fasta_fields:
-            if field not in form_data:
+        for fasta_field in fasta_fields:
+            if fasta_field not in form_data:
                 continue
-            files_list = form_data[field]
+            files_list = form_data[fasta_field]
             for fname in files_list:
                 if os.path.exists(fname):
                     os.remove(fname)

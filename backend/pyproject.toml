@@ -16,7 +16,7 @@ server = [
     "prometheus-flask-exporter >=0.23, <0.24",
     "requests >=2.32, <3",
 ]
-worker = [{ include-group = "shared" }, "biopython >=1.86, <2"]
+worker = [{ include-group = "shared" }, "biopython >=1.86, <2", "psutil >=5.9, <6"]
 test = [
     { include-group = "server" },
     "coverage >=7.12, <8",

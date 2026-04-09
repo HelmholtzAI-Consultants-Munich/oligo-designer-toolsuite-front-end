@@ -102,10 +102,11 @@ def enqueue_pipeline(
     form_data: dict[str, Any],
     upload_path: Path,
     output_path: Path,
+    run_id_str: str,
 ) -> AsyncResult:
     return celery_app.send_task(
         "backend.worker.tasks.run_pipeline",
-        (pipeline_name, form_data, str(upload_path), str(output_path)),
+        (pipeline_name, form_data, str(upload_path), str(output_path), run_id_str),
     )
 
 
@@ -160,7 +161,9 @@ def start_pipeline(pipeline_name: str):
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    result_promise = enqueue_pipeline(pipeline_name, sanitized_form_data, upload_path, context.output_path)
+    result_promise = enqueue_pipeline(
+        pipeline_name, sanitized_form_data, upload_path, context.output_path, run_id_str
+    )
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
