@@ -26,7 +26,7 @@ All pipelines share a consistent workflow: **prepare inputs → configure parame
 - **Oligo-Seq** — _src/pages/oligoseq.tsx_  
   Designs oligo hybridization probes optimized for probe-based targeted sequencing to measure RNA expression. These probes are specifically tailored for next-generation sequencing detection methods.
 
-- **Genomic Region Generator**
+- **Genomic Region Generator**  
   Extracts specific genomic regions (intergenic, gene, CDS, exon, intron, 3' UTR, 5' UTR, exon-exon junctions) from FASTA and GTF files, which can be automatically retrieved from NCBI or Ensembl or provided as custom files. The extracted regions are stored in a compressed memory-efficient format that eliminates duplicated sequences from common exons of different gene isoforms while preserving isoform information.
 
 ---
