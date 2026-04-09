@@ -46,9 +46,9 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(days=90)
     REMEMBER_COOKIE_DURATION = timedelta(days=90)
 
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = BACKEND_URL.startswith("https://")
     SESSION_COOKIE_SAMESITE = "Lax"
-    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = BACKEND_URL.startswith("https://")
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
