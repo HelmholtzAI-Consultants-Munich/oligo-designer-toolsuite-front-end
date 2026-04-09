@@ -202,6 +202,25 @@ def get_pipeline_runs():
     return jsonify(formatted_runs), HTTPStatus.OK
 
 
+@admin_bp.route("/api/admin/pipelines/<ObjectId:run_id>/metrics", methods=["GET"])
+@login_required
+@require_admin
+def get_pipeline_run_metrics(run_id: ObjectId):
+    """
+    Get performance metrics for a specific pipeline run (admin only).
+
+    Returns the metrics subdocument (runtime, memory, CPU, disk I/O) for the given run,
+    or null if no metrics have been collected yet.
+
+    :param run_id: The MongoDB ObjectId of the pipeline run
+    :type run_id: ObjectId
+    :returns: JSON metrics object or null
+    :rtype: flask.Response
+    """
+    run = get_run_or_404(run_id, require_ownership=False)
+    return jsonify(run.get("metrics")), HTTPStatus.OK
+
+
 @admin_bp.route("/api/admin/pipelines/<ObjectId:run_id>", methods=["PUT"])
 @login_required
 @require_admin

@@ -60,7 +60,6 @@ def format_pipeline_run(run):
         "user": user_info,
         "session_id": run.get("session_id"),
         "transferred_from_anon": run.get("transferred_from_anon", False),
-        "metrics": run.get("metrics"),
     }
 
 

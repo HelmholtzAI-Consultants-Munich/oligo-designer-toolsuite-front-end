@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Badge, Card, Col, Row } from "react-bootstrap";
 import type { MetricSample, RunMetrics } from "../types";
 

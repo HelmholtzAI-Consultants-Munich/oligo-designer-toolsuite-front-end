@@ -16,8 +16,8 @@ import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
 import { formatAdminDateTime } from "../shared/date";
 import { STATUS_CONFIG } from "../shared/types";
 import { BACKEND_URL } from "../../config";
-import RunMetrics from "../../components/RunMetrics";
-import type { RunMetrics as RunMetricsType } from "../../types";
+import RunMetricsComponent from "../../components/RunMetrics";
+import type { RunMetrics } from "../../types";
 
 interface PipelineRun {
     id: string;
@@ -33,7 +33,6 @@ interface PipelineRun {
     };
     session_id?: string;
     transferred_from_anon?: boolean;
-    metrics?: RunMetricsType;
 }
 
 const PipelineList: React.FC = () => {
@@ -41,6 +40,9 @@ const PipelineList: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    const [runMetrics, setRunMetrics] = useState<
+        Record<string, RunMetrics | null>
+    >({});
     const [editingStatus, setEditingStatus] = useState<{
         [key: string]: string;
     }>({});
@@ -91,6 +93,26 @@ const PipelineList: React.FC = () => {
             newExpanded.delete(runId);
         } else {
             newExpanded.add(runId);
+            // Lazy-fetch metrics when expanding a row (only if not already fetched)
+            if (!(runId in runMetrics)) {
+                axios
+                    .get(
+                        BACKEND_URL + `/api/admin/pipelines/${runId}/metrics`,
+                        { withCredentials: true }
+                    )
+                    .then((response) => {
+                        setRunMetrics((prev) => ({
+                            ...prev,
+                            [runId]: response.data,
+                        }));
+                    })
+                    .catch(() => {
+                        setRunMetrics((prev) => ({
+                            ...prev,
+                            [runId]: null,
+                        }));
+                    });
+            }
         }
         setExpandedRows(newExpanded);
     };
@@ -641,9 +663,11 @@ const PipelineList: React.FC = () => {
                                                     </div>
                                                 </Card.Body>
                                             </Card>
-                                            {run.metrics && (
-                                                <RunMetrics
-                                                    metrics={run.metrics}
+                                            {runMetrics[run.id] && (
+                                                <RunMetricsComponent
+                                                    metrics={
+                                                        runMetrics[run.id]!
+                                                    }
                                                 />
                                             )}
                                         </td>

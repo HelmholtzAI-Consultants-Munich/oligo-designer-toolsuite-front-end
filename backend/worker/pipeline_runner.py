@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -17,14 +18,15 @@ from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 DEFAULT_SAMPLE_INTERVAL = 0.5  # seconds
 MAX_SAMPLES = 3_600  # ~30 min at 0.5s; older samples roll off after this
+BYTES_PER_MB = 1024 * 1024
 
 
 @dataclass
 class PipelineMetrics:
     runtime_seconds: float = 0.0
     peak_memory_mb: float = 0.0
-    memory_samples: list[list[float]] = field(default_factory=list)  # [[elapsed_s, rss_mb], ...]
-    cpu_samples: list[list[float]] = field(default_factory=list)  # [[elapsed_s, cpu_pct], ...]
+    memory_samples: deque[list[float]] = field(default_factory=lambda: deque(maxlen=MAX_SAMPLES))
+    cpu_samples: deque[list[float]] = field(default_factory=lambda: deque(maxlen=MAX_SAMPLES))
     total_read_mb: float = 0.0
     total_write_mb: float = 0.0
 
@@ -32,11 +34,22 @@ class PipelineMetrics:
         return {
             "runtime_seconds": self.runtime_seconds,
             "peak_memory_mb": self.peak_memory_mb,
-            "memory_samples": self.memory_samples,
-            "cpu_samples": self.cpu_samples,
+            "memory_samples": list(self.memory_samples),
+            "cpu_samples": list(self.cpu_samples),
             "total_read_mb": self.total_read_mb,
             "total_write_mb": self.total_write_mb,
         }
+
+
+def _sum_children(children: list[psutil.Process], fn, default: float = 0.0) -> float:
+    """Aggregate a metric across child processes, ignoring dead/inaccessible ones."""
+    total = default
+    for child in children:
+        try:
+            total += fn(child)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    return total
 
 
 class PipelineRunner:
@@ -138,50 +151,34 @@ class PipelineRunner:
         while not stop_event.is_set():
             try:
                 children = proc.children(recursive=True)
-
-                # Memory (RSS including children)
-                rss_bytes = proc.memory_info().rss
-                for child in children:
-                    try:
-                        rss_bytes += child.memory_info().rss
-                    except psutil.NoSuchProcess:
-                        pass
-                rss_mb = rss_bytes / (1024 * 1024)
-
-                # CPU (process + children)
-                cpu_pct = proc.cpu_percent(interval=None)
-                for child in children:
-                    try:
-                        cpu_pct += child.cpu_percent(interval=None)
-                    except psutil.NoSuchProcess:
-                        pass
-
                 elapsed = round(time.monotonic() - start_time, 2)
 
-                # Memory samples (rolling window)
-                if len(metrics.memory_samples) >= MAX_SAMPLES:
-                    metrics.memory_samples.pop(0)
+                # Memory (RSS including children)
+                rss_bytes = proc.memory_info().rss + _sum_children(children, lambda c: c.memory_info().rss)
+                rss_mb = rss_bytes / BYTES_PER_MB
+
+                # CPU (process + children)
+                cpu_pct = proc.cpu_percent(interval=None) + _sum_children(
+                    children, lambda c: c.cpu_percent(interval=None)
+                )
+
+                # Memory samples (deque handles maxlen automatically)
                 metrics.memory_samples.append([elapsed, round(rss_mb, 2)])
                 if rss_mb > metrics.peak_memory_mb:
                     metrics.peak_memory_mb = round(rss_mb, 2)
 
-                # CPU samples (rolling window)
-                if len(metrics.cpu_samples) >= MAX_SAMPLES:
-                    metrics.cpu_samples.pop(0)
+                # CPU samples
                 metrics.cpu_samples.append([elapsed, round(cpu_pct, 1)])
 
                 # Disk I/O — update cumulative totals
                 try:
                     io = proc.io_counters()
-                    read_mb = io.read_bytes / (1024 * 1024)
-                    write_mb = io.write_bytes / (1024 * 1024)
-                    for child in children:
-                        try:
-                            child_io = child.io_counters()
-                            read_mb += child_io.read_bytes / (1024 * 1024)
-                            write_mb += child_io.write_bytes / (1024 * 1024)
-                        except (psutil.NoSuchProcess, psutil.AccessDenied, AttributeError):
-                            pass
+                    read_mb = io.read_bytes / BYTES_PER_MB + _sum_children(
+                        children, lambda c: c.io_counters().read_bytes / BYTES_PER_MB
+                    )
+                    write_mb = io.write_bytes / BYTES_PER_MB + _sum_children(
+                        children, lambda c: c.io_counters().write_bytes / BYTES_PER_MB
+                    )
                     metrics.total_read_mb = round(read_mb, 2)
                     metrics.total_write_mb = round(write_mb, 2)
                 except (psutil.AccessDenied, AttributeError):
@@ -204,6 +201,7 @@ class PipelineRunner:
                 text=True,
             )
         except FileNotFoundError:
+            self.logger.error(f"Pipeline binary not found: {self.subprocess_name}")
             return False, metrics
         sampler = threading.Thread(
             target=self._sample_metrics,

@@ -4,11 +4,22 @@ from typing import Any
 from bson import ObjectId
 from celery import Celery
 from pymongo import MongoClient
+from pymongo.database import Database
 
 from backend.config import CeleryConfig
 from backend.genomic_databases import prefetch_dropdown_options
 from backend.worker.celery import app
 from backend.worker.pipeline_runner import PipelineRunner
+
+_mongo_client: MongoClient | None = None
+
+
+def _get_db() -> Database:
+    """Return a shared MongoClient connection to avoid creating a new pool per task."""
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = MongoClient(CeleryConfig.result_backend)
+    return _mongo_client["oligo_db"]
 
 
 @app.task(bind=True)
@@ -22,8 +33,7 @@ def run_pipeline(
 ) -> bool:
     runner = PipelineRunner(pipeline_name, task=self)
     ok, metrics = runner.run(form_data, upload_path, output_path)
-    client = MongoClient(CeleryConfig.result_backend)
-    db = client["oligo_db"]
+    db = _get_db()
     db.runs.update_one(
         {"_id": ObjectId(run_id_str)},
         {"$set": {"metrics": metrics.to_dict()}},
@@ -33,9 +43,7 @@ def run_pipeline(
 
 @app.task(bind=True)
 def fetch_dropdown_options(self: Celery.Task):
-    client = MongoClient(CeleryConfig.result_backend)
-
-    db = client["oligo_db"]
+    db = _get_db()
 
     if "cache" not in db.list_collection_names():
         db.create_collection("cache")

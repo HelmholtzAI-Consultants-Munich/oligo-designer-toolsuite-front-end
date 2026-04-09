@@ -150,7 +150,6 @@ def get_pipeline_run(run_id: ObjectId):
     # Include error_message if status is failure
     if run.get("status") == "failure" and run.get("error_message"):
         formatted_run["error_message"] = run.get("error_message")
-    formatted_run["metrics"] = run.get("metrics")
     return jsonify(formatted_run), HTTPStatus.OK
 
 
