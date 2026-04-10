@@ -13,6 +13,9 @@ export const EXCLUDED_FIELDS = [
     "files_fasta_reference_database_primer",
 ] as const;
 
+// Set for O(1) lookups instead of repeated array .includes() calls
+const EXCLUDED_FIELDS_SET = new Set<string>(EXCLUDED_FIELDS);
+
 export interface PipelineConfigExport {
     _meta: {
         version: string;
@@ -21,6 +24,9 @@ export interface PipelineConfigExport {
     };
     config: RJSFFormData;
 }
+
+// Created once at module level — no need to reinstantiate per call
+const validator = customizeValidator({ AjvClass: Ajv2020 });
 
 // ---- Version helpers ----
 
@@ -42,6 +48,10 @@ export function isVersionCompatible(
     return file[0] === schema[0];
 }
 
+function getSchemaVersion(schema: RJSFSchema): string {
+    return (schema as { configVersion?: string }).configVersion ?? "1.0.0";
+}
+
 // ---- Export ----
 
 export function buildExportPayload(
@@ -51,15 +61,13 @@ export function buildExportPayload(
 ): PipelineConfigExport {
     const config: RJSFFormData = {};
     for (const key of Object.keys(formData)) {
-        if (!(EXCLUDED_FIELDS as readonly string[]).includes(key)) {
+        if (!EXCLUDED_FIELDS_SET.has(key)) {
             config[key] = formData[key];
         }
     }
-    const schemaVersion =
-        (schema as { configVersion?: string }).configVersion ?? "1.0.0";
     return {
         _meta: {
-            version: schemaVersion,
+            version: getSchemaVersion(schema),
             pipeline,
             exportedAt: new Date().toISOString(),
         },
@@ -106,8 +114,7 @@ export function importAndValidate(
     const typed = raw as PipelineConfigExport;
 
     // 2. Version check
-    const schemaVersion =
-        (schema as { configVersion?: string }).configVersion ?? "1.0.0";
+    const schemaVersion = getSchemaVersion(schema);
     if (typeof typed._meta?.version !== "string") {
         return { ok: false, error: "Invalid file format: missing version." };
     }
@@ -149,7 +156,6 @@ export function importAndValidate(
         additionalProperties: false,
     };
 
-    const validator = customizeValidator({ AjvClass: Ajv2020 });
     const { errors } = validator.rawValidation(partialSchema, incoming);
     if (errors?.length) {
         const msg = errors

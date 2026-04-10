@@ -12,6 +12,13 @@ import { RunLinkModal } from "../modal/RunLinkModal";
 import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
 import { Container, Button, Stack } from "react-bootstrap";
+
+const validator = customizeValidator({ AjvClass: Ajv2020 });
+const widgets = { fileSelection: FileSelection };
+const templates = {
+    FieldTemplate: FieldTemplate,
+    ObjectFieldTemplate: TabsLayout,
+};
 import { BoxArrowDown, BoxArrowInUp } from "react-bootstrap-icons";
 import {
     buildExportPayload,
@@ -33,7 +40,6 @@ const PipelineTemplate: React.FC<Props> = ({
     uiSchema,
 }) => {
     const [formData, setFormData] = useState<RJSFFormData>({});
-    const validator = customizeValidator({ AjvClass: Ajv2020 });
 
     const [files, setFiles] = useState<FileState>({
         files_fasta_target_probe_database: [],
@@ -49,9 +55,7 @@ const PipelineTemplate: React.FC<Props> = ({
         title: "",
         body: "",
     });
-    const closeModal = () => {
-        setModal({ ...modal, show: false });
-    };
+    const closeModal = () => setModal((m) => ({ ...m, show: false }));
 
     const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -98,10 +102,6 @@ const PipelineTemplate: React.FC<Props> = ({
             });
         };
         reader.readAsText(file);
-    };
-
-    const widgets = {
-        fileSelection: FileSelection,
     };
 
     return (
@@ -158,10 +158,7 @@ const PipelineTemplate: React.FC<Props> = ({
                         setFiles,
                     }}
                     formData={formData}
-                    templates={{
-                        FieldTemplate: FieldTemplate,
-                        ObjectFieldTemplate: TabsLayout,
-                    }}
+                    templates={templates}
                     widgets={widgets}
                     validator={validator}
                     onChange={(e) => setFormData(e.formData)}
