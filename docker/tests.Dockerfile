@@ -1,24 +1,17 @@
-# TODO: This should be replaced with the official Docker image
-# see https://playwright.dev/docs/docker
+FROM mcr.microsoft.com/playwright:v1.58.2-noble
 
-FROM node:22-slim
-
-USER node
 WORKDIR /app
 
-# --- Install dependencies ---
-RUN npm install @playwright/test
-
-USER root
-RUN npx playwright install-deps
-USER node
-
-# --- Install Playwright browsers ---
-RUN npx playwright install
+COPY package.json package-lock.json playwright.config.ts ./
+RUN npm ci
 ENV CI=true
 
-# --- Copy ODT Cloud tests ---
-COPY --chown=node:node tests ./tests
+# Only the two smallest FASTA fixtures (see tests/e2e/helpers.ts FASTA_FIXTURES).
+COPY \
+    backend/data/genomic_regions/cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna \
+    backend/data/genomic_regions/utr_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna \
+    ./backend/data/genomic_regions/
+COPY tests ./tests
 
 ENTRYPOINT ["npx", "playwright"]
-CMD ["test", "tests", "--reporter=html"]
+CMD ["test"]
