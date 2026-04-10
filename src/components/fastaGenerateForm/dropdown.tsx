@@ -3,7 +3,9 @@ import type { DropDown, FastaForm } from "./types";
 
 interface DropDownOptionProps {
     form: FastaForm;
-    handleNcbiChange: any;
+    handleNcbiChange: (
+        e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
+    ) => void;
     dropDown: DropDown;
 }
 

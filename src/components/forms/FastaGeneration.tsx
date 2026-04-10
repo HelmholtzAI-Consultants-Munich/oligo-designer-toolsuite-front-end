@@ -41,7 +41,7 @@ const FastaGeneration: React.FC<Props> = ({
                     ),
                 }));
             }),
-        [fastaForms[name].length]
+        [name, fastaForms, setFastaForms]
     );
     const onRemoveFunctions = useMemo(
         () =>
@@ -54,7 +54,7 @@ const FastaGeneration: React.FC<Props> = ({
                             : prevForms[name].filter((_, i) => i !== idx),
                 }));
             }),
-        [fastaForms[name].length]
+        [name, fastaForms, setFastaForms]
     );
     return (
         <div className="flex-grow-1 my-1">

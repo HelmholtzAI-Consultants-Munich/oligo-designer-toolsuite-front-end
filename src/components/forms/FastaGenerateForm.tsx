@@ -5,7 +5,7 @@
  * It allows users to select the data source, species, taxon, annotation release, genomic regions, and additional options.
  * The form is controlled via props and notifies parent components of changes.
  */
-import React, { memo, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Alert, Spinner } from "react-bootstrap";
 import type { DropDown, FastaForm } from "../fastaGenerateForm/types";
@@ -28,9 +28,10 @@ interface FastaGenerateFormProps {
     disableRemove?: boolean;
 }
 
+type GenomicDropdownEntries = { [index: string]: string[] };
 interface RawDropDown {
-    ncbi: any;
-    ensembl: any;
+    ncbi: GenomicDropdownEntries;
+    ensembl: GenomicDropdownEntries;
 }
 
 /**
@@ -45,20 +46,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [error, setError] = useState<string | null>(null);
         const [dropDown, setDropDown] = useState<DropDown>();
 
-        useEffect(() => {
-            fetchDropDownData();
-        }, []);
-
-        const parseDropDown = (data: RawDropDown) => {
-            return {
-                ncbi: new Map<string, string[]>(Object.entries(data.ncbi)),
-                ensembl: new Map<string, string[]>(
-                    Object.entries(data.ensembl)
-                ),
-            } as DropDown;
-        };
-
-        const fetchDropDownData = async () => {
+        const fetchDropDownData = useCallback(async () => {
             try {
                 setIsLoading(true);
                 setError(null);
@@ -79,6 +67,19 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             } finally {
                 setIsLoading(false);
             }
+        }, []);
+
+        useEffect(() => {
+            fetchDropDownData();
+        }, [fetchDropDownData]);
+
+        const parseDropDown = (data: RawDropDown) => {
+            return {
+                ncbi: new Map<string, string[]>(Object.entries(data.ncbi)),
+                ensembl: new Map<string, string[]>(
+                    Object.entries(data.ensembl)
+                ),
+            } as DropDown;
         };
 
         // Handles changes to NCBI-specific form fields and checkboxes

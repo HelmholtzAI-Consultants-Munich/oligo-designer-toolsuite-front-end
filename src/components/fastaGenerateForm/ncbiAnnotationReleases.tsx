@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config";
 import axios from "axios";
 import type { FastaForm } from "./types";
@@ -17,34 +17,37 @@ export const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
     const kingdom = form.formDataNcbi.source_params.taxon.value;
     const species = form.formDataNcbi.source_params.species.value;
 
-    useEffect(() => {
-        fetchAnnotaionReleasesNCBI(species);
-    }, [species]);
-
-    const fetchAnnotaionReleasesNCBI = async (species: string) => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            const DROPDOWN_URL =
-                BACKEND_URL + `/api/genomic/releases/${kingdom}/${species}`;
-            const response = await axios.get(DROPDOWN_URL, {
-                withCredentials: true,
-            });
-            setReleases(response.data);
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.error ||
-                        "Failed to load Annotation Releases"
-                );
-            } else {
-                setError("Failed to load Annotation Releases");
+    const fetchAnnotationReleasesNCBI = useCallback(
+        async (species: string, kingdom: string) => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                const DROPDOWN_URL =
+                    BACKEND_URL + `/api/genomic/releases/${kingdom}/${species}`;
+                const response = await axios.get(DROPDOWN_URL, {
+                    withCredentials: true,
+                });
+                setReleases(response.data);
+            } catch (err: unknown) {
+                if (axios.isAxiosError(err)) {
+                    setError(
+                        err.response?.data?.error ||
+                            "Failed to load Annotation Releases"
+                    );
+                } else {
+                    setError("Failed to load Annotation Releases");
+                }
+                console.error("Error fetching Annotation Releases:", err);
+            } finally {
+                setIsLoading(false);
             }
-            console.error("Error fetching Annotation Releases:", err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        },
+        []
+    );
+
+    useEffect(() => {
+        fetchAnnotationReleasesNCBI(species, kingdom);
+    }, [species, kingdom, fetchAnnotationReleasesNCBI]);
 
     if (isLoading) {
         return <option>Loading annotation releases...</option>;

@@ -50,7 +50,9 @@ export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
 };
 
 const stripComments = (fastaForm: FastaForm) => {
-    for (let property of Object.keys(fastaForm) as unknown as keyof FastaForm) {
+    for (const property of Object.keys(
+        fastaForm
+    ) as unknown as keyof FastaForm) {
         if (typeof fastaForm[property] === "object") {
             if (Object.keys(fastaForm[property]).includes("value")) {
                 fastaForm[property] = fastaForm[property]["value"];
