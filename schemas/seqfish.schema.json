@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "odt:seqfish",
+  "configVersion": "1.0.0",
   "type": "object",
   "properties": {
     "n_jobs": {

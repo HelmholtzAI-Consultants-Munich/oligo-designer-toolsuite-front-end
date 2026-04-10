@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
@@ -11,7 +11,13 @@ import FileSelection from "./FileSelection";
 import { RunLinkModal } from "../modal/RunLinkModal";
 import { InfoModal } from "../modal/InfoModal";
 import Ajv2020 from "ajv/dist/2020";
-import { Container } from "react-bootstrap";
+import { Container, Button, Stack } from "react-bootstrap";
+import { BoxArrowDown, BoxArrowInUp } from "react-bootstrap-icons";
+import {
+    buildExportPayload,
+    triggerDownload,
+    importAndValidate,
+} from "./pipelineConfigIO";
 
 type Props = {
     pipeline: string;
@@ -46,6 +52,54 @@ const PipelineTemplate: React.FC<Props> = ({
     const closeModal = () => {
         setModal({ ...modal, show: false });
     };
+
+    const importInputRef = useRef<HTMLInputElement>(null);
+
+    const handleExport = () =>
+        triggerDownload(buildExportPayload(formData, pipeline, schema));
+
+    const handleImportClick = () => importInputRef.current?.click();
+
+    const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = "";
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(ev.target?.result as string);
+            } catch {
+                setModal({
+                    show: true,
+                    title: "Import Failed",
+                    body: "The file is not valid JSON.",
+                });
+                return;
+            }
+            const result = importAndValidate(parsed, schema);
+            if (!result.ok) {
+                setModal({
+                    show: true,
+                    title: "Import Failed",
+                    body: result.error,
+                });
+                return;
+            }
+            setFormData((prev) => ({ ...prev, ...result.config }));
+            const skipNote =
+                result.skippedFields.length > 0
+                    ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
+                    : "";
+            setModal({
+                show: true,
+                title: "Import Successful",
+                body: `Configuration loaded.${skipNote}`,
+            });
+        };
+        reader.readAsText(file);
+    };
+
     const widgets = {
         fileSelection: FileSelection,
     };
@@ -71,6 +125,31 @@ const PipelineTemplate: React.FC<Props> = ({
             )}
             <Container>
                 <h2>{title}</h2>
+                <Stack direction="horizontal" gap={2} className="mb-3">
+                    <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={handleExport}
+                    >
+                        <BoxArrowDown className="me-1" aria-hidden />
+                        Export Config
+                    </Button>
+                    <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={handleImportClick}
+                    >
+                        <BoxArrowInUp className="me-1" aria-hidden />
+                        Import Config
+                    </Button>
+                    <input
+                        ref={importInputRef}
+                        type="file"
+                        accept=".json,application/json"
+                        style={{ display: "none" }}
+                        onChange={handleImportFile}
+                    />
+                </Stack>
                 <Form
                     schema={schema}
                     uiSchema={uiSchema}
