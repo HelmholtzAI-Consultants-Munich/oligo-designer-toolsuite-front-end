@@ -174,13 +174,13 @@ function Header({
     return (
         <>
             {stickyHeader && (
-                <Container>
+                <Container className="sticky-header-title">
                     <h1>{title}</h1>
                 </Container>
             )}
             <header className={`header ${stickyHeader ? "sticky-header" : ""}`}>
+                <title>{extendedTitle}</title>
                 <div id="header-background">
-                    <title>{extendedTitle}</title>
                     <Container
                         className={stickyHeader ? "sticky-header-content" : ""}
                     >
@@ -305,6 +305,7 @@ function Header({
                             </Horizontal>
                         )}
                     </Container>
+                    {stickyHeader && <div className="sticky-header-spacer" />}
                 </div>
             </header>
         </>

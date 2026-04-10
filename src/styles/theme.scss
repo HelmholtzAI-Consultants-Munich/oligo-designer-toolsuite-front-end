@@ -216,7 +216,7 @@ body.modal-open {
     border-radius: $border-radius-lg;
     width: 100%;
     padding: $btn-padding-y-sm * 0.4;
-    margin-top: 1rem;
+    margin-top: 2rem;
 
     &::after {
         content: "";
@@ -266,58 +266,68 @@ body.modal-open {
 
 /* Header */
 .header {
-    z-index: 100;
+    z-index: 1000;
+
+    #header-background {
+        border-bottom: 1px solid $border-color;
+    }
+
+    &.sticky-header #header-background {
+        margin-top: 1rem;
+    }
+
+    .header-title {
+        font-weight: 400;
+    }
 
     .sticky-header-content {
         padding-top: 0rem;
+        padding-bottom: 0rem;
         margin-top: -1rem;
     }
+
+    .sticky-header-spacer {
+        height: 2rem;
+    }
+
+    label {
+        margin-bottom: 0.7rem;
+    }
 }
-@include media-breakpoint-up(xl) {
+
+.sticky-header-title {
+    padding-bottom: 0rem;
+    background-color: white;
+    z-index: 1001;
+}
+
+/* Progressive enhancement: on smaller devices the header content wraps, which would make a sticky header cover too much of the screen */
+@media (min-width: 1505px) {
     .header {
         &.sticky-header {
             position: sticky;
-            top: 0;
+            top: -2rem;
             background-color: $white;
             container-type: scroll-state;
 
             #header-background {
+                margin-top: 2rem;
                 transition: box-shadow 0.3s ease;
             }
         }
 
-        .header-title {
-            font-weight: 400;
-        }
-
         .sticky-header-content {
+            position: sticky;
+            top: -1rem;
             margin-top: -2rem;
         }
     }
 }
 
-#header-background {
-    border-bottom: 1px solid $border-color;
-}
+/* Progressive enhancement: not all browsers support scroll-state container queries as of April 2026 */
 @container scroll-state(stuck: top) {
     #header-background {
         box-shadow: $box-shadow-lg;
-
-        label {
-            height: 0;
-            opacity: 0;
-            margin-bottom: 0;
-        }
-
-        .container {
-            padding-top: 1rem;
-            padding-bottom: 1rem;
-            margin-top: 0;
-        }
-
-        .nav-header {
-            margin-top: 0;
-        }
     }
 }
 
@@ -346,7 +356,7 @@ footer,
 }
 
 .btn.icon-button {
-    padding: $btn-padding-x;
+    padding: 0.8rem;
     line-height: 1;
 }
 
