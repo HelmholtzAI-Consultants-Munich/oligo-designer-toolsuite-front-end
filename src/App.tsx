@@ -6,6 +6,13 @@ import Runs from "./pages/runs";
 import Merfish from "./pages/merfish";
 import SeqFish from "./pages/seqfish";
 import OligoSeq from "./pages/oligoseq";
+import Login from "./pages/login";
+import RunDetail from "./pages/rundetail";
+import AdminApp from "./admin/AdminApp";
+import DefaultLayout from "./components/layouts/DefaultLayout";
+import FeedbackButton from "./components/feedback/FeedbackButton";
+import NotFound from "./pages/404";
+import { useAuth } from "./modules/useAuth";
 import {
     createBrowserRouter,
     Outlet,
@@ -16,13 +23,6 @@ import {
 import "./styles/theme.scss";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import "@fontsource-variable/fustat";
-
-import Login from "./pages/login";
-import RunDetail from "./pages/rundetail";
-import AdminApp from "./admin/AdminApp";
-import DefaultLayout from "./components/layouts/DefaultLayout";
-import FeedbackButton from "./components/feedback/FeedbackButton";
-import { useAuth } from "./modules/useAuth";
 
 function RunDetailWrapper() {
     const { runId } = useParams();
@@ -51,7 +51,7 @@ const defaultLayoutRoutes = [
     { path: "/pipelines/scrinshot", element: <Scrinshot /> },
     { path: "/pipelines/merfish", element: <Merfish /> },
     { path: "/pipelines/seqfish", element: <SeqFish /> },
-    { path: "/pipelines/oligoSeq", element: <OligoSeq /> },
+    { path: "/pipelines/oligoseq", element: <OligoSeq /> },
     { path: "/runs/:runId", element: <RunDetailWrapper /> },
 ];
 
@@ -65,6 +65,7 @@ const router = createBrowserRouter([
                 children: defaultLayoutRoutes,
             },
         ],
+        errorElement: <NotFound />,
     },
 ]);
 

@@ -16,7 +16,7 @@ $toast-background-color: #fff;
 $border-color: #b0b0b0;
 $border-color-translucent: $border-color;
 $focus-ring-opacity: 0.15;
-$primary-bg-subtle: tint-color($primary, 90%);
+$primary-bg-subtle: tint-color($primary, 95%);
 
 $border-radius: 0.7rem;
 $border-radius-sm: 0.5rem;
@@ -244,7 +244,7 @@ body.modal-open {
             background-color: rgb(
                 from $primary r g b / calc(1 - var(--animation-ready))
             );
-            border-radius: 9999px;
+            border-radius: $border-radius-lg;
         }
     }
 }
@@ -255,6 +255,10 @@ body.modal-open {
         width: max-content;
 
         &::after {
+            border-radius: 9999px;
+        }
+
+        .nav-link.active {
             border-radius: 9999px;
         }
     }
@@ -323,7 +327,7 @@ footer,
     border-top: 1px solid $border-color;
 }
 
-/* Buttons */
+/* Buttons & Links */
 .btn-outline-border {
     @include button-variant(
         $white,
@@ -355,8 +359,23 @@ footer,
 }
 
 a,
-.btn-link {
+.btn-link,
+.link {
     text-decoration: none;
+}
+
+.link {
+    color: rgba(
+        var(--#{$prefix}link-color-rgb),
+        var(--#{$prefix}link-opacity, 1)
+    );
+
+    &:hover {
+        color: rgba(
+            var(--#{$prefix}link-hover-color-rgb),
+            var(--#{$prefix}link-opacity, 1)
+        );
+    }
 }
 
 /* Toasts */
@@ -424,7 +443,7 @@ form.rjsf {
     border: 1px solid $border-color;
     border-radius: $border-radius;
     padding: 1.5rem;
-    background-color: tint-color($primary, 95%);
+    background-color: $primary-bg-subtle;
 }
 
 .text-muted {

@@ -52,7 +52,7 @@ function HeaderAction({ action }: { action: Action }) {
                 {action.icon && (
                     <Form.Label
                         className="small text-muted text-center"
-                        for={`action-${action.label.replace(/\s+/g, "-")}`}
+                        htmlFor={`action-${action.label.replace(/\s+/g, "-")}`}
                     >
                         {action.label}
                     </Form.Label>

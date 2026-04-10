@@ -34,6 +34,7 @@ export default function RecentRuns() {
                         active={location.pathname.startsWith(
                             `/runs/${run._id}`
                         )}
+                        eventKey={run._id}
                     >
                         <Horizontal gap="lg" align="center">
                             <RunStatus status={run.status} />
@@ -51,9 +52,9 @@ export default function RecentRuns() {
                     <span className="text-muted">No recent runs</span>
                 )}
             </Nav>
-            <Link to="/runs">
+            <Nav.Link as={Link} to="/runs" eventKey="/runs" className="link">
                 All Runs <ArrowRight />
-            </Link>
+            </Nav.Link>
         </>
     );
 }

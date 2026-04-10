@@ -7,7 +7,7 @@ interface ObjectProperty {
 
 const ObjectTemplate = (props: { properties: ObjectProperty[] }) => {
     return (
-        <Horizontal gap="lg" wrap>
+        <Horizontal gap="lg" wrap align="stretch">
             {props.properties.map((element) => (
                 <Horizontal.Item grow key={element.name}>
                     {element.content}

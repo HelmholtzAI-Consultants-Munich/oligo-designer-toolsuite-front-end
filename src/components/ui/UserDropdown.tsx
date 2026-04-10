@@ -9,17 +9,21 @@ import {
     Person,
 } from "react-bootstrap-icons";
 import { Horizontal } from "./Alignment";
-import { useNavigate } from "react-router";
 
 const UserDisplay = forwardRef(
-    ({ onClick }: { onClick: () => void }, ref: Ref<HTMLButtonElement>) => {
+    (
+        {
+            onClick,
+            noUserCallback,
+        }: { onClick: () => void; noUserCallback: () => void },
+        ref: Ref<HTMLButtonElement>
+    ) => {
         const { user } = useAuth();
-        const navigate = useNavigate();
 
         return (
             <Button
                 ref={ref}
-                onClick={user ? onClick : () => navigate("/login")}
+                onClick={user ? onClick : noUserCallback}
                 className="w-100 user-dropdown"
                 variant="outline-border"
             >
@@ -39,7 +43,11 @@ const UserDisplay = forwardRef(
     }
 );
 
-export default function UserDropdown() {
+export default function UserDropdown({
+    noUserCallback,
+}: {
+    noUserCallback: () => void;
+}) {
     const { user, logout } = useAuth();
     const [copied, setCopied] = useState(false);
 
@@ -54,7 +62,11 @@ export default function UserDropdown() {
 
     return (
         <Dropdown drop="up-centered">
-            <Dropdown.Toggle as={UserDisplay} id="user-dropdown-toggle" />
+            <Dropdown.Toggle
+                as={UserDisplay}
+                id="user-dropdown-toggle"
+                noUserCallback={noUserCallback}
+            />
             <Dropdown.Menu>
                 {user && (
                     <>

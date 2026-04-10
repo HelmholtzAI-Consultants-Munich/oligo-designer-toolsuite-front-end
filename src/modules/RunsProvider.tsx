@@ -19,7 +19,12 @@ export default function RunsProvider({
             method: "GET",
             credentials: "include",
         })
-            .then((response) => response.json())
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(response.statusText);
+                }
+                return response.json();
+            })
             .then((data: PipelineRun[]) => {
                 setRuns(
                     data.sort(

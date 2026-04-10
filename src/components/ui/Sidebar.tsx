@@ -1,30 +1,52 @@
 import { Image, Nav, Navbar } from "react-bootstrap";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { BoxArrowUpRight, Window } from "react-bootstrap-icons";
 import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";
 import { Horizontal, Vertical } from "./Alignment";
+import { pipelineDisplayNames } from "./utils";
+import { useState } from "react";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
+    const navigate = useNavigate();
 
-    const pipelines = [
-        { name: "Scrinshot", path: "/pipelines/scrinshot" },
-        { name: "Merfish", path: "/pipelines/merfish" },
-        { name: "SeqFish+", path: "/pipelines/seqfish" },
-        { name: "Oligo-Seq", path: "/pipelines/oligoseq" },
-    ];
+    const pipelines: { name: string; path: string }[] = Object.entries(
+        pipelineDisplayNames
+    ).map(([key, name]: [string, string]) => ({
+        name,
+        path: `/pipelines/${key}`,
+    }));
+
+    const [expanded, setExpanded] = useState(false);
+
+    const handleSelect = () => {
+        setExpanded(false);
+    };
+
+    const handleNoUser = () => {
+        navigate("/login");
+        setExpanded(false);
+    };
 
     return (
-        <Navbar expand="lg" variant="main">
-            <Navbar.Brand as={Link} to="/">
+        <Navbar
+            onSelect={handleSelect}
+            expand="lg"
+            variant="main"
+            expanded={expanded}
+        >
+            <Navbar.Brand as={Link} to="/" onClick={() => setExpanded(false)}>
                 <Horizontal gap="lg" align="center">
                     <Image src="/ODT_logo.svg" alt="Oligo Designer Toolsuite" />
                     Oligo Designer <br /> Toolsuite
                 </Horizontal>
             </Navbar.Brand>
-            <Navbar.Toggle aria-controls="navigation-bar" />
+            <Navbar.Toggle
+                aria-controls="navigation-bar"
+                onClick={() => setExpanded(!expanded)}
+            />
             <Navbar.Collapse id="navigation-bar" className="mt-2">
                 <Vertical
                     justify="space-between"
@@ -38,6 +60,7 @@ const Sidebar: React.FC = () => {
                             as={Link}
                             to="/"
                             active={location.pathname === "/"}
+                            eventKey="/"
                         >
                             Home
                         </Nav.Link>
@@ -45,6 +68,7 @@ const Sidebar: React.FC = () => {
                             as={Link}
                             to="/faq"
                             active={location.pathname === "/faq"}
+                            eventKey="/faq"
                         >
                             FAQ
                         </Nav.Link>
@@ -52,6 +76,7 @@ const Sidebar: React.FC = () => {
                             as={Link}
                             to="/contact"
                             active={location.pathname === "/contact"}
+                            eventKey="/contact"
                         >
                             Contact
                         </Nav.Link>
@@ -76,6 +101,7 @@ const Sidebar: React.FC = () => {
                                     active={location.pathname.startsWith(
                                         pipeline.path
                                     )}
+                                    eventKey={pipeline.path}
                                 >
                                     <Horizontal gap="lg" align="center">
                                         <Window size={18} />
@@ -92,7 +118,7 @@ const Sidebar: React.FC = () => {
                         <RecentRuns />
                     </Vertical>
 
-                    <UserDropdown />
+                    <UserDropdown noUserCallback={handleNoUser} />
                 </Vertical>
             </Navbar.Collapse>
         </Navbar>
