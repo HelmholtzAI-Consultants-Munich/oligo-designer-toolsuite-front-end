@@ -289,10 +289,6 @@ body.modal-open {
     .sticky-header-spacer {
         height: 2rem;
     }
-
-    label {
-        margin-bottom: 0.7rem;
-    }
 }
 
 .sticky-header-title {
@@ -313,6 +309,10 @@ body.modal-open {
             #header-background {
                 margin-top: 2rem;
                 transition: box-shadow 0.3s ease;
+            }
+
+            label {
+                margin-bottom: 0.7rem;
             }
         }
 
