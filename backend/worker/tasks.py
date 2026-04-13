@@ -65,27 +65,32 @@ def refresh_pipeline_timeouts(self: Celery.Task):
                     "status": "success",
                     "started_at": {"$exists": True},
                     "finished_at": {"$exists": True, "$gte": window},
+                    "gene_count": {"$exists": True, "$gt": 0},
                 }
             )
         )
         if len(docs) < 5:
             continue
-        durations = [
-            (doc["finished_at"] - doc["started_at"]).total_seconds()
+        # Normalize duration by gene count to get seconds-per-gene rate.
+        # This ensures the timeout scales correctly with input size rather than
+        # being biased by the mix of small/large runs in the sample window.
+        rates = [
+            (doc["finished_at"] - doc["started_at"]).total_seconds() / doc["gene_count"]
             for doc in docs
             if doc["finished_at"] > doc["started_at"]
         ]
-        if not durations:
+        if not rates:
             continue
         p = CeleryConfig.pipeline_timeout_heuristic_percentile
-        percentile_val = sorted(durations)[int(len(durations) * p / 100)]
-        timeouts[pipeline] = int(percentile_val * CeleryConfig.pipeline_timeout_heuristic_factor)
+        p95_rate = sorted(rates)[int(len(rates) * p / 100)]
+        # Store the raw p95 rate — the safety factor is applied at enqueue time
+        # so it remains visible and configurable without re-running aggregation.
+        timeouts[pipeline] = {"seconds_per_gene": p95_rate, "sample_count": len(rates)}
 
-    if timeouts:
-        cache = db["cache"]
-        cache.update_one(
-            {"_id": "pipeline_timeouts"},
-            {"$set": {"data": timeouts, "updated_at": datetime.datetime.utcnow()}},
-            upsert=True,
-        )
-        print(f"Updated pipeline timeout heuristics: {timeouts}")
+    cache = db["cache"]
+    cache.update_one(
+        {"_id": "pipeline_timeouts"},
+        {"$set": {"data": timeouts, "updated_at": datetime.datetime.utcnow()}},
+        upsert=True,
+    )
+    print(f"Updated pipeline timeout heuristics: {timeouts}")

@@ -79,44 +79,74 @@ def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
     return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
 
 
+def extract_gene_count(form_data: dict) -> int | None:
+    """Extract the number of genes from form_data for heuristic timeout normalization.
+
+    file_regions is either a comma-separated gene list or a path to an uploaded .txt file.
+    Returns None if the count cannot be determined.
+    """
+    file_regions = form_data.get("file_regions", "")
+    if not file_regions:
+        return None
+    if ".txt" not in file_regions:
+        # Inline comma-separated gene list
+        genes = [g.strip() for g in file_regions.split(",") if g.strip()]
+        return len(genes) if genes else None
+    # Uploaded .txt file — count non-empty lines
+    try:
+        with open(file_regions) as f:
+            count = sum(1 for line in f if line.strip())
+        return count if count > 0 else None
+    except OSError:
+        return None
+
+
 def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
     context: RunContext,
     task_id: str | None,
+    gene_count: int | None = None,
 ):
-    return update_run_in_DB(
-        run_id,
-        {
-            "session_id": context.session_id,
-            "user_id": context.user_id,
-            "timestamp": context.timestamp,
-            "output_path": serialize_path(context.output_path),
-            "status": "pending",
-            "pipeline": pipeline_name,
-            "task_id": task_id,
-        },
-    )
+    data: dict[str, Any] = {
+        "session_id": context.session_id,
+        "user_id": context.user_id,
+        "timestamp": context.timestamp,
+        "output_path": serialize_path(context.output_path),
+        "status": "pending",
+        "pipeline": pipeline_name,
+        "task_id": task_id,
+    }
+    if gene_count is not None:
+        data["gene_count"] = gene_count
+    return update_run_in_DB(run_id, data)
 
 
-def _get_heuristic_timeout(pipeline_name: str) -> int | None:
-    """Look up cached p95 duration for this pipeline from MongoDB. Returns None if unavailable."""
+def _get_heuristic_rate(pipeline_name: str) -> dict | None:
+    """Look up cached p95 seconds-per-gene rate for this pipeline from MongoDB.
+
+    Returns a dict with key 'seconds_per_gene', or None if unavailable.
+    """
     doc = mongo.db.cache.find_one({"_id": "pipeline_timeouts"})
     if doc:
         return doc.get("data", {}).get(pipeline_name)
     return None
 
 
-def resolve_timeout(pipeline_name: str, is_authenticated: bool) -> int:
+def resolve_timeout(pipeline_name: str, is_authenticated: bool, gene_count: int | None) -> int:
     """Return soft time limit in seconds for this pipeline run.
 
-    In heuristic mode, uses the cached p95 duration (scaled by auth status) if available,
-    otherwise falls back to the fixed config values.
+    In heuristic mode, multiplies the cached p95 seconds-per-gene rate by the current
+    run's gene count and the configured safety factor. Falls back to fixed config values
+    if no cache data exists or gene count is unavailable.
     """
     if CeleryConfig.pipeline_timeout_mode == "heuristic":
-        cached = _get_heuristic_timeout(pipeline_name)
-        if cached is not None:
-            return int(cached * (2 if is_authenticated else 1))
+        cached = _get_heuristic_rate(pipeline_name)
+        if cached is not None and gene_count:
+            base = int(
+                cached["seconds_per_gene"] * gene_count * CeleryConfig.pipeline_timeout_heuristic_factor
+            )
+            return int(base * (2 if is_authenticated else 1))
     return CeleryConfig.pipeline_timeout_auth if is_authenticated else CeleryConfig.pipeline_timeout_anon
 
 
@@ -127,8 +157,9 @@ def enqueue_pipeline(
     output_path: Path,
     is_authenticated: bool,
     task_id: str,
+    gene_count: int | None = None,
 ) -> AsyncResult:
-    soft_limit = resolve_timeout(pipeline_name, is_authenticated)
+    soft_limit = resolve_timeout(pipeline_name, is_authenticated, gene_count)
     hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
     return celery_app.send_task(
         "backend.worker.tasks.run_pipeline",
@@ -195,14 +226,23 @@ def start_pipeline(pipeline_name: str):
     # before write_run_to_DB has stored the task_id in the run document.
     task_id = str(uuid.uuid4())
 
+    # Extract gene count for heuristic timeout normalization and duration tracking.
+    gene_count = extract_gene_count(sanitized_form_data)
+
     # Mark Run as Enqueued in DB FIRST — worker prerun will now always find the document
-    update_result = write_run_to_DB(pipeline_name, run_id, context, task_id)
+    update_result = write_run_to_DB(pipeline_name, run_id, context, task_id, gene_count)
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
     is_authenticated = context.user_id is not None
     enqueue_pipeline(
-        pipeline_name, sanitized_form_data, upload_path, context.output_path, is_authenticated, task_id
+        pipeline_name,
+        sanitized_form_data,
+        upload_path,
+        context.output_path,
+        is_authenticated,
+        task_id,
+        gene_count,
     )
 
     # The task state can be polled using get_run_state(run_id_str).
