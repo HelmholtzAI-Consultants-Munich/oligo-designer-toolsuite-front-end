@@ -1,4 +1,5 @@
 import os
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
@@ -125,12 +126,14 @@ def enqueue_pipeline(
     upload_path: Path,
     output_path: Path,
     is_authenticated: bool,
+    task_id: str,
 ) -> AsyncResult:
     soft_limit = resolve_timeout(pipeline_name, is_authenticated)
     hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
     return celery_app.send_task(
         "backend.worker.tasks.run_pipeline",
         (pipeline_name, form_data, str(upload_path), str(output_path)),
+        task_id=task_id,
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
     )
@@ -187,15 +190,20 @@ def start_pipeline(pipeline_name: str):
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    is_authenticated = context.user_id is not None
-    result_promise = enqueue_pipeline(
-        pipeline_name, sanitized_form_data, upload_path, context.output_path, is_authenticated
-    )
+    # Pre-generate task_id so we can write it to DB before publishing to RabbitMQ.
+    # This closes the race window where the worker's task_prerun signal could fire
+    # before write_run_to_DB has stored the task_id in the run document.
+    task_id = str(uuid.uuid4())
 
-    # Mark Run as Enqueued in DB
-    update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
+    # Mark Run as Enqueued in DB FIRST — worker prerun will now always find the document
+    update_result = write_run_to_DB(pipeline_name, run_id, context, task_id)
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
+
+    is_authenticated = context.user_id is not None
+    enqueue_pipeline(
+        pipeline_name, sanitized_form_data, upload_path, context.output_path, is_authenticated, task_id
+    )
 
     # The task state can be polled using get_run_state(run_id_str).
 
