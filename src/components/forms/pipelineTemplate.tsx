@@ -81,7 +81,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 });
                 return;
             }
-            const result = importAndValidate(parsed, schema);
+            const result = importAndValidate(parsed, schema, pipeline);
             if (!result.ok) {
                 setModal({
                     show: true,

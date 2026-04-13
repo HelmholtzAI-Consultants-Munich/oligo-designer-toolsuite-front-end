@@ -6,7 +6,7 @@ import {
     triggerDownload,
     importAndValidate,
     EXCLUDED_FIELDS,
-} from "./pipelineConfigIO";
+} from "../components/forms/pipelineConfigIO";
 
 // Minimal schema that mirrors the real pipeline schemas
 const testSchema = {
@@ -181,7 +181,7 @@ describe("importAndValidate", () => {
     };
 
     it("accepts a valid export payload", () => {
-        const result = importAndValidate(validPayload, testSchema);
+        const result = importAndValidate(validPayload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) {
             expect(result.config.n_jobs).toBe(8);
@@ -191,12 +191,16 @@ describe("importAndValidate", () => {
     });
 
     it("rejects null", () => {
-        const result = importAndValidate(null, testSchema);
+        const result = importAndValidate(null, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
     });
 
     it("rejects a plain object missing _meta", () => {
-        const result = importAndValidate({ config: { n_jobs: 4 } }, testSchema);
+        const result = importAndValidate(
+            { config: { n_jobs: 4 } },
+            testSchema,
+            "scrinshot"
+        );
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.error).toMatch(/_meta/);
     });
@@ -204,15 +208,53 @@ describe("importAndValidate", () => {
     it("rejects a plain object missing config", () => {
         const result = importAndValidate(
             { _meta: { version: "1.0.0" } },
-            testSchema
+            testSchema,
+            "scrinshot"
         );
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.error).toMatch(/config/);
     });
 
+    it("rejects when config is not a plain object (array)", () => {
+        const payload = { _meta: validPayload._meta, config: [1, 2, 3] };
+        const result = importAndValidate(payload, testSchema, "scrinshot");
+        expect(result.ok).toBe(false);
+        if (!result.ok)
+            expect(result.error).toMatch(/config must be an object/);
+    });
+
+    it("rejects when config is not a plain object (string)", () => {
+        const payload = { _meta: validPayload._meta, config: "not-an-object" };
+        const result = importAndValidate(payload, testSchema, "scrinshot");
+        expect(result.ok).toBe(false);
+        if (!result.ok)
+            expect(result.error).toMatch(/config must be an object/);
+    });
+
+    it("rejects when config is null", () => {
+        const payload = { _meta: validPayload._meta, config: null };
+        const result = importAndValidate(payload, testSchema, "scrinshot");
+        expect(result.ok).toBe(false);
+        if (!result.ok)
+            expect(result.error).toMatch(/config must be an object/);
+    });
+
+    it("rejects a config from a different pipeline", () => {
+        const payload = {
+            ...validPayload,
+            _meta: { ...validPayload._meta, pipeline: "merfish" },
+        };
+        const result = importAndValidate(payload, testSchema, "scrinshot");
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+            expect(result.error).toMatch(/merfish/);
+            expect(result.error).toMatch(/scrinshot/);
+        }
+    });
+
     it("rejects when _meta.version is missing", () => {
         const payload = { _meta: { pipeline: "scrinshot" }, config: {} };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.error).toMatch(/version/);
     });
@@ -222,7 +264,7 @@ describe("importAndValidate", () => {
             ...validPayload,
             _meta: { ...validPayload._meta, version: "99.0.0" },
         };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.error).toMatch(/99\.0\.0/);
     });
@@ -232,7 +274,7 @@ describe("importAndValidate", () => {
             ...validPayload,
             _meta: { ...validPayload._meta, version: "1.5.3" },
         };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
     });
 
@@ -245,7 +287,7 @@ describe("importAndValidate", () => {
                 files_fasta_target_probe_database: ["/also/removed"],
             },
         };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) {
             expect(result.config).not.toHaveProperty("file_regions");
@@ -260,7 +302,7 @@ describe("importAndValidate", () => {
             ...validPayload,
             config: { n_jobs: 4, unknown_field: 42, another_unknown: "hello" },
         };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) {
             expect(result.config).not.toHaveProperty("unknown_field");
@@ -275,28 +317,28 @@ describe("importAndValidate", () => {
             ...validPayload,
             config: { n_jobs: "not-a-number" }, // should be integer
         };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.error).toMatch(/invalid/i);
     });
 
     it("accepts a partial config (only some fields present)", () => {
         const payload = { ...validPayload, config: { n_jobs: 12 } };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(result.config.n_jobs).toBe(12);
     });
 
     it("accepts an empty config object", () => {
         const payload = { ...validPayload, config: {} };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(Object.keys(result.config)).toHaveLength(0);
     });
 
     it("accepts boolean fields correctly", () => {
         const payload = { ...validPayload, config: { heuristic: false } };
-        const result = importAndValidate(payload, testSchema);
+        const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(result.config.heuristic).toBe(false);
     });

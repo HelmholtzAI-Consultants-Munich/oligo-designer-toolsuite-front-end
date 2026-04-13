@@ -11,7 +11,7 @@ export const EXCLUDED_FIELDS = [
     "files_fasta_reference_database_target_probe",
     "files_fasta_reference_database_readout_probe",
     "files_fasta_reference_database_primer",
-] as const;
+];
 
 // Set for O(1) lookups instead of repeated array .includes() calls
 const EXCLUDED_FIELDS_SET = new Set<string>(EXCLUDED_FIELDS);
@@ -96,7 +96,8 @@ export type ImportResult =
 
 export function importAndValidate(
     raw: unknown,
-    schema: RJSFSchema
+    schema: RJSFSchema,
+    pipeline: string
 ): ImportResult {
     // 1. Shape check
     if (
@@ -113,7 +114,27 @@ export function importAndValidate(
 
     const typed = raw as PipelineConfigExport;
 
-    // 2. Version check
+    // 2. Validate config is a plain object
+    if (
+        typeof typed.config !== "object" ||
+        typed.config === null ||
+        Array.isArray(typed.config)
+    ) {
+        return {
+            ok: false,
+            error: "Invalid file format: config must be an object.",
+        };
+    }
+
+    // 3. Pipeline check
+    if (typed._meta?.pipeline !== pipeline) {
+        return {
+            ok: false,
+            error: `This config is for "${typed._meta?.pipeline}", but the current pipeline is "${pipeline}".`,
+        };
+    }
+
+    // 4. Version check
     const schemaVersion = getSchemaVersion(schema);
     if (typeof typed._meta?.version !== "string") {
         return { ok: false, error: "Invalid file format: missing version." };
@@ -125,13 +146,13 @@ export function importAndValidate(
         };
     }
 
-    // 3. Strip excluded fields (defensive — they should not be present)
+    // 5. Strip excluded fields (defensive — they should not be present)
     const incoming = { ...(typed.config ?? {}) };
     for (const f of EXCLUDED_FIELDS) {
         delete incoming[f];
     }
 
-    // 4. Drop fields not in current schema, collect for warning
+    // 6. Drop fields not in current schema, collect for warning
     const knownFields = new Set(Object.keys(schema.properties ?? {}));
     const skippedFields: string[] = [];
     for (const key of Object.keys(incoming)) {
@@ -141,7 +162,7 @@ export function importAndValidate(
         }
     }
 
-    // 5. AJV validation against a partial schema built from only the present fields.
+    // 7. AJV validation against a partial schema built from only the present fields.
     //    No $id to avoid collision with the form's already-registered schema.
     const schemaProps = schema.properties as Record<
         string,
