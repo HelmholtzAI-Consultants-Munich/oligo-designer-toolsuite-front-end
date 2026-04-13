@@ -20,7 +20,6 @@ from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
-from celery.exceptions import SoftTimeLimitExceeded
 from flask import Blueprint, abort, jsonify, send_file, session
 from flask_login import current_user
 
@@ -291,17 +290,10 @@ def get_run_status(run_id: ObjectId):
         # overwrite "success" state if pipeline failed but output was delivered successfully
         # -> literally "task failed successfully"
         state = result_promise.state.lower() if ok else "failure"
-        if run["status"] != state:
-            update_run_in_DB(run_id, {"status": state, "finished_at": utc_now()})
     else:
         state = result_promise.state.lower()
-        if run["status"] != state:
-            update_data: dict[str, Any] = {"status": state, "finished_at": utc_now()}
-            if isinstance(result_promise.info, SoftTimeLimitExceeded):
-                update_data["error_message"] = (
-                    "This pipeline run exceeded the maximum allowed runtime and was stopped. "
-                    "Please reduce the input size or contact support."
-                )
-            update_run_in_DB(run_id, update_data)
+
+    if run["status"] != state:
+        update_run_in_DB(run_id, {"status": state, "finished_at": utc_now()})
 
     return jsonify({"state": state}), HTTPStatus.OK

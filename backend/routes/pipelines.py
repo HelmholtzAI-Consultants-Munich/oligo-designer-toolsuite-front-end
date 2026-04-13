@@ -10,7 +10,7 @@ from bson import ObjectId
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 
-from backend.config import CeleryConfig
+from backend.config import PIPELINE_NAMES, CeleryConfig
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.utilities.typed_values import (
@@ -25,18 +25,8 @@ from backend.utilities.validation import parse_run_id
 pipelines_bp = Blueprint("pipelines", __name__)
 
 
-EXISTING_PIPELINES = frozenset(
-    {
-        "scrinshot",
-        "seqfish",
-        "merfish",
-        "oligoseq",
-    }
-)
-
-
 def validate_name(pipeline_name: str) -> bool:
-    return pipeline_name in EXISTING_PIPELINES
+    return pipeline_name in PIPELINE_NAMES
 
 
 @dataclass(frozen=True)
@@ -88,7 +78,7 @@ def extract_gene_count(form_data: dict) -> int | None:
     file_regions = form_data.get("file_regions", "")
     if not file_regions:
         return None
-    if ".txt" not in file_regions:
+    if not file_regions.endswith(".txt"):
         # Inline comma-separated gene list
         genes = [g.strip() for g in file_regions.split(",") if g.strip()]
         return len(genes) if genes else None
@@ -98,6 +88,7 @@ def extract_gene_count(form_data: dict) -> int | None:
             count = sum(1 for line in f if line.strip())
         return count if count > 0 else None
     except OSError:
+        current_app.logger.warning(f"Could not read gene count from file_regions path: {file_regions}")
         return None
 
 
@@ -105,7 +96,7 @@ def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
     context: RunContext,
-    task_id: str | None,
+    task_id: str,
     gene_count: int | None = None,
 ):
     data: dict[str, Any] = {
@@ -143,10 +134,13 @@ def resolve_timeout(pipeline_name: str, is_authenticated: bool, gene_count: int 
     if CeleryConfig.pipeline_timeout_mode == "heuristic":
         cached = _get_heuristic_rate(pipeline_name)
         if cached is not None and gene_count:
-            base = int(
-                cached["seconds_per_gene"] * gene_count * CeleryConfig.pipeline_timeout_heuristic_factor
+            multiplier = 2 if is_authenticated else 1
+            return int(
+                cached["seconds_per_gene"]
+                * gene_count
+                * CeleryConfig.pipeline_timeout_heuristic_factor
+                * multiplier
             )
-            return int(base * (2 if is_authenticated else 1))
     return CeleryConfig.pipeline_timeout_auth if is_authenticated else CeleryConfig.pipeline_timeout_anon
 
 

@@ -125,6 +125,12 @@ class Config:
             raise ValueError(f"Missing required environment variable(s): {', '.join(missing)}")
 
 
+# Shared constants used by both the Flask server and Celery worker.
+# Defined here to avoid circular imports between routes and worker modules.
+MONGO_DB_NAME: str = "oligo_db"
+PIPELINE_NAMES: frozenset[str] = frozenset({"scrinshot", "seqfish", "merfish", "oligoseq"})
+
+
 class CeleryConfig:
     """Celery configuration with default values.
 
