@@ -140,3 +140,22 @@ class CeleryConfig:
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
+
+    # Timeout mode: "config" (fixed env vars) or "heuristic" (p95 of past runs)
+    pipeline_timeout_mode: str = os.environ.get("PIPELINE_TIMEOUT_MODE", "config")
+
+    # Fixed timeout values — used in "config" mode, and as fallback in "heuristic" mode
+    pipeline_timeout_anon: int = int(os.environ.get("PIPELINE_TIMEOUT_ANON", 3600))  # 1 hour
+    pipeline_timeout_auth: int = int(os.environ.get("PIPELINE_TIMEOUT_AUTH", 7200))  # 2 hours
+    pipeline_timeout_hard_margin: int = int(
+        os.environ.get("PIPELINE_TIMEOUT_HARD_MARGIN", 300)
+    )  # 5 min SIGKILL backstop
+
+    # Heuristic mode settings
+    pipeline_timeout_heuristic_factor: float = float(os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_FACTOR", 3.0))
+    pipeline_timeout_heuristic_percentile: int = int(
+        os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE", 95)
+    )
+    pipeline_timeout_heuristic_window_days: int = int(
+        os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS", 30)
+    )

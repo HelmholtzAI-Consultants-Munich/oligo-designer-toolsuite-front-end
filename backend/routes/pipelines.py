@@ -9,6 +9,7 @@ from bson import ObjectId
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 
+from backend.config import CeleryConfig
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.utilities.typed_values import (
@@ -97,15 +98,41 @@ def write_run_to_DB(
     )
 
 
+def _get_heuristic_timeout(pipeline_name: str) -> int | None:
+    """Look up cached p95 duration for this pipeline from MongoDB. Returns None if unavailable."""
+    doc = mongo.db.cache.find_one({"_id": "pipeline_timeouts"})
+    if doc:
+        return doc.get("data", {}).get(pipeline_name)
+    return None
+
+
+def resolve_timeout(pipeline_name: str, is_authenticated: bool) -> int:
+    """Return soft time limit in seconds for this pipeline run.
+
+    In heuristic mode, uses the cached p95 duration (scaled by auth status) if available,
+    otherwise falls back to the fixed config values.
+    """
+    if CeleryConfig.pipeline_timeout_mode == "heuristic":
+        cached = _get_heuristic_timeout(pipeline_name)
+        if cached is not None:
+            return int(cached * (2 if is_authenticated else 1))
+    return CeleryConfig.pipeline_timeout_auth if is_authenticated else CeleryConfig.pipeline_timeout_anon
+
+
 def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     upload_path: Path,
     output_path: Path,
+    is_authenticated: bool,
 ) -> AsyncResult:
+    soft_limit = resolve_timeout(pipeline_name, is_authenticated)
+    hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
     return celery_app.send_task(
         "backend.worker.tasks.run_pipeline",
         (pipeline_name, form_data, str(upload_path), str(output_path)),
+        soft_time_limit=soft_limit,
+        time_limit=hard_limit,
     )
 
 
@@ -160,7 +187,10 @@ def start_pipeline(pipeline_name: str):
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    result_promise = enqueue_pipeline(pipeline_name, sanitized_form_data, upload_path, context.output_path)
+    is_authenticated = context.user_id is not None
+    result_promise = enqueue_pipeline(
+        pipeline_name, sanitized_form_data, upload_path, context.output_path, is_authenticated
+    )
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
