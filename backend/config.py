@@ -141,7 +141,14 @@ class CeleryConfig:
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
+
+    task_queue_max_priority = 10
+    task_default_priority = 5
     task_queues = (
-        Queue("priority"),
-        Queue("standard"),
+        Queue(
+            "celery",
+            routing_key="default",
+            queue_arguments={"x-max-priority": task_queue_max_priority},
+        ),
     )
+    worker_prefetch_multiplier = 1

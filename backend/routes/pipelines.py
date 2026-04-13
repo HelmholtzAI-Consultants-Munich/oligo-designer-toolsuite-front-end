@@ -7,6 +7,7 @@ from typing import Any
 
 from bson import ObjectId
 from celery.result import AsyncResult
+from flask import Blueprint, abort, current_app, jsonify, request
 
 from backend.extensions import celery_app, mongo
 from backend.routes.auth import check_auth
@@ -19,7 +20,6 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import parse_run_id
-from flask import Blueprint, abort, current_app, jsonify, request
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -104,7 +104,6 @@ def enqueue_pipeline(
 ) -> AsyncResult:
     authenticated = check_auth().get_json()["authenticated"]
     if not authenticated:
-        queue = "standard"
         gene_count = 0
         for gene in form_data["file_regions"].split(","):
             gene_count += 1
@@ -112,14 +111,18 @@ def enqueue_pipeline(
         if gene_count > 10:
             delete_run(run_id)
             abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
+        return celery_app.send_task(
+            "backend.worker.tasks.run_pipeline",
+            (pipeline_name, form_data, str(upload_path), str(output_path)),
+            priority=1,
+        )
 
     else:
-        queue = "priority"
-    return celery_app.send_task(
-        "backend.worker.tasks.run_pipeline",
-        (pipeline_name, form_data, str(upload_path), str(output_path)),
-        queue=queue,
-    )
+        return celery_app.send_task(
+            "backend.worker.tasks.run_pipeline",
+            (pipeline_name, form_data, str(upload_path), str(output_path)),
+            priority=10,
+        )
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])

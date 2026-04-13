@@ -31,4 +31,4 @@ WORKDIR /app
 COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 COPY --chown=$MAMBA_USER:$MAMBA_USER schemas schemas
 
-CMD ["celery", "-A", "backend.worker", "worker","-Q", "priority, standard" "-l", "INFO"]
+CMD ["celery", "-A", "backend.worker", "worker", "-l", "INFO"]
