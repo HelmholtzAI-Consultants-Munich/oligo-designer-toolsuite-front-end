@@ -9,6 +9,7 @@ from bson import ObjectId
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 
+from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app, mongo
 from backend.routes.auth import check_auth
 from backend.routes.route_helpers import get_user_context_with_directory
@@ -104,25 +105,18 @@ def enqueue_pipeline(
 ) -> AsyncResult:
     authenticated = check_auth().get_json()["authenticated"]
     if not authenticated:
-        gene_count = 0
-        for gene in form_data["file_regions"].split(","):
-            gene_count += 1
-
-        if gene_count > 10:
+        gene_count = len(form_data["file_regions"].split(","))
+        if gene_count > Config.GENE_COUNT_THRESHOLD:
             delete_run(run_id)
             abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
-        return celery_app.send_task(
-            "backend.worker.tasks.run_pipeline",
-            (pipeline_name, form_data, str(upload_path), str(output_path)),
-            priority=1,
-        )
-
+        priority = CeleryConfig.task_default_priority
     else:
-        return celery_app.send_task(
-            "backend.worker.tasks.run_pipeline",
-            (pipeline_name, form_data, str(upload_path), str(output_path)),
-            priority=10,
-        )
+        priority = CeleryConfig.task_high_priority
+    return celery_app.send_task(
+        "backend.worker.tasks.run_pipeline",
+        (pipeline_name, form_data, str(upload_path), str(output_path)),
+        priority=priority,
+    )
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])

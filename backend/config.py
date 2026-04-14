@@ -74,6 +74,7 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+    GENE_COUNT_THRESHOLD = 10
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
@@ -144,6 +145,7 @@ class CeleryConfig:
 
     task_queue_max_priority = 10
     task_default_priority = 5
+    task_high_priority = 10
     task_queues = (
         Queue(
             "celery",
