@@ -22,6 +22,7 @@ import { GenomicRegionSelect } from "../fastaGenerateForm/genomicRegionSelect";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
+    id: number;
     form: FastaForm;
     onChange: (newForm: FastaForm) => void;
     onRemove?: () => void;
@@ -41,7 +42,7 @@ interface RawDropDown {
  * Handles all controlled input changes and notifies parent components of updates.
  */
 const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
-    ({ form, onChange, onRemove, disableRemove }) => {
+    ({ id, form, onChange, onRemove, disableRemove }) => {
         const [isLoading, setIsLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [dropDown, setDropDown] = useState<DropDown>();
@@ -237,10 +238,12 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <div>
                                     <div className="row g-3">
                                         <SourceSelect
+                                            id={`ncbi-${id}`}
                                             form={form}
                                             onChange={onChange}
                                         />
                                         <TaxonSelect
+                                            id={`ncbi-${id}`}
                                             tooltip={
                                                 form.formDataNcbi.source_params
                                                     .taxon.comment
@@ -266,6 +269,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                         </TaxonSelect>
                                         {/* Species selector */}
                                         <SpeciesSelect
+                                            id={`ncbi-${id}`}
                                             tooltip={
                                                 form.formDataNcbi.source_params
                                                     .species.comment
@@ -292,6 +296,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                 ))}
                                         </SpeciesSelect>
                                         <AnnotationSelect
+                                            id={`ncbi-${id}`}
                                             tooltip={
                                                 form.formDataNcbi.source_params
                                                     .annotation_release.comment
@@ -311,6 +316,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                         </AnnotationSelect>
                                     </div>
                                     <GenomicRegionSelect
+                                        id={`ncbi-${id}`}
                                         exon_exon_junction_block_size={
                                             form.formDataNcbi
                                                 .exon_exon_junction_block_size
@@ -327,11 +333,13 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                     {/* Source selector */}
                                     <div className="row g-3">
                                         <SourceSelect
+                                            id={`ensembl-${id}`}
                                             form={form}
                                             onChange={onChange}
                                         />
                                         {/* Species selector */}
                                         <SpeciesSelect
+                                            id={`ensembl-${id}`}
                                             tooltip={
                                                 form.formDataEns.source_params
                                                     .species.comment
@@ -357,6 +365,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                         </SpeciesSelect>
                                         {/* Annotation release selector */}
                                         <AnnotationSelect
+                                            id={`ensembl-${id}`}
                                             tooltip={
                                                 form.formDataEns.source_params
                                                     .annotation_release.comment
@@ -387,6 +396,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                         </AnnotationSelect>
                                     </div>
                                     <GenomicRegionSelect
+                                        id={`ensembl-${id}`}
                                         exon_exon_junction_block_size={
                                             form.formDataEns
                                                 .exon_exon_junction_block_size

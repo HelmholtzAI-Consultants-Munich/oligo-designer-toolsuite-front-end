@@ -1,3 +1,4 @@
+import { Button, Form } from "react-bootstrap";
 import type { FileState } from "./types";
 
 type Props = {
@@ -25,31 +26,30 @@ const FileSelection: React.FC<Props> = ({ name, id, setFiles, files }) => {
     return (
         <div className="flex-grow-1 my-1">
             <div className="d-flex align-items-center">
-                <input
-                    type="file"
-                    className="form-control visually-hidden"
-                    id={id}
-                    name={name}
-                    onChange={(e) => {
-                        handleFileChange(e, setFiles);
-                    }}
-                    multiple
-                />
-                <label
-                    htmlFor={id}
-                    className="btn btn-outline-primary flex-grow-1"
-                    style={{ cursor: "pointer" }}
-                >
-                    Choose File
-                </label>
+                <Form.Label className="btn btn-outline-primary flex-grow-1">
+                    Choose File(s)
+                    <Form.Control
+                        type="file"
+                        className="visually-hidden"
+                        id={id}
+                        name={name}
+                        onChange={(e) => {
+                            handleFileChange(
+                                e as React.ChangeEvent<HTMLInputElement>,
+                                setFiles
+                            );
+                        }}
+                        multiple
+                    />
+                </Form.Label>
             </div>
             <div className="text-muted small mt-1">
                 {files[name].length > 0 ? (
                     <>
                         <p>{`Selected: ${files[name].map((f: File) => f.name).join(", ")}`}</p>
-                        <button
+                        <Button
                             type="button"
-                            className="btn btn-danger"
+                            variant="danger"
                             onClick={() => {
                                 setFiles((prevFiles) => ({
                                     ...prevFiles,
@@ -58,7 +58,7 @@ const FileSelection: React.FC<Props> = ({ name, id, setFiles, files }) => {
                             }}
                         >
                             Remove Selected Files
-                        </button>
+                        </Button>
                     </>
                 ) : (
                     "No files selected"

@@ -2,6 +2,7 @@ import type form_Data_Ncbi from "../../forms/genomic_ncbi_form";
 import { ToolTip } from "./tooltip";
 
 interface GenomicRegionSelectProps {
+    id: string;
     exon_exon_junction_block_size: typeof form_Data_Ncbi.exon_exon_junction_block_size;
     genomic_regions: typeof form_Data_Ncbi.genomic_regions;
     handleChange: (
@@ -10,6 +11,7 @@ interface GenomicRegionSelectProps {
 }
 
 export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
+    id,
     exon_exon_junction_block_size,
     genomic_regions,
     handleChange,
@@ -34,7 +36,7 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                             <input
                                 type="checkbox"
                                 className="form-check-input me-2"
-                                id={region}
+                                id={`${region}-${id}`}
                                 name={region}
                                 checked={
                                     genomic_regions[region]?.value === "true"
@@ -42,7 +44,7 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                                 onChange={handleChange}
                             />
                             <label
-                                htmlFor={region}
+                                htmlFor={`${region}-${id}`}
                                 className="form-check-label me-2 mb-0"
                             >
                                 {["utr", "cds"].includes(region)
@@ -51,7 +53,7 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                                       region.slice(1).replace(/_/g, "-")}
                             </label>
                             <ToolTip
-                                id={`popover-${region}`}
+                                id={`popover-${region}-${id}`}
                                 tip={genomic_regions[region].comment}
                             />
                         </div>
@@ -71,14 +73,14 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                         <input
                             type="number"
                             className="form-control"
-                            id="exon_exon_junction_block_size"
+                            id={`exon_exon_junction_block_size-${id}`}
                             name="exon_exon_junction_block_size"
                             value={exon_exon_junction_block_size.value}
                             onChange={handleChange}
                             placeholder="50"
                         />
                         <ToolTip
-                            id="dir_output"
+                            id={`dir_output-${id}`}
                             tip={exon_exon_junction_block_size.comment}
                         />
                     </div>

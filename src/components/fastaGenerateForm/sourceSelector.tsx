@@ -2,11 +2,13 @@ import { GenomicDropDown } from "./genomicDropDown";
 import type { FastaForm } from "./types";
 
 interface SourceSelectProps {
+    id: string;
     form: FastaForm;
     onChange: (newForm: FastaForm) => void;
 }
 
 export const SourceSelect: React.FC<SourceSelectProps> = ({
+    id,
     form,
     onChange,
 }) => {
@@ -21,8 +23,8 @@ export const SourceSelect: React.FC<SourceSelectProps> = ({
 
     return (
         <GenomicDropDown
+            id={id}
             label="Select Source"
-            labelHtmlFor="source"
             nameAndId="source"
             value={form.selectedSource}
             handleChange={handleSourceChange}

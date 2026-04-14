@@ -17,7 +17,7 @@ const addFastaGenerationForm = (
     e: React.MouseEvent<HTMLButtonElement>,
     setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>
 ) => {
-    const name = e.target.name as keyof FastaFormState;
+    const name = (e.target as HTMLButtonElement).name as keyof FastaFormState;
 
     setFastaForms((prevForms) => ({
         ...prevForms,
@@ -43,6 +43,7 @@ const FastaGeneration: React.FC<Props> = ({
             }),
         [name, fastaForms, setFastaForms]
     );
+
     const onRemoveFunctions = useMemo(
         () =>
             fastaForms[name].map((_, idx) => () => {
@@ -56,6 +57,7 @@ const FastaGeneration: React.FC<Props> = ({
             }),
         [name, fastaForms, setFastaForms]
     );
+
     return (
         <div className="flex-grow-1 my-1">
             <button
@@ -70,6 +72,7 @@ const FastaGeneration: React.FC<Props> = ({
             <div>
                 {fastaForms[name].map((form, idx) => (
                     <FastaGenerateForm
+                        id={idx}
                         key={`${id} ${idx}`}
                         form={form}
                         onChange={onChangeFunctions[idx]}
