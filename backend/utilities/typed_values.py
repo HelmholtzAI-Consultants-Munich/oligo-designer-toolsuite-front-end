@@ -50,9 +50,9 @@ def timestamp_for_display(value: datetime | None, separator: str = " ") -> str:
     return value.strftime(f"%Y-%m-%d{separator}%H-%M-%S")
 
 
-def timestamp_to_iso(value: Any) -> str:
+def timestamp_to_iso(value: datetime) -> str:
     """Convert supported timestamp values to ISO format for API output."""
-    timestamp = coerce_datetime(value)
+    timestamp = value
     if timestamp is not None:
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=UTC)
