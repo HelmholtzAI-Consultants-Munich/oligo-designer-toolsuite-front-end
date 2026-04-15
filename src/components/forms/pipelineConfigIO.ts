@@ -49,7 +49,7 @@ export function isVersionCompatible(
 }
 
 function getSchemaVersion(schema: RJSFSchema): string {
-    return (schema as { configVersion?: string }).configVersion ?? "1.0.0";
+    return schema.description ?? "1.0.0";
 }
 
 // ---- Export ----

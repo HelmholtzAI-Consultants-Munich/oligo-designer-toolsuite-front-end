@@ -12,7 +12,7 @@ import {
 const testSchema = {
     $schema: "https://json-schema.org/draft/2020-12/schema",
     $id: "odt:test",
-    configVersion: "1.0.0",
+    description: "1.0.0",
     type: "object",
     properties: {
         n_jobs: { type: "integer", default: 4, title: "N Jobs" },
@@ -86,15 +86,15 @@ describe("buildExportPayload", () => {
         expect(payload._meta.pipeline).toBe("merfish");
     });
 
-    it("reads _meta.version from schema.configVersion", () => {
+    it("reads _meta.version from schema.description", () => {
         const payload = buildExportPayload({}, "scrinshot", testSchema);
         expect(payload._meta.version).toBe("1.0.0");
     });
 
-    it("falls back to 1.0.0 if schema has no configVersion", () => {
+    it("falls back to 1.0.0 if schema has no description", () => {
         const schemaWithoutVersion = {
             ...testSchema,
-            configVersion: undefined,
+            description: undefined,
         } as unknown as RJSFSchema;
         const payload = buildExportPayload(
             {},

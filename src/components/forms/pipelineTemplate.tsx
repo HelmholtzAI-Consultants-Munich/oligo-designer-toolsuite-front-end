@@ -146,7 +146,7 @@ const PipelineTemplate: React.FC<Props> = ({
                         ref={importInputRef}
                         type="file"
                         accept=".json,application/json"
-                        style={{ display: "none" }}
+                        className="visually-hidden"
                         onChange={handleImportFile}
                     />
                 </Stack>
