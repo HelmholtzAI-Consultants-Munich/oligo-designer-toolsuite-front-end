@@ -3,7 +3,7 @@ from datetime import timedelta
 from typing import Any
 
 from celery import Celery
-from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
+from celery.exceptions import SoftTimeLimitExceeded
 
 from backend.config import PIPELINE_NAMES, CeleryConfig
 from backend.genomic_databases import prefetch_dropdown_options
@@ -19,7 +19,7 @@ def run_pipeline(
     runner = PipelineRunner(pipeline_name, task=self)
     try:
         return runner.run(form_data, upload_path, output_path)
-    except (SoftTimeLimitExceeded, TimeLimitExceeded):
+    except SoftTimeLimitExceeded:
         # Write the error message directly from the worker — this is more reliable than
         # inferring the failure reason server-side via exception deserialization.
         with get_worker_db() as db:

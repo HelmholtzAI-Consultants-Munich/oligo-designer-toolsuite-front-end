@@ -13,6 +13,7 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from backend.config import PIPELINE_NAMES, CeleryConfig
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.runs import update_run_in_DB
 from backend.utilities.typed_values import (
     sanitize_pipeline_form_paths,
     serialize_path,
@@ -63,10 +64,6 @@ def create_context(pipeline_name: str) -> RunContext:
         timestamp=timestamp,
         output_path=output_path,
     )
-
-
-def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
 
 
 def extract_gene_count(form_data: dict) -> int | None:
@@ -229,15 +226,24 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
     is_authenticated = context.user_id is not None
-    enqueue_pipeline(
-        pipeline_name,
-        sanitized_form_data,
-        upload_path,
-        context.output_path,
-        is_authenticated,
-        task_id,
-        gene_count,
-    )
+    try:
+        enqueue_pipeline(
+            pipeline_name,
+            sanitized_form_data,
+            upload_path,
+            context.output_path,
+            is_authenticated,
+            task_id,
+            gene_count,
+        )
+    except Exception:
+        # If publishing to the queue fails after the run doc is already written,
+        # mark it as failed so the user isn't left with a permanently pending run.
+        update_run_in_DB(run_id, {"status": "failure"})
+        current_app.logger.exception("Failed to enqueue pipeline task")
+        abort(
+            HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to submit pipeline run. Please try again."
+        )
 
     # The task state can be polled using get_run_state(run_id_str).
 
