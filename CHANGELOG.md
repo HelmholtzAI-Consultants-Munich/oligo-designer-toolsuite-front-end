@@ -33,10 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rename project to "Oligo Designer Toolsuite Cloud"
 - Restructure backend package from `flask` to `backend` with fully qualified imports
 - Centralize common request validation and secure_filename handling
-- Refactor Celery integration for new backend structure
 - Decouple utility functions from app.logger for Celery compatibility
 - Streamline environment configuration with env file overrides and env.docker for localhost
-- Replace HTTP status code integers with named constants
 - Split D3 visualization logic into composable functions with context object
 - Reorganize and tidy frontend components
 - Switch from react-router-dom to react-router
@@ -44,12 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Platform-dependent Conda environment.yml
-- Mark flaky NCBI tests as xfail
-- Ignore non-existent genes in GenomicRegionsFile
-- Use reverse sequence on negative strand
-- Position reference bases correctly and use correct length for merged regions
-- Initial prefetch waiting logic
-- Docker Compose environment and Celery Beat task name configuration
 - CI fixes for MongoDB readiness checks and unused workflow cleanup
 
 ### Security
