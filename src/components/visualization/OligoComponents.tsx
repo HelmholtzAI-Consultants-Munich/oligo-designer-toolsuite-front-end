@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
-import { reverseComplement } from "./helpers";
+import { reverseComplement } from "./visualizationHelpers";
 import type { Probe } from "../../types";
 import { Horizontal } from "../ui/Alignment";
 

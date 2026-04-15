@@ -39,7 +39,7 @@ const Sidebar: React.FC = () => {
         >
             <Navbar.Brand as={Link} to="/" onClick={() => setExpanded(false)}>
                 <Horizontal gap="lg" align="center">
-                    <Image src="/ODT_logo.svg" alt="Oligo Designer Toolsuite" />
+                    <Image src="/odt-logo.svg" alt="Oligo Designer Toolsuite" />
                     Oligo Designer <br /> Toolsuite
                 </Horizontal>
             </Navbar.Brand>

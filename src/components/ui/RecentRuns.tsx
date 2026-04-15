@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { Nav } from "react-bootstrap";
-import { useRuns } from "../../modules/useRuns";
+import { useRuns } from "../../hooks/useRuns";
 import { pipelineDisplayNames } from "./utils";
 import { Horizontal } from "./Alignment";
 import RunStatus from "./RunStatus";

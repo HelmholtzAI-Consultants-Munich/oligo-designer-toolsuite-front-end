@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { RunsContext } from "./useRuns";
+import { RunsContext } from "../hooks/useRuns";
 import type { PipelineRun } from "../types";
 import { BACKEND_URL } from "../config";
 

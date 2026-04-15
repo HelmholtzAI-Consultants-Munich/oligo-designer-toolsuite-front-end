@@ -1,5 +1,5 @@
 import type { WidgetProps } from "@rjsf/utils";
-import { handleFileChange } from "../helpers";
+import { handleFileChange } from "../componentHelpers";
 import { Form } from "react-bootstrap";
 
 const FileSelection = ({ id, name, registry }: WidgetProps) => {

@@ -1,5 +1,5 @@
 import { Toast, ToastContainer } from "react-bootstrap";
-import { hideToast, type ToastProps } from "../../modules/toastUtil";
+import { hideToast, type ToastProps } from "../../utils/toastUtil";
 import { useEffect, useState } from "react";
 import {
     CheckCircleFill,

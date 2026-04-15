@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
-import { useAuth } from "../modules/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { BACKEND_URL } from "../config";
 import { Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
-import { showToast } from "../modules/toastUtil";
+import { showToast } from "../utils/toastUtil";
 import { Vertical } from "../components/ui/Alignment";
-import { useRuns } from "../modules/useRuns";
+import { useRuns } from "../hooks/useRuns";
 
 /**
  * Login component handles user login functionality.

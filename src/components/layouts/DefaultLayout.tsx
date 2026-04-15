@@ -3,8 +3,8 @@ import Sidebar from "../ui/Sidebar";
 import Toasts from "../notifications/Toasts";
 import { Vertical } from "../ui/Alignment";
 import Modal from "../notifications/Modal";
-import { useAuth } from "../../modules/useAuth";
-import { useRuns } from "../../modules/useRuns";
+import { useAuth } from "../../hooks/useAuth";
+import { useRuns } from "../../hooks/useRuns";
 import Footer from "../ui/Footer";
 
 export default function DefaultLayout() {

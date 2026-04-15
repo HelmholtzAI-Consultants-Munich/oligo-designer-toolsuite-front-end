@@ -1,15 +1,15 @@
 import { useNavigate } from "react-router";
-import { useAuth } from "../modules/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
-import { useRuns } from "../modules/useRuns";
+import { useRuns } from "../hooks/useRuns";
 import { pipelineDisplayNames } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
-import { showToast } from "../modules/toastUtil";
+import { showToast } from "../utils/toastUtil";
 import { Horizontal } from "../components/ui/Alignment";
-import { confirmWithModal } from "../modules/modalUtil";
+import { confirmWithModal } from "../utils/modalUtil";
 
 const Runs = () => {
     const { loading } = useAuth();

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { type ModalProps } from "../../modules/modalUtil";
+import { type ModalProps } from "../../utils/modalUtil";
 import { ModalComponent } from "./ModalComponent";
 
 export default function Modal() {

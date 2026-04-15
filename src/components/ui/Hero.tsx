@@ -11,7 +11,7 @@ export default function Hero() {
                         Oligo Designer
                     </h1>
                     <Image
-                        src="/ODT_logo.svg"
+                        src="/odt-logo.svg"
                         alt="Oligo Designer Toolsuite"
                         width="150"
                         height="150"
