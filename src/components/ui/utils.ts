@@ -3,6 +3,7 @@ export const pipelineDisplayNames: Record<string, string> = {
     merfish: "Merfish",
     seqfish: "SeqFish+",
     oligoseq: "OligoSeq",
+    generator: "Genomic Region Generator",
 };
 
 export const visualizationDisplayNames = {

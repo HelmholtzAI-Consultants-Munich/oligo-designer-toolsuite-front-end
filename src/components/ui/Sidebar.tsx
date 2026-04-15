@@ -14,10 +14,12 @@ const Sidebar: React.FC = () => {
 
     const pipelines: { name: string; path: string }[] = Object.entries(
         pipelineDisplayNames
-    ).map(([key, name]: [string, string]) => ({
-        name,
-        path: `/pipelines/${key}`,
-    }));
+    )
+        .filter(([key]) => key !== "generator")
+        .map(([key, name]: [string, string]) => ({
+            name,
+            path: `/pipelines/${key}`,
+        }));
 
     const [expanded, setExpanded] = useState(false);
 

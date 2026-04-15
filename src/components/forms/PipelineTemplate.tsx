@@ -3,10 +3,9 @@ import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 import type { FileState, RJSFFormData } from "../componentTypes";
-import { handleSubmit } from "../componentHelpers";
+import { handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";
-import FileSelection from "./FileSelection";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
 import {
@@ -17,6 +16,8 @@ import {
 } from "react-bootstrap-icons";
 import { useRuns } from "../../hooks/useRuns";
 import { Button } from "react-bootstrap";
+import type { FastaFormState } from "../fastaGenerateForm/types";
+import GenomicInput from "../fastaGenerateForm/GenomicInput";
 
 type Props = {
     pipeline: string;
@@ -39,6 +40,13 @@ const PipelineTemplate: React.FC<Props> = ({
     const [formData, setFormData] = useState<RJSFFormData>({});
     const validator = customizeValidator({ AjvClass: Ajv2020 });
 
+    const [fastaForms, setFastaForms] = useState<FastaFormState>({
+        files_fasta_target_probe_database: [],
+        files_fasta_reference_database_target_probe: [],
+        files_fasta_reference_database_readout_probe: [],
+        files_fasta_reference_database_primer: [],
+    });
+
     const [files, setFiles] = useState<FileState>({
         files_fasta_target_probe_database: [],
         files_fasta_reference_database_target_probe: [],
@@ -49,7 +57,7 @@ const PipelineTemplate: React.FC<Props> = ({
     const { updateRuns } = useRuns();
 
     const widgets = {
-        fileSelection: FileSelection,
+        fileSelection: GenomicInput,
     };
 
     const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
@@ -84,7 +92,13 @@ const PipelineTemplate: React.FC<Props> = ({
                     icon: Send,
                     variant: "primary",
                     onClick: () =>
-                        handleSubmit(files, formData, pipeline, updateRuns),
+                        handleSubmit(
+                            files,
+                            fastaForms,
+                            formData,
+                            pipeline,
+                            updateRuns
+                        ),
                 },
             ]}
             stickyHeader
@@ -95,6 +109,8 @@ const PipelineTemplate: React.FC<Props> = ({
                 formContext={{
                     files,
                     setFiles,
+                    fastaForms,
+                    setFastaForms,
                 }}
                 formData={formData}
                 templates={{
@@ -105,7 +121,13 @@ const PipelineTemplate: React.FC<Props> = ({
                 validator={validator}
                 onChange={(e) => setFormData(e.formData)}
                 onSubmit={() =>
-                    handleSubmit(files, formData, pipeline, updateRuns)
+                    handleSubmit(
+                        files,
+                        fastaForms,
+                        formData,
+                        pipeline,
+                        updateRuns
+                    )
                 }
             >
                 <Button type="submit" variant="primary">

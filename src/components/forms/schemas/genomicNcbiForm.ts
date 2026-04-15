@@ -1,4 +1,6 @@
-const form_Data_Ncbi = {
+import type { NcbiFastaFormDataGeneric } from "../components/fastaGenerateForm/types";
+
+const form_Data_Ncbi: NcbiFastaFormDataGeneric<true> = {
     dir_output: {
         value: "output_genomic_region_generator_ncbi",
         comment: "name of the directory where the output files will be written",

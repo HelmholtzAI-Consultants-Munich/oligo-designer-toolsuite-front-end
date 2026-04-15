@@ -265,8 +265,8 @@ def get_run_files(run_id: ObjectId):
                 }
             )
 
-    # Special handling for "Genomic Region Generator" pipeline
-    if run.get("pipeline") == "Genomic Region Generator":
+    # Special handling for Genomic Region Generator pipeline
+    if run.get("pipeline") == "generator":
         output_gen = output_dir / "annotation"
         if output_gen.exists():
             for fname in os.listdir(output_gen):
