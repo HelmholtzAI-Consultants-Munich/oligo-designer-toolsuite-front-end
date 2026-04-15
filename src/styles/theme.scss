@@ -216,7 +216,6 @@ body.modal-open {
     border-radius: $border-radius-lg;
     width: 100%;
     padding: $btn-padding-y-sm * 0.4;
-    margin-top: 2rem;
 
     &::after {
         content: "";
@@ -286,6 +285,10 @@ body.modal-open {
         margin-top: -1rem;
     }
 
+    .nav-header {
+        margin-top: 2rem;
+    }
+
     .sticky-header-spacer {
         height: 2rem;
     }
@@ -310,14 +313,11 @@ body.modal-open {
                 margin-top: 2rem;
                 transition: box-shadow 0.3s ease;
             }
-
-            label {
-                margin-bottom: 0.7rem;
-            }
         }
 
         .sticky-header-content {
             position: sticky;
+            container-type: scroll-state;
             top: -1rem;
             margin-top: -2rem;
         }
@@ -325,9 +325,39 @@ body.modal-open {
 }
 
 /* Progressive enhancement: not all browsers support scroll-state container queries as of April 2026 */
-@container scroll-state(stuck: top) {
-    #header-background {
-        box-shadow: $box-shadow-lg;
+@supports (container-type: scroll-state) {
+    .header {
+        @container scroll-state(stuck: top) {
+            #header-background {
+                box-shadow: $box-shadow-lg;
+            }
+        }
+
+        @container scroll-state(stuck: top) {
+            label {
+                opacity: 0;
+            }
+        }
+    }
+}
+
+@supports not (container-type: scroll-state) {
+    .header {
+        label {
+            margin-bottom: 1rem;
+        }
+
+        .nav-header {
+            margin-top: 2.5rem;
+        }
+
+        .sticky-header-content {
+            top: -1.5rem;
+        }
+
+        &.sticky-header {
+            top: -2.5rem;
+        }
     }
 }
 
