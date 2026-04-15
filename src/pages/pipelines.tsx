@@ -1,43 +1,55 @@
 import React from "react";
-import Navbar from "../components/ui/Topbar";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useAuth } from "../modules/useAuth";
 import scrinshot from "../images/scrinshot.jpg";
 import merfish from "../images/merfish.jpg";
 import seqfish from "../images/seqfish.jpg";
 import oligoseq from "../images/oligoseq.jpg";
-import { Alert, Card, Col, Container, Row } from "react-bootstrap";
+import { Alert, Button, Card } from "react-bootstrap";
+import Page from "../components/ui/Page";
+import Hero from "../components/ui/Hero";
+import { Grid, Vertical } from "../components/ui/Alignment";
+import { ArrowRight } from "react-bootstrap-icons";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
+    const navigate = useNavigate();
 
     const pipelines = [
         {
-            title: "Scrinshot Probe",
+            title: "Scrinshot",
             description:
                 "Spatial gene expression analysis using scrinshot technology.",
             link: "/pipelines/scrinshot",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/scrinshot_probe_designer.html",
             img: scrinshot,
         },
         {
-            title: "Merfish Probe",
-            link: "/pipelines/merfish",
+            title: "Merfish",
             description:
                 "Highly multiplexed imaging for spatially resolved transcriptomics.",
+            link: "/pipelines/merfish",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/merfish_probe_designer.html",
             img: merfish,
         },
         {
-            title: "SeqFish+ Probe",
-            link: "/pipelines/seqfish",
+            title: "SeqFish+",
             description:
                 "Sequential imaging for probing complex spatial transcriptomes.",
+            link: "/pipelines/seqfish",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/seqfishplus_probe_designer.html",
             img: seqfish,
         },
         {
-            title: "Oligo-Seq Probe",
-            link: "/pipelines/oligoseq",
+            title: "Oligo-Seq",
             description:
                 "High-throughput sequencing tailored for spatial transcriptomics.",
+            link: "/pipelines/oligoseq",
+            detailedLink:
+                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/oligoseq_probe_designer.html",
             img: oligoseq,
         },
     ];
@@ -45,54 +57,51 @@ const Pipelines: React.FC = () => {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <>
-            <Navbar />
+        <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
+            <Hero />
 
-            {!user && (
-                <Alert variant="warning">
-                    To keep your runs saved when you close your browser, please{" "}
-                    <Link to="/login">log in</Link>.
-                </Alert>
-            )}
+            <Vertical className="tight-container" gap="lg" align="stretch">
+                {!user && (
+                    <Alert variant="warning">
+                        To keep your runs saved when you close your browser,
+                        please <Link to="/login">log in</Link>.
+                    </Alert>
+                )}
 
-            <Container>
-                <p className="lead">
-                    Oligo Designer Toolsuite is an open-source framework
-                    designed to streamline the development of custom
-                    oligonucleotide (oligo) design pipelines. Oligos are short
-                    DNA or RNA sequences used in various applications, such as
-                    research, diagnostics, and therapeutics. The Toolsuite
-                    provides modular functionalities like sequence generation,
-                    thermodynamic filtering, and machine learning-based
-                    specificity prediction.
-                </p>
-
-                <h2>Probe Designers</h2>
-
-                <Row>
+                <Grid gap="lg" itemWidth="25rem">
                     {pipelines.map((pipeline, index) => (
-                        <Col md={3} key={index}>
-                            <Card>
-                                <Card.Img
-                                    variant="top"
-                                    src={pipeline.img}
-                                    alt={pipeline.title}
-                                />
-                                <Card.Body>
-                                    <Card.Title>{pipeline.title}</Card.Title>
-                                    <Card.Text>
+                        <Card key={index}>
+                            <Card.Body as={Vertical} gap="md">
+                                <Card.Title as="h4">
+                                    {pipeline.title} Probe Designer
+                                </Card.Title>
+                                <Vertical.Item grow>
+                                    <Card.Text className="text-muted">
                                         {pipeline.description}
                                     </Card.Text>
-                                    <Card.Link as={Link} to={pipeline.link}>
-                                        Go to Pipeline
+                                </Vertical.Item>
+                                <Vertical.Item>
+                                    <Card.Link
+                                        as={Button}
+                                        onClick={() => navigate(pipeline.link)}
+                                    >
+                                        Use Pipeline
                                     </Card.Link>
-                                </Card.Body>
-                            </Card>
-                        </Col>
+                                    <Card.Link
+                                        as={Link}
+                                        to={pipeline.detailedLink}
+                                        target="_blank"
+                                    >
+                                        Read about {pipeline.title}{" "}
+                                        <ArrowRight />
+                                    </Card.Link>
+                                </Vertical.Item>
+                            </Card.Body>
+                        </Card>
                     ))}
-                </Row>
-            </Container>
-        </>
+                </Grid>
+            </Vertical>
+        </Page>
     );
 };
 

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@fontsource-variable/fustat": "^5.2.7",
     "@popperjs/core": "^2.11.8",
     "@rjsf/core": "^6.2.5",
     "@rjsf/react-bootstrap": "^6.2.5",

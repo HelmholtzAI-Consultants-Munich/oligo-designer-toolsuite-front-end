@@ -92,6 +92,17 @@ def timestamp_for_display(value: Any, separator: str = " ") -> str:
     return ""
 
 
+def timestamp_to_iso(value: Any) -> str:
+    """Convert supported timestamp values to ISO format for API output."""
+    timestamp = coerce_datetime(value)
+    if timestamp is not None:
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        return timestamp.isoformat()
+
+    return ""
+
+
 def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
     """Safely join user-provided file names under a base directory."""
     joined = safe_join(str(base_dir), requested_path)

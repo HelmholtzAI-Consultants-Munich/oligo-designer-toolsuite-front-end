@@ -1,5 +1,5 @@
 import seqfish_schema from "@schemas/seqfish.schema.json";
-import PipelineTemplate from "../components/forms/pipelineTemplate";
+import PipelineTemplate from "../components/forms/PipelineTemplate";
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import { TabsLayout } from "../components/forms/TabsLayout";
 
@@ -124,14 +124,12 @@ const uiSchema: UiSchema = {
 
 const Seqfish: React.FC = () => {
     return (
-        <>
-            <PipelineTemplate
-                pipeline="seqfish"
-                title="Seqfish+ Probe Designer"
-                schema={schema}
-                uiSchema={uiSchema}
-            />
-        </>
+        <PipelineTemplate
+            pipeline="seqfish"
+            title="Seqfish+ Probe Designer"
+            schema={schema}
+            uiSchema={uiSchema}
+        />
     );
 };
 export default Seqfish;

@@ -3,6 +3,7 @@ import axios from "axios";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
 import { BACKEND_URL, FEEDBACK_MAX_LENGTH } from "../../config";
+import { showToast } from "../../modules/toastUtil";
 
 interface FeedbackButtonProps {
     context?: Record<string, unknown>;
@@ -22,7 +23,6 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     const [message, setMessage] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
 
     const getRunIdFromPath = () => {
         const match = window.location.pathname.match(/^\/runs\/([^/]+)$/);
@@ -32,14 +32,12 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     const open = () => {
         setShow(true);
         setError(null);
-        setSuccess(null);
     };
 
     const close = () => {
         setShow(false);
         setMessage("");
         setError(null);
-        setSuccess(null);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -59,7 +57,6 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
         setSubmitting(true);
         setError(null);
-        setSuccess(null);
 
         try {
             const metadata: Record<string, unknown> = {
@@ -77,12 +74,13 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                 { withCredentials: true }
             );
 
-            setSuccess("Thank you for your feedback!");
+            showToast({
+                title: "Thank you for your feedback!",
+                content: "Your feedback has been submitted successfully.",
+                type: "success",
+            });
             setMessage("");
-            // Auto-close after a short delay
-            setTimeout(() => {
-                close();
-            }, 1200);
+            close();
         } catch (err: unknown) {
             if (axios.isAxiosError(err)) {
                 setError(
@@ -156,11 +154,6 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                                 {error}
                             </Alert>
                         )}
-                        {success && (
-                            <Alert variant="success" className="py-2">
-                                {success}
-                            </Alert>
-                        )}
                         <Form.Group controlId="generalFeedback">
                             <Form.Label>Your feedback</Form.Label>
                             <Form.Control
@@ -179,7 +172,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                     </Modal.Body>
                     <Modal.Footer>
                         <Button
-                            variant="secondary"
+                            variant="outline-secondary"
                             onClick={close}
                             disabled={submitting}
                         >

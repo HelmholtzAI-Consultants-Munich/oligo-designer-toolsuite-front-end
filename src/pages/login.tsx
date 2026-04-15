@@ -3,10 +3,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
-import Navbar from "../components/ui/Topbar";
 import { useAuth } from "../modules/useAuth";
 import { BACKEND_URL } from "../config";
-import { Button, Card, Col, Container, Form, Row } from "react-bootstrap";
+import { Button, Card, Form } from "react-bootstrap";
+import Page from "../components/ui/Page";
+import { showToast } from "../modules/toastUtil";
+import { Vertical } from "../components/ui/Alignment";
+import { useRuns } from "../modules/useRuns";
 
 /**
  * Login component handles user login functionality.
@@ -19,6 +22,7 @@ const Login = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { user, loading, checkAuth } = useAuth();
+    const { updateRuns } = useRuns();
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get("redirect") || "/";
@@ -41,17 +45,31 @@ const Login = () => {
             );
 
             console.log(res.data);
-            alert("Login successful!");
+            showToast({
+                title: "Login successful!",
+                content: "You have been logged in successfully.",
+                type: "success",
+            });
 
             await checkAuth();
+            updateRuns(); // Refresh runs after login
             // Navigate to the redirect URL or home
             navigate(redirectTo);
         } catch (err: unknown) {
             if (axios.isAxiosError(err) && err.response?.status === 401) {
-                alert("Invalid username or password.");
+                showToast({
+                    title: "Invalid username or password.",
+                    content: "Please check your credentials and try again.",
+                    type: "danger",
+                });
             } else {
                 console.error(err);
-                alert("Login failed.");
+                showToast({
+                    title: "Login failed.",
+                    content:
+                        "An error occurred during login. Please try again later.",
+                    type: "danger",
+                });
             }
         }
     };
@@ -74,76 +92,74 @@ const Login = () => {
     }
 
     return (
-        <>
-            <Navbar />
-            <Container>
-                <Row className="justify-content-center">
-                    <Col md={6}>
-                        <h2>Login</h2>
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>
-                                    Login with Helmholtz AAI
-                                </Card.Title>
-                                <Card.Text className="text-muted">
-                                    Recommended for Helmholtz users. You will be
-                                    redirected to the Helmholtz AAI login page.
-                                </Card.Text>
-                                <Button onClick={redirectToHelmholtz}>
-                                    Continue with Helmholtz AAI
-                                </Button>
-                            </Card.Body>
-                        </Card>
+        <Page title="Login" hideHeader>
+            <Vertical gap="xl" align="center" justify="center" grow>
+                <Card style={{ maxWidth: "500px" }}>
+                    <Card.Body>
+                        <Vertical gap="md" align="stretch">
+                            <Card.Title as="h2">
+                                Login with Helmholtz AAI
+                            </Card.Title>
+                            <Card.Text className="text-muted">
+                                Recommended for Helmholtz users. You will be
+                                redirected to the Helmholtz AAI login page.
+                            </Card.Text>
+                            <Button onClick={redirectToHelmholtz}>
+                                Continue with Helmholtz AAI
+                            </Button>
+                        </Vertical>
+                    </Card.Body>
+                </Card>
 
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>Admin Login</Card.Title>
-                                <Card.Text className="text-muted">
-                                    Use this option if you have an admin account
-                                    with username/password.
-                                </Card.Text>
-                                <Form onSubmit={handleSubmit}>
-                                    <Form.Group controlId="loginUsername">
-                                        <Form.Label>Username</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            value={username}
-                                            onChange={(e) =>
-                                                setUsername(e.target.value)
-                                            }
-                                            required
-                                        />
-                                    </Form.Group>
-                                    <Form.Group controlId="loginPassword">
-                                        <Form.Label>Password</Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            value={password}
-                                            onChange={(e) =>
-                                                setPassword(e.target.value)
-                                            }
-                                            required
-                                        />
-                                    </Form.Group>
-                                    <Form.Check
-                                        type="checkbox"
-                                        label="Remember me"
-                                        id="loginRememberMe"
-                                        checked={rememberMe}
+                <Card style={{ maxWidth: "500px" }}>
+                    <Card.Body>
+                        <Card.Title>Admin Login</Card.Title>
+                        <Card.Text className="text-muted">
+                            Use this option if you have an admin account with
+                            username/password.
+                        </Card.Text>
+                        <Form onSubmit={handleSubmit}>
+                            <Vertical gap="md" align="stretch">
+                                <Form.Group controlId="loginUsername">
+                                    <Form.Label>Username</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={username}
                                         onChange={(e) =>
-                                            setRememberMe(e.target.checked)
+                                            setUsername(e.target.value)
                                         }
+                                        required
                                     />
-                                    <Button variant="secondary" type="submit">
-                                        Login with Username
-                                    </Button>
-                                </Form>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
-            </Container>
-        </>
+                                </Form.Group>
+                                <Form.Group controlId="loginPassword">
+                                    <Form.Label>Password</Form.Label>
+                                    <Form.Control
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) =>
+                                            setPassword(e.target.value)
+                                        }
+                                        required
+                                    />
+                                </Form.Group>
+                                <Form.Check
+                                    type="checkbox"
+                                    label="Remember me"
+                                    id="loginRememberMe"
+                                    checked={rememberMe}
+                                    onChange={(e) =>
+                                        setRememberMe(e.target.checked)
+                                    }
+                                />
+                                <Button variant="outline-primary" type="submit">
+                                    Login with Username
+                                </Button>
+                            </Vertical>
+                        </Form>
+                    </Card.Body>
+                </Card>
+            </Vertical>
+        </Page>
     );
 };
 

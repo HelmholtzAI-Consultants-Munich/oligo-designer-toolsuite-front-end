@@ -1,8 +1,11 @@
-import type { FastaForm, FileState, RJSFFormData, Status } from "./types";
-import { copyToClipboard, createRunId } from "../modules/helpers";
+import type { FastaForm, FileState, RJSFFormData } from "./types";
+import { createRunId } from "../modules/helpers";
 import { extractSubmissionError } from "./errorHandler";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
+import { showToast } from "../modules/toastUtil";
+import { Link } from "react-router";
+import { ArrowRight } from "react-bootstrap-icons";
 
 export const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -120,55 +123,33 @@ export const getRequiredFiles = (pipeline: string): (keyof FileState)[] => {
 };
 
 export const handleSubmit = async (
-    runStatus: Status,
-    setRunStatus: React.Dispatch<React.SetStateAction<Status>>,
-    setRunId: React.Dispatch<React.SetStateAction<string | null>>,
-
-    setModal: React.Dispatch<
-        React.SetStateAction<{
-            show: boolean;
-            title: string;
-            body: string;
-        }>
-    >,
     files: FileState,
     formData: RJSFFormData,
     pipeline: string,
-    setIdCopySuccess?: React.Dispatch<React.SetStateAction<boolean>>
+    updateRuns: () => void
 ) => {
-    if (runStatus !== "idle") return;
-    setRunStatus("submitting");
-    setRunId(null);
-
+    // TODO: reintroduce some loading state after submission
     if (!allFilesUploaded(files, getRequiredFiles(pipeline))) {
-        setModal({
-            show: true,
+        showToast({
             title: "Submission Failed",
-            body: `Please upload all required files before submitting.`,
+            content: "Please upload all required files before submitting.",
+            type: "danger",
         });
-        setRunStatus("idle");
         return;
     }
     await uploadFiles(files, formData);
 
     const newId = await createRunId();
     if (!newId) {
-        setModal({
-            show: true,
+        showToast({
             title: "Pipeline Failed",
-            body: `Our servers have failed to create a new run.`,
+            content: "Our servers have failed to create a new run.",
+            type: "danger",
         });
-        setRunStatus("idle");
         return;
     }
 
-    setRunId(newId);
-    const copySuccess = await copyToClipboard(newId);
-    setIdCopySuccess?.(copySuccess);
-
     try {
-        setRunStatus("running");
-
         await axios.post(
             BACKEND_URL + `/api/${pipeline}`,
             { formdata: formData, runid: newId },
@@ -178,23 +159,37 @@ export const handleSubmit = async (
             }
         );
 
-        setModal({
-            show: true,
+        showToast({
             title: "Pipeline Enqueued",
-            body: `The pipeline run was successfully added to the queue. Your run ID is: ${newId}`,
+            content: (
+                <>
+                    <p>The pipeline run was successfully added to the queue.</p>
+                    <Link to={`/runs/${newId}`}>
+                        View the run here <ArrowRight />
+                    </Link>
+                </>
+            ),
+            type: "success",
         });
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
-        setModal({
-            show: true,
+        showToast({
             title: "Pipeline Failed",
-            body: errorMessage + (newId ? ` Your run ID is: ${newId}.` : ""),
+            content: (
+                <>
+                    <p>{errorMessage}</p>
+                    <Link className="mt-2" to={`/runs/${newId}`}>
+                        View the run here <ArrowRight />
+                    </Link>
+                </>
+            ),
+            type: "danger",
         });
     } finally {
         // remove uploaded filepaths added in uploadFiles
         for (const key in files) {
             formData[key] = [];
         }
-        setRunStatus("idle");
+        updateRuns();
     }
 };

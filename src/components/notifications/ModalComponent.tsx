@@ -4,21 +4,23 @@ export function ModalComponent({
     show,
     close,
     title,
-    body,
+    content,
     primaryAction,
     secondaryAction,
 }: {
     show: boolean;
     close: () => void;
     title: string;
-    body: string;
+    content: React.ReactNode;
     primaryAction: {
-        title: string;
+        label: string;
         callback: () => void;
+        variant?: string;
     };
     secondaryAction?: {
-        title: string;
+        label: string;
         callback: () => void;
+        variant?: string;
     };
 }) {
     return (
@@ -26,18 +28,21 @@ export function ModalComponent({
             <Modal.Header closeButton>
                 <Modal.Title>{title}</Modal.Title>
             </Modal.Header>
-            <Modal.Body>{body}</Modal.Body>
+            <Modal.Body>{content}</Modal.Body>
             <Modal.Footer>
                 {secondaryAction && (
                     <Button
-                        variant="secondary"
+                        variant={secondaryAction.variant || "secondary"}
                         onClick={secondaryAction.callback}
                     >
-                        {secondaryAction.title}
+                        {secondaryAction.label}
                     </Button>
                 )}
-                <Button variant="primary" onClick={primaryAction.callback}>
-                    {primaryAction.title}
+                <Button
+                    variant={primaryAction.variant || "primary"}
+                    onClick={primaryAction.callback}
+                >
+                    {primaryAction.label}
                 </Button>
             </Modal.Footer>
         </Modal>
