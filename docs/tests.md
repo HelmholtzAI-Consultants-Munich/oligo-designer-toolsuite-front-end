@@ -97,56 +97,59 @@ npm run test:watch
 
 ## 3) End-to-End (E2E) Tests (Playwright)
 
-**Goal:** Prove a real user can run a pipeline from the UI to a **successful terminal state** on the deployed app.
+**Goal:** Prove a real user can run a pipeline from the UI to a **successful terminal state** with the Dockerized full stack (frontend, Flask API, Celery worker, MongoDB, and RabbitMQ).
 
 ### Scope
 
-- Navigate to pipelines page, fill required fields, and **submit**.
-- Optionally capture/display **Run ID** if shown (useful for debugging).
-- **Pass criteria:** Visible terminal success signal (e.g., banner “Pipeline finished successfully”, or status badge **COMPLETED**).
-- Smoke checks for key pages (render without severe console errors).
+- Navigate to a pipeline page, fill required fields, and **submit**.
+- Capture the **Run ID** from the submission modal and open the corresponding run detail page.
+- **Pass criteria:** the run detail page reaches backend state `success`, exposes expected artifacts such as `genomic_regions.yaml`, and renders result content.
+- The PR `@smoke` suite keeps a smaller stable subset, while the monthly `@full` suite covers each supported pipeline with real execution.
+
+### Suites
+
+- `@smoke`: fast confidence checks used on pull requests. This suite verifies the app stack starts, key pipeline pages render, and at least one real pipeline run can be submitted and completed successfully.
+- `@full`: broader regression coverage used for the monthly scheduled run and manual deep checks. This suite runs the same real end-to-end flow for every supported pipeline covered by Playwright.
+- Use `@smoke` for quick feedback and merge protection.
+- Use `@full` when you want stronger cross-pipeline confidence and are willing to pay the longer runtime.
 
 ### Running locally
 
 ```bash
-# in the frontend root
-npx playwright test
-# test with ui:
-npx playwright test --ui
+# run the complete monthly-style suite
+npm run test:e2e:full
+
+# run the PR smoke suite
+npm run test:e2e:smoke
+
+# or use Playwright directly
+npx playwright test --grep @full
+npx playwright test --grep @smoke
 ```
 
 or if using Docker:
 
-The `odt-tests` container is only available when using the tests profile. To start the application with the test container available, use:
-
 ```bash
-npm run docker:start:test
-# or for development with hot reloading:
+npm run docker:test          # builds the stack, runs full suite, then exits
+npm run docker:test:smoke    # smoke suite only (requires a running stack)
+npm run docker:test:full     # full suite only (requires a running stack)
+
+# for development with hot reloading (syncs code changes into running containers):
 npm run docker:watch:test
 ```
 
+`docker:test` starts the full application stack and runs Playwright inside the `odt-tests` container (built from the official Playwright Docker image). `docker:watch:test` does the same but keeps containers running and syncs file changes, so you can iterate on tests without rebuilding. To re-run a specific suite against an already-running stack, use `docker:test:smoke` or `docker:test:full`.
+
 See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for more details on Docker profiles.
-
-Then run Playwright tests:
-
-```bash
-# run all tests:
-docker compose run --rm odt-tests
-# run a specific test:
-docker compose run --rm odt-tests test tests/scrinshot.spec.ts --reporter=html
-# inspect the test results:
-docker compose run --rm odt-tests show-report
-```
 
 ---
 
 ## Continuous Integration (GitHub Actions)
 
-**Backend tests (Pytest)**, **Frontend tests (Vitest)**, and **E2E tests (Playwright)** run on every push/PR.  
-Set `E2E_BASE_URL` as a repository secret to point E2E tests to the hosted app.
+**Backend tests (Pytest)** and **Frontend tests (Vitest)** run on pull requests.  
+**Playwright E2E tests** run as a `@smoke` suite on pull requests and as a `@full` suite on a monthly schedule or manual dispatch, using Docker Compose plus the official Playwright Docker image.
 
 You can find the configuration at:
 
 - `.github/workflows/pr_tests.yml` - Backend and Frontend tests
 - `.github/workflows/e2e.yml` - E2E tests
-- `.github/workflows/backend_tests.yml` - Backend tests (legacy)

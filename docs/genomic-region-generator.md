@@ -113,18 +113,9 @@ It supports flexible region selection, automatic file retrieval, and efficient c
     }
     ```
 
-## Frontend component (`FastaGenerateForm.tsx`)
+## Frontend configuration
 
-The `FastaGenerateForm` component provides the user interface for configuring genomic region generation:
-
-- **Dynamic source switching**: UI adapts based on NCBI vs. Ensembl selection
-- **Cascading dropdowns**: Species lists update based on selected taxon (NCBI only)
-- **Controlled inputs**: All form state is managed by parent components and passed via props
-- **Inline help**: Info icons with Bootstrap popovers explain each parameter
-- **Conditional fields**: Block size input appears only when Exon-Exon Junction is selected
-- **Remove functionality**: Forms can be removed in multi-form contexts (e.g., when generating multiple FASTA groups)
-
-The component is reusable across multiple pipelines (OligoSeq, MERFISH, seqFISH+, Scrinshot) and supports both standalone usage and integration into larger form workflows.
+Genomic region jobs are configured through JSON Schema form definitions in `src/forms/genomic_custom_form.ts`, `src/forms/genomic_ncbi_form.ts`, and `src/forms/genomic_ens_form.ts` (maintained via the YAML-to-TypeScript automation described in [Automated Updates](automated-updates.md)). The React app renders those schemas with **react-jsonschema-form**, so behavior such as dynamic fields and validation follows the generated schema rather than a dedicated FASTA form component.
 
 ## Use cases
 

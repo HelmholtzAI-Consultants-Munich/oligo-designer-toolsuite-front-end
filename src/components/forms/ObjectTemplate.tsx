@@ -1,4 +1,4 @@
-import { Col, Row } from "react-bootstrap";
+import { Horizontal } from "../ui/Alignment";
 
 interface ObjectProperty {
     name: string;
@@ -7,13 +7,13 @@ interface ObjectProperty {
 
 const ObjectTemplate = (props: { properties: ObjectProperty[] }) => {
     return (
-        <Row>
+        <Horizontal gap="lg" wrap align="stretch">
             {props.properties.map((element) => (
-                <Col md={6} key={element.name}>
+                <Horizontal.Item grow key={element.name}>
                     {element.content}
-                </Col>
+                </Horizontal.Item>
             ))}
-        </Row>
+        </Horizontal>
     );
 };
 export default ObjectTemplate;

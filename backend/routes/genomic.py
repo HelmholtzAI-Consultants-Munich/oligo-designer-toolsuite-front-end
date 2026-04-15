@@ -129,7 +129,7 @@ def genomic_cascaded_custom():
         "timestamp": timestamp,
         "output_path": serialize_path(run_output_path),
         "status": "started",
-        "pipeline": "Genomic Region Generator",
+        "pipeline": "generator",
     }
     run_result = mongo.db.runs.insert_one(run_doc)
     run_id = run_result.inserted_id

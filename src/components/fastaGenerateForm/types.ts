@@ -1,5 +1,5 @@
-import form_Data_Ens from "../../forms/genomic_ens_form";
-import form_Data_Ncbi from "../../forms/genomic_ncbi_form";
+import form_Data_Ens from "../forms/schemas/genomicEnsForm";
+import form_Data_Ncbi from "../forms/schemas/genomicNcbiForm";
 
 export interface DropDown {
     ncbi: Map<string, string[]>;

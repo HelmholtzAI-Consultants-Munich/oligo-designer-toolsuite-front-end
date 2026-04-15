@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@fontsource-variable/fustat": "^5.2.7",
     "@popperjs/core": "^2.11.8",
     "@rjsf/core": "^6.2.5",
     "@rjsf/react-bootstrap": "^6.2.5",
@@ -19,8 +20,6 @@
     "react-bootstrap-icons": "^1.11.6",
     "react-dom": "^19.2.0",
     "react-router": "^7.13.1",
-    "socket.io-client": "^4.8.1",
-    "web-vitals": "^2.1.4",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "scripts": {
@@ -31,6 +30,9 @@
     "preview": "vite preview",
     "test": "vitest run --exclude 'tests/**'",
     "test:watch": "vitest --exclude 'tests/**'",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:e2e:full": "playwright test --grep @full",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "docker:start": "docker compose up -d",
@@ -44,7 +46,9 @@
     "docker:build": "docker compose build",
     "docker:update": "docker compose build --pull && docker compose pull --ignore-buildable",
     "docker:prune": "docker system prune",
-    "docker:test": "npm run docker:start && docker compose run --rm odt-tests"
+    "docker:test": "docker compose --profile tests up -d --build odt-db odt-mq odt-server odt-worker odt-web odt-tests && docker compose --profile tests run --rm odt-tests",
+    "docker:test:smoke": "docker compose --profile tests run --rm odt-tests test --grep @smoke",
+    "docker:test:full": "docker compose --profile tests run --rm odt-tests test --grep @full"
   },
   "prettier": {
     "tabWidth": 4,
@@ -67,7 +71,7 @@
   "devDependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@eslint/js": "^9.39.1",
-    "@playwright/test": "^1.56.1",
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

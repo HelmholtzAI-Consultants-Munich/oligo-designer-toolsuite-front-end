@@ -91,14 +91,7 @@ def format_feedback(feedback):
             pass
 
     created_at = feedback.get("created_at")
-    if created_at is not None:
-        created_at_value = created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at)
-    else:
-        # Fall back to ObjectId generation time if available
-        feedback_id = feedback.get("_id")
-        created_at_value = (
-            feedback_id.generation_time.isoformat() if isinstance(feedback_id, ObjectId) else None
-        )
+    created_at_value = created_at.isoformat() if created_at is not None else None
 
     return {
         "id": str(feedback["_id"]),

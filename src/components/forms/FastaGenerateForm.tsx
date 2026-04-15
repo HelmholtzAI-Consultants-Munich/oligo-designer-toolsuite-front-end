@@ -16,15 +16,15 @@ import type {
     NestedObject,
 } from "../fastaGenerateForm/types";
 import { BACKEND_URL } from "../../config";
-import { SourceSelect } from "../fastaGenerateForm/sourceSelector";
+import { SourceSelect } from "../fastaGenerateForm/SourceSelector";
 import {
     AnnotationSelect,
     SpeciesSelect,
     TaxonSelect,
-} from "../fastaGenerateForm/genomicDropDown";
+} from "../fastaGenerateForm/GenomicDropDown";
 import { replaceUnderscore } from "../fastaGenerateForm/helpers";
-import { NcbiAnnotationReleases } from "../fastaGenerateForm/ncbiAnnotationReleases";
-import { GenomicRegionSelect } from "../fastaGenerateForm/genomicRegionSelect";
+import { NcbiAnnotationReleases } from "../fastaGenerateForm/NcbiAnnotationReleases";
+import { GenomicRegionSelect } from "../fastaGenerateForm/GenomicRegionSelect";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
