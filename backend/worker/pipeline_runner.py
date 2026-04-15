@@ -98,7 +98,8 @@ class PipelineRunner:
     def call_subprocess(self, config_path: str) -> bool:
         proc = subprocess.Popen(
             [self.subprocess_name, "-c", config_path],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
         )
         self._process = proc

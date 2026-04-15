@@ -279,7 +279,10 @@ def get_run_status(run_id: ObjectId):
     state = run["status"]
 
     if state in {"success", "failure"}:
-        return jsonify({"state": state})
+        response = {"state": state}
+        if state == "failure" and run.get("error_message"):
+            response["error_message"] = run["error_message"]
+        return jsonify(response)
 
     # Check for potential state changes
     task_id = get_task_id(run)
@@ -296,4 +299,11 @@ def get_run_status(run_id: ObjectId):
     if run["status"] != state:
         update_run_in_DB(run_id, {"status": state, "finished_at": utc_now()})
 
-    return jsonify({"state": state}), HTTPStatus.OK
+    response = {"state": state}
+    if state == "failure":
+        # Re-fetch run to pick up error_message written by the worker on timeout
+        updated_run = mongo.db.runs.find_one({"_id": run_id})
+        if updated_run and updated_run.get("error_message"):
+            response["error_message"] = updated_run["error_message"]
+
+    return jsonify(response), HTTPStatus.OK

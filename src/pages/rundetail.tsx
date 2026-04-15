@@ -95,6 +95,7 @@ const RunDetail = () => {
     };
     // --- Polling/log state variables ---
     const [runState, setRunState] = useState<RunState>("pending");
+    const [runErrorMessage, setRunErrorMessage] = useState<string | null>(null);
     const [polling, setPolling] = useState(true);
     const fetchAndParseRunFiles = useCallback(() => {
         axios
@@ -147,6 +148,9 @@ const RunDetail = () => {
                     }
                 );
                 setRunState(response.data.state);
+                if (response.data.error_message) {
+                    setRunErrorMessage(response.data.error_message);
+                }
 
                 // If finished, stop polling
                 if (
@@ -487,6 +491,14 @@ const RunDetail = () => {
                     <Alert variant="info">
                         Run is {runState == "pending" ? "pending" : "executing"}
                         ... <Spinner size="sm" />
+                    </Alert>
+                )}
+
+                {/* Pipeline failure */}
+                {runState == "failure" && (
+                    <Alert variant="danger">
+                        {runErrorMessage ??
+                            "The pipeline run failed. Please check the log file for details."}
                     </Alert>
                 )}
 
