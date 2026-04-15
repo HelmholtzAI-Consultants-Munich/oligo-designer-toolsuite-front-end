@@ -8,7 +8,13 @@
 import React, { memo, useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Alert, Spinner } from "react-bootstrap";
-import type { DropDown, FastaForm } from "../fastaGenerateForm/types";
+import type {
+    DropDown,
+    EnsFastaFormDataGeneric,
+    FastaForm,
+    NcbiFastaFormDataGeneric,
+    NestedObject,
+} from "../fastaGenerateForm/types";
 import { BACKEND_URL } from "../../config";
 import { SourceSelect } from "../fastaGenerateForm/sourceSelector";
 import {
@@ -83,131 +89,91 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             } as DropDown;
         };
 
-        // Handles changes to NCBI-specific form fields and checkboxes
-        const handleNcbiChange = (
-            e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        const processFormChange = <T,>(
+            e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+            formData: T
         ) => {
             const { name, value } = e.target;
             const checked =
                 "checked" in e.target
                     ? (e.target as HTMLInputElement).checked
                     : false;
-            // Checkboxes for genomic regions
-            if (name in form.formDataNcbi.genomic_regions) {
-                const key =
-                    name as keyof typeof form.formDataNcbi.genomic_regions;
-                const newGenomicRegions = {
-                    ...form.formDataNcbi.genomic_regions,
-                    [key]: {
-                        ...form.formDataNcbi.genomic_regions[key],
-                        value: checked ? "true" : "false",
-                    },
+
+            const keys = name.split(".");
+            const newFormData = { ...formData };
+            let formTarget = newFormData as unknown as NestedObject;
+            // only index n-1 key to keep a reference to the parent object for onChange
+            for (const key of keys.slice(0, -1)) {
+                formTarget[key as keyof typeof formTarget] = {
+                    ...(formTarget[
+                        key as keyof typeof formTarget
+                    ] as NestedObject),
                 };
-                onChange({
-                    ...form,
-                    formDataNcbi: {
-                        ...form.formDataNcbi,
-                        genomic_regions: newGenomicRegions,
-                    },
-                });
-                return;
+                formTarget = formTarget[
+                    key as keyof typeof formTarget
+                ] as NestedObject;
             }
-            if (name === "exon_exon_junction_block_size") {
-                onChange({
-                    ...form,
-                    formDataNcbi: {
-                        ...form.formDataNcbi,
-                        exon_exon_junction_block_size: {
-                            ...form.formDataNcbi.exon_exon_junction_block_size,
-                            value: value,
-                        },
-                    },
-                });
-                return;
+
+            if (keys[0] === "genomic_regions") {
+                formTarget[keys[keys.length - 1]] = {
+                    ...(formTarget[keys[keys.length - 1]] as NestedObject),
+                    value: checked ? "true" : "false",
+                };
+            } else {
+                formTarget[keys[keys.length - 1]] = {
+                    ...(formTarget[keys[keys.length - 1]] as NestedObject),
+                    value: value,
+                };
             }
-            // Nested source_params
-            if (name.startsWith("source_params.")) {
-                const key = name.split(
-                    "."
-                )[1] as keyof typeof form.formDataNcbi.source_params;
-                onChange({
-                    ...form,
-                    formDataNcbi: {
-                        ...form.formDataNcbi,
-                        source_params: {
-                            ...form.formDataNcbi.source_params,
-                            [key]: {
-                                ...form.formDataNcbi.source_params[key],
-                                value: value,
-                            },
-                        },
-                    },
-                });
-                return;
+            return { newFormData, keys, value };
+        };
+
+        // Handles changes to NCBI-specific form fields and checkboxes
+        const handleNcbiChange = (
+            e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        ) => {
+            const { newFormData, keys, value } = processFormChange<
+                NcbiFastaFormDataGeneric<true>
+            >(e, form.formDataNcbi);
+
+            if (keys[0] === "source_params" && keys[1] === "taxon") {
+                // Update dependent fields when source params change
+                const selectedTaxon = value.toLowerCase();
+                const speciesOptions = dropDown!.ncbi.get(selectedTaxon) || [];
+                if (
+                    !speciesOptions.includes(
+                        form.formDataNcbi.source_params.species.value
+                    )
+                ) {
+                    newFormData.source_params.species = {
+                        ...newFormData.source_params.species,
+                        value: speciesOptions[0] || "",
+                    };
+                }
             }
+
+            onChange({
+                ...form,
+                formDataNcbi: {
+                    ...newFormData,
+                },
+            });
         };
 
         // Handles changes to Ensembl-specific form fields and checkboxes
         const handleEnsChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-            const { name, value } = e.target;
-            const checked =
-                "checked" in e.target
-                    ? (e.target as HTMLInputElement).checked
-                    : false;
-            if (name in form.formDataEns.genomic_regions) {
-                const key =
-                    name as keyof typeof form.formDataEns.genomic_regions;
-                const newGenomicRegions = {
-                    ...form.formDataEns.genomic_regions,
-                    [key]: {
-                        ...form.formDataEns.genomic_regions[key],
-                        value: checked ? "true" : "false",
-                    },
-                };
-                onChange({
-                    ...form,
-                    formDataEns: {
-                        ...form.formDataEns,
-                        genomic_regions: newGenomicRegions,
-                    },
-                });
-                return;
-            }
-            if (name === "exon_exon_junction_block_size") {
-                onChange({
-                    ...form,
-                    formDataEns: {
-                        ...form.formDataEns,
-                        exon_exon_junction_block_size: {
-                            ...form.formDataEns.exon_exon_junction_block_size,
-                            value: value,
-                        },
-                    },
-                });
-                return;
-            }
-            // Nested source_params
-            if (name.startsWith("source_params.")) {
-                const key = name.split(
-                    "."
-                )[1] as keyof typeof form.formDataEns.source_params;
-                onChange({
-                    ...form,
-                    formDataEns: {
-                        ...form.formDataEns,
-                        source_params: {
-                            ...form.formDataEns.source_params,
-                            [key]: {
-                                ...form.formDataEns.source_params[key],
-                                value: value,
-                            },
-                        },
-                    },
-                });
-                return;
-            }
+            const { newFormData } = processFormChange<
+                EnsFastaFormDataGeneric<true>
+            >(e, form.formDataEns);
+
+            onChange({
+                ...form,
+                formDataEns: {
+                    ...newFormData,
+                },
+            });
         };
 
         if (isLoading) {
@@ -348,7 +314,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                 form.formDataEns.source_params
                                                     .species.value
                                             }
-                                            handleChange={handleNcbiChange}
+                                            handleChange={handleEnsChange}
                                         >
                                             {Array.from(
                                                 dropDown!.ensembl.keys()

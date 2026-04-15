@@ -1,4 +1,6 @@
-const form_Data_Ens = {
+import type { EnsFastaFormDataGeneric } from "../components/fastaGenerateForm/types";
+
+const form_Data_Ens: EnsFastaFormDataGeneric<true> = {
     dir_output: {
         value: "output_genomic_region_generator_ensembl",
         comment: "name of the directory where the output files will be written",

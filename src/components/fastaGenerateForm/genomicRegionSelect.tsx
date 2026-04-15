@@ -37,7 +37,7 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                                 type="checkbox"
                                 className="form-check-input me-2"
                                 id={`${region}-${id}`}
-                                name={region}
+                                name={`genomic_regions.${region}`}
                                 checked={
                                     genomic_regions[region]?.value === "true"
                                 }

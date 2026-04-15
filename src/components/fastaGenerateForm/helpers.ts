@@ -2,7 +2,16 @@ import { BACKEND_URL } from "../../config";
 import { copyToClipboard, createRunId } from "../../modules/helpers";
 import { extractSubmissionError } from "../errorHandler";
 import type { RJSFFormData, Status } from "../types";
-import { type FastaForm, type FastaFormState, type FileState } from "./types";
+import {
+    type CommentEntry,
+    type EnsFastaFormDataGeneric,
+    type FastaForm,
+    type FastaFormState,
+    type FileState,
+    type NcbiFastaFormDataGeneric,
+    type NestedObject,
+    type UploadFastaFormData,
+} from "./types";
 import axios from "axios";
 
 export const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
@@ -49,19 +58,44 @@ export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
     }
 };
 
-const stripComments = (fastaForm: FastaForm) => {
-    for (const property of Object.keys(
-        fastaForm
-    ) as unknown as keyof FastaForm) {
-        if (typeof fastaForm[property] === "object") {
-            if (Object.keys(fastaForm[property]).includes("value")) {
-                fastaForm[property] = fastaForm[property]["value"];
+const removeComments = (fastaFormData: NestedObject) => {
+    const uploadReadyFastaForm = {} as NestedObject;
+    for (const property of Object.keys(fastaFormData)) {
+        const key = property as keyof NestedObject;
+        if (typeof fastaFormData[key] === "object") {
+            if (Object.keys(fastaFormData[key]).includes("value")) {
+                uploadReadyFastaForm[key] = (
+                    fastaFormData[key] as unknown as CommentEntry
+                )["value" as keyof CommentEntry];
             } else {
-                fastaForm[property] = stripComments(fastaForm[property]);
+                uploadReadyFastaForm[key] = removeComments(fastaFormData[key]);
             }
         }
     }
-    return fastaForm;
+    return uploadReadyFastaForm;
+};
+
+const prepareForUpload = (fastaForm: FastaForm) => {
+    let uploadReadyFastaForm;
+    switch (fastaForm.selectedSource) {
+        case "ncbi":
+            uploadReadyFastaForm = removeComments(
+                fastaForm.formDataNcbi as unknown as NestedObject
+            ) as unknown as UploadFastaFormData<
+                NcbiFastaFormDataGeneric<false>
+            >;
+            uploadReadyFastaForm.source = "NCBI";
+            break;
+        case "ensembl":
+            uploadReadyFastaForm = removeComments(
+                fastaForm.formDataEns as unknown as NestedObject
+            ) as unknown as UploadFastaFormData<EnsFastaFormDataGeneric<false>>;
+            uploadReadyFastaForm.source = "Ensembl";
+            break;
+        default:
+            return null;
+    }
+    return uploadReadyFastaForm;
 };
 
 export const handleSubmitGenomicAll = async (
@@ -71,16 +105,15 @@ export const handleSubmitGenomicAll = async (
     for (const key of Object.keys(fastaForms) as (keyof FileState)[]) {
         if (fastaForms[key]) {
             for (const form of fastaForms[key]) {
-                let payload = stripComments(form);
-                if (form.selectedSource === "ncbi") {
-                    payload = payload.formDataNcbi;
-                    payload["source"] = "NCBI";
-                } else if (form.selectedSource === "ensembl") {
-                    payload = payload.formDataEns;
-                    payload["source"] = "Ensembl";
-                } else {
-                    continue; // skip unknown
+                const payload = prepareForUpload(form);
+
+                if (!payload) {
+                    console.error(
+                        "Error while processing Genomic Region Generator Form"
+                    );
+                    continue;
                 }
+
                 try {
                     const response = await axios.post(
                         BACKEND_URL + `/api/genomic/cascaded/custom`,

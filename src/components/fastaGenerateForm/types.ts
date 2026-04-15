@@ -6,6 +6,57 @@ export interface DropDown {
     ensembl: Map<string, string[]>;
 }
 
+export interface CommentEntry {
+    value: string;
+    comment: string;
+}
+
+export type MaybeCommentEntry<WithComment> = WithComment extends true
+    ? CommentEntry
+    : string;
+
+interface EnsSourceParams<WithComments> {
+    species: MaybeCommentEntry<WithComments>;
+    annotation_release: MaybeCommentEntry<WithComments>;
+}
+
+interface NcbiSourceParams<WithComments> extends EnsSourceParams<WithComments> {
+    taxon: MaybeCommentEntry<WithComments>;
+}
+
+export interface BaseFastaFormDataGeneric<WithComments> {
+    dir_output: MaybeCommentEntry<WithComments>;
+    source: MaybeCommentEntry<WithComments>;
+    genomic_regions: {
+        gene: MaybeCommentEntry<WithComments>;
+        intergenic: MaybeCommentEntry<WithComments>;
+        exon: MaybeCommentEntry<WithComments>;
+        exon_exon_junction: MaybeCommentEntry<WithComments>;
+        utr: MaybeCommentEntry<WithComments>;
+        cds: MaybeCommentEntry<WithComments>;
+        intron: MaybeCommentEntry<WithComments>;
+    };
+    exon_exon_junction_block_size: MaybeCommentEntry<WithComments>;
+}
+
+export interface EnsFastaFormDataGeneric<WithComments>
+    extends BaseFastaFormDataGeneric<WithComments> {
+    source_params: EnsSourceParams<WithComments>;
+}
+
+export interface NcbiFastaFormDataGeneric<WithComments>
+    extends BaseFastaFormDataGeneric<WithComments> {
+    source_params: NcbiSourceParams<WithComments>;
+}
+
+export type UploadFastaFormData<FastaFormDataType> = FastaFormDataType & {
+    source: string;
+};
+
+export type NestedObject = {
+    [key: string]: string | NestedObject;
+};
+
 export interface GenomicRegionState<Type> {
     files_fasta_target_probe_database: Type[];
     files_fasta_reference_database_target_probe: Type[];
@@ -15,10 +66,11 @@ export interface GenomicRegionState<Type> {
 
 export type FileState = GenomicRegionState<File>;
 export type FastaFormState = GenomicRegionState<FastaForm>;
+
 export interface FastaForm {
     selectedSource: string;
-    formDataNcbi: typeof form_Data_Ncbi;
-    formDataEns: typeof form_Data_Ens;
+    formDataNcbi: NcbiFastaFormDataGeneric<true>;
+    formDataEns: EnsFastaFormDataGeneric<true>;
 }
 
 export const defaultFastaForm: FastaForm = {
