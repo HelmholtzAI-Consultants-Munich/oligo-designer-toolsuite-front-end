@@ -30,11 +30,58 @@ from backend.utilities.typed_values import (
     deserialize_path,
     path_for_display,
     safe_join_under,
-    timestamp_for_display,
+    timestamp_to_iso,
     utc_now,
 )
 
 runs_bp = Blueprint("runs", __name__)
+
+
+TERMINAL_RUN_STATES = {"success", "failure"}
+
+
+def resolve_run_state(run: dict[Any, Any]) -> str:
+    """Resolve current run state from DB/Celery without mutating DB."""
+    state = run.get("status", "unknown")
+    if state in TERMINAL_RUN_STATES:
+        return state
+
+    task_id = get_task_id(run)
+    if not task_id:
+        return state
+
+    result_promise = celery_app.AsyncResult(task_id)
+    if result_promise.successful():
+        ok = result_promise.get()
+        # overwrite "success" state if pipeline failed but output was delivered successfully
+        # -> literally "task failed successfully"
+        return result_promise.state.lower() if ok else "failure"
+    return result_promise.state.lower()
+
+
+def refresh_run_status(run: dict[Any, Any]) -> dict[Any, Any]:
+    """Refresh run status from Celery and persist changes if needed."""
+    state = resolve_run_state(run)
+    if run.get("status") != state:
+        update_run_status_in_DB(run["_id"], state)
+        run["status"] = state
+    return run
+
+
+def format_run(run: dict[Any, Any]) -> dict[str, Any]:
+    """Return run payload formatted for API responses."""
+    formatted = {
+        "_id": str(run["_id"]),
+        "pipeline": run.get("pipeline", "unknown"),
+        "status": run.get("status", "unknown"),
+        "timestamp": timestamp_to_iso(run.get("timestamp")),
+        "output_path": path_for_display(run.get("output_path")),
+        "user_id": run.get("user_id", "unknown"),
+    }
+
+    if run.get("status") == "failure" and run.get("error_message"):
+        formatted["error_message"] = run.get("error_message")
+    return formatted
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>", methods=["DELETE"])
@@ -85,7 +132,7 @@ def init_run_id():
     return jsonify({"run_id": str(run_result.inserted_id)})
 
 
-@runs_bp.route("/api/pipelines", methods=["GET"])
+@runs_bp.route("/api/runs", methods=["GET"])
 def get_pipeline_runs():
     """
     List all pipeline runs for the current user or anonymous session.
@@ -108,15 +155,7 @@ def get_pipeline_runs():
 
     formatted_runs = []
     for run in runs:
-        formatted = {
-            "_id": str(run["_id"]),
-            "pipeline": run.get("pipeline", "unknown"),
-            "status": run.get("status", "unknown"),
-            "timestamp": timestamp_for_display(run.get("timestamp"), separator=" "),
-            "output_path": path_for_display(run.get("output_path")),
-            "user_id": run.get("user_id", "unknown"),
-        }
-        formatted_runs.append(formatted)
+        formatted_runs.append(format_run(refresh_run_status(run)))
     return jsonify(formatted_runs), HTTPStatus.OK
 
 
@@ -137,19 +176,8 @@ def get_pipeline_run(run_id: ObjectId):
         2. Return run details or error if not found.
     """
     # Auth or session check
-    run = get_run_or_404(run_id, require_ownership=True)
-
-    formatted_run = {
-        "_id": str(run["_id"]),
-        "pipeline": run.get("pipeline", "unknown"),
-        "status": run.get("status", "unknown"),
-        "timestamp": timestamp_for_display(run.get("timestamp"), separator=" "),
-        "output_path": path_for_display(run.get("output_path")),
-        "user_id": run.get("user_id", "unknown"),
-    }
-    # Include error_message if status is failure
-    if run.get("status") == "failure" and run.get("error_message"):
-        formatted_run["error_message"] = run.get("error_message")
+    run = refresh_run_status(get_run_or_404(run_id, require_ownership=True))
+    formatted_run = format_run(run)
     return jsonify(formatted_run), HTTPStatus.OK
 
 
@@ -237,8 +265,8 @@ def get_run_files(run_id: ObjectId):
                 }
             )
 
-    # Special handling for "Genomic Region Generator" pipeline
-    if run.get("pipeline") == "Genomic Region Generator":
+    # Special handling for Genomic Region Generator pipeline
+    if run.get("pipeline") == "generator":
         output_gen = output_dir / "annotation"
         if output_gen.exists():
             for fname in os.listdir(output_gen):
@@ -262,7 +290,7 @@ def update_run_status_in_DB(run_id: ObjectId, status: str):
     return update_run_in_DB(run_id, {"status": status})
 
 
-@runs_bp.route("/api/runs/<ObjectId:run_id>/state", methods=["GET"])
+@runs_bp.route("/api/runs/<ObjectId:run_id>/status", methods=["GET"])
 def get_run_status(run_id: ObjectId):
     """
     Return status of a specific pipeline run.
@@ -275,25 +303,7 @@ def get_run_status(run_id: ObjectId):
     :returns: Run status or JSON error.
     :rtype: flask.Response
     """
-    run = get_run_or_404(run_id)
+    run = refresh_run_status(get_run_or_404(run_id))
     state = run["status"]
-
-    if state in {"success", "failure"}:
-        return jsonify({"state": state})
-
-    # Check for potential state changes
-    task_id = get_task_id(run)
-    result_promise = celery_app.AsyncResult(task_id)
-
-    if result_promise.successful():
-        ok = result_promise.get()
-        # overwrite "success" state if pipeline failed but output was delivered successfully
-        # -> literally "task failed successfully"
-        state = result_promise.state.lower() if ok else "failure"
-    else:
-        state = result_promise.state.lower()
-
-    if run["status"] != state:
-        update_run_status_in_DB(run_id, state)
 
     return jsonify({"state": state}), HTTPStatus.OK

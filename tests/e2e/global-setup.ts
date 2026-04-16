@@ -34,7 +34,7 @@ export default async function globalSetup() {
     console.log("Waiting for application stack…");
     await Promise.all([
         waitForUrl(`${APP_URL}/pipelines`, "Frontend"),
-        waitForUrl(`${BACKEND_URL}/api/pipelines`, "Backend API"),
+        waitForUrl(`${BACKEND_URL}/api/runs`, "Backend API"),
     ]);
     console.log("Application stack is ready.");
 }

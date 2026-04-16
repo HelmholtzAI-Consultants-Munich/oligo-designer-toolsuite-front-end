@@ -145,7 +145,7 @@ export const ALL_PIPELINES: PipelineDefinition[] = [
 // ---------------------------------------------------------------------------
 
 export const clickTab = async (page: Page, name: RegExp) => {
-    await page.getByRole("tab", { name }).click();
+    await page.getByRole("tab").and(page.getByTitle(name)).click();
 };
 
 export const openPipeline = async (
@@ -177,7 +177,9 @@ export const expectPipelineFields = async (
 // ---------------------------------------------------------------------------
 
 export const submitPipelineAndOpenRun = async (page: Page) => {
-    const submitButton = page.getByRole("button", { name: /submit/i });
+    const submitButton = page
+        .getByRole("button", { name: /Run Pipeline/i })
+        .first();
     await submitButton.click();
 
     const termsCheckbox = page.getByRole("checkbox", {
@@ -192,19 +194,19 @@ export const submitPipelineAndOpenRun = async (page: Page) => {
         await expect(termsCheckbox).toBeChecked();
     }
 
-    const modal = page
-        .getByRole("dialog")
+    const toast = page
+        .getByRole("alert")
         .filter({ hasText: /Pipeline Enqueued/i });
-    const modalAppeared = await modal
+    const toastAppeared = await toast
         .waitFor({ state: "visible", timeout: 1_000 })
         .then(() => true)
         .catch(() => false);
-    if (!modalAppeared) {
+    if (!toastAppeared) {
         await submitButton.click();
     }
-    await expect(modal).toBeVisible();
+    await expect(toast).toBeVisible();
 
-    await modal.getByRole("button", { name: "Show Run" }).click();
+    await toast.getByRole("link", { name: "View the run here" }).click();
     await expect(page).toHaveURL(/\/runs\/[a-f0-9]{24}$/i);
 
     const runId = page.url().match(/\/runs\/([a-f0-9]{24})$/i)?.[1];
@@ -227,7 +229,7 @@ const backendGetOk = async (page: Page, apiPath: string) => {
 const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGetOk(page, `/api/runs/${runId}/state`);
+            const res = await backendGetOk(page, `/api/runs/${runId}/status`);
             const { state } = await res.json();
             if (state === "success") return true;
             if (state === "failure") {
@@ -285,11 +287,11 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
     // After long Node.js-side API polling the browser tab has been idle;
     // reload so the page reflects the final backend state.
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(
-        page.getByRole("heading", { name: "Run Files" })
-    ).toBeVisible();
-    await expect(page.getByText("Gene Analysis")).toBeVisible({
-        timeout: 60_000,
+    await expect(page.getByRole("heading", { name: "Run Logs" })).toBeVisible({
+        timeout: 30_000,
+    });
+    await expect(page.getByText("Oligo Visualization")).toBeVisible({
+        timeout: 30_000,
     });
 };
 
@@ -305,12 +307,16 @@ export const fillTargetProbeParameters = async (
         fastaReferenceFiles: string[];
     }
 ) => {
-    await page.getByLabel(/File Regions/i).fill(options.fileRegions);
     await page
-        .getByLabel(/Files Fasta Target Probe Database/i)
+        .getByRole("textbox", { name: /File Regions/i })
+        .fill(options.fileRegions);
+    await page
+        .getByRole("button", { name: /Files Fasta Target Probe Database/i })
         .setInputFiles(options.fastaTargetFiles);
     await page
-        .getByLabel(/Files Fasta Reference Database Target Probe/i)
+        .getByRole("button", {
+            name: /Files Fasta Reference Database Target Probe/i,
+        })
         .setInputFiles(options.fastaReferenceFiles);
 };
 
@@ -322,7 +328,9 @@ export const fillReadoutProbeParameters = async (
 ) => {
     await clickTab(page, /Readout Probe Parameters/i);
     await page
-        .getByLabel(/Files Fasta Reference Database Readout Probe/i)
+        .getByRole("button", {
+            name: /Files Fasta Reference Database Readout Probe/i,
+        })
         .setInputFiles(options.fastaReferenceFiles);
 };
 
@@ -334,7 +342,7 @@ export const fillPrimerParameters = async (
 ) => {
     await clickTab(page, /Primer Parameters/i);
     await page
-        .getByLabel(/Files Fasta Reference Database Primer/i)
+        .getByRole("button", { name: /Files Fasta Reference Database Primer/i })
         .setInputFiles(options.fastaReferenceFiles);
 };
 
@@ -352,10 +360,14 @@ export const fillDeveloperSettings = async (
     await clickTab(page, /Developer Settings/i);
 
     if (options.maxGraphSize) {
-        await page.getByLabel(/Max Graph Size/i).fill(options.maxGraphSize);
+        await page
+            .getByRole("spinbutton", { name: /Max Graph Size/i })
+            .fill(options.maxGraphSize);
     }
     if (options.nAttempts) {
-        await page.getByLabel(/^N Attempts$/i).fill(options.nAttempts);
+        await page
+            .getByRole("spinbutton", { name: "N Attempts", exact: true })
+            .fill(options.nAttempts);
     }
     if (options.readoutProbeInitialNumSequences) {
         await page

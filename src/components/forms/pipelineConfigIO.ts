@@ -2,8 +2,16 @@ import type { RJSFSchema } from "@rjsf/utils";
 import type { JSONSchema7Definition } from "json-schema";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import Ajv2020 from "ajv/dist/2020";
+import fastaFormSchema from "../../../schemas/fastaForm.schema.json";
 
-import type { RJSFFormData } from "../types";
+import type { RJSFFormData } from "../componentTypes";
+import type {
+    FastaFormState,
+    FastaFormStateUncommented,
+    NestedObject,
+} from "../fastaGenerateForm/types";
+import { removeComments } from "../fastaGenerateForm/helpers";
+import { pipelineDisplayNames } from "../ui/utils";
 
 export const EXCLUDED_FIELDS = [
     "file_regions",
@@ -23,6 +31,7 @@ export interface PipelineConfigExport {
         exportedAt: string;
     };
     config: RJSFFormData;
+    fastaForms: FastaFormStateUncommented;
 }
 
 // Created once at module level — no need to reinstantiate per call
@@ -57,7 +66,8 @@ function getSchemaVersion(schema: RJSFSchema): string {
 export function buildExportPayload(
     formData: RJSFFormData,
     pipeline: string,
-    schema: RJSFSchema
+    schema: RJSFSchema,
+    fastaForms: FastaFormState
 ): PipelineConfigExport {
     const config: RJSFFormData = {};
     for (const key of Object.keys(formData)) {
@@ -65,6 +75,7 @@ export function buildExportPayload(
             config[key] = formData[key];
         }
     }
+
     return {
         _meta: {
             version: getSchemaVersion(schema),
@@ -72,6 +83,9 @@ export function buildExportPayload(
             exportedAt: new Date().toISOString(),
         },
         config,
+        fastaForms: removeComments(
+            fastaForms as unknown as NestedObject
+        ) as unknown as FastaFormStateUncommented,
     };
 }
 
@@ -91,7 +105,12 @@ export function triggerDownload(payload: PipelineConfigExport): void {
 // ---- Import / Validation ----
 
 export type ImportResult =
-    | { ok: true; config: RJSFFormData; skippedFields: string[] }
+    | {
+          ok: true;
+          config: RJSFFormData;
+          fastaForms: FastaFormStateUncommented;
+          skippedFields: string[];
+      }
     | { ok: false; error: string };
 
 export function importAndValidate(
@@ -130,7 +149,7 @@ export function importAndValidate(
     if (typed._meta?.pipeline !== pipeline) {
         return {
             ok: false,
-            error: `This config is for "${typed._meta?.pipeline}", but the current pipeline is "${pipeline}".`,
+            error: `This config is for "${pipelineDisplayNames[typed._meta?.pipeline]}", but the current pipeline is "${pipelineDisplayNames[pipeline]}".`,
         };
     }
 
@@ -157,7 +176,9 @@ export function importAndValidate(
     const skippedFields: string[] = [];
     for (const key of Object.keys(incoming)) {
         if (!knownFields.has(key)) {
-            skippedFields.push(key);
+            if (key !== "fastaForms") {
+                skippedFields.push(key);
+            }
             delete incoming[key];
         }
     }
@@ -185,5 +206,27 @@ export function importAndValidate(
         return { ok: false, error: `Config values are invalid: ${msg}` };
     }
 
-    return { ok: true, config: incoming, skippedFields };
+    // 8. Check for fastaForms presence and validity
+    if (!("fastaForms" in typed)) {
+        return { ok: false, error: "Invalid file format: missing fastaForms." };
+    }
+
+    const { errors: fastaErrors } = validator.rawValidation(
+        fastaFormSchema as RJSFSchema,
+        typed.fastaForms
+    );
+
+    if (fastaErrors?.length) {
+        const msg = fastaErrors
+            .map((e) => `${e.instancePath || "root"}: ${e.message}`)
+            .join("; ");
+        return { ok: false, error: `Fasta forms are invalid: ${msg}` };
+    }
+
+    return {
+        ok: true,
+        config: incoming,
+        fastaForms: typed.fastaForms,
+        skippedFields,
+    };
 }

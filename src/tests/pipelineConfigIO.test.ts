@@ -54,6 +54,12 @@ describe("isVersionCompatible", () => {
 // ---- buildExportPayload ----
 
 describe("buildExportPayload", () => {
+    const fastaForms = {
+        files_fasta_target_probe_database: [],
+        files_fasta_reference_database_target_probe: [],
+        files_fasta_reference_database_readout_probe: [],
+        files_fasta_reference_database_primer: [],
+    };
     it("excludes all file-related fields from the config", () => {
         const formData = {
             n_jobs: 8,
@@ -63,7 +69,12 @@ describe("buildExportPayload", () => {
             files_fasta_reference_database_readout_probe: ["/ro.fasta"],
             files_fasta_reference_database_primer: ["/primer.fasta"],
         };
-        const payload = buildExportPayload(formData, "scrinshot", testSchema);
+        const payload = buildExportPayload(
+            formData,
+            "scrinshot",
+            testSchema,
+            fastaForms
+        );
         expect(payload.config).not.toHaveProperty("file_regions");
         for (const field of EXCLUDED_FIELDS) {
             expect(payload.config).not.toHaveProperty(field);
@@ -76,18 +87,33 @@ describe("buildExportPayload", () => {
             top_n_sets: 5,
             file_regions: "/some/path",
         };
-        const payload = buildExportPayload(formData, "scrinshot", testSchema);
+        const payload = buildExportPayload(
+            formData,
+            "scrinshot",
+            testSchema,
+            fastaForms
+        );
         expect(payload.config.n_jobs).toBe(8);
         expect(payload.config.top_n_sets).toBe(5);
     });
 
     it("sets _meta.pipeline to the given pipeline name", () => {
-        const payload = buildExportPayload({}, "merfish", testSchema);
+        const payload = buildExportPayload(
+            {},
+            "merfish",
+            testSchema,
+            fastaForms
+        );
         expect(payload._meta.pipeline).toBe("merfish");
     });
 
     it("reads _meta.version from schema.description", () => {
-        const payload = buildExportPayload({}, "scrinshot", testSchema);
+        const payload = buildExportPayload(
+            {},
+            "scrinshot",
+            testSchema,
+            fastaForms
+        );
         expect(payload._meta.version).toBe("1.0.0");
     });
 
@@ -99,13 +125,19 @@ describe("buildExportPayload", () => {
         const payload = buildExportPayload(
             {},
             "scrinshot",
-            schemaWithoutVersion
+            schemaWithoutVersion,
+            fastaForms
         );
         expect(payload._meta.version).toBe("1.0.0");
     });
 
     it("sets _meta.exportedAt to an ISO timestamp", () => {
-        const payload = buildExportPayload({}, "scrinshot", testSchema);
+        const payload = buildExportPayload(
+            {},
+            "scrinshot",
+            testSchema,
+            fastaForms
+        );
         expect(() => new Date(payload._meta.exportedAt)).not.toThrow();
         expect(payload._meta.exportedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
@@ -114,6 +146,13 @@ describe("buildExportPayload", () => {
 // ---- triggerDownload ----
 
 describe("triggerDownload", () => {
+    const fastaForms = {
+        files_fasta_target_probe_database: [],
+        files_fasta_reference_database_target_probe: [],
+        files_fasta_reference_database_readout_probe: [],
+        files_fasta_reference_database_primer: [],
+    };
+
     beforeEach(() => {
         // Mock URL and DOM APIs used by triggerDownload
         vi.stubGlobal("URL", {
@@ -144,6 +183,7 @@ describe("triggerDownload", () => {
                 exportedAt: "2026-04-10T12:00:00.000Z",
             },
             config: { n_jobs: 4 },
+            fastaForms,
         };
         triggerDownload(payload);
         const mockLink = document.createElement("a") as unknown as {
@@ -162,6 +202,7 @@ describe("triggerDownload", () => {
                 exportedAt: "2026-04-10T12:00:00.000Z",
             },
             config: {},
+            fastaForms,
         };
         triggerDownload(payload);
         expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
@@ -171,6 +212,13 @@ describe("triggerDownload", () => {
 // ---- importAndValidate ----
 
 describe("importAndValidate", () => {
+    const fastaForms = {
+        files_fasta_target_probe_database: [],
+        files_fasta_reference_database_target_probe: [],
+        files_fasta_reference_database_readout_probe: [],
+        files_fasta_reference_database_primer: [],
+    };
+
     const validPayload = {
         _meta: {
             version: "1.0.0",
@@ -178,6 +226,7 @@ describe("importAndValidate", () => {
             exportedAt: "2026-04-10T12:00:00.000Z",
         },
         config: { n_jobs: 8, top_n_sets: 5 },
+        fastaForms,
     };
 
     it("accepts a valid export payload", () => {
@@ -197,7 +246,7 @@ describe("importAndValidate", () => {
 
     it("rejects a plain object missing _meta", () => {
         const result = importAndValidate(
-            { config: { n_jobs: 4 } },
+            { config: { n_jobs: 4 }, fastaForms },
             testSchema,
             "scrinshot"
         );
@@ -207,7 +256,7 @@ describe("importAndValidate", () => {
 
     it("rejects a plain object missing config", () => {
         const result = importAndValidate(
-            { _meta: { version: "1.0.0" } },
+            { _meta: { version: "1.0.0", pipeline: "scrinshot" }, fastaForms },
             testSchema,
             "scrinshot"
         );
@@ -215,8 +264,25 @@ describe("importAndValidate", () => {
         if (!result.ok) expect(result.error).toMatch(/config/);
     });
 
+    it("reject a plain object missing fastaForms", () => {
+        const result = importAndValidate(
+            {
+                _meta: { version: "1.0.0", pipeline: "scrinshot" },
+                config: { n_jobs: 4 },
+            },
+            testSchema,
+            "scrinshot"
+        );
+        expect(result.ok).toBe(false);
+        if (!result.ok) expect(result.error).toMatch(/fastaForms/);
+    });
+
     it("rejects when config is not a plain object (array)", () => {
-        const payload = { _meta: validPayload._meta, config: [1, 2, 3] };
+        const payload = {
+            _meta: validPayload._meta,
+            config: [1, 2, 3],
+            fastaForms,
+        };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok)
@@ -224,7 +290,11 @@ describe("importAndValidate", () => {
     });
 
     it("rejects when config is not a plain object (string)", () => {
-        const payload = { _meta: validPayload._meta, config: "not-an-object" };
+        const payload = {
+            _meta: validPayload._meta,
+            config: "not-an-object",
+            fastaForms,
+        };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok)
@@ -232,7 +302,7 @@ describe("importAndValidate", () => {
     });
 
     it("rejects when config is null", () => {
-        const payload = { _meta: validPayload._meta, config: null };
+        const payload = { _meta: validPayload._meta, config: null, fastaForms };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok)
@@ -247,13 +317,17 @@ describe("importAndValidate", () => {
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok) {
-            expect(result.error).toMatch(/merfish/);
-            expect(result.error).toMatch(/scrinshot/);
+            expect(result.error).toMatch(/Merfish/);
+            expect(result.error).toMatch(/Scrinshot/);
         }
     });
 
     it("rejects when _meta.version is missing", () => {
-        const payload = { _meta: { pipeline: "scrinshot" }, config: {} };
+        const payload = {
+            _meta: { pipeline: "scrinshot" },
+            config: {},
+            fastaForms,
+        };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
         if (!result.ok) expect(result.error).toMatch(/version/);
@@ -263,6 +337,7 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             _meta: { ...validPayload._meta, version: "99.0.0" },
+            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
@@ -273,6 +348,7 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             _meta: { ...validPayload._meta, version: "1.5.3" },
+            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
@@ -286,6 +362,7 @@ describe("importAndValidate", () => {
                 file_regions: "/should/be/removed",
                 files_fasta_target_probe_database: ["/also/removed"],
             },
+            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
@@ -301,6 +378,7 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             config: { n_jobs: 4, unknown_field: 42, another_unknown: "hello" },
+            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
@@ -316,6 +394,7 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             config: { n_jobs: "not-a-number" }, // should be integer
+            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(false);
@@ -323,21 +402,25 @@ describe("importAndValidate", () => {
     });
 
     it("accepts a partial config (only some fields present)", () => {
-        const payload = { ...validPayload, config: { n_jobs: 12 } };
+        const payload = { ...validPayload, config: { n_jobs: 12 }, fastaForms };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(result.config.n_jobs).toBe(12);
     });
 
     it("accepts an empty config object", () => {
-        const payload = { ...validPayload, config: {} };
+        const payload = { ...validPayload, config: {}, fastaForms };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(Object.keys(result.config)).toHaveLength(0);
     });
 
     it("accepts boolean fields correctly", () => {
-        const payload = { ...validPayload, config: { heuristic: false } };
+        const payload = {
+            ...validPayload,
+            config: { heuristic: false },
+            fastaForms,
+        };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(result.config.heuristic).toBe(false);

@@ -19,7 +19,10 @@ from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.utilities.converters import to_bool, to_int
-from backend.utilities.pipeline import generate_single_region_forms, get_form_cache_key
+from backend.utilities.pipeline import (
+    generate_single_region_forms,
+    get_form_cache_key,
+)
 from backend.utilities.typed_values import serialize_path, timestamp_for_display, utc_now
 
 genomic_bp = Blueprint("genomic", __name__)
@@ -126,7 +129,7 @@ def genomic_cascaded_custom():
         "timestamp": timestamp,
         "output_path": serialize_path(run_output_path),
         "status": "started",
-        "pipeline": "Genomic Region Generator",
+        "pipeline": "generator",
     }
     run_result = mongo.db.runs.insert_one(run_doc)
     run_id = run_result.inserted_id

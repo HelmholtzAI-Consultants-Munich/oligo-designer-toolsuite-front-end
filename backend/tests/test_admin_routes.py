@@ -77,7 +77,7 @@ def pipeline_run(client):
         "user_id": str(user_id),
         "pipeline": "test_pipeline",
         "status": "pending",
-        "timestamp": "2025-01-01_12-00-00",
+        "timestamp": datetime.now(),
         "created_at": datetime.now(),
         "output_path": "/tmp/test_output",
         "session_id": None,
