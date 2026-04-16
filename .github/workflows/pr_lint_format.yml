@@ -156,7 +156,7 @@ jobs:
             echo "Run 'npm run format:fix' to fix" >> $GITHUB_STEP_SUMMARY
           fi
 
-  frontend-typecheck:
+  frontend-typscript:
     name: Frontend TypeScript
     runs-on: ubuntu-latest
     timeout-minutes: 10
