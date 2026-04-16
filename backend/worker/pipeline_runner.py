@@ -120,6 +120,7 @@ class PipelineRunner:
                 fname
                 for fname in os.listdir(output_path)
                 if ("probes" in fname or "probeset" in fname)
+                and "order" not in fname
                 and (fname.endswith(".yml") or fname.endswith(".yaml"))
             ),
             None,

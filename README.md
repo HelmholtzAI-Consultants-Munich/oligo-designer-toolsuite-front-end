@@ -108,12 +108,10 @@ See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.
   - npm for environment setup
   - Vite as build tool
   - Vitest as testing framework
-  - Playwright for integration tests
+  - Playwright for smoke and full end-to-end tests
 - Written in Python + Flask for backend.
   - Conda for environment setup
   - MongoDB as database
-
----
 
 ## License
 

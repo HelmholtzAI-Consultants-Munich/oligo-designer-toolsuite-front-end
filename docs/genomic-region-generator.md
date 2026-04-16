@@ -112,3 +112,14 @@ It supports flexible region selection, automatic file retrieval, and efficient c
       "cached": ["cache_key1", "cache_key2"]
     }
     ```
+
+## Frontend configuration
+
+Genomic region jobs are configured through JSON Schema form definitions in `src/forms/genomic_custom_form.ts`, `src/forms/genomic_ncbi_form.ts`, and `src/forms/genomic_ens_form.ts` (maintained via the YAML-to-TypeScript automation described in [Automated Updates](automated-updates.md)). The React app renders those schemas with **react-jsonschema-form**, so behavior such as dynamic fields and validation follows the generated schema rather than a dedicated FASTA form component.
+
+## Use cases
+
+1. **Probe design pipelines**: Generate target and reference databases for ISH probe design
+2. **Custom sequence extraction**: Extract specific genomic features for analysis
+3. **Multi-species workflows**: Process annotations from different organisms in parallel
+4. **Version-controlled analyses**: Use specific annotation releases for reproducible research

@@ -23,71 +23,40 @@ def serialize_path(path: Path) -> dict[str, Any]:
     }
 
 
-def deserialize_path(path_value: Any) -> Path | None:
-    """Deserialize a structured path representation (with string fallback)."""
-    if isinstance(path_value, Path):
-        return path_value
-
-    if isinstance(path_value, str):
-        return Path(path_value) if path_value else None
-
-    if isinstance(path_value, dict):
-        if path_value.get("kind") != PATH_STORAGE_KIND:
-            return None
-        parts = path_value.get("parts")
-        if not isinstance(parts, list) or not parts:
-            return None
-        if not all(isinstance(part, str) for part in parts):
-            return None
-        return Path(*parts)
-
-    return None
+def deserialize_path(path_value: dict[str, Any] | None) -> Path | None:
+    """Deserialize a structured path representation."""
+    if not isinstance(path_value, dict):
+        return None
+    if path_value.get("kind") != PATH_STORAGE_KIND:
+        return None
+    parts = path_value.get("parts")
+    if not isinstance(parts, list) or not parts:
+        return None
+    if not all(isinstance(part, str) for part in parts):
+        return None
+    return Path(*parts)
 
 
-def path_for_display(path_value: Any) -> str:
-    """Convert any supported path representation to string for API output."""
+def path_for_display(path_value: dict[str, Any] | None) -> str:
+    """Convert a structured path representation to string for API output."""
     path = deserialize_path(path_value)
     return str(path) if path else ""
 
 
-def coerce_datetime(value: Any) -> datetime | None:
-    """Convert legacy string timestamps and datetimes to datetime."""
-    if isinstance(value, datetime):
-        return value
-
-    if isinstance(value, str):
-        normalized = value.strip()
-        if not normalized:
-            return None
-
-        # ISO values from DB/API.
-        iso_candidate = normalized.replace("Z", "+00:00")
-        try:
-            return datetime.fromisoformat(iso_candidate)
-        except ValueError:
-            pass
-
-        # Legacy run timestamp values.
-        for fmt in ("%Y-%m-%d_%H-%M-%S", "%Y-%m-%d %H-%M-%S"):
-            try:
-                return datetime.strptime(normalized, fmt)
-            except ValueError:
-                continue
-
-    return None
+def timestamp_for_display(value: datetime | None, separator: str = " ") -> str:
+    """Format a datetime for display."""
+    if value is None:
+        return ""
+    return value.strftime(f"%Y-%m-%d{separator}%H-%M-%S")
 
 
-def timestamp_for_display(value: Any, separator: str = " ") -> str:
-    """Convert supported timestamp values to legacy display format."""
-    timestamp = coerce_datetime(value)
+def timestamp_to_iso(value: datetime) -> str:
+    """Convert supported timestamp values to ISO format for API output."""
+    timestamp = value
     if timestamp is not None:
-        return timestamp.strftime(f"%Y-%m-%d{separator}%H-%M-%S")
-
-    if isinstance(value, str):
-        if separator == " ":
-            return value.replace("_", " ", 1)
-        if separator == "_":
-            return value.replace(" ", "_", 1)
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        return timestamp.isoformat()
 
     return ""
 
