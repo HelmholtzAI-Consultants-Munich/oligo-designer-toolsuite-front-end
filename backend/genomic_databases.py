@@ -12,6 +12,7 @@ from email.utils import formatdate, parsedate_to_datetime
 from pathlib import Path
 
 import requests
+from filelock import SoftReadWriteLock
 
 
 class BaseGenomicDataBase:
@@ -76,35 +77,40 @@ class BaseGenomicDataBase:
         file_name = f"{url_hash}-{filename}"
         file_path = pathlib.Path(f"{self.cache_dir}/{file_name}").resolve()
 
-        if os.path.exists(file_path):
-            mtime = os.path.getmtime(file_path)
-            headers["if-modified-since"] = formatdate(mtime, usegmt=True)
+        # Acquire lock to avoid downloading the same file mulitple times at once
+        # "Soft" lock is required for network file systems
+        file_lock = SoftReadWriteLock(file_path.with_suffix(".lock"))
 
-        with requests.get(url, headers=headers, stream=True) as response:
-            response.raise_for_status()
+        with file_lock.write_lock():
+            if os.path.exists(file_path):
+                mtime = os.path.getmtime(file_path)
+                headers["if-modified-since"] = formatdate(mtime, usegmt=True)
 
-            if response.status_code == requests.codes.not_modified:
-                return file_path
+            with requests.get(url, headers=headers, stream=True) as response:
+                response.raise_for_status()
 
-            if response.status_code == requests.codes.ok:
-                with open(file_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=10 * 1024 * 1024):
-                        f.write(chunk)
+                if response.status_code == requests.codes.not_modified:  # type: ignore
+                    return file_path
 
-                if last_modified := response.headers.get("last-modified"):
-                    new_mtime = parsedate_to_datetime(last_modified).timestamp()
-                    os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
+                if response.status_code == requests.codes.ok:  # type: ignore
+                    with open(file_path, "wb") as f:
+                        for chunk in response.iter_content(chunk_size=10 * 1024 * 1024):
+                            f.write(chunk)
 
-        if extract_gzip:
-            extracted_file_path = self.extracted_file_path(file_path)
+                    if last_modified := response.headers.get("last-modified"):
+                        new_mtime = parsedate_to_datetime(last_modified).timestamp()
+                        os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
 
-            if os.path.exists(extracted_file_path):
-                return file_path
+            if extract_gzip:
+                extracted_file_path = self.extracted_file_path(file_path)
 
-            with gzip.open(file_path, "rb") as archive:
-                with open(extracted_file_path, "wb") as extract:
-                    shutil.copyfileobj(archive, extract)
+                if os.path.exists(extracted_file_path):
+                    return file_path
 
+                with gzip.open(file_path, "rb") as archive:
+                    with open(extracted_file_path, "wb") as extract:
+                        shutil.copyfileobj(archive, extract)
+                # NOTE: shouldn't this return the extracted_file_path?
         return file_path
 
     def extracted_file_path(self, file_path: str | pathlib.Path):
@@ -393,6 +399,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 checksum_idx = 0
 
             for line in f:
+                # TODO: skip header line in uncompressed checksums file
                 filename, checksum = self._parse_checksums(line, filename_idx, checksum_idx)
                 filename_to_checksum_map[filename] = checksum
         return filename_to_checksum_map
