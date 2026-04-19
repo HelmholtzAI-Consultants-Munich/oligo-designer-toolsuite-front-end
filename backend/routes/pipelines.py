@@ -1,17 +1,20 @@
 import os
+import uuid
+from collections import defaultdict
 from datetime import datetime
 from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
+from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
-from flask_login import current_user
-from flask_login.utils import LocalProxy
 
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
-from backend.utilities.validation import parse_run_id
+from backend.utilities.pipeline import generate_single_region_forms
+from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
+from backend.worker.task_index import Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -31,7 +34,7 @@ def validate_name(pipeline_name: str) -> bool:
     return pipeline_name in EXISTING_PIPELINES
 
 
-def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> dict[str, str | None]:
+def create_context(pipeline_name: str) -> dict[str, str | None]:
     # Get user context and directory
     user_id, session_id, user_dir = get_user_context_with_directory()
 
@@ -42,12 +45,12 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
             description="Unable to access your data directory. Please try again or contact support.",
         )
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{timestamp}")
+    output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{uuid.uuid4().hex}")
 
     # To prevent overwriting a run, fail if the directory already exists
     os.makedirs(output_path, exist_ok=False)
 
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     context = {
         "user_id": user_id,
         "session_id": session_id,
@@ -57,6 +60,38 @@ def create_context(pipeline_name: str, current_user: LocalProxy[Any | None]) -> 
     }
 
     return context
+
+
+def unpack_genomic_form_data(region_generation_forms: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    forms = []
+    for region_generation_form_data in region_generation_forms:
+        validate_genomic_form_data(region_generation_form_data, allowed_sources=["NCBI", "Ensembl"])
+        region_generation_list = generate_single_region_forms(region_generation_form_data)
+        if not region_generation_list:
+            abort(HTTPStatus.BAD_REQUEST, description="Invalid input: no valid genomic regions specified")
+        forms.extend(region_generation_list)
+    return forms
+
+
+def parse_region_generation(form_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """
+    Parses the region_generation_forms field of the provided form.
+    Returns a dict mapping ids to a list of dicts, each representing a single region form.
+    """
+    if "genomic_region_generation_forms" not in form_data:
+        return {}
+
+    generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
+    region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = form_data[
+        "genomic_region_generation_forms"
+    ]
+
+    for id, region_generation_forms in region_generation_forms_by_id.items():
+        validate_file_key(id)
+        region_generation_list = unpack_genomic_form_data(region_generation_forms)
+        generated_regions[id].extend(region_generation_list)
+
+    return dict(generated_regions)
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
@@ -86,13 +121,25 @@ def write_run_to_DB(
 def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
-    upload_path: str,
+    generated_regions: dict[str, list[dict[str, Any]]],
     output_path: str,
 ) -> AsyncResult:
-    return celery_app.send_task(
-        "backend.worker.tasks.run_pipeline",
-        (pipeline_name, form_data, upload_path, output_path),
+    """
+    Builds and enqueues a chord such that all region generation tasks
+    finish executing before the pipeline is started.
+    """
+
+    region_generation_signatures = (
+        celery_app.signature(Tasks.RUN_GENOMIC_REGION_GENERATOR, args=(form, id))
+        for id, forms in generated_regions.items()
+        for form in forms
     )
+
+    pipeline_signature = celery_app.signature(
+        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, output_path)
+    )
+
+    return chord(region_generation_signatures)(pipeline_signature)
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
@@ -121,23 +168,26 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
     json = request.get_json(silent=True)
-    if not json:
-        abort(415, description="Expected JSON")
+    if json is None:
+        abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, description="Expected JSON")
 
     run_id_str = json.get("runid")  # Run ID from React
     run_id = parse_run_id(run_id_str)
 
-    form_data = json.get("formdata")  # Form data from React
+    form_data: dict[str, Any] | None = json.get("formdata")
+    if form_data is None:
+        abort(HTTPStatus.BAD_REQUEST, description="Expected form data")
 
-    upload_path = current_app.config["UPLOAD_PATH"]
+    # genomic_region_generator
+    generated_regions = parse_region_generation(form_data)
 
     # User Directory and Session / User ID Logic
-    context = create_context(pipeline_name, current_user)
+    context = create_context(pipeline_name)
 
-    if context["output_path"] is None:
+    if context["user_dir"] is None or context["output_path"] is None:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Could not infer output directory")
 
-    result_promise = enqueue_pipeline(pipeline_name, form_data, upload_path, context["output_path"])
+    result_promise = enqueue_pipeline(pipeline_name, form_data, generated_regions, context["output_path"])
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)

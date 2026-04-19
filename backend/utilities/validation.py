@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from bson import ObjectId
 from flask import abort
 
@@ -62,3 +64,53 @@ def validate_id_array(data: dict, key_name: str) -> list:
         abort(400, description=f"{key_name} must be a non-empty array")
 
     return ids
+
+
+def get_valid_file_keys():
+    """
+    Get the list of valid form data keys that a generated
+    genomic regions file can be used for.
+    """
+    return [
+        "files_fasta_target_probe_database",
+        "files_fasta_reference_database_target_probe",
+        "files_fasta_reference_database_readout_probe",
+        "files_fasta_reference_database_primer",
+    ]
+
+
+def validate_file_key(id: str) -> None:
+    if id not in get_valid_file_keys():
+        abort(
+            HTTPStatus.BAD_REQUEST,
+            description="Invalid input: genomic region generation cannot be used for specified key",
+        )
+
+
+def validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | None = None) -> None:
+    """
+    Validate genomic form data structure and required fields.
+
+    Args:
+        form_data: The form data dictionary to validate
+        allowed_sources: List of allowed source values. Defaults to ["NCBI", "Ensembl"]
+
+    Raises:
+        400: If validation fails
+    """
+    if allowed_sources is None:
+        allowed_sources = ["NCBI", "Ensembl"]
+
+    if not form_data:
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: form data is required")
+    if "source" not in form_data:
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: source is required")
+    if form_data["source"] not in allowed_sources:
+        abort(
+            HTTPStatus.BAD_REQUEST,
+            description=f"Invalid input: source must be one of {', '.join(repr(s) for s in allowed_sources)}",
+        )
+    if "genomic_regions" not in form_data:
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic_regions is required")
+    if form_data["source"] == "Custom" and "file_regions" not in form_data:
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: file_regions is required for Custom source")
