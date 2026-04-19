@@ -178,7 +178,8 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             gtf_listing = ftp.nlst()
             gtf_gz = None
             for name in sorted(gtf_listing):
-                if name.endswith(".gtf.gz"):
+                # ends with NUMBER.gtf.gz
+                if re.search(r"^.+\.\d+\.gtf.gz$", name):
                     gtf_gz = name
                     break
             if not gtf_gz:
