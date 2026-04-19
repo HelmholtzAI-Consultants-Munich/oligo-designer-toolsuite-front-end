@@ -18,7 +18,7 @@ repos:
 
   # Ruff configuration is found in backend/pyproject.toml
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.6
+    rev: v0.15.11
     hooks:
       # Run the linter.
       - id: ruff-check
@@ -28,6 +28,6 @@ repos:
         args: [--config, backend/pyproject.toml]
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.6.2
+    rev: v3.8.3
     hooks:
       - id: prettier
