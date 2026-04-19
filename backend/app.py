@@ -14,6 +14,7 @@ from backend.extensions import celery_app, limiter, mongo, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
+from backend.worker.task_index import Tasks
 
 
 def prepare_paths(app: Flask):
@@ -45,7 +46,7 @@ def initial_dropdown_prefetch(celery_app, app):
         try:
             app.logger.debug("try dropdown prefetch")
             celery_app.send_task(
-                "backend.worker.tasks.fetch_dropdown_options",
+                Tasks.FETCH_DROPDOWN_OPTIONS,
             )
             app.logger.debug("dropdown prefetch done")
             break
