@@ -13,6 +13,8 @@
 !/backend/pyproject.toml
 !/backend/worker_environment.yml
 !/backend/worker
+!/backend/data-access
+!/backend/cache
 
 # Python artifacts
 **/__pycache__
