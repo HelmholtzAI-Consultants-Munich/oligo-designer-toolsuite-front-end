@@ -86,7 +86,7 @@ export const removeComments = (fastaFormData: NestedObject) => {
     return stripComments(fastaFormData) as NestedObject;
 };
 
-export const applyToCommented = (
+export const addComments = (
     fastaFormData: NestedObject,
     commentedFastaFormData: NestedObject
 ) => {

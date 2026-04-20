@@ -104,6 +104,20 @@ export function triggerDownload(payload: PipelineConfigExport): void {
 
 // ---- Import / Validation ----
 
+function validationFailure(
+    errors:
+        | Array<{ instancePath?: string; message?: string }>
+        | null
+        | undefined,
+    prefix: string
+): { ok: false; error: string } | null {
+    if (!errors?.length) return null;
+    const msg = errors
+        .map((e) => `${e.instancePath || "root"}: ${e.message}`)
+        .join("; ");
+    return { ok: false, error: `${prefix} ${msg}` };
+}
+
 export type ImportResult =
     | {
           ok: true;
@@ -199,12 +213,8 @@ export function importAndValidate(
     };
 
     const { errors } = validator.rawValidation(partialSchema, incoming);
-    if (errors?.length) {
-        const msg = errors
-            .map((e) => `${e.instancePath || "root"}: ${e.message}`)
-            .join("; ");
-        return { ok: false, error: `Config values are invalid: ${msg}` };
-    }
+    const configError = validationFailure(errors, "Config values are invalid:");
+    if (configError) return configError;
 
     // 8. Check for fastaForms presence and validity
     if (!("fastaForms" in typed)) {
@@ -216,12 +226,11 @@ export function importAndValidate(
         typed.fastaForms
     );
 
-    if (fastaErrors?.length) {
-        const msg = fastaErrors
-            .map((e) => `${e.instancePath || "root"}: ${e.message}`)
-            .join("; ");
-        return { ok: false, error: `Fasta forms are invalid: ${msg}` };
-    }
+    const fastaError = validationFailure(
+        fastaErrors,
+        "Fasta forms are invalid:"
+    );
+    if (fastaError) return fastaError;
 
     return {
         ok: true,

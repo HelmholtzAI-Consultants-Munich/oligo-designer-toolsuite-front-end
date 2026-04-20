@@ -3,6 +3,7 @@ import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import Page from "../ui/Page";
 import { Horizontal, Vertical } from "../ui/Alignment";
 import { Fragment } from "react/jsx-runtime";
+import { isRootField } from "./utils";
 
 interface TabConfig {
     title: string;
@@ -13,7 +14,7 @@ export const TabsLayout = (props: ObjectFieldTemplateProps) => {
     const { uiSchema } = props;
     const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
 
-    const isRoot = props.fieldPathId.$id === "root";
+    const isRoot = isRootField(props.fieldPathId);
     if (isRoot && tabs && tabs.length > 0)
         return (
             <Page.Tabs>

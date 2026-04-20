@@ -28,6 +28,13 @@ const testSchema = {
     },
 } as unknown as RJSFSchema;
 
+const fastaForms = {
+    files_fasta_target_probe_database: [],
+    files_fasta_reference_database_target_probe: [],
+    files_fasta_reference_database_readout_probe: [],
+    files_fasta_reference_database_primer: [],
+};
+
 // ---- isVersionCompatible ----
 
 describe("isVersionCompatible", () => {
@@ -54,12 +61,6 @@ describe("isVersionCompatible", () => {
 // ---- buildExportPayload ----
 
 describe("buildExportPayload", () => {
-    const fastaForms = {
-        files_fasta_target_probe_database: [],
-        files_fasta_reference_database_target_probe: [],
-        files_fasta_reference_database_readout_probe: [],
-        files_fasta_reference_database_primer: [],
-    };
     it("excludes all file-related fields from the config", () => {
         const formData = {
             n_jobs: 8,
@@ -146,13 +147,6 @@ describe("buildExportPayload", () => {
 // ---- triggerDownload ----
 
 describe("triggerDownload", () => {
-    const fastaForms = {
-        files_fasta_target_probe_database: [],
-        files_fasta_reference_database_target_probe: [],
-        files_fasta_reference_database_readout_probe: [],
-        files_fasta_reference_database_primer: [],
-    };
-
     beforeEach(() => {
         // Mock URL and DOM APIs used by triggerDownload
         vi.stubGlobal("URL", {
@@ -212,11 +206,15 @@ describe("triggerDownload", () => {
 // ---- importAndValidate ----
 
 describe("importAndValidate", () => {
-    const fastaForms = {
-        files_fasta_target_probe_database: [],
-        files_fasta_reference_database_target_probe: [],
-        files_fasta_reference_database_readout_probe: [],
-        files_fasta_reference_database_primer: [],
+    const negativeTestImportAndValidate = (
+        payload: unknown,
+        ...matchers: (string | RegExp)[]
+    ) => {
+        const result = importAndValidate(payload, testSchema, "scrinshot");
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+            for (const m of matchers) expect(result.error).toMatch(m);
+        }
     };
 
     const validPayload = {
@@ -240,108 +238,81 @@ describe("importAndValidate", () => {
     });
 
     it("rejects null", () => {
-        const result = importAndValidate(null, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
+        negativeTestImportAndValidate(null);
     });
 
     it("rejects a plain object missing _meta", () => {
-        const result = importAndValidate(
+        negativeTestImportAndValidate(
             { config: { n_jobs: 4 }, fastaForms },
-            testSchema,
-            "scrinshot"
+            /_meta/
         );
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toMatch(/_meta/);
     });
 
     it("rejects a plain object missing config", () => {
-        const result = importAndValidate(
+        negativeTestImportAndValidate(
             { _meta: { version: "1.0.0", pipeline: "scrinshot" }, fastaForms },
-            testSchema,
-            "scrinshot"
+            /config/
         );
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toMatch(/config/);
     });
 
     it("reject a plain object missing fastaForms", () => {
-        const result = importAndValidate(
+        negativeTestImportAndValidate(
             {
                 _meta: { version: "1.0.0", pipeline: "scrinshot" },
                 config: { n_jobs: 4 },
             },
-            testSchema,
-            "scrinshot"
+            /fastaForms/
         );
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toMatch(/fastaForms/);
     });
 
     it("rejects when config is not a plain object (array)", () => {
-        const payload = {
-            _meta: validPayload._meta,
-            config: [1, 2, 3],
-            fastaForms,
-        };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
-        if (!result.ok)
-            expect(result.error).toMatch(/config must be an object/);
+        negativeTestImportAndValidate(
+            { _meta: validPayload._meta, config: [1, 2, 3], fastaForms },
+            /config must be an object/
+        );
     });
 
     it("rejects when config is not a plain object (string)", () => {
-        const payload = {
-            _meta: validPayload._meta,
-            config: "not-an-object",
-            fastaForms,
-        };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
-        if (!result.ok)
-            expect(result.error).toMatch(/config must be an object/);
+        negativeTestImportAndValidate(
+            { _meta: validPayload._meta, config: "not-an-object", fastaForms },
+            /config must be an object/
+        );
     });
 
     it("rejects when config is null", () => {
-        const payload = { _meta: validPayload._meta, config: null, fastaForms };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
-        if (!result.ok)
-            expect(result.error).toMatch(/config must be an object/);
+        negativeTestImportAndValidate(
+            { _meta: validPayload._meta, config: null, fastaForms },
+            /config must be an object/
+        );
     });
 
     it("rejects a config from a different pipeline", () => {
-        const payload = {
-            ...validPayload,
-            _meta: { ...validPayload._meta, pipeline: "merfish" },
-        };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
-        if (!result.ok) {
-            expect(result.error).toMatch(/Merfish/);
-            expect(result.error).toMatch(/Scrinshot/);
-        }
+        negativeTestImportAndValidate(
+            {
+                ...validPayload,
+                _meta: { ...validPayload._meta, pipeline: "merfish" },
+            },
+            /Merfish/,
+            /Scrinshot/
+        );
     });
 
     it("rejects when _meta.version is missing", () => {
-        const payload = {
-            _meta: { pipeline: "scrinshot" },
-            config: {},
-            fastaForms,
-        };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toMatch(/version/);
+        negativeTestImportAndValidate(
+            { _meta: { pipeline: "scrinshot" }, config: {}, fastaForms },
+            /version/
+        );
     });
 
     it("rejects incompatible major version", () => {
-        const payload = {
-            ...validPayload,
-            _meta: { ...validPayload._meta, version: "99.0.0" },
-            fastaForms,
-        };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toMatch(/99\.0\.0/);
+        negativeTestImportAndValidate(
+            {
+                ...validPayload,
+                _meta: { ...validPayload._meta, version: "99.0.0" },
+                fastaForms,
+            },
+            /99\.0\.0/
+        );
     });
 
     it("accepts a different minor/patch version with matching major", () => {
@@ -391,14 +362,10 @@ describe("importAndValidate", () => {
     });
 
     it("rejects when a field has the wrong type", () => {
-        const payload = {
-            ...validPayload,
-            config: { n_jobs: "not-a-number" }, // should be integer
-            fastaForms,
-        };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(false);
-        if (!result.ok) expect(result.error).toMatch(/invalid/i);
+        negativeTestImportAndValidate(
+            { ...validPayload, config: { n_jobs: "not-a-number" }, fastaForms },
+            /invalid/i
+        );
     });
 
     it("accepts a partial config (only some fields present)", () => {

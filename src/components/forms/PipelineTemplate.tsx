@@ -3,7 +3,7 @@ import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 import type { FileState, RJSFFormData } from "../componentTypes";
-import { applyToCommented, handleSubmit } from "../fastaGenerateForm/helpers";
+import { addComments, handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";
 import Ajv2020 from "ajv/dist/2020";
@@ -51,11 +51,11 @@ const convertImportedFastaForms = (
         form: FastaFormStateUncommented[keyof FastaFormStateUncommented][number]
     ): FastaForm => ({
         selectedSource: form.selectedSource,
-        formDataNcbi: applyToCommented(
+        formDataNcbi: addComments(
             form.formDataNcbi as unknown as NestedObject,
             genomicNcbiForm as unknown as NestedObject
         ) as unknown as FastaForm["formDataNcbi"],
-        formDataEns: applyToCommented(
+        formDataEns: addComments(
             form.formDataEns as unknown as NestedObject,
             genomicEnsForm as unknown as NestedObject
         ) as unknown as FastaForm["formDataEns"],
