@@ -153,8 +153,11 @@ def start_pipeline(pipeline_name: str):
     - Verifies the pipeline name
     - Loads and validates user/session context.
     - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
+    - Parses and validates region generation form data.
     - Prepares output directory.
-    - Adds pipeline execution to the Celery queue.
+    - Builds chord of tasks, consisting of a group of region generation tasks  and the specified pipeline
+        as their callback.
+    - Adds chord to the Celery queue for execution.
     - Writes updated run information to database.
     - Returns the run ID as a JSON response.
 
@@ -162,6 +165,8 @@ def start_pipeline(pipeline_name: str):
     :rtype: flask.Response
 
     For more information on the input parameters and configuration options, refer to the pipeline documentation.
+    For details on the genomic region generator, see 'Genomic Region Generator' and 'Caching FASTA Files'
+    in the developer documentation.
 
     """
     if not validate_name(pipeline_name):
