@@ -314,6 +314,8 @@ def get_run_status(run_id: ObjectId):
     state = run["status"]
 
     if state in {"success", "failure"}:
+        if not run.get("finished_at"):
+            update_run_in_DB(run_id, {"finished_at": utc_now()})
         return jsonify(format_run_state_response(state, run))
 
     # Check for potential state changes
