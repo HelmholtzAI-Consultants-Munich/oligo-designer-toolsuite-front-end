@@ -1,3 +1,4 @@
+import { Trash } from "react-bootstrap-icons";
 import {
     defaultFastaForm,
     type FastaForm,
@@ -5,6 +6,13 @@ import {
 } from "../fastaGenerateForm/types";
 import FastaGenerateForm from "./FastaGenerateForm";
 import { useMemo } from "react";
+import { Button, InputGroup } from "react-bootstrap";
+import {
+    firstLetterUppercase,
+    regionDisplayNames,
+    replaceUnderscore,
+} from "../fastaGenerateForm/helpers";
+import { showModal } from "../../utils/modalUtil";
 
 type Props = {
     name: keyof FastaFormState;
@@ -58,6 +66,43 @@ const FastaGeneration: React.FC<Props> = ({
         [name, fastaForms, setFastaForms]
     );
 
+    const onEditFunctions = useMemo(
+        () =>
+            fastaForms[name].map((form, idx) => () => {
+                showModal({
+                    rawContent: (
+                        <FastaGenerateForm
+                            id={`${id}-${idx}`}
+                            key={`${id} ${idx}`}
+                            form={form}
+                            onChange={onChangeFunctions[idx]}
+                            // onRemove={onRemoveFunctions[idx]}
+                            // disableRemove={fastaForms[name].length === 0}
+                        />
+                    ),
+                });
+            }),
+        [name, fastaForms, id, onChangeFunctions]
+    );
+
+    const FastaFormPreview = (form: FastaForm) => {
+        const formData =
+            form.selectedSource === "ncbi"
+                ? form.formDataNcbi
+                : form.formDataEns;
+        const species = replaceUnderscore(
+            firstLetterUppercase(formData.source_params.species.value)
+        );
+        const selectedRegions = Object.entries(formData.genomic_regions)
+            .filter(([, selected]) => selected.value === "true")
+            .map(
+                ([key]) =>
+                    regionDisplayNames[key as keyof typeof regionDisplayNames]
+            );
+
+        return `${species} (${selectedRegions.join(", ") || "no regions selected"})`;
+    };
+
     return (
         <div className="flex-grow-1 my-1">
             <button
@@ -68,17 +113,24 @@ const FastaGeneration: React.FC<Props> = ({
             >
                 Generate FASTA+
             </button>
-            {/* TODO handleSubmit einfügen */}
+
             <div>
                 {fastaForms[name].map((form, idx) => (
-                    <FastaGenerateForm
-                        id={`${id}-${idx}`}
-                        key={`${id} ${idx}`}
-                        form={form}
-                        onChange={onChangeFunctions[idx]}
-                        onRemove={onRemoveFunctions[idx]}
-                        disableRemove={fastaForms[name].length === 0}
-                    />
+                    <InputGroup key={`${id} ${idx}`}>
+                        <Button
+                            variant="outline-border"
+                            className="flex-grow-1"
+                            onClick={onEditFunctions[idx]}
+                        >
+                            {FastaFormPreview(form)}
+                        </Button>
+                        <Button
+                            variant="outline-border"
+                            onClick={onRemoveFunctions[idx]}
+                        >
+                            <Trash />
+                        </Button>
+                    </InputGroup>
                 ))}
             </div>
         </div>

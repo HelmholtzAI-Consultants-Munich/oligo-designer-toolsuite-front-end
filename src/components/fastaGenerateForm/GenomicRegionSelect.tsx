@@ -1,4 +1,5 @@
 import type form_Data_Ncbi from "../forms/schemas/genomicNcbiForm";
+import { regionDisplayNames } from "./helpers";
 import { ToolTip } from "./Tooltip";
 
 interface GenomicRegionSelectProps {
@@ -47,10 +48,7 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                                 htmlFor={`${region}-${id}`}
                                 className="form-check-label me-2 mb-0"
                             >
-                                {["utr", "cds"].includes(region)
-                                    ? region.toUpperCase()
-                                    : region.charAt(0).toUpperCase() +
-                                      region.slice(1).replace(/_/g, "-")}
+                                {regionDisplayNames[region]}
                             </label>
                             <ToolTip
                                 id={`popover-${region}-${id}`}

@@ -19,6 +19,19 @@ import { Link } from "react-router";
 
 export const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
 
+export const firstLetterUppercase = (s: string) =>
+    s.charAt(0).toUpperCase() + s.slice(1);
+
+export const regionDisplayNames = {
+    gene: "Gene",
+    intergenic: "Intergenic",
+    exon: "Exon",
+    utr: "UTR",
+    cds: "CDS",
+    intron: "Intron",
+    exon_exon_junction: "Exon-exon-junction",
+};
+
 export const allFieldsFilled = (
     files: FileState,
     required_files: (keyof FileState)[]
