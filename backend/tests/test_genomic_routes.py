@@ -99,7 +99,7 @@ def release_queries():
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_ncbi(
-    client, dummy_form_ncbi, mock_run, authenticated_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ncbi, mock_run, mock_celery, authenticated_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
@@ -113,7 +113,7 @@ def test_genomic_cascaded_ncbi(
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_ncbi_unauthenticated(
-    client, dummy_form_ncbi, mock_run, session_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ncbi, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
@@ -126,7 +126,14 @@ def test_genomic_cascaded_ncbi_unauthenticated(
 
 
 def test_genomic_cascaded_single_ensembl(
-    client, run_id, dummy_form_ensembl, mock_run, authenticated_user, verify_file_mock, cache_dir_mock
+    client,
+    run_id,
+    dummy_form_ensembl,
+    mock_run,
+    mock_celery,
+    authenticated_user,
+    verify_file_mock,
+    cache_dir_mock,
 ):
     dummy_form = dummy_form_ensembl
 
@@ -137,7 +144,7 @@ def test_genomic_cascaded_single_ensembl(
 
 
 def test_genomic_cascaded_single_ensembl_unauthenticated(
-    client, run_id, dummy_form_ensembl, mock_run, session_user, verify_file_mock, cache_dir_mock
+    client, run_id, dummy_form_ensembl, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ensembl
 
@@ -255,7 +262,7 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user, dumm
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_ncbi_session_without_directory(
-    client, dummy_form_ncbi, mock_run, verify_file_mock, cache_dir_mock
+    client, dummy_form_ncbi, mock_run, mock_celery, verify_file_mock, cache_dir_mock
 ):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ncbi
