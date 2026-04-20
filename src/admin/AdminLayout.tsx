@@ -11,8 +11,6 @@ import {
     Speedometer2,
     ChatDots,
 } from "react-bootstrap-icons";
-import axios from "axios";
-import { BACKEND_URL } from "../config.ts";
 
 interface NavItemConfig {
     path: string;
@@ -121,21 +119,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
         return () => mediaQuery.removeEventListener("change", handleChange);
     }, [user, loading, navigate, location.pathname]);
 
-    const handleLogout = async () => {
-        try {
-            await axios.post(
-                BACKEND_URL + "/logout",
-                {},
-                {
-                    withCredentials: true,
-                }
-            );
-            navigate("/");
-        } catch (error) {
-            console.error("Logout failed:", error);
-            navigate("/");
-        }
-    };
+    const { logoutWithConfirmation } = useAuth();
 
     if (loading) {
         return (
@@ -235,7 +219,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                                     Back to App
                                 </Nav.Link>
                                 <Nav.Link
-                                    onClick={handleLogout}
+                                    onClick={logoutWithConfirmation}
                                     style={{ cursor: "pointer" }}
                                 >
                                     <BoxArrowRight className="me-1" />
