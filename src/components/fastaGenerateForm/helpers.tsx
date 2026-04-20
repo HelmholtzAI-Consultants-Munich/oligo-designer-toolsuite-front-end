@@ -61,21 +61,74 @@ export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
     }
 };
 
-const removeComments = (fastaFormData: NestedObject) => {
-    const uploadReadyFastaForm = {} as NestedObject;
-    for (const property of Object.keys(fastaFormData)) {
-        const key = property as keyof NestedObject;
-        if (typeof fastaFormData[key] === "object") {
-            if (Object.keys(fastaFormData[key]).includes("value")) {
-                uploadReadyFastaForm[key] = (
-                    fastaFormData[key] as unknown as CommentEntry
-                )["value" as keyof CommentEntry];
-            } else {
-                uploadReadyFastaForm[key] = removeComments(fastaFormData[key]);
-            }
+export const removeComments = (fastaFormData: NestedObject) => {
+    const stripComments = (value: unknown): unknown => {
+        if (Array.isArray(value)) {
+            return value.map((entry) => stripComments(entry));
         }
-    }
-    return uploadReadyFastaForm;
+
+        if (value && typeof value === "object") {
+            const record = value as Record<string, unknown>;
+            if ("value" in record) {
+                return record.value;
+            }
+
+            const cleaned: Record<string, unknown> = {};
+            for (const [key, nestedValue] of Object.entries(record)) {
+                cleaned[key] = stripComments(nestedValue);
+            }
+            return cleaned;
+        }
+
+        return value;
+    };
+
+    return stripComments(fastaFormData) as NestedObject;
+};
+
+export const addComments = (
+    fastaFormData: NestedObject,
+    commentedFastaFormData: NestedObject
+) => {
+    const mergeComments = (data: unknown, template: unknown): unknown => {
+        if (Array.isArray(data)) {
+            return data.map((entry, idx) =>
+                mergeComments(
+                    entry,
+                    Array.isArray(template) ? template[idx] : template
+                )
+            );
+        }
+
+        if (data && typeof data === "object") {
+            const merged: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(
+                data as Record<string, unknown>
+            )) {
+                merged[key] = mergeComments(
+                    value,
+                    (template as Record<string, unknown> | undefined)?.[key]
+                );
+            }
+            return merged;
+        }
+
+        if (
+            template &&
+            typeof template === "object" &&
+            "value" in template &&
+            "comment" in template
+        ) {
+            return {
+                value: data,
+                comment: (template as CommentEntry).comment,
+            };
+        }
+
+        return data;
+    };
+
+    return mergeComments(fastaFormData, commentedFastaFormData) as NestedObject;
 };
 
 const prepareForUpload = (fastaForm: FastaForm) => {

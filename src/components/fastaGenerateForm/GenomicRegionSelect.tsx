@@ -64,7 +64,7 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
             {genomic_regions.exon_exon_junction.value === "true" && (
                 <div className="col-md-4 pt-2">
                     <label
-                        htmlFor="exon_exon_junction_block_size"
+                        htmlFor={`exon_exon_junction_block_size-${id}`}
                         className="form-label me-2 mb-0"
                     >
                         Block Size

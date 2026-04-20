@@ -66,11 +66,19 @@ export interface GenomicRegionState<Type> {
 
 export type FileState = GenomicRegionState<File>;
 export type FastaFormState = GenomicRegionState<FastaForm>;
+export type FastaFormStateUncommented =
+    GenomicRegionState<FastaFormUncommented>;
 
 export interface FastaForm {
     selectedSource: string;
     formDataNcbi: NcbiFastaFormDataGeneric<true>;
     formDataEns: EnsFastaFormDataGeneric<true>;
+}
+
+export interface FastaFormUncommented {
+    selectedSource: string;
+    formDataNcbi: NcbiFastaFormDataGeneric<false>;
+    formDataEns: EnsFastaFormDataGeneric<false>;
 }
 
 export const defaultFastaForm: FastaForm = {

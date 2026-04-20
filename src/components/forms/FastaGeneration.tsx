@@ -72,7 +72,7 @@ const FastaGeneration: React.FC<Props> = ({
             <div>
                 {fastaForms[name].map((form, idx) => (
                     <FastaGenerateForm
-                        id={idx}
+                        id={`${id}-${idx}`}
                         key={`${id} ${idx}`}
                         form={form}
                         onChange={onChangeFunctions[idx]}

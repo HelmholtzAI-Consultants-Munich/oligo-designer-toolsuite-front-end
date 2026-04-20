@@ -23,12 +23,12 @@ import {
     TaxonSelect,
 } from "../fastaGenerateForm/GenomicDropDown";
 import { replaceUnderscore } from "../fastaGenerateForm/helpers";
-import { NcbiAnnotationReleases } from "../fastaGenerateForm/NcbiAnnotationReleases";
 import { GenomicRegionSelect } from "../fastaGenerateForm/GenomicRegionSelect";
+import { NcbiAnnotationSelect } from "../fastaGenerateForm/NcbiAnnotationSelect";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
-    id: number;
+    id: string;
     form: FastaForm;
     onChange: (newForm: FastaForm) => void;
     onRemove?: () => void;
@@ -125,6 +125,18 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                     value: value,
                 };
             }
+
+            if (
+                keys[0] === "source_params" &&
+                keys[1] !== "annotation_release"
+            ) {
+                // Reset annotation release if source params change
+                formTarget["annotation_release"] = {
+                    ...(formTarget["annotation_release"] as NestedObject),
+                    value: "",
+                };
+            }
+
             return { newFormData, keys, value };
         };
 
@@ -261,7 +273,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                     </option>
                                                 ))}
                                         </SpeciesSelect>
-                                        <AnnotationSelect
+                                        <NcbiAnnotationSelect
                                             id={`ncbi-${id}`}
                                             tooltip={
                                                 form.formDataNcbi.source_params
@@ -272,14 +284,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                                     .annotation_release.value
                                             }
                                             handleChange={handleNcbiChange}
-                                        >
-                                            <option value="">
-                                                Select a release
-                                            </option>
-                                            <NcbiAnnotationReleases
-                                                form={form}
-                                            />
-                                        </AnnotationSelect>
+                                            form={form}
+                                        />
                                     </div>
                                     <GenomicRegionSelect
                                         id={`ncbi-${id}`}

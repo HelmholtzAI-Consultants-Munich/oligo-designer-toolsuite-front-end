@@ -2,12 +2,21 @@ import { useCallback, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config";
 import axios from "axios";
 import type { FastaForm } from "./types";
+import { GenomicDropDown } from "./GenomicDropDown";
 
-interface NcbiAnnotationReleasesProps {
+interface NcbiAnnotationSelectProps {
+    id: string;
+    value: string;
+    tooltip?: string;
     form: FastaForm;
+    handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
+export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
+    tooltip,
+    value,
+    handleChange,
+    id,
     form,
 }) => {
     const [releases, setReleases] = useState<string[]>();
@@ -49,17 +58,38 @@ export const NcbiAnnotationReleases: React.FC<NcbiAnnotationReleasesProps> = ({
         fetchAnnotationReleasesNCBI(species, kingdom);
     }, [species, kingdom, fetchAnnotationReleasesNCBI]);
 
-    if (isLoading) {
-        return <option>Loading annotation releases...</option>;
-    }
+    const Options = () => {
+        if (isLoading) {
+            return <option>Loading annotation releases...</option>;
+        }
 
-    if (error || !releases) {
-        return <option>Error while loading annotation releases!</option>;
-    }
+        if (error || !releases) {
+            return <option>Error while loading annotation releases!</option>;
+        }
 
-    return releases.map((release, idx) => (
-        <option key={idx} value={release}>
-            {release}
-        </option>
-    ));
+        return (
+            <>
+                <option value="">Select a release</option>
+                {releases.map((release, idx) => (
+                    <option key={idx} value={release}>
+                        {release}
+                    </option>
+                ))}
+            </>
+        );
+    };
+
+    return (
+        <GenomicDropDown
+            id={id}
+            label="Annotation Release"
+            nameAndId="source_params.annotation_release"
+            tooltip={tooltip}
+            value={value}
+            handleChange={handleChange}
+            key={isLoading ? "loading" : error ? "error" : "loaded"} // Force re-render on loading/error state change
+        >
+            <Options />
+        </GenomicDropDown>
+    );
 };

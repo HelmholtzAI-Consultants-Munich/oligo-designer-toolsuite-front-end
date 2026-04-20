@@ -466,10 +466,10 @@ const RunDetail = () => {
             {run?.status === "success" && (
                 <>
                     {probes === undefined && (
-                        <>
+                        <Vertical align="center" className="my-5" gap="lg">
                             <RunStatus status="pending" size={100} />
                             <h3 className="mt-3">Processing results...</h3>
-                        </>
+                        </Vertical>
                     )}
 
                     {probes === null && (
@@ -655,8 +655,8 @@ const RunDetail = () => {
                                     </tfoot>
                                 </Table>
                                 <span className="text-muted">
-                                    Click on an oligo in the table to focus it
-                                    in the visualization.
+                                    Click an oligo in the table to focus it in
+                                    the visualization.
                                 </span>
                             </Vertical>
                             <Divider />
