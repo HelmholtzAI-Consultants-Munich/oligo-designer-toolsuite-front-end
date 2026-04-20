@@ -37,7 +37,7 @@ It supports flexible region selection, automatic file retrieval, and efficient c
      - If selected, specify the **Block Size** (number of nucleotides to include from each flanking exon)
 
 4. **Generate FASTA files**
-   - When you click **Generate FASTA+**, the form data is sent to `/api/genomic/cascaded/custom`.
+   - When you submit a pipeline, the form data is sent with your request.
    - The backend processes your request using a two-level caching mechanism (see [Caching FASTA Files](caching_fasta.md) for details).
    - Multiple region selections are handled in a single request, with each region combination cached independently.
 

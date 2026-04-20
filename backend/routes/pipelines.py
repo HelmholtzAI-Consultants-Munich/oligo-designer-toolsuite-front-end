@@ -1,8 +1,10 @@
 import os
 import uuid
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
+from pathlib import Path
 from typing import Any
 
 from bson import ObjectId
@@ -13,6 +15,11 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.utilities.pipeline import generate_single_region_forms
+from backend.utilities.typed_values import (
+    sanitize_pipeline_form_paths,
+    serialize_path,
+    utc_now,
+)
 from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
 from backend.worker.task_index import Tasks
 
@@ -34,32 +41,39 @@ def validate_name(pipeline_name: str) -> bool:
     return pipeline_name in EXISTING_PIPELINES
 
 
-def create_context(pipeline_name: str) -> dict[str, str | None]:
+@dataclass(frozen=True)
+class RunContext:
+    user_id: str | None
+    session_id: str | None
+    user_dir: Path
+    timestamp: datetime
+    output_path: Path
+
+
+def create_context(pipeline_name: str) -> RunContext:
     # Get user context and directory
     user_id, session_id, user_dir = get_user_context_with_directory()
 
-    if not os.path.exists(user_dir):
+    if not user_dir.exists():
         current_app.logger.error(f"Expected user directory at {user_dir} to exist")
         abort(
             HTTPStatus.INTERNAL_SERVER_ERROR,
             description="Unable to access your data directory. Please try again or contact support.",
         )
 
-    output_path = os.path.join(user_dir, f"output_{pipeline_name}_probe_designer_{uuid.uuid4().hex}")
+    timestamp = utc_now()
+    output_path = user_dir / f"output_{pipeline_name}_probe_designer_{uuid.uuid4().hex}"
 
     # To prevent overwriting a run, fail if the directory already exists
     os.makedirs(output_path, exist_ok=False)
 
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    context = {
-        "user_id": user_id,
-        "session_id": session_id,
-        "user_dir": user_dir,
-        "timestamp": timestamp,
-        "output_path": output_path,
-    }
-
-    return context
+    return RunContext(
+        user_id=user_id,
+        session_id=session_id,
+        user_dir=user_dir,
+        timestamp=timestamp,
+        output_path=output_path,
+    )
 
 
 def unpack_genomic_form_data(region_generation_forms: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -101,16 +115,16 @@ def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
 def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
-    context: dict[str, str | None],
+    context: RunContext,
     task_id: str | None,
 ):
     return update_run_in_DB(
         run_id,
         {
-            "session_id": context.get("session_id"),
-            "user_id": context.get("user_id"),
-            "timestamp": context.get("timestamp"),
-            "output_path": context.get("output_path"),
+            "session_id": context.session_id,
+            "user_id": context.user_id,
+            "timestamp": context.timestamp,
+            "output_path": serialize_path(context.output_path),
             "status": "pending",
             "pipeline": pipeline_name,
             "task_id": task_id,
@@ -122,7 +136,7 @@ def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
-    output_path: str,
+    output_path: Path,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
@@ -136,7 +150,7 @@ def enqueue_pipeline(
     )
 
     pipeline_signature = celery_app.signature(
-        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, output_path)
+        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path))
     )
 
     return chord(region_generation_signatures)(pipeline_signature)
@@ -179,9 +193,23 @@ def start_pipeline(pipeline_name: str):
     run_id_str = json.get("runid")  # Run ID from React
     run_id = parse_run_id(run_id_str)
 
-    form_data: dict[str, Any] | None = json.get("formdata")
-    if form_data is None:
-        abort(HTTPStatus.BAD_REQUEST, description="Expected form data")
+    form_data = json.get("formdata")  # Form data from React
+    if not isinstance(form_data, dict):
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
+
+    # TODO: the allowed paths shouldn't be defined here
+    allowed_roots = [
+        Path(current_app.config["UPLOAD_PATH"]),
+        Path("/app/uploads"),
+        Path(current_app.root_path) / "cache",
+        Path(current_app.config["USERDATA_PATH"]),
+    ]
+    try:
+        sanitized_form_data = sanitize_pipeline_form_paths(form_data, allowed_roots)
+    except ValueError as error:
+        abort(
+            HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}"
+        )  # TODO: investigate potential data leakage due to this plain error output
 
     # genomic_region_generator
     generated_regions = parse_region_generation(form_data)
@@ -189,10 +217,9 @@ def start_pipeline(pipeline_name: str):
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    if context["user_dir"] is None or context["output_path"] is None:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Could not infer output directory")
-
-    result_promise = enqueue_pipeline(pipeline_name, form_data, generated_regions, context["output_path"])
+    result_promise = enqueue_pipeline(
+        pipeline_name, sanitized_form_data, generated_regions, context.output_path
+    )
 
     # Mark Run as Enqueued in DB
     update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)

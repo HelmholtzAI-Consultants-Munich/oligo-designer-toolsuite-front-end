@@ -1,12 +1,13 @@
 import copy
 import logging
-import os
 import shutil
 from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
 from flask import abort
+
+from backend.utilities.typed_values import deserialize_path, path_for_display
 
 logger = logging.getLogger(__name__)
 
@@ -58,12 +59,13 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
         abort(HTTPStatus.NOT_FOUND)
 
     # Delete output files/folders
-    output_path = run.get("output_path", "")
-    if output_path and os.path.exists(output_path):
+    output_path = deserialize_path(run.get("output_path"))
+    if output_path and output_path.exists():
         try:
             shutil.rmtree(output_path)
         except Exception as e:
-            logger.warning(f"Failed to delete output directory {output_path}: {e!s}")
+            output_label = path_for_display(run.get("output_path"))
+            logger.warning(f"Failed to delete output directory {output_label}: {e!s}")
             # Continue with DB deletion even if file deletion fails
 
     # Remove from database

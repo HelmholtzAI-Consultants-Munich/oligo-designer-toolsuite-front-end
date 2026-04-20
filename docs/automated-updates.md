@@ -11,40 +11,13 @@ The Oligo Designer Toolsuite uses GitHub Actions to automatically update critica
 
 ## Overview
 
-Two automated workflows run monthly to keep the application data current:
+One automated workflow runs monthly to keep form configuration data current:
 
-1. **RefSeq Species List Updates** - Updates NCBI RefSeq and Ensembl species lists
-2. **YAML to JS Conversion** - Updates form configurations from the main repository
+1. **YAML to JS Conversion** - Updates form configurations from the main repository
 
-Both workflows are scheduled to run on the 1st of every month at 2 AM UTC and can also be triggered manually.
+The workflow is scheduled to run on the 1st of every month at 2 AM UTC and can also be triggered manually.
 
-## RefSeq Species List Updates
-
-**Workflow:** `.github/workflows/update_genomic.yml`
-
-This workflow updates species lists from multiple genomic data sources to ensure users have access to the latest available species and annotation releases.
-
-### What it updates:
-
-1. **NCBI RefSeq Species Lists** (`update_genome.py`)
-   - Fetches species from NCBI RefSeq FTP server
-   - Updates categories: vertebrate_mammalian, vertebrate_other, archaea, fungi, invertebrate, metagenomes, mitochondrion, plant, plasmid, plastid, protozoa, unknown
-   - Generates: `src/forms/refseqSpecies.ts`
-
-2. **Ensembl Species List** (`update_ens.py`)
-   - Fetches species from Ensembl GTF releases (currently release-108)
-   - Generates: `src/forms/ensemblSpecies.ts`
-
-3. **NCBI Annotation Releases** (`update_anno_release.py`)
-   - Fetches available annotation releases for H. sapiens from NCBI
-   - Generates: `src/forms/ncbiAnnotationReleases.ts`
-
-### Technical Details:
-
-- **Schedule:** `0 2 1 * *` (2 AM on the 1st of every month)
-- **Dependencies:** `requests`, `beautifulsoup4`
-- **Python Version:** 3.9
-- **Output:** TypeScript files with exported arrays of species/releases
+> **Note:** Large species and annotation list modules (`refseqSpecies.ts`, `ensemblSpecies.ts`, `ncbiAnnotationReleases.ts`) are not part of the current application source tree. Any historical `update_genomic.yml` automation that generated them is not wired into this repository snapshot.
 
 ## YAML to JS Conversion
 
@@ -85,7 +58,7 @@ The YAML to JS conversion process:
 
 ## Manual Triggering
 
-Both workflows can be triggered manually through the GitHub Actions interface:
+The workflow can be triggered manually through the GitHub Actions interface:
 
 1. Go to the **Actions** tab in the repository
 2. Select the workflow you want to run
@@ -96,9 +69,9 @@ Both workflows can be triggered manually through the GitHub Actions interface:
 
 ### Success Indicators:
 
-- Workflows complete without errors
+- The workflow completes without errors
 - Generated TypeScript files are committed and pushed
-- Commit messages include "Updated Refseq species list" or "Updated YAML to JS conversion"
+- Commit messages include "Updated YAML to JS conversion" (or similar)
 
 ### Common Issues:
 
@@ -112,7 +85,7 @@ Check the workflow logs in the GitHub Actions interface for detailed execution i
 
 ## Benefits
 
-These automated updates provide several key benefits:
+This automated update provides several key benefits:
 
 - **Always Current Data** - Users have access to the latest species and configuration options
 - **Reduced Maintenance** - No manual intervention required to keep data current
@@ -124,9 +97,6 @@ These automated updates provide several key benefits:
 
 The automated updates generate the following TypeScript files in `src/forms/`:
 
-- `refseqSpecies.ts` - NCBI RefSeq species lists by category
-- `ensemblSpecies.ts` - Ensembl species list
-- `ncbiAnnotationReleases.ts` - NCBI annotation release versions
 - `oligoseq_form.ts` - OligoSeq probe designer form configuration
 - `scrinshot_form.ts` - Scrinshot probe designer form configuration
 - `merfish_form.ts` - MERFISH probe designer form configuration
@@ -135,4 +105,4 @@ The automated updates generate the following TypeScript files in `src/forms/`:
 - `genomic_ncbi_form.ts` - Genomic region generator (NCBI) form configuration
 - `genomic_ens_form.ts` - Genomic region generator (Ensembl) form configuration
 
-These files are automatically imported and used by the React components to provide up-to-date form options and species selections.
+These files are automatically imported and used by the React components to provide up-to-date form options.

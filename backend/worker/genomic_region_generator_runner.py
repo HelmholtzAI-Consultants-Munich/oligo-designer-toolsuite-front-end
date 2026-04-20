@@ -23,32 +23,32 @@ class GenomicRegionGeneratorRunner:
         self.logger = logger
 
         # TODO: pass root_dir config to worker, use config for absolute path
-        self.cache_dir = os.path.join(os.path.dirname(__file__), "../cache")
-        os.makedirs(self.cache_dir, exist_ok=True)
+        self.cache_dir = (Path(os.path.dirname(__file__)) / "../cache").resolve()
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self, region_form: dict[str, Any]) -> list[str]:
 
         fna_files = []
 
         cache_key = self.get_form_cache_key(region_form)
-        output_path = os.path.join(self.cache_dir, "generated", f"cached_genomic_{cache_key}")
-        os.makedirs(output_path, exist_ok=True)
+        output_path = self.cache_dir / "generated" / f"cached_genomic_{cache_key}"
+        output_path.mkdir(parents=True, exist_ok=True)
 
         # Acquire r/w lock on output directory, allowing multiple concurrent reads but exclusive writes
         # "Soft" lock is required for network file systems
         # This avoids:
         # - computing the same genomic regions multiple times at once
         # - race conditions due to simultaneous access to output and config (esp. writes, deletions)
-        output_lock = SoftReadWriteLock(output_path + ".lock")
+        output_lock = SoftReadWriteLock(output_path.with_suffix(".lock"))
         with output_lock.write_lock():
             # ---------------------------------------------
             # First-line cache: region FASTAs already built?
             # ---------------------------------------------
-            output_gen = os.path.join(output_path, "annotation")
-            if os.path.exists(output_gen) and any(fname.endswith(".fna") for fname in os.listdir(output_gen)):
+            output_gen = output_path / "annotation"
+            if output_gen.exists() and any(fname.endswith(".fna") for fname in os.listdir(output_gen)):
                 for fname in os.listdir(output_gen):
                     if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
-                        fna_files.append(os.path.join(output_gen, fname))
+                        fna_files.append(output_gen / fname)
                 return fna_files
 
             # ---------------------------------------------
@@ -92,9 +92,9 @@ class GenomicRegionGeneratorRunner:
                 files_source = "NCBI"
 
             # Build custom config pointing to cached decompressed files (BASIC PARAMETERS spec)
-            config_path = os.path.join(output_path, f"config_genomic_{cache_key}.yaml")
+            config_path = output_path / f"config_genomic_{cache_key}.yaml"
             config_genomic = {
-                "dir_output": output_path,
+                "dir_output": str(output_path),
                 "source": "custom",
                 "source_params": {
                     "file_annotation": annotation_file,  # required: GTF
@@ -128,10 +128,10 @@ class GenomicRegionGeneratorRunner:
                 raise ValueError("The pipeline failed to execute. Please check your input and try again.")
 
             # Collect output .fna files (ignore raw genome)
-            if os.path.exists(output_gen):
+            if output_gen.exists():
                 for fname in os.listdir(output_gen):
                     if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
-                        fna_files.append(os.path.join(output_gen, fname))
+                        fna_files.append(output_gen / fname)
 
             self.cleanup_temp_files(config_path)
 
@@ -146,6 +146,6 @@ class GenomicRegionGeneratorRunner:
         serialized = json.dumps(relevant_part, sort_keys=True)
         return hashlib.sha256(serialized.encode()).hexdigest()
 
-    def cleanup_temp_files(self, config_path: str):
-        if os.path.exists(config_path):
-            os.remove(config_path)
+    def cleanup_temp_files(self, config_path: Path):
+        if config_path.exists():
+            config_path.unlink()

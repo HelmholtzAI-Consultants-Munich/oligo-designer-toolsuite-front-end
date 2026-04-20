@@ -1,5 +1,5 @@
-import os
 from http import HTTPStatus
+from pathlib import Path
 
 from bson import ObjectId
 from flask import abort, current_app, session
@@ -33,20 +33,20 @@ def get_user_context() -> tuple[str | None, str | None]:
     return None, session_id
 
 
-def get_user_context_with_directory() -> tuple[str | None, str | None, str]:
+def get_user_context_with_directory() -> tuple[str | None, str | None, Path]:
     """Get user context and the user's data directory path.
 
     :returns: Tuple of (user_id, session_id, user_dir)
-    :rtype: tuple[str | None, str | None, str]
+    :rtype: tuple[str | None, str | None, pathlib.Path]
     :raises: 401 if anonymous user has no session_id
     """
     user_id, session_id = get_user_context()
-    userdata_path = current_app.config["USERDATA_PATH"]
+    userdata_path = Path(current_app.config["USERDATA_PATH"])
 
     if user_id:
-        user_dir = os.path.join(userdata_path, user_id)
+        user_dir = userdata_path / user_id
     else:
-        user_dir = os.path.join(userdata_path, "anon", session_id)
+        user_dir = userdata_path / "anon" / session_id
 
     return user_id, session_id, user_dir
 
@@ -159,6 +159,4 @@ def get_task_id(run) -> str:
     :raises: 500 if task_id is not found
     """
     task_id = run.get("task_id")
-    if not task_id:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR)
     return task_id

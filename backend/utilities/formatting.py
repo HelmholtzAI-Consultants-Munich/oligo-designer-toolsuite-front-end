@@ -1,6 +1,7 @@
 from bson import ObjectId
 
 from backend.routes.route_helpers import find_user_by_id
+from backend.utilities.typed_values import path_for_display, timestamp_for_display
 
 
 def format_user(user):
@@ -52,9 +53,9 @@ def format_pipeline_run(run):
         "id": str(run["_id"]),
         "pipeline": run.get("pipeline", "unknown"),
         "status": run.get("status", "unknown"),
-        "timestamp": run.get("timestamp", ""),
+        "timestamp": timestamp_for_display(run.get("timestamp"), separator="_"),
         "created_at": run.get("created_at").isoformat() if run.get("created_at") else None,
-        "output_path": run.get("output_path", ""),
+        "output_path": path_for_display(run.get("output_path")),
         "user_id": user_id,
         "user": user_info,
         "session_id": run.get("session_id"),
@@ -90,14 +91,7 @@ def format_feedback(feedback):
             pass
 
     created_at = feedback.get("created_at")
-    if created_at is not None:
-        created_at_value = created_at.isoformat() if hasattr(created_at, "isoformat") else str(created_at)
-    else:
-        # Fall back to ObjectId generation time if available
-        feedback_id = feedback.get("_id")
-        created_at_value = (
-            feedback_id.generation_time.isoformat() if isinstance(feedback_id, ObjectId) else None
-        )
+    created_at_value = created_at.isoformat() if created_at is not None else None
 
     return {
         "id": str(feedback["_id"]),

@@ -28,6 +28,7 @@ from flask_login import LoginManager, UserMixin, current_user, login_required, l
 from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
+from backend.utilities.typed_values import parse_http_url, sanitize_relative_redirect_path
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -134,7 +135,10 @@ def login():
         # Preserve redirect parameter from frontend through OAuth flow
         redirect_param = request.args.get("redirect")
         if redirect_param:
-            session["oauth_redirect"] = redirect_param
+            safe_redirect = sanitize_relative_redirect_path(redirect_param)
+            if safe_redirect is None:
+                abort(HTTPStatus.BAD_REQUEST, description="Invalid redirect path")
+            session["oauth_redirect"] = safe_redirect
         redirect_uri = url_for("auth.auth_callback", _external=True)
         return oauth.helmholtz.authorize_redirect(redirect_uri)
 
@@ -234,11 +238,16 @@ def auth_callback():
         session.pop("session_id", None)
 
     # Redirect to frontend - check if there's a preserved redirect URL
-    frontend_url = "http://localhost:3000"
-    redirect_path = session.pop("oauth_redirect", None)
+    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+    frontend_url = parse_http_url(frontend_url_raw)
+    if frontend_url is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
+
+    frontend_base = frontend_url.geturl().rstrip("/")
+    redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
     if redirect_path:
-        return redirect(f"{frontend_url}{redirect_path}")
-    return redirect(f"{frontend_url}/")  # Default to homepage
+        return redirect(f"{frontend_base}{redirect_path}")
+    return redirect(f"{frontend_base}/")  # Default to homepage
 
 
 # ---- Check Authentication Status Route ----
@@ -291,7 +300,7 @@ def logout():
     if oauth_token:
         try:
             # Revoke the token with Helmholtz AAI
-            revocation_url = current_app.config.get("HELMHOLTZ_REVOCATION_ENDPOINT")
+            revocation_url = parse_http_url(current_app.config.get("HELMHOLTZ_REVOCATION_ENDPOINT"))
             client_id = current_app.config.get("HELMHOLTZ_CLIENT_ID")
 
             # According to RFC 7009 and Helmholtz AAI docs, token_type_hint is mandatory
@@ -302,9 +311,12 @@ def logout():
                 "logout": "true",
             }
 
-            response = requests.post(revocation_url, data=data)
-            if response.status_code != HTTPStatus.OK:
-                current_app.logger.warning(f"Token revocation failed: {response.status_code}")
+            if revocation_url is None:
+                current_app.logger.warning("Token revocation skipped: invalid revocation endpoint URL")
+            else:
+                response = requests.post(revocation_url.geturl(), data=data)
+                if response.status_code != HTTPStatus.OK:
+                    current_app.logger.warning(f"Token revocation failed: {response.status_code}")
         except Exception as e:
             current_app.logger.error(f"Error revoking token: {e!s}")
 

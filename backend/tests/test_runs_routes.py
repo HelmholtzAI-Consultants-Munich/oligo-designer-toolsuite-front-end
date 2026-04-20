@@ -28,7 +28,7 @@ def test_init_run_id(client):
 def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
     create_test_run(run_id, user_id=dummy_user.id)
 
-    response = client.get("/api/pipelines")
+    response = client.get("/api/runs")
     assert response.status_code == 200
     assert isinstance(response.get_json(), list)
 
@@ -62,6 +62,14 @@ def test_delete_run_success(client, monkeypatch, run_id, output_path):
 def test_get_run_file_not_found(client, dummy_user, run_id):
     response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
     assert response.status_code == 404
+
+
+def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_path, tmp_path):
+    (tmp_path / "secret.txt").write_text("secret")
+
+    response = client.get(f"/api/runs/{run_id}/files/%2e%2e/secret.txt")
+    assert response.status_code == 400
+    assert response.get_json()["error"] == "Invalid file path"
 
 
 def test_runid_null(client, mock_celery):
@@ -183,7 +191,7 @@ def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id
     create_test_run(run_id, user_id=dummy_user.id, status="success")
 
     for exc in exceptions:
-        with patch("backend.routes.pipelines.os.path.join", side_effect=exc):
+        with patch("backend.routes.runs.safe_join_under", side_effect=exc):
             response = client.get(f"/api/runs/{run_id}/files/test.txt")
             data = response.get_json()
             assert "error" in data
