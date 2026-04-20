@@ -1,4 +1,4 @@
-import type { NcbiFastaFormDataGeneric } from "../components/fastaGenerateForm/types";
+import type { NcbiFastaFormDataGeneric } from "../../fastaGenerateForm/types";
 
 const form_Data_Ncbi: NcbiFastaFormDataGeneric<true> = {
     dir_output: {

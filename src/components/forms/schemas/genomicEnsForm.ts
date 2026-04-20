@@ -1,4 +1,4 @@
-import type { EnsFastaFormDataGeneric } from "../components/fastaGenerateForm/types";
+import type { EnsFastaFormDataGeneric } from "../../fastaGenerateForm/types";
 
 const form_Data_Ens: EnsFastaFormDataGeneric<true> = {
     dir_output: {
