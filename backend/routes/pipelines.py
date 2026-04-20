@@ -9,6 +9,7 @@ from typing import Any
 from bson import ObjectId
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
+from flask_login import current_user
 
 from backend.config import PIPELINE_NAMES, CeleryConfig
 from backend.extensions import celery_app, mongo
@@ -111,7 +112,7 @@ def write_run_to_DB(
 
 
 def _get_heuristic_rate(pipeline_name: str) -> dict | None:
-    """Look up cached p95 seconds-per-gene rate for this pipeline from MongoDB.
+    """Look up the cached percentile seconds-per-gene rate for this pipeline from MongoDB.
 
     Returns a dict with key 'seconds_per_gene', or None if unavailable.
     """
@@ -124,9 +125,9 @@ def _get_heuristic_rate(pipeline_name: str) -> dict | None:
 def resolve_timeout(pipeline_name: str, is_authenticated: bool, gene_count: int | None) -> int:
     """Return soft time limit in seconds for this pipeline run.
 
-    In heuristic mode, multiplies the cached p95 seconds-per-gene rate by the current
-    run's gene count and the configured safety factor. Falls back to fixed config values
-    if no cache data exists or gene count is unavailable.
+    In heuristic mode, multiplies the cached percentile seconds-per-gene rate by the
+    current run's gene count and the configured safety factor. Falls back to fixed
+    config values if no cache data exists or gene count is unavailable.
     """
     if CeleryConfig.pipeline_timeout_mode == "heuristic":
         cached = _get_heuristic_rate(pipeline_name)
@@ -209,23 +210,17 @@ def start_pipeline(pipeline_name: str):
     except ValueError as error:
         abort(HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}")
 
-    # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    # Pre-generate task_id so we can write it to DB before publishing to RabbitMQ.
-    # This closes the race window where the worker's task_prerun signal could fire
-    # before write_run_to_DB has stored the task_id in the run document.
     task_id = str(uuid.uuid4())
 
-    # Extract gene count for heuristic timeout normalization and duration tracking.
     gene_count = extract_gene_count(sanitized_form_data)
 
-    # Mark Run as Enqueued in DB FIRST — worker prerun will now always find the document
     update_result = write_run_to_DB(pipeline_name, run_id, context, task_id, gene_count)
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
-    is_authenticated = context.user_id is not None
+    is_authenticated = current_user.is_authenticated
     try:
         enqueue_pipeline(
             pipeline_name,
@@ -237,14 +232,10 @@ def start_pipeline(pipeline_name: str):
             gene_count,
         )
     except Exception:
-        # If publishing to the queue fails after the run doc is already written,
-        # mark it as failed so the user isn't left with a permanently pending run.
         update_run_in_DB(run_id, {"status": "failure"})
         current_app.logger.exception("Failed to enqueue pipeline task")
         abort(
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to submit pipeline run. Please try again."
         )
-
-    # The task state can be polled using get_run_state(run_id_str).
 
     return jsonify({"run_id": run_id_str})

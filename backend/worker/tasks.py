@@ -51,7 +51,7 @@ def fetch_dropdown_options(self: Celery.Task):
 
 @app.task(bind=True)
 def refresh_pipeline_timeouts(self: Celery.Task):
-    """Compute p95 run duration per pipeline from recent successful runs and cache the results.
+    """Compute a percentile run-duration rate per pipeline and cache the results.
 
     Used by heuristic timeout mode to automatically tune soft_time_limit values.
     Requires at least 5 successful runs per pipeline; pipelines with fewer runs are skipped
@@ -85,10 +85,13 @@ def refresh_pipeline_timeouts(self: Celery.Task):
             ]
             if not rates:
                 continue
-            p95_rate = compute_percentile(rates, CeleryConfig.pipeline_timeout_heuristic_percentile)
-            # Store the raw p95 rate — the safety factor is applied at enqueue time
-            # so it remains visible and configurable without re-running aggregation.
-            timeouts[pipeline] = {"seconds_per_gene": p95_rate, "sample_count": len(rates)}
+            percentile_rate = compute_percentile(rates, CeleryConfig.pipeline_timeout_heuristic_percentile)
+            # Store the raw percentile rate — the safety factor is applied at enqueue
+            # time so it remains visible and configurable without re-running aggregation.
+            timeouts[pipeline] = {
+                "seconds_per_gene": percentile_rate,
+                "sample_count": len(rates),
+            }
 
         db.cache.update_one(
             {"_id": "pipeline_timeouts"},

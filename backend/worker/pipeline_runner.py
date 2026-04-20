@@ -100,15 +100,12 @@ class PipelineRunner:
             stderr=subprocess.PIPE,
             text=True,
         )
-        self._process = proc
         try:
             stdout, stderr = proc.communicate()
         except BaseException:
             proc.kill()
             proc.wait()
-            self._process = None
             raise
-        self._process = None
         self.logger.debug(f"STDERR: {stderr}")
         self.logger.debug(f"STDOUT (partial logs): {stdout}")
         return proc.returncode == 0

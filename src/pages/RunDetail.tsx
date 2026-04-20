@@ -148,9 +148,7 @@ const RunDetail = () => {
                     }
                 );
                 setRunState(response.data.state);
-                if (response.data.error_message) {
-                    setRunErrorMessage(response.data.error_message);
-                }
+                setRunErrorMessage(response.data.error_message ?? null);
 
                 // If finished, stop polling
                 if (
@@ -174,6 +172,7 @@ const RunDetail = () => {
                         }
                     );
                     setPipeline(runResponse.data.pipeline || "");
+                    setRunErrorMessage(runResponse.data.error_message ?? null);
 
                     // genomic regions check
                     const regionsFile = response.data.find(

@@ -147,7 +147,7 @@ class CeleryConfig:
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
 
-    # Timeout mode: "config" (fixed env vars) or "heuristic" (p95 of past runs)
+    # Timeout mode: "config" (fixed env vars) or "heuristic" (configured percentile of past runs)
     pipeline_timeout_mode: str = os.environ.get("PIPELINE_TIMEOUT_MODE", "config")
 
     # Fixed timeout values — used in "config" mode, and as fallback in "heuristic" mode

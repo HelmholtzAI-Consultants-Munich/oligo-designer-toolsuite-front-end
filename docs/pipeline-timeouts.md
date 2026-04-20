@@ -35,17 +35,17 @@ PIPELINE_TIMEOUT_AUTH=7200    # 2 hours for authenticated users
 
 ### `heuristic`
 
-Limits are computed automatically from past run durations. Every night, a background job calculates the p95 seconds-per-gene rate for each pipeline over the last 30 days and stores it in the cache. At submission time the limit is:
+Limits are computed automatically from past run durations. Every night, a background job calculates the configured percentile seconds-per-gene rate for each pipeline over the last 30 days and stores it in the cache. At submission time the limit is:
 
 ```
-p95_rate × gene_count × PIPELINE_TIMEOUT_HEURISTIC_FACTOR
+percentile_rate × gene_count × PIPELINE_TIMEOUT_HEURISTIC_FACTOR
 ```
 
 Authenticated users get 2× that value. Falls back to the `config` values if there is no cache data yet or the gene count cannot be determined.
 
 ```
 PIPELINE_TIMEOUT_MODE=heuristic
-PIPELINE_TIMEOUT_HEURISTIC_FACTOR=3.0       # safety multiplier on top of p95
+PIPELINE_TIMEOUT_HEURISTIC_FACTOR=3.0       # safety multiplier on top of the percentile baseline
 PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE=95    # which percentile to use
 PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS=30   # days of history to include
 ```
@@ -62,7 +62,7 @@ A pipeline needs at least 5 successful runs in the window before heuristic data 
 | `PIPELINE_TIMEOUT_ANON`                  | `3600`   | Soft limit (seconds) for anonymous users          |
 | `PIPELINE_TIMEOUT_AUTH`                  | `7200`   | Soft limit (seconds) for authenticated users      |
 | `PIPELINE_TIMEOUT_HARD_MARGIN`           | `300`    | Seconds added on top of soft limit before SIGKILL |
-| `PIPELINE_TIMEOUT_HEURISTIC_FACTOR`      | `3.0`    | Safety multiplier applied to p95 rate             |
+| `PIPELINE_TIMEOUT_HEURISTIC_FACTOR`      | `3.0`    | Safety multiplier applied to percentile rate      |
 | `PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE`  | `95`     | Percentile of past durations used as baseline     |
 | `PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS` | `30`     | Rolling window of past runs considered            |
 

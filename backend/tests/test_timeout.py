@@ -42,7 +42,7 @@ _MERFISH_CACHE_DOC = {
 
 @pytest.fixture
 def merfish_heuristic_cache(client):
-    """Seed MongoDB cache with a merfish heuristic rate of 2.0 s/gene."""
+    """Seed MongoDB cache with a merfish heuristic percentile rate of 2.0 s/gene."""
     mongo.db.cache.replace_one({"_id": "pipeline_timeouts"}, _MERFISH_CACHE_DOC, upsert=True)
 
 
