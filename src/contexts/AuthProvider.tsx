@@ -3,6 +3,7 @@ import type { User } from "../types";
 import { BACKEND_URL } from "../config";
 import { AuthContext } from "../hooks/useAuth";
 import { useRuns } from "../hooks/useRuns";
+import { confirmWithModal } from "../utils/modalUtil";
 
 export default function AuthProvider({
     children,
@@ -38,8 +39,30 @@ export default function AuthProvider({
         updateRuns();
     };
 
+    const logoutWithConfirmation = () => {
+        const callback = () =>
+            fetch(BACKEND_URL + "/logout", {
+                method: "POST",
+                credentials: "include",
+            }).then(() => {
+                logout();
+            });
+
+        confirmWithModal({
+            title: "Confirm Logout",
+            content: "Are you sure you want to log out?",
+            primaryAction: {
+                label: "Logout",
+                callback,
+                variant: "danger",
+            },
+        });
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, checkAuth, logout }}>
+        <AuthContext.Provider
+            value={{ user, loading, checkAuth, logout, logoutWithConfirmation }}
+        >
             {children}
         </AuthContext.Provider>
     );

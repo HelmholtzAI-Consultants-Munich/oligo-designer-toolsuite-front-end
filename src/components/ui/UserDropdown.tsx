@@ -1,6 +1,5 @@
 import { forwardRef, useState, type Ref } from "react";
 import { Link } from "react-router";
-import { BACKEND_URL } from "../../config";
 import { useAuth } from "../../hooks/useAuth";
 import { Button, Dropdown } from "react-bootstrap";
 import {
@@ -10,7 +9,6 @@ import {
     Person,
 } from "react-bootstrap-icons";
 import { Horizontal } from "./Alignment";
-import { confirmWithModal } from "../../utils/modalUtil";
 
 const UserDisplay = forwardRef(
     (
@@ -50,28 +48,8 @@ export default function UserDropdown({
 }: {
     noUserCallback: () => void;
 }) {
-    const { user, logout } = useAuth();
+    const { user, logoutWithConfirmation } = useAuth();
     const [copied, setCopied] = useState(false);
-
-    const handleLogout = () => {
-        const callback = () =>
-            fetch(BACKEND_URL + "/logout", {
-                method: "POST",
-                credentials: "include",
-            }).then(() => {
-                logout();
-            });
-
-        confirmWithModal({
-            title: "Confirm Logout",
-            content: "Are you sure you want to log out?",
-            primaryAction: {
-                label: "Logout",
-                callback,
-                variant: "danger",
-            },
-        });
-    };
 
     return (
         <Dropdown drop="up-centered">
@@ -124,7 +102,7 @@ export default function UserDropdown({
                                 Admin Panel
                             </Dropdown.Item>
                         )}
-                        <Dropdown.Item onClick={handleLogout}>
+                        <Dropdown.Item onClick={logoutWithConfirmation}>
                             Logout
                         </Dropdown.Item>
                     </>
