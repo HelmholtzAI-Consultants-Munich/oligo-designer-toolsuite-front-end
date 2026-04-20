@@ -14,6 +14,11 @@ from backend.worker.converters import to_bool, to_int
 
 
 class GenomicRegionGeneratorRunner:
+    """
+    For details on the genomic region generator, see 'Genomic Region Generator' and
+    'Caching FASTA Files' in the developer documentation.
+    """
+
     def __init__(self, logger: Logger):
         self.logger = logger
 
@@ -26,20 +31,20 @@ class GenomicRegionGeneratorRunner:
         fna_files = []
 
         cache_key = self.get_form_cache_key(region_form)
-        output_path = os.path.join(self.cache_dir, f"cached_genomic_{cache_key}")
+        output_path = os.path.join(self.cache_dir, "generated", f"cached_genomic_{cache_key}")
         os.makedirs(output_path, exist_ok=True)
-        output_gen = os.path.join(output_path, "annotation")
 
         # Acquire r/w lock on output directory, allowing multiple concurrent reads but exclusive writes
         # "Soft" lock is required for network file systems
         # This avoids:
         # - computing the same genomic regions multiple times at once
-        # - race conditions due to simultaneous access (esp. writes, deletions)
+        # - race conditions due to simultaneous access to output and config (esp. writes, deletions)
         output_lock = SoftReadWriteLock(output_path + ".lock")
         with output_lock.write_lock():
             # ---------------------------------------------
             # First-line cache: region FASTAs already built?
             # ---------------------------------------------
+            output_gen = os.path.join(output_path, "annotation")
             if os.path.exists(output_gen) and any(fname.endswith(".fna") for fname in os.listdir(output_gen)):
                 for fname in os.listdir(output_gen):
                     if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
@@ -142,6 +147,5 @@ class GenomicRegionGeneratorRunner:
         return hashlib.sha256(serialized.encode()).hexdigest()
 
     def cleanup_temp_files(self, config_path: str):
-        return
         if os.path.exists(config_path):
             os.remove(config_path)

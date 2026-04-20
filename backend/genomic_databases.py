@@ -16,17 +16,22 @@ from filelock import SoftReadWriteLock
 
 
 class BaseGenomicDataBase:
+    """
+    For details on the caching procedure see 'Caching FASTA Files' in the developer documentation.
+    """
+
     def __init__(
         self,
+        cache_dir: str,
         host: str = "",
         base_path: str = "",
         allowlist: list[str] | None = None,
-        cache_dir: str | None = None,
+        name: str = "",
     ) -> None:
         self.host: str = host
         self.base_path: str = base_path
         self.allowlist: set[str] | None = set(allowlist) if allowlist is not None else None
-        self.name: str = ""
+        self.name: str = name
         self.cache_dir = cache_dir
 
     def get_dirs(self, ftp: ftplib.FTP) -> list[str]:
@@ -75,7 +80,7 @@ class BaseGenomicDataBase:
         _, filename = url.rsplit("/", maxsplit=1)
 
         file_name = f"{url_hash}-{filename}"
-        file_path = pathlib.Path(f"{self.cache_dir}/{file_name}").resolve()
+        file_path = (pathlib.Path(self.cache_dir) / self.name / file_name).resolve()
 
         # Acquire lock to avoid downloading the same file mulitple times at once
         # "Soft" lock is required for network file systems
@@ -119,9 +124,10 @@ class BaseGenomicDataBase:
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
     # release 116 changes structure => could be a problem once they set this to current
-    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, cache_dir=None) -> None:
-        super().__init__(host, base_path, allowlist, cache_dir)
-        self.name = "ensembl"
+    def __init__(
+        self, cache_dir, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, name="ensembl"
+    ) -> None:
+        super().__init__(cache_dir, host, base_path, allowlist, name)
         self.orig_top_dirs = [""]
 
     def _get_species_dirs(self, dirs, ftp):
@@ -274,10 +280,9 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
 class NCBIGenomicDataBase(BaseGenomicDataBase):
     def __init__(
-        self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", allowlist=None, cache_dir=None
+        self, cache_dir, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", name="ncbi", allowlist=None
     ) -> None:
-        super().__init__(host, base_path, allowlist, cache_dir)
-        self.name = "ncbi"
+        super().__init__(cache_dir, host, base_path, allowlist, name)
 
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str):
         try:
@@ -468,12 +473,17 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
 def prefetch_dropdown_options():
     # TODO: check allowlists to apply same behaviour like before
+
+    # we will not download anything so a cache_dir isn't necessary
+    # TODO: maybe move cache_dir parameter to prepare_cache_assets
     return dict(
         [
             NCBIGenomicDataBase(
+                cache_dir="",
                 allowlist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
             ).fetch_ftp_directories(),
             EnsemblGenomicDataBase(
+                cache_dir="",
                 allowlist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
             ).fetch_ftp_directories(),
         ]
