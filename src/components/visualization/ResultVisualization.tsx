@@ -1,14 +1,14 @@
-import { Tab, Tabs } from "react-bootstrap";
 import type { GenomicRegions, Probe } from "../../types";
 import OligoComponents from "./OligoComponents";
-import { useState } from "react";
 import GenomeAlignment from "./GenomeAlignment";
+import type { VisualizationType } from "../ui/utils";
 
 type Props = {
     probes: Probe[];
     selectedOligo: string;
     setSelectedOligo: (id: string) => void;
     genomicRegions: GenomicRegions | null;
+    selectedVisualization: VisualizationType;
 };
 
 const ResultVisualization: React.FC<Props> = ({
@@ -16,33 +16,23 @@ const ResultVisualization: React.FC<Props> = ({
     selectedOligo,
     setSelectedOligo,
     genomicRegions,
+    selectedVisualization,
 }) => {
-    const [key, setKey] = useState("alignment");
-
-    return (
-        <Tabs
-            id="result-visualization-tabs"
-            activeKey={key}
-            onSelect={(k) => k && setKey(k)}
-        >
-            <Tab eventKey="alignment" title="Genomic Regions">
-                <GenomeAlignment
-                    key={probes.map((p) => p.oligo_id).join(",")} // Force remount on probes change
-                    probes={probes}
-                    selectedOligo={selectedOligo}
-                    setSelectedOligo={setSelectedOligo}
-                    genomicRegions={genomicRegions}
-                />
-            </Tab>
-            <Tab eventKey="components" title="Oligo Components">
-                <OligoComponents
-                    probes={probes}
-                    selectedOligo={selectedOligo}
-                    setSelectedOligo={setSelectedOligo}
-                />
-            </Tab>
-        </Tabs>
-    );
+    if (selectedVisualization === "alignment") {
+        return (
+            <GenomeAlignment
+                key={probes.map((p) => p.oligo_id).join(",")} // Force remount on probes change
+                probes={probes}
+                selectedOligo={selectedOligo}
+                setSelectedOligo={setSelectedOligo}
+                genomicRegions={genomicRegions}
+            />
+        );
+    } else if (selectedVisualization === "components") {
+        return (
+            <OligoComponents probes={probes} selectedOligo={selectedOligo} />
+        );
+    }
 };
 
 export default ResultVisualization;

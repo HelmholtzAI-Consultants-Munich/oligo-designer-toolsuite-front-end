@@ -1,0 +1,87 @@
+import {
+    defaultFastaForm,
+    type FastaForm,
+    type FastaFormState,
+} from "../fastaGenerateForm/types";
+import FastaGenerateForm from "./FastaGenerateForm";
+import { useMemo } from "react";
+
+type Props = {
+    name: keyof FastaFormState;
+    id: string;
+    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>;
+    fastaForms: FastaFormState;
+};
+
+const addFastaGenerationForm = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>
+) => {
+    const name = (e.target as HTMLButtonElement).name as keyof FastaFormState;
+
+    setFastaForms((prevForms) => ({
+        ...prevForms,
+        [name]: [...prevForms[name], defaultFastaForm], // Multiple files (always an array)
+    }));
+};
+
+const FastaGeneration: React.FC<Props> = ({
+    name,
+    id,
+    setFastaForms,
+    fastaForms,
+}) => {
+    const onChangeFunctions = useMemo(
+        () =>
+            fastaForms[name].map((_, idx) => (updatedForm: FastaForm) => {
+                setFastaForms((prevForms: FastaFormState) => ({
+                    ...prevForms,
+                    [name]: prevForms[name].map((f, i) =>
+                        i === idx ? updatedForm : f
+                    ),
+                }));
+            }),
+        [name, fastaForms, setFastaForms]
+    );
+
+    const onRemoveFunctions = useMemo(
+        () =>
+            fastaForms[name].map((_, idx) => () => {
+                setFastaForms((prevForms: FastaFormState) => ({
+                    ...prevForms,
+                    [name]:
+                        prevForms[name].length === 0
+                            ? prevForms[name]
+                            : prevForms[name].filter((_, i) => i !== idx),
+                }));
+            }),
+        [name, fastaForms, setFastaForms]
+    );
+
+    return (
+        <div className="flex-grow-1 my-1">
+            <button
+                type="button"
+                className="btn btn-outline-primary w-100"
+                name={name}
+                onClick={(e) => addFastaGenerationForm(e, setFastaForms)}
+            >
+                Generate FASTA+
+            </button>
+            {/* TODO handleSubmit einfügen */}
+            <div>
+                {fastaForms[name].map((form, idx) => (
+                    <FastaGenerateForm
+                        id={idx}
+                        key={`${id} ${idx}`}
+                        form={form}
+                        onChange={onChangeFunctions[idx]}
+                        onRemove={onRemoveFunctions[idx]}
+                        disableRemove={fastaForms[name].length === 0}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+export default FastaGeneration;

@@ -29,8 +29,8 @@ class GenomicRegionsFile:
         with open(yaml_path, "w") as yaml_file:
             yaml.dump(
                 {
-                    "regions": self.regions,
-                    "probes": self.probes,
+                    "regions": self.regions if self.regions else None,
+                    "probes": self.probes if self.probes else None,
                 },
                 yaml_file,
             )

@@ -86,9 +86,8 @@ services:
     container_name: odt-web
     ports:
       - 3000:3000
-    environment:
-      VITE_BACKEND_URL: ${BACKEND_URL}
-      VITE_FEEDBACK_MAX_LENGTH: ${FEEDBACK_MAX_LENGTH}
+    env_file:
+      - .env # Shared frontend settings (Vite env vars)
     restart: on-failure
     develop:
       watch:

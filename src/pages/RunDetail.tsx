@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
-import Navbar from "../components/ui/Topbar";
 import * as XLSX from "xlsx";
 import type {
     GenomicRegions,
@@ -14,18 +13,21 @@ import type {
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
+import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
+import Page from "../components/ui/Page";
+import { useRuns } from "../hooks/useRuns";
 import {
-    Alert,
-    Button,
-    Card,
-    Col,
-    Container,
-    Form,
-    ListGroup,
-    Row,
-    Spinner,
-    Table,
-} from "react-bootstrap";
+    pipelineDisplayNames,
+    visualizationDisplayNames,
+    type VisualizationType,
+} from "../components/ui/utils";
+import Divider from "../components/ui/Divider";
+import { Horizontal, Vertical } from "../components/ui/Alignment";
+import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
+import { showToast } from "../utils/toastUtil";
+import RunStatus from "../components/ui/RunStatus";
+import { confirmWithModal } from "../utils/modalUtil";
+import type { Action } from "../components/ui/Header";
 
 interface RunFile {
     name: string;
@@ -70,160 +72,201 @@ const RunDetail = () => {
     const { runId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { runs, updateRuns } = useRuns();
+    const prevStatus = useRef<RunState | null>(null);
     const [files, setFiles] = useState<RunFile[]>([]);
     const [fileContent, setFileContent] = useState<string | null>(null);
     const [viewingFilename, setViewingFilename] = useState<string | null>(null);
-    const [pipeline, setPipeline] = useState<string>("");
 
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
     const [selectedOligo, setSelectedOligo] = useState<string>("");
+    const [selectedVisualization, setSelectedVisualization] =
+        useState<VisualizationType>("alignment");
     const [genomicRegions, setGenomicRegions] = useState<{
         [key: string]: GenomicRegions;
     } | null>(null);
-    const [probes, setProbes] = useState<{
-        [key: string]: Probesets;
-    } | null>(null);
+    const [probes, setProbes] = useState<
+        | {
+              [key: string]: Probesets;
+          }
+        | null
+        | undefined
+    >(undefined); // undefined = not loaded yet, null = no probes available or error loading
+
+    const run = useMemo(() => runs.find((r) => r._id === runId), [runs, runId]);
 
     const definition = ComponentDefinition[
-        pipeline as keyof typeof ComponentDefinition
+        run?.pipeline as keyof typeof ComponentDefinition
     ] as OligoComponentDefinition[] | undefined;
     const tableColumns = getColumnsFromDefinition(definition);
 
-    const closeFileView = () => {
-        setViewingFilename(null);
-    };
     // --- Polling/log state variables ---
-    const [runState, setRunState] = useState<RunState>("pending");
-    const [runErrorMessage, setRunErrorMessage] = useState<string | null>(null);
-    const [polling, setPolling] = useState(true);
-    const fetchAndParseRunFiles = useCallback(() => {
-        axios
-            .get(
-                BACKEND_URL + `/api/runs/${runId}/files/genomic_regions.yaml`,
-                { withCredentials: true, responseType: "text" }
-            )
-            .then((response) => {
-                const regionsYaml = YAML.load(response.data) as {
-                    regions: {
-                        [gene: string]: GenomicRegions;
-                    };
-                    probes: {
-                        [gene: string]: Probesets;
-                    };
-                };
-
-                const genes = Object.keys(regionsYaml.probes || {});
-                const firstGene = genes[0] || "";
-                const firstOligoset =
-                    Object.keys(regionsYaml.probes?.[firstGene] || {})[0] || "";
-                const firstOligo =
-                    regionsYaml.probes?.[firstGene]?.[firstOligoset][0]
-                        ?.oligo_id || "";
-
-                setGenomicRegions(regionsYaml.regions);
-                setProbes(regionsYaml.probes);
-                setSelectedGene(firstGene);
-                setSelectedOligoset(firstOligoset);
-                setSelectedOligo(firstOligo);
-            })
-            .catch((error) => {
-                console.error("Error fetching genomic regions file:", error);
-                setGenomicRegions(null);
-                setProbes(null);
-                return null;
-            });
-    }, [runId]);
-    // Poll for files & log/YAML status
-    useEffect(() => {
-        if (!runId) return;
-        let interval: NodeJS.Timeout;
-
-        const poll = async () => {
-            try {
-                const response = await axios.get(
-                    BACKEND_URL + `/api/runs/${runId}/state`,
-                    {
+    const fetchAndParseRunFiles = useCallback(
+        (id: string) => {
+            if (prevStatus.current !== "success") {
+                axios
+                    .get(BACKEND_URL + `/api/runs/${id}/files`, {
                         withCredentials: true,
-                    }
+                    })
+                    .then((response) => setFiles(response.data));
+            }
+
+            if (run?.status === "success" && prevStatus.current !== "success") {
+                axios
+                    .get(
+                        BACKEND_URL +
+                            `/api/runs/${id}/files/genomic_regions.yaml`,
+                        { withCredentials: true, responseType: "text" }
+                    )
+                    .then((response) => {
+                        const regionsYaml = YAML.load(response.data) as {
+                            regions: {
+                                [gene: string]: GenomicRegions;
+                            };
+                            probes: {
+                                [gene: string]: Probesets;
+                            };
+                        };
+
+                        const genes = Object.keys(regionsYaml.probes || {});
+                        const firstGene = genes[0] || "";
+                        const firstOligoset =
+                            Object.keys(
+                                regionsYaml.probes?.[firstGene] || {}
+                            )[0] || "";
+                        const firstOligo =
+                            regionsYaml.probes?.[firstGene]?.[firstOligoset][0]
+                                ?.oligo_id || "";
+
+                        setGenomicRegions(regionsYaml.regions);
+                        setProbes(regionsYaml.probes);
+                        setSelectedGene(firstGene);
+                        setSelectedOligoset(firstOligoset);
+                        setSelectedOligo(firstOligo);
+                    })
+                    .catch((error) => {
+                        console.error(
+                            "Error fetching genomic regions file:",
+                            error
+                        );
+                        setGenomicRegions(null);
+                        setProbes(undefined);
+                        return null;
+                    });
+            }
+
+            prevStatus.current = run?.status || null;
+        },
+        [prevStatus, run?.status]
+    );
+
+    useEffect(() => {
+        if (run) {
+            fetchAndParseRunFiles(run._id);
+        }
+    }, [runs, run, fetchAndParseRunFiles]); // runs on every poll event
+
+    const fetchFileContent = useCallback(
+        (filename: string) => {
+            axios
+                .get(BACKEND_URL + `/api/runs/${runId}/files/${filename}`, {
+                    withCredentials: true,
+                    responseType: "text",
+                })
+                .then((response) => {
+                    setFileContent(response.data);
+                })
+                .catch((error) =>
+                    console.error("Error fetching file content:", error)
                 );
-                setRunState(response.data.state);
-                setRunErrorMessage(response.data.error_message ?? null);
+        },
+        [runId]
+    );
 
-                // If finished, stop polling
-                if (
-                    response.data.state == "success" ||
-                    response.data.state == "failure"
-                ) {
-                    setPolling(false);
-                    if (interval) clearInterval(interval);
-                    const response = await axios.get(
-                        BACKEND_URL + `/api/runs/${runId}/files`,
-                        {
-                            withCredentials: true,
-                        }
-                    );
-                    setFiles(response.data);
+    useEffect(() => {
+        if (viewingFilename) {
+            fetchFileContent(viewingFilename);
+        }
+    }, [runs, viewingFilename, fetchFileContent]); // runs on every poll event
 
-                    const runResponse = await axios.get(
-                        BACKEND_URL + `/api/runs/${runId}`,
-                        {
-                            withCredentials: true,
-                        }
-                    );
-                    setPipeline(runResponse.data.pipeline || "");
-                    setRunErrorMessage(runResponse.data.error_message ?? null);
+    const handleDelete = useCallback(async () => {
+        if (!run) return;
 
-                    // genomic regions check
-                    const regionsFile = response.data.find(
-                        (f: RunFile) => f.name === "genomic_regions.yaml"
-                    );
+        confirmWithModal({
+            title: "Confirm Deletion",
+            content:
+                "Are you sure you want to delete this run? This action cannot be undone.",
+            primaryAction: {
+                label: "Delete",
+                variant: "danger",
+                callback: async () => {
+                    try {
+                        await axios.delete(
+                            BACKEND_URL + `/api/runs/${run._id}`,
+                            {
+                                withCredentials: true,
+                            }
+                        );
+                        updateRuns();
+                        // Navigate back to admin panel if we came from there, otherwise go to runs page
+                        const fromAdmin = (location.state as LocationState)
+                            ?.fromAdmin;
+                        navigate(fromAdmin ? "/admin/pipelines" : "/runs");
+                    } catch (error) {
+                        console.error("Error deleting run:", error);
+                        showToast({
+                            title: "Failed to delete run",
+                            content:
+                                "An error occurred while trying to delete the run. Please try again later.",
+                            type: "danger",
+                        });
+                    }
+                },
+            },
+        });
+    }, [run, navigate, location.state, updateRuns]);
 
-                    // If genomic regions file present, stop polling!
-                    if (regionsFile) {
-                        setPolling(false);
-                        if (interval) clearInterval(interval);
-                        // Fetch and parse YAML as before
-                        fetchAndParseRunFiles();
+    const formatValueForExcel = useCallback(
+        (value: ProbeDetailsValue): string | number => {
+            // Handle deeply nested arrays
+            const flatten = (
+                arr: ProbeDetailsValue[],
+                acc: (string | number)[] = []
+            ): (string | number)[] => {
+                let result: (string | number)[] = [...acc];
+                for (const val of arr) {
+                    if (Array.isArray(val)) {
+                        result = flatten(val, result);
+                    } else if (val !== null && typeof val !== "object") {
+                        result = result.concat(val);
+                    } else {
+                        result = result.concat(JSON.stringify(val));
                     }
                 }
-            } catch (e) {
-                console.error(e);
+                return result;
+            };
+
+            if (Array.isArray(value)) {
+                return flatten(value).join(", ");
             }
-        };
-
-        if (polling) {
-            interval = setInterval(poll, 2000);
-            poll(); // initial
-        }
-
-        return () => {
-            if (interval) clearInterval(interval);
-        };
-    }, [runId, polling, fetchAndParseRunFiles]);
-
-    const handleDelete = async () => {
-        if (
-            window.confirm(
-                "Are you sure you want to delete this run? This action cannot be undone."
-            )
-        ) {
-            try {
-                await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
-                    withCredentials: true,
-                });
-                // Navigate back to admin panel if we came from there, otherwise go to runs page
-                const fromAdmin = (location.state as LocationState)?.fromAdmin;
-                navigate(fromAdmin ? "/admin/pipelines" : "/runs");
-            } catch (error) {
-                console.error("Error deleting run:", error);
-                alert("Failed to delete run");
+            if (typeof value === "object" && value !== null) {
+                return JSON.stringify(value);
             }
-        }
-    };
+            return value; // Return raw value for Excel
+        },
+        []
+    );
+
+    const formatValue = useCallback(
+        (value: ProbeDetailsValue): string => {
+            return String(formatValueForExcel(value));
+        },
+        [formatValueForExcel]
+    );
 
     // Download CSV for current oligoset only
-    const handleDownloadCSV = () => {
+    const handleDownloadCSV = useCallback(() => {
         // TODO: include all output fields in details
         const oligos =
             probes?.[selectedGene]?.[selectedOligoset]?.map((p) => p.details) ||
@@ -274,10 +317,10 @@ const RunDetail = () => {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+    }, [probes, selectedGene, selectedOligoset, formatValue]);
 
     // Download Excel file with each gene as a separate sheet
-    const handleDownloadExcel = () => {
+    const handleDownloadExcel = useCallback(() => {
         if (!probes) return;
 
         const workbook = XLSX.utils.book_new();
@@ -335,58 +378,16 @@ const RunDetail = () => {
 
         // Write file
         XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
-    };
-
-    const formatValueForExcel = (value: ProbeDetailsValue): string | number => {
-        // Handle deeply nested arrays
-        const flatten = (
-            arr: ProbeDetailsValue[],
-            acc: (string | number)[] = []
-        ): (string | number)[] => {
-            let result: (string | number)[] = [...acc];
-            for (const val of arr) {
-                if (Array.isArray(val)) {
-                    result = flatten(val, result);
-                } else if (val !== null && typeof val !== "object") {
-                    result = result.concat(val);
-                } else {
-                    result = result.concat(JSON.stringify(val));
-                }
-            }
-            return result;
-        };
-
-        if (Array.isArray(value)) {
-            return flatten(value).join(", ");
-        }
-        if (typeof value === "object" && value !== null) {
-            return JSON.stringify(value);
-        }
-        return value; // Return raw value for Excel
-    };
-
-    const formatValue = (value: ProbeDetailsValue): string => {
-        return String(formatValueForExcel(value));
-    };
+    }, [probes, formatValueForExcel]);
 
     const viewFileContent = (filename: string) => {
         if (viewingFilename === filename) {
-            closeFileView();
-            return;
+            setViewingFilename(null);
+            setFileContent(null);
+        } else {
+            setViewingFilename(filename);
+            setFileContent("Loading...");
         }
-
-        axios
-            .get(BACKEND_URL + `/api/runs/${runId}/files/${filename}`, {
-                withCredentials: true,
-                responseType: "text",
-            })
-            .then((response) => {
-                setViewingFilename(filename);
-                setFileContent(response.data);
-            })
-            .catch((error) =>
-                console.error("Error fetching file content:", error)
-            );
     };
 
     const downloadFile = (filename: string) => {
@@ -396,130 +397,100 @@ const RunDetail = () => {
         );
     };
 
+    const fromAdmin = (location.state as LocationState)?.fromAdmin;
+
+    const actions = useMemo(() => {
+        if (!run) return undefined;
+
+        const deleteAction = {
+            type: "button",
+            label: "Delete Run",
+            variant: "outline-danger",
+            icon: Trash,
+            onClick: handleDelete,
+        };
+
+        const downloadExcelAction = {
+            type: "button",
+            label: "All Genes Excel",
+            variant: "outline-primary",
+            icon: FileEarmarkSpreadsheet,
+            onClick: handleDownloadExcel,
+        };
+
+        const downloadCSVAction = {
+            type: "button",
+            label: "Oligoset CSV",
+            variant: "outline-primary",
+            icon: CardList,
+            onClick: handleDownloadCSV,
+        };
+
+        if (probes) {
+            return [deleteAction, downloadExcelAction, downloadCSVAction];
+        } else {
+            return [deleteAction];
+        }
+    }, [run, probes, handleDelete, handleDownloadCSV, handleDownloadExcel]);
+
     return (
-        <>
-            <Navbar />
-            <Container>
-                <Row>
-                    <Col>
-                        <Button
-                            variant="outline-secondary"
-                            onClick={() => {
-                                const fromAdmin = (
-                                    location.state as LocationState
-                                )?.fromAdmin;
-                                navigate(
-                                    fromAdmin ? "/admin/pipelines" : "/runs"
-                                );
-                            }}
-                        >
-                            ← Back to{" "}
-                            {(location.state as LocationState)?.fromAdmin
-                                ? "Admin Panel"
-                                : "Runs"}
-                        </Button>
-                    </Col>
-                    <Col xs="auto">
-                        <Button variant="danger" onClick={handleDelete}>
-                            Delete Run
-                        </Button>
-                    </Col>
-                </Row>
+        <Page
+            title={`Run Result - ${run ? pipelineDisplayNames[run?.pipeline] : "Unknown Pipeline"}`}
+            actions={actions as Action[] | undefined}
+            backTo={{
+                label: fromAdmin ? "Admin Panel" : "All Runs",
+                href: fromAdmin ? "/admin/pipelines" : "/runs",
+            }}
+        >
+            {!run && (
+                <Alert variant="danger">
+                    Run not found. It may have been deleted.
+                </Alert>
+            )}
 
-                <h3>Run Files</h3>
-                <ListGroup>
-                    {files
-                        .filter((file) =>
-                            file.name.toLowerCase().includes("log")
-                        )
-                        .map((file) => (
-                            <ListGroup.Item key={file.name}>
-                                <Row>
-                                    <Col>
-                                        {file.name}
-                                        <span className="badge bg-secondary ms-2">
-                                            {Math.round(file.size / 1024)} KB
-                                        </span>
-                                    </Col>
-                                    <Col xs="auto">
-                                        {file.name.endsWith(".txt") && (
-                                            <Button
-                                                variant="outline-primary"
-                                                size="sm"
-                                                onClick={() =>
-                                                    viewFileContent(file.name)
-                                                }
-                                            >
-                                                View
-                                            </Button>
-                                        )}
-                                        <Button
-                                            variant="outline-success"
-                                            size="sm"
-                                            onClick={() =>
-                                                downloadFile(file.name)
-                                            }
-                                        >
-                                            Download
-                                        </Button>
-                                    </Col>
-                                </Row>
-                            </ListGroup.Item>
-                        ))}
-                </ListGroup>
+            {/* Polling/waiting for YAML/log */}
+            {(run?.status == "pending" || run?.status == "started") && (
+                <Vertical align="center" className="my-5" gap="lg">
+                    <RunStatus status={run.status} size={100} />
+                    <h3 className="mt-3">Run {run.status}...</h3>
+                </Vertical>
+            )}
 
-                {fileContent &&
-                    viewingFilename &&
-                    viewingFilename.endsWith(".txt") && (
+            {run?.status === "failure" && (
+                <Alert variant="danger">
+                    {run.error_message ??
+                        "Run failed. Please check the logs for more details."}
+                </Alert>
+            )}
+
+            {/* YAML/table logic remains unchanged below */}
+            {run?.status === "success" && (
+                <>
+                    {probes === undefined && (
                         <>
-                            <h4>Viewing: {viewingFilename}</h4>
-                            <pre
-                                className="bg-light p-3 rounded mb-4"
-                                style={{
-                                    maxHeight: "500px",
-                                    overflow: "auto",
-                                }}
-                            >
-                                {fileContent}
-                            </pre>
+                            <RunStatus status="pending" size={100} />
+                            <h3 className="mt-3">Processing results...</h3>
                         </>
                     )}
 
-                {/* Polling/waiting for YAML/log */}
-                {(runState == "pending" || runState == "started") && (
-                    <Alert variant="info">
-                        Run is {runState == "pending" ? "pending" : "executing"}
-                        ... <Spinner size="sm" />
-                    </Alert>
-                )}
+                    {probes === null && (
+                        <>
+                            <Alert variant="danger">
+                                Results file not found or could not be parsed.
+                                Please check the logs for more details.
+                            </Alert>
+                        </>
+                    )}
 
-                {/* Pipeline failure */}
-                {runState == "failure" && (
-                    <Alert variant="danger">
-                        {runErrorMessage ??
-                            "The pipeline run failed. Please check the log file for details."}
-                    </Alert>
-                )}
-
-                {/* YAML/table logic remains unchanged below */}
-                {probes && (
-                    <Card>
-                        <Card.Body>
-                            <Card.Title className="d-flex">
-                                <Col>Gene Analysis</Col>
-                                <Col xs="auto">
-                                    <button
-                                        onClick={handleDownloadExcel}
-                                        className="btn btn-success"
-                                        title="Download Excel file with each gene as a separate sheet"
-                                    >
-                                        Download All Genes Excel
-                                    </button>
-                                </Col>
-                            </Card.Title>
-
-                            <Row>
-                                <Col md={6}>
+                    {probes && (
+                        <>
+                            <Vertical
+                                className="visual-container"
+                                align="stretch"
+                                gap="lg"
+                            >
+                                <h2>Oligo Visualization</h2>
+                                <Horizontal gap="md">
                                     <Form.Group controlId="geneSelect">
                                         <Form.Label>Select Gene</Form.Label>
                                         {/* TODO: make this searchable again */}
@@ -538,9 +509,6 @@ const RunDetail = () => {
                                                 );
                                             }}
                                         >
-                                            <option value="">
-                                                Select a gene
-                                            </option>
                                             {Object.keys(probes).map((gene) => (
                                                 <option key={gene} value={gene}>
                                                     {gene}
@@ -548,174 +516,246 @@ const RunDetail = () => {
                                             ))}
                                         </Form.Select>
                                     </Form.Group>
-                                </Col>
 
-                                {selectedGene && (
-                                    <Col md={6}>
-                                        <Form.Group controlId="oligosetSelect">
-                                            <Form.Label>
-                                                Select Oligoset
-                                            </Form.Label>
-                                            <Form.Select
-                                                value={selectedOligoset}
-                                                onChange={(e) => {
-                                                    setSelectedOligoset(
-                                                        e.target.value
-                                                    );
-                                                    setSelectedOligo(
-                                                        probes[selectedGene][
-                                                            e.target.value
-                                                        ]?.[0].oligo_id || ""
-                                                    );
-                                                }}
-                                            >
-                                                <option value="">
-                                                    Select an Oligoset
-                                                </option>
-                                                {Object.keys(
-                                                    probes[selectedGene]
-                                                ).map((oligoset) => (
-                                                    <option
-                                                        key={oligoset}
-                                                        value={oligoset}
-                                                    >
-                                                        {oligoset}
-                                                    </option>
-                                                ))}
-                                            </Form.Select>
-                                        </Form.Group>
-                                    </Col>
-                                )}
-                            </Row>
-
-                            {selectedGene && selectedOligoset && (
-                                <>
-                                    <Row>
-                                        <Col>
-                                            <h5>
-                                                Oligos in {selectedOligoset}
-                                            </h5>
-                                        </Col>
-                                        <Col xs="auto">
-                                            <Form.Text>
-                                                Showing{" "}
-                                                {
+                                    <Form.Group controlId="oligosetSelect">
+                                        <Form.Label>Select Oligoset</Form.Label>
+                                        <Form.Select
+                                            value={selectedOligoset}
+                                            onChange={(e) => {
+                                                setSelectedOligoset(
+                                                    e.target.value
+                                                );
+                                                setSelectedOligo(
                                                     probes[selectedGene][
-                                                        selectedOligoset
-                                                    ].length
-                                                }{" "}
-                                                oligos
-                                            </Form.Text>
-                                            <Button
-                                                variant="primary"
-                                                size="sm"
-                                                onClick={handleDownloadCSV}
-                                            >
-                                                Download Oligoset CSV
-                                            </Button>
-                                        </Col>
-                                    </Row>
+                                                        e.target.value
+                                                    ]?.[0].oligo_id || ""
+                                                );
+                                            }}
+                                        >
+                                            {Object.keys(
+                                                probes[selectedGene]
+                                            ).map((oligoset) => (
+                                                <option
+                                                    key={oligoset}
+                                                    value={oligoset}
+                                                >
+                                                    {oligoset}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
 
-                                    <ResultVisualization
-                                        probes={
-                                            probes[selectedGene][
-                                                selectedOligoset
-                                            ]
-                                        }
-                                        selectedOligo={selectedOligo}
-                                        setSelectedOligo={setSelectedOligo}
-                                        genomicRegions={
-                                            genomicRegions
-                                                ? genomicRegions[selectedGene]
-                                                : null
-                                        }
-                                    />
+                                    <Form.Group controlId="visualizationSelect">
+                                        <Form.Label>
+                                            Select Visualization
+                                        </Form.Label>
+                                        <Form.Select
+                                            value={selectedVisualization}
+                                            onChange={(e) => {
+                                                setSelectedVisualization(
+                                                    e.target
+                                                        .value as VisualizationType
+                                                );
+                                            }}
+                                        >
+                                            {Object.keys(
+                                                visualizationDisplayNames
+                                            ).map((visualization) => (
+                                                <option
+                                                    key={visualization}
+                                                    value={visualization}
+                                                >
+                                                    {
+                                                        visualizationDisplayNames[
+                                                            visualization as VisualizationType
+                                                        ]
+                                                    }
+                                                </option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Horizontal>
 
-                                    <Table responsive bordered striped hover>
-                                        <thead className="table-light">
-                                            <tr>
+                                <ResultVisualization
+                                    probes={
+                                        probes[selectedGene][selectedOligoset]
+                                    }
+                                    selectedOligo={selectedOligo}
+                                    setSelectedOligo={setSelectedOligo}
+                                    genomicRegions={
+                                        genomicRegions
+                                            ? genomicRegions[selectedGene]
+                                            : null
+                                    }
+                                    selectedVisualization={
+                                        selectedVisualization
+                                    }
+                                />
+                                <Table responsive bordered hover>
+                                    <thead className="table-light">
+                                        <tr>
+                                            {tableColumns.map((column) => (
+                                                <th
+                                                    key={column}
+                                                    className="text-nowrap"
+                                                >
+                                                    {column.replace(/_/g, " ")}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {probes[selectedGene][
+                                            selectedOligoset
+                                        ].map(({ details: oligo }) => (
+                                            <tr key={oligo.oligo_id}>
                                                 {tableColumns.map((column) => (
-                                                    <th
-                                                        key={column}
-                                                        className="text-nowrap"
+                                                    <td
+                                                        key={`${oligo.oligo_id}-${column}`}
+                                                        className={
+                                                            "text-nowrap " +
+                                                            (oligo.oligo_id ===
+                                                            selectedOligo
+                                                                ? "table-primary"
+                                                                : "")
+                                                        }
+                                                        onClick={() =>
+                                                            setSelectedOligo(
+                                                                oligo.oligo_id
+                                                            )
+                                                        }
                                                     >
-                                                        {column.replace(
-                                                            /_/g,
-                                                            " "
-                                                        )}
-                                                    </th>
+                                                        {column === "location"
+                                                            ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
+                                                            : formatValue(
+                                                                  oligo[
+                                                                      column as keyof ProbeDetails
+                                                                  ]
+                                                              )}
+                                                    </td>
                                                 ))}
                                             </tr>
-                                        </thead>
+                                        ))}
+                                    </tbody>
 
-                                        <tbody>
-                                            {probes[selectedGene][
-                                                selectedOligoset
-                                            ].map(({ details: oligo }) => (
-                                                <tr key={oligo.oligo_id}>
-                                                    {tableColumns.map(
-                                                        (column) => (
-                                                            <td
-                                                                key={`${oligo.oligo_id}-${column}`}
-                                                                className={
-                                                                    "text-nowrap " +
-                                                                    (oligo.oligo_id ===
-                                                                    selectedOligo
-                                                                        ? "table-primary"
-                                                                        : "")
-                                                                }
-                                                                onClick={() =>
-                                                                    setSelectedOligo(
-                                                                        oligo.oligo_id
-                                                                    )
-                                                                }
-                                                            >
-                                                                {column ===
-                                                                "location"
-                                                                    ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                                    : formatValue(
-                                                                          oligo[
-                                                                              column as keyof ProbeDetails
-                                                                          ]
-                                                                      )}
-                                                            </td>
+                                    <tfoot>
+                                        <tr>
+                                            <td colSpan={tableColumns.length}>
+                                                <strong>Source:</strong>{" "}
+                                                {probes[selectedGene][
+                                                    selectedOligoset
+                                                ][0]?.details.source ?? "N/A"}
+                                                <br />
+                                                <strong>Species:</strong>{" "}
+                                                {probes[selectedGene][
+                                                    selectedOligoset
+                                                ][0]?.details.species ?? "N/A"}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </Table>
+                                <span className="text-muted">
+                                    Click on an oligo in the table to focus it
+                                    in the visualization.
+                                </span>
+                            </Vertical>
+                            <Divider />
+
+                            <h2>File Downloads</h2>
+
+                            <Horizontal gap="md">
+                                <Button
+                                    variant="outline-primary"
+                                    onClick={handleDownloadCSV}
+                                >
+                                    <FileEarmarkSpreadsheet /> All Genes Excel
+                                </Button>
+                                <Button
+                                    variant="outline-primary"
+                                    onClick={handleDownloadCSV}
+                                >
+                                    <CardList /> Oligoset CSV
+                                </Button>
+                            </Horizontal>
+                        </>
+                    )}
+                </>
+            )}
+
+            {run &&
+                files.filter((file) => file.name.toLowerCase().includes("log"))
+                    .length > 0 && (
+                    <>
+                        <Divider />
+
+                        <h2>Run Logs</h2>
+
+                        <ListGroup>
+                            {files
+                                .filter((file) =>
+                                    file.name.toLowerCase().includes("log")
+                                )
+                                .map((file) => (
+                                    <ListGroup.Item key={file.name}>
+                                        <Horizontal
+                                            gap="md"
+                                            align="center"
+                                            wrap
+                                        >
+                                            {file.name}
+                                            <Horizontal.Item grow>
+                                                <span className="badge bg-secondary">
+                                                    {Math.round(
+                                                        file.size / 1024
+                                                    )}{" "}
+                                                    KB
+                                                </span>
+                                            </Horizontal.Item>
+                                            {file.name.endsWith(".txt") && (
+                                                <Button
+                                                    variant="outline-secondary"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        viewFileContent(
+                                                            file.name
                                                         )
-                                                    )}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-
-                                        <tfoot>
-                                            <tr>
-                                                <td
-                                                    colSpan={
-                                                        tableColumns.length
                                                     }
                                                 >
-                                                    <strong>Source:</strong>{" "}
-                                                    {probes[selectedGene][
-                                                        selectedOligoset
-                                                    ][0]?.details.source ??
-                                                        "N/A"}
-                                                    <br />
-                                                    <strong>
-                                                        Species:
-                                                    </strong>{" "}
-                                                    {probes[selectedGene][
-                                                        selectedOligoset
-                                                    ][0]?.details.species ??
-                                                        "N/A"}
-                                                </td>
-                                            </tr>
-                                        </tfoot>
-                                    </Table>
-                                </>
-                            )}
-                        </Card.Body>
-                    </Card>
+                                                    {viewingFilename ===
+                                                    file.name
+                                                        ? "Hide"
+                                                        : "View"}
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="outline-primary"
+                                                size="sm"
+                                                onClick={() =>
+                                                    downloadFile(file.name)
+                                                }
+                                            >
+                                                Download
+                                            </Button>
+                                        </Horizontal>
+                                        {fileContent &&
+                                            viewingFilename === file.name && (
+                                                <pre
+                                                    className="bg-light p-3 rounded mt-2"
+                                                    style={{
+                                                        maxHeight: "500px",
+                                                        whiteSpace: "pre-wrap",
+                                                    }}
+                                                >
+                                                    {fileContent}
+                                                </pre>
+                                            )}
+                                    </ListGroup.Item>
+                                ))}
+                        </ListGroup>
+                    </>
                 )}
-            </Container>
-        </>
+        </Page>
     );
 };
 
