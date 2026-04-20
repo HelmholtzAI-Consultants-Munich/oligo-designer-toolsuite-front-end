@@ -1,4 +1,5 @@
 import { forwardRef, useState, type Ref } from "react";
+import { Link } from "react-router";
 import { BACKEND_URL } from "../../config";
 import { useAuth } from "../../hooks/useAuth";
 import { Button, Dropdown } from "react-bootstrap";
@@ -9,6 +10,7 @@ import {
     Person,
 } from "react-bootstrap-icons";
 import { Horizontal } from "./Alignment";
+import { confirmWithModal } from "../../utils/modalUtil";
 
 const UserDisplay = forwardRef(
     (
@@ -52,11 +54,22 @@ export default function UserDropdown({
     const [copied, setCopied] = useState(false);
 
     const handleLogout = () => {
-        fetch(BACKEND_URL + "/logout", {
-            method: "POST",
-            credentials: "include",
-        }).then(() => {
-            logout();
+        const callback = () =>
+            fetch(BACKEND_URL + "/logout", {
+                method: "POST",
+                credentials: "include",
+            }).then(() => {
+                logout();
+            });
+
+        confirmWithModal({
+            title: "Confirm Logout",
+            content: "Are you sure you want to log out?",
+            primaryAction: {
+                label: "Logout",
+                callback,
+                variant: "danger",
+            },
         });
     };
 
@@ -106,6 +119,11 @@ export default function UserDropdown({
                             </code>
                         </Dropdown.ItemText>
                         <Dropdown.Divider />
+                        {user.role === "admin" && (
+                            <Dropdown.Item as={Link} to="/admin">
+                                Admin Panel
+                            </Dropdown.Item>
+                        )}
                         <Dropdown.Item onClick={handleLogout}>
                             Logout
                         </Dropdown.Item>
