@@ -14,7 +14,7 @@ export interface LegalDocumentVersion {
 export interface LegalDocumentAdminView {
     document: string;
     title: string;
-    published: LegalDocumentVersion | null;
+    published: LegalDocumentVersion;
     history: LegalDocumentVersion[];
 }
 

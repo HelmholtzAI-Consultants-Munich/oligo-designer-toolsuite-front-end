@@ -65,31 +65,45 @@ def _resolve_path_under_root(path_value: Any, root: Path) -> Path | None:
 
 
 def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
+    """
+    Returns (can_delete_record, did_delete_file).
+
+    can_delete_record is True when the DB record is safe to remove: either the path
+    is already gone or was never valid. False when the path points to something that
+    isn't a file (e.g. a directory), so the record must be kept to avoid data loss.
+    """
     file_path = _resolve_path_under_root(path_value, root)
     if file_path is None:
-        return False, False
+        return False, False  # path outside root or invalid — don't touch the DB record
 
     if not file_path.exists():
-        return True, False
+        return True, False  # file already gone — safe to delete the DB record, nothing deleted on disk
     if not file_path.is_file():
-        return False, False
+        return False, False  # unexpected type (e.g. directory) — retain the DB record to avoid data loss
 
     file_path.unlink()
-    return True, True
+    return True, True  # file deleted from disk and DB record is safe to remove
 
 
 def _delete_directory_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
+    """
+    Returns (can_delete_record, did_delete_directory).
+
+    Same semantics as _delete_file_if_under_root: can_delete_record is False only
+    when the path exists but is not a directory, meaning something unexpected occupies
+    that path and the record should be retained.
+    """
     directory = _resolve_path_under_root(path_value, root)
     if directory is None:
-        return False, False
+        return False, False  # path outside root or invalid — don't touch the DB record
 
     if not directory.exists():
-        return True, False
+        return True, False  # directory already gone — safe to delete the DB record, nothing deleted on disk
     if not directory.is_dir():
-        return False, False
+        return False, False  # unexpected type (e.g. a file) — retain the DB record to avoid data loss
 
     shutil.rmtree(directory)
-    return True, True
+    return True, True  # directory deleted from disk and DB record is safe to remove
 
 
 def _partition_records_for_deletion(
@@ -98,6 +112,14 @@ def _partition_records_for_deletion(
     root: Path,
     delete_path,
 ) -> tuple[list[Any], int, int]:
+    """
+    Returns (deletable_ids, deleted_paths, retained_records).
+
+    Iterates records, deletes each associated path via delete_path, and separates
+    records into those safe to remove from the DB (deletable_ids) and those that
+    must be kept because their path couldn't be safely deleted (retained_records).
+    deleted_paths counts how many files/directories were actually removed from disk.
+    """
     deletable_ids: list[Any] = []
     deleted_paths = 0
     retained_records = 0

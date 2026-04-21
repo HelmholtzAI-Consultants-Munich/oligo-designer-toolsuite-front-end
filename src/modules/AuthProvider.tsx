@@ -68,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     const logout = () => {
+        setAuthState({ kind: "unauthenticated", legal: null });
         void loadAuth(false);
     };
 

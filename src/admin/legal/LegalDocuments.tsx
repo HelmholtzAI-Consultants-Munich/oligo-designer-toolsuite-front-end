@@ -15,7 +15,6 @@ import {
 import { formatAdminDateTime } from "../shared/date";
 import {
     type LegalDocumentAdminView,
-    fetchLegalDocumentDetail,
     fetchLegalDocumentsOverview,
     publishLegalDocument,
 } from "./legalApi";
@@ -23,7 +22,6 @@ import {
 const LegalDocuments: React.FC = () => {
     const [documents, setDocuments] = useState<LegalDocumentAdminView[]>([]);
     const [activeDocument, setActiveDocument] = useState("terms");
-    const [detail, setDetail] = useState<LegalDocumentAdminView | null>(null);
     const [selectedHistoryVersionId, setSelectedHistoryVersionId] = useState<
         string | null
     >(null);
@@ -35,44 +33,7 @@ const LegalDocuments: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
-    const applyDetailState = (data: LegalDocumentAdminView) => {
-        setDetail(data);
-        setSelectedHistoryVersionId(data.published?.id || null);
-        setIsViewingHistoryVersion(false);
-        setBody(data.published?.body || "");
-    };
-
-    useEffect(() => {
-        const loadOverview = async () => {
-            try {
-                const data = await fetchLegalDocumentsOverview();
-                setDocuments(data);
-            } catch (err: unknown) {
-                setError(
-                    getErrorMessage(err, "Failed to load legal documents")
-                );
-            }
-        };
-
-        void loadOverview();
-    }, []);
-
-    useEffect(() => {
-        const loadDetail = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                const data = await fetchLegalDocumentDetail(activeDocument);
-                applyDetailState(data);
-            } catch (err: unknown) {
-                setError(getErrorMessage(err, "Failed to load legal document"));
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        void loadDetail();
-    }, [activeDocument]);
+    const detail = documents.find((d) => d.document === activeDocument) ?? null;
 
     const getErrorMessage = (err: unknown, fallback: string) => {
         if (axios.isAxiosError(err)) {
@@ -82,31 +43,37 @@ const LegalDocuments: React.FC = () => {
     };
 
     const loadOverview = async () => {
-        const overview = await fetchLegalDocumentsOverview();
-        setDocuments(overview);
+        const data = await fetchLegalDocumentsOverview();
+        setDocuments(data);
     };
 
-    const loadDetail = async (documentKey: string) => {
-        try {
-            setIsLoading(true);
-            setError(null);
-            const data = await fetchLegalDocumentDetail(documentKey);
-            applyDetailState(data);
-        } catch (err: unknown) {
-            setError(getErrorMessage(err, "Failed to load legal document"));
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    useEffect(() => {
+        const init = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                await loadOverview();
+            } catch (err: unknown) {
+                setError(
+                    getErrorMessage(err, "Failed to load legal documents")
+                );
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    const refreshActiveDocument = async () => {
-        try {
-            setError(null);
-            await Promise.all([loadOverview(), loadDetail(activeDocument)]);
-        } catch (err: unknown) {
-            setError(getErrorMessage(err, "Failed to refresh legal documents"));
-        }
-    };
+        void init();
+    }, []);
+
+    // Sync editor state whenever the active document changes
+    useEffect(() => {
+        if (!detail) return;
+        setSelectedHistoryVersionId(detail.published.id);
+        setIsViewingHistoryVersion(false);
+        setBody(detail.published.body);
+        setSuccess(null);
+        setError(null);
+    }, [activeDocument, detail]);
 
     const handlePublish = async () => {
         if (
@@ -122,8 +89,12 @@ const LegalDocuments: React.FC = () => {
             setError(null);
             setSuccess(null);
             const data = await publishLegalDocument(activeDocument, body);
-            applyDetailState(data);
-            await loadOverview();
+            setDocuments((prev) =>
+                prev.map((d) => (d.document === activeDocument ? data : d))
+            );
+            setSelectedHistoryVersionId(data.published.id);
+            setIsViewingHistoryVersion(false);
+            setBody(data.published.body);
             setSuccess("Document published successfully.");
         } catch (err: unknown) {
             setError(getErrorMessage(err, "Failed to publish document"));
@@ -133,20 +104,20 @@ const LegalDocuments: React.FC = () => {
     };
 
     const handleResetToCurrent = () => {
+        if (!detail) return;
         setIsViewingHistoryVersion(false);
-        setSelectedHistoryVersionId(detail?.published?.id || null);
-        setBody(detail?.published?.body || "");
+        setSelectedHistoryVersionId(detail.published.id);
+        setBody(detail.published.body);
         setSuccess(null);
         setError(null);
     };
 
     const handleSelectHistoryVersion = (versionId: string) => {
-        const version = detail?.history.find((item) => item.id === versionId);
-        if (!version) {
-            return;
-        }
+        if (!detail) return;
+        const version = detail.history.find((item) => item.id === versionId);
+        if (!version) return;
 
-        if (version.id === detail?.published?.id) {
+        if (version.id === detail.published.id) {
             handleResetToCurrent();
             return;
         }
@@ -170,15 +141,7 @@ const LegalDocuments: React.FC = () => {
 
     return (
         <div className="container-fluid p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Legal Documents</h2>
-                <Button
-                    variant="outline-primary"
-                    onClick={() => void refreshActiveDocument()}
-                >
-                    Refresh
-                </Button>
-            </div>
+            <h2 className="mb-4">Legal Documents</h2>
 
             {error && (
                 <Alert
@@ -217,8 +180,7 @@ const LegalDocuments: React.FC = () => {
                                         </Card.Title>
                                         <div className="text-muted small">
                                             Published:{" "}
-                                            {document.published?.version ||
-                                                "N/A"}
+                                            {document.published.version}
                                         </div>
                                     </div>
                                     <Button
@@ -252,8 +214,12 @@ const LegalDocuments: React.FC = () => {
                                             Edit {detail.title}
                                         </Card.Title>
                                         <div className="text-muted small">
-                                            Published version:{" "}
-                                            {detail.published?.version || "N/A"}
+                                            Editing version:{" "}
+                                            {detail.history.find(
+                                                (v) =>
+                                                    v.id ===
+                                                    selectedHistoryVersionId
+                                            )?.version || "N/A"}
                                         </div>
                                     </div>
                                     {isViewingHistoryVersion ? (
@@ -275,12 +241,11 @@ const LegalDocuments: React.FC = () => {
                                             onChange={(e) =>
                                                 setBody(e.target.value)
                                             }
-                                            readOnly={isViewingHistoryVersion}
                                             placeholder="# Terms of Service"
                                         />
                                         <Form.Text className="text-muted">
                                             {isViewingHistoryVersion
-                                                ? "You are viewing a historical published version. Click Reset Form to return to the current editable text."
+                                                ? "You are viewing a historical version. You can edit and publish it to restore it, or click Reset Form to return to the current version."
                                                 : "Supports simple Markdown-style text such as headings with `#`, subheadings with `##`, paragraphs, and `-` bullet lists."}
                                         </Form.Text>
                                     </Form.Group>
@@ -297,10 +262,7 @@ const LegalDocuments: React.FC = () => {
                                             variant="success"
                                             type="button"
                                             onClick={handlePublish}
-                                            disabled={
-                                                isPublishing ||
-                                                isViewingHistoryVersion
-                                            }
+                                            disabled={isPublishing}
                                         >
                                             {isPublishing
                                                 ? "Publishing..."
@@ -320,14 +282,10 @@ const LegalDocuments: React.FC = () => {
                                     <div className="text-muted small">
                                         Published
                                     </div>
-                                    <div>
-                                        {detail.published?.version || "N/A"}
-                                    </div>
+                                    <div>{detail.published.version}</div>
                                     <div className="text-muted small">
                                         {formatAdminDateTime(
-                                            detail.published?.published_at ??
-                                                undefined,
-                                            "Not published"
+                                            detail.published.published_at
                                         )}
                                     </div>
                                 </div>
@@ -337,68 +295,58 @@ const LegalDocuments: React.FC = () => {
                         <Card>
                             <Card.Body>
                                 <Card.Title>Published History</Card.Title>
-                                {detail.history.length === 0 ? (
-                                    <Alert variant="info" className="mb-0">
-                                        No published versions yet.
-                                    </Alert>
-                                ) : (
-                                    <Table responsive size="sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Version</th>
-                                                <th>Status</th>
-                                                <th>Published</th>
+                                <Table responsive size="sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Version</th>
+                                            <th>Status</th>
+                                            <th>Published</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {detail.history.map((version) => (
+                                            <tr
+                                                key={version.id}
+                                                onClick={() =>
+                                                    handleSelectHistoryVersion(
+                                                        version.id
+                                                    )
+                                                }
+                                                style={{ cursor: "pointer" }}
+                                                className={
+                                                    selectedHistoryVersionId ===
+                                                    version.id
+                                                        ? "table-active"
+                                                        : undefined
+                                                }
+                                            >
+                                                <td className="font-monospace">
+                                                    {version.version}
+                                                </td>
+                                                <td>
+                                                    <Badge
+                                                        bg={
+                                                            version.id ===
+                                                            detail.published.id
+                                                                ? "success"
+                                                                : "secondary"
+                                                        }
+                                                    >
+                                                        {version.id ===
+                                                        detail.published.id
+                                                            ? "published"
+                                                            : "archived"}
+                                                    </Badge>
+                                                </td>
+                                                <td>
+                                                    {formatAdminDateTime(
+                                                        version.published_at
+                                                    )}
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {detail.history.map((version) => (
-                                                <tr
-                                                    key={version.id}
-                                                    onClick={() =>
-                                                        handleSelectHistoryVersion(
-                                                            version.id
-                                                        )
-                                                    }
-                                                    style={{
-                                                        cursor: "pointer",
-                                                        backgroundColor:
-                                                            selectedHistoryVersionId ===
-                                                            version.id
-                                                                ? "#e7f1ff"
-                                                                : undefined,
-                                                    }}
-                                                >
-                                                    <td className="font-monospace">
-                                                        {version.version}
-                                                    </td>
-                                                    <td>
-                                                        <Badge
-                                                            bg={
-                                                                version.id ===
-                                                                detail.published
-                                                                    ?.id
-                                                                    ? "success"
-                                                                    : "secondary"
-                                                            }
-                                                        >
-                                                            {version.id ===
-                                                            detail.published?.id
-                                                                ? "published"
-                                                                : "archived"}
-                                                        </Badge>
-                                                    </td>
-                                                    <td>
-                                                        {formatAdminDateTime(
-                                                            version.published_at ??
-                                                                undefined,
-                                                            "Not published"
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </Table>
-                                )}
+                                        ))}
+                                    </tbody>
+                                </Table>
                             </Card.Body>
                         </Card>
                     </Col>

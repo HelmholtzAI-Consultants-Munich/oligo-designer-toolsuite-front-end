@@ -217,11 +217,11 @@ def auth_callback():
       1. Exchange authorization code for access token.
       2. Fetch user info from Helmholtz AAI userinfo endpoint.
       3. Check if user exists in MongoDB by helmholtz_sub.
-      4. If new user: create user document with helmholtz_sub and role: "user".
-      5. Create user data directory if needed.
-      6. Log user in via Flask-Login.
-      7. Migrate any anonymous session data to authenticated user.
-      8. Store access token in session for later revocation.
+      4. If new user: create a user document with helmholtz_sub, role, and legal acceptance fields.
+      5. Log user in via Flask-Login with remember-me enabled.
+      6. Let _login() create the user data directory if needed and migrate any anonymous session data.
+      7. Store the access token in session for later revocation.
+      8. Redirect to the frontend, preserving any validated redirect path from the OAuth flow.
     """
     # Exchange authorization code for access token
     token = oauth.helmholtz.authorize_access_token()
@@ -337,16 +337,7 @@ def accept_terms():
             },
         )
 
-    return (
-        jsonify(
-            {
-                "accepted_terms_version": acceptance["terms_version"],
-                "terms_accepted_at": acceptance["timestamp"].isoformat(),
-                "legal": _build_legal_status(user_id=user_id, session_id=session_id),
-            }
-        ),
-        HTTPStatus.OK,
-    )
+    return jsonify({"legal": _build_legal_status(user_id=user_id, session_id=session_id)}), HTTPStatus.OK
 
 
 # ---- Logout Route ----

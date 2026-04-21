@@ -52,7 +52,6 @@ const PipelineTemplate: React.FC<Props> = ({
         title: "",
         body: "",
     });
-    const [showTermsAcceptance, setShowTermsAcceptance] = useState(false);
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [termsError, setTermsError] = useState<string | null>(null);
     const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
@@ -84,12 +83,6 @@ const PipelineTemplate: React.FC<Props> = ({
 
     const handleFormSubmit = async () => {
         if (requiresTermsAcceptance) {
-            if (!showTermsAcceptance) {
-                setShowTermsAcceptance(true);
-                setTermsError(null);
-                return;
-            }
-
             if (!hasAcceptedTerms) {
                 setTermsError(
                     "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing."
@@ -109,7 +102,6 @@ const PipelineTemplate: React.FC<Props> = ({
                 return;
             }
 
-            setShowTermsAcceptance(false);
             setHasAcceptedTerms(false);
         }
 
@@ -165,7 +157,7 @@ const PipelineTemplate: React.FC<Props> = ({
                                   ? "Submit"
                                   : "Submitting..."}
                         </Button>
-                        {showTermsAcceptance && requiresTermsAcceptance && (
+                        {requiresTermsAcceptance && (
                             <div className="border rounded p-3 mt-3 bg-light">
                                 <p className="mb-2">
                                     Before running this pipeline, please accept
@@ -194,10 +186,6 @@ const PipelineTemplate: React.FC<Props> = ({
                                     }
                                     label="I accept the Terms of Service and acknowledge the Privacy Policy."
                                 />
-                                <div className="text-muted small">
-                                    Check the box above, then press Submit
-                                    again.
-                                </div>
                             </div>
                         )}
                     </div>

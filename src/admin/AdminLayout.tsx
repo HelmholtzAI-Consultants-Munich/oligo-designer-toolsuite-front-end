@@ -83,7 +83,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
     const navigate = useNavigate();
     const location = useLocation();
     const auth = useAuth();
-    const { loading } = auth;
+    const { loading, logout } = auth;
     const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar collapse state
 
@@ -116,13 +116,12 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
             await axios.post(
                 BACKEND_URL + "/logout",
                 {},
-                {
-                    withCredentials: true,
-                }
+                { withCredentials: true }
             );
-            navigate("/");
         } catch (error) {
             console.error("Logout failed:", error);
+        } finally {
+            logout();
             navigate("/");
         }
     };
