@@ -52,8 +52,7 @@ The caching system employs a two-level cache strategy to optimize both performan
 - **Level 2: Raw Asset Cache from NCBI/Ensembl**
 
   Level 2 is the heavy, persistent cache for raw data assets downloaded from NCBI or Ensembl. These assets are typically large—ranging from hundreds of megabytes to several gigabytes—and comprise the official compressed files (`.fna.gz`, `.gtf.gz`) as distributed by the source. The cache stores both the original compressed files and their decompressed forms. This avoids repeated decompression (gunzip) overhead for downstream processing.
-  <!-- TODO: this is a lie, they all get thrown into the same directory
-  also why even keep both compressed and uncompressed files?
+  <!-- TODO:
   genomic region generator can read gzip files, we could either skip uncompressing or investigate
   the performance difference (probably negligible) -->
 
@@ -73,7 +72,7 @@ The caching system employs a two-level cache strategy to optimize both performan
   - **Ensembl Cache Example:**
 
     ```
-    cache/ncbi/
+    cache/ensembl/
     ├── annotation.gtf.gz
     ├── annotation.gtf.gz-extract
     ├── genome.fna.gz
