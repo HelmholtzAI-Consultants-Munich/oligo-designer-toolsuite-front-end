@@ -229,7 +229,7 @@ const backendGetOk = async (page: Page, apiPath: string) => {
 const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGetOk(page, `/api/runs/${runId}/state`);
+            const res = await backendGetOk(page, `/api/runs/${runId}/status`);
             const { state } = await res.json();
             if (state === "success") return true;
             if (state === "failure") {
