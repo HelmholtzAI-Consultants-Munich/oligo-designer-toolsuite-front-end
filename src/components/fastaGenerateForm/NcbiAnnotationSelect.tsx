@@ -104,7 +104,6 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
             tooltip={tooltip}
             value={value}
             handleChange={handleChange}
-            key={isLoading ? "loading" : error ? "error" : "loaded"} // Force re-render on loading/error state change
         >
             <Options />
         </GenomicDropDown>

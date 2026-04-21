@@ -1,11 +1,7 @@
 import { useRef } from "react";
 import { CacheContext } from "../hooks/useCache";
 
-interface Cache {
-    [key: string]: {
-        [key: string]: unknown;
-    };
-}
+type Cache = Map<string, Map<string, unknown>>;
 
 export interface CacheContextType {
     cached: <TArgs extends unknown[], TResult>(
@@ -18,7 +14,7 @@ export default function CacheProvider({
 }: {
     children: React.ReactNode;
 }) {
-    const cache = useRef<Cache>({});
+    const cache = useRef<Cache>(new Map());
 
     const cacheFunction = <TArgs extends unknown[], TResult>(
         func: (...args: TArgs) => TResult | Promise<TResult>
@@ -26,15 +22,15 @@ export default function CacheProvider({
         return async (...args: TArgs): Promise<TResult> => {
             const funcHash = func.toString();
             const argsHash = JSON.stringify(args);
-            if (cache.current[funcHash] && cache.current[funcHash][argsHash]) {
-                return cache.current[funcHash][argsHash] as TResult;
+            if (cache.current.get(funcHash)?.get(argsHash)) {
+                return cache.current.get(funcHash)?.get(argsHash) as TResult;
             }
 
             const result = await func(...args);
-            cache.current[funcHash] = {
-                ...cache.current[funcHash],
-                [argsHash]: result,
-            };
+            if (!cache.current.get(funcHash)) {
+                cache.current.set(funcHash, new Map());
+            }
+            cache.current.get(funcHash)?.set(argsHash, result);
             return result;
         };
     };

@@ -146,7 +146,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         // Handles changes to the source selector
         const handleSourceChange = (newFastaForm: FastaForm) => {
             setFormState(newFastaForm);
-            console.log("Source changed to: ", newFastaForm);
         };
 
         // Handles changes to NCBI-specific form fields and checkboxes

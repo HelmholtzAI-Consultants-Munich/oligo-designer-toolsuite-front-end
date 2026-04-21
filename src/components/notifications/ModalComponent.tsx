@@ -34,7 +34,13 @@ export default function ModalComponent() {
     if (!modal) return null;
 
     return (
-        <Modal show={show} onHide={handleClose}>
+        <Modal
+            show={show}
+            onHide={handleClose}
+            centered={modal.centered}
+            backdrop={modal.ignoreBackdropClick ? "static" : true}
+            dialogClassName={modal.dialogClassName}
+        >
             {"rawContent" in modal ? (
                 modal.rawContent
             ) : (

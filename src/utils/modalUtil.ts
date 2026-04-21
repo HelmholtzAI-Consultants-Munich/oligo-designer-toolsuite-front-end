@@ -12,11 +12,17 @@ interface ModalPropsBase {
         callback: () => void;
         variant?: string;
     };
+    centered?: boolean;
+    ignoreBackdropClick?: boolean;
+    dialogClassName?: string;
 }
 
 // ModalPropsRaw is used for custom modals with full control over the content
 interface ModalPropsRaw {
     rawContent: React.ReactNode;
+    centered?: boolean;
+    ignoreBackdropClick?: boolean;
+    dialogClassName?: string;
 }
 
 export type ModalProps = ModalPropsBase | ModalPropsRaw;
