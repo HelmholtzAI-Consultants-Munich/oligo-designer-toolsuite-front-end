@@ -135,24 +135,6 @@ def _login(user: User, remember: bool = True):
         session.pop("session_id", None)
 
 
-def _ensure_user_legal_fields(user_id: ObjectId):
-    """Backfill legal acceptance fields for legacy users."""
-    user_doc = mongo.db.users.find_one(
-        {"_id": user_id}, {"accepted_terms_version": 1, "terms_accepted_at": 1}
-    )
-    if user_doc is None:
-        return
-
-    missing_fields = {}
-    if "accepted_terms_version" not in user_doc:
-        missing_fields["accepted_terms_version"] = None
-    if "terms_accepted_at" not in user_doc:
-        missing_fields["terms_accepted_at"] = None
-
-    if missing_fields:
-        mongo.db.users.update_one({"_id": user_id}, {"$set": missing_fields})
-
-
 def _build_legal_status(user_id: str | None = None, session_id: str | None = None) -> dict:
     terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
     latest_acceptance = None
@@ -219,7 +201,6 @@ def login():
     if not check_password_hash(user_doc["password"], password):
         abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
 
-    _ensure_user_legal_fields(user_doc["_id"])
     user = User(user_doc)
     _login(user, remember=remember_me)
 
@@ -280,10 +261,6 @@ def auth_callback():
             }
         ).inserted_id
         user_doc = mongo.db.users.find_one({"_id": user_id})
-    else:
-        _ensure_user_legal_fields(user_doc["_id"])
-        user_doc = mongo.db.users.find_one({"_id": user_doc["_id"]})
-
     # Log user in with "Remember Me" to persist login across browser sessions
     # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
     # _login() will create the user directory if it doesn't exist
@@ -320,9 +297,6 @@ def check_auth():
     if current_user.is_authenticated:
         # Get user document to include role, helmholtz_sub, and username
         user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
-        if user_doc:
-            _ensure_user_legal_fields(user_doc["_id"])
-            user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
         role = user_doc.get("role", "user") if user_doc else "user"
         helmholtz_sub = user_doc.get("helmholtz_sub") if user_doc else None
         username = user_doc.get("username") if user_doc else None
