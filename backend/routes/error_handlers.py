@@ -8,29 +8,8 @@ Sensitive information is never exposed to clients.
 
 from http import HTTPStatus
 
-from flask import Flask, current_app, jsonify, request
+from flask import Flask, current_app, jsonify
 from werkzeug.exceptions import HTTPException
-
-
-def _is_genomic_endpoint() -> bool:
-    """Check if the current request targets a genomic endpoint."""
-    return bool(request.endpoint and "genomic" in request.endpoint)
-
-
-def _make_error_response(message: str, status_code: int):
-    """
-    Build a JSON error response, using the genomic envelope when appropriate.
-    """
-    if _is_genomic_endpoint():
-        return jsonify(
-            {
-                "status": "error",
-                "message": message,
-                "error": message,
-            }
-        ), status_code
-
-    return jsonify({"error": message}), status_code
 
 
 def register_error_handlers(app: Flask):
@@ -52,7 +31,7 @@ def register_error_handlers(app: Flask):
         """Handle Flask HTTPException (from abort())."""
         message = error.description or "Something went wrong."
         status_code = error.code or HTTPStatus.INTERNAL_SERVER_ERROR
-        return _make_error_response(message, status_code)
+        return jsonify({"error": message}), status_code
 
     @app.errorhandler(Exception)
     def handle_generic_exception(error: Exception):
@@ -62,4 +41,4 @@ def register_error_handlers(app: Flask):
             exc_info=True,
         )
         message = "Something went wrong. Please try again or contact support if the problem persists."
-        return _make_error_response(message, HTTPStatus.INTERNAL_SERVER_ERROR)
+        return jsonify({"error": message}), HTTPStatus.INTERNAL_SERVER_ERROR
