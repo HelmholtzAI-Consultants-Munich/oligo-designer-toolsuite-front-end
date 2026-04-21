@@ -68,15 +68,17 @@ def validate_id_array(data: dict, key_name: str) -> list:
 
 def get_valid_file_keys():
     """
-    Get the list of valid form data keys that a generated
+    Get the set of valid form data keys that a generated
     genomic regions file can be used for.
     """
-    return [
-        "files_fasta_target_probe_database",
-        "files_fasta_reference_database_target_probe",
-        "files_fasta_reference_database_readout_probe",
-        "files_fasta_reference_database_primer",
-    ]
+    return frozenset(
+        {
+            "files_fasta_target_probe_database",
+            "files_fasta_reference_database_target_probe",
+            "files_fasta_reference_database_readout_probe",
+            "files_fasta_reference_database_primer",
+        }
+    )
 
 
 def validate_file_key(id: str) -> None:
