@@ -263,7 +263,7 @@ export const handleSubmit = async (
 
     try {
         await uploadFiles(files, formData);
-        await handleSubmitGenomicAll(fastaForms, formData);
+        // await handleSubmitGenomicAll(fastaForms, formData);
     } catch {
         showToast({
             title: "Submitting Failed",
@@ -284,9 +284,33 @@ export const handleSubmit = async (
     }
 
     try {
+        const formDataWithFastaForms: RJSFFormData = {
+            ...formData,
+            genomic_region_generation_forms: {
+                files_fasta_target_probe_database:
+                    fastaForms.files_fasta_target_probe_database.map(
+                        prepareForUpload
+                    ),
+                files_fasta_reference_database_target_probe:
+                    fastaForms.files_fasta_reference_database_target_probe.map(
+                        prepareForUpload
+                    ),
+                files_fasta_reference_database_readout_probe:
+                    fastaForms.files_fasta_reference_database_readout_probe.map(
+                        prepareForUpload
+                    ),
+                files_fasta_reference_database_primer:
+                    fastaForms.files_fasta_reference_database_primer.map(
+                        prepareForUpload
+                    ),
+            },
+        };
+
+        console.log("Submitting with form data:", formDataWithFastaForms);
+
         await axios.post(
             BACKEND_URL + `/api/${pipeline}`,
-            { formdata: formData, runid: newId },
+            { formdata: formDataWithFastaForms, runid: newId },
             {
                 withCredentials: true,
                 headers: { "Content-Type": "application/json" },

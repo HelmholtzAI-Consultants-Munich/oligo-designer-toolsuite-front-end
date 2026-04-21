@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
@@ -164,6 +164,10 @@ const PipelineTemplate: React.FC<Props> = ({
         };
         reader.readAsText(file);
     };
+
+    useEffect(() => {
+        console.log(fastaForms);
+    }, [fastaForms]);
 
     return (
         <Page
