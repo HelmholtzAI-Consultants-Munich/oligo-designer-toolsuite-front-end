@@ -159,7 +159,6 @@ const GenomicInput = ({ id, name, registry }: WidgetProps) => {
                         <Button
                             variant="outline-border"
                             className="flex-grow-1"
-                            onClick={() => {}}
                         >
                             {FilePreview(file)}
                         </Button>

@@ -77,7 +77,12 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
 
     const Options = () => {
         if (isLoading) {
-            return <option>Loading annotation releases...</option>;
+            return (
+                <>
+                    <option>Loading annotation releases...</option>
+                    {value !== "" && <option value={value}>{value}</option>}
+                </>
+            );
         }
 
         if (error || !releases) {
