@@ -80,7 +80,7 @@ The caching system employs a two-level cache strategy to optimize both performan
     ```
 
   This structure ensures that both the original and ready-to-use files are always available for fast access and reuse.
-  <!-- is is debatable whether this is necessary, see comment above -->
+  <!-- it is debatable whether this is necessary, see comment above -->
 
 **Workflow Summary:**
 
