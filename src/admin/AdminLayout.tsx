@@ -82,7 +82,8 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, loading } = useAuth();
+    const auth = useAuth();
+    const { loading } = auth;
     const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar collapse state
 
@@ -97,31 +98,18 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
             setIsLargeScreen(e.matches);
         mediaQuery.addEventListener("change", handleChange);
 
-        // Check if user is authenticated and is admin
         if (!loading) {
-            console.log(
-                "Admin check - loading:",
-                loading,
-                "user:",
-                user,
-                "role:",
-                user?.role
-            );
-            if (!user) {
-                // Not logged in - redirect to login with return URL
-                console.log("Redirecting to login - user not authenticated");
+            if (auth.kind !== "authenticated") {
                 navigate(
                     `/login?redirect=${encodeURIComponent(location.pathname)}`
                 );
-            } else if (user.role !== "admin") {
-                // Logged in but not admin - redirect to home
-                console.log("Redirecting to home - user is not admin");
+            } else if (auth.user.role !== "admin") {
                 navigate("/");
             }
         }
 
         return () => mediaQuery.removeEventListener("change", handleChange);
-    }, [user, loading, navigate, location.pathname]);
+    }, [auth, loading, navigate, location.pathname]);
 
     const handleLogout = async () => {
         try {
@@ -152,8 +140,8 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
         );
     }
 
-    if (!user || user.role !== "admin") {
-        return null; // Will redirect
+    if (auth.kind !== "authenticated" || auth.user.role !== "admin") {
+        return null;
     }
 
     const isActive = (path: string) => {

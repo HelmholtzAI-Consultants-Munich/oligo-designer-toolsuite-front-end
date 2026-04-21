@@ -14,7 +14,8 @@ import { Link, useNavigate } from "react-router";
 import { GearFill } from "react-bootstrap-icons";
 
 const Topbar: React.FC = () => {
-    const { user, logout } = useAuth();
+    const auth = useAuth();
+    const { logout } = auth;
     const navigate = useNavigate();
     const [copied, setCopied] = useState(false);
     const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -117,9 +118,9 @@ const Topbar: React.FC = () => {
                         </Nav.Link>
 
                         {/* Auth  */}
-                        {user ? (
+                        {auth.kind === "authenticated" ? (
                             <>
-                                {user.role === "admin" && (
+                                {auth.user.role === "admin" && (
                                     <Nav.Link as={Link} to="/admin">
                                         Admin
                                     </Nav.Link>
@@ -137,9 +138,10 @@ const Topbar: React.FC = () => {
                                                 }}
                                                 onClick={() => {
                                                     const textToCopy =
-                                                        user.helmholtz_sub ||
-                                                        user.username ||
-                                                        user.id;
+                                                        auth.user
+                                                            .helmholtz_sub ||
+                                                        auth.user.username ||
+                                                        auth.user.id;
                                                     navigator.clipboard.writeText(
                                                         textToCopy
                                                     );
@@ -161,9 +163,9 @@ const Topbar: React.FC = () => {
                                                     )}
                                                 </small>
                                                 <code className="text-break mb-0 d-block">
-                                                    {user.helmholtz_sub ||
-                                                        user.username ||
-                                                        user.id}
+                                                    {auth.user.helmholtz_sub ||
+                                                        auth.user.username ||
+                                                        auth.user.id}
                                                 </code>
                                             </Dropdown.Item>
                                             <Dropdown.Divider />

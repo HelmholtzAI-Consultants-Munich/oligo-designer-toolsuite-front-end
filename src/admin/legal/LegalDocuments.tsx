@@ -325,7 +325,8 @@ const LegalDocuments: React.FC = () => {
                                     </div>
                                     <div className="text-muted small">
                                         {formatAdminDateTime(
-                                            detail.published?.published_at,
+                                            detail.published?.published_at ??
+                                                undefined,
                                             "Not published"
                                         )}
                                     </div>
@@ -373,18 +374,23 @@ const LegalDocuments: React.FC = () => {
                                                     <td>
                                                         <Badge
                                                             bg={
-                                                                version.status ===
-                                                                "published"
+                                                                version.id ===
+                                                                detail.published
+                                                                    ?.id
                                                                     ? "success"
                                                                     : "secondary"
                                                             }
                                                         >
-                                                            {version.status}
+                                                            {version.id ===
+                                                            detail.published?.id
+                                                                ? "published"
+                                                                : "archived"}
                                                         </Badge>
                                                     </td>
                                                     <td>
                                                         {formatAdminDateTime(
-                                                            version.published_at,
+                                                            version.published_at ??
+                                                                undefined,
                                                             "Not published"
                                                         )}
                                                     </td>

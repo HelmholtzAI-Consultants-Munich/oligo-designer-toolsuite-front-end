@@ -3,36 +3,43 @@ export interface User {
     username?: string;
     role?: "user" | "admin";
     helmholtz_sub?: string;
-    accepted_terms_version?: string | null;
-    terms_accepted_at?: string | null;
-    current_terms_version?: string;
+    accepted_terms_version: string | null;
+    terms_accepted_at: string | null;
+    current_terms_version: string;
 }
 
 export interface TermsAcceptanceStatus {
-    scope: "user" | "session";
+    scope: "session";
     current_terms_version: string;
     accepted_terms_version?: string | null;
     terms_accepted_at?: string | null;
     requires_terms_acceptance: boolean;
 }
 
+export type AuthState =
+    | {
+          kind: "authenticated";
+          user: User;
+      }
+    | {
+          kind: "unauthenticated";
+          legal: TermsAcceptanceStatus | null;
+      };
+
 export interface LegalDocument {
     document: string;
     title: string;
     version: string;
     body: string;
-    status: "published" | "archived";
     published_at?: string | null;
 }
 
-export interface AuthContextType {
-    user: User | null;
+export type AuthContextType = AuthState & {
     loading: boolean;
-    legal: TermsAcceptanceStatus | null;
     acceptTerms: () => Promise<boolean>;
     checkAuth: () => Promise<void>;
     logout: () => void;
-}
+};
 
 export interface GenomicRegion {
     start: number;

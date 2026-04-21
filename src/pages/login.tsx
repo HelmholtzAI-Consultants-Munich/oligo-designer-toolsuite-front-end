@@ -18,18 +18,18 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { user, loading, checkAuth } = useAuth();
+    const auth = useAuth();
+    const { loading, checkAuth } = auth;
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get("redirect") || "/";
 
     // Redirect if already logged in
     useEffect(() => {
-        if (!loading && user) {
-            // User is already authenticated, redirect them away from login page
+        if (!loading && auth.kind === "authenticated") {
             navigate(redirectTo);
         }
-    }, [user, loading, navigate, redirectTo]);
+    }, [auth.kind, loading, navigate, redirectTo]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -69,7 +69,7 @@ const Login = () => {
     if (loading) return <div>Loading...</div>;
 
     // Don't render login form if user is already authenticated (will redirect)
-    if (user) {
+    if (auth.kind === "authenticated") {
         return null;
     }
 

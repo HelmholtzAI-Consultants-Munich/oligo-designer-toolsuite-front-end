@@ -229,8 +229,9 @@ def test_get_legal_document_detail_success(admin_client):
     assert response.status_code == 200
     data = response.get_json()
     assert data["document"] == TERMS_DOCUMENT_KEY
-    assert data["published"]["status"] == "published"
     assert len(data["history"]) >= 1
+    assert data["history"][0]["id"] == data["published"]["id"]
+    assert "status" not in data["published"]
 
 
 def test_publish_legal_document_success(admin_client):
@@ -243,10 +244,11 @@ def test_publish_legal_document_success(admin_client):
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data["published"]["status"] == "published"
     assert data["published"]["version"] is not None
     assert "Updated legal paragraph." in data["published"]["body"]
     assert len(data["history"]) >= 2
+    assert data["history"][0]["id"] == data["published"]["id"]
+    assert all("status" not in item for item in data["history"])
 
 
 def test_publish_legal_document_requires_new_content(admin_client):

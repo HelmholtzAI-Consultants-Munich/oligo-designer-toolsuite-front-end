@@ -20,11 +20,11 @@ import SiteFooter from "./components/ui/SiteFooter";
 import { useAuth } from "./modules/useAuth";
 
 function App() {
-    const { user } = useAuth();
+    const auth = useAuth();
 
     return (
         <Router>
-            {user && <FeedbackButton floating />}
+            {auth.kind === "authenticated" && <FeedbackButton floating />}
             <Routes>
                 {/* Make "index" the main page */}
                 <Route path="/login" element={<Login />} />

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { Alert, Card, Container, Spinner } from "react-bootstrap";
 
 import { BACKEND_URL } from "../../config";
 import type { LegalDocument } from "../../types";
-import LegalMarkdown from "./LegalMarkdown";
 import Navbar from "./Topbar";
 
 interface LegalDocumentPageProps {
@@ -68,7 +68,7 @@ const LegalDocumentPage: React.FC<LegalDocumentPageProps> = ({ endpoint }) => {
                             <p className="text-muted mb-2">
                                 Version {document.version}
                             </p>
-                            <LegalMarkdown body={document.body} />
+                            <ReactMarkdown>{document.body}</ReactMarkdown>
                         </Card.Body>
                     </Card>
                 )}

@@ -33,7 +33,8 @@ const PipelineTemplate: React.FC<Props> = ({
     schema,
     uiSchema,
 }) => {
-    const { legal, acceptTerms } = useAuth();
+    const auth = useAuth();
+    const { acceptTerms } = auth;
     const [formData, setFormData] = useState<RJSFFormData>({});
     const validator = customizeValidator({ AjvClass: Ajv2020 });
 
@@ -62,6 +63,11 @@ const PipelineTemplate: React.FC<Props> = ({
     const widgets = {
         fileSelection: FileSelection,
     };
+    const requiresTermsAcceptance =
+        auth.kind === "authenticated"
+            ? auth.user.accepted_terms_version !==
+              auth.user.current_terms_version
+            : (auth.legal?.requires_terms_acceptance ?? false);
 
     const submitPipeline = async () => {
         await handleSubmit(
@@ -76,7 +82,7 @@ const PipelineTemplate: React.FC<Props> = ({
     };
 
     const handleFormSubmit = async () => {
-        if (legal?.requires_terms_acceptance) {
+        if (requiresTermsAcceptance) {
             if (!showTermsAcceptance) {
                 setShowTermsAcceptance(true);
                 setTermsError(null);
@@ -158,47 +164,41 @@ const PipelineTemplate: React.FC<Props> = ({
                                   ? "Submit"
                                   : "Submitting..."}
                         </Button>
-                        {showTermsAcceptance &&
-                            legal?.requires_terms_acceptance && (
-                                <div className="border rounded p-3 mt-3 bg-light">
-                                    <p className="mb-2">
-                                        Before running this pipeline, please
-                                        accept the{" "}
-                                        <Link to="/terms">
-                                            Terms of Service
-                                        </Link>{" "}
-                                        and review the{" "}
-                                        <Link to="/privacy-policy">
-                                            Privacy Policy
-                                        </Link>
-                                        .
-                                    </p>
-                                    {termsError && (
-                                        <Alert
-                                            variant="danger"
-                                            className="mb-3"
-                                        >
-                                            {termsError}
-                                        </Alert>
-                                    )}
-                                    <BootstrapForm.Check
-                                        id={`${pipeline}-terms-acceptance`}
-                                        type="checkbox"
-                                        className="mb-3"
-                                        checked={hasAcceptedTerms}
-                                        onChange={(event) =>
-                                            setHasAcceptedTerms(
-                                                event.target.checked
-                                            )
-                                        }
-                                        label="I accept the Terms of Service and acknowledge the Privacy Policy."
-                                    />
-                                    <div className="text-muted small">
-                                        Check the box above, then press Submit
-                                        again.
-                                    </div>
+                        {showTermsAcceptance && requiresTermsAcceptance && (
+                            <div className="border rounded p-3 mt-3 bg-light">
+                                <p className="mb-2">
+                                    Before running this pipeline, please accept
+                                    the{" "}
+                                    <Link to="/terms">Terms of Service</Link>{" "}
+                                    and review the{" "}
+                                    <Link to="/privacy-policy">
+                                        Privacy Policy
+                                    </Link>
+                                    .
+                                </p>
+                                {termsError && (
+                                    <Alert variant="danger" className="mb-3">
+                                        {termsError}
+                                    </Alert>
+                                )}
+                                <BootstrapForm.Check
+                                    id={`${pipeline}-terms-acceptance`}
+                                    type="checkbox"
+                                    className="mb-3"
+                                    checked={hasAcceptedTerms}
+                                    onChange={(event) =>
+                                        setHasAcceptedTerms(
+                                            event.target.checked
+                                        )
+                                    }
+                                    label="I accept the Terms of Service and acknowledge the Privacy Policy."
+                                />
+                                <div className="text-muted small">
+                                    Check the box above, then press Submit
+                                    again.
                                 </div>
-                            )}
+                            </div>
+                        )}
                     </div>
                 </Form>
             </Container>

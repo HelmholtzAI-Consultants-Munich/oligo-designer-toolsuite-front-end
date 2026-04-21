@@ -1,11 +1,30 @@
 import { useState, useEffect } from "react";
-import type { TermsAcceptanceStatus, User } from "../types";
+import type { AuthState, TermsAcceptanceStatus, User } from "../types";
 import { BACKEND_URL } from "../config";
 import { AuthContext } from "./authContext";
 
+type AuthCheckResponse =
+    | {
+          authenticated: true;
+          user: User;
+          legal?: {
+              scope: "user";
+              current_terms_version: string;
+              accepted_terms_version?: string | null;
+              terms_accepted_at?: string | null;
+              requires_terms_acceptance: boolean;
+          } | null;
+      }
+    | {
+          authenticated: false;
+          legal?: TermsAcceptanceStatus | null;
+      };
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
-    const [legal, setLegal] = useState<TermsAcceptanceStatus | null>(null);
+    const [authState, setAuthState] = useState<AuthState>({
+        kind: "unauthenticated",
+        legal: null,
+    });
     const [loading, setLoading] = useState(true);
 
     const loadAuth = async (showLoading: boolean) => {
@@ -16,13 +35,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const response = await fetch(BACKEND_URL + "/api/check_auth", {
                 credentials: "include",
             });
-            const data = await response.json();
-            setUser(data.authenticated ? data.user : null);
-            setLegal(data.legal ?? null);
+            const data = (await response.json()) as AuthCheckResponse;
+            setAuthState(
+                data.authenticated
+                    ? {
+                          kind: "authenticated",
+                          user: data.user,
+                      }
+                    : {
+                          kind: "unauthenticated",
+                          legal: data.legal ?? null,
+                      }
+            );
         } catch (error) {
             console.error("Auth check failed:", error);
-            setUser(null);
-            setLegal(null);
+            setAuthState({
+                kind: "unauthenticated",
+                legal: null,
+            });
         } finally {
             if (showLoading) {
                 setLoading(false);
@@ -66,9 +96,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return (
         <AuthContext.Provider
             value={{
-                user,
+                ...authState,
                 loading,
-                legal,
                 acceptTerms,
                 checkAuth,
                 logout,

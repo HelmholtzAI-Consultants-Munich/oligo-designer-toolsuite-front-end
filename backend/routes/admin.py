@@ -197,7 +197,7 @@ def delete_user(user_id: ObjectId):
 @login_required
 @require_admin
 def get_legal_documents():
-    """List legal documents with current published status and history."""
+    """List legal documents with the current version and history."""
     return jsonify(list_legal_document_admin_views()), HTTPStatus.OK
 
 

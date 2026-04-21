@@ -17,9 +17,6 @@ LEGAL_DOCUMENT_LABELS = {
     PRIVACY_DOCUMENT_KEY: "Data Protection Declaration",
 }
 
-LEGAL_STATUS_PUBLISHED = "published"
-LEGAL_STATUS_ARCHIVED = "archived"
-
 
 def _legal_documents_dir() -> Path:
     return Path(__file__).resolve().parent.parent / "legal"
@@ -32,10 +29,10 @@ def _default_legal_document_path(document_key: str) -> Path:
     return _legal_documents_dir() / filename
 
 
-def _latest_legal_document(document_key: str, status: str) -> dict | None:
+def _latest_legal_document(document_key: str) -> dict | None:
     sort_field = "published_at"
     return mongo.db.legal_documents.find_one(
-        {"document": document_key, "status": status},
+        {"document": document_key},
         sort=[(sort_field, -1)],
     )
 
@@ -52,7 +49,6 @@ def _serialize_legal_document(document: dict | None) -> dict | None:
         "title": derive_legal_title(document["document"], body),
         "body": body,
         "version": document["version"],
-        "status": document["status"],
         "published_at": document.get("published_at").isoformat() if document.get("published_at") else None,
     }
 
@@ -67,7 +63,6 @@ def _create_published_legal_document(document_key: str) -> dict:
             "document": document_key,
             "body": body,
             "version": version,
-            "status": LEGAL_STATUS_PUBLISHED,
             "published_at": now,
         }
     ).inserted_id
@@ -109,7 +104,7 @@ def ensure_published_legal_document(document_key: str) -> dict:
     if not is_supported_legal_document(document_key):
         raise ValueError(f"Unsupported legal document: {document_key}")
 
-    published_document = _latest_legal_document(document_key, LEGAL_STATUS_PUBLISHED)
+    published_document = _latest_legal_document(document_key)
     if published_document is not None:
         return published_document
 
@@ -125,14 +120,7 @@ def get_legal_document_admin_view(document_key: str) -> dict:
         raise ValueError(f"Unsupported legal document: {document_key}")
 
     published_document = _serialize_legal_document(ensure_published_legal_document(document_key))
-    history = list(
-        mongo.db.legal_documents.find(
-            {
-                "document": document_key,
-                "status": {"$in": [LEGAL_STATUS_PUBLISHED, LEGAL_STATUS_ARCHIVED]},
-            }
-        ).sort("published_at", -1)
-    )
+    history = list(mongo.db.legal_documents.find({"document": document_key}).sort("published_at", -1))
 
     return {
         "document": document_key,
@@ -157,22 +145,11 @@ def publish_legal_document(document_key: str, body: str) -> dict:
     if version == published_document["version"]:
         raise ValueError("Document matches the currently published version")
 
-    mongo.db.legal_documents.update_many(
-        {"document": document_key, "status": LEGAL_STATUS_PUBLISHED},
-        {
-            "$set": {
-                "status": LEGAL_STATUS_ARCHIVED,
-            }
-        },
-    )
-    mongo.db.legal_documents.delete_many({"document": document_key, "status": "draft"})
-
     inserted_id = mongo.db.legal_documents.insert_one(
         {
             "document": document_key,
             "body": normalized_body,
             "version": version,
-            "status": LEGAL_STATUS_PUBLISHED,
             "published_at": now,
         }
     ).inserted_id

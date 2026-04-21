@@ -9,7 +9,8 @@ import oligoseq from "../images/oligoseq.jpg";
 import { Alert, Card, Col, Container, Row } from "react-bootstrap";
 
 const Pipelines: React.FC = () => {
-    const { user, loading } = useAuth();
+    const auth = useAuth();
+    const { loading } = auth;
 
     const pipelines = [
         {
@@ -48,7 +49,7 @@ const Pipelines: React.FC = () => {
         <>
             <Navbar />
 
-            {!user && (
+            {auth.kind !== "authenticated" && (
                 <Alert variant="warning">
                     To keep your runs saved when you close your browser, please{" "}
                     <Link to="/login">log in</Link>.

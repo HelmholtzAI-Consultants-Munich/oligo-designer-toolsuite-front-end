@@ -8,7 +8,6 @@ export interface LegalDocumentVersion {
     title: string;
     body: string;
     version: string;
-    status: "published" | "archived";
     published_at?: string | null;
 }
 
