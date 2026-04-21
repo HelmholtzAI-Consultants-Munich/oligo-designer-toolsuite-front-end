@@ -1,4 +1,5 @@
 import os
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
@@ -8,9 +9,12 @@ from typing import Any
 from bson import ObjectId
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
+from flask_login import current_user
 
+from backend.config import PIPELINE_NAMES, CeleryConfig
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.runs import update_run_in_DB
 from backend.utilities.typed_values import (
     sanitize_pipeline_form_paths,
     serialize_path,
@@ -23,18 +27,8 @@ from backend.utilities.validation import parse_run_id
 pipelines_bp = Blueprint("pipelines", __name__)
 
 
-EXISTING_PIPELINES = frozenset(
-    {
-        "scrinshot",
-        "seqfish",
-        "merfish",
-        "oligoseq",
-    }
-)
-
-
 def validate_name(pipeline_name: str) -> bool:
-    return pipeline_name in EXISTING_PIPELINES
+    return pipeline_name in PIPELINE_NAMES
 
 
 @dataclass(frozen=True)
@@ -73,28 +67,79 @@ def create_context(pipeline_name: str) -> RunContext:
     )
 
 
-def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
+def extract_gene_count(form_data: dict) -> int | None:
+    """Extract the number of genes from form_data for heuristic timeout normalization.
+
+    file_regions is either a comma-separated gene list or a path to an uploaded .txt file.
+    Returns None if the count cannot be determined.
+    """
+    file_regions = form_data.get("file_regions", "")
+    if not file_regions:
+        return None
+    if not file_regions.endswith(".txt"):
+        # Inline comma-separated gene list
+        genes = [g.strip() for g in file_regions.split(",") if g.strip()]
+        return len(genes) if genes else None
+    # Uploaded .txt file — count non-empty lines
+    try:
+        with open(file_regions) as f:
+            count = sum(1 for line in f if line.strip())
+        return count if count > 0 else None
+    except OSError:
+        current_app.logger.warning(f"Could not read gene count from file_regions path: {file_regions}")
+        return None
 
 
 def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
     context: RunContext,
-    task_id: str | None,
+    task_id: str,
+    gene_count: int | None = None,
 ):
-    return update_run_in_DB(
-        run_id,
-        {
-            "session_id": context.session_id,
-            "user_id": context.user_id,
-            "timestamp": context.timestamp,
-            "output_path": serialize_path(context.output_path),
-            "status": "pending",
-            "pipeline": pipeline_name,
-            "task_id": task_id,
-        },
-    )
+    data: dict[str, Any] = {
+        "session_id": context.session_id,
+        "user_id": context.user_id,
+        "timestamp": context.timestamp,
+        "output_path": serialize_path(context.output_path),
+        "status": "pending",
+        "pipeline": pipeline_name,
+        "task_id": task_id,
+    }
+    if gene_count is not None:
+        data["gene_count"] = gene_count
+    return update_run_in_DB(run_id, data)
+
+
+def _get_heuristic_rate(pipeline_name: str) -> dict | None:
+    """Look up the cached percentile seconds-per-gene rate for this pipeline from MongoDB.
+
+    Returns a dict with key 'seconds_per_gene', or None if unavailable.
+    """
+    doc = mongo.db.cache.find_one({"_id": "pipeline_timeouts"})
+    if doc:
+        return doc.get("data", {}).get(pipeline_name)
+    return None
+
+
+def resolve_timeout(pipeline_name: str, is_authenticated: bool, gene_count: int | None) -> int:
+    """Return soft time limit in seconds for this pipeline run.
+
+    In heuristic mode, multiplies the cached percentile seconds-per-gene rate by the
+    current run's gene count and the configured safety factor. Falls back to fixed
+    config values if no cache data exists or gene count is unavailable.
+    """
+    if CeleryConfig.pipeline_timeout_mode == "heuristic":
+        cached = _get_heuristic_rate(pipeline_name)
+        if cached is not None and gene_count:
+            multiplier = 2 if is_authenticated else 1
+            return int(
+                cached["seconds_per_gene"]
+                * gene_count
+                * CeleryConfig.pipeline_timeout_heuristic_factor
+                * multiplier
+            )
+    return CeleryConfig.pipeline_timeout_auth if is_authenticated else CeleryConfig.pipeline_timeout_anon
 
 
 def enqueue_pipeline(
@@ -102,10 +147,18 @@ def enqueue_pipeline(
     form_data: dict[str, Any],
     upload_path: Path,
     output_path: Path,
+    is_authenticated: bool,
+    task_id: str,
+    gene_count: int | None = None,
 ) -> AsyncResult:
+    soft_limit = resolve_timeout(pipeline_name, is_authenticated, gene_count)
+    hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
     return celery_app.send_task(
         "backend.worker.tasks.run_pipeline",
         (pipeline_name, form_data, str(upload_path), str(output_path)),
+        task_id=task_id,
+        soft_time_limit=soft_limit,
+        time_limit=hard_limit,
     )
 
 
@@ -157,16 +210,32 @@ def start_pipeline(pipeline_name: str):
     except ValueError as error:
         abort(HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}")
 
-    # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    result_promise = enqueue_pipeline(pipeline_name, sanitized_form_data, upload_path, context.output_path)
+    task_id = str(uuid.uuid4())
 
-    # Mark Run as Enqueued in DB
-    update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
+    gene_count = extract_gene_count(sanitized_form_data)
+
+    update_result = write_run_to_DB(pipeline_name, run_id, context, task_id, gene_count)
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
-    # The task state can be polled using get_run_state(run_id_str).
+    is_authenticated = current_user.is_authenticated
+    try:
+        enqueue_pipeline(
+            pipeline_name,
+            sanitized_form_data,
+            upload_path,
+            context.output_path,
+            is_authenticated,
+            task_id,
+            gene_count,
+        )
+    except Exception:
+        update_run_in_DB(run_id, {"status": "failure"})
+        current_app.logger.exception("Failed to enqueue pipeline task")
+        abort(
+            HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to submit pipeline run. Please try again."
+        )
 
     return jsonify({"run_id": run_id_str})
