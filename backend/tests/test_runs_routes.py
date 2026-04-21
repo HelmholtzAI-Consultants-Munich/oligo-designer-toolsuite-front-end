@@ -34,7 +34,7 @@ def test_init_run_id_requires_terms_acceptance(client):
 def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
     create_test_run(run_id, user_id=dummy_user.id)
 
-    response = client.get("/api/pipelines")
+    response = client.get("/api/runs")
     assert response.status_code == 200
     assert isinstance(response.get_json(), list)
 

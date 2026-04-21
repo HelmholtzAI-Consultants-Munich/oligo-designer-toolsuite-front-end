@@ -16,14 +16,8 @@ export interface TermsAcceptanceStatus {
 }
 
 export type AuthState =
-    | {
-          kind: "authenticated";
-          user: User;
-      }
-    | {
-          kind: "unauthenticated";
-          legal: TermsAcceptanceStatus | null;
-      };
+    | { kind: "authenticated"; user: User }
+    | { kind: "unauthenticated"; legal: TermsAcceptanceStatus | null };
 
 export interface LegalDocument {
     document: string;
@@ -38,6 +32,7 @@ export type AuthContextType = AuthState & {
     acceptTerms: () => Promise<boolean>;
     checkAuth: () => Promise<void>;
     logout: () => void;
+    logoutWithConfirmation: () => void;
 };
 
 export interface GenomicRegion {
@@ -179,3 +174,13 @@ export interface Probesets {
 export type ProbeDetailsValue = string | number | string[] | number[];
 
 export type RunState = "started" | "success" | "failure" | "pending";
+
+export interface PipelineRun {
+    _id: string;
+    pipeline: string;
+    status: RunState;
+    timestamp: string;
+    output_path: string;
+    user_id: string;
+    error_message?: string;
+}

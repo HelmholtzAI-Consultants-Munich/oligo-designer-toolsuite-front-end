@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router";
-import { useAuth } from "../modules/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { Navbar, Nav, Container, Spinner, Button } from "react-bootstrap";
 import {
     People,
@@ -12,8 +12,6 @@ import {
     ChatDots,
     FileEarmarkText,
 } from "react-bootstrap-icons";
-import axios from "axios";
-import { BACKEND_URL } from "../config.ts";
 
 interface NavItemConfig {
     path: string;
@@ -111,6 +109,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
         return () => mediaQuery.removeEventListener("change", handleChange);
     }, [auth, loading, navigate, location.pathname]);
 
+    const { logoutWithConfirmation } = useAuth();
     const handleLogout = async () => {
         try {
             await axios.post(
@@ -224,7 +223,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                                     Back to App
                                 </Nav.Link>
                                 <Nav.Link
-                                    onClick={handleLogout}
+                                    onClick={logoutWithConfirmation}
                                     style={{ cursor: "pointer" }}
                                 >
                                     <BoxArrowRight className="me-1" />

@@ -1,6 +1,9 @@
-import { Col, Row, Tab, Tabs } from "react-bootstrap";
 import ObjectTemplate from "./ObjectTemplate";
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
+import Page from "../ui/Page";
+import { Horizontal, Vertical } from "../ui/Alignment";
+import { Fragment } from "react/jsx-runtime";
+import { isRootField } from "./utils";
 
 interface TabConfig {
     title: string;
@@ -11,43 +14,57 @@ export const TabsLayout = (props: ObjectFieldTemplateProps) => {
     const { uiSchema } = props;
     const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
 
-    const isRoot = props.fieldPathId.$id === "root";
+    const isRoot = isRootField(props.fieldPathId);
     if (isRoot && tabs && tabs.length > 0)
         return (
-            <Tabs defaultActiveKey={tabs[0].title}>
+            <Page.Tabs>
                 {tabs.map((tab) => (
-                    <Tab eventKey={tab.title} title={tab.title} key={tab.title}>
-                        {tab.fields.map((entry: string | string[]) => {
-                            if (Array.isArray(entry)) {
-                                return (
-                                    <Row key={entry.join("-")}>
-                                        {entry.map((field) => {
-                                            const found = props.properties.find(
-                                                (p) => p.name === field
-                                            );
-                                            if (!found) return null;
+                    <Page.Tab tabKey={tab.title} key={tab.title}>
+                        <Vertical gap="xl" align="stretch">
+                            {tab.fields.map((entry: string | string[]) => {
+                                if (Array.isArray(entry)) {
+                                    return (
+                                        <Horizontal
+                                            key={entry.join("-")}
+                                            gap="md"
+                                            align="stretch"
+                                        >
+                                            {entry.map((field) => {
+                                                const found =
+                                                    props.properties.find(
+                                                        (p) => p.name === field
+                                                    );
+                                                if (!found) return null;
 
-                                            return (
-                                                <Col key={field}>
-                                                    {found.content}
-                                                </Col>
-                                            );
-                                        })}
-                                    </Row>
-                                );
-                            } else {
-                                const found = props.properties.find(
-                                    (p) => p.name === entry
-                                );
+                                                return (
+                                                    <Horizontal.Item
+                                                        grow
+                                                        key={field}
+                                                    >
+                                                        {found.content}
+                                                    </Horizontal.Item>
+                                                );
+                                            })}
+                                        </Horizontal>
+                                    );
+                                } else {
+                                    const found = props.properties.find(
+                                        (p) => p.name === entry
+                                    );
 
-                                if (!found) return null;
+                                    if (!found) return null;
 
-                                return <Col key={entry}>{found.content}</Col>;
-                            }
-                        })}
-                    </Tab>
+                                    return (
+                                        <Fragment key={entry}>
+                                            {found.content}
+                                        </Fragment>
+                                    );
+                                }
+                            })}
+                        </Vertical>
+                    </Page.Tab>
                 ))}
-            </Tabs>
+            </Page.Tabs>
         );
     else {
         return <ObjectTemplate {...props} />;

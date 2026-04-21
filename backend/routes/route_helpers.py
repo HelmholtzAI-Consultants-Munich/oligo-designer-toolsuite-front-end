@@ -166,6 +166,4 @@ def get_task_id(run) -> str:
     :raises: 500 if task_id is not found
     """
     task_id = run.get("task_id")
-    if not task_id:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR)
     return task_id

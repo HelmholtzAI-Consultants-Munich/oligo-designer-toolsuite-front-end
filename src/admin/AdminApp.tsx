@@ -7,10 +7,14 @@ import UserEdit from "./users/UserEdit";
 import PipelineList from "./pipelines/PipelineList";
 import FeedbackList from "./feedback/FeedbackList";
 import LegalDocuments from "./legal/LegalDocuments";
+import Modal from "../components/notifications/Modal";
+import Toasts from "../components/notifications/Toasts";
 
 const AdminApp: React.FC = () => {
     return (
         <AdminLayout>
+            <Toasts />
+            <Modal />
             <Routes>
                 <Route
                     index

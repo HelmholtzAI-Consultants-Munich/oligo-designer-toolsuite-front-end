@@ -18,6 +18,11 @@ def setup(sender, **kwargs):
     )
     sender.add_periodic_task(
         MIDNIGHT_CRON,
+        signature("backend.worker.tasks.refresh_pipeline_timeouts"),
+        name="refresh-pipeline-timeouts-task",
+    )
+    sender.add_periodic_task(
+        MIDNIGHT_CRON,
         signature("backend.worker.tasks.cleanup_anonymous_data"),
         name="cleanup-anonymous-data-task",
     )

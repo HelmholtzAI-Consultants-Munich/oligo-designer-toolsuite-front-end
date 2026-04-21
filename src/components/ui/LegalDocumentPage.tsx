@@ -4,7 +4,6 @@ import { Alert, Card, Container, Spinner } from "react-bootstrap";
 
 import { BACKEND_URL } from "../../config";
 import type { LegalDocument } from "../../types";
-import Navbar from "./Topbar";
 
 interface LegalDocumentPageProps {
     endpoint: string;
@@ -52,7 +51,6 @@ const LegalDocumentPage: React.FC<LegalDocumentPageProps> = ({ endpoint }) => {
 
     return (
         <>
-            <Navbar />
             <Container className="py-4">
                 {error && <Alert variant="danger">{error}</Alert>}
                 {isLoading && !error && (

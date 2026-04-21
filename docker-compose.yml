@@ -36,6 +36,7 @@ services:
           path: ./backend
           target: /app/backend
           initial_sync: true
+
   odt-beat:
     image: odt-server
     build:
@@ -85,9 +86,8 @@ services:
     container_name: odt-web
     ports:
       - 3000:3000
-    environment:
-      VITE_BACKEND_URL: ${BACKEND_URL}
-      VITE_FEEDBACK_MAX_LENGTH: ${FEEDBACK_MAX_LENGTH}
+    env_file:
+      - .env # Shared frontend settings (Vite env vars)
     restart: on-failure
     develop:
       watch:
@@ -103,10 +103,16 @@ services:
     container_name: odt-tests
     network_mode: host # this should be removed once the URL is configurable
     environment:
-      PLAYWRIGHT_HTML_OUTPUT_DIR: /app/tests/playwright-report
+      PLAYWRIGHT_HTML_OUTPUT_DIR: /app/playwright-report
     depends_on:
       - odt-web
       - odt-server
+      - odt-worker
+      - odt-mq
+      - odt-db
+    volumes:
+      - ./playwright/report:/app/playwright-report
+      - ./playwright/results:/app/test-results
     restart: no
     profiles: [tests] # don't run unless specified
 

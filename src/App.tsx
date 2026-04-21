@@ -1,50 +1,82 @@
-import FAQ from "./pages/faq";
-import Contact from "./pages/contact";
-import PrivacyPolicy from "./pages/privacy-policy";
-import Pipelines from "./pages/pipelines";
-import Scrinshot from "./pages/scrinshot";
-import Runs from "./pages/runs";
-import Merfish from "./pages/merfish";
-import SeqFish from "./pages/seqfish";
-import OligoSeq from "./pages/oligoseq";
+import FAQ from "./pages/Faq";
+import Contact from "./pages/Contact";
+import Pipelines from "./pages/Pipelines";
+import Scrinshot from "./pages/Scrinshot";
+import Runs from "./pages/Runs";
+import Merfish from "./pages/Merfish";
+import SeqFish from "./pages/SeqFish";
+import OligoSeq from "./pages/OligoSeq";
+import Login from "./pages/Login";
+import RunDetail from "./pages/RunDetail";
 import Terms from "./pages/terms";
-import { BrowserRouter as Router, Routes, Route } from "react-router";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
-
-import Login from "./pages/login";
-import RunDetail from "./pages/rundetail";
+import PrivacyPolicy from "./pages/privacy-policy";
 import AdminApp from "./admin/AdminApp";
+import DefaultLayout from "./components/layouts/DefaultLayout";
 import FeedbackButton from "./components/feedback/FeedbackButton";
 import SiteFooter from "./components/ui/SiteFooter";
-import { useAuth } from "./modules/useAuth";
+import NotFound from "./pages/404";
+import { useAuth } from "./hooks/useAuth";
+import {
+    createBrowserRouter,
+    Outlet,
+    RouterProvider,
+    ScrollRestoration,
+    useParams,
+} from "react-router";
+import "./styles/theme.scss";
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
+import "@fontsource-variable/fustat";
 
-function App() {
+function RunDetailWrapper() {
+    const { runId } = useParams();
+    return <RunDetail key={runId} />;
+}
+
+function RootLayout() {
     const auth = useAuth();
 
     return (
-        <Router>
+        <>
             {auth.kind === "authenticated" && <FeedbackButton floating />}
-            <Routes>
-                {/* Make "index" the main page */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/runs" element={<Runs />} />
-                <Route path="/" element={<Pipelines />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                <Route path="/pipelines" element={<Pipelines />} />
-                <Route path="/pipelines/scrinshot" element={<Scrinshot />} />
-                <Route path="/pipelines/merfish" element={<Merfish />} />
-                <Route path="/pipelines/seqfish" element={<SeqFish />} />
-                <Route path="/pipelines/oligoSeq" element={<OligoSeq />} />
-                <Route path="/runs/:runId" element={<RunDetail />} />
-                <Route path="/admin/*" element={<AdminApp />} />
-            </Routes>
+            <Outlet />
+            <ScrollRestoration />
             <SiteFooter />
-        </Router>
+        </>
     );
+}
+
+const defaultLayoutRoutes = [
+    { path: "/login", element: <Login /> },
+    { path: "/runs", element: <Runs /> },
+    { path: "/", element: <Pipelines /> },
+    { path: "/faq", element: <FAQ /> },
+    { path: "/contact", element: <Contact /> },
+    { path: "/terms", element: <Terms /> },
+    { path: "/privacy-policy", element: <PrivacyPolicy /> },
+    { path: "/pipelines", element: <Pipelines /> },
+    { path: "/pipelines/scrinshot", element: <Scrinshot /> },
+    { path: "/pipelines/merfish", element: <Merfish /> },
+    { path: "/pipelines/seqfish", element: <SeqFish /> },
+    { path: "/pipelines/oligoseq", element: <OligoSeq /> },
+    { path: "/runs/:runId", element: <RunDetailWrapper /> },
+];
+
+const router = createBrowserRouter([
+    {
+        element: <RootLayout />,
+        children: [
+            { path: "/admin/*", element: <AdminApp /> },
+            {
+                element: <DefaultLayout />,
+                children: defaultLayoutRoutes,
+            },
+        ],
+        errorElement: <NotFound />,
+    },
+]);
+
+function App() {
+    return <RouterProvider router={router} />;
 }
 
 export default App;

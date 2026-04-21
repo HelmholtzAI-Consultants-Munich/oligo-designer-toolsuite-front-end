@@ -1,13 +1,28 @@
-import { defaultFastaForm } from "../types";
-import type { FastaForm } from "../types";
-
+import {
+    defaultFastaForm,
+    type FastaForm,
+    type FastaFormState,
+} from "../fastaGenerateForm/types";
 import FastaGenerateForm from "./FastaGenerateForm";
+import { useMemo } from "react";
 
 type Props = {
-    name: string;
+    name: keyof FastaFormState;
     id: string;
-    setFastaForms: React.Dispatch<React.SetStateAction<FastaForm[]>>;
-    fastaForms: FastaForm[];
+    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>;
+    fastaForms: FastaFormState;
+};
+
+const addFastaGenerationForm = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>
+) => {
+    const name = (e.target as HTMLButtonElement).name as keyof FastaFormState;
+
+    setFastaForms((prevForms) => ({
+        ...prevForms,
+        [name]: [...prevForms[name], defaultFastaForm], // Multiple files (always an array)
+    }));
 };
 
 const FastaGeneration: React.FC<Props> = ({
@@ -16,47 +31,56 @@ const FastaGeneration: React.FC<Props> = ({
     setFastaForms,
     fastaForms,
 }) => {
+    const onChangeFunctions = useMemo(
+        () =>
+            fastaForms[name].map((_, idx) => (updatedForm: FastaForm) => {
+                setFastaForms((prevForms: FastaFormState) => ({
+                    ...prevForms,
+                    [name]: prevForms[name].map((f, i) =>
+                        i === idx ? updatedForm : f
+                    ),
+                }));
+            }),
+        [name, fastaForms, setFastaForms]
+    );
+
+    const onRemoveFunctions = useMemo(
+        () =>
+            fastaForms[name].map((_, idx) => () => {
+                setFastaForms((prevForms: FastaFormState) => ({
+                    ...prevForms,
+                    [name]:
+                        prevForms[name].length === 0
+                            ? prevForms[name]
+                            : prevForms[name].filter((_, i) => i !== idx),
+                }));
+            }),
+        [name, fastaForms, setFastaForms]
+    );
+
     return (
-        <div className="flex-grow-1">
-            <label htmlFor={id} className="form-label">
-                {name}
-            </label>
+        <div className="flex-grow-1 my-1">
             <button
                 type="button"
                 className="btn btn-outline-primary w-100"
-                onClick={() =>
-                    setFastaForms((forms: FastaForm[]) => [
-                        ...forms,
-                        { ...defaultFastaForm },
-                    ])
-                }
+                name={name}
+                onClick={(e) => addFastaGenerationForm(e, setFastaForms)}
             >
                 Generate FASTA+
             </button>
             {/* TODO handleSubmit einfügen */}
-            <form onSubmit={() => {}}>
-                {fastaForms.map((form, idx) => (
+            <div>
+                {fastaForms[name].map((form, idx) => (
                     <FastaGenerateForm
-                        key={idx}
+                        id={`${id}-${idx}`}
+                        key={`${id} ${idx}`}
                         form={form}
-                        onChange={(updatedForm: FastaForm) =>
-                            setFastaForms((forms: FastaForm[]) =>
-                                forms.map((f, i) =>
-                                    i === idx ? updatedForm : f
-                                )
-                            )
-                        }
-                        onRemove={() =>
-                            setFastaForms((forms: FastaForm[]) =>
-                                forms.length === 0
-                                    ? forms
-                                    : forms.filter((_, i) => i !== idx)
-                            )
-                        }
-                        disableRemove={fastaForms.length === 0}
+                        onChange={onChangeFunctions[idx]}
+                        onRemove={onRemoveFunctions[idx]}
+                        disableRemove={fastaForms[name].length === 0}
                     />
                 ))}
-            </form>
+            </div>
         </div>
     );
 };
