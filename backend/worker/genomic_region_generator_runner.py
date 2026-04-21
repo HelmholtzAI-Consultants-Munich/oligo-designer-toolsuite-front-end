@@ -27,7 +27,7 @@ class GenomicRegionGeneratorRunner:
 
     def run(self, region_form: dict[str, Any]) -> list[str]:
 
-        fna_files = []
+        fna_files: list[str] = []
 
         cache_key = self.get_form_cache_key(region_form)
         output_path = self.cache_dir / "generated" / f"cached_genomic_{cache_key}"
@@ -47,7 +47,7 @@ class GenomicRegionGeneratorRunner:
             if output_gen.exists() and any(fname.endswith(".fna") for fname in os.listdir(output_gen)):
                 for fname in os.listdir(output_gen):
                     if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
-                        fna_files.append(output_gen / fname)
+                        fna_files.append(str(output_gen / fname))
                 return fna_files
 
             # ---------------------------------------------
@@ -130,7 +130,7 @@ class GenomicRegionGeneratorRunner:
             if output_gen.exists():
                 for fname in os.listdir(output_gen):
                     if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
-                        fna_files.append(output_gen / fname)
+                        fna_files.append(str(output_gen / fname))
 
             self.cleanup_temp_files(config_path)
 
