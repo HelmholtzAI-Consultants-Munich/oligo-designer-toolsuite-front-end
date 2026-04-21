@@ -22,7 +22,6 @@ class GenomicRegionGeneratorRunner:
     def __init__(self, logger: Logger):
         self.logger = logger
 
-        # TODO: pass root_dir config to worker, use config for absolute path
         self.cache_dir = (Path(os.path.dirname(__file__)) / "../cache").resolve()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 

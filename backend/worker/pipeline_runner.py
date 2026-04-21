@@ -36,6 +36,7 @@ class PipelineRunner:
         self.logger = logger
 
         # TODO: pass root_dir config to worker, use config for absolute path
+        #   here and in genomic_region_generator_runner.py
         schema_path = os.path.join(os.path.dirname(__file__), f"../../schemas/{pipeline_name}.schema.json")
         with open(schema_path) as f:
             schema = json.load(f)
