@@ -14,6 +14,8 @@ from pathlib import Path
 import requests
 from filelock import SoftReadWriteLock
 
+from backend.config import Config
+
 
 class BaseGenomicDataBase:
     """
@@ -82,7 +84,7 @@ class BaseGenomicDataBase:
         file_name = f"{url_hash}-{filename}"
         file_path = (pathlib.Path(self.cache_dir) / self.name / file_name).resolve()
 
-        # Acquire lock to avoid downloading the same file mulitple times at once
+        # Acquire lock to avoid downloading the same file multiple times at once
         # "Soft" lock is required for network file systems
         file_lock = SoftReadWriteLock(file_path.with_suffix(".lock"))
 
@@ -99,7 +101,7 @@ class BaseGenomicDataBase:
 
                 if response.status_code == requests.codes.ok:  # type: ignore
                     with open(file_path, "wb") as f:
-                        for chunk in response.iter_content(chunk_size=10 * 1024 * 1024):
+                        for chunk in response.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
                             f.write(chunk)
 
                     if last_modified := response.headers.get("last-modified"):
@@ -115,7 +117,7 @@ class BaseGenomicDataBase:
                 with gzip.open(file_path, "rb") as archive:
                     with open(extracted_file_path, "wb") as extract:
                         shutil.copyfileobj(archive, extract)
-                # NOTE: shouldn't this return the extracted_file_path?
+
         return file_path
 
     def extracted_file_path(self, file_path: str | pathlib.Path):

@@ -16,7 +16,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-# This ensures environment variables are available for both from_prefixed_env() and CeleryConfig
+# This ensures environment variables are available for both from_prefixed_env() and os.environ.get()
 load_dotenv()
 
 
