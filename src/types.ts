@@ -10,6 +10,7 @@ export interface AuthContextType {
     loading: boolean;
     checkAuth: () => Promise<void>;
     logout: () => void;
+    logoutWithConfirmation: () => void;
 }
 
 export interface GenomicRegion {

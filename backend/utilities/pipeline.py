@@ -1,9 +1,8 @@
 import copy
-import hashlib
-import json
 import logging
 import shutil
 from http import HTTPStatus
+from typing import Any
 
 from bson import ObjectId
 from flask import abort
@@ -13,17 +12,7 @@ from backend.utilities.typed_values import deserialize_path, path_for_display
 logger = logging.getLogger(__name__)
 
 
-def get_form_cache_key(form: dict) -> str:
-    relevant_part = {
-        "source": form.get("source"),
-        "source_params": form.get("source_params"),
-        "genomic_regions": form.get("genomic_regions"),
-    }
-    serialized = json.dumps(relevant_part, sort_keys=True)
-    return hashlib.sha256(serialized.encode()).hexdigest()
-
-
-def generate_single_region_forms(form: dict) -> list[dict]:
+def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
     """
     Generate separate forms where each form has only one genomic region set to "true",
     and all others set to "false".

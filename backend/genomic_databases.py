@@ -12,20 +12,28 @@ from email.utils import formatdate, parsedate_to_datetime
 from pathlib import Path
 
 import requests
+from filelock import SoftReadWriteLock
+
+from backend.config import Config
 
 
 class BaseGenomicDataBase:
+    """
+    For details on the caching procedure see 'Caching FASTA Files' in the developer documentation.
+    """
+
     def __init__(
         self,
+        cache_dir: str,
         host: str = "",
         base_path: str = "",
         allowlist: list[str] | None = None,
-        cache_dir: str | None = None,
+        name: str = "",
     ) -> None:
         self.host: str = host
         self.base_path: str = base_path
         self.allowlist: set[str] | None = set(allowlist) if allowlist is not None else None
-        self.name: str = ""
+        self.name: str = name
         self.cache_dir = cache_dir
 
     def get_dirs(self, ftp: ftplib.FTP) -> list[str]:
@@ -74,36 +82,41 @@ class BaseGenomicDataBase:
         _, filename = url.rsplit("/", maxsplit=1)
 
         file_name = f"{url_hash}-{filename}"
-        file_path = pathlib.Path(f"{self.cache_dir}/{file_name}").resolve()
+        file_path = (pathlib.Path(self.cache_dir) / self.name / file_name).resolve()
 
-        if os.path.exists(file_path):
-            mtime = os.path.getmtime(file_path)
-            headers["if-modified-since"] = formatdate(mtime, usegmt=True)
+        # Acquire lock to avoid downloading the same file multiple times at once
+        # "Soft" lock is required for network file systems
+        file_lock = SoftReadWriteLock(file_path.with_suffix(".lock"))
 
-        with requests.get(url, headers=headers, stream=True) as response:
-            response.raise_for_status()
+        with file_lock.write_lock():
+            if os.path.exists(file_path):
+                mtime = os.path.getmtime(file_path)
+                headers["if-modified-since"] = formatdate(mtime, usegmt=True)
 
-            if response.status_code == requests.codes.not_modified:
-                return file_path
+            with requests.get(url, headers=headers, stream=True) as response:
+                response.raise_for_status()
 
-            if response.status_code == requests.codes.ok:
-                with open(file_path, "wb") as f:
-                    for chunk in response.iter_content(chunk_size=10 * 1024 * 1024):
-                        f.write(chunk)
+                if response.status_code == requests.codes.not_modified:  # type: ignore
+                    return file_path
 
-                if last_modified := response.headers.get("last-modified"):
-                    new_mtime = parsedate_to_datetime(last_modified).timestamp()
-                    os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
+                if response.status_code == requests.codes.ok:  # type: ignore
+                    with open(file_path, "wb") as f:
+                        for chunk in response.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
+                            f.write(chunk)
 
-        if extract_gzip:
-            extracted_file_path = self.extracted_file_path(file_path)
+                    if last_modified := response.headers.get("last-modified"):
+                        new_mtime = parsedate_to_datetime(last_modified).timestamp()
+                        os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
 
-            if os.path.exists(extracted_file_path):
-                return file_path
+            if extract_gzip:
+                extracted_file_path = self.extracted_file_path(file_path)
 
-            with gzip.open(file_path, "rb") as archive:
-                with open(extracted_file_path, "wb") as extract:
-                    shutil.copyfileobj(archive, extract)
+                if os.path.exists(extracted_file_path):
+                    return file_path
+
+                with gzip.open(file_path, "rb") as archive:
+                    with open(extracted_file_path, "wb") as extract:
+                        shutil.copyfileobj(archive, extract)
 
         return file_path
 
@@ -113,9 +126,10 @@ class BaseGenomicDataBase:
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
     # release 116 changes structure => could be a problem once they set this to current
-    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, cache_dir=None) -> None:
-        super().__init__(host, base_path, allowlist, cache_dir)
-        self.name = "ensembl"
+    def __init__(
+        self, cache_dir, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, name="ensembl"
+    ) -> None:
+        super().__init__(cache_dir, host, base_path, allowlist, name)
         self.orig_top_dirs = [""]
 
     def _get_species_dirs(self, dirs, ftp):
@@ -178,7 +192,8 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             gtf_listing = ftp.nlst()
             gtf_gz = None
             for name in sorted(gtf_listing):
-                if name.endswith(".gtf.gz"):
+                # ends with NUMBER.gtf.gz
+                if re.search(r"^.+\.\d+\.gtf.gz$", name):
                     gtf_gz = name
                     break
             if not gtf_gz:
@@ -267,10 +282,9 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
 class NCBIGenomicDataBase(BaseGenomicDataBase):
     def __init__(
-        self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", allowlist=None, cache_dir=None
+        self, cache_dir, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", name="ncbi", allowlist=None
     ) -> None:
-        super().__init__(host, base_path, allowlist, cache_dir)
-        self.name = "ncbi"
+        super().__init__(cache_dir, host, base_path, allowlist, name)
 
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str):
         try:
@@ -392,6 +406,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 checksum_idx = 0
 
             for line in f:
+                # TODO: skip header line in uncompressed checksums file
                 filename, checksum = self._parse_checksums(line, filename_idx, checksum_idx)
                 filename_to_checksum_map[filename] = checksum
         return filename_to_checksum_map
@@ -460,12 +475,17 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
 def prefetch_dropdown_options():
     # TODO: check allowlists to apply same behaviour like before
+
+    # we will not download anything so a cache_dir isn't necessary
+    # TODO: maybe move cache_dir parameter to prepare_cache_assets
     return dict(
         [
             NCBIGenomicDataBase(
+                cache_dir="",
                 allowlist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
             ).fetch_ftp_directories(),
             EnsemblGenomicDataBase(
+                cache_dir="",
                 allowlist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
             ).fetch_ftp_directories(),
         ]

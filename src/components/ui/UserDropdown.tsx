@@ -1,5 +1,5 @@
 import { forwardRef, useState, type Ref } from "react";
-import { BACKEND_URL } from "../../config";
+import { Link } from "react-router";
 import { useAuth } from "../../hooks/useAuth";
 import { Button, Dropdown } from "react-bootstrap";
 import {
@@ -48,17 +48,8 @@ export default function UserDropdown({
 }: {
     noUserCallback: () => void;
 }) {
-    const { user, logout } = useAuth();
+    const { user, logoutWithConfirmation } = useAuth();
     const [copied, setCopied] = useState(false);
-
-    const handleLogout = () => {
-        fetch(BACKEND_URL + "/logout", {
-            method: "POST",
-            credentials: "include",
-        }).then(() => {
-            logout();
-        });
-    };
 
     return (
         <Dropdown drop="up-centered">
@@ -106,7 +97,12 @@ export default function UserDropdown({
                             </code>
                         </Dropdown.ItemText>
                         <Dropdown.Divider />
-                        <Dropdown.Item onClick={handleLogout}>
+                        {user.role === "admin" && (
+                            <Dropdown.Item as={Link} to="/admin">
+                                Admin Panel
+                            </Dropdown.Item>
+                        )}
+                        <Dropdown.Item onClick={logoutWithConfirmation}>
                             Logout
                         </Dropdown.Item>
                     </>

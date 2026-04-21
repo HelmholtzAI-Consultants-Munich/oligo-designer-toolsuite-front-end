@@ -79,6 +79,7 @@ def mock_user_dir_exists(monkeypatch):
         return original_open(file_path, mode, *args, **kwargs)
 
     monkeypatch.setattr("os.path.exists", mock_exists)
+    monkeypatch.setattr("pathlib.Path.exists", mock_exists)
     monkeypatch.setattr("os.makedirs", mock_makedirs)
     monkeypatch.setattr("builtins.open", mock_open)
 

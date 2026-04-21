@@ -65,6 +65,7 @@ services:
     container_name: odt-worker
     volumes:
       - data-access:/app/backend/data-access
+      - cache:/app/backend/cache
     env_file:
       - .env # Shared settings (secrets, Celery config)
       - .env.docker # Docker overrides (service hostnames instead of localhost)
@@ -184,3 +185,4 @@ services:
 
 volumes:
   data-access:
+  cache:
