@@ -337,7 +337,14 @@ def accept_terms():
             },
         )
 
-    return jsonify({"legal": _build_legal_status(user_id=user_id, session_id=session_id)}), HTTPStatus.OK
+    timestamp = acceptance["timestamp"]
+    return jsonify(
+        {
+            "accepted_terms_version": acceptance["terms_version"],
+            "terms_accepted_at": timestamp.isoformat() if timestamp else None,
+            "legal": _build_legal_status(user_id=user_id, session_id=session_id),
+        }
+    ), HTTPStatus.OK
 
 
 # ---- Logout Route ----

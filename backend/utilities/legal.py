@@ -30,10 +30,9 @@ def _default_legal_document_path(document_key: str) -> Path:
 
 
 def _latest_legal_document(document_key: str) -> dict | None:
-    sort_field = "published_at"
     return mongo.db.legal_documents.find_one(
         {"document": document_key},
-        sort=[(sort_field, -1)],
+        sort=[("published_at", -1), ("_id", -1)],
     )
 
 
