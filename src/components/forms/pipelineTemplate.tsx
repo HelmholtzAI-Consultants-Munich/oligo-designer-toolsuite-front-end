@@ -67,7 +67,8 @@ const PipelineTemplate: React.FC<Props> = ({
         auth.kind === "authenticated"
             ? auth.user.accepted_terms_version !==
               auth.user.current_terms_version
-            : (auth.legal?.requires_terms_acceptance ?? false);
+            : auth.legal?.accepted_terms_version !==
+              auth.legal?.current_terms_version;
 
     const submitPipeline = async () => {
         await handleSubmit(

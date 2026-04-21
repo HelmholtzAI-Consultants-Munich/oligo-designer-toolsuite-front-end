@@ -12,7 +12,6 @@ type AuthCheckResponse =
               current_terms_version: string;
               accepted_terms_version?: string | null;
               terms_accepted_at?: string | null;
-              requires_terms_acceptance: boolean;
           } | null;
       }
     | {

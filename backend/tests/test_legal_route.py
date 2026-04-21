@@ -54,7 +54,7 @@ def test_accept_terms_updates_current_session(client):
     data = response.get_json()
     assert data["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
     assert data["legal"]["scope"] == "session"
-    assert data["legal"]["requires_terms_acceptance"] is False
+    assert data["legal"]["accepted_terms_version"] == data["legal"]["current_terms_version"]
 
 
 def test_delete_account_removes_user_data(client, authenticate_as_user, legal_user_doc, tmp_path):

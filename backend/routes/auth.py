@@ -32,7 +32,6 @@ from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 from backend.utilities.legal_acceptance import (
     get_latest_terms_acceptance,
-    has_current_terms_acceptance,
     record_terms_acceptance,
 )
 from backend.utilities.session_activity import delete_anonymous_session, touch_anonymous_session
@@ -140,23 +139,17 @@ def _build_legal_status(user_id: str | None = None, session_id: str | None = Non
     latest_acceptance = None
     accepted_terms_version = None
     accepted_at = None
-    requires_terms_acceptance = True
 
     if user_id or session_id:
         latest_acceptance = get_latest_terms_acceptance(user_id=user_id, session_id=session_id)
         accepted_terms_version = latest_acceptance.get("terms_version") if latest_acceptance else None
         accepted_at = latest_acceptance.get("timestamp") if latest_acceptance else None
-        requires_terms_acceptance = not has_current_terms_acceptance(
-            user_id=user_id,
-            session_id=session_id,
-        )
 
     return {
         "scope": "user" if user_id else "session",
         "current_terms_version": terms_doc["version"],
         "accepted_terms_version": accepted_terms_version,
         "terms_accepted_at": accepted_at.isoformat() if accepted_at else None,
-        "requires_terms_acceptance": requires_terms_acceptance,
     }
 
 

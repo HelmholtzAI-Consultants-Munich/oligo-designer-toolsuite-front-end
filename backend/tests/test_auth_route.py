@@ -80,7 +80,8 @@ def test_check_auth_logged_out(client):
     data = response.get_json()
     assert data["authenticated"] is False
     assert data["legal"]["scope"] == "session"
-    assert data["legal"]["requires_terms_acceptance"] is True
+    assert "requires_terms_acceptance" not in data["legal"]
+    assert data["legal"]["accepted_terms_version"] is None
 
 
 def test_check_auth_logged_in(client, authenticate_as_user, dummy_user):
@@ -101,7 +102,7 @@ def test_check_auth_logged_in(client, authenticate_as_user, dummy_user):
     )
     assert data["user"]["accepted_terms_version"] is None
     assert data["legal"]["scope"] == "user"
-    assert data["legal"]["requires_terms_acceptance"] is True
+    assert "requires_terms_acceptance" not in data["legal"]
 
 
 def test_logout(client, monkeypatch, authenticate_as_user):
