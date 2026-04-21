@@ -225,7 +225,7 @@ def publish_admin_legal_document(document_key: str):
     except ValueError as exc:
         abort(HTTPStatus.BAD_REQUEST, description=str(exc))
 
-    return jsonify(get_legal_document_admin_view(document["document"])), HTTPStatus.OK
+    return jsonify(get_legal_document_admin_view(document_key, published_doc=document)), HTTPStatus.OK
 
 
 @admin_bp.route("/api/admin/pipelines", methods=["GET"])

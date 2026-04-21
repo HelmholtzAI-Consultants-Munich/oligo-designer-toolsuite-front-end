@@ -114,12 +114,14 @@ def get_published_legal_document(document_key: str) -> dict:
     return _serialize_legal_document(ensure_published_legal_document(document_key))
 
 
-def get_legal_document_admin_view(document_key: str) -> dict:
+def get_legal_document_admin_view(document_key: str, published_doc: dict | None = None) -> dict:
     if not is_supported_legal_document(document_key):
         raise ValueError(f"Unsupported legal document: {document_key}")
 
-    published_document = _serialize_legal_document(ensure_published_legal_document(document_key))
-    history = list(mongo.db.legal_documents.find({"document": document_key}).sort("published_at", -1))
+    if published_doc is None:
+        published_doc = ensure_published_legal_document(document_key)
+    published_document = _serialize_legal_document(published_doc)
+    history = list(mongo.db.legal_documents.find({"document": document_key}).sort("_id", -1))
 
     return {
         "document": document_key,
