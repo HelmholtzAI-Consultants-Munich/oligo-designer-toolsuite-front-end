@@ -206,9 +206,9 @@ def test_resolve_timeout_heuristic_no_gene_count_falls_back(client, merfish_heur
 # ---------------------------------------------------------------------------
 
 
-def test_task_id_in_db_before_enqueue(client, run_id, session_user):
-    """write_run_to_DB must be called before enqueue_pipeline so the
-    worker's task_prerun signal always finds the document."""
+def test_db_write_before_enqueue(client, run_id, session_user):
+    """DB write must happen before pipeline enqueue so the run document
+    exists in the DB"""
     call_order = []
 
     def tracking_write(*args, **kwargs):
