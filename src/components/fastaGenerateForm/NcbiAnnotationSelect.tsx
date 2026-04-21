@@ -3,6 +3,7 @@ import { BACKEND_URL } from "../../config";
 import axios from "axios";
 import type { FastaForm } from "./types";
 import { GenomicDropDown } from "./GenomicDropDown";
+import { useCache } from "../../hooks/useCache";
 
 interface NcbiAnnotationSelectProps {
     id: string;
@@ -19,6 +20,7 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
     id,
     form,
 }) => {
+    const { cached } = useCache();
     const [releases, setReleases] = useState<string[]>();
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -26,17 +28,32 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
     const kingdom = form.formDataNcbi.source_params.taxon.value;
     const species = form.formDataNcbi.source_params.species.value;
 
-    const fetchAnnotationReleasesNCBI = useCallback(
+    const fetchAnnotationReleasesNCBI = async (
+        species: string,
+        kingdom: string
+    ) => {
+        const DROPDOWN_URL =
+            BACKEND_URL + `/api/genomic/releases/${kingdom}/${species}`;
+        const response = await axios.get(DROPDOWN_URL, {
+            withCredentials: true,
+        });
+        return response.data as string[];
+    };
+
+    const cachedFetchAnnotationReleasesNCBI = cached(
+        fetchAnnotationReleasesNCBI
+    );
+
+    const updateAnnotationReleasesNCBI = useCallback(
         async (species: string, kingdom: string) => {
             try {
                 setIsLoading(true);
                 setError(null);
-                const DROPDOWN_URL =
-                    BACKEND_URL + `/api/genomic/releases/${kingdom}/${species}`;
-                const response = await axios.get(DROPDOWN_URL, {
-                    withCredentials: true,
-                });
-                setReleases(response.data);
+                const data = await cachedFetchAnnotationReleasesNCBI(
+                    species,
+                    kingdom
+                );
+                setReleases(data);
             } catch (err: unknown) {
                 if (axios.isAxiosError(err)) {
                     setError(
@@ -51,12 +68,12 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
                 setIsLoading(false);
             }
         },
-        []
+        [cachedFetchAnnotationReleasesNCBI]
     );
 
     useEffect(() => {
-        fetchAnnotationReleasesNCBI(species, kingdom);
-    }, [species, kingdom, fetchAnnotationReleasesNCBI]);
+        updateAnnotationReleasesNCBI(species, kingdom);
+    }, [species, kingdom, updateAnnotationReleasesNCBI]);
 
     const Options = () => {
         if (isLoading) {
