@@ -40,6 +40,7 @@ blob-report
 !.vscode/extensions.json
 !.vscode/*.sample.json
 .idea
+.github/copilot-instructions.md
 .DS_Store
 *.suo
 *.ntvs*
