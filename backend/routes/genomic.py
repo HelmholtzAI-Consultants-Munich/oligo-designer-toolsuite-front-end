@@ -36,6 +36,7 @@ def genomic_dropdown_dict():
 
 @genomic_bp.route("/api/genomic/releases/<taxon>/<species>", methods=["GET"])
 def genomic_get_releases(taxon: str, species: str):
+    # we will not download anything so a cache_dir isn't necessary
     dirs = NCBIGenomicDataBase(cache_dir="").fetch_annotations_releases(taxon, species)
 
     if dirs is None:
