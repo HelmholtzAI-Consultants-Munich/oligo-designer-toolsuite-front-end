@@ -162,3 +162,22 @@ The code contained in the `odt-server` image might be out of date compared to th
 ## Additional Tips for using Docker
 
 You can check Docker's disk usage using `docker system df`. To reclaim disk space used by Docker (e.g. images, volumes, build cache), run `npm run docker:prune`. Be aware that this might cause significantly increased container building times because of deleted build cache.
+
+## Execute commands inside docker container
+
+To enter the shell inside the docker containers you can use the basic docker compose exec command like this
+
+```bash
+docker compose exec <container-name> <command>
+# for example to enter the shell of the server container use
+docker compose exec odt-server sh
+```
+
+Our python environments are managed via conda/micromamba, so if you want to use commands provided via python packages inside of our docker containers you have to prefix them with `micromamba run`. You also have to do this if you are in a `sh` shell inside a container, but if you are using the bash shell you can omit this prefix.
+
+```bash
+# register a new user using flask cli command
+docker compose exec odt-server micromamba run flask user register
+# run pipeline in a shell inside of odt-worker
+micromamba run genomic_region_generator [ARGUMENTS]
+```
