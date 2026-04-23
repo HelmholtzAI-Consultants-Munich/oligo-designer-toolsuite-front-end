@@ -10,6 +10,7 @@ import {
     Gear,
     Speedometer2,
     ChatDots,
+    BarChartFill,
 } from "react-bootstrap-icons";
 
 interface NavItemConfig {
@@ -71,6 +72,7 @@ const navItems: NavItemConfig[] = [
     { path: "/admin/users", label: "User Management", icon: People },
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
     { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
+    { path: "/admin/reports", label: "Monthly Reports", icon: BarChartFill },
 ];
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
