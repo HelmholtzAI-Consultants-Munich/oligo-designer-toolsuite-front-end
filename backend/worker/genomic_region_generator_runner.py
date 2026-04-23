@@ -64,9 +64,7 @@ class GenomicRegionGeneratorRunner:
                     raise ValueError(
                         "Custom genomic (Ensembl) requires 'species' and 'annotation_release' in source_params."
                     )
-                cache_info = EnsemblGenomicDataBase(cache_dir=self.cache_dir).prepare_cached_assets(
-                    species, ann_rel
-                )
+                cache_info = EnsemblGenomicDataBase().prepare_assets(self.cache_dir, species, ann_rel)
                 genome_assembly = cache_info["genome_assembly"]
                 resolved_rel = cache_info["annotation_release"]
                 annotation_file = cache_info["annotation_file"]
@@ -81,9 +79,7 @@ class GenomicRegionGeneratorRunner:
                     raise ValueError(
                         "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
                     )
-                cache_info = NCBIGenomicDataBase(cache_dir=self.cache_dir).prepare_cached_assets(
-                    taxon, species, ann_rel
-                )
+                cache_info = NCBIGenomicDataBase().prepare_assets(self.cache_dir, taxon, species, ann_rel)
                 genome_assembly = cache_info["genome_assembly"]
                 resolved_rel = cache_info["annotation_release"]
                 annotation_file = cache_info["annotation_file"]

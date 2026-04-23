@@ -24,7 +24,6 @@ class BaseGenomicDataBase:
 
     def __init__(
         self,
-        cache_dir: str,
         host: str = "",
         base_path: str = "",
         allowlist: list[str] | None = None,
@@ -34,7 +33,6 @@ class BaseGenomicDataBase:
         self.base_path: str = base_path
         self.allowlist: set[str] | None = set(allowlist) if allowlist is not None else None
         self.name: str = name
-        self.cache_dir = cache_dir
 
     def get_dirs(self, ftp: ftplib.FTP) -> list[str]:
         lines: list[str] = []
@@ -75,14 +73,14 @@ class BaseGenomicDataBase:
             species_dirs = self._get_species_dirs(top_dirs, ftp)
         return self.name, self._build_directory_dict(top_dirs, species_dirs)
 
-    def download(self, url: str, extract_gzip: bool = False) -> Path:
+    def download(self, url: str, cache_dir: Path, extract_gzip: bool = False) -> Path:
         headers: dict[str, str] = {}
 
         url_hash = hashlib.md5(url.encode()).hexdigest()
         _, filename = url.rsplit("/", maxsplit=1)
 
         file_name = f"{url_hash}-{filename}"
-        file_path = (pathlib.Path(self.cache_dir) / self.name / file_name).resolve()
+        file_path = (pathlib.Path(cache_dir) / self.name / file_name).resolve()
 
         # Acquire lock to avoid downloading the same file multiple times at once
         # "Soft" lock is required for network file systems
@@ -126,10 +124,8 @@ class BaseGenomicDataBase:
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
     # release 116 changes structure => could be a problem once they set this to current
-    def __init__(
-        self, cache_dir, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, name="ensembl"
-    ) -> None:
-        super().__init__(cache_dir, host, base_path, allowlist, name)
+    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, name="ensembl") -> None:
+        super().__init__(host, base_path, allowlist, name)
         self.orig_top_dirs = [""]
 
     def _get_species_dirs(self, dirs, ftp):
@@ -236,18 +232,20 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
         return gtf_gz, fasta_gz, assembly
 
-    def get_plain_file_path(self, dir, remote_filename):
-        checksum_path = self.download(f"https://{self.host}/{dir}/CHECKSUMS")
+    def get_or_download(self, dir, remote_filename, cache_dir):
+        checksum_path = self.download(f"https://{self.host}/{dir}/CHECKSUMS", cache_dir)
         checksum = self._parse_checksums(checksum_path)[remote_filename]
 
-        local_path = self.download(f"https://{self.host}/{dir}/{remote_filename}", extract_gzip=True)
+        local_path = self.download(
+            f"https://{self.host}/{dir}/{remote_filename}", cache_dir, extract_gzip=True
+        )
 
         if not self._verify_file(local_path, checksum):
             raise RuntimeError(f"Couldn't match checksum for {local_path}")
 
         return str(self.extracted_file_path(local_path))
 
-    def prepare_cached_assets(self, species, release):
+    def prepare_assets(self, cache_dir, species, release):
         """
         URL based cache for Ensembl GTF/FASTA.
         - Resolves 'current' vs numeric release to the right directories.
@@ -268,8 +266,8 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         # Use 'current' literally if current; else use the numeric/label release
         rel_label = "current" if is_current else str(release)
 
-        gtf_plain = self.get_plain_file_path(gtf_dir, gtf_gz)
-        fasta_plain = self.get_plain_file_path(fasta_dir, fasta_gz)
+        gtf_plain = self.get_or_download(gtf_dir, gtf_gz, cache_dir)
+        fasta_plain = self.get_or_download(fasta_dir, fasta_gz, cache_dir)
 
         return {
             "annotation_file": gtf_plain,
@@ -282,9 +280,9 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
 class NCBIGenomicDataBase(BaseGenomicDataBase):
     def __init__(
-        self, cache_dir, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", name="ncbi", allowlist=None
+        self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", name="ncbi", allowlist=None
     ) -> None:
-        super().__init__(cache_dir, host, base_path, allowlist, name)
+        super().__init__(host, base_path, allowlist, name)
 
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str):
         try:
@@ -315,12 +313,11 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             dirs = [dir for dir in dirs if dir != "suppressed"]
         return dirs
 
-    def _get_assembly_information(self, rel_dir: str, file_name: str) -> tuple[str | None, str | None]:
+    def _get_assembly_information(
+        self, cache_dir: Path, rel_dir: str, file_name: str
+    ) -> tuple[str | None, str | None]:
         url = f"https://{self.host}{rel_dir}/{file_name}"
-        file_path = self.download(url)
-
-        if file_path is None:
-            raise ValueError("Could not fetch assembly information")
+        file_path = self.download(url, cache_dir)
 
         with open(file_path) as file:
             assembly_name, accession = None, None
@@ -338,7 +335,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
         return digest.hexdigest() == expected_checksum
 
-    def _resolve_release_and_dir(self, taxon, species, release):
+    def _resolve_release_and_dir(self, cache_dir, taxon, species, release):
         # Resolve "current" to a concrete release; also read README to get assembly/accession
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
@@ -368,7 +365,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             if not assembly_report:
                 raise RuntimeError(f"No assembly report found in {rel_dir}")
 
-        assembly_name, accession = self._get_assembly_information(rel_dir, assembly_report)
+        assembly_name, accession = self._get_assembly_information(cache_dir, rel_dir, assembly_report)
         if not assembly_name or not accession:
             raise RuntimeError("Failed to parse assembly/accession from README.")
 
@@ -411,20 +408,24 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 filename_to_checksum_map[filename] = checksum
         return filename_to_checksum_map
 
-    def prepare_cached_assets(self, taxon, species, release):
+    def prepare_assets(self, cache_dir, taxon, species, release):
         """
         Returns cached, MD5-verified local paths for .gtf and .fna (decompressed),
         plus metadata: release, assembly, accession.
         """
-        release, assembly, accession, final_dir = self._resolve_release_and_dir(taxon, species, release)
+        release, assembly, accession, final_dir = self._resolve_release_and_dir(
+            cache_dir, taxon, species, release
+        )
         #
         # md5 manifests (compressed + optional uncompressed)
-        md5_local = self.download(f"https://{self.host}/{final_dir}/md5checksums.txt")
+        md5_local = self.download(f"https://{self.host}/{final_dir}/md5checksums.txt", cache_dir)
 
         compressed_checksum_map = self._parse_md5checksums(md5_local)
 
         try:
-            uncompressed_local = self.download(f"https://{self.host}/{final_dir}/uncompressed_checksums.txt")
+            uncompressed_local = self.download(
+                f"https://{self.host}/{final_dir}/uncompressed_checksums.txt", cache_dir
+            )
             uncompressed_checksum_map = self._parse_md5checksums(uncompressed_local)
         except requests.exceptions.HTTPError:
             uncompressed_checksum_map = None
@@ -446,7 +447,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 raise RuntimeError(f"Required file missing in md5checksums.txt: {e}") from e
 
             archive_local_path = self.download(
-                f"https://{self.host}/{final_dir}/{files[key]['remote_path']}", True
+                f"https://{self.host}/{final_dir}/{files[key]['remote_path']}", cache_dir, extract_gzip=True
             )
 
             if not self._verify_file(archive_local_path, expected_archive_checksum):
@@ -476,16 +477,12 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 def prefetch_dropdown_options():
     # TODO: check allowlists to apply same behaviour like before
 
-    # we will not download anything so a cache_dir isn't necessary
-    # TODO: maybe move cache_dir parameter to prepare_cache_assets
     return dict(
         [
             NCBIGenomicDataBase(
-                cache_dir="",
                 allowlist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
             ).fetch_ftp_directories(),
             EnsemblGenomicDataBase(
-                cache_dir="",
                 allowlist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
             ).fetch_ftp_directories(),
         ]
