@@ -107,7 +107,7 @@ class BaseGenomicDataBase:
                         os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
 
             if extract_gzip:
-                extracted_file_path = self.extracted_file_path(file_path)
+                extracted_file_path = file_path.with_suffix("")  # remove .gz extension
 
                 if os.path.exists(extracted_file_path):
                     return file_path
@@ -116,10 +116,10 @@ class BaseGenomicDataBase:
                     with open(extracted_file_path, "wb") as extract:
                         shutil.copyfileobj(archive, extract)
 
-        return file_path
+                # TODO: delete compressed file, but only after verifying checksum
+                file_path = extracted_file_path
 
-    def extracted_file_path(self, file_path: str | pathlib.Path):
-        return pathlib.Path(str(file_path) + "-extract")
+        return file_path
 
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
@@ -243,7 +243,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         if not self._verify_file(local_path, checksum):
             raise RuntimeError(f"Couldn't match checksum for {local_path}")
 
-        return str(self.extracted_file_path(local_path))
+        return str(local_path)
 
     def prepare_assets(self, cache_dir, species, release):
         """
@@ -380,31 +380,23 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 final_dir = rel_dir
         return str(release), assembly_name, accession, final_dir
 
-    def _parse_checksums(self, line, filename_idx: int, checksum_idx: int):
+    def _parse_checksums(self, line):
         line = line.strip()
         if not line:
             return None
         line = line.split()
         if len(line) < 2:
             return None
-        filename = line[filename_idx].lstrip("./")
-        checksum = line[checksum_idx]
+        checksum = line[0]
+        filename = line[1].lstrip("./")
         return filename, checksum
 
     def _parse_md5checksums(self, md5_text_path):
         # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
         filename_to_checksum_map = {}
         with open(md5_text_path) as f:
-            if "uncompressed" in str(md5_text_path):
-                filename_idx = 0
-                checksum_idx = 1
-            else:
-                filename_idx = 1
-                checksum_idx = 0
-
             for line in f:
-                # TODO: skip header line in uncompressed checksums file
-                filename, checksum = self._parse_checksums(line, filename_idx, checksum_idx)
+                filename, checksum = self._parse_checksums(line)
                 filename_to_checksum_map[filename] = checksum
         return filename_to_checksum_map
 
@@ -416,21 +408,11 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         release, assembly, accession, final_dir = self._resolve_release_and_dir(
             cache_dir, taxon, species, release
         )
-        #
-        # md5 manifests (compressed + optional uncompressed)
+
+        # md5 manifests of compressed files
         md5_local = self.download(f"https://{self.host}/{final_dir}/md5checksums.txt", cache_dir)
 
         compressed_checksum_map = self._parse_md5checksums(md5_local)
-
-        try:
-            uncompressed_local = self.download(
-                f"https://{self.host}/{final_dir}/uncompressed_checksums.txt", cache_dir
-            )
-            uncompressed_checksum_map = self._parse_md5checksums(uncompressed_local)
-        except requests.exceptions.HTTPError:
-            uncompressed_checksum_map = None
-            # Not all NCBI directories publish this file; proceed without it.
-            pass
 
         file_types = ["gtf", "fna"]
         file_endings = ["_genomic.gtf.gz", "_genomic.fna.gz"]
@@ -453,17 +435,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             if not self._verify_file(archive_local_path, expected_archive_checksum):
                 raise RuntimeError(f"Checksum for {archive_local_path} doesn't match")
 
-            uncompressed_local_path = self.extracted_file_path(archive_local_path)
-
-            # Optional: verify uncompressed files using uncompressed_checksums.txt (if available)
-            # possibly not necessary
-            if uncompressed_checksum_map is not None:
-                expected_uncompressed_checksum = uncompressed_checksum_map[
-                    files[key]["remote_path"].rstrip(".gz")
-                ]
-                if not self._verify_file(uncompressed_local_path, expected_uncompressed_checksum):
-                    raise RuntimeError(f"Checksum for {uncompressed_local_path} doesn't match")
-            files[key]["local_path"] = str(uncompressed_local_path)
+            files[key]["local_path"] = str(archive_local_path)
 
         return {
             "annotation_file": files["gtf"]["local_path"],
