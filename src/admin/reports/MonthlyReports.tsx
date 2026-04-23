@@ -285,7 +285,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                     ))}
                                 </Row>
                                 <p className="small fw-semibold text-uppercase text-muted mb-2">
-                                    Conversion Funnel
+                                    Anon-to-user conversion
                                 </p>
                                 <div className="d-flex align-items-center justify-content-between mb-1">
                                     <span className="small text-muted">
