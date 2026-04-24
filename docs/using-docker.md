@@ -170,7 +170,7 @@ To enter the shell inside the docker containers you can use the basic docker com
 ```bash
 docker compose exec <container-name> <command>
 # for example to enter the shell of the server container use
-docker compose exec odt-server sh
+docker compose exec odt-server bash
 ```
 
 Our python environments are managed via conda/micromamba, so if you want to use commands provided via python packages inside of our docker containers you have to prefix them with `micromamba run`. You also have to do this if you are in a `sh` shell inside a container, but if you are using the bash shell you can omit this prefix.
@@ -179,5 +179,6 @@ Our python environments are managed via conda/micromamba, so if you want to use 
 # register a new user using flask cli command
 docker compose exec odt-server micromamba run flask user register
 # run pipeline in a shell inside of odt-worker
-micromamba run genomic_region_generator [ARGUMENTS]
+docker compose exec odt-worker bash
+(base) 1337c977958a:/app$ genomic_region_generator [ARGUMENTS]
 ```
