@@ -7,7 +7,9 @@ import pathlib
 import re
 import shutil
 import subprocess
+from abc import abstractmethod
 from collections import defaultdict
+from dataclasses import dataclass
 from email.utils import formatdate, parsedate_to_datetime
 from pathlib import Path
 
@@ -15,6 +17,24 @@ import requests
 from filelock import SoftReadWriteLock
 
 from backend.config import Config
+
+
+@dataclass
+class GenomicEntity:
+    taxon: str | None
+    species: str
+    release: str  # | int
+
+
+@dataclass
+class GenomicEntityContext:
+    annotation_remote_dir: str
+    annotation_remote_file_name: str
+    sequence_remote_dir: str
+    sequence_remote_file_name: str
+    annotation_release: str
+    genome_assembly: str
+    accession: str | None  # Ensembl doesn't use GCF/GCA accessions in filenames
 
 
 class BaseGenomicDataBase:
@@ -47,24 +67,26 @@ class BaseGenomicDataBase:
                 entries.append(parts[8])
         return sorted(entries)
 
-    def _filter_allowlist(self, dirs: list[str]):
+    def _filter_allowlist(self, dirs: list[str]) -> list[str]:
         if self.allowlist is not None:
             return list(set(dirs).intersection(self.allowlist))
         return dirs
 
-    def _get_species_dirs(self, dirs, ftp):
+    def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> list[list[str]]:
         dirs.sort()
 
-        all_species_dirs = []
+        all_species_dirs: list[list[str]] = []
         for dir in dirs:
             _ = ftp.cwd(f"/{self.base_path}/{dir}")
             all_species_dirs.extend([self.get_dirs(ftp)])
         return all_species_dirs
 
-    def _build_directory_dict(self, top_dirs, species_dirs):
+    def _build_directory_dict(
+        self, top_dirs: list[str], species_dirs: list[list[str]]
+    ) -> dict[str, list[str]]:
         return dict(zip(top_dirs, species_dirs))
 
-    def fetch_ftp_directories(self):
+    def _fetch_ftp_directories(self) -> tuple[str, dict[str, list[str]]]:
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
             ftp.cwd(self.base_path)
@@ -73,72 +95,175 @@ class BaseGenomicDataBase:
             species_dirs = self._get_species_dirs(top_dirs, ftp)
         return self.name, self._build_directory_dict(top_dirs, species_dirs)
 
-    def download(self, url: str, cache_dir: Path, extract_gzip: bool = False) -> Path:
+    def _build_local_file_path(self, url: str, file_name: str, cache_dir: Path) -> Path:
+        url_hash = hashlib.md5(url.encode()).hexdigest()
+        file_name = f"{url_hash}-{file_name}"
+        return (pathlib.Path(cache_dir) / self.name / file_name).resolve()
+
+    def _download(self, url: str, file_path: Path) -> None:
+        """Downloads the file if it changed."""
         headers: dict[str, str] = {}
 
-        url_hash = hashlib.md5(url.encode()).hexdigest()
-        _, filename = url.rsplit("/", maxsplit=1)
+        if file_path.exists():
+            mtime = os.path.getmtime(file_path)
+            headers["if-modified-since"] = formatdate(mtime, usegmt=True)
 
-        file_name = f"{url_hash}-{filename}"
-        file_path = (pathlib.Path(cache_dir) / self.name / file_name).resolve()
+        with requests.get(url, headers=headers, stream=True) as response:
+            response.raise_for_status()
+
+            if response.status_code == requests.codes.not_modified:  # type: ignore
+                return
+
+            if response.status_code == requests.codes.ok:  # type: ignore
+                with open(file_path, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
+                        f.write(chunk)
+
+                if last_modified := response.headers.get("last-modified"):
+                    new_mtime = parsedate_to_datetime(last_modified).timestamp()
+                    os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
+
+    @abstractmethod
+    def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
+        pass
+
+    def _download_and_verify(
+        self, dir: str, remote_file_name: str, expected_checksum: str, cache_dir: Path
+    ) -> str:
+        """Downloads the file, verifies its checksum, uncompresses it and returns the new local file path."""
+        url = f"https://{self.host}/{dir}/{remote_file_name}"
+        file_path = self._build_local_file_path(url, remote_file_name, cache_dir)
 
         # Acquire lock to avoid downloading the same file multiple times at once
         # "Soft" lock is required for network file systems
-        file_lock = SoftReadWriteLock(file_path.with_suffix(".lock"))
-
+        file_lock = SoftReadWriteLock(file_path.with_name(file_path.name + ".lock"))
         with file_lock.write_lock():
-            if os.path.exists(file_path):
-                mtime = os.path.getmtime(file_path)
-                headers["if-modified-since"] = formatdate(mtime, usegmt=True)
+            # Download compressed file
+            self._download(url, file_path)
 
-            with requests.get(url, headers=headers, stream=True) as response:
-                response.raise_for_status()
+            # Verify checksum
+            if not self._verify_file(file_path, expected_checksum):
+                raise RuntimeError(f"Checksum for {file_path} does not match")
 
-                if response.status_code == requests.codes.not_modified:  # type: ignore
-                    return file_path
+            if file_path.suffix == ".gz":
+                # Uncompress file
+                uncompressed_file_path = file_path.with_suffix("")  # remove .gz extension
+                if not uncompressed_file_path.exists():
+                    with gzip.open(file_path, "rb") as archive:
+                        with open(uncompressed_file_path, "wb") as extract:
+                            shutil.copyfileobj(archive, extract)
 
-                if response.status_code == requests.codes.ok:  # type: ignore
-                    with open(file_path, "wb") as f:
-                        for chunk in response.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
-                            f.write(chunk)
+                # Delete compressed file
+                file_path.unlink()
+                file_path = uncompressed_file_path
 
-                    if last_modified := response.headers.get("last-modified"):
-                        new_mtime = parsedate_to_datetime(last_modified).timestamp()
-                        os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
+        return str(file_path)
 
-            if extract_gzip:
-                extracted_file_path = file_path.with_suffix("")  # remove .gz extension
+    @abstractmethod
+    def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
+        pass
 
-                if os.path.exists(extracted_file_path):
-                    return file_path
+    @abstractmethod
+    def _checksum_file_name(self) -> str:
+        pass
 
-                with gzip.open(file_path, "rb") as archive:
-                    with open(extracted_file_path, "wb") as extract:
-                        shutil.copyfileobj(archive, extract)
+    @abstractmethod
+    def _parse_checksum_line(self, line) -> tuple[str, str] | None:
+        pass
 
-                # TODO: delete compressed file, but only after verifying checksum
-                file_path = extracted_file_path
+    def _get_checksum_map(self, context: GenomicEntityContext, cache_dir: Path) -> dict[str, str]:
+        """Returns map of filenames to their respective checksum"""
 
-        return file_path
+        # Combined checksum map for gtf and fasta files
+        filename_to_checksum_map: dict[str, str] = {}
+        checksums_file_name = self._checksum_file_name()
+
+        # set -> if the dirs are equal, the checksums are only downloaded once
+        for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
+            url = f"https://{self.host}/{dir}/{checksums_file_name}"
+            checksums_path = self._build_local_file_path(url, checksums_file_name, cache_dir)
+            file_lock = SoftReadWriteLock(checksums_path.with_name(checksums_path.name + ".lock"))
+            with file_lock.acquire_write():
+                self._download(url, checksums_path)
+
+            with file_lock.acquire_read():
+                with open(checksums_path) as checksums_file:
+                    for line in checksums_file:
+                        if (parsed_line := self._parse_checksum_line(line)) is not None:
+                            filename, checksum = parsed_line
+                            filename_to_checksum_map[filename] = checksum
+
+        return filename_to_checksum_map
+
+    def _get_checksum(self, checksum_map: dict[str, str], file_name: str) -> str:
+        try:
+            return checksum_map[file_name]
+        except KeyError as e:
+            raise RuntimeError(f"Required file missing in md5checksums.txt: {e}") from e
+
+    def prepare_assets(self, entity: GenomicEntity, cache_dir: Path) -> dict[str, str]:
+        """
+        TODO:
+        Ensembl:
+        URL based cache for Ensembl GTF/FASTA.
+        - Resolves 'current' vs numeric release to the right directories.
+        - Selects one .gtf.gz and one DNA FASTA (prefers dna_sm.primary_assembly, then primary_assembly, then toplevel).
+        - Attempts to fetch .md5 sidecar for each for MD5 verification.
+        - verifies checksums parsed from CHECKSUMS file using 'sum' command
+        - Gunzips once into 'decompressed' and returns local paths and metadata.
+        NCBI:
+        Returns cached, MD5-verified local paths for .gtf and .fna (decompressed),
+        plus metadata: release, assembly, accession.
+        """
+
+        context = self.get_entity_context(entity, cache_dir)
+        checksum_map = self._get_checksum_map(context, cache_dir)
+
+        # Annotation (GTF)
+        annotation_checksum = checksum_map[context.annotation_remote_file_name]
+        annotation_file = self._download_and_verify(
+            context.annotation_remote_dir, context.annotation_remote_file_name, annotation_checksum, cache_dir
+        )
+
+        # Sequence (FASTA)
+        sequence_checksum = checksum_map[context.sequence_remote_file_name]
+        sequence_file = self._download_and_verify(
+            context.sequence_remote_dir, context.sequence_remote_file_name, sequence_checksum, cache_dir
+        )
+
+        return {
+            "annotation_file": annotation_file,
+            "sequence_file": sequence_file,
+            "annotation_release": context.annotation_release,
+            "genome_assembly": context.genome_assembly,
+        }
 
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
     # release 116 changes structure => could be a problem once they set this to current
-    def __init__(self, host="ftp.ensembl.org", base_path="/pub/", allowlist=None, name="ensembl") -> None:
+    def __init__(
+        self,
+        host: str = "ftp.ensembl.org",
+        base_path: str = "/pub/",
+        allowlist: list[str] | None = None,
+        name: str = "ensembl",
+    ) -> None:
         super().__init__(host, base_path, allowlist, name)
         self.orig_top_dirs = [""]
 
-    def _get_species_dirs(self, dirs, ftp):
+    def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> list[list[str]]:
         self.orig_top_dirs = dirs
         dirs = [f"{dir}/fasta" if dir.startswith("release") else dir for dir in dirs]
         return super()._get_species_dirs(dirs, ftp)
 
-    def _build_directory_dict(self, top_dirs, species_dirs):
+    def _build_directory_dict(
+        self, top_dirs: list[str], species_dirs: list[list[str]]
+    ) -> dict[str, list[str]]:
         # only use number to list release so e.g. "release-115" -> "115"
         self.orig_top_dirs = [dir[-3:] for dir in self.orig_top_dirs]
-        return self.reverse_dict(super()._build_directory_dict(self.orig_top_dirs, species_dirs))
+        return self._reverse_dict(super()._build_directory_dict(self.orig_top_dirs, species_dirs))
 
-    def reverse_dict(self, directories):
+    def _reverse_dict(self, directories: dict) -> dict:
         reversed_directories = defaultdict(list)
         for release, species_dirs in directories.items():
             for species_dir in species_dirs:
@@ -153,27 +278,27 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         except subprocess.CalledProcessError:
             return False
 
-    def _parse_checksums(self, checksums_path: str | Path):
-        filename_to_checksum_map = {}
-        with open(checksums_path) as checksums_file:
-            for line in checksums_file:
-                line = line.strip()
-                split_line = line.split()
-                filename_to_checksum_map[split_line[len(split_line) - 1]] = split_line[0]
-        return filename_to_checksum_map
+    def _checksum_file_name(self) -> str:
+        return "CHECKSUMS"
 
-    def _release_dirs(self, release: str | int):
+    def _parse_checksum_line(self, line: str) -> tuple[str, str] | None:
+        # returns tuple of file name and its checksum
+        line = line.strip()
+        split_line = line.split()
+        return split_line[-1], split_line[0]
+
+    def _release_dirs(self, release: str) -> tuple[str, str, bool]:
         """
         Return tuple (gtf_dir, fasta_dir, resolved_release_is_current_flag).
         Uses 'current_gtf' and 'current_fasta' when release == 'current',
         otherwise 'pub/release-<rel>/(gtf|fasta)/...'
         """
-        if str(release) == "current":
+        if release == "current":
             return ("pub/current_gtf", "pub/current_fasta", True)
         else:
             return (f"pub/release-{release}/gtf", f"pub/release-{release}/fasta", False)
 
-    def _pick_files(self, gtf_dir, fasta_dir):
+    def _pick_files(self, gtf_dir: str, fasta_dir: str) -> tuple[str, str, str]:
         """
         Given fully-qualified remote directories for GTF and DNA FASTA
         (e.g., 'pub/current_gtf/homo_sapiens' and 'pub/current_fasta/homo_sapiens/dna'),
@@ -232,65 +357,47 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
         return gtf_gz, fasta_gz, assembly
 
-    def get_or_download(self, dir, remote_filename, cache_dir):
-        checksum_path = self.download(f"https://{self.host}/{dir}/CHECKSUMS", cache_dir)
-        checksum = self._parse_checksums(checksum_path)[remote_filename]
+    def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
+        annotation_remote_root_dir, sequence_remote_root_dir, is_current = self._release_dirs(entity.release)
 
-        local_path = self.download(
-            f"https://{self.host}/{dir}/{remote_filename}", cache_dir, extract_gzip=True
+        annotation_remote_dir = f"{annotation_remote_root_dir}/{entity.species}"
+        sequence_remote_dir = f"{sequence_remote_root_dir}/{entity.species}/dna"
+        # Use 'current' literally if current; else use the numeric/label release
+        annotation_release = "current" if is_current else str(entity.release)
+
+        # Resolve filenames and assembly
+        annotation_remote_file_name, sequence_remote_file_name, genome_assembly = self._pick_files(
+            annotation_remote_dir, sequence_remote_dir
         )
 
-        if not self._verify_file(local_path, checksum):
-            raise RuntimeError(f"Couldn't match checksum for {local_path}")
-
-        return str(local_path)
-
-    def prepare_assets(self, cache_dir, species, release):
-        """
-        URL based cache for Ensembl GTF/FASTA.
-        - Resolves 'current' vs numeric release to the right directories.
-        - Selects one .gtf.gz and one DNA FASTA (prefers dna_sm.primary_assembly, then primary_assembly, then toplevel).
-        - Attempts to fetch .md5 sidecar for each for MD5 verification.
-        - verifies checksums parsed from CHECKSUMS file using 'sum' command
-        - Gunzips once into 'decompressed' and returns local paths and metadata.
-        """
-
-        gtf_root, fasta_root, is_current = self._release_dirs(release)
-        # species should be like 'homo_sapiens'
-        gtf_dir = f"{gtf_root}/{species}"
-        fasta_dir = f"{fasta_root}/{species}/dna"
-
-        # Pick filenames and assembly
-        gtf_gz, fasta_gz, assembly = self._pick_files(gtf_dir, fasta_dir)
-
-        # Use 'current' literally if current; else use the numeric/label release
-        rel_label = "current" if is_current else str(release)
-
-        gtf_plain = self.get_or_download(gtf_dir, gtf_gz, cache_dir)
-        fasta_plain = self.get_or_download(fasta_dir, fasta_gz, cache_dir)
-
-        return {
-            "annotation_file": gtf_plain,
-            "sequence_file": fasta_plain,
-            "annotation_release": rel_label,
-            "genome_assembly": assembly,
-            "accession": None,  # Ensembl doesn't use GCF/GCA accessions in filenames
-        }
+        return GenomicEntityContext(
+            annotation_remote_dir,
+            annotation_remote_file_name,
+            sequence_remote_dir,
+            sequence_remote_file_name,
+            annotation_release,
+            genome_assembly,
+            accession=None,
+        )
 
 
 class NCBIGenomicDataBase(BaseGenomicDataBase):
     def __init__(
-        self, host="ftp.ncbi.nlm.nih.gov", base_path="genomes/refseq/", name="ncbi", allowlist=None
+        self,
+        host: str = "ftp.ncbi.nlm.nih.gov",
+        base_path: str = "genomes/refseq/",
+        allowlist: list[str] | None = None,
+        name: str = "ncbi",
     ) -> None:
         super().__init__(host, base_path, allowlist, name)
 
-    def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str):
+    def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str) -> str | None:
         try:
             return ftp.cwd(f"/{self.base_path}/{taxon}/{species}/{dir}")
         except ftplib.Error:
             return None
 
-    def _get_releases_dir(self, ftp, taxon, species):
+    def _get_releases_dir(self, ftp: ftplib.FTP, taxon: str, species: str) -> str | None:
         possible_dirs = ["annotation_releases", "all_assembly_versions"]
 
         for dir in possible_dirs:
@@ -299,7 +406,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
         return None
 
-    def fetch_annotations_releases(self, taxon: str, species: str):
+    def fetch_annotations_releases(self, taxon: str, species: str) -> list[str] | None:
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
             dir = self._get_releases_dir(ftp, taxon, species)
@@ -317,16 +424,21 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         self, cache_dir: Path, rel_dir: str, file_name: str
     ) -> tuple[str | None, str | None]:
         url = f"https://{self.host}{rel_dir}/{file_name}"
-        file_path = self.download(url, cache_dir)
+        file_path = self._build_local_file_path(url, file_name, cache_dir)
 
-        with open(file_path) as file:
-            assembly_name, accession = None, None
-            for line in file:
-                if line.startswith("# Assembly name:"):
-                    _, assembly_name = line.strip().rsplit(maxsplit=1)
-                if line.startswith("# RefSeq assembly accession:"):
-                    _, accession = line.strip().rsplit(maxsplit=1)
-                    break
+        file_lock = SoftReadWriteLock(file_path.with_name(file_path.name + ".lock"))
+        with file_lock.acquire_write():
+            self._download(url, file_path)
+
+        with file_lock.acquire_read():
+            with open(file_path) as file:
+                assembly_name, accession = None, None
+                for line in file:
+                    if line.startswith("# Assembly name:"):
+                        _, assembly_name = line.strip().rsplit(maxsplit=1)
+                    if line.startswith("# RefSeq assembly accession:"):
+                        _, accession = line.strip().rsplit(maxsplit=1)
+                        break
             return assembly_name, accession
 
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
@@ -335,30 +447,48 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
         return digest.hexdigest() == expected_checksum
 
-    def _resolve_release_and_dir(self, cache_dir, taxon, species, release):
+    def _checksum_file_name(self) -> str:
+        return "md5checksums.txt"
+
+    def _parse_checksum_line(self, line: str) -> tuple[str, str] | None:
+        # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
+        line = line.strip()
+        if not line:
+            return None
+        split_line = line.split()
+        if len(split_line) < 2:
+            return None
+        checksum = split_line[0]
+        filename = split_line[1].lstrip("./")
+        return filename, checksum
+
+    def _resolve_release_and_dir(self, cache_dir, entity: GenomicEntity) -> tuple[str, str, str, str]:
         # Resolve "current" to a concrete release; also read README to get assembly/accession
+        if entity.taxon is None:
+            raise ValueError("NCBI requires specifying a taxon but none was provided.")
+
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
 
-            releases_dir = self._get_releases_dir(ftp, taxon, species)
+            releases_dir = self._get_releases_dir(ftp, entity.taxon, entity.species)
             if releases_dir is None:
                 raise RuntimeError("Could not fetch release dir")
-            base = f"/{self.base_path}{taxon}/{species}/{releases_dir}/"
-            rel_dir = base + f"{release}/"
+            base = f"/{self.base_path}{entity.taxon}/{entity.species}/{releases_dir}/"
+            rel_dir = base + f"{entity.release}/"
 
             ftp.cwd(rel_dir)
 
-            if "GCF" not in release:
+            if "GCF" not in entity.release:
                 # Be deterministic
                 listing = self.get_dirs(ftp)
                 if not listing:
                     raise RuntimeError("Empty 'current' directory at NCBI.")
 
-                old_release = release
-                release = listing[0]
+                old_release = entity.release
+                entity.release = listing[0]
 
-                rel_dir = base + f"{old_release}/{release}"
-                ftp.cwd(release)
+                rel_dir = base + f"{old_release}/{entity.release}"
+                ftp.cwd(entity.release)
 
             # find README
             assembly_report = min((n for n in ftp.nlst() if n.endswith("_assembly_report.txt")), default=None)
@@ -378,72 +508,32 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 final_dir = nested
             except ftplib.error_perm:
                 final_dir = rel_dir
-        return str(release), assembly_name, accession, final_dir
+        return str(entity.release), assembly_name, accession, final_dir
 
-    def _parse_checksums(self, line):
-        line = line.strip()
-        if not line:
-            return None
-        line = line.split()
-        if len(line) < 2:
-            return None
-        checksum = line[0]
-        filename = line[1].lstrip("./")
-        return filename, checksum
-
-    def _parse_md5checksums(self, md5_text_path):
-        # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
-        filename_to_checksum_map = {}
-        with open(md5_text_path) as f:
-            for line in f:
-                filename, checksum = self._parse_checksums(line)
-                filename_to_checksum_map[filename] = checksum
-        return filename_to_checksum_map
-
-    def prepare_assets(self, cache_dir, taxon, species, release):
-        """
-        Returns cached, MD5-verified local paths for .gtf and .fna (decompressed),
-        plus metadata: release, assembly, accession.
-        """
-        release, assembly, accession, final_dir = self._resolve_release_and_dir(
-            cache_dir, taxon, species, release
+    def _remote_file_names(self, context: GenomicEntityContext) -> tuple[str, str]:
+        return (
+            f"{context.accession}_{context.genome_assembly}_genomic.gtf.gz",
+            f"{context.accession}_{context.genome_assembly}_genomic.fna.gz",
         )
 
-        # md5 manifests of compressed files
-        md5_local = self.download(f"https://{self.host}/{final_dir}/md5checksums.txt", cache_dir)
+    def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
+        annotation_release, genome_assembly, accession, remote_dir = self._resolve_release_and_dir(
+            cache_dir, entity
+        )
 
-        compressed_checksum_map = self._parse_md5checksums(md5_local)
+        annotation_remote_dir = sequence_remote_dir = remote_dir
+        annotation_remote_file_name = f"{accession}_{genome_assembly}_genomic.gtf.gz"
+        sequence_remote_file_name = f"{accession}_{genome_assembly}_genomic.fna.gz"
 
-        file_types = ["gtf", "fna"]
-        file_endings = ["_genomic.gtf.gz", "_genomic.fna.gz"]
-        files = {
-            file_type: {"remote_path": f"{accession}_{assembly}{file_ending}"}
-            for file_type, file_ending in zip(file_types, file_endings)
-        }
-
-        # Ensure raw files present & verified (store in our cache /raw regardless of NCBI nesting)
-        for key in files.keys():
-            try:
-                expected_archive_checksum = compressed_checksum_map[files[key]["remote_path"]]
-            except KeyError as e:
-                raise RuntimeError(f"Required file missing in md5checksums.txt: {e}") from e
-
-            archive_local_path = self.download(
-                f"https://{self.host}/{final_dir}/{files[key]['remote_path']}", cache_dir, extract_gzip=True
-            )
-
-            if not self._verify_file(archive_local_path, expected_archive_checksum):
-                raise RuntimeError(f"Checksum for {archive_local_path} doesn't match")
-
-            files[key]["local_path"] = str(archive_local_path)
-
-        return {
-            "annotation_file": files["gtf"]["local_path"],
-            "sequence_file": files["fna"]["local_path"],
-            "annotation_release": release,
-            "genome_assembly": assembly,
-            "accession": accession,
-        }
+        return GenomicEntityContext(
+            annotation_remote_dir,
+            annotation_remote_file_name,
+            sequence_remote_dir,
+            sequence_remote_file_name,
+            annotation_release,
+            genome_assembly,
+            accession,
+        )
 
 
 def prefetch_dropdown_options():
@@ -453,9 +543,9 @@ def prefetch_dropdown_options():
         [
             NCBIGenomicDataBase(
                 allowlist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
-            ).fetch_ftp_directories(),
+            )._fetch_ftp_directories(),
             EnsemblGenomicDataBase(
                 allowlist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
-            ).fetch_ftp_directories(),
+            )._fetch_ftp_directories(),
         ]
     )

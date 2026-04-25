@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 from filelock import SoftReadWriteLock
 
-from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
+from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
 from backend.worker.converters import to_bool, to_int
 
 
@@ -38,7 +38,7 @@ class GenomicRegionGeneratorRunner:
         # This avoids:
         # - computing the same genomic regions multiple times at once
         # - race conditions due to simultaneous access to output and config (esp. writes, deletions)
-        output_lock = SoftReadWriteLock(output_path.with_suffix(".lock"))
+        output_lock = SoftReadWriteLock(output_path.with_name(output_path.name + ".lock"))
         with output_lock.write_lock():
             # ---------------------------------------------
             # First-line cache: region FASTAs already built?
@@ -54,37 +54,29 @@ class GenomicRegionGeneratorRunner:
             # Determine which upstream (NCBI or Ensembl) we are caching from, then always run in custom mode
             # ---------------------------------------------
             source_params = region_form.get("source_params", {})
-            source_val = region_form.get("source", "").lower()
+            taxon = source_params.get("taxon", "H_sapiens")  # ignored by EnsemblGenomicDataBase
+            species = source_params.get("species")
+            ann_rel = source_params.get("annotation_release")
+            if species is None or ann_rel is None:
+                raise ValueError(
+                    "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
+                )
+            genomic_entity = GenomicEntity(taxon=taxon, species=species, release=ann_rel)
 
+            source_val = region_form.get("source", "").lower()
             if source_val == "ensembl":
                 # Ensembl second-line cache
-                species = source_params.get("species")
-                ann_rel = source_params.get("annotation_release")
-                if not species or ann_rel is None:
-                    raise ValueError(
-                        "Custom genomic (Ensembl) requires 'species' and 'annotation_release' in source_params."
-                    )
-                cache_info = EnsemblGenomicDataBase().prepare_assets(self.cache_dir, species, ann_rel)
-                genome_assembly = cache_info["genome_assembly"]
-                resolved_rel = cache_info["annotation_release"]
-                annotation_file = cache_info["annotation_file"]
-                sequence_file = cache_info["sequence_file"]
+                cache_info = EnsemblGenomicDataBase().prepare_assets(genomic_entity, self.cache_dir)
                 files_source = "Ensembl"
             else:
                 # Default to NCBI second-line cache
-                taxon = source_params.get("taxon", "H_sapiens")
-                species = source_params.get("species")
-                ann_rel = source_params.get("annotation_release")
-                if not species or ann_rel is None:
-                    raise ValueError(
-                        "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
-                    )
-                cache_info = NCBIGenomicDataBase().prepare_assets(self.cache_dir, taxon, species, ann_rel)
-                genome_assembly = cache_info["genome_assembly"]
-                resolved_rel = cache_info["annotation_release"]
-                annotation_file = cache_info["annotation_file"]
-                sequence_file = cache_info["sequence_file"]
+                cache_info = NCBIGenomicDataBase().prepare_assets(genomic_entity, self.cache_dir)
                 files_source = "NCBI"
+
+            genome_assembly = cache_info["genome_assembly"]
+            resolved_rel = cache_info["annotation_release"]
+            annotation_file = cache_info["annotation_file"]
+            sequence_file = cache_info["sequence_file"]
 
             # Build custom config pointing to cached decompressed files (BASIC PARAMETERS spec)
             config_path = output_path / f"config_genomic_{cache_key}.yaml"
@@ -109,8 +101,8 @@ class GenomicRegionGeneratorRunner:
                 yaml.dump(config_genomic, yaml_file)
 
             # Lock input files to avoid modification during region generation
-            annotation_file_lock = SoftReadWriteLock(Path(annotation_file).with_suffix(".lock"))
-            sequence_file_lock = SoftReadWriteLock(Path(sequence_file).with_suffix(".lock"))
+            annotation_file_lock = SoftReadWriteLock(Path(annotation_file + ".lock"))
+            sequence_file_lock = SoftReadWriteLock(Path(sequence_file + ".lock"))
 
             with annotation_file_lock.read_lock(), sequence_file_lock.read_lock():
                 result = subprocess.run(
