@@ -29,21 +29,20 @@ def run_genomic_region_generator(form_data: Any, id: str) -> tuple[str, list[str
 
 @app.task()
 def fetch_dropdown_options():
-    client = MongoClient(CeleryConfig.result_backend)
+    with MongoClient(CeleryConfig.result_backend) as client:
+        db = client["oligo_db"]
 
-    db = client["oligo_db"]
+        if "cache" not in db.list_collection_names():
+            db.create_collection("cache")
+            print("setup cache collection")
 
-    if "cache" not in db.list_collection_names():
-        db.create_collection("cache")
-        print("setup cache collection")
+        cache = db["cache"]
 
-    cache = db["cache"]
-
-    doc = cache.find_one({"_id": 1})
-    if doc is None or (datetime.datetime.today() - doc["timestamp"]).days >= 1:
-        cache.update_one(
-            {"_id": 1},
-            {"$set": {"timestamp": datetime.datetime.today(), "data": prefetch_dropdown_options()}},
-            upsert=True,
-        )
-        print("Inserted/ Updated outdated dropdown options")
+        doc = cache.find_one({"_id": 1})
+        if doc is None or (datetime.datetime.today() - doc["timestamp"]).days >= 1:
+            cache.update_one(
+                {"_id": 1},
+                {"$set": {"timestamp": datetime.datetime.today(), "data": prefetch_dropdown_options()}},
+                upsert=True,
+            )
+            print("Inserted/ Updated outdated dropdown options")
