@@ -114,37 +114,11 @@ function Header({
     const navigate = useNavigate();
 
     // Set initial active tab offset and width on mount
-    useEffect(() => {
-        if (activeSize[0] === 0 && tabs && tabs.length > 0) {
-            requestAnimationFrame(() => {
-                const activeElement = document.querySelector(
-                    `.nav-header .nav-link.active`
-                ) as HTMLElement;
-                if (activeElement) {
-                    setActiveOffset([
-                        activeElement.offsetLeft,
-                        activeElement.offsetTop,
-                    ]);
-                    setActiveSize([
-                        activeElement.offsetWidth,
-                        activeElement.offsetHeight,
-                    ]);
-                }
-                requestAnimationFrame(() => {
-                    setAnimationReady(1); // Set animation ready flag after initial measurement
-                });
-            });
-        }
-    }, [tabs, activeSize]);
-
-    useEffect(() => {
-        if (!tabs || tabs.length === 0) return; // No tabs, no need to set up resize listener
-
-        const handleResize = () => {
+    if (activeSize[0] === 0 && tabs && tabs.length > 0) {
+        requestAnimationFrame(() => {
             const activeElement = document.querySelector(
                 `.nav-header .nav-link.active`
             ) as HTMLElement;
-            setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
             if (activeElement) {
                 setActiveOffset([
                     activeElement.offsetLeft,
@@ -156,9 +130,33 @@ function Header({
                 ]);
             }
             requestAnimationFrame(() => {
-                setAnimationReady(1); // Set animation ready flag after measurement
+                setAnimationReady(1); // Set animation ready flag after initial measurement
             });
-        };
+        });
+    }
+
+    const handleResize = () => {
+        const activeElement = document.querySelector(
+            `.nav-header .nav-link.active`
+        ) as HTMLElement;
+        setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
+        if (activeElement) {
+            setActiveOffset([
+                activeElement.offsetLeft,
+                activeElement.offsetTop,
+            ]);
+            setActiveSize([
+                activeElement.offsetWidth,
+                activeElement.offsetHeight,
+            ]);
+        }
+        requestAnimationFrame(() => {
+            setAnimationReady(1); // Set animation ready flag after measurement
+        });
+    };
+
+    useEffect(() => {
+        if (!tabs || tabs.length === 0) return; // No tabs, no need to set up resize listener
 
         window.addEventListener("resize", handleResize);
 

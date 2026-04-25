@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { Navbar, Nav, Container, Spinner, Button } from "react-bootstrap";
@@ -78,48 +78,38 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, loading } = useAuth();
+    const { user, loading, logoutWithConfirmation } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar collapse state
 
-    const [isLargeScreen, setIsLargeScreen] = useState(
-        window.matchMedia("(min-width: 992px)").matches
-    );
-
-    useEffect(() => {
-        // Responsive screen detection using matchMedia
-        const mediaQuery = window.matchMedia("(min-width: 992px)");
-        const handleChange = (e: MediaQueryListEvent) =>
-            setIsLargeScreen(e.matches);
-        mediaQuery.addEventListener("change", handleChange);
-
-        // Check if user is authenticated and is admin
-        if (!loading) {
-            console.log(
-                "Admin check - loading:",
-                loading,
-                "user:",
-                user,
-                "role:",
-                user?.role
+    // Check if user is authenticated and is admin
+    if (!loading) {
+        if (!user) {
+            // Not logged in - redirect to login with return URL
+            navigate(
+                `/login?redirect=${encodeURIComponent(location.pathname)}`
             );
-            if (!user) {
-                // Not logged in - redirect to login with return URL
-                console.log("Redirecting to login - user not authenticated");
-                navigate(
-                    `/login?redirect=${encodeURIComponent(location.pathname)}`
-                );
-            } else if (user.role !== "admin") {
-                // Logged in but not admin - redirect to home
-                console.log("Redirecting to home - user is not admin");
-                navigate("/");
-            }
+        } else if (user.role !== "admin") {
+            // Logged in but not admin - redirect to home
+            navigate("/");
         }
+    }
 
-        return () => mediaQuery.removeEventListener("change", handleChange);
-    }, [user, loading, navigate, location.pathname]);
+    function subscribeToScreenChanges(callback: () => void) {
+        window
+            .matchMedia("(min-width: 992px)")
+            .addEventListener("change", callback);
+        return () => {
+            window
+                .matchMedia("(min-width: 992px)")
+                .removeEventListener("change", callback);
+        };
+    }
 
-    const { logoutWithConfirmation } = useAuth();
+    const isLargeScreen = useSyncExternalStore(
+        subscribeToScreenChanges,
+        () => window.matchMedia("(min-width: 992px)").matches
+    );
 
     if (loading) {
         return (
