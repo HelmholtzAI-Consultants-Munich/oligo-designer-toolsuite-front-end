@@ -53,7 +53,8 @@ class BaseGenomicDataBase:
         self.allowlist: set[str] | None = set(allowlist) if allowlist is not None else None
         self.name: str = name
 
-    def get_dirs(self, ftp: ftplib.FTP) -> list[str]:
+    # ---- Directory Discovery ----
+    def _get_dirs(self, ftp: ftplib.FTP) -> list[str]:
         lines: list[str] = []
         _ = ftp.retrlines("LIST", lines.append)
 
@@ -64,7 +65,7 @@ class BaseGenomicDataBase:
                 continue
             if parts[0][0] == "d" or parts[0][0] == "l":
                 entries.append(parts[8])
-        return sorted(entries)
+        return sorted(entries)  # sort for determinism
 
     def _filter_allowlist(self, dirs: list[str]) -> list[str]:
         if self.allowlist is not None:
@@ -72,12 +73,12 @@ class BaseGenomicDataBase:
         return dirs
 
     def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> list[list[str]]:
-        dirs.sort()
+        dirs.sort()  # sort for determinism
 
         all_species_dirs: list[list[str]] = []
         for dir in dirs:
             _ = ftp.cwd(f"/{self.base_path}/{dir}")
-            all_species_dirs.extend([self.get_dirs(ftp)])
+            all_species_dirs.extend([self._get_dirs(ftp)])
         return all_species_dirs
 
     def _build_directory_dict(
@@ -85,15 +86,16 @@ class BaseGenomicDataBase:
     ) -> dict[str, list[str]]:
         return dict(zip(top_dirs, species_dirs))
 
-    def _fetch_ftp_directories(self) -> tuple[str, dict[str, list[str]]]:
+    def fetch_ftp_directories(self) -> tuple[str, dict[str, list[str]]]:
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
             ftp.cwd(self.base_path)
-            top_dirs = self.get_dirs(ftp)
+            top_dirs = self._get_dirs(ftp)
             top_dirs = self._filter_allowlist(top_dirs)
             species_dirs = self._get_species_dirs(top_dirs, ftp)
         return self.name, self._build_directory_dict(top_dirs, species_dirs)
 
+    # ---- Genomic Asset Fetching ----
     def _download(self, url: str, file_path: Path) -> None:
         """Downloads the file if it changed."""
         headers: dict[str, str] = {}
@@ -150,13 +152,17 @@ class BaseGenomicDataBase:
             # Uncompress file if extension is .gz
             if file_path.suffix == ".gz":
                 uncompressed_file_path = file_path.with_suffix("")  # remove .gz extension
-                if not uncompressed_file_path.exists():
-                    with gzip.open(file_path, "rb") as archive:
-                        with open(uncompressed_file_path, "wb") as extract:
-                            shutil.copyfileobj(archive, extract)
+                with gzip.open(file_path, "rb") as archive:
+                    with open(uncompressed_file_path, "wb") as extract:
+                        shutil.copyfileobj(archive, extract)
 
-                # Delete compressed file
-                file_path.unlink()
+                # NOTE: The compressed files are currently still kept since the download caching
+                #   is based on their file metadata.
+                # TODO: Find a neat solution for avoiding redundant files.
+                #   Option 1: use separate metadata for download caching
+                #   Option 2: don't uncompress files & make genomic region generator handle compressed files
+                # # Delete compressed file
+                # file_path.unlink()
                 file_path = uncompressed_file_path
 
         return file_path
@@ -252,17 +258,11 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         super().__init__(host, base_path, allowlist, name)
         self.orig_top_dirs = [""]
 
+    # ---- Directory Discovery ----
     def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> list[list[str]]:
         self.orig_top_dirs = dirs
         dirs = [f"{dir}/fasta" if dir.startswith("release") else dir for dir in dirs]
         return super()._get_species_dirs(dirs, ftp)
-
-    def _build_directory_dict(
-        self, top_dirs: list[str], species_dirs: list[list[str]]
-    ) -> dict[str, list[str]]:
-        # only use number to list release so e.g. "release-115" -> "115"
-        self.orig_top_dirs = [dir[-3:] for dir in self.orig_top_dirs]
-        return self._reverse_dict(super()._build_directory_dict(self.orig_top_dirs, species_dirs))
 
     def _reverse_dict(self, directories: dict) -> dict:
         reversed_directories = defaultdict(list)
@@ -271,6 +271,14 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
                 reversed_directories[species_dir].append(release)
         return dict(reversed_directories)
 
+    def _build_directory_dict(
+        self, top_dirs: list[str], species_dirs: list[list[str]]
+    ) -> dict[str, list[str]]:
+        # only use number to list release so e.g. "release-115" -> "115"
+        self.orig_top_dirs = [dir[-3:] for dir in self.orig_top_dirs]
+        return self._reverse_dict(super()._build_directory_dict(self.orig_top_dirs, species_dirs))
+
+    # ---- Genomic Asset Fetching ----
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
         try:
             result = subprocess.run(["sum", file_path], capture_output=True, check=True, text=True)
@@ -313,7 +321,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             ftp.cwd(gtf_dir)
             gtf_listing = ftp.nlst()
             gtf_gz = None
-            for name in sorted(gtf_listing):
+            for name in sorted(gtf_listing):  # sort for determinism
                 # ends with NUMBER.gtf.gz
                 if re.search(r"^.+\.\d+\.gtf.gz$", name):
                     gtf_gz = name
@@ -327,7 +335,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
             # FASTA directory (already includes species + dna)
             ftp.cwd(f"/{fasta_dir}")
-            fa_listing = sorted(ftp.nlst())
+            fa_listing = sorted(ftp.nlst())  # sort for determinism
 
             fasta_gz = None
             suffix_precedence = [
@@ -392,6 +400,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
     ) -> None:
         super().__init__(host, base_path, allowlist, name)
 
+    # ---- Directory Discovery ----
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str) -> str | None:
         try:
             return ftp.cwd(f"/{self.base_path}/{taxon}/{species}/{dir}")
@@ -413,7 +422,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             dir = self._get_releases_dir(ftp, taxon, species)
             if dir is None:
                 return None
-            dirs = self.get_dirs(ftp)
+            dirs = self._get_dirs(ftp)
 
         # split to avoid including locations that symbolic links point to in the list so "current -> test/4711" -> "current"
         dirs = [dir.split(maxsplit=1)[0] for dir in dirs]
@@ -421,6 +430,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             dirs = [dir for dir in dirs if dir != "suppressed"]
         return dirs
 
+    # ---- Genomic Asset Fetching ----
     def _get_assembly_information(
         self, cache_dir: Path, rel_dir: str, file_name: str
     ) -> tuple[str | None, str | None]:
@@ -478,8 +488,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             ftp.cwd(rel_dir)
 
             if "GCF" not in entity.release:
-                # Be deterministic
-                listing = self.get_dirs(ftp)
+                listing = self._get_dirs(ftp)
                 if not listing:
                     raise RuntimeError("Empty 'current' directory at NCBI.")
 
@@ -509,12 +518,6 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 final_dir = rel_dir
         return str(entity.release), assembly_name, accession, final_dir
 
-    def _remote_file_names(self, context: GenomicEntityContext) -> tuple[str, str]:
-        return (
-            f"{context.accession}_{context.genome_assembly}_genomic.gtf.gz",
-            f"{context.accession}_{context.genome_assembly}_genomic.fna.gz",
-        )
-
     def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
         annotation_release, genome_assembly, accession, remote_dir = self._resolve_release_and_dir(
             cache_dir, entity
@@ -542,9 +545,9 @@ def prefetch_dropdown_options():
         [
             NCBIGenomicDataBase(
                 allowlist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
-            )._fetch_ftp_directories(),
+            ).fetch_ftp_directories(),
             EnsemblGenomicDataBase(
                 allowlist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
-            )._fetch_ftp_directories(),
+            ).fetch_ftp_directories(),
         ]
     )

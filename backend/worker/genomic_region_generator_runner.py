@@ -56,7 +56,7 @@ class GenomicRegionGeneratorRunner:
             source_params = region_form.get("source_params", {})
             taxon = source_params.get("taxon", "H_sapiens")  # ignored by EnsemblGenomicDataBase
             species = source_params.get("species")
-            ann_rel = source_params.get("annotation_release")
+            ann_rel = str(source_params.get("annotation_release"))
             if species is None or ann_rel is None:
                 raise ValueError(
                     "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
