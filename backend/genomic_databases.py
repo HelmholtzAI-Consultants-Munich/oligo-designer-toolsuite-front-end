@@ -22,7 +22,7 @@ from backend.config import Config
 class GenomicEntity:
     taxon: str | None
     species: str
-    release: str  # | int
+    release: str
 
 
 @dataclass
@@ -152,7 +152,10 @@ class BaseGenomicDataBase:
             # Uncompress file if extension is .gz
             if file_path.suffix == ".gz":
                 uncompressed_file_path = file_path.with_suffix("")  # remove .gz extension
-                with gzip.open(file_path, "rb") as archive:
+                uncompressed_file_lock = SoftReadWriteLock(
+                    uncompressed_file_path.with_name(uncompressed_file_path.name + ".lock")
+                )
+                with uncompressed_file_lock.write_lock(), gzip.open(file_path, "rb") as archive:
                     with open(uncompressed_file_path, "wb") as extract:
                         shutil.copyfileobj(archive, extract)
 
@@ -208,19 +211,18 @@ class BaseGenomicDataBase:
         except KeyError as e:
             raise RuntimeError(f"Required file missing in md5checksums.txt: {e}") from e
 
-    def prepare_assets(self, entity: GenomicEntity, cache_dir: Path) -> dict[str, str]:
-        """
+    def fetch_genomic_entity(self, entity: GenomicEntity, cache_dir: Path) -> dict[str, str]:
+        """Fetch genomic entity from cache or download it if not cached yet.
         TODO:
         Ensembl:
         URL based cache for Ensembl GTF/FASTA.
         - Resolves 'current' vs numeric release to the right directories.
         - Selects one .gtf.gz and one DNA FASTA (prefers dna_sm.primary_assembly, then primary_assembly, then toplevel).
-        - Attempts to fetch .md5 sidecar for each for MD5 verification.
-        - verifies checksums parsed from CHECKSUMS file using 'sum' command
-        - Gunzips once into 'decompressed' and returns local paths and metadata.
+        - Verifies checksums parsed from CHECKSUMS file using 'sum' command
+        - Decompresses downloaded files and returns local paths and metadata.
         NCBI:
         Returns cached, MD5-verified local paths for .gtf and .fna (decompressed),
-        plus metadata: release, assembly, accession.
+        plus metadata: release, assembly.
         """
 
         context = self.get_entity_context(entity, cache_dir)
@@ -296,16 +298,16 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         split_line = line.split()
         return split_line[-1], split_line[0]
 
-    def _release_dirs(self, release: str) -> tuple[str, str, bool]:
+    def _release_dirs(self, release: str) -> tuple[str, str]:
         """
-        Return tuple (gtf_dir, fasta_dir, resolved_release_is_current_flag).
+        Return tuple (gtf_dir, fasta_dir).
         Uses 'current_gtf' and 'current_fasta' when release == 'current',
         otherwise 'pub/release-<rel>/(gtf|fasta)/...'
         """
         if release == "current":
-            return ("pub/current_gtf", "pub/current_fasta", True)
+            return ("pub/current_gtf", "pub/current_fasta")
         else:
-            return (f"pub/release-{release}/gtf", f"pub/release-{release}/fasta", False)
+            return (f"pub/release-{release}/gtf", f"pub/release-{release}/fasta")
 
     def _pick_files(self, gtf_dir: str, fasta_dir: str) -> tuple[str, str, str]:
         """
@@ -367,12 +369,11 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         return gtf_gz, fasta_gz, assembly
 
     def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
-        annotation_remote_root_dir, sequence_remote_root_dir, is_current = self._release_dirs(entity.release)
+        annotation_remote_root_dir, sequence_remote_root_dir = self._release_dirs(entity.release)
 
         annotation_remote_dir = f"{annotation_remote_root_dir}/{entity.species}"
         sequence_remote_dir = f"{sequence_remote_root_dir}/{entity.species}/dna"
-        # Use 'current' literally if current; else use the numeric/label release
-        annotation_release = "current" if is_current else str(entity.release)
+        annotation_release = entity.release
 
         # Resolve filenames and assembly
         annotation_remote_file_name, sequence_remote_file_name, genome_assembly = self._pick_files(
@@ -516,7 +517,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 final_dir = nested
             except ftplib.error_perm:
                 final_dir = rel_dir
-        return str(entity.release), assembly_name, accession, final_dir
+        return entity.release, assembly_name, accession, final_dir
 
     def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
         annotation_release, genome_assembly, accession, remote_dir = self._resolve_release_and_dir(

@@ -66,11 +66,11 @@ class GenomicRegionGeneratorRunner:
             source_val = region_form.get("source", "").lower()
             if source_val == "ensembl":
                 # Ensembl second-line cache
-                cache_info = EnsemblGenomicDataBase().prepare_assets(genomic_entity, self.cache_dir)
+                cache_info = EnsemblGenomicDataBase().fetch_genomic_entity(genomic_entity, self.cache_dir)
                 files_source = "Ensembl"
             else:
                 # Default to NCBI second-line cache
-                cache_info = NCBIGenomicDataBase().prepare_assets(genomic_entity, self.cache_dir)
+                cache_info = NCBIGenomicDataBase().fetch_genomic_entity(genomic_entity, self.cache_dir)
                 files_source = "NCBI"
 
             genome_assembly = cache_info["genome_assembly"]
