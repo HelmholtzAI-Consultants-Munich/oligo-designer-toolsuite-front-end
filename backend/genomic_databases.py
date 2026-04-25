@@ -3,7 +3,6 @@ import ftplib
 import gzip
 import hashlib
 import os
-import pathlib
 import re
 import shutil
 import subprocess
@@ -95,17 +94,12 @@ class BaseGenomicDataBase:
             species_dirs = self._get_species_dirs(top_dirs, ftp)
         return self.name, self._build_directory_dict(top_dirs, species_dirs)
 
-    def _build_local_file_path(self, url: str, file_name: str, cache_dir: Path) -> Path:
-        url_hash = hashlib.md5(url.encode()).hexdigest()
-        file_name = f"{url_hash}-{file_name}"
-        return (pathlib.Path(cache_dir) / self.name / file_name).resolve()
-
     def _download(self, url: str, file_path: Path) -> None:
         """Downloads the file if it changed."""
         headers: dict[str, str] = {}
 
         if file_path.exists():
-            mtime = os.path.getmtime(file_path)
+            mtime = file_path.stat().st_mtime
             headers["if-modified-since"] = formatdate(mtime, usegmt=True)
 
         with requests.get(url, headers=headers, stream=True) as response:
@@ -127,26 +121,34 @@ class BaseGenomicDataBase:
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
         pass
 
-    def _download_and_verify(
-        self, dir: str, remote_file_name: str, expected_checksum: str, cache_dir: Path
-    ) -> str:
-        """Downloads the file, verifies its checksum, uncompresses it and returns the new local file path."""
+    def _download_and_process(
+        self, dir: str, remote_file_name: str, expected_checksum: str | None, cache_dir: Path
+    ) -> Path:
+        """Downloads the file and processes it as needed.
+
+        Handles:
+        - optional verification of checksum
+        - uncompression of .gz files
+
+        Returns the new local file path.
+        """
         url = f"https://{self.host}/{dir}/{remote_file_name}"
-        file_path = self._build_local_file_path(url, remote_file_name, cache_dir)
+        url_hash = hashlib.md5(url.encode()).hexdigest()
+        file_path = (cache_dir / self.name / f"{url_hash}-{remote_file_name}").resolve()
 
         # Acquire lock to avoid downloading the same file multiple times at once
         # "Soft" lock is required for network file systems
         file_lock = SoftReadWriteLock(file_path.with_name(file_path.name + ".lock"))
         with file_lock.write_lock():
-            # Download compressed file
+            # Download file
             self._download(url, file_path)
 
-            # Verify checksum
-            if not self._verify_file(file_path, expected_checksum):
+            # Verify checksum if provided
+            if expected_checksum is not None and not self._verify_file(file_path, expected_checksum):
                 raise RuntimeError(f"Checksum for {file_path} does not match")
 
+            # Uncompress file if extension is .gz
             if file_path.suffix == ".gz":
-                # Uncompress file
                 uncompressed_file_path = file_path.with_suffix("")  # remove .gz extension
                 if not uncompressed_file_path.exists():
                     with gzip.open(file_path, "rb") as archive:
@@ -157,7 +159,7 @@ class BaseGenomicDataBase:
                 file_path.unlink()
                 file_path = uncompressed_file_path
 
-        return str(file_path)
+        return file_path
 
     @abstractmethod
     def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
@@ -180,12 +182,11 @@ class BaseGenomicDataBase:
 
         # set -> if the dirs are equal, the checksums are only downloaded once
         for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
-            url = f"https://{self.host}/{dir}/{checksums_file_name}"
-            checksums_path = self._build_local_file_path(url, checksums_file_name, cache_dir)
-            file_lock = SoftReadWriteLock(checksums_path.with_name(checksums_path.name + ".lock"))
-            with file_lock.acquire_write():
-                self._download(url, checksums_path)
+            checksums_path = self._download_and_process(
+                dir, checksums_file_name, expected_checksum=None, cache_dir=cache_dir
+            )
 
+            file_lock = SoftReadWriteLock(checksums_path.with_name(checksums_path.name + ".lock"))
             with file_lock.acquire_read():
                 with open(checksums_path) as checksums_file:
                     for line in checksums_file:
@@ -221,19 +222,19 @@ class BaseGenomicDataBase:
 
         # Annotation (GTF)
         annotation_checksum = checksum_map[context.annotation_remote_file_name]
-        annotation_file = self._download_and_verify(
+        annotation_file = self._download_and_process(
             context.annotation_remote_dir, context.annotation_remote_file_name, annotation_checksum, cache_dir
         )
 
         # Sequence (FASTA)
         sequence_checksum = checksum_map[context.sequence_remote_file_name]
-        sequence_file = self._download_and_verify(
+        sequence_file = self._download_and_process(
             context.sequence_remote_dir, context.sequence_remote_file_name, sequence_checksum, cache_dir
         )
 
         return {
-            "annotation_file": annotation_file,
-            "sequence_file": sequence_file,
+            "annotation_file": str(annotation_file),
+            "sequence_file": str(sequence_file),
             "annotation_release": context.annotation_release,
             "genome_assembly": context.genome_assembly,
         }
@@ -423,13 +424,11 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
     def _get_assembly_information(
         self, cache_dir: Path, rel_dir: str, file_name: str
     ) -> tuple[str | None, str | None]:
-        url = f"https://{self.host}{rel_dir}/{file_name}"
-        file_path = self._build_local_file_path(url, file_name, cache_dir)
+        file_path = self._download_and_process(
+            rel_dir, file_name, expected_checksum=None, cache_dir=cache_dir
+        )
 
         file_lock = SoftReadWriteLock(file_path.with_name(file_path.name + ".lock"))
-        with file_lock.acquire_write():
-            self._download(url, file_path)
-
         with file_lock.acquire_read():
             with open(file_path) as file:
                 assembly_name, accession = None, None
