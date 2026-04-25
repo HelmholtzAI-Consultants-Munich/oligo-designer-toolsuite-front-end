@@ -103,17 +103,22 @@ def sanitize_pipeline_form_paths(form_data: dict[str, Any], allowed_roots: list[
                 sanitized[key] = str(sanitize_submitted_path(value, allowed_roots))
             continue
 
-        if key.startswith("files_") and isinstance(value, list):
+        if key.startswith("files_") and value["files"] and isinstance(value["files"], list):
             sanitized_paths = []
-            for item in value:
+            for item in value["files"]:
                 if not isinstance(item, str):
                     raise ValueError(f"Expected string path in '{key}'")
                 sanitized_paths.append(str(sanitize_submitted_path(item, allowed_roots)))
-            sanitized[key] = sanitized_paths
+            sanitized[key]["files"] = sanitized_paths
             continue
 
-        if key.startswith("file_") and key != "file_regions" and isinstance(value, str) and value:
-            sanitized[key] = str(sanitize_submitted_path(value, allowed_roots))
+        if (
+            key.startswith("file_")
+            and key != "file_regions"
+            and value["files"]
+            and isinstance(value["files"], str)
+        ):
+            sanitized[key]["files"] = str(sanitize_submitted_path(value["files"], allowed_roots))
 
     return sanitized
 

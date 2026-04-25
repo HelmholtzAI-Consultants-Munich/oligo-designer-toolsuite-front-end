@@ -1,64 +1,79 @@
-import type { WidgetProps } from "@rjsf/utils";
-import {
-    defaultFastaForm,
-    type FastaForm,
-    type FastaFormState,
-    type FileState,
-} from "./types";
+import fastaformSchema from "@schemas/fastaForm.schema.json";
+import type { FieldProps, WidgetProps } from "@rjsf/utils";
+import { type FastaFormUncommented, type NestedObject } from "./types";
 import FastaGenerateForm from "../forms/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
 import {
+    createDefaultFromSchema,
     firstLetterUppercase,
     regionDisplayNames,
     replaceUnderscore,
+    retrieveFlatSchema,
 } from "./helpers";
 import { Button, Form, InputGroup } from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
 import { Grid, Vertical } from "../ui/Alignment";
+import { useCallback } from "react";
 
-const GenomicInput = ({ id, name, registry }: WidgetProps) => {
-    const formKey = name as keyof FastaFormState;
+const GenomicInput = ({
+    fieldPathId: { $id, path },
+    name,
+    schema,
+    formData,
+    onChange,
+}: FieldProps) => {
+    const id = $id;
 
-    const { files, setFiles, fastaForms, setFastaForms } =
-        registry.formContext as {
-            files: FileState;
-            setFiles: React.Dispatch<React.SetStateAction<FileState>>;
-            fastaForms: FastaFormState;
-            setFastaForms: React.Dispatch<React.SetStateAction<FastaFormState>>;
-        };
+    const changeHandlerAbstractFactory = useCallback(
+        (fieldPath: string[]) => (newValue: unknown) => {
+            onChange(newValue, [...path, ...fieldPath]);
+        },
+        [onChange, path]
+    );
 
-    const handleFastaFormNew = (
-        newForm: FastaForm,
-        onChange: (updatedForm: FastaForm, idx: number) => void
-    ) => {
-        handleFastaFormEdit(newForm, onChange, fastaForms[formKey].length);
+    const files: File[] = formData.files;
+    const fastaForms: FastaFormUncommented[] = formData.fasta_form;
+
+    type setterCallback<T> = (prevFiles: T[]) => T[];
+
+    const setFiles = (callback: setterCallback<File>) => {
+        changeHandlerAbstractFactory(["files"])(callback(files));
     };
 
-    const handleFastaFormChange = (updatedForm: FastaForm, idx: number) => {
-        setFastaForms((prevForms: FastaFormState) => ({
-            ...prevForms,
-            [formKey]:
-                prevForms[formKey].length > idx
-                    ? prevForms[formKey].map((f, i) =>
-                          i === idx ? updatedForm : f
-                      )
-                    : [...prevForms[formKey], updatedForm], // Add new form if idx is out of bounds
-        }));
+    const setFastaForms = (callback: setterCallback<FastaFormUncommented>) => {
+        changeHandlerAbstractFactory(["fasta_form"])(callback(fastaForms));
+    };
+
+    const handleFastaFormNew = (
+        newForm: FastaFormUncommented,
+        onChange: (updatedForm: FastaFormUncommented, idx: number) => void
+    ) => {
+        handleFastaFormEdit(newForm, onChange, fastaForms.length);
+    };
+
+    const handleFastaFormChange = (
+        updatedForm: FastaFormUncommented,
+        idx: number
+    ) => {
+        setFastaForms(
+            (prevForms) =>
+                prevForms.length > idx
+                    ? prevForms.map((f, i) => (i === idx ? updatedForm : f))
+                    : [...prevForms, updatedForm] // Add new form if idx is out of bounds)
+        );
     };
 
     const handleFastaFormRemove = (idx: number) => {
-        setFastaForms((prevForms: FastaFormState) => ({
-            ...prevForms,
-            [formKey]:
-                prevForms[formKey].length === 0
-                    ? prevForms[formKey]
-                    : prevForms[formKey].filter((_, i) => i !== idx),
-        }));
+        setFastaForms((prevForms) =>
+            prevForms.length === 0
+                ? prevForms
+                : prevForms.filter((_, i) => i !== idx)
+        );
     };
 
     const handleFastaFormEdit = (
-        form: FastaForm,
-        onChange: (updatedForm: FastaForm, idx: number) => void,
+        form: FastaFormUncommented,
+        onChange: (updatedForm: FastaFormUncommented, idx: number) => void,
         idx: number
     ) => {
         showModal({
@@ -67,6 +82,7 @@ const GenomicInput = ({ id, name, registry }: WidgetProps) => {
                     id={`${id}-${idx}`}
                     key={`${id} ${idx}`}
                     form={form}
+                    schema={schema}
                     onChange={(updatedForm) => onChange(updatedForm, idx)}
                 />
             ),
@@ -78,37 +94,30 @@ const GenomicInput = ({ id, name, registry }: WidgetProps) => {
 
     const handleFileChange = (
         e: React.ChangeEvent<HTMLInputElement>,
-        setFiles: React.Dispatch<React.SetStateAction<FileState>>
+        setFiles: (callback: setterCallback<File>) => void
     ) => {
-        const { name, files: selectedFiles } = e.target;
+        const { files: selectedFiles } = e.target;
         if (!selectedFiles) return;
 
-        setFiles((prevFiles) => ({
-            ...prevFiles,
-            [name]: [
-                ...prevFiles[name as keyof FileState],
-                ...Array.from(selectedFiles),
-            ],
-        }));
+        setFiles((prevFiles) => [...prevFiles, ...Array.from(selectedFiles)]);
     };
 
     const handleFileRemove = (fileIndex: number) => {
-        setFiles((prevFiles) => ({
-            ...prevFiles,
-            [formKey]: prevFiles[formKey].filter((_, idx) => idx !== fileIndex),
-        }));
+        setFiles((prevFiles) =>
+            prevFiles.filter((_, idx) => idx !== fileIndex)
+        );
     };
 
-    const FastaFormPreview = (form: FastaForm) => {
+    const FastaFormPreview = (form: FastaFormUncommented) => {
         const formData =
             form.selectedSource === "ncbi"
                 ? form.formDataNcbi
                 : form.formDataEns;
         const species = replaceUnderscore(
-            firstLetterUppercase(formData.source_params.species.value)
+            firstLetterUppercase(formData.source_params.species)
         );
         const selectedRegions = Object.entries(formData.genomic_regions)
-            .filter(([, selected]) => selected.value === "true")
+            .filter(([, selected]) => selected === "true")
             .map(
                 ([key]) =>
                     regionDisplayNames[key as keyof typeof regionDisplayNames]
@@ -124,13 +133,12 @@ const GenomicInput = ({ id, name, registry }: WidgetProps) => {
     return (
         <>
             <Vertical gap="md">
-                {fastaForms[formKey].length === 0 &&
-                    files[formKey].length === 0 && (
-                        <div className="text-muted">
-                            No FASTA forms or files uploaded.
-                        </div>
-                    )}
-                {fastaForms[formKey].map((form, idx) => (
+                {fastaForms.length === 0 && files.length === 0 && (
+                    <div className="text-muted">
+                        No FASTA forms or files uploaded.
+                    </div>
+                )}
+                {fastaForms.map((form, idx) => (
                     <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
                         <Button
                             variant="outline-border"
@@ -154,7 +162,7 @@ const GenomicInput = ({ id, name, registry }: WidgetProps) => {
                         </Button>
                     </InputGroup>
                 ))}
-                {files[formKey].map((file, idx) => (
+                {files.map((file, idx) => (
                     <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
                         <Button
                             variant="outline-border"
@@ -176,7 +184,11 @@ const GenomicInput = ({ id, name, registry }: WidgetProps) => {
                         name={name}
                         onClick={() =>
                             handleFastaFormNew(
-                                defaultFastaForm,
+                                createDefaultFromSchema(
+                                    schema.properties!.fasta_form
+                                        .items as unknown as NestedObject,
+                                    fastaformSchema as unknown as NestedObject
+                                ) as unknown as FastaFormUncommented,
                                 handleFastaFormChange
                             )
                         }

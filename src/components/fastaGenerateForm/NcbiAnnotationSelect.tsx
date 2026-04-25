@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config";
 import axios from "axios";
-import type { FastaForm } from "./types";
+import type { FastaFormUncommented } from "./types";
 import { GenomicDropDown } from "./GenomicDropDown";
 import { useCache } from "../../hooks/useCache";
 
@@ -9,7 +9,7 @@ interface NcbiAnnotationSelectProps {
     id: string;
     value: string;
     tooltip?: string;
-    form: FastaForm;
+    form: FastaFormUncommented;
     handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
@@ -25,8 +25,8 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    const kingdom = form.formDataNcbi.source_params.taxon.value;
-    const species = form.formDataNcbi.source_params.species.value;
+    const kingdom = form.formDataNcbi.source_params.taxon;
+    const species = form.formDataNcbi.source_params.species;
 
     const fetchAnnotationReleasesNCBI = async (
         species: string,

@@ -176,6 +176,20 @@
           "$ref": "#/$defs/EnsFastaFormDataUncommented"
         }
       }
+    },
+    "FastaFormUpload": {
+      "type": "object",
+      "required": ["source", "formData"],
+      "anyOf": [
+        { "$ref": "#/$defs/NcbiFastaFormDataUncommented" },
+        { "$ref": "#/$defs/EnsFastaFormDataUncommented" }
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "default": ""
+        }
+      }
     }
   }
 }

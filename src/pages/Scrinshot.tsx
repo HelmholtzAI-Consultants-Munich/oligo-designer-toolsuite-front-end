@@ -82,12 +82,11 @@ const uiSchema: UiSchema = {
             ],
         },
     ],
-
     files_fasta_target_probe_database: {
-        "ui:widget": "fileSelection",
+        "ui:field": "fileSelection",
     },
     files_fasta_reference_database_target_probe: {
-        "ui:widget": "fileSelection",
+        "ui:field": "fileSelection",
     },
 };
 

@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from backend.worker.genomic_regions_file import GenomicRegionsFile
+from backend.worker.shared_constants import PIPELINE_GENOMIC_INPUT
 
 
 class PipelineRunner:
@@ -87,13 +88,17 @@ class PipelineRunner:
         config["dir_output"] = output_path
 
         # Add generated region paths to config
+        for field in PIPELINE_GENOMIC_INPUT[self.pipeline_name]:
+            if config[field]["files"] is None:
+                config[field] = []
+            else:
+                config[field] = config[field]["files"]
+
         for id, paths in generated_region_paths:
             if id not in config:
                 config[id] = []
             for path in paths:
                 config[id].append(path)
-        if "genomic_region_generation_forms" in config:
-            del config["genomic_region_generation_forms"]
 
         # Write config to YAML file
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
@@ -179,7 +184,7 @@ class PipelineRunner:
                     os.remove(fname)
 
         if os.path.exists(config_path):
-            os.remove(config_path)
+            # os.remove(config_path)
             self.logger.debug(f"deleted config: {config_path}")
         else:
             self.logger.debug(f"config not found, skipped: {config_path}")

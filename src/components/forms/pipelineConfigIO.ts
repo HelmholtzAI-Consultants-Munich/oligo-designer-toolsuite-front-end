@@ -2,24 +2,15 @@ import type { RJSFSchema } from "@rjsf/utils";
 import type { JSONSchema7Definition } from "json-schema";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import Ajv2020 from "ajv/dist/2020";
-import fastaFormSchema from "../../../schemas/fastaForm.schema.json";
 
 import type { RJSFFormData } from "../componentTypes";
-import type {
-    FastaFormState,
-    FastaFormStateUncommented,
-    NestedObject,
-} from "../fastaGenerateForm/types";
-import { removeComments } from "../fastaGenerateForm/helpers";
+import {
+    getGenomicInputFields,
+    removeComments,
+} from "../fastaGenerateForm/helpers";
 import { pipelineDisplayNames } from "../ui/utils";
 
-export const EXCLUDED_FIELDS = [
-    "file_regions",
-    "files_fasta_target_probe_database",
-    "files_fasta_reference_database_target_probe",
-    "files_fasta_reference_database_readout_probe",
-    "files_fasta_reference_database_primer",
-];
+export const EXCLUDED_FIELDS = ["file_regions"];
 
 // Set for O(1) lookups instead of repeated array .includes() calls
 const EXCLUDED_FIELDS_SET = new Set<string>(EXCLUDED_FIELDS);
@@ -31,7 +22,6 @@ export interface PipelineConfigExport {
         exportedAt: string;
     };
     config: RJSFFormData;
-    fastaForms: FastaFormStateUncommented;
 }
 
 // Created once at module level — no need to reinstantiate per call
@@ -66,8 +56,7 @@ function getSchemaVersion(schema: RJSFSchema): string {
 export function buildExportPayload(
     formData: RJSFFormData,
     pipeline: string,
-    schema: RJSFSchema,
-    fastaForms: FastaFormState
+    schema: RJSFSchema
 ): PipelineConfigExport {
     const config: RJSFFormData = {};
     for (const key of Object.keys(formData)) {
@@ -83,9 +72,6 @@ export function buildExportPayload(
             exportedAt: new Date().toISOString(),
         },
         config,
-        fastaForms: removeComments(
-            fastaForms as unknown as NestedObject
-        ) as unknown as FastaFormStateUncommented,
     };
 }
 
@@ -122,7 +108,6 @@ export type ImportResult =
     | {
           ok: true;
           config: RJSFFormData;
-          fastaForms: FastaFormStateUncommented;
           skippedFields: string[];
       }
     | { ok: false; error: string };
@@ -199,6 +184,7 @@ export function importAndValidate(
 
     // 7. AJV validation against a partial schema built from only the present fields.
     //    No $id to avoid collision with the form's already-registered schema.
+    // TODO: check how to make this validation save, fails to validate fasta
     const schemaProps = schema.properties as Record<
         string,
         JSONSchema7Definition
@@ -216,26 +202,14 @@ export function importAndValidate(
     const configError = validationFailure(errors, "Config values are invalid:");
     if (configError) return configError;
 
-    // 8. Check for fastaForms presence and validity
-    if (!("fastaForms" in typed)) {
-        return { ok: false, error: "Invalid file format: missing fastaForms." };
+    // 8. Remove File fields from imported form
+    for (const field of getGenomicInputFields(pipeline)) {
+        incoming[field]["files"] = [];
     }
-
-    const { errors: fastaErrors } = validator.rawValidation(
-        fastaFormSchema as RJSFSchema,
-        typed.fastaForms
-    );
-
-    const fastaError = validationFailure(
-        fastaErrors,
-        "Fasta forms are invalid:"
-    );
-    if (fastaError) return fastaError;
 
     return {
         ok: true,
         config: incoming,
-        fastaForms: typed.fastaForms,
         skippedFields,
     };
 }

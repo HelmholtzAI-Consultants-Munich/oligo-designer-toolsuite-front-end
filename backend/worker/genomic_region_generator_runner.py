@@ -133,8 +133,7 @@ class GenomicRegionGeneratorRunner:
                         fna_files.append(str(output_gen / fname))
 
             self.cleanup_temp_files(config_path)
-
-        return fna_files
+        return [file.as_posix() for file in fna_files]
 
     def get_form_cache_key(self, form: dict) -> str:
         relevant_part = {

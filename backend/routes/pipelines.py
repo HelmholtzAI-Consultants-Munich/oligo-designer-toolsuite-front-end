@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from collections import defaultdict
@@ -11,6 +12,8 @@ from bson import ObjectId
 from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
+from werkzeug.datastructures import FileStorage, ImmutableMultiDict
+from werkzeug.utils import secure_filename
 
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
@@ -21,6 +24,7 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
+from backend.worker.shared_constants import PIPELINE_GENOMIC_INPUT
 from backend.worker.task_index import Tasks
 
 # Blueprint for Merfish endpoints
@@ -87,18 +91,18 @@ def unpack_genomic_form_data(region_generation_forms: list[dict[str, Any]]) -> l
     return forms
 
 
-def parse_region_generation(form_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> dict[str, list[dict[str, Any]]]:
     """
     Parses the region_generation_forms field of the provided form.
     Returns a dict mapping ids to a list of dicts, each representing a single region form.
     """
-    if "genomic_region_generation_forms" not in form_data:
-        return {}
 
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = form_data[
-        "genomic_region_generation_forms"
-    ]
+    region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
+        field: form_data[field]["fasta_form"]
+        for field in PIPELINE_GENOMIC_INPUT[pipeline_name]
+        if len(form_data[field]["fasta_form"]) > 0
+    }
 
     for id, region_generation_forms in region_generation_forms_by_id.items():
         validate_file_key(id)
@@ -156,6 +160,39 @@ def enqueue_pipeline(
     return chord(region_generation_signatures)(pipeline_signature)
 
 
+def save_file(file_name: str, files: ImmutableMultiDict[str, FileStorage]):
+    if file := files.get(file_name):
+        # Step 2: Check if the user actually selected a file (filename should not be empty)
+        if file is None or file.filename == "":
+            abort(HTTPStatus.BAD_REQUEST, description="No selected file")
+
+        # Step 3: Sanitize the filename to prevent path traversal attacks
+        safe_filename = secure_filename(file.filename)
+        if not safe_filename:
+            abort(HTTPStatus.BAD_REQUEST, description="Invalid filename")
+
+        # Step 4: Generate a unique filename by prefixing with a UUID
+        unique_filename = f"{uuid.uuid4().hex}_{safe_filename}"
+
+        # Step 5: Build the full path in the uploads directory (from Flask app config)
+        upload_root = Path(current_app.config["UPLOAD_PATH"]).resolve(strict=False)
+        file_path = (upload_root / unique_filename).resolve(strict=False)
+        if not file_path.is_relative_to(upload_root):
+            abort(HTTPStatus.BAD_REQUEST, description="Invalid upload path")
+
+        # Step 6: Save the file to disk and write file path into form_data
+        file.save(file_path)
+        return file_path
+
+
+def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMultiDict[str, FileStorage]):
+    file_inputs = {}
+    for field in PIPELINE_GENOMIC_INPUT[pipeline_name]:
+        file_inputs[field] = [save_file(file_name, files) for file_name in form_data[field]["files"]]
+
+    return file_inputs
+
+
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
 def start_pipeline(pipeline_name: str):
     """
@@ -186,16 +223,26 @@ def start_pipeline(pipeline_name: str):
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
-    json = request.get_json(silent=True)
-    if json is None:
+    form = json.loads(request.form["payload"])
+    files = request.files
+
+    if form is None:
         abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, description="Expected JSON")
 
-    run_id_str = json.get("runid")  # Run ID from React
+    run_id_str = form.get("runid")  # Run ID from React
     run_id = parse_run_id(run_id_str)
 
-    form_data = json.get("formdata")  # Form data from React
+    form_data = form.get("formdata")  # Form data from React
+
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
+
+    # genomic_region_generator
+    generated_regions = parse_region_generation(form_data, pipeline_name)
+
+    file_inputs = save_files(form_data, pipeline_name, files)
+    for field, file_paths in file_inputs.items():
+        form_data[field]["files"] = [file_path.as_posix() for file_path in file_paths]
 
     # TODO: the allowed paths shouldn't be defined here
     allowed_roots = [
@@ -210,9 +257,6 @@ def start_pipeline(pipeline_name: str):
         abort(
             HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}"
         )  # TODO: investigate potential data leakage due to this plain error output
-
-    # genomic_region_generator
-    generated_regions = parse_region_generation(form_data)
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
