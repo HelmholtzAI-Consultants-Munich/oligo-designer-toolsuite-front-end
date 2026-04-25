@@ -46,7 +46,7 @@ class GenomicRegionGeneratorRunner:
             output_gen = output_path / "annotation"
             if output_gen.exists() and any(fname.endswith(".fna") for fname in os.listdir(output_gen)):
                 for fname in os.listdir(output_gen):
-                    if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
+                    if fname.endswith(".fna"):
                         fna_files.append(str(output_gen / fname))
                 return fna_files
 
@@ -117,7 +117,7 @@ class GenomicRegionGeneratorRunner:
             # Collect output .fna files (ignore raw genome)
             if output_gen.exists():
                 for fname in os.listdir(output_gen):
-                    if fname.endswith(".fna") and not ("GCF" in fname or "GCA" in fname):
+                    if fname.endswith(".fna"):
                         fna_files.append(str(output_gen / fname))
 
             self.cleanup_temp_files(config_path)
