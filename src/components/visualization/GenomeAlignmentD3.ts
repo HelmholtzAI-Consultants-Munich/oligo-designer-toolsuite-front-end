@@ -366,8 +366,8 @@ const setupZoom = (
     genomicRegions: GenomicRegions
 ) => {
     const extent: [[number, number], [number, number]] = [
-        [0, 0],
-        [ctx.innerWidth, ctx.innerHeight],
+        [ctx.margin, ctx.margin],
+        [ctx.margin + ctx.innerWidth, ctx.margin + ctx.innerHeight],
     ];
 
     // TODO: zoom not centered correctly on mouse position
