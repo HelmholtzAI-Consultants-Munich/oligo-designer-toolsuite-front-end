@@ -5,10 +5,6 @@ import Ajv2020 from "ajv/dist/2020";
 
 import type { RJSFFormData } from "../componentTypes";
 import {
-    getGenomicInputFields,
-    removeComments,
-} from "../fastaGenerateForm/helpers";
-import {
     PIPELINE_CONFIG,
     type PipelineConfig,
 } from "../../pipelineConfig/config";
@@ -206,7 +202,8 @@ export function importAndValidate(
     if (configError) return configError;
 
     // 8. Remove File fields from imported form
-    for (const field of getGenomicInputFields(pipeline)) {
+    for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
+        .genomicInputFields!) {
         incoming[field]["files"] = [];
     }
 

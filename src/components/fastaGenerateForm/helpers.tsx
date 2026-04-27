@@ -11,6 +11,10 @@ import {
 } from "./types";
 import axios from "axios";
 import { Link } from "react-router";
+import {
+    PIPELINE_CONFIG,
+    type PipelineConfig,
+} from "../../pipelineConfig/config";
 
 export const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
 
@@ -194,27 +198,10 @@ const prepareForUpload = (fastaForm: FastaFormUncommented) => {
     return uploadReadyFastaForm;
 };
 
-export const getGenomicInputFields = (
-    pipeline: string
-): (keyof RJSFFormData)[] => {
-    if (pipeline === "scrinshot" || pipeline === "oligoseq") {
-        return [
-            "files_fasta_target_probe_database",
-            "files_fasta_reference_database_target_probe",
-        ];
-    } else {
-        return [
-            "files_fasta_target_probe_database",
-            "files_fasta_reference_database_target_probe",
-            "files_fasta_reference_database_readout_probe",
-            "files_fasta_reference_database_primer",
-        ];
-    }
-};
-
 export const validateInput = (pipeline: string, formData: RJSFFormData) => {
     console.log("validation", formData);
-    for (const field of getGenomicInputFields(pipeline)) {
+    for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
+        .genomicInputFields!) {
         const files = formData[field].files;
         const fastaForms = formData[field].fasta_form;
         if (files.length === 0 && fastaForms.length === 0) {
@@ -256,7 +243,8 @@ export const handleSubmit = async (
 
     try {
         let upload = {};
-        for (const field of getGenomicInputFields(pipeline)) {
+        for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
+            .genomicInputFields!) {
             console.log(field);
             console.log(uploadFormData[field]);
             if (uploadFormData[field].fasta_form.length > 0) {
