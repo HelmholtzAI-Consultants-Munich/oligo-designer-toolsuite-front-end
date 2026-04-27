@@ -317,6 +317,19 @@ const calculateTranscriptHeight = (
     return (innerHeight - 60) / transcriptCount;
 };
 
+// helper function to update location indicator and position label
+const updateLocationIndicator = (ctx: VisualizationContext, xPos: number) => {
+    const zx = ctx.currentZoomTransform.rescaleX(ctx.xScale);
+    const domainX = zx.invert(xPos);
+    const snapX = Math.floor(domainX + 0.5);
+    const x = zx(snapX - 0.5);
+
+    ctx.locationIndicator.attr("x", x);
+    ctx.positionLabel
+        .attr("x", x)
+        .text(snapX.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+};
+
 // Set up mouse events for showing location indicator and handling oligo clicks
 const setupMouseEvents = (
     el: Element,
@@ -331,14 +344,7 @@ const setupMouseEvents = (
         })
         .on("mousemove", (event) => {
             const [xPos] = d3.pointer(event, ctx.plot.node());
-            const zx = ctx.currentZoomTransform.rescaleX(ctx.xScale);
-            const domainX = zx.invert(xPos);
-            const snapX = Math.floor(domainX + 0.5);
-            ctx.locationIndicator.attr("x", zx(snapX - 0.5));
-            ctx.positionLabel
-                .attr("x", zx(snapX - 0.5))
-                // insert commas for thousands
-                .text(snapX.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+            updateLocationIndicator(ctx, xPos);
         })
         .on("mouseleave", () => {
             ctx.locationIndicator.attr("visibility", "hidden");
@@ -383,6 +389,14 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
     return (event: d3.D3ZoomEvent<Element, unknown>) => {
         ctx.currentZoomTransform = event.transform;
         const zx = event.transform.rescaleX(ctx.xScale);
+
+        ctx.locationIndicator.attr("width", zx(1) - zx(0));
+        const source = event.sourceEvent;
+        const plotNode = ctx.plot.node();
+        if (source instanceof MouseEvent && plotNode) {
+            const [xPos] = d3.pointer(source, plotNode);
+            updateLocationIndicator(ctx, xPos);
+        }
 
         // Rescale location indicator
         ctx.locationIndicator.attr("width", zx(1) - zx(0));
