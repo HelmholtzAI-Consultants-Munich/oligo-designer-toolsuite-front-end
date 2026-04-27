@@ -45,7 +45,7 @@ export type Pipeline =
 
 type pipelineModifier = (pipeline: Pipeline) => Pipeline;
 
-type PipelineConfig = {
+export type PipelineConfig = {
     [K in Pipeline["name"]]: Pipeline;
 };
 

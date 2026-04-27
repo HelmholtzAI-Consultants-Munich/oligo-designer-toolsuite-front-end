@@ -8,7 +8,10 @@ import {
     getGenomicInputFields,
     removeComments,
 } from "../fastaGenerateForm/helpers";
-import { pipelineDisplayNames } from "../ui/utils";
+import {
+    PIPELINE_CONFIG,
+    type PipelineConfig,
+} from "../../pipelineConfig/config";
 
 export const EXCLUDED_FIELDS = ["file_regions"];
 
@@ -148,7 +151,7 @@ export function importAndValidate(
     if (typed._meta?.pipeline !== pipeline) {
         return {
             ok: false,
-            error: `This config is for "${pipelineDisplayNames[typed._meta?.pipeline]}", but the current pipeline is "${pipelineDisplayNames[pipeline]}".`,
+            error: `This config is for "${PIPELINE_CONFIG[typed._meta?.pipeline as keyof PipelineConfig].displayName}", but the current pipeline is "${PIPELINE_CONFIG[pipeline as keyof PipelineConfig].displayName}".`,
         };
     }
 
