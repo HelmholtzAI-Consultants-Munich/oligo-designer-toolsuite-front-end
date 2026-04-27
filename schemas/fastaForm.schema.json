@@ -2,54 +2,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "odt:fastaForm",
   "type": "object",
-  "required": [
-    "files_fasta_target_probe_database",
-    "files_fasta_reference_database_target_probe",
-    "files_fasta_reference_database_readout_probe",
-    "files_fasta_reference_database_primer"
-  ],
-  "additionalProperties": false,
-  "properties": {
-    "files_fasta_target_probe_database": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/FastaFormUncommented"
-      },
-      "default": []
+  "definitions": {
+    "FastaFormUpload": {
+      "type": "object",
+      "required": ["source", "formData"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "default": ""
+        },
+        "formData": {
+          "anyOf": [
+            { "$ref": "#/definitions/NcbiFastaFormDataUncommented" },
+            { "$ref": "#/definitions/EnsFastaFormDataUncommented" }
+          ]
+        }
+      }
     },
-    "files_fasta_reference_database_target_probe": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/FastaFormUncommented"
-      },
-      "default": []
+    "genomic_input": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": { "type": "object" },
+          "default": [],
+          "title": "Files Fasta Target Probe Database",
+          "description": "fasta file with sequences form which the probes should be generated. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest"
+        },
+        "fasta_form": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/FastaFormUncommented"
+          },
+          "default": []
+        }
+      }
     },
-    "files_fasta_reference_database_readout_probe": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/FastaFormUncommented"
-      },
-      "default": []
-    },
-    "files_fasta_reference_database_primer": {
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/FastaFormUncommented"
-      },
-      "default": []
-    }
-  },
-  "$defs": {
     "EnsSourceParamsUncommented": {
       "type": "object",
       "required": ["species", "annotation_release"],
       "additionalProperties": false,
       "properties": {
         "species": {
-          "type": "string"
+          "type": "string",
+          "description": "required: species name in ensemble download format, e.g. 'homo_sapiens' for human; see http://ftp.ensembl.org/pub/release-108/gtf/ for available species names",
+          "default": "homo_sapiens"
         },
         "annotation_release": {
-          "type": "string"
+          "type": "string",
+          "description": "required: release number of annotation, e.g. 'release-108' or 'current' to use most recent annotation release. Check out release numbers for ensemble at ftp.ensembl.org/pub/",
+          "default": "current"
         }
       }
     },
@@ -59,13 +62,19 @@
       "additionalProperties": false,
       "properties": {
         "species": {
-          "type": "string"
+          "type": "string",
+          "default": "Homo_sapiens",
+          "description": "required: species name in NCBI download format, e.g. 'Homo_sapiens' for human; see https://ftp.ncbi.nlm.nih.gov/genomes/refseq/ for available species name"
         },
         "annotation_release": {
-          "type": "string"
+          "type": "string",
+          "default": "110",
+          "description": "required: release number of annotation e.g. '109' or '109.20211119'  or 'current' to use most recent annotation release. Check out release numbers for NCBI at ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/annotation_releases/"
         },
         "taxon": {
-          "type": "string"
+          "type": "string",
+          "default": "vertebrate_mammalian",
+          "description": "required: taxon of the species, valid taxa are: archaea, bacteria, fungi, invertebrate, mitochondrion, plant, plasmid, plastid, protozoa, vertebrate_mammalian, vertebrate_other, viral"
         }
       }
     },
@@ -83,25 +92,49 @@
       "additionalProperties": false,
       "properties": {
         "gene": {
-          "type": "string"
+          "type": "string",
+          "default": "false"
         },
         "intergenic": {
-          "type": "string"
+          "type": "string",
+          "default": "false"
         },
         "exon": {
-          "type": "string"
+          "type": "string",
+          "default": "true"
         },
         "exon_exon_junction": {
-          "type": "string"
+          "type": "string",
+          "default": "false"
         },
         "utr": {
-          "type": "string"
+          "type": "string",
+          "default": "false"
         },
         "cds": {
-          "type": "string"
+          "type": "string",
+          "default": "false"
         },
         "intron": {
-          "type": "string"
+          "type": "string",
+          "default": "false"
+        }
+      }
+    },
+    "FastaFormUncommented": {
+      "type": "object",
+      "required": ["selectedSource", "formDataNcbi", "formDataEns"],
+      "additionalProperties": false,
+      "properties": {
+        "selectedSource": {
+          "type": "string",
+          "default": "ncbi"
+        },
+        "formDataNcbi": {
+          "$ref": "#/definitions/NcbiFastaFormDataUncommented"
+        },
+        "formDataEns": {
+          "$ref": "#/definitions/EnsFastaFormDataUncommented"
         }
       }
     },
@@ -117,19 +150,24 @@
       "additionalProperties": false,
       "properties": {
         "dir_output": {
-          "type": "string"
+          "type": "string",
+          "default": "output_genomic_region_generator_ncbi",
+          "description": "name of the directory where the output files will be written"
         },
         "source": {
-          "type": "string"
+          "type": "string",
+          "default": "ncbi",
+          "description": "required: indicate that ncbi annotation should be used"
         },
         "source_params": {
-          "$ref": "#/$defs/NcbiSourceParamsUncommented"
+          "$ref": "#/definitions/NcbiSourceParamsUncommented"
         },
         "genomic_regions": {
-          "$ref": "#/$defs/GenomicRegionsUncommented"
+          "$ref": "#/definitions/GenomicRegionsUncommented"
         },
         "exon_exon_junction_block_size": {
-          "type": "string"
+          "type": "string",
+          "default": "50"
         }
       }
     },
@@ -145,49 +183,23 @@
       "additionalProperties": false,
       "properties": {
         "dir_output": {
-          "type": "string"
+          "type": "string",
+          "description": "name of the directory where the output files will be written",
+          "default": "output_genomic_region_generator_ensembl"
         },
-        "source": {
-          "type": "string"
-        },
-        "source_params": {
-          "$ref": "#/$defs/EnsSourceParamsUncommented"
-        },
-        "genomic_regions": {
-          "$ref": "#/$defs/GenomicRegionsUncommented"
-        },
-        "exon_exon_junction_block_size": {
-          "type": "string"
-        }
-      }
-    },
-    "FastaFormUncommented": {
-      "type": "object",
-      "required": ["selectedSource", "formDataNcbi", "formDataEns"],
-      "additionalProperties": false,
-      "properties": {
-        "selectedSource": {
-          "type": "string"
-        },
-        "formDataNcbi": {
-          "$ref": "#/$defs/NcbiFastaFormDataUncommented"
-        },
-        "formDataEns": {
-          "$ref": "#/$defs/EnsFastaFormDataUncommented"
-        }
-      }
-    },
-    "FastaFormUpload": {
-      "type": "object",
-      "required": ["source", "formData"],
-      "anyOf": [
-        { "$ref": "#/$defs/NcbiFastaFormDataUncommented" },
-        { "$ref": "#/$defs/EnsFastaFormDataUncommented" }
-      ],
-      "properties": {
         "source": {
           "type": "string",
-          "default": ""
+          "default": "ensembl"
+        },
+        "source_params": {
+          "$ref": "#/definitions/EnsSourceParamsUncommented"
+        },
+        "genomic_regions": {
+          "$ref": "#/definitions/GenomicRegionsUncommented"
+        },
+        "exon_exon_junction_block_size": {
+          "type": "string",
+          "default": "50"
         }
       }
     }

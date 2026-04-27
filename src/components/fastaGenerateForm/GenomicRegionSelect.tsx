@@ -1,11 +1,10 @@
 import type { RJSFSchema } from "@rjsf/utils";
-import type form_Data_Ncbi from "../forms/schemas/genomicNcbiForm";
 import { regionDisplayNames } from "./helpers";
 import { ToolTip } from "./Tooltip";
 
 interface GenomicRegionSelectProps {
     id: string;
-    exon_exon_junction_block_size: number;
+    exon_exon_junction_block_size: string;
     genomic_regions: { [key: string]: string };
     handleChange: (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -53,7 +52,10 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                             </label>
                             <ToolTip
                                 id={`popover-${region}-${id}`}
-                                tip={"test"}
+                                tip={
+                                    schema.genomic_regions[region]
+                                        .description ?? ""
+                                }
                             />
                         </div>
                     </div>
@@ -78,7 +80,13 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                             onChange={handleChange}
                             placeholder="50"
                         />
-                        <ToolTip id={`dir_output-${id}`} tip={"test"} />
+                        <ToolTip
+                            id={`dir_output-${id}`}
+                            tip={
+                                schema.exon_exon_junction_block_size
+                                    .description ?? ""
+                            }
+                        />
                     </div>
                 </div>
             )}

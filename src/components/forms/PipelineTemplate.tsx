@@ -21,12 +21,12 @@ import {
 } from "./pipelineConfigIO";
 import { useRuns } from "../../hooks/useRuns";
 import { Button } from "react-bootstrap";
-import type { NestedObject } from "../fastaGenerateForm/types";
 import GenomicInput from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
+import type { Pipeline } from "../../pipelineConfig/config";
 
 type Props = {
-    pipeline: string;
+    pipeline: Pipeline["name"];
     title: string;
     schema: RJSFSchema;
     uiSchema: UiSchema;
