@@ -103,7 +103,6 @@ export const getKeyObjectFromSchema = (
 
 const prepareForUpload = (fastaForm: FastaFormUncommented) => {
     let uploadReadyFastaForm: FastaFormUpload;
-    console.log(fastaForm.selectedSource);
     switch (fastaForm.selectedSource) {
         case "ncbi":
             uploadReadyFastaForm = fastaForm.formDataNcbi;
@@ -120,7 +119,6 @@ const prepareForUpload = (fastaForm: FastaFormUncommented) => {
 };
 
 export const validateInput = (pipeline: string, formData: RJSFFormData) => {
-    console.log("validation", formData);
     for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
         .genomicInputFields!) {
         const files = formData[field].files;
@@ -137,10 +135,8 @@ export const handleSubmit = async (
     pipeline: string,
     updateRuns: () => void
 ) => {
-    console.log("submit", formData);
-    // copy to not modify formData
+    // copy to avoid modifying formData
     const uploadFormData = structuredClone(formData);
-    console.log("stringify", uploadFormData);
     const isInputValid = validateInput(pipeline, uploadFormData);
 
     if (!isInputValid) {
@@ -166,15 +162,12 @@ export const handleSubmit = async (
         let upload = {};
         for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
             .genomicInputFields!) {
-            console.log(field);
-            console.log(uploadFormData[field]);
             if (uploadFormData[field].fasta_form.length > 0) {
                 uploadFormData[field].fasta_form = uploadFormData[
                     field
                 ].fasta_form.map((fastaForm: FastaFormUncommented) =>
                     prepareForUpload(fastaForm)
                 );
-                console.log(uploadFormData[field]);
             } else if (formData[field].files.length > 0) {
                 upload = {
                     ...upload,
@@ -186,7 +179,6 @@ export const handleSubmit = async (
                         {}
                     ),
                 };
-                console.log("upload innen", upload);
                 uploadFormData[field].files = formData[field].files.map(
                     (file: File) => file.name
                 );
@@ -200,8 +192,6 @@ export const handleSubmit = async (
                 runid: newId,
             }),
         };
-
-        console.log("upload", upload);
 
         await axios.post(BACKEND_URL + `/api/${pipeline}`, upload, {
             withCredentials: true,
