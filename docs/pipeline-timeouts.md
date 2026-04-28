@@ -54,9 +54,10 @@ PIPELINE_TIMEOUT_MODE=heuristic
 PIPELINE_TIMEOUT_HEURISTIC_FACTOR=3.0       # safety multiplier on top of the percentile baseline
 PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE=95    # which percentile to use
 PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS=30   # days of history to include
+PIPELINE_TIMEOUT_HEURISTIC_MIN_RUNS=5       # minimum successful runs required before heuristics apply
 ```
 
-A pipeline needs at least 5 successful runs in the window before heuristic data is used; below that threshold it falls back to the fixed config values.
+A pipeline needs at least `PIPELINE_TIMEOUT_HEURISTIC_MIN_RUNS` successful runs in the window before heuristic data is used; below that threshold it falls back to the fixed config values.
 
 ---
 
@@ -71,6 +72,7 @@ A pipeline needs at least 5 successful runs in the window before heuristic data 
 | `PIPELINE_TIMEOUT_HEURISTIC_FACTOR`         | `3.0`    | Safety multiplier applied to percentile rate                   |
 | `PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE`     | `95`     | Percentile of past durations used as baseline                  |
 | `PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS`    | `30`     | Rolling window of past runs considered                         |
+| `PIPELINE_TIMEOUT_HEURISTIC_MIN_RUNS`       | `5`      | Minimum successful runs required before heuristic data is used |
 
 ---
 

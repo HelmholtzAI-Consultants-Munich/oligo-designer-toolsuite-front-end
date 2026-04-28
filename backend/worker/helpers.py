@@ -4,6 +4,7 @@ The worker has no Flask application context, so utilities here must be
 framework-agnostic and rely only on PyMongo and stdlib.
 """
 
+from collections.abc import Iterator
 from contextlib import contextmanager
 
 from pymongo import MongoClient
@@ -19,7 +20,7 @@ TIMEOUT_ERROR_MESSAGE = (
 
 
 @contextmanager
-def get_worker_db() -> Database:
+def get_worker_db() -> Iterator[Database]:
     """Open a MongoDB connection and yield the database, closing it on exit."""
     client = MongoClient(CeleryConfig.result_backend)
     try:

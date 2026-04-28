@@ -180,3 +180,4 @@ class CeleryConfig:
     pipeline_timeout_heuristic_window_days: int = int(
         os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS", 30)
     )
+    pipeline_timeout_heuristic_min_runs: int = int(os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_MIN_RUNS", 5))

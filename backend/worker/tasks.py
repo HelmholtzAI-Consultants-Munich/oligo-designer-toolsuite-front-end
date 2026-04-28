@@ -56,8 +56,9 @@ def refresh_pipeline_timeouts(self: Celery.Task):
     """Compute a percentile run-duration rate per pipeline and cache the results.
 
     Used by heuristic timeout mode to automatically tune soft_time_limit values.
-    Requires at least 5 successful runs per pipeline; pipelines with fewer runs are skipped
-    and will fall back to the fixed config values at enqueue time.
+    Requires at least the configured minimum number of successful runs per pipeline;
+    pipelines with fewer runs are skipped and will fall back to the fixed config
+    values at enqueue time.
     """
     window = utc_now() - timedelta(days=CeleryConfig.pipeline_timeout_heuristic_window_days)
     timeouts = {}
@@ -75,7 +76,7 @@ def refresh_pipeline_timeouts(self: Celery.Task):
                     }
                 )
             )
-            if len(docs) < 5:
+            if len(docs) < CeleryConfig.pipeline_timeout_heuristic_min_runs:
                 continue
             # Normalize duration by gene count to get seconds-per-gene rate.
             # This ensures the timeout scales correctly with input size rather than
