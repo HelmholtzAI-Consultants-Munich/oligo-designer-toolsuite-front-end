@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 from kombu import Queue
 
 # Load environment variables from .env file
-# This ensures environment variables are available for both from_prefixed_env() and CeleryConfig
+# This ensures environment variables are available for both from_prefixed_env() and os.environ.get()
 load_dotenv()
 
 
@@ -47,9 +47,9 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(days=90)
     REMEMBER_COOKIE_DURATION = timedelta(days=90)
 
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = BACKEND_URL.startswith("https://")
     SESSION_COOKIE_SAMESITE = "Lax"
-    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = BACKEND_URL.startswith("https://")
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings

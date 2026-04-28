@@ -1,141 +1,128 @@
-name: E2E Test for all Pipelines
+name: Playwright E2E
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened]
   schedule:
-    - cron: "0 2 1 * *" # Run at 2:00 AM on the 1st of every month (UTC)
+    - cron: "0 2 1 * *"
   workflow_dispatch:
-
-env:
-  PIP_CACHE_DIR: ~/.cache/pip
+    inputs:
+      suite:
+        description: Select which Playwright suite to run
+        required: false
+        default: full
+        type: choice
+        options:
+          - smoke
+          - full
 
 jobs:
   e2e:
-    name: Playwright E2E Test
+    name: Playwright E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-
-    services:
-      mongo:
-        image: mongo:8
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+    timeout-minutes: 120
 
     steps:
-      - name: Free up disk space
-        run: |
-          set -euxo pipefail
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
-          sudo apt-get clean
-          df -h
-
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Clone Oligo Designer Toolsuite
+      - name: Select Playwright suite
         run: |
           set -euxo pipefail
-          git clone https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite odt_repo
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "PLAYWRIGHT_SUITE=smoke" >> "$GITHUB_ENV"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "PLAYWRIGHT_SUITE=${{ inputs.suite || 'full' }}" >> "$GITHUB_ENV"
+          else
+            echo "PLAYWRIGHT_SUITE=full" >> "$GITHUB_ENV"
+          fi
 
-      - name: Set up Conda Environment, Bio Tools, and Backend
-        uses: conda-incubator/setup-miniconda@v3
+      - name: Set up Docker Compose
+        uses: docker/setup-compose-action@v2
         with:
-          miniconda-version: "latest"
-          auto-update-conda: true
-          activate-environment: odt
-          python-version: 3.12
+          version: latest
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install Bio Tools and ODT Repo
+      - name: Prepare Docker env files
         run: |
           set -euxo pipefail
-          source $(conda info --base)/etc/profile.d/conda.sh
-          conda activate odt
-          conda env update -f backend/environment.yml
-          cd odt_repo
-          pip install -e .
-          cd ..
+          cp .env.sample .env
+          cp .env.docker.sample .env.docker
 
-      - name: Set up ODT Environment from Repo
+      - name: Create artifact directories
         run: |
           set -euxo pipefail
-          source $(conda info --base)/etc/profile.d/conda.sh
-          conda activate odt
-          pip install --group backend/pyproject.toml:test
+          mkdir -p playwright-report test-results
 
-      - name: Install Frontend Dependencies
+      - name: Build test stack
         run: |
           set -euxo pipefail
-          npm ci
+          docker compose --profile tests build odt-server odt-worker odt-web odt-tests
 
-      - name: Wait for MongoDB to be ready
+      - name: Start application stack
         run: |
           set -euxo pipefail
-          echo "Waiting for MongoDB connection..."
-          for i in {1..10}; do
-            if nc -z localhost 27017; then
-              echo "✅ MongoDB is ready!"
-              exit 0
-            fi
-            echo "⏳ Waiting for MongoDB... (attempt $i/10)"
-            sleep 3
+          docker compose --profile tests up -d odt-db odt-mq odt-server odt-worker odt-web
+
+      - name: Wait for application readiness
+        run: |
+          set -euxo pipefail
+          for url in "http://localhost:3000/runs" "http://localhost:5000/api/runs"; do
+            for attempt in {1..40}; do
+              if curl --fail --silent --show-error "$url" > /dev/null; then
+                break
+              fi
+              sleep 5
+              if [ "$attempt" -eq 40 ]; then
+                echo "Application endpoint $url did not become ready"
+                exit 1
+              fi
+            done
           done
-          echo "MongoDB did not become available after 10 retries."
-          exit 1
 
-      - name: Start Full App (Frontend + Backend)
+      - name: Run Playwright suite in Docker
+        id: playwright-run
         run: |
           set -euxo pipefail
-          source $(conda info --base)/etc/profile.d/conda.sh
-          conda activate odt
-          chmod +x start.sh
-          ./start.sh &
-          sleep 30
+          docker compose --profile tests run --rm odt-tests test --grep "@${PLAYWRIGHT_SUITE}"
 
-      - name: Install Playwright
-        run: |
-          set -euxo pipefail
-          npx playwright install --with-deps
-
-      - name: Run E2E Tests
-        id: e2e-tests-run
-        run: |
-          set -euxo pipefail
-          npx playwright test tests/scrinshotE2E.spec.ts
-          npx playwright test tests/oligoseqE2E.spec.ts
-          npx playwright test tests/merfishE2E.spec.ts
-          npx playwright test tests/seqfishE2E.spec.ts
-          npx playwright test tests/genomic_ensemblE2E.spec.ts
-          npx playwright test tests/genomic_ncbiE2E.spec.ts
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-e2e-report
-          path: playwright-report/
-          retention-days: 30
-
-      - name: Test summary
+      - name: Collect Docker logs
         if: always()
         run: |
-          echo "## E2E Test Results" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.e2e-tests-run.outcome }}" == "success" ]; then
-            echo "✅ E2E tests completed successfully" >> $GITHUB_STEP_SUMMARY
-            echo "Test report uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+          set -euxo pipefail
+          docker compose --profile tests logs --no-color > e2e-stack.log
+
+      - name: Upload Playwright artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-${{ env.PLAYWRIGHT_SUITE }}-artifacts
+          path: |
+            playwright-report/
+            test-results/
+            e2e-stack.log
+          retention-days: 30
+
+      - name: Print stack log on failure
+        if: failure()
+        run: |
+          set -euxo pipefail
+          tail -n 200 e2e-stack.log
+
+      - name: Shut down Docker stack
+        if: always()
+        run: |
+          set -euxo pipefail
+          docker compose --profile tests down --volumes
+
+      - name: E2E summary
+        if: always()
+        run: |
+          echo "## Playwright E2E Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "Suite: \`${PLAYWRIGHT_SUITE}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Runtime: Docker Compose app stack + Playwright Docker image" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.playwright-run.outcome }}" = "success" ]; then
+            echo "✅ Playwright E2E tests completed successfully" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "❌ E2E tests failed" >> $GITHUB_STEP_SUMMARY
-            echo "Check the test logs above for details" >> $GITHUB_STEP_SUMMARY
-            echo "Test report uploaded as artifact" >> $GITHUB_STEP_SUMMARY
+            echo "❌ Playwright E2E tests failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "See the uploaded artifact for the HTML report, traces, and stack log." >> "$GITHUB_STEP_SUMMARY"
           fi

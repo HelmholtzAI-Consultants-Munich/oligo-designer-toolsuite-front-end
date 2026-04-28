@@ -1,6 +1,7 @@
 from celery import Celery
 
 from backend.config import CeleryConfig
+from backend.worker.task_index import TASK_ROOT
 
 app = Celery()
 app.config_from_object(CeleryConfig)
@@ -8,7 +9,7 @@ app.config_from_object(CeleryConfig)
 # Optional configuration, see the application user guide.
 app.conf.update(
     main="worker",
-    include=["backend.worker.tasks"],
+    include=[TASK_ROOT],
 )
 
 if __name__ == "__main__":

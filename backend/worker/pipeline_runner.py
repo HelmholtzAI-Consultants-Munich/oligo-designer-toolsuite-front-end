@@ -3,11 +3,10 @@ import os
 import subprocess
 import tempfile
 from collections.abc import Mapping
+from logging import Logger
 from typing import Any
 
 import yaml
-from celery import Celery
-from celery.utils.log import get_task_logger
 
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
@@ -33,8 +32,11 @@ class PipelineRunner:
         "oligoseq": "oligo_seq_probe_designer",
     }
 
-    def __init__(self, pipeline_name: str, task: Celery.Task):
+    def __init__(self, pipeline_name: str, logger: Logger):
+        self.logger = logger
+
         # TODO: pass root_dir config to worker, use config for absolute path
+        #   here and in genomic_region_generator_runner.py
         schema_path = os.path.join(os.path.dirname(__file__), f"../../schemas/{pipeline_name}.schema.json")
         with open(schema_path) as f:
             schema = json.load(f)
@@ -42,16 +44,15 @@ class PipelineRunner:
         self.pipeline_name = pipeline_name  # e.g., 'merfish'
         self.subprocess_name = self.PIPELINE_SUBPROCESS[pipeline_name]  # e.g., 'merfish_probe_designer'
         self.schema = schema  # JSON schema
-        self.task = task
-        # Create logger using task name (Celery tasks have a 'name' attribute)
-        self.logger = get_task_logger(getattr(task, "name", __name__))
 
-    def run(self, form_data: dict[str, Any], upload_path: str, output_path: str) -> bool:
+    def run(
+        self, form_data: dict[str, Any], output_path: str, generated_region_paths: list[tuple[str, list[str]]]
+    ) -> bool:
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
 
         # Build Config and Write to YAML
-        config_path = self.write_config_file(form_data, output_path)
+        config_path = self.write_config_file(form_data, output_path, generated_region_paths)
 
         # Subprocess Call
         ok = self.call_subprocess(config_path)
@@ -77,11 +78,22 @@ class PipelineRunner:
         else:
             form_data["file_regions"] = None
 
-    def write_config_file(self, form_data: dict, output_path: str) -> str:
+    def write_config_file(
+        self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
+    ) -> str:
         config = form_data
 
         # Override output directory
         config["dir_output"] = output_path
+
+        # Add generated region paths to config
+        for id, paths in generated_region_paths:
+            if id not in config:
+                config[id] = []
+            for path in paths:
+                config[id].append(path)
+        if "genomic_region_generation_forms" in config:
+            del config["genomic_region_generation_forms"]
 
         # Write config to YAML file
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
@@ -96,6 +108,7 @@ class PipelineRunner:
         return config_path
 
     def call_subprocess(self, config_path: str) -> bool:
+        # NOTE: This might require locking input files once we add automatic cleanup for generated regions
         result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
         self.logger.debug(f"STDERR: {result.stderr}")
         self.logger.debug(f"STDOUT (partial logs): {result.stdout}")
@@ -120,12 +133,13 @@ class PipelineRunner:
                 fname
                 for fname in os.listdir(output_path)
                 if ("probes" in fname or "probeset" in fname)
+                and "order" not in fname
                 and (fname.endswith(".yml") or fname.endswith(".yaml"))
             ),
             None,
         )
         if not output_yaml:
-            print(
+            self.logger.warning(
                 "No output YAML file containing 'probes' or 'probeset' found, skipping visualization generation."
             )
             return
@@ -159,7 +173,9 @@ class PipelineRunner:
                 continue
             files_list = form_data[field]
             for fname in files_list:
-                if os.path.exists(fname):
+                # Delete user-uploaded files, but not generated regions so they can be cached
+                # TODO: make the distinction logic more robust
+                if os.path.exists(fname) and "user_data" in fname:
                     os.remove(fname)
 
         if os.path.exists(config_path):
