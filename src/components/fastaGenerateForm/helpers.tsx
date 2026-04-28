@@ -48,15 +48,17 @@ const findReference = (
     return baseSchema as Record<string, unknown>;
 };
 
-export const createDefaultFromSchema = (
+export const getKeyObjectFromSchema = (
     fastaFormSchema: NestedObject,
-    baseSchema: NestedObject
+    baseSchema: NestedObject,
+    extractKey: string,
+    overwriteObject: boolean = false
 ) => {
     const references = new Set<string>();
 
-    const stripComments = (value: unknown, key?: string): unknown => {
+    const extractValue = (value: unknown, key?: string): unknown => {
         if (Array.isArray(value)) {
-            return value.map((entry) => stripComments(entry));
+            return value.map((entry) => extractValue(entry));
         }
 
         if (value && typeof value === "object") {
@@ -78,20 +80,21 @@ export const createDefaultFromSchema = (
                 record = record.properties as Record<string, unknown>;
             }
 
-            if ("default" in record) {
-                return record.default;
+            if (extractKey in record) {
+                if (overwriteObject) return record[extractKey];
+                else return { [extractKey]: record[extractKey] };
             }
 
             const cleaned: Record<string, unknown> = {};
             for (const [key, nestedValue] of Object.entries(record)) {
-                cleaned[key] = stripComments(nestedValue, key);
+                cleaned[key] = extractValue(nestedValue, key);
                 if (
                     cleaned[key] === null ||
                     (typeof cleaned[key] === "object" &&
                         "type" in cleaned[key] &&
                         cleaned[key].type === null)
                 ) {
-                    delete cleaned[key];
+                    cleaned[key] = {};
                 }
             }
             if (Object.keys(cleaned).length > 0) return cleaned;
@@ -99,85 +102,7 @@ export const createDefaultFromSchema = (
         return null;
     };
 
-    return stripComments(fastaFormSchema) as NestedObject;
-};
-
-export const retrieveFlatSchema = (
-    fastaFormSchema: NestedObject,
-    baseSchema: NestedObject
-) => {
-    const references = new Set<string>();
-
-    const stripComments = (value: unknown, key?: string): unknown => {
-        if (Array.isArray(value)) {
-            return value.map((entry) => stripComments(entry));
-        }
-
-        if (value && typeof value === "object") {
-            let record = value as Record<string, unknown>;
-
-            if ("$ref" in record) {
-                if (references.has(record.$ref as string)) {
-                    return null;
-                }
-                references.add(record.$ref as string);
-                const result = findReference(record.$ref as string, baseSchema);
-                if (!result) {
-                    return null;
-                }
-                record = result;
-                references.delete(record.$ref as string);
-            }
-            if ("properties" in record) {
-                record = record.properties as Record<string, unknown>;
-            }
-
-            const cleaned: Record<string, unknown> = {};
-            for (const [key, nestedValue] of Object.entries(record)) {
-                cleaned[key] = stripComments(nestedValue, key);
-                if (
-                    cleaned[key] === null ||
-                    (typeof cleaned[key] === "object" &&
-                        "type" in cleaned[key] &&
-                        cleaned[key].type === null)
-                ) {
-                    delete cleaned[key];
-                }
-            }
-            if (Object.keys(cleaned).length > 0) return cleaned;
-        }
-        if (key) {
-            if (key === "description" || key === "default") return value;
-        }
-        return null;
-    };
-
-    return stripComments(fastaFormSchema) as NestedObject;
-};
-
-export const removeComments = (fastaFormData: NestedObject) => {
-    const stripComments = (value: unknown): unknown => {
-        if (Array.isArray(value)) {
-            return value.map((entry) => stripComments(entry));
-        }
-
-        if (value && typeof value === "object") {
-            const record = value as Record<string, unknown>;
-            if ("value" in record) {
-                return record.value;
-            }
-
-            const cleaned: Record<string, unknown> = {};
-            for (const [key, nestedValue] of Object.entries(record)) {
-                cleaned[key] = stripComments(nestedValue);
-            }
-            return cleaned;
-        }
-
-        return value;
-    };
-
-    return stripComments(fastaFormData) as NestedObject;
+    return extractValue(fastaFormSchema) as NestedObject;
 };
 
 const prepareForUpload = (fastaForm: FastaFormUncommented) => {

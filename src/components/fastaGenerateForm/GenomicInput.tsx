@@ -4,11 +4,10 @@ import { type FastaFormUncommented, type NestedObject } from "./types";
 import FastaGenerateForm from "../forms/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
 import {
-    createDefaultFromSchema,
     firstLetterUppercase,
+    getKeyObjectFromSchema,
     regionDisplayNames,
     replaceUnderscore,
-    retrieveFlatSchema,
 } from "./helpers";
 import { Button, Form, InputGroup } from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
@@ -184,11 +183,13 @@ const GenomicInput = ({
                         name={name}
                         onClick={() =>
                             handleFastaFormNew(
-                                createDefaultFromSchema(
+                                getKeyObjectFromSchema(
                                     schema.properties!.fasta_form
                                         .items as unknown as NestedObject,
-                                    fastaformSchema as unknown as NestedObject
-                                ) as unknown as FastaFormUncommented,
+                                    fastaformSchema as unknown as NestedObject,
+                                    "default",
+                                    true
+                                ),
                                 handleFastaFormChange
                             )
                         }

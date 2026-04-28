@@ -5,7 +5,6 @@
  * It allows users to select the data source, species, taxon, annotation release, genomic regions, and additional options.
  * The form is controlled via props and notifies parent components of changes.
  */
-import fastaFormSchema from "@schemas/fastaForm.schema.json";
 import React, { memo, useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
@@ -26,8 +25,8 @@ import {
 } from "../fastaGenerateForm/GenomicDropDown";
 import {
     firstLetterUppercase,
+    getKeyObjectFromSchema,
     replaceUnderscore,
-    retrieveFlatSchema,
 } from "../fastaGenerateForm/helpers";
 import { GenomicRegionSelect } from "../fastaGenerateForm/GenomicRegionSelect";
 import { NcbiAnnotationSelect } from "../fastaGenerateForm/NcbiAnnotationSelect";
@@ -62,9 +61,12 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [dropDown, setDropDown] = useState<DropDown>();
         const [formState, setFormState] = useState(form);
 
-        const flatSchema = retrieveFlatSchema(
+        // TODO: could be made cleaner
+        // the definitions section is the same for every schema, so we just use "scrinshot" here
+        const descriptionOnlySchema = getKeyObjectFromSchema(
             schema.properties!.fasta_form.items!,
-            PIPELINE_CONFIG["scrinshot"].schema
+            PIPELINE_CONFIG["scrinshot"].schema,
+            "description"
         );
 
         const fetchDropDownData = useCallback(async () => {
@@ -235,8 +237,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <TaxonSelect
                                     id={`ncbi-${id}`}
                                     tooltip={
-                                        flatSchema.formDataNcbi.source_params
-                                            .taxon.description
+                                        descriptionOnlySchema.formDataNcbi
+                                            .source_params.taxon.description
                                     }
                                     value={
                                         formState.formDataNcbi.source_params
@@ -258,8 +260,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <SpeciesSelect
                                     id={`ncbi-${id}`}
                                     tooltip={
-                                        flatSchema.formDataNcbi.source_params
-                                            .species.description
+                                        descriptionOnlySchema.formDataNcbi
+                                            .source_params.species.description
                                     }
                                     value={
                                         formState.formDataNcbi.source_params
@@ -280,8 +282,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <NcbiAnnotationSelect
                                     id={`ncbi-${id}`}
                                     tooltip={
-                                        flatSchema.formDataNcbi.source_params
-                                            .annotation_release.description
+                                        descriptionOnlySchema.formDataNcbi
+                                            .source_params.annotation_release
+                                            .description
                                     }
                                     value={
                                         formState.formDataNcbi.source_params
@@ -303,9 +306,10 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 handleChange={handleNcbiChange}
                                 schema={{
                                     genomic_regions:
-                                        flatSchema.formDataNcbi.genomic_regions,
+                                        descriptionOnlySchema.formDataNcbi
+                                            .genomic_regions,
                                     exon_exon_junction_block_size:
-                                        flatSchema.formDataNcbi
+                                        descriptionOnlySchema.formDataNcbi
                                             .exon_exon_junction_block_size,
                                 }}
                             />
@@ -324,8 +328,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <SpeciesSelect
                                     id={`ensembl-${id}`}
                                     tooltip={
-                                        flatSchema.formDataEns.source_params
-                                            .species.description
+                                        descriptionOnlySchema.formDataEns
+                                            .source_params.species.description
                                     }
                                     value={
                                         formState.formDataEns.source_params
@@ -347,8 +351,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <AnnotationSelect
                                     id={`ensembl-${id}`}
                                     tooltip={
-                                        flatSchema.formDataEns.source_params
-                                            .annotation_release.description
+                                        descriptionOnlySchema.formDataEns
+                                            .source_params.annotation_release
+                                            .description
                                     }
                                     value={
                                         formState.formDataEns.source_params
@@ -381,9 +386,10 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 handleChange={handleEnsChange}
                                 schema={{
                                     genomic_regions:
-                                        flatSchema.formDataEns.genomic_regions,
+                                        descriptionOnlySchema.formDataEns
+                                            .genomic_regions,
                                     exon_exon_junction_block_size:
-                                        flatSchema.formDataEns
+                                        descriptionOnlySchema.formDataEns
                                             .exon_exon_junction_block_size,
                                 }}
                             />
