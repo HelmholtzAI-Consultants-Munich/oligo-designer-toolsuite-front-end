@@ -279,7 +279,7 @@ def check_auth():
                 },
             }
         )
-    return jsonify({"authenticated": False}), HTTPStatus.OK
+    return jsonify({"authenticated": False})
 
 
 # ---- Logout Route ----

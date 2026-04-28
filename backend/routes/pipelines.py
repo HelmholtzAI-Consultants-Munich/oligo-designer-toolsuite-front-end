@@ -12,8 +12,11 @@ from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 
+from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app, mongo
+from backend.routes.auth import check_auth
 from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.runs import delete_run
 from backend.utilities.pipeline import generate_single_region_forms
 from backend.utilities.typed_values import (
     sanitize_pipeline_form_paths,
@@ -132,11 +135,29 @@ def write_run_to_DB(
     )
 
 
+def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
+    gene_count = len(form_data["file_regions"].split(","))
+    if gene_count > Config.GENE_COUNT_THRESHOLD:
+        delete_run(run_id)
+        abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
+
+
+def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> AsyncResult:
+    authenticated = check_auth().get_json()["authenticated"]
+    if not authenticated:
+        check_gene_threshold(form_data, run_id)
+        priority = CeleryConfig.task_default_priority
+    else:
+        priority = CeleryConfig.task_high_priority
+    return priority
+
+
 def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
     output_path: Path,
+    priority: int,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
@@ -150,7 +171,7 @@ def enqueue_pipeline(
     )
 
     pipeline_signature = celery_app.signature(
-        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path))
+        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path)), priority=priority
     )
 
     return chord(region_generation_signatures)(pipeline_signature)
@@ -217,8 +238,10 @@ def start_pipeline(pipeline_name: str):
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
+    priority = get_task_priority(form_data, run_id)
+
     result_promise = enqueue_pipeline(
-        pipeline_name, sanitized_form_data, generated_regions, context.output_path
+        pipeline_name, sanitized_form_data, generated_regions, context.output_path, priority
     )
 
     # Mark Run as Enqueued in DB

@@ -20,7 +20,7 @@ def dummy_form(run_id):
 def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenticated_user):
     # Ensure run exists with correct user_id for authenticated user
 
-    create_test_run(run_id, user_id="test_user_id", status="created")
+    create_test_run(run_id, user_id="507f1f77bcf86cd799439011", status="created")
 
     response = client.post("/api/merfish", json=dummy_form)
     assert response.status_code == 200
