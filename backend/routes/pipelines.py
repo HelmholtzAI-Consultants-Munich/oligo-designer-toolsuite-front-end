@@ -160,8 +160,13 @@ def enqueue_pipeline(
     return chord(region_generation_signatures)(pipeline_signature)
 
 
-def save_file(file_name: str, files: ImmutableMultiDict[str, FileStorage]):
+def save_file(
+    file_name: str, files: ImmutableMultiDict[str, FileStorage], saved_files: dict[FileStorage, Path]
+):
     if file := files.get(file_name):
+        if file in saved_files:
+            return saved_files[file]
+
         # Step 2: Check if the user actually selected a file (filename should not be empty)
         if file is None or file.filename == "":
             abort(HTTPStatus.BAD_REQUEST, description="No selected file")
@@ -182,13 +187,20 @@ def save_file(file_name: str, files: ImmutableMultiDict[str, FileStorage]):
 
         # Step 6: Save the file to disk and write file path into form_data
         file.save(file_path)
+        saved_files[file] = file_path
         return file_path
 
 
 def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMultiDict[str, FileStorage]):
-    file_inputs = {}
+    file_inputs: dict[str, list[Path]] = {}
+    # Because duplicated File Objects only get uploaded once via the browser we need to map the Filestorage object
+    # to the corresponding path to avoid reading an empty stream
+    saved_files: dict[FileStorage, Path] = {}
+
     for field in PIPELINE_GENOMIC_INPUT[pipeline_name]:
-        file_inputs[field] = [save_file(file_name, files) for file_name in form_data[field]["files"]]
+        file_inputs[field] = [
+            save_file(file_name, files, saved_files) for file_name in form_data[field]["files"]
+        ]
 
     return file_inputs
 
