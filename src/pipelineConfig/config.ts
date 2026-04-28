@@ -16,7 +16,6 @@ import {
     scrinshotUiSchema,
     seqfishUiSchema,
 } from "./uiSchemas";
-import { useMemo } from "react";
 
 interface BasePipeline {
     schema: RJSFSchema;

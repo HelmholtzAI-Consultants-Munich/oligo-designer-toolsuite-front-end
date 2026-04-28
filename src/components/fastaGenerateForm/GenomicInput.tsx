@@ -1,6 +1,6 @@
 import fastaformSchema from "@schemas/fastaForm.schema.json";
 import type { JSONSchema7 } from "json-schema";
-import type { FieldProps, WidgetProps } from "@rjsf/utils";
+import type { FieldProps } from "@rjsf/utils";
 import { type FastaFormUncommented } from "./types";
 import FastaGenerateForm from "../forms/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";

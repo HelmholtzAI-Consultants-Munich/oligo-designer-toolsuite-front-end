@@ -52,7 +52,7 @@ export const getKeyObjectFromSchema = (
 ) => {
     const references = new Set<string>();
 
-    const extractValue = (value: unknown, key?: string): unknown => {
+    const extractValue = (value: unknown): unknown => {
         if (Array.isArray(value)) {
             return value.map((entry) => extractValue(entry));
         }
@@ -83,7 +83,7 @@ export const getKeyObjectFromSchema = (
 
             const cleaned: Record<string, unknown> = {};
             for (const [key, nestedValue] of Object.entries(record)) {
-                cleaned[key] = extractValue(nestedValue, key);
+                cleaned[key] = extractValue(nestedValue);
                 if (
                     cleaned[key] === null ||
                     (typeof cleaned[key] === "object" &&
