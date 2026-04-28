@@ -43,15 +43,17 @@ class BaseGenomicDataBase:
 
     def __init__(
         self,
+        name: str = "",
         host: str = "",
         base_path: str = "",
+        cache_dir: Path | None = None,
         allowlist: list[str] | None = None,
-        name: str = "",
     ) -> None:
+        self.name: str = name
         self.host: str = host
         self.base_path: str = base_path
+        self.cache_dir = cache_dir
         self.allowlist: set[str] | None = set(allowlist) if allowlist is not None else None
-        self.name: str = name
 
     # ---- Directory Discovery ----
     def _get_dirs(self, ftp: ftplib.FTP) -> list[str]:
@@ -123,9 +125,7 @@ class BaseGenomicDataBase:
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
         pass
 
-    def _download_and_process(
-        self, dir: str, remote_file_name: str, expected_checksum: str | None, cache_dir: Path
-    ) -> Path:
+    def _download_and_process(self, dir: str, remote_file_name: str, expected_checksum: str | None) -> Path:
         """Downloads the file and processes it as needed.
 
         Handles:
@@ -136,7 +136,9 @@ class BaseGenomicDataBase:
         """
         url = f"https://{self.host}/{dir}/{remote_file_name}"
         url_hash = hashlib.md5(url.encode()).hexdigest()
-        file_path = (cache_dir / self.name / f"{url_hash}-{remote_file_name}").resolve()
+        if self.cache_dir is None:
+            raise RuntimeError("No caching directory set for genomic downloads.")
+        file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_file_name}").resolve()
 
         # Acquire lock to avoid downloading the same file multiple times at once
         # "Soft" lock is required for network file systems
@@ -171,7 +173,7 @@ class BaseGenomicDataBase:
         return file_path
 
     @abstractmethod
-    def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
+    def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
         pass
 
     @abstractmethod
@@ -182,7 +184,7 @@ class BaseGenomicDataBase:
     def _parse_checksum_line(self, line) -> tuple[str, str] | None:
         pass
 
-    def _get_checksum_map(self, context: GenomicEntityContext, cache_dir: Path) -> dict[str, str]:
+    def _get_checksum_map(self, context: GenomicEntityContext) -> dict[str, str]:
         """Returns map of filenames to their respective checksum"""
 
         # Combined checksum map for gtf and fasta files
@@ -191,9 +193,7 @@ class BaseGenomicDataBase:
 
         # set -> if the dirs are equal, the checksums are only downloaded once
         for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
-            checksums_path = self._download_and_process(
-                dir, checksums_file_name, expected_checksum=None, cache_dir=cache_dir
-            )
+            checksums_path = self._download_and_process(dir, checksums_file_name, expected_checksum=None)
 
             file_lock = SoftReadWriteLock(checksums_path.with_name(checksums_path.name + ".lock"))
             with file_lock.acquire_read():
@@ -211,7 +211,7 @@ class BaseGenomicDataBase:
         except KeyError as e:
             raise RuntimeError(f"Required file missing in md5checksums.txt: {e}") from e
 
-    def fetch_genomic_entity(self, entity: GenomicEntity, cache_dir: Path) -> dict[str, str]:
+    def fetch_genomic_entity(self, entity: GenomicEntity) -> dict[str, str]:
         """Fetch genomic entity from cache or download it if not cached yet.
         TODO:
         Ensembl:
@@ -225,19 +225,19 @@ class BaseGenomicDataBase:
         plus metadata: release, assembly.
         """
 
-        context = self.get_entity_context(entity, cache_dir)
-        checksum_map = self._get_checksum_map(context, cache_dir)
+        context = self.get_entity_context(entity)
+        checksum_map = self._get_checksum_map(context)
 
         # Annotation (GTF)
         annotation_checksum = checksum_map[context.annotation_remote_file_name]
         annotation_file = self._download_and_process(
-            context.annotation_remote_dir, context.annotation_remote_file_name, annotation_checksum, cache_dir
+            context.annotation_remote_dir, context.annotation_remote_file_name, annotation_checksum
         )
 
         # Sequence (FASTA)
         sequence_checksum = checksum_map[context.sequence_remote_file_name]
         sequence_file = self._download_and_process(
-            context.sequence_remote_dir, context.sequence_remote_file_name, sequence_checksum, cache_dir
+            context.sequence_remote_dir, context.sequence_remote_file_name, sequence_checksum
         )
 
         return {
@@ -252,12 +252,13 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
     # release 116 changes structure => could be a problem once they set this to current
     def __init__(
         self,
+        name: str = "ensembl",
         host: str = "ftp.ensembl.org",
         base_path: str = "/pub/",
+        cache_dir: Path | None = None,
         allowlist: list[str] | None = None,
-        name: str = "ensembl",
     ) -> None:
-        super().__init__(host, base_path, allowlist, name)
+        super().__init__(name, host, base_path, cache_dir, allowlist)
         self.orig_top_dirs = [""]
 
     # ---- Directory Discovery ----
@@ -368,7 +369,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
         return gtf_gz, fasta_gz, assembly
 
-    def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
+    def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
         annotation_remote_root_dir, sequence_remote_root_dir = self._release_dirs(entity.release)
 
         annotation_remote_dir = f"{annotation_remote_root_dir}/{entity.species}"
@@ -394,12 +395,13 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 class NCBIGenomicDataBase(BaseGenomicDataBase):
     def __init__(
         self,
+        name: str = "ncbi",
         host: str = "ftp.ncbi.nlm.nih.gov",
         base_path: str = "genomes/refseq/",
+        cache_dir: Path | None = None,
         allowlist: list[str] | None = None,
-        name: str = "ncbi",
     ) -> None:
-        super().__init__(host, base_path, allowlist, name)
+        super().__init__(name, host, base_path, cache_dir, allowlist)
 
     # ---- Directory Discovery ----
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str) -> str | None:
@@ -432,12 +434,8 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         return dirs
 
     # ---- Genomic Asset Fetching ----
-    def _get_assembly_information(
-        self, cache_dir: Path, rel_dir: str, file_name: str
-    ) -> tuple[str | None, str | None]:
-        file_path = self._download_and_process(
-            rel_dir, file_name, expected_checksum=None, cache_dir=cache_dir
-        )
+    def _get_assembly_information(self, rel_dir: str, file_name: str) -> tuple[str | None, str | None]:
+        file_path = self._download_and_process(rel_dir, file_name, expected_checksum=None)
 
         file_lock = SoftReadWriteLock(file_path.with_name(file_path.name + ".lock"))
         with file_lock.acquire_read():
@@ -472,7 +470,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         filename = split_line[1].lstrip("./")
         return filename, checksum
 
-    def _resolve_release_and_dir(self, cache_dir, entity: GenomicEntity) -> tuple[str, str, str, str]:
+    def _resolve_release_and_dir(self, entity: GenomicEntity) -> tuple[str, str, str, str]:
         # Resolve "current" to a concrete release; also read README to get assembly/accession
         if entity.taxon is None:
             raise ValueError("NCBI requires specifying a taxon but none was provided.")
@@ -504,7 +502,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
             if not assembly_report:
                 raise RuntimeError(f"No assembly report found in {rel_dir}")
 
-        assembly_name, accession = self._get_assembly_information(cache_dir, rel_dir, assembly_report)
+        assembly_name, accession = self._get_assembly_information(rel_dir, assembly_report)
         if not assembly_name or not accession:
             raise RuntimeError("Failed to parse assembly/accession from README.")
 
@@ -519,10 +517,8 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 final_dir = rel_dir
         return entity.release, assembly_name, accession, final_dir
 
-    def get_entity_context(self, entity: GenomicEntity, cache_dir: Path) -> GenomicEntityContext:
-        annotation_release, genome_assembly, accession, remote_dir = self._resolve_release_and_dir(
-            cache_dir, entity
-        )
+    def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
+        annotation_release, genome_assembly, accession, remote_dir = self._resolve_release_and_dir(entity)
 
         annotation_remote_dir = sequence_remote_dir = remote_dir
         annotation_remote_file_name = f"{accession}_{genome_assembly}_genomic.gtf.gz"
