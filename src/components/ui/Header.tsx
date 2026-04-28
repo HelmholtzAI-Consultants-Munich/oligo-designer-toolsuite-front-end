@@ -174,9 +174,11 @@ function Header({
     return (
         <>
             {stickyHeader && (
-                <Container className="sticky-header-title">
-                    <h1>{title}</h1>
-                </Container>
+                <div className="sticky-header-title">
+                    <Container>
+                        <h1>{title}</h1>
+                    </Container>
+                </div>
             )}
             <header className={`header ${stickyHeader ? "sticky-header" : ""}`}>
                 <title>{extendedTitle}</title>

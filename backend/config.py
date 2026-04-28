@@ -14,6 +14,7 @@ import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
+from kombu import Queue
 
 # Load environment variables from .env file
 # This ensures environment variables are available for both from_prefixed_env() and os.environ.get()
@@ -73,6 +74,7 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+    GENE_COUNT_THRESHOLD = 10
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
@@ -140,3 +142,15 @@ class CeleryConfig:
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
+
+    task_queue_max_priority = 10
+    task_default_priority = 5
+    task_high_priority = 10
+    task_queues = (
+        Queue(
+            "celery",
+            routing_key="default",
+            queue_arguments={"x-max-priority": task_queue_max_priority},
+        ),
+    )
+    worker_prefetch_multiplier = 1
