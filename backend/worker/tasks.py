@@ -8,6 +8,7 @@ from celery.exceptions import SoftTimeLimitExceeded
 from backend.config import CeleryConfig
 from backend.constants import PIPELINE_NAMES
 from backend.genomic_databases import prefetch_dropdown_options
+from backend.utilities.typed_values import utc_now
 from backend.worker.celery import app
 from backend.worker.helpers import TIMEOUT_ERROR_MESSAGE, compute_percentile, get_worker_db
 from backend.worker.pipeline_runner import PipelineRunner
@@ -58,7 +59,7 @@ def refresh_pipeline_timeouts(self: Celery.Task):
     Requires at least 5 successful runs per pipeline; pipelines with fewer runs are skipped
     and will fall back to the fixed config values at enqueue time.
     """
-    window = datetime.datetime.utcnow() - timedelta(days=CeleryConfig.pipeline_timeout_heuristic_window_days)
+    window = utc_now() - timedelta(days=CeleryConfig.pipeline_timeout_heuristic_window_days)
     timeouts = {}
 
     with get_worker_db() as db:
@@ -96,7 +97,7 @@ def refresh_pipeline_timeouts(self: Celery.Task):
 
         db.cache.update_one(
             {"_id": "pipeline_timeouts"},
-            {"$set": {"data": timeouts, "updated_at": datetime.datetime.utcnow()}},
+            {"$set": {"data": timeouts, "updated_at": utc_now()}},
             upsert=True,
         )
     print(f"Updated pipeline timeout heuristics: {timeouts}")
