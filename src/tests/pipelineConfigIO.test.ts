@@ -70,12 +70,7 @@ describe("buildExportPayload", () => {
             files_fasta_reference_database_readout_probe: ["/ro.fasta"],
             files_fasta_reference_database_primer: ["/primer.fasta"],
         };
-        const payload = buildExportPayload(
-            formData,
-            "scrinshot",
-            testSchema,
-            fastaForms
-        );
+        const payload = buildExportPayload(formData, "scrinshot", testSchema);
         expect(payload.config).not.toHaveProperty("file_regions");
         for (const field of EXCLUDED_FIELDS) {
             expect(payload.config).not.toHaveProperty(field);
@@ -88,33 +83,18 @@ describe("buildExportPayload", () => {
             top_n_sets: 5,
             file_regions: "/some/path",
         };
-        const payload = buildExportPayload(
-            formData,
-            "scrinshot",
-            testSchema,
-            fastaForms
-        );
+        const payload = buildExportPayload(formData, "scrinshot", testSchema);
         expect(payload.config.n_jobs).toBe(8);
         expect(payload.config.top_n_sets).toBe(5);
     });
 
     it("sets _meta.pipeline to the given pipeline name", () => {
-        const payload = buildExportPayload(
-            {},
-            "merfish",
-            testSchema,
-            fastaForms
-        );
+        const payload = buildExportPayload({}, "merfish", testSchema);
         expect(payload._meta.pipeline).toBe("merfish");
     });
 
     it("reads _meta.version from schema.description", () => {
-        const payload = buildExportPayload(
-            {},
-            "scrinshot",
-            testSchema,
-            fastaForms
-        );
+        const payload = buildExportPayload({}, "scrinshot", testSchema);
         expect(payload._meta.version).toBe("1.0.0");
     });
 
@@ -126,19 +106,13 @@ describe("buildExportPayload", () => {
         const payload = buildExportPayload(
             {},
             "scrinshot",
-            schemaWithoutVersion,
-            fastaForms
+            schemaWithoutVersion
         );
         expect(payload._meta.version).toBe("1.0.0");
     });
 
     it("sets _meta.exportedAt to an ISO timestamp", () => {
-        const payload = buildExportPayload(
-            {},
-            "scrinshot",
-            testSchema,
-            fastaForms
-        );
+        const payload = buildExportPayload({}, "scrinshot", testSchema);
         expect(() => new Date(payload._meta.exportedAt)).not.toThrow();
         expect(payload._meta.exportedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });

@@ -1,11 +1,12 @@
 import type { RJSFSchema } from "@rjsf/utils";
 import { regionDisplayNames } from "./helpers";
 import { ToolTip } from "./Tooltip";
+import type { GenomicRegionsUncommented } from "./types";
 
 interface GenomicRegionSelectProps {
     id: string;
     exon_exon_junction_block_size: string;
-    genomic_regions: { [key: string]: string };
+    genomic_regions: GenomicRegionsUncommented;
     handleChange: (
         e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
     ) => void;

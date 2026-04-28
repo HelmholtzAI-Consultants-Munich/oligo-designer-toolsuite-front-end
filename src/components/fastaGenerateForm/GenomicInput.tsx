@@ -1,6 +1,7 @@
 import fastaformSchema from "@schemas/fastaForm.schema.json";
+import type { JSONSchema7 } from "json-schema";
 import type { FieldProps, WidgetProps } from "@rjsf/utils";
-import { type FastaFormUncommented, type NestedObject } from "./types";
+import { type FastaFormUncommented } from "./types";
 import FastaGenerateForm from "../forms/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
 import {
@@ -13,6 +14,7 @@ import { Button, Form, InputGroup } from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
 import { Grid, Vertical } from "../ui/Alignment";
 import { useCallback } from "react";
+import type { NestedObject } from "../componentTypes";
 
 const GenomicInput = ({
     fieldPathId: { $id, path },
@@ -184,12 +186,14 @@ const GenomicInput = ({
                         onClick={() =>
                             handleFastaFormNew(
                                 getKeyObjectFromSchema(
-                                    schema.properties!.fasta_form
-                                        .items as unknown as NestedObject,
+                                    (
+                                        schema.properties!
+                                            .fasta_form as JSONSchema7
+                                    ).items as unknown as NestedObject,
                                     fastaformSchema as unknown as NestedObject,
                                     "default",
                                     true
-                                ),
+                                ) as unknown as FastaFormUncommented,
                                 handleFastaFormChange
                             )
                         }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
-import type { FileState, RJSFFormData } from "../componentTypes";
+import type { RJSFFormData } from "../componentTypes";
 import { handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";

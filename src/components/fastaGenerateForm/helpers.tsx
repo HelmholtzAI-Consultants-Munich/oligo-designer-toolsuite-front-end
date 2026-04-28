@@ -3,12 +3,8 @@ import { BACKEND_URL } from "../../config";
 import { createRunId } from "../../contexts/authHelpers";
 import { showToast } from "../../utils/toastUtil";
 import { extractSubmissionError } from "../errorHandler";
-import type { RJSFFormData } from "../componentTypes";
-import {
-    type FastaFormUncommented,
-    type FastaFormUpload,
-    type NestedObject,
-} from "./types";
+import type { NestedObject, RJSFFormData } from "../componentTypes";
+import { type FastaFormUncommented, type FastaFormUpload } from "./types";
 import axios from "axios";
 import { Link } from "react-router";
 import {

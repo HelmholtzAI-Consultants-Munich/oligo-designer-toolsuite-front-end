@@ -9,12 +9,9 @@ import React, { memo, useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import type {
-    DropDown,
-    EnsFastaFormDataGeneric,
-    FastaForm,
+    EnsFastaFormDataUncommented,
     FastaFormUncommented,
-    NcbiFastaFormDataGeneric,
-    NestedObject,
+    NcbiFastaFormDataUncommented,
 } from "../fastaGenerateForm/types";
 import { BACKEND_URL } from "../../config";
 import { SourceSelect } from "../fastaGenerateForm/SourceSelector";
@@ -33,6 +30,8 @@ import { NcbiAnnotationSelect } from "../fastaGenerateForm/NcbiAnnotationSelect"
 import { closeModal } from "../../utils/modalUtil";
 import type { RJSFSchema } from "@rjsf/utils";
 import { PIPELINE_CONFIG } from "../../pipelineConfig/config";
+import type { DropDown, NestedObject } from "../componentTypes";
+import type { JSONSchema7 } from "json-schema";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
@@ -64,10 +63,11 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         // TODO: could be made cleaner
         // the definitions section is the same for every schema, so we just use "scrinshot" here
         const descriptionOnlySchema = getKeyObjectFromSchema(
-            schema.properties!.fasta_form.items!,
+            (schema.properties!.fasta_form as JSONSchema7)
+                .items as unknown as NestedObject,
             PIPELINE_CONFIG["scrinshot"].schema,
             "description"
-        );
+        ) as RJSFSchema;
 
         const fetchDropDownData = useCallback(async () => {
             try {
@@ -156,9 +156,11 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const handleNcbiChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-            const { newFormData, keys, value } = processFormChange<
-                NcbiFastaFormDataGeneric<false>
-            >(e, formState.formDataNcbi);
+            const { newFormData, keys, value } =
+                processFormChange<NcbiFastaFormDataUncommented>(
+                    e,
+                    formState.formDataNcbi
+                );
 
             if (keys[0] === "source_params" && keys[1] === "taxon") {
                 // Update dependent fields when source params change
@@ -185,9 +187,11 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const handleEnsChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-            const { newFormData } = processFormChange<
-                EnsFastaFormDataGeneric<false>
-            >(e, formState.formDataEns);
+            const { newFormData } =
+                processFormChange<EnsFastaFormDataUncommented>(
+                    e,
+                    formState.formDataEns
+                );
 
             setFormState({
                 ...formState,

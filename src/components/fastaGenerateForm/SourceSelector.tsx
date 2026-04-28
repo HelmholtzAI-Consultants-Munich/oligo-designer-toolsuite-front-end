@@ -1,5 +1,5 @@
 import { GenomicDropDown } from "./GenomicDropDown";
-import type { FastaForm, FastaFormUncommented } from "./types";
+import type { FastaFormUncommented } from "./types";
 
 interface SourceSelectProps {
     id: string;
