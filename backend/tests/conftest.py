@@ -40,10 +40,11 @@ def mock_user_dir_exists(monkeypatch):
     def mock_exists(path):
         path_str = str(path)
         # Allow user directories to exist for authenticated users
-        # Pattern: .../user_data/test_user_id or .../user_data/dummy_user
+        # Pattern: .../user_data/507f1f77bcf86cd799439011 or .../user_data/dummy_user
+        # 507f1f77bcf86cd799439011 is a test user id
         if "/user_data/" in path_str or "cache" in path_str or path_str.endswith("user_data"):
             # Check if it's for a test user
-            if any(user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]):
+            if any(user_id in path_str for user_id in ["507f1f77bcf86cd799439011", "dummy_user", "anon"]):
                 # Return True for directory existence checks
                 # This allows PipelineRunner.create_context() to succeed
                 return True
@@ -54,7 +55,7 @@ def mock_user_dir_exists(monkeypatch):
         """Mock makedirs to silently succeed for test user directories."""
         path_str = str(path)
         if "/user_data/" in path_str:
-            if any(user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]):
+            if any(user_id in path_str for user_id in ["507f1f77bcf86cd799439011", "dummy_user", "anon"]):
                 # Silently succeed for test user directories
                 return
         if "cache" in path_str:
@@ -66,7 +67,7 @@ def mock_user_dir_exists(monkeypatch):
         """Mock open() to succeed for config files in test user directories."""
         path_str = str(file_path)
         if "/user_data/" in path_str and any(
-            user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]
+            user_id in path_str for user_id in ["507f1f77bcf86cd799439011", "dummy_user", "anon"]
         ):
             if "config" in path_str and mode == "w":
                 # For config files, return a mock file object that can be written to
@@ -163,7 +164,7 @@ def authenticated_user(monkeypatch):
     # Simulate an authenticated user
     class DummyUser:
         is_authenticated = True
-        id = "test_user_id"
+        id = "507f1f77bcf86cd799439011"
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
 
