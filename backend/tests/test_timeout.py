@@ -302,10 +302,10 @@ def test_get_run_status_writes_finished_at_on_success(client, run_id, dummy_user
         "backend.extensions.celery_app.AsyncResult",
         return_value=make_async_result("SUCCESS", successful=True, return_value=True),
     ):
-        response = client.get(f"/api/runs/{run_id}/state")
+        response = client.get(f"/api/runs/{run_id}/status")
 
     assert response.status_code == 200
-    assert response.get_json()["state"] == "success"
+    assert response.get_json()["status"] == "success"
     assert "finished_at" in mongo.db.runs.find_one({"_id": run_id})
 
 
@@ -315,22 +315,22 @@ def test_get_run_status_writes_finished_at_on_failure(client, run_id, dummy_user
     mock_result = make_async_result("FAILURE", successful=False)
     mock_result.info = Exception("pipeline error")
     with patch("backend.extensions.celery_app.AsyncResult", return_value=mock_result):
-        response = client.get(f"/api/runs/{run_id}/state")
+        response = client.get(f"/api/runs/{run_id}/status")
 
     assert response.status_code == 200
-    assert response.get_json()["state"] == "failure"
+    assert response.get_json()["status"] == "failure"
     assert "finished_at" in mongo.db.runs.find_one({"_id": run_id})
 
 
 def test_get_run_status_no_update_if_state_unchanged(client, run_id, dummy_user):
     create_test_run(run_id, user_id=dummy_user.id, status="success")
-    response = client.get(f"/api/runs/{run_id}/state")
+    response = client.get(f"/api/runs/{run_id}/status")
     assert response.status_code == 200
-    assert response.get_json()["state"] == "success"
+    assert response.get_json()["status"] == "success"
 
 
 def test_get_run_status_includes_error_message_when_already_failure(client, run_id, dummy_user):
-    """When state is already 'failure' in DB, error_message must be in the state response."""
+    """When status is already 'failure' in DB, error_message must be in the status response."""
     create_test_run(
         run_id,
         user_id=dummy_user.id,
@@ -339,9 +339,9 @@ def test_get_run_status_includes_error_message_when_already_failure(client, run_
         error_message=TIMEOUT_ERROR_MESSAGE,
     )
 
-    body = client.get(f"/api/runs/{run_id}/state").get_json()
+    body = client.get(f"/api/runs/{run_id}/status").get_json()
 
-    assert body["state"] == "failure"
+    assert body["status"] == "failure"
     assert body.get("error_message") == TIMEOUT_ERROR_MESSAGE
 
 
@@ -353,9 +353,9 @@ def test_get_run_status_includes_error_message_on_first_failure_transition(clien
     mock_result = make_async_result("FAILURE", successful=False)
     mock_result.info = Exception("pipeline error")
     with patch("backend.extensions.celery_app.AsyncResult", return_value=mock_result):
-        body = client.get(f"/api/runs/{run_id}/state").get_json()
+        body = client.get(f"/api/runs/{run_id}/status").get_json()
 
-    assert body["state"] == "failure"
+    assert body["status"] == "failure"
     assert body.get("error_message") == TIMEOUT_ERROR_MESSAGE
 
 

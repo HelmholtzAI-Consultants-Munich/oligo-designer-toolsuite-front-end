@@ -229,10 +229,10 @@ const backendGetOk = async (page: Page, apiPath: string) => {
 const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGetOk(page, `/api/runs/${runId}/state`);
-            const { state } = await res.json();
-            if (state === "success") return true;
-            if (state === "failure") {
+            const res = await backendGetOk(page, `/api/runs/${runId}/status`);
+            const { status } = await res.json();
+            if (status === "success") return true;
+            if (status === "failure") {
                 throw new Error(`Pipeline run ${runId} finished with failure.`);
             }
             return false;

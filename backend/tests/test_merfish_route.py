@@ -31,9 +31,9 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    response = client.get(f"/api/runs/{run_id}/state")
+    response = client.get(f"/api/runs/{run_id}/status")
     data = response.get_json()
-    assert data["state"] == "success"
+    assert data["status"] == "success"
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
@@ -51,9 +51,9 @@ def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    response = client.get(f"/api/runs/{run_id}/state")
+    response = client.get(f"/api/runs/{run_id}/status")
     data = response.get_json()
-    assert data["state"] == "success"
+    assert data["status"] == "success"
 
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
