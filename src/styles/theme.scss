@@ -295,9 +295,12 @@ body.modal-open {
 }
 
 .sticky-header-title {
-    padding-bottom: 0rem;
     background-color: white;
     z-index: 1001;
+
+    & > .container {
+        padding-bottom: 0rem;
+    }
 }
 
 /* Progressive enhancement: on smaller devices the header content wraps, which would make a sticky header cover too much of the screen */
