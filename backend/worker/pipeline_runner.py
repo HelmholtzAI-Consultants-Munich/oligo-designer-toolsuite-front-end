@@ -9,6 +9,8 @@ import yaml
 from celery import Celery
 from celery.utils.log import get_task_logger
 
+from backend.worker.genomic_regions_file import GenomicRegionsFile
+
 
 class PipelineRunner:
     """
@@ -111,12 +113,6 @@ class PipelineRunner:
         return proc.returncode == 0
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
-        # Imported here rather than at module level because GenomicRegionsFile
-        # pulls in Bio (biopython), which is only needed for visualization.
-        # Keeping it lazy avoids forcing Bio as a hard dependency of PipelineRunner
-        # itself, which matters in the test suite where biopython is not installed.
-        from backend.worker.genomic_regions_file import GenomicRegionsFile
-
         # find files_fasta_target_probe_database fasta file and read it
         self.logger.info("Generating visualization files...")
         regions_file = form_data.get("file_regions", None)
