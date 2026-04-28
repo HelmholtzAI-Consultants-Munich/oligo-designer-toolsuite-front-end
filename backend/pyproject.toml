@@ -9,6 +9,7 @@ shared = [
     "PyYAML >=6, <7",
     "python-dotenv >=1.2, <2",
     "filelock >=3.28, <4",
+    "dogpile.cache[redis] >=1.5, <2",
 ]
 server = [
     { include-group = "shared" },

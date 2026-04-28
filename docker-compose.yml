@@ -14,6 +14,13 @@ services:
       - 5672:5672
     restart: on-failure
 
+  odt-redis:
+    image: redis:8-alpine
+    container_name: odt-redis
+    ports:
+      - 6379:6379
+    restart: on-failure
+
   odt-server:
     image: odt-server
     build:

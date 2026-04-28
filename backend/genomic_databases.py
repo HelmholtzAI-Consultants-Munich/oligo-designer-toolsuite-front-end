@@ -13,8 +13,8 @@ from email.utils import formatdate, parsedate_to_datetime
 from pathlib import Path
 
 import requests
-from filelock import SoftReadWriteLock
 
+from backend.cache import file_cache_region
 from backend.config import Config
 
 
@@ -125,6 +125,7 @@ class BaseGenomicDataBase:
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
         pass
 
+    @file_cache_region.cache_on_arguments()
     def _download_and_process(self, dir: str, remote_file_name: str, expected_checksum: str | None) -> Path:
         """Downloads the file and processes it as needed.
 
@@ -139,36 +140,30 @@ class BaseGenomicDataBase:
         if self.cache_dir is None:
             raise RuntimeError("No caching directory set for genomic downloads.")
         file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_file_name}").resolve()
+        file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Acquire lock to avoid downloading the same file multiple times at once
-        # "Soft" lock is required for network file systems
-        file_lock = SoftReadWriteLock(file_path.with_name(file_path.name + ".lock"))
-        with file_lock.write_lock():
-            # Download file
-            self._download(url, file_path)
+        # Download file
+        self._download(url, file_path)
 
-            # Verify checksum if provided
-            if expected_checksum is not None and not self._verify_file(file_path, expected_checksum):
-                raise RuntimeError(f"Checksum for {file_path} does not match")
+        # Verify checksum if provided
+        if expected_checksum is not None and not self._verify_file(file_path, expected_checksum):
+            raise RuntimeError(f"Checksum for {file_path} does not match.")
 
-            # Uncompress file if extension is .gz
-            if file_path.suffix == ".gz":
-                uncompressed_file_path = file_path.with_suffix("")  # remove .gz extension
-                uncompressed_file_lock = SoftReadWriteLock(
-                    uncompressed_file_path.with_name(uncompressed_file_path.name + ".lock")
-                )
-                with uncompressed_file_lock.write_lock(), gzip.open(file_path, "rb") as archive:
-                    with open(uncompressed_file_path, "wb") as extract:
-                        shutil.copyfileobj(archive, extract)
+        # Uncompress file if extension is .gz
+        if file_path.suffix == ".gz":
+            uncompressed_file_path = file_path.with_suffix("")  # remove .gz extension
+            with gzip.open(file_path, "rb") as archive:
+                with open(uncompressed_file_path, "wb") as extract:
+                    shutil.copyfileobj(archive, extract)
 
-                # NOTE: The compressed files are currently still kept since the download caching
-                #   is based on their file metadata.
-                # TODO: Find a neat solution for avoiding redundant files.
-                #   Option 1: use separate metadata for download caching
-                #   Option 2: don't uncompress files & make genomic region generator handle compressed files
-                # # Delete compressed file
-                # file_path.unlink()
-                file_path = uncompressed_file_path
+            # NOTE: The compressed files are currently still kept since the _download caching
+            #   is based on their file metadata.
+            # TODO: Find a neat solution for avoiding redundant files.
+            #   Option 1: rely solely on the TTL-based file_cache_region caching
+            #   Option 2: never uncompress files & make genomic region generator handle compressed files
+            # # Delete compressed file
+            # file_path.unlink()
+            file_path = uncompressed_file_path
 
         return file_path
 
@@ -194,14 +189,11 @@ class BaseGenomicDataBase:
         # set -> if the dirs are equal, the checksums are only downloaded once
         for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
             checksums_path = self._download_and_process(dir, checksums_file_name, expected_checksum=None)
-
-            file_lock = SoftReadWriteLock(checksums_path.with_name(checksums_path.name + ".lock"))
-            with file_lock.acquire_read():
-                with open(checksums_path) as checksums_file:
-                    for line in checksums_file:
-                        if (parsed_line := self._parse_checksum_line(line)) is not None:
-                            filename, checksum = parsed_line
-                            filename_to_checksum_map[filename] = checksum
+            with open(checksums_path) as checksums_file:
+                for line in checksums_file:
+                    if (parsed_line := self._parse_checksum_line(line)) is not None:
+                        filename, checksum = parsed_line
+                        filename_to_checksum_map[filename] = checksum
 
         return filename_to_checksum_map
 
@@ -436,18 +428,15 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
     # ---- Genomic Asset Fetching ----
     def _get_assembly_information(self, rel_dir: str, file_name: str) -> tuple[str | None, str | None]:
         file_path = self._download_and_process(rel_dir, file_name, expected_checksum=None)
-
-        file_lock = SoftReadWriteLock(file_path.with_name(file_path.name + ".lock"))
-        with file_lock.acquire_read():
-            with open(file_path) as file:
-                assembly_name, accession = None, None
-                for line in file:
-                    if line.startswith("# Assembly name:"):
-                        _, assembly_name = line.strip().rsplit(maxsplit=1)
-                    if line.startswith("# RefSeq assembly accession:"):
-                        _, accession = line.strip().rsplit(maxsplit=1)
-                        break
-            return assembly_name, accession
+        with open(file_path) as file:
+            assembly_name, accession = None, None
+            for line in file:
+                if line.startswith("# Assembly name:"):
+                    _, assembly_name = line.strip().rsplit(maxsplit=1)
+                if line.startswith("# RefSeq assembly accession:"):
+                    _, accession = line.strip().rsplit(maxsplit=1)
+                    break
+        return assembly_name, accession
 
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
         with open(file_path, "rb") as f:

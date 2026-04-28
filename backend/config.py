@@ -26,6 +26,9 @@ class Config:
     Environment variables prefixed with FLASK_ will override these defaults
     when app.config.from_prefixed_env() is called in create_app().
 
+    Variables also used by the Celery worker need to use os.environ.get since
+    Flask's from_prefixed_env() does not get called by the worker.
+
     For example, to override MONGO_URI, set FLASK_MONGO_URI in your environment.
     See .env.sample for all available options.
     """
@@ -73,6 +76,12 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+
+    # Caching Settings
+    REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
+    REDIS_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_EXPIRATION_TIME", 60 * 60 * 24 * 30)
+    )  # in seconds (default: 30 days)
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
