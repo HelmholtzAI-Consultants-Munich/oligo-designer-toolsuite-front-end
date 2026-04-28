@@ -20,6 +20,27 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _get_pipeline_timeout_authenticated_multiplier() -> float:
+    """Return the timeout multiplier for authenticated users.
+
+    PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER is the preferred configuration.
+    PIPELINE_TIMEOUT_AUTH is still accepted as a compatibility fallback.
+    """
+    anonymous_timeout = int(os.environ.get("PIPELINE_TIMEOUT_ANON", 3600))
+    if anonymous_timeout <= 0:
+        raise ValueError("PIPELINE_TIMEOUT_ANON must be a positive integer")
+
+    configured_multiplier = os.environ.get("PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER")
+    if configured_multiplier is not None:
+        return float(configured_multiplier)
+
+    legacy_authenticated_timeout = os.environ.get("PIPELINE_TIMEOUT_AUTH")
+    if legacy_authenticated_timeout is not None:
+        return float(legacy_authenticated_timeout) / anonymous_timeout
+
+    return 2.0
+
+
 class Config:
     """Flask configuration with default values.
 
@@ -146,7 +167,7 @@ class CeleryConfig:
 
     # Fixed timeout values — used in "config" mode, and as fallback in "heuristic" mode
     pipeline_timeout_anon: int = int(os.environ.get("PIPELINE_TIMEOUT_ANON", 3600))  # 1 hour
-    pipeline_timeout_auth: int = int(os.environ.get("PIPELINE_TIMEOUT_AUTH", 7200))  # 2 hours
+    pipeline_timeout_authenticated_multiplier: float = _get_pipeline_timeout_authenticated_multiplier()
     pipeline_timeout_hard_margin: int = int(
         os.environ.get("PIPELINE_TIMEOUT_HARD_MARGIN", 300)
     )  # 5 min SIGKILL backstop

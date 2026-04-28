@@ -2,7 +2,7 @@
 
 Covers:
 - extract_gene_count (pipelines.py)
-- resolve_timeout (pipelines.py)
+- resolve_timeout (utilities/pipeline.py)
 - start_pipeline: ordering guarantee and enqueue failure rollback
 - get_run_status: finished_at written on transition, error_message surfaced
 - run_pipeline: error_message written on soft timeout (tasks.py)
@@ -23,8 +23,9 @@ from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 
 from backend.config import CeleryConfig
 from backend.extensions import mongo
-from backend.routes.pipelines import enqueue_pipeline, extract_gene_count, resolve_timeout
+from backend.routes.pipelines import enqueue_pipeline, extract_gene_count
 from backend.tests.conftest import create_test_run
+from backend.utilities.pipeline import resolve_timeout
 from backend.worker.celery import on_task_prerun
 from backend.worker.helpers import TIMEOUT_ERROR_MESSAGE
 from backend.worker.pipeline_runner import PipelineRunner
@@ -167,7 +168,12 @@ def test_resolve_timeout_config_mode_anonymous(app):
 
 def test_resolve_timeout_config_mode_authenticated(app):
     with app.app_context():
-        with patch.multiple(CeleryConfig, pipeline_timeout_mode="config", pipeline_timeout_auth=7200):
+        with patch.multiple(
+            CeleryConfig,
+            pipeline_timeout_mode="config",
+            pipeline_timeout_anon=3600,
+            pipeline_timeout_authenticated_multiplier=2.0,
+        ):
             result = resolve_timeout("merfish", is_authenticated=True, gene_count=100)
     assert result == 7200
 
@@ -182,7 +188,10 @@ def test_resolve_timeout_heuristic_uses_cache(client, merfish_heuristic_cache):
 
 def test_resolve_timeout_heuristic_auth_doubles_limit(client, merfish_heuristic_cache):
     with patch.multiple(
-        CeleryConfig, pipeline_timeout_mode="heuristic", pipeline_timeout_heuristic_factor=3.0
+        CeleryConfig,
+        pipeline_timeout_mode="heuristic",
+        pipeline_timeout_heuristic_factor=3.0,
+        pipeline_timeout_authenticated_multiplier=2.0,
     ):
         result = resolve_timeout("merfish", is_authenticated=True, gene_count=100)
     assert result == 1200  # 2.0 * 100 * 3.0 * 2

@@ -29,8 +29,14 @@ Fixed limits read from environment variables. Simple and predictable.
 
 ```
 PIPELINE_TIMEOUT_MODE=config
-PIPELINE_TIMEOUT_ANON=3600    # 1 hour for anonymous users
-PIPELINE_TIMEOUT_AUTH=7200    # 2 hours for authenticated users
+PIPELINE_TIMEOUT_ANON=3600
+PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER=2.0
+```
+
+The authenticated-user timeout is calculated as:
+
+```
+PIPELINE_TIMEOUT_ANON × PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER
 ```
 
 ### `heuristic`
@@ -41,7 +47,7 @@ Limits are computed automatically from past run durations. Every night, a backgr
 percentile_rate × gene_count × PIPELINE_TIMEOUT_HEURISTIC_FACTOR
 ```
 
-Authenticated users get 2× that value. Falls back to the `config` values if there is no cache data yet or the gene count cannot be determined.
+Authenticated users get the same `PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER` applied here as well. Falls back to the `config` values if there is no cache data yet or the gene count cannot be determined.
 
 ```
 PIPELINE_TIMEOUT_MODE=heuristic
@@ -56,15 +62,15 @@ A pipeline needs at least 5 successful runs in the window before heuristic data 
 
 ## All variables
 
-| Variable                                 | Default  | Description                                       |
-| ---------------------------------------- | -------- | ------------------------------------------------- |
-| `PIPELINE_TIMEOUT_MODE`                  | `config` | `config` or `heuristic`                           |
-| `PIPELINE_TIMEOUT_ANON`                  | `3600`   | Soft limit (seconds) for anonymous users          |
-| `PIPELINE_TIMEOUT_AUTH`                  | `7200`   | Soft limit (seconds) for authenticated users      |
-| `PIPELINE_TIMEOUT_HARD_MARGIN`           | `300`    | Seconds added on top of soft limit before SIGKILL |
-| `PIPELINE_TIMEOUT_HEURISTIC_FACTOR`      | `3.0`    | Safety multiplier applied to percentile rate      |
-| `PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE`  | `95`     | Percentile of past durations used as baseline     |
-| `PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS` | `30`     | Rolling window of past runs considered            |
+| Variable                                    | Default  | Description                                                    |
+| ------------------------------------------- | -------- | -------------------------------------------------------------- |
+| `PIPELINE_TIMEOUT_MODE`                     | `config` | `config` or `heuristic`                                        |
+| `PIPELINE_TIMEOUT_ANON`                     | `3600`   | Base soft limit (seconds) for anonymous users                  |
+| `PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER` | `2.0`    | Multiplier applied to the base timeout for authenticated users |
+| `PIPELINE_TIMEOUT_HARD_MARGIN`              | `300`    | Seconds added on top of soft limit before SIGKILL              |
+| `PIPELINE_TIMEOUT_HEURISTIC_FACTOR`         | `3.0`    | Safety multiplier applied to percentile rate                   |
+| `PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE`     | `95`     | Percentile of past durations used as baseline                  |
+| `PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS`    | `30`     | Rolling window of past runs considered                         |
 
 ---
 

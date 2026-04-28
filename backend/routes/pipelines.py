@@ -13,9 +13,10 @@ from flask_login import current_user
 
 from backend.config import CeleryConfig
 from backend.constants import PIPELINE_NAMES
-from backend.extensions import celery_app, mongo
+from backend.extensions import celery_app
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.routes.runs import update_run_in_DB
+from backend.utilities.pipeline import resolve_timeout
 from backend.utilities.typed_values import (
     sanitize_pipeline_form_paths,
     serialize_path,
@@ -110,37 +111,6 @@ def write_run_to_DB(
     if gene_count is not None:
         data["gene_count"] = gene_count
     return update_run_in_DB(run_id, data)
-
-
-def _get_heuristic_rate(pipeline_name: str) -> dict | None:
-    """Look up the cached percentile seconds-per-gene rate for this pipeline from MongoDB.
-
-    Returns a dict with key 'seconds_per_gene', or None if unavailable.
-    """
-    doc = mongo.db.cache.find_one({"_id": "pipeline_timeouts"})
-    if doc:
-        return doc.get("data", {}).get(pipeline_name)
-    return None
-
-
-def resolve_timeout(pipeline_name: str, is_authenticated: bool, gene_count: int | None) -> int:
-    """Return soft time limit in seconds for this pipeline run.
-
-    In heuristic mode, multiplies the cached percentile seconds-per-gene rate by the
-    current run's gene count and the configured safety factor. Falls back to fixed
-    config values if no cache data exists or gene count is unavailable.
-    """
-    if CeleryConfig.pipeline_timeout_mode == "heuristic":
-        cached = _get_heuristic_rate(pipeline_name)
-        if cached is not None and gene_count:
-            multiplier = 2 if is_authenticated else 1
-            return int(
-                cached["seconds_per_gene"]
-                * gene_count
-                * CeleryConfig.pipeline_timeout_heuristic_factor
-                * multiplier
-            )
-    return CeleryConfig.pipeline_timeout_auth if is_authenticated else CeleryConfig.pipeline_timeout_anon
 
 
 def enqueue_pipeline(
