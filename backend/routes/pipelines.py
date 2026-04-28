@@ -11,7 +11,8 @@ from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 
-from backend.config import PIPELINE_NAMES, CeleryConfig
+from backend.config import CeleryConfig
+from backend.constants import PIPELINE_NAMES
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.routes.runs import update_run_in_DB

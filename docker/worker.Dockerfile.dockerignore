@@ -8,6 +8,7 @@
 /backend/*
 !/backend/__init__.py
 !/backend/config.py
+!/backend/constants.py
 !/backend/extensions.py
 !/backend/genomic_databases.py
 !/backend/pyproject.toml

@@ -5,7 +5,8 @@ from typing import Any
 from celery import Celery
 from celery.exceptions import SoftTimeLimitExceeded
 
-from backend.config import PIPELINE_NAMES, CeleryConfig
+from backend.config import CeleryConfig
+from backend.constants import PIPELINE_NAMES
 from backend.genomic_databases import prefetch_dropdown_options
 from backend.worker.celery import app
 from backend.worker.helpers import TIMEOUT_ERROR_MESSAGE, compute_percentile, get_worker_db
