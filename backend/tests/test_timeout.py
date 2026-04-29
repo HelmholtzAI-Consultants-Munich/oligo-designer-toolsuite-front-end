@@ -6,7 +6,7 @@ Covers:
 - start_pipeline: ordering guarantee and enqueue failure rollback
 - get_run_status: finished_at written on transition, error_message surfaced
 - run_pipeline: error_message written on soft timeout (tasks.py)
-- on_task_prerun: started_at written for pipeline tasks only (celery.py)
+- on_task_prerun: started_at written for pipeline tasks only (signals.py)
 - refresh_pipeline_timeouts: per-pipeline aggregation (tasks.py)
 - enqueue_pipeline: soft_time_limit and time_limit passed to Celery
 - call_subprocess: child process killed on timeout (pipeline_runner.py)
@@ -26,9 +26,9 @@ from backend.extensions import mongo
 from backend.routes.pipelines import enqueue_pipeline, extract_gene_count
 from backend.tests.conftest import create_test_run
 from backend.utilities.pipeline import resolve_timeout
-from backend.worker.celery import on_task_prerun
 from backend.worker.helpers import TIMEOUT_ERROR_MESSAGE
 from backend.worker.pipeline_runner import PipelineRunner
+from backend.worker.signals import on_task_prerun
 from backend.worker.tasks import refresh_pipeline_timeouts, run_pipeline
 
 # ---------------------------------------------------------------------------
@@ -410,7 +410,7 @@ def test_on_task_prerun_writes_started_at_for_run_pipeline():
     mock_task = MagicMock()
     mock_task.name = "backend.worker.tasks.run_pipeline"
 
-    with patch_worker_db("backend.worker.celery") as (_, mock_db):
+    with patch_worker_db("backend.worker.signals") as (_, mock_db):
         on_task_prerun(task_id="test-task-id", task=mock_task)
 
     mock_db.runs.update_one.assert_called_once()
@@ -424,7 +424,7 @@ def test_on_task_prerun_ignores_other_tasks():
     mock_task = MagicMock()
     mock_task.name = "backend.worker.tasks.fetch_dropdown_options"
 
-    with patch("backend.worker.celery.get_worker_db") as mock_ctx:
+    with patch("backend.worker.signals.get_worker_db") as mock_ctx:
         on_task_prerun(task_id="test-id", task=mock_task)
         mock_ctx.assert_not_called()
 
