@@ -63,8 +63,6 @@ const UserEdit: React.FC = () => {
         loadUser();
     }, [loadUser]);
 
-    if (!id) return;
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
@@ -121,7 +119,7 @@ const UserEdit: React.FC = () => {
         );
     }
 
-    if (error && !user) {
+    if (!id || (error && !user)) {
         return (
             <div className="container-fluid p-4">
                 <Alert variant="danger">

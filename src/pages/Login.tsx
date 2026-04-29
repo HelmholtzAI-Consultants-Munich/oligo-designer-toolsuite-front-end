@@ -1,6 +1,6 @@
 // Login page component for user authentication
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
@@ -28,10 +28,13 @@ const Login = () => {
     const redirectTo = searchParams.get("redirect") || "/";
 
     // Redirect if already logged in
-    if (!loading && user) {
-        // User is already authenticated, redirect them away from login page
-        navigate(redirectTo);
-    }
+    // This useEffect is necessary because navigate() cannot reliably be called during render.
+    useEffect(() => {
+        if (!loading && user) {
+            // User is already authenticated, redirect them away from login page
+            navigate(redirectTo);
+        }
+    }, [user, loading, navigate, redirectTo]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

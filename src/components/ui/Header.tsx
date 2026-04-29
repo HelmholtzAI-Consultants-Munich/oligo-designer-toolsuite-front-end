@@ -113,27 +113,30 @@ function Header({
 
     const navigate = useNavigate();
 
-    // Set initial active tab offset and width on mount
-    if (activeSize[0] === 0 && tabs && tabs.length > 0) {
-        requestAnimationFrame(() => {
-            const activeElement = document.querySelector(
-                `.nav-header .nav-link.active`
-            ) as HTMLElement;
-            if (activeElement) {
-                setActiveOffset([
-                    activeElement.offsetLeft,
-                    activeElement.offsetTop,
-                ]);
-                setActiveSize([
-                    activeElement.offsetWidth,
-                    activeElement.offsetHeight,
-                ]);
-            }
+    useEffect(() => {
+        // Set initial active tab offset and width on mount
+        if (activeSize[0] === 0 && tabs && tabs.length > 0) {
             requestAnimationFrame(() => {
-                setAnimationReady(1); // Set animation ready flag after initial measurement
+                console.log("Measuring active tab for animation");
+                const activeElement = document.querySelector(
+                    `.nav-header .nav-link.active`
+                ) as HTMLElement;
+                if (activeElement) {
+                    setActiveOffset([
+                        activeElement.offsetLeft,
+                        activeElement.offsetTop,
+                    ]);
+                    setActiveSize([
+                        activeElement.offsetWidth,
+                        activeElement.offsetHeight,
+                    ]);
+                }
+                requestAnimationFrame(() => {
+                    setAnimationReady(1); // Set animation ready flag after initial measurement
+                });
             });
-        });
-    }
+        }
+    }, [tabs, activeSize]);
 
     const handleResize = () => {
         const activeElement = document.querySelector(
