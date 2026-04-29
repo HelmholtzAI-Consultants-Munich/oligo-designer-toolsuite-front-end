@@ -53,7 +53,7 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
                     species,
                     kingdom
                 );
-                setReleases(data);
+                return data;
             } catch (err: unknown) {
                 if (axios.isAxiosError(err)) {
                     setError(
@@ -72,7 +72,17 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
     );
 
     useEffect(() => {
-        updateAnnotationReleasesNCBI(species, kingdom);
+        let ignore = false;
+        updateAnnotationReleasesNCBI(species, kingdom).then((data) => {
+            if (!ignore) {
+                setReleases(data);
+            } else {
+                setIsLoading(true);
+            }
+        });
+        return () => {
+            ignore = true;
+        };
     }, [species, kingdom, updateAnnotationReleasesNCBI]);
 
     const Options = () => {
