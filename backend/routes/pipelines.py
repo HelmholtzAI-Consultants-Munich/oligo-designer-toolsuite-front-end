@@ -256,10 +256,15 @@ def start_pipeline(pipeline_name: str):
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
+    if request.form is None or len(request.form) == 0 or "payload" not in request.form:
+        abort(
+            HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+            description="Expected a Multipart form data with payload JSON field",
+        )
     form = json.loads(request.form["payload"])
     files = request.files
 
-    if form is None:
+    if form is None or len(form) == 0:
         abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, description="Expected JSON")
 
     run_id_str = form.get("runid")  # Run ID from React

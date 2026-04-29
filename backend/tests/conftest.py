@@ -8,8 +8,10 @@ Important Note:
 """
 
 import builtins
+import json
 import os
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -24,6 +26,10 @@ from backend.utilities.typed_values import serialize_path, utc_now
 #     """Auto-use fixture to mock os.makedirs across all tests"""
 #     with patch("os.makedirs"):
 #         yield
+
+
+def post(client, link: str, data: dict[str, Any]):
+    return client.post(link, data={"payload": json.dumps(data)}, content_type="multipart/form-data")
 
 
 @pytest.fixture(autouse=True)

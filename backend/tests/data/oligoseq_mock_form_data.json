@@ -5,12 +5,54 @@
     "write_intermediate_steps": true,
     "top_n_sets": 3,
     "file_regions": "AARS1",
-    "files_fasta_target_probe_database": [
-      "/app/uploads/c76e036a60774b08b83978bb7b370987_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
-    ],
-    "files_fasta_reference_database_target_probe": [
-      "/app/uploads/16cfebe0cbea4647a6cec85cdf2267e9_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
-    ],
+    "files_fasta_target_probe_database": {
+      "files": [],
+      "fasta_form": [
+        {
+          "source": "NCBI",
+          "dir_output": "output_genomic_region_generator_ncbi",
+          "source_params": {
+            "species": "Homo_sapiens",
+            "annotation_release": "110",
+            "taxon": "vertebrate_mammalian"
+          },
+          "genomic_regions": {
+            "gene": "false",
+            "intergenic": "false",
+            "exon": "true",
+            "exon_exon_junction": "false",
+            "utr": "false",
+            "cds": "false",
+            "intron": "false"
+          },
+          "exon_exon_junction_block_size": "50"
+        }
+      ]
+    },
+    "files_fasta_reference_database_target_probe": {
+      "files": [],
+      "fasta_form": [
+        {
+          "source": "NCBI",
+          "dir_output": "output_genomic_region_generator_ncbi",
+          "source_params": {
+            "species": "Homo_sapiens",
+            "annotation_release": "110",
+            "taxon": "vertebrate_mammalian"
+          },
+          "genomic_regions": {
+            "gene": "false",
+            "intergenic": "false",
+            "exon": "true",
+            "exon_exon_junction": "false",
+            "utr": "false",
+            "cds": "false",
+            "intron": "false"
+          },
+          "exon_exon_junction_block_size": "50"
+        }
+      ]
+    },
     "target_probe_length_min": 26,
     "target_probe_length_max": 30,
     "target_probe_isoform_consensus": 0,

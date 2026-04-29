@@ -47,7 +47,7 @@ class TestHTTPExceptionHandler:
         response = client.post("/api/merfish", content_type="text/plain", data="not json")
         assert response.status_code == 415
         data = response.get_json()
-        assert data["error"] == "Expected JSON"
+        assert data["error"] == "Expected a Multipart form data with payload JSON field"
 
     def test_abort_returns_json_with_error_key(self, client):
         """All abort responses have a consistent {"error": "..."} shape."""
