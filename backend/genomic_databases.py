@@ -130,10 +130,14 @@ class BaseGenomicDataBase:
         """Downloads the file and processes it as needed.
 
         Handles:
-        - optional verification of checksum
-        - uncompression of .gz files
+            - Optional verification of checksum.
+            - Uncompression of .gz files.
 
-        Returns the new local file path.
+        Notes:
+            This function is decorated with our file cache to serve as the level 2 cache.
+
+        Returns:
+            pathlib.Path -- The local file path of the downloaded resource.
         """
         url = f"https://{self.host}/{dir}/{remote_file_name}"
         url_hash = hashlib.md5(url.encode()).hexdigest()
@@ -147,6 +151,7 @@ class BaseGenomicDataBase:
 
         # Verify checksum if provided
         if expected_checksum is not None and not self._verify_file(file_path, expected_checksum):
+            # TODO: we could also retry the download a set amount of times at this point
             raise RuntimeError(f"Checksum for {file_path} does not match.")
 
         # Uncompress file if extension is .gz
@@ -201,33 +206,39 @@ class BaseGenomicDataBase:
         try:
             return checksum_map[file_name]
         except KeyError as e:
-            raise RuntimeError(f"Required file missing in md5checksums.txt: {e}") from e
+            raise RuntimeError(
+                f"Required file missing in {self.name}'s {self._checksum_file_name()}: {e}"
+            ) from e
 
     def fetch_genomic_entity(self, entity: GenomicEntity) -> dict[str, str]:
         """Fetch genomic entity from cache or download it if not cached yet.
-        TODO:
-        Ensembl:
-        URL based cache for Ensembl GTF/FASTA.
-        - Resolves 'current' vs numeric release to the right directories.
-        - Selects one .gtf.gz and one DNA FASTA (prefers dna_sm.primary_assembly, then primary_assembly, then toplevel).
-        - Verifies checksums parsed from CHECKSUMS file using 'sum' command
-        - Decompresses downloaded files and returns local paths and metadata.
-        NCBI:
-        Returns cached, MD5-verified local paths for .gtf and .fna (decompressed),
-        plus metadata: release, assembly.
+
+        Workflow:
+            - Obtain GenomicEntityContext (file names, location, etc.) using subclass-specific implementation.
+            - Obtain map of filename-to-checksum from subclass-specific location.
+            - For the annotation and sequence files:
+                - Verify checksum is known.
+                - Download from source, verify checksum of compressed file and uncompress if possible.
+
+        Raises:
+            RuntimeError: When no cache_dir was set, a resource cannot be located, a download fails or
+                a checksum cannot be verified.
+
+        Returns:
+            dict[str, str] -- A dict containing the file paths and the resolved release and assembly.
         """
 
         context = self.get_entity_context(entity)
         checksum_map = self._get_checksum_map(context)
 
         # Annotation (GTF)
-        annotation_checksum = checksum_map[context.annotation_remote_file_name]
+        annotation_checksum = self._get_checksum(checksum_map, context.annotation_remote_file_name)
         annotation_file = self._download_and_process(
             context.annotation_remote_dir, context.annotation_remote_file_name, annotation_checksum
         )
 
         # Sequence (FASTA)
-        sequence_checksum = checksum_map[context.sequence_remote_file_name]
+        sequence_checksum = self._get_checksum(checksum_map, context.sequence_remote_file_name)
         sequence_file = self._download_and_process(
             context.sequence_remote_dir, context.sequence_remote_file_name, sequence_checksum
         )
@@ -275,6 +286,12 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
     # ---- Genomic Asset Fetching ----
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
+        """Verifies checksums parsed from CHECKSUMS file using 'sum' command.
+
+        Notes:
+            The checksum type used is a 16-bit BSD checksum.
+            There does not seem to be a neater Python implementation for this than simply calling the `sum` command.
+        """
         try:
             result = subprocess.run(["sum", file_path], capture_output=True, check=True, text=True)
             computed_checksum = result.stdout.split()[0]
@@ -292,10 +309,14 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         return split_line[-1], split_line[0]
 
     def _release_dirs(self, release: str) -> tuple[str, str]:
-        """
-        Return tuple (gtf_dir, fasta_dir).
-        Uses 'current_gtf' and 'current_fasta' when release == 'current',
-        otherwise 'pub/release-<rel>/(gtf|fasta)/...'
+        """Resolves 'current' vs numeric release to the right directories.
+
+        Notes:
+            Uses 'current_gtf' and 'current_fasta' when release == 'current',
+            otherwise 'pub/release-<rel>/(gtf|fasta)/...'
+
+        Returns:
+            tuple[str, str] -- (annotation_remote_dir, sequence_remote_dir)
         """
         if release == "current":
             return ("pub/current_gtf", "pub/current_fasta")
@@ -303,11 +324,15 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             return (f"pub/release-{release}/gtf", f"pub/release-{release}/fasta")
 
     def _pick_files(self, gtf_dir: str, fasta_dir: str) -> tuple[str, str, str]:
-        """
-        Given fully-qualified remote directories for GTF and DNA FASTA
-        (e.g., 'pub/current_gtf/homo_sapiens' and 'pub/current_fasta/homo_sapiens/dna'),
-        choose one .gtf.gz and one .fa.gz. Prefer primary_assembly for FASTA; fallback to toplevel.
-        Returns (gtf_filename, fasta_filename, assembly_name).
+        """Chooses annotation and sequence files from specified remote directories.
+
+        Notes:
+            Chooses one .gtf.gz file and one .fa.gz file out of potentially multiple
+            matching files in the respective directories.
+            Prefers primary_assembly for annotation (FASTA) with toplevel as fallback.
+
+        Returns:
+            tuple[str, str, str] -- (gtf_filename, fasta_filename, assembly_name)
         """
         with ftplib.FTP(self.host) as ftp:
             ftp.login()

@@ -55,6 +55,21 @@ class GenomicRegionGeneratorRunner:
 
     @file_cache_region.cache_on_arguments(function_key_generator=lambda namespace, fn: get_form_cache_key)
     def generate_regions(self, region_form: dict[str, Any]) -> Path:
+        """Executes the genomic region generator.
+
+        Arguments:
+            region_form {dict[str, Any]} -- The provided form specifying what regions to generate.
+
+        Notes:
+            This function is decorated with our file cache to serve as the level 1 cache.
+
+        Raises:
+            ValueError: Missing fields in region_form.
+            ValueError: The genomic region generator failed.
+
+        Returns:
+            Path -- The output directory containing the results.
+        """
         output_path = self.cache_dir / "generated" / f"cached_genomic_{uuid.uuid4().hex}"
         output_path.mkdir(parents=True, exist_ok=True)
 
@@ -86,7 +101,7 @@ class GenomicRegionGeneratorRunner:
         annotation_file = cache_info["annotation_file"]
         sequence_file = cache_info["sequence_file"]
 
-        # Build custom config pointing to cached decompressed files (BASIC PARAMETERS spec)
+        # Build custom config pointing to cached uncompressed files (BASIC PARAMETERS spec)
         config_path = output_path / "config_genomic.yaml"
         config_genomic = {
             "dir_output": str(output_path),

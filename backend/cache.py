@@ -1,7 +1,8 @@
 import shutil
 from pathlib import Path
+from typing import Annotated
 
-from dogpile.cache import make_region
+from dogpile.cache import CacheRegion, make_region
 from dogpile.cache.api import NO_VALUE, BackendFormatted, BackendSetType, SerializedReturnType
 from dogpile.cache.proxy import ProxyBackend
 
@@ -84,13 +85,15 @@ class FileCacheProxy(ProxyBackend):
         self.proxied.delete(key)
 
 
-file_cache_region = make_region().configure(
-    "dogpile.cache.redis",
-    arguments={
-        "host": Config.REDIS_HOST,
-        "redis_expiration_time": Config.REDIS_EXPIRATION_TIME,
-        "distributed_lock": True,
-        "thread_local_lock": False,
-    },
-    wrap=[FileCacheProxy],
+file_cache_region: Annotated[CacheRegion, "see backend.cache.FileCacheProxy"] = (
+    make_region().configure(  # test
+        "dogpile.cache.redis",
+        arguments={
+            "host": Config.REDIS_HOST,
+            "redis_expiration_time": Config.REDIS_EXPIRATION_TIME,
+            "distributed_lock": True,
+            "thread_local_lock": False,
+        },
+        wrap=[FileCacheProxy],
+    )
 )
