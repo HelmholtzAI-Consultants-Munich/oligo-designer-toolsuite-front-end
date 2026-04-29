@@ -12,7 +12,7 @@ from backend.constants import (
     PIPELINE_TIMEOUTS_CACHE_KEY,
 )
 from backend.genomic_databases import prefetch_dropdown_options
-from backend.utilities.typed_values import utc_now
+from backend.utilities.timestamps import utc_now
 from backend.worker.celery import app
 from backend.worker.helpers import compute_percentile, get_worker_db
 from backend.worker.pipeline_runner import PipelineRunner

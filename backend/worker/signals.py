@@ -5,7 +5,7 @@ from celery.signals import task_postrun, task_prerun
 
 from backend.constants import PIPELINE_RUN_LIFECYCLE_COLLECTION
 from backend.utilities.pipeline import resolve_pipeline_task_status
-from backend.utilities.typed_values import utc_now
+from backend.utilities.timestamps import utc_now
 from backend.worker.helpers import get_worker_db
 
 
