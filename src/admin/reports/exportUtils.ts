@@ -15,7 +15,7 @@ export function exportReportToCSV(report: MonthlyReport): void {
     const csv = [
         ["Metric", "Value", "Delta vs Previous Month"],
         ["Period", `${month} ${report.year}`, ""],
-        ["Generated At", report.generated_at ?? "N/A", ""],
+        ["Generated At", report.generated_at, ""],
         [],
         ["--- USERS ---"],
         [

@@ -79,8 +79,7 @@ const SUMMARY_COLS = [
     },
     {
         label: "Generated At",
-        val: (r: MonthlyReport) =>
-            formatAdminDateTime(r.generated_at ?? undefined),
+        val: (r: MonthlyReport) => formatAdminDateTime(r.generated_at),
     },
 ] as const;
 
@@ -89,15 +88,20 @@ const COL_COUNT = SUMMARY_COLS.length + 3; // expand + Period + summaries + Acti
 function fmtRate(v: number | null) {
     return v != null ? `${(v * 100).toFixed(1)}%` : "N/A";
 }
-function monthsBetween(fy: number, fm: number, ty: number, tm: number) {
+function monthsBetween(
+    fromYear: number,
+    fromMonth: number,
+    toYear: number,
+    toMonth: number
+) {
     const out: { year: number; month: number }[] = [];
-    let y = fy,
-        m = fm;
-    while (y < ty || (y === ty && m <= tm)) {
-        out.push({ year: y, month: m });
-        if (++m > 12) {
-            m = 1;
-            y++;
+    let year = fromYear,
+        month = fromMonth;
+    while (year < toYear || (year === toYear && month <= toMonth)) {
+        out.push({ year, month });
+        if (++month > 12) {
+            month = 1;
+            year++;
         }
     }
     return out;
@@ -379,9 +383,9 @@ const MonthlyReports: React.FC = () => {
             setRangeError("Please select both From and To months.");
             return;
         }
-        const [fy, fm] = fromValue.split("-").map(Number);
-        const [ty, tm] = toValue.split("-").map(Number);
-        if (fy > ty || (fy === ty && fm > tm)) {
+        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
+        const [toYear, toMonth] = toValue.split("-").map(Number);
+        if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
             setRangeError('"From" must not be after "To".');
             return;
         }
@@ -389,7 +393,7 @@ const MonthlyReports: React.FC = () => {
             setRangeError("Cannot generate reports for future months.");
             return;
         }
-        const months = monthsBetween(fy, fm, ty, tm);
+        const months = monthsBetween(fromYear, fromMonth, toYear, toMonth);
         if (!(await triggerGenerate(months))) return;
         setShowModal(false);
         setFromValue("");
@@ -403,11 +407,11 @@ const MonthlyReports: React.FC = () => {
 
     const rangeCount = (() => {
         if (!fromValue || !toValue) return 0;
-        const [fy, fm] = fromValue.split("-").map(Number);
-        const [ty, tm] = toValue.split("-").map(Number);
-        return fy > ty || (fy === ty && fm > tm)
+        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
+        const [toYear, toMonth] = toValue.split("-").map(Number);
+        return fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)
             ? 0
-            : monthsBetween(fy, fm, ty, tm).length;
+            : monthsBetween(fromYear, fromMonth, toYear, toMonth).length;
     })();
 
     if (isLoading)

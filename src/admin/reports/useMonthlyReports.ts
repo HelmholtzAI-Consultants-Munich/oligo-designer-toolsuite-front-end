@@ -6,7 +6,7 @@ export interface MonthlyReport {
     id: string;
     year: number;
     month: number;
-    generated_at: string | null;
+    generated_at: string;
     generated_by: "scheduled" | "manual";
     users: {
         new_registrations: number;
