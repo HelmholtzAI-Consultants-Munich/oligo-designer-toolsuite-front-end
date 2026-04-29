@@ -3,7 +3,7 @@ from typing import Any
 
 from celery.signals import task_postrun, task_prerun
 
-from backend.constants import PIPELINE_DURATION_STATS_COLLECTION
+from backend.constants import PIPELINE_RUN_LIFECYCLE_COLLECTION
 from backend.utilities.pipeline import resolve_pipeline_task_status
 from backend.utilities.typed_values import utc_now
 from backend.worker.helpers import get_worker_db
@@ -20,6 +20,21 @@ def _get_request_header(task, key: str) -> Any:
     return getattr(task.request, key, None)
 
 
+def _get_lifecycle_collection(db):
+    return db[PIPELINE_RUN_LIFECYCLE_COLLECTION]
+
+
+def _get_lifecycle_metadata(task_id: str, task) -> dict[str, Any]:
+    return {
+        "task_id": task_id,
+        "run_id": _get_request_header(task, "run_id"),
+        "pipeline": _get_request_header(task, "pipeline"),
+        "user_id": _get_request_header(task, "user_id"),
+        "session_id": _get_request_header(task, "session_id"),
+        "gene_count": _get_request_header(task, "gene_count"),
+    }
+
+
 @task_prerun.connect
 def on_task_prerun(task_id, task, *args, **kwargs):
     """Record start time of pipeline tasks for heuristic timeout calculation."""
@@ -28,8 +43,13 @@ def on_task_prerun(task_id, task, *args, **kwargs):
         task.request.prerun_time = time.time()
         task.request.started_at = started_at
         with get_worker_db() as db:
-            db.runs.update_one(
-                {"task_id": task_id}, {"$set": {"started_at": started_at, "status": "started"}}
+            _get_lifecycle_collection(db).update_one(
+                {"task_id": task_id},
+                {
+                    "$set": _get_lifecycle_metadata(task_id, task)
+                    | {"started_at": started_at, "status": "started"}
+                },
+                upsert=True,
             )
 
 
@@ -57,30 +77,20 @@ def on_task_postrun(task_id, task, state, retval=None, *args, **kwargs):
     if publish_time is not None:
         total_seconds = current_time - float(publish_time)
 
-    with get_worker_db() as db:
-        db.runs.update_one(
-            {"task_id": task_id}, {"$set": {"status": final_status, "finished_at": finished_at}}
-        )
+    lifecycle_update = _get_lifecycle_metadata(task_id, task) | {
+        "status": final_status,
+        "finished_at": finished_at,
+    }
+    if started_at is not None:
+        lifecycle_update["started_at"] = started_at
+    if queue_wait_seconds is not None:
+        lifecycle_update["queue_wait_seconds"] = queue_wait_seconds
+    if execution_seconds is not None:
+        lifecycle_update["execution_seconds"] = execution_seconds
+    if total_seconds is not None:
+        lifecycle_update["total_seconds"] = total_seconds
 
-        gene_count = _get_request_header(task, "gene_count")
-        if final_status == "success" and isinstance(gene_count, int) and gene_count > 0:
-            db[PIPELINE_DURATION_STATS_COLLECTION].update_one(
-                {"task_id": task_id},
-                {
-                    "$set": {
-                        "task_id": task_id,
-                        "run_id": _get_request_header(task, "run_id"),
-                        "pipeline": _get_request_header(task, "pipeline"),
-                        "user_id": _get_request_header(task, "user_id"),
-                        "session_id": _get_request_header(task, "session_id"),
-                        "gene_count": gene_count,
-                        "status": final_status,
-                        "started_at": started_at,
-                        "finished_at": finished_at,
-                        "queue_wait_seconds": queue_wait_seconds,
-                        "execution_seconds": execution_seconds,
-                        "total_seconds": total_seconds,
-                    }
-                },
-                upsert=True,
-            )
+    with get_worker_db() as db:
+        _get_lifecycle_collection(db).update_one(
+            {"task_id": task_id}, {"$set": lifecycle_update}, upsert=True
+        )

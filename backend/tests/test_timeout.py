@@ -21,7 +21,7 @@ import pytest
 from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 
 from backend.config import CeleryConfig
-from backend.constants import PIPELINE_TIMEOUTS_CACHE_KEY
+from backend.constants import PIPELINE_RUN_LIFECYCLE_COLLECTION, PIPELINE_TIMEOUTS_CACHE_KEY
 from backend.extensions import mongo
 from backend.routes.pipelines import enqueue_pipeline
 from backend.tests.conftest import create_test_run
@@ -378,14 +378,21 @@ def test_run_pipeline_does_not_write_to_db_on_success():
 def test_on_task_prerun_writes_started_at_for_run_pipeline():
     mock_task = MagicMock()
     mock_task.name = "backend.worker.tasks.run_pipeline"
+    mock_task.request = MagicMock(
+        headers={"run_id": "run-1", "pipeline": "merfish", "user_id": "user-1", "session_id": "session-1"}
+    )
 
     with patch_worker_db("backend.worker.signals") as (_, mock_db):
+        lifecycle_collection = MagicMock()
+        mock_db.__getitem__.return_value = lifecycle_collection
         on_task_prerun(task_id="test-task-id", task=mock_task)
 
-    mock_db.runs.update_one.assert_called_once()
-    filter_arg, update_arg = mock_db.runs.update_one.call_args[0]
+    mock_db.__getitem__.assert_called_once_with(PIPELINE_RUN_LIFECYCLE_COLLECTION)
+    filter_arg, update_arg = lifecycle_collection.update_one.call_args[0]
+    assert lifecycle_collection.update_one.call_args.kwargs["upsert"] is True
     assert filter_arg == {"task_id": "test-task-id"}
     assert update_arg["$set"]["status"] == "started"
+    assert update_arg["$set"]["run_id"] == "run-1"
     assert "started_at" in update_arg["$set"]
     assert isinstance(update_arg["$set"]["started_at"], datetime.datetime)
 
@@ -409,16 +416,19 @@ def test_on_task_postrun_marks_timeout(client):
     )
 
     with patch_worker_db("backend.worker.signals") as (_, mock_db):
+        lifecycle_collection = MagicMock()
+        mock_db.__getitem__.return_value = lifecycle_collection
         with patch("backend.worker.signals.time.time", return_value=5.0):
             on_task_postrun(task_id="task-1", task=mock_task, state="FAILURE", retval=SoftTimeLimitExceeded())
 
-    mock_db.runs.update_one.assert_called_once()
-    _, update_arg = mock_db.runs.update_one.call_args[0]
+    mock_db.__getitem__.assert_called_once_with(PIPELINE_RUN_LIFECYCLE_COLLECTION)
+    _, update_arg = lifecycle_collection.update_one.call_args[0]
     assert update_arg["$set"]["status"] == "timeout"
-    mock_db.__getitem__.return_value.update_one.assert_not_called()
+    assert update_arg["$set"]["finished_at"]
+    assert lifecycle_collection.update_one.call_args.kwargs["upsert"] is True
 
 
-def test_on_task_postrun_persists_success_duration_stats(client):
+def test_on_task_postrun_persists_success_lifecycle_metrics(client):
     mock_task = MagicMock()
     mock_task.name = "backend.worker.tasks.run_pipeline"
     started_at = datetime.datetime.now(datetime.UTC)
@@ -436,20 +446,19 @@ def test_on_task_postrun_persists_success_duration_stats(client):
     )
 
     with patch_worker_db("backend.worker.signals") as (_, mock_db):
-        stats_collection = MagicMock()
-        mock_db.__getitem__.return_value = stats_collection
+        lifecycle_collection = MagicMock()
+        mock_db.__getitem__.return_value = lifecycle_collection
         with patch("backend.worker.signals.time.time", return_value=5.0):
             on_task_postrun(task_id="task-1", task=mock_task, state="SUCCESS", retval=True)
 
-    _, update_arg = mock_db.runs.update_one.call_args[0]
+    mock_db.__getitem__.assert_called_once_with(PIPELINE_RUN_LIFECYCLE_COLLECTION)
+    _, update_arg = lifecycle_collection.update_one.call_args[0]
     assert update_arg["$set"]["status"] == "success"
-    stats_collection.update_one.assert_called_once()
-    _, stats_update_arg = stats_collection.update_one.call_args[0]
-    assert stats_update_arg["$set"]["pipeline"] == "merfish"
-    assert stats_update_arg["$set"]["gene_count"] == 100
-    assert stats_update_arg["$set"]["execution_seconds"] == 3.0
-    assert stats_update_arg["$set"]["queue_wait_seconds"] == 1.0
-    assert stats_update_arg["$set"]["total_seconds"] == 4.0
+    assert update_arg["$set"]["pipeline"] == "merfish"
+    assert update_arg["$set"]["gene_count"] == 100
+    assert update_arg["$set"]["execution_seconds"] == 3.0
+    assert update_arg["$set"]["queue_wait_seconds"] == 1.0
+    assert update_arg["$set"]["total_seconds"] == 4.0
 
 
 def test_resolve_pipeline_task_status_maps_timeout():
@@ -467,9 +476,9 @@ def test_refresh_pipeline_duration_stats_computes_seconds_per_gene():
     runs_data = make_run_docs("merfish", count=10, duration_seconds=200, gene_count=100)
 
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
-        stats_collection = MagicMock()
-        stats_collection.find.side_effect = pipeline_find(runs_data)
-        mock_db.__getitem__.return_value = stats_collection
+        lifecycle_collection = MagicMock()
+        lifecycle_collection.find.side_effect = pipeline_find(runs_data)
+        mock_db.__getitem__.return_value = lifecycle_collection
         refresh_pipeline_duration_stats.run()
 
     _, update_arg = mock_db.cache.update_one.call_args[0]
@@ -483,9 +492,9 @@ def test_refresh_pipeline_duration_stats_skips_pipeline_with_fewer_than_5_runs()
     runs_data = make_run_docs("merfish", count=4, duration_seconds=3600, gene_count=100)
 
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
-        stats_collection = MagicMock()
-        stats_collection.find.side_effect = pipeline_find(runs_data)
-        mock_db.__getitem__.return_value = stats_collection
+        lifecycle_collection = MagicMock()
+        lifecycle_collection.find.side_effect = pipeline_find(runs_data)
+        mock_db.__getitem__.return_value = lifecycle_collection
         refresh_pipeline_duration_stats.run()
 
     _, update_arg = mock_db.cache.update_one.call_args[0]
@@ -495,9 +504,9 @@ def test_refresh_pipeline_duration_stats_skips_pipeline_with_fewer_than_5_runs()
 def test_refresh_pipeline_duration_stats_always_writes_cache_even_when_empty():
     """Cache must be written even with no data so stale keys are cleared."""
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
-        stats_collection = MagicMock()
-        stats_collection.find.side_effect = pipeline_find([])
-        mock_db.__getitem__.return_value = stats_collection
+        lifecycle_collection = MagicMock()
+        lifecycle_collection.find.side_effect = pipeline_find([])
+        mock_db.__getitem__.return_value = lifecycle_collection
         refresh_pipeline_duration_stats.run()
 
     mock_db.cache.update_one.assert_called_once()

@@ -7,8 +7,8 @@ from celery import Celery
 from backend.config import CeleryConfig
 from backend.constants import (
     GENOMIC_DROPDOWN_CACHE_KEY,
-    PIPELINE_DURATION_STATS_COLLECTION,
     PIPELINE_NAMES,
+    PIPELINE_RUN_LIFECYCLE_COLLECTION,
     PIPELINE_TIMEOUTS_CACHE_KEY,
 )
 from backend.genomic_databases import prefetch_dropdown_options
@@ -49,10 +49,10 @@ def fetch_dropdown_options(self: Celery.Task):
 def refresh_pipeline_duration_stats(self: Celery.Task):
     """Compute and cache per-pipeline run-duration statistics.
 
-    Used by heuristic timeout mode to automatically tune soft_time_limit values.
-    Requires at least the configured minimum number of successful runs per pipeline;
-    pipelines with fewer runs are skipped and will fall back to the fixed config
-    values at enqueue time.
+    Used by heuristic timeout mode to automatically tune soft_time_limit values
+    from worker-managed lifecycle records. Requires at least the configured
+    minimum number of successful runs per pipeline; pipelines with fewer runs
+    are skipped and will fall back to the fixed config values at enqueue time.
     """
     window = utc_now() - timedelta(days=CeleryConfig.pipeline_timeout_heuristic_window_days)
     duration_stats = {}
@@ -60,10 +60,11 @@ def refresh_pipeline_duration_stats(self: Celery.Task):
     with get_worker_db() as db:
         for pipeline in PIPELINE_NAMES:
             docs = list(
-                db[PIPELINE_DURATION_STATS_COLLECTION].find(
+                db[PIPELINE_RUN_LIFECYCLE_COLLECTION].find(
                     {
                         "pipeline": pipeline,
                         "status": "success",
+                        "started_at": {"$exists": True},
                         "finished_at": {"$exists": True, "$gte": window},
                         "gene_count": {"$exists": True, "$gt": 0},
                     }
