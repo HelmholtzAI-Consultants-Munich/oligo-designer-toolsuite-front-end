@@ -1,4 +1,4 @@
-import type { MonthlyReport } from "./useMonthlyReports";
+import type { MonthlyReport } from "./types";
 
 const pct = (v: number | null) =>
     v != null ? `${(v * 100).toFixed(1)}%` : "N/A";

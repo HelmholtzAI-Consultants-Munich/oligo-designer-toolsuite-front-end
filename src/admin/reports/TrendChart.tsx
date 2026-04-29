@@ -1,75 +1,113 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { area, line, max, scaleLinear, scalePoint } from "d3";
 import { Card, Form } from "react-bootstrap";
-import type { MonthlyReport } from "./useMonthlyReports";
+import { formatReportMonth } from "./display";
+import type { MonthlyReport } from "./types";
 
-const MONTH_ABBR = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
+const METRICS: Array<{
+    label: string;
+    getValue: (report: MonthlyReport) => number;
+}> = [
+    { label: "Total Runs", getValue: (report) => report.runs.total },
+    {
+        label: "Successful Runs",
+        getValue: (report) => report.runs.by_status.success,
+    },
+    {
+        label: "Failed Runs",
+        getValue: (report) => report.runs.by_status.failure,
+    },
+    {
+        label: "Pipeline: Scrinshot",
+        getValue: (report) => report.runs.by_pipeline.scrinshot,
+    },
+    {
+        label: "Pipeline: Seqfish",
+        getValue: (report) => report.runs.by_pipeline.seqfish,
+    },
+    {
+        label: "Pipeline: Merfish",
+        getValue: (report) => report.runs.by_pipeline.merfish,
+    },
+    {
+        label: "Pipeline: Oligoseq",
+        getValue: (report) => report.runs.by_pipeline.oligoseq,
+    },
+    {
+        label: "New Users",
+        getValue: (report) => report.users.new_registrations,
+    },
+    { label: "Active Users", getValue: (report) => report.users.active },
+    { label: "Feedback", getValue: (report) => report.feedback.total },
 ];
 
-const METRICS: { value: string; label: string }[] = [
-    { value: "runs.total", label: "Total Runs" },
-    { value: "runs.success", label: "Successful Runs" },
-    { value: "runs.failure", label: "Failed Runs" },
-    { value: "pipeline.scrinshot", label: "Pipeline: Scrinshot" },
-    { value: "pipeline.seqfish", label: "Pipeline: Seqfish" },
-    { value: "pipeline.merfish", label: "Pipeline: Merfish" },
-    { value: "pipeline.oligoseq", label: "Pipeline: Oligoseq" },
-    { value: "users.new", label: "New Users" },
-    { value: "users.active", label: "Active Users" },
-    { value: "feedback.total", label: "Feedback" },
-];
+const WIDTH = 800;
+const HEIGHT = 180;
+const MARGINS = {
+    left: 48,
+    right: 24,
+    top: 20,
+    bottom: 40,
+};
+const LINE_COLOR = "#0d6efd";
+const GRID_COLOR = "#dee2e6";
+const LABEL_COLOR = "#6c757d";
 
-const GETTERS: Record<string, (r: MonthlyReport) => number> = {
-    "runs.total": (r) => r.runs.total,
-    "runs.success": (r) => r.runs.by_status.success,
-    "runs.failure": (r) => r.runs.by_status.failure,
-    "pipeline.scrinshot": (r) => r.runs.by_pipeline.scrinshot,
-    "pipeline.seqfish": (r) => r.runs.by_pipeline.seqfish,
-    "pipeline.merfish": (r) => r.runs.by_pipeline.merfish,
-    "pipeline.oligoseq": (r) => r.runs.by_pipeline.oligoseq,
-    "users.new": (r) => r.users.new_registrations,
-    "users.active": (r) => r.users.active,
-    "feedback.total": (r) => r.feedback.total,
+type TrendPoint = {
+    id: string;
+    label: string;
+    year: number;
+    value: number;
 };
 
-const PL = 48,
-    PR = 24,
-    PT = 20,
-    PB = 40,
-    W = 800,
-    H = 180;
-const CW = W - PL - PR,
-    CH = H - PT - PB;
-
 const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
-    const [metric, setMetric] = useState("runs.total");
-    if (reports.length < 2) return null;
+    const [metricIndex, setMetricIndex] = useState(0);
 
-    const data = reports.slice(0, 12).reverse();
-    const get = GETTERS[metric] ?? (() => 0);
-    const values = data.map(get);
-    const maxVal = Math.max(...values, 1);
-    const xStep = CW / Math.max(data.length - 1, 1);
+    const chart = useMemo(() => {
+        const data = reports.slice(0, 12).reverse();
+        if (data.length < 2) {
+            return null;
+        }
 
-    const pts = data.map((r, i) => ({
-        x: PL + i * xStep,
-        y: PT + CH - (values[i] / maxVal) * CH,
-        v: values[i],
-        m: MONTH_ABBR[r.month - 1],
-        yr: r.year,
-    }));
-    const line = pts.map((p) => `${p.x},${p.y}`).join(" ");
+        const selectedMetric = METRICS[metricIndex] ?? METRICS[0];
+        const points: TrendPoint[] = data.map((report) => ({
+            id: `${report.year}-${String(report.month).padStart(2, "0")}`,
+            label: formatReportMonth(report.month, "short"),
+            year: report.year,
+            value: selectedMetric.getValue(report),
+        }));
+
+        const xScale = scalePoint<string>()
+            .domain(points.map((point) => point.id))
+            .range([MARGINS.left, WIDTH - MARGINS.right]);
+
+        const yScale = scaleLinear()
+            .domain([0, Math.max(max(points, (point) => point.value) ?? 0, 1)])
+            .nice(4)
+            .range([HEIGHT - MARGINS.bottom, MARGINS.top]);
+
+        const linePath =
+            line<TrendPoint>()
+                .x((point) => xScale(point.id) ?? MARGINS.left)
+                .y((point) => yScale(point.value))(points) ?? "";
+
+        const areaPath =
+            area<TrendPoint>()
+                .x((point) => xScale(point.id) ?? MARGINS.left)
+                .y0(yScale(0))
+                .y1((point) => yScale(point.value))(points) ?? "";
+
+        return {
+            points,
+            ticks: yScale.ticks(5),
+            xScale,
+            yScale,
+            linePath,
+            areaPath,
+        };
+    }, [metricIndex, reports]);
+
+    if (!chart) return null;
 
     return (
         <Card className="mb-4">
@@ -77,12 +115,12 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
                 <strong>Trends</strong>
                 <Form.Select
                     size="sm"
-                    value={metric}
-                    onChange={(e) => setMetric(e.target.value)}
+                    value={String(metricIndex)}
+                    onChange={(e) => setMetricIndex(Number(e.target.value))}
                     style={{ width: "auto" }}
                 >
-                    {METRICS.map(({ value, label }) => (
-                        <option key={value} value={value}>
+                    {METRICS.map(({ label }, index) => (
+                        <option key={label} value={index}>
                             {label}
                         </option>
                     ))}
@@ -90,70 +128,76 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
             </Card.Header>
             <Card.Body className="p-3">
                 <svg
-                    viewBox={`0 0 ${W} ${H}`}
+                    viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
                     width="100%"
                     aria-label="Trend chart"
                 >
-                    {[0, 0.25, 0.5, 0.75, 1].map((f) => {
-                        const y = PT + CH * (1 - f);
+                    {chart.ticks.map((tick) => {
+                        const y = chart.yScale(tick);
                         return (
-                            <g key={f}>
+                            <g key={tick}>
                                 <line
-                                    x1={PL}
+                                    x1={MARGINS.left}
                                     y1={y}
-                                    x2={PL + CW}
+                                    x2={WIDTH - MARGINS.right}
                                     y2={y}
-                                    stroke="#dee2e6"
+                                    stroke={GRID_COLOR}
                                     strokeWidth="1"
                                 />
                                 <text
-                                    x={PL - 6}
+                                    x={MARGINS.left - 6}
                                     y={y + 4}
                                     textAnchor="end"
                                     fontSize="11"
-                                    fill="#6c757d"
+                                    fill={LABEL_COLOR}
                                 >
-                                    {Math.round(maxVal * f)}
+                                    {tick}
                                 </text>
                             </g>
                         );
                     })}
-                    <polyline
-                        points={line}
+
+                    <path
+                        d={chart.areaPath}
+                        fill={LINE_COLOR}
+                        fillOpacity="0.08"
+                    />
+                    <path
+                        d={chart.linePath}
                         fill="none"
-                        stroke="#0d6efd"
+                        stroke={LINE_COLOR}
                         strokeWidth="2.5"
                         strokeLinejoin="round"
                         strokeLinecap="round"
                     />
-                    <polyline
-                        points={`${pts[0].x},${PT + CH} ${line} ${pts[pts.length - 1].x},${PT + CH}`}
-                        fill="#0d6efd"
-                        fillOpacity="0.08"
-                        stroke="none"
-                    />
-                    {pts.map((p, i) => (
-                        <g key={i}>
-                            <title>{`${p.m} ${p.yr}: ${p.v}`}</title>
-                            <circle
-                                cx={p.x}
-                                cy={p.y}
-                                r={5}
-                                fill="#0d6efd"
-                                stroke="white"
-                                strokeWidth="2"
-                            />
-                            <text
-                                x={p.x}
-                                y={H - 6}
-                                textAnchor="middle"
-                                fontSize="10"
-                                fill="#6c757d"
-                            >
-                                {p.m}
-                            </text>
-                        </g>
-                    ))}
+
+                    {chart.points.map((point) => {
+                        const x = chart.xScale(point.id) ?? MARGINS.left;
+                        const y = chart.yScale(point.value);
+
+                        return (
+                            <g key={point.id}>
+                                <title>{`${point.label} ${point.year}: ${point.value}`}</title>
+                                <circle
+                                    cx={x}
+                                    cy={y}
+                                    r={5}
+                                    fill={LINE_COLOR}
+                                    stroke="white"
+                                    strokeWidth="2"
+                                />
+                                <text
+                                    x={x}
+                                    y={HEIGHT - 6}
+                                    textAnchor="middle"
+                                    fontSize="10"
+                                    fill={LABEL_COLOR}
+                                >
+                                    {point.label}
+                                </text>
+                            </g>
+                        );
+                    })}
                 </svg>
             </Card.Body>
         </Card>
