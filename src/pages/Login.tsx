@@ -22,7 +22,7 @@ const Login = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const auth = useAuth();
-    const user = auth.kind === "authenticated" ? auth.user : null;
+    const user = auth.authenticated ? auth.user : null;
     const { loading, checkAuth } = auth;
     const { updateRuns } = useRuns();
 

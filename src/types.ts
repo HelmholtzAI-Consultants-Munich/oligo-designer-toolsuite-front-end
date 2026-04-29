@@ -9,15 +9,14 @@ export interface User {
 }
 
 export interface TermsAcceptanceStatus {
-    scope: "session";
     current_terms_version: string;
     accepted_terms_version?: string | null;
     terms_accepted_at?: string | null;
 }
 
 export type AuthState =
-    | { kind: "authenticated"; user: User }
-    | { kind: "unauthenticated"; legal: TermsAcceptanceStatus | null };
+    | { authenticated: true; user: User }
+    | { authenticated: false; legal: TermsAcceptanceStatus | null };
 
 export interface LegalDocument {
     document: string;

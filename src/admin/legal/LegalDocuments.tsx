@@ -34,6 +34,12 @@ const LegalDocuments: React.FC = () => {
     const [success, setSuccess] = useState<string | null>(null);
 
     const detail = documents.find((d) => d.document === activeDocument) ?? null;
+    const selectedVersion =
+        detail?.history.find(
+            (version) => version.id === selectedHistoryVersionId
+        ) ??
+        detail?.published ??
+        null;
 
     const getErrorMessage = (err: unknown, fallback: string) => {
         if (axios.isAxiosError(err)) {
@@ -277,15 +283,17 @@ const LegalDocuments: React.FC = () => {
                     <Col lg={4}>
                         <Card className="mb-4">
                             <Card.Body>
-                                <Card.Title>Current State</Card.Title>
+                                <Card.Title>Selected Version</Card.Title>
                                 <div className="mb-3">
                                     <div className="text-muted small">
-                                        Published
+                                        Version
                                     </div>
-                                    <div>{detail.published.version}</div>
+                                    <div>
+                                        {selectedVersion?.version ?? "N/A"}
+                                    </div>
                                     <div className="text-muted small">
                                         {formatAdminDateTime(
-                                            detail.published.published_at
+                                            selectedVersion?.published_at
                                         )}
                                     </div>
                                 </div>

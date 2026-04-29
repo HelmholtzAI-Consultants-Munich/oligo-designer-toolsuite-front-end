@@ -37,7 +37,7 @@ function RootLayout() {
 
     return (
         <>
-            {auth.kind === "authenticated" && <FeedbackButton floating />}
+            {auth.authenticated && <FeedbackButton floating />}
             <Outlet />
             <ScrollRestoration />
             <SiteFooter />

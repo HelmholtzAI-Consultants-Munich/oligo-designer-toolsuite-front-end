@@ -97,7 +97,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
         mediaQuery.addEventListener("change", handleChange);
 
         if (!loading) {
-            if (auth.kind !== "authenticated") {
+            if (!auth.authenticated) {
                 navigate(
                     `/login?redirect=${encodeURIComponent(location.pathname)}`
                 );
@@ -124,7 +124,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
         );
     }
 
-    if (auth.kind !== "authenticated" || auth.user.role !== "admin") {
+    if (!auth.authenticated || auth.user.role !== "admin") {
         return null;
     }
 

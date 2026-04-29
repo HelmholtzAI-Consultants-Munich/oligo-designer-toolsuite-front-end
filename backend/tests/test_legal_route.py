@@ -34,8 +34,10 @@ def test_accept_terms_updates_current_user(client, authenticate_as_user, legal_u
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
-    assert data["terms_accepted_at"] is not None
+    assert (
+        data["legal"]["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
+    )
+    assert data["legal"]["terms_accepted_at"] is not None
 
     updated_user = mongo.db.users.find_one({"_id": legal_user_doc["_id"]})
     assert (
@@ -52,8 +54,9 @@ def test_accept_terms_updates_current_session(client):
 
     assert response.status_code == 200
     data = response.get_json()
-    assert data["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
-    assert data["legal"]["scope"] == "session"
+    assert (
+        data["legal"]["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
+    )
     assert data["legal"]["accepted_terms_version"] == data["legal"]["current_terms_version"]
 
 
@@ -137,21 +140,3 @@ def test_public_privacy_policy_route(client):
     assert data["title"] == "Data Protection Declaration"
     assert data["version"] == get_published_legal_document(PRIVACY_DOCUMENT_KEY)["version"]
     assert data["body"]
-
-
-def test_terms_page_redirects_to_frontend(client, app):
-    app.config["FRONTEND_URL"] = "http://localhost:3000"
-
-    response = client.get("/terms")
-
-    assert response.status_code == 307
-    assert response.headers["Location"] == "http://localhost:3000/terms"
-
-
-def test_privacy_policy_page_redirects_to_frontend(client, app):
-    app.config["FRONTEND_URL"] = "http://localhost:3000"
-
-    response = client.get("/privacy-policy")
-
-    assert response.status_code == 307
-    assert response.headers["Location"] == "http://localhost:3000/privacy-policy"

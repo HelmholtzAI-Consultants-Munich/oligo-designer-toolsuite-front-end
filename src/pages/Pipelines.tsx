@@ -13,7 +13,7 @@ import { ArrowRight } from "react-bootstrap-icons";
 
 const Pipelines: React.FC = () => {
     const auth = useAuth();
-    const user = auth.kind === "authenticated" ? auth.user : null;
+    const user = auth.authenticated ? auth.user : null;
     const { loading } = auth;
     const navigate = useNavigate();
 

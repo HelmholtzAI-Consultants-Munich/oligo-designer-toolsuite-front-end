@@ -146,7 +146,6 @@ def _build_legal_status(user_id: str | None = None, session_id: str | None = Non
         accepted_at = latest_acceptance.get("timestamp") if latest_acceptance else None
 
     return {
-        "scope": "user" if user_id else "session",
         "current_terms_version": terms_doc["version"],
         "accepted_terms_version": accepted_terms_version,
         "terms_accepted_at": accepted_at.isoformat() if accepted_at else None,
@@ -307,7 +306,6 @@ def check_auth():
                     "terms_accepted_at": legal_status["terms_accepted_at"],
                     "current_terms_version": legal_status["current_terms_version"],
                 },
-                "legal": legal_status,
             }
         )
     return jsonify(
@@ -337,11 +335,8 @@ def accept_terms():
             },
         )
 
-    timestamp = acceptance["timestamp"]
     return jsonify(
         {
-            "accepted_terms_version": acceptance["terms_version"],
-            "terms_accepted_at": timestamp.isoformat() if timestamp else None,
             "legal": _build_legal_status(user_id=user_id, session_id=session_id),
         }
     ), HTTPStatus.OK

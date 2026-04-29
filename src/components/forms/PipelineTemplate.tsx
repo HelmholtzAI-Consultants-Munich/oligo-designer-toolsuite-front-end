@@ -21,7 +21,7 @@ import {
 } from "./pipelineConfigIO";
 import { useRuns } from "../../hooks/useRuns";
 import { useAuth } from "../../hooks/useAuth";
-import { Alert, Button, Form as BootstrapForm } from "react-bootstrap";
+import { Button, Form as BootstrapForm } from "react-bootstrap";
 import { Link } from "react-router";
 import type {
     FastaForm,
@@ -111,15 +111,12 @@ const PipelineTemplate: React.FC<Props> = ({
     const { acceptTerms } = auth;
 
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
-    const [termsError, setTermsError] = useState<string | null>(null);
     const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
 
-    const requiresTermsAcceptance =
-        auth.kind === "authenticated"
-            ? auth.user.accepted_terms_version !==
-              auth.user.current_terms_version
-            : auth.legal?.accepted_terms_version !==
-              auth.legal?.current_terms_version;
+    const requiresTermsAcceptance = auth.authenticated
+        ? auth.user.accepted_terms_version !== auth.user.current_terms_version
+        : auth.legal?.accepted_terms_version !==
+          auth.legal?.current_terms_version;
 
     const widgets = {
         fileSelection: GenomicInput,
@@ -137,19 +134,24 @@ const PipelineTemplate: React.FC<Props> = ({
     const handleRunPipeline = async () => {
         if (requiresTermsAcceptance) {
             if (!hasAcceptedTerms) {
-                setTermsError(
-                    "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing."
-                );
+                showToast({
+                    title: "Terms acceptance required",
+                    content:
+                        "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing.",
+                    type: "danger",
+                });
                 return;
             }
             setIsAcceptingTerms(true);
-            setTermsError(null);
             const accepted = await acceptTerms();
             setIsAcceptingTerms(false);
             if (!accepted) {
-                setTermsError(
-                    "We couldn't record your acceptance. Please try again."
-                );
+                showToast({
+                    title: "Terms acceptance failed",
+                    content:
+                        "We couldn't record your acceptance. Please try again.",
+                    type: "danger",
+                });
                 return;
             }
             setHasAcceptedTerms(false);
@@ -271,11 +273,6 @@ const PipelineTemplate: React.FC<Props> = ({
                             the <Link to="/privacy-policy">Privacy Policy</Link>
                             .
                         </p>
-                        {termsError && (
-                            <Alert variant="danger" className="mb-3">
-                                {termsError}
-                            </Alert>
-                        )}
                         <BootstrapForm.Check
                             id={`${pipeline}-terms-acceptance`}
                             type="checkbox"

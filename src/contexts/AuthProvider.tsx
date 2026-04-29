@@ -11,7 +11,7 @@ export default function AuthProvider({
     children: React.ReactNode;
 }) {
     const [authState, setAuthState] = useState<AuthState>({
-        kind: "unauthenticated",
+        authenticated: false,
         legal: null,
     });
     const [loading, setLoading] = useState(true);
@@ -26,15 +26,15 @@ export default function AuthProvider({
             const data = await response.json();
             setAuthState(
                 data.authenticated
-                    ? { kind: "authenticated", user: data.user as User }
+                    ? { authenticated: true, user: data.user as User }
                     : {
-                          kind: "unauthenticated",
+                          authenticated: false,
                           legal: (data.legal as TermsAcceptanceStatus) ?? null,
                       }
             );
         } catch (error) {
             console.error("Auth check failed:", error);
-            setAuthState({ kind: "unauthenticated", legal: null });
+            setAuthState({ authenticated: false, legal: null });
         } finally {
             setLoading(false);
         }
@@ -60,7 +60,7 @@ export default function AuthProvider({
     };
 
     const logout = () => {
-        setAuthState({ kind: "unauthenticated", legal: null });
+        setAuthState({ authenticated: false, legal: null });
         updateRuns();
     };
 
