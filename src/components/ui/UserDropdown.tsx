@@ -19,7 +19,7 @@ const UserDisplay = forwardRef(
         ref: Ref<HTMLButtonElement>
     ) => {
         const auth = useAuth();
-        const user = auth.authenticated ? auth.user : null;
+        const user = auth.user;
 
         return (
             <Button
@@ -50,7 +50,7 @@ export default function UserDropdown({
     noUserCallback: () => void;
 }) {
     const auth = useAuth();
-    const user = auth.authenticated ? auth.user : null;
+    const user = auth.user;
     const { logoutWithConfirmation } = auth;
     const [copied, setCopied] = useState(false);
 

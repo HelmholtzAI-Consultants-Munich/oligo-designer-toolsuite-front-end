@@ -13,7 +13,6 @@ import PrivacyPolicy from "./pages/privacy-policy";
 import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
 import FeedbackButton from "./components/feedback/FeedbackButton";
-import SiteFooter from "./components/ui/SiteFooter";
 import NotFound from "./pages/404";
 import { useAuth } from "./hooks/useAuth";
 import {
@@ -40,7 +39,6 @@ function RootLayout() {
             {auth.authenticated && <FeedbackButton floating />}
             <Outlet />
             <ScrollRestoration />
-            <SiteFooter />
         </>
     );
 }

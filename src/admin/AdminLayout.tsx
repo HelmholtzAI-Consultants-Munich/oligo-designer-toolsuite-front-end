@@ -101,7 +101,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                 navigate(
                     `/login?redirect=${encodeURIComponent(location.pathname)}`
                 );
-            } else if (auth.user.role !== "admin") {
+            } else if (auth.user?.role !== "admin") {
                 navigate("/");
             }
         }
@@ -124,7 +124,7 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
         );
     }
 
-    if (!auth.authenticated || auth.user.role !== "admin") {
+    if (!auth.authenticated || auth.user?.role !== "admin") {
         return null;
     }
 

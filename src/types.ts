@@ -3,9 +3,6 @@ export interface User {
     username?: string;
     role?: "user" | "admin";
     helmholtz_sub?: string;
-    accepted_terms_version: string | null;
-    terms_accepted_at: string | null;
-    current_terms_version: string;
 }
 
 export interface TermsAcceptanceStatus {
@@ -14,9 +11,11 @@ export interface TermsAcceptanceStatus {
     terms_accepted_at?: string | null;
 }
 
-export type AuthState =
-    | { authenticated: true; user: User }
-    | { authenticated: false; legal: TermsAcceptanceStatus | null };
+export interface AuthState {
+    authenticated: boolean;
+    user: User | null;
+    legal: TermsAcceptanceStatus | null;
+}
 
 export interface LegalDocument {
     document: string;

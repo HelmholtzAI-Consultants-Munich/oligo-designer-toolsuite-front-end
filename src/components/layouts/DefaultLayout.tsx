@@ -9,7 +9,7 @@ import Footer from "../ui/Footer";
 
 export default function DefaultLayout() {
     const auth = useAuth();
-    const user = auth.authenticated ? auth.user : null;
+    const user = auth.user;
     const { loading } = useRuns();
 
     return (

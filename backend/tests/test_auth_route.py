@@ -97,10 +97,9 @@ def test_check_auth_logged_in(client, authenticate_as_user, dummy_user):
     assert data["user"]["username"] == dummy_user["username"]
     assert data["user"]["role"] == dummy_user["role"]
     assert (
-        data["user"]["current_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
+        data["legal"]["current_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
     )
-    assert data["user"]["accepted_terms_version"] is None
-    assert "legal" not in data
+    assert data["legal"]["accepted_terms_version"] is None
 
 
 def test_logout(client, monkeypatch, authenticate_as_user):

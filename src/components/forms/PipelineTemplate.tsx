@@ -113,10 +113,9 @@ const PipelineTemplate: React.FC<Props> = ({
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
 
-    const requiresTermsAcceptance = auth.authenticated
-        ? auth.user.accepted_terms_version !== auth.user.current_terms_version
-        : auth.legal?.accepted_terms_version !==
-          auth.legal?.current_terms_version;
+    const requiresTermsAcceptance =
+        auth.legal?.accepted_terms_version !==
+        auth.legal?.current_terms_version;
 
     const widgets = {
         fileSelection: GenomicInput,

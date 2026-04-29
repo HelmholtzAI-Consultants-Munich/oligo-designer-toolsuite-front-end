@@ -12,6 +12,7 @@ export default function AuthProvider({
 }) {
     const [authState, setAuthState] = useState<AuthState>({
         authenticated: false,
+        user: null,
         legal: null,
     });
     const [loading, setLoading] = useState(true);
@@ -24,17 +25,14 @@ export default function AuthProvider({
                 credentials: "include",
             });
             const data = await response.json();
-            setAuthState(
-                data.authenticated
-                    ? { authenticated: true, user: data.user as User }
-                    : {
-                          authenticated: false,
-                          legal: (data.legal as TermsAcceptanceStatus) ?? null,
-                      }
-            );
+            setAuthState({
+                authenticated: data.authenticated,
+                user: data.authenticated ? (data.user as User) : null,
+                legal: (data.legal as TermsAcceptanceStatus) ?? null,
+            });
         } catch (error) {
             console.error("Auth check failed:", error);
-            setAuthState({ authenticated: false, legal: null });
+            setAuthState({ authenticated: false, user: null, legal: null });
         } finally {
             setLoading(false);
         }
@@ -60,7 +58,7 @@ export default function AuthProvider({
     };
 
     const logout = () => {
-        setAuthState({ authenticated: false, legal: null });
+        setAuthState({ authenticated: false, user: null, legal: null });
         updateRuns();
     };
 

@@ -302,10 +302,8 @@ def check_auth():
                     "username": username,
                     "role": role,
                     "helmholtz_sub": helmholtz_sub,
-                    "accepted_terms_version": legal_status["accepted_terms_version"],
-                    "terms_accepted_at": legal_status["terms_accepted_at"],
-                    "current_terms_version": legal_status["current_terms_version"],
                 },
+                "legal": legal_status,
             }
         )
     return jsonify(
