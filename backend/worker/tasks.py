@@ -3,14 +3,18 @@ from datetime import timedelta
 from typing import Any
 
 from celery import Celery
-from celery.exceptions import SoftTimeLimitExceeded
 
 from backend.config import CeleryConfig
-from backend.constants import GENOMIC_DROPDOWN_CACHE_KEY, PIPELINE_NAMES
+from backend.constants import (
+    GENOMIC_DROPDOWN_CACHE_KEY,
+    PIPELINE_DURATION_STATS_COLLECTION,
+    PIPELINE_NAMES,
+    PIPELINE_TIMEOUTS_CACHE_KEY,
+)
 from backend.genomic_databases import prefetch_dropdown_options
 from backend.utilities.typed_values import utc_now
 from backend.worker.celery import app
-from backend.worker.helpers import TIMEOUT_ERROR_MESSAGE, compute_percentile, get_worker_db
+from backend.worker.helpers import compute_percentile, get_worker_db
 from backend.worker.pipeline_runner import PipelineRunner
 
 
@@ -19,17 +23,7 @@ def run_pipeline(
     self: Celery.Task, pipeline_name: str, form_data: Any, upload_path: str, output_path: str
 ) -> bool:
     runner = PipelineRunner(pipeline_name, task=self)
-    try:
-        return runner.run(form_data, upload_path, output_path)
-    except SoftTimeLimitExceeded:
-        # Write the error message directly from the worker — this is more reliable than
-        # inferring the failure reason server-side via exception deserialization.
-        with get_worker_db() as db:
-            db.runs.update_one(
-                {"task_id": self.request.id},
-                {"$set": {"error_message": TIMEOUT_ERROR_MESSAGE}},
-            )
-        raise
+    return runner.run(form_data, upload_path, output_path)
 
 
 @app.task(bind=True)
@@ -66,11 +60,10 @@ def refresh_pipeline_duration_stats(self: Celery.Task):
     with get_worker_db() as db:
         for pipeline in PIPELINE_NAMES:
             docs = list(
-                db.runs.find(
+                db[PIPELINE_DURATION_STATS_COLLECTION].find(
                     {
                         "pipeline": pipeline,
                         "status": "success",
-                        "started_at": {"$exists": True},
                         "finished_at": {"$exists": True, "$gte": window},
                         "gene_count": {"$exists": True, "$gt": 0},
                     }
@@ -95,7 +88,7 @@ def refresh_pipeline_duration_stats(self: Celery.Task):
             }
 
         db.cache.update_one(
-            {"_id": "pipeline_timeouts"},
+            {"_id": PIPELINE_TIMEOUTS_CACHE_KEY},
             {"$set": {"data": duration_stats, "updated_at": utc_now()}},
             upsert=True,
         )

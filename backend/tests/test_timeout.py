@@ -4,9 +4,9 @@ Covers:
 - extract_gene_count (utilities/pipeline.py)
 - resolve_timeout (utilities/pipeline.py)
 - start_pipeline: ordering guarantee and enqueue failure rollback
-- get_run_status: finished_at written on transition, error surfaced
-- run_pipeline: error_message written on soft timeout (tasks.py)
-- on_task_prerun: started_at written for pipeline tasks only (signals.py)
+- get_run_status: shared status refresh path
+- run_pipeline: task outcome propagates without self-updating the DB
+- worker signals: started_at / finished_at / timeout tracking
 - refresh_pipeline_duration_stats: per-pipeline aggregation (tasks.py)
 - enqueue_pipeline: soft_time_limit and time_limit passed to Celery
 - call_subprocess: subprocess failures propagate (pipeline_runner.py)
@@ -21,13 +21,13 @@ import pytest
 from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 
 from backend.config import CeleryConfig
+from backend.constants import PIPELINE_TIMEOUTS_CACHE_KEY
 from backend.extensions import mongo
 from backend.routes.pipelines import enqueue_pipeline
 from backend.tests.conftest import create_test_run
-from backend.utilities.pipeline import extract_gene_count, resolve_timeout
-from backend.worker.helpers import TIMEOUT_ERROR_MESSAGE
+from backend.utilities.pipeline import extract_gene_count, resolve_pipeline_task_status, resolve_timeout
 from backend.worker.pipeline_runner import PipelineRunner
-from backend.worker.signals import on_task_prerun
+from backend.worker.signals import on_task_postrun, on_task_prerun
 from backend.worker.tasks import refresh_pipeline_duration_stats, run_pipeline
 
 # ---------------------------------------------------------------------------
@@ -35,7 +35,7 @@ from backend.worker.tasks import refresh_pipeline_duration_stats, run_pipeline
 # ---------------------------------------------------------------------------
 
 _MERFISH_CACHE_DOC = {
-    "_id": "pipeline_timeouts",
+    "_id": PIPELINE_TIMEOUTS_CACHE_KEY,
     "data": {"merfish": {"seconds_per_gene": 2.0, "sample_count": 10}},
 }
 
@@ -43,7 +43,7 @@ _MERFISH_CACHE_DOC = {
 @pytest.fixture
 def merfish_heuristic_cache(client):
     """Seed MongoDB cache with a merfish heuristic percentile rate of 2.0 s/gene."""
-    mongo.db.cache.replace_one({"_id": "pipeline_timeouts"}, _MERFISH_CACHE_DOC, upsert=True)
+    mongo.db.cache.replace_one({"_id": PIPELINE_TIMEOUTS_CACHE_KEY}, _MERFISH_CACHE_DOC, upsert=True)
 
 
 def make_async_result(state: str, *, successful: bool, return_value=None) -> MagicMock:
@@ -197,7 +197,7 @@ def test_resolve_timeout_heuristic_auth_doubles_limit(client, merfish_heuristic_
 
 
 def test_resolve_timeout_heuristic_no_cache_falls_back(client):
-    mongo.db.cache.delete_many({"_id": "pipeline_timeouts"})
+    mongo.db.cache.delete_many({"_id": PIPELINE_TIMEOUTS_CACHE_KEY})
     with patch.multiple(CeleryConfig, pipeline_timeout_mode="heuristic", pipeline_timeout_anon=3600):
         result = resolve_timeout("merfish", is_authenticated=False, gene_count=100)
     assert result == 3600
@@ -250,7 +250,16 @@ def test_task_id_matches_between_db_and_enqueue(client, run_id, session_user):
         return result
 
     def tracking_enqueue(
-        pipeline_name, form_data, upload_path, output_path, is_authenticated, task_id, gene_count=None
+        pipeline_name,
+        form_data,
+        upload_path,
+        output_path,
+        is_authenticated,
+        task_id,
+        run_id,
+        user_id,
+        session_id,
+        gene_count=None,
     ):
         enqueued_task_ids.append(task_id)
         return MagicMock(id=task_id)
@@ -290,11 +299,11 @@ def test_enqueue_failure_marks_run_as_failed(client, run_id, session_user):
 
 
 # ---------------------------------------------------------------------------
-# get_run_status: finished_at and error
+# get_run_status: shared refresh path
 # ---------------------------------------------------------------------------
 
 
-def test_get_run_status_writes_finished_at_on_success(client, run_id, dummy_user):
+def test_get_run_status_returns_success_status(client, run_id, dummy_user):
     create_test_run(run_id, user_id=dummy_user.id, status="started", task_id="test-task-id")
 
     with patch(
@@ -305,20 +314,20 @@ def test_get_run_status_writes_finished_at_on_success(client, run_id, dummy_user
 
     assert response.status_code == 200
     assert response.get_json()["status"] == "success"
-    assert "finished_at" in mongo.db.runs.find_one({"_id": run_id})
+    assert mongo.db.runs.find_one({"_id": run_id})["status"] == "success"
 
 
-def test_get_run_status_writes_finished_at_on_failure(client, run_id, dummy_user):
+def test_get_run_status_returns_timeout_status(client, run_id, dummy_user):
     create_test_run(run_id, user_id=dummy_user.id, status="started", task_id="test-task-id")
 
     mock_result = make_async_result("FAILURE", successful=False)
-    mock_result.info = Exception("pipeline error")
+    mock_result.info = SoftTimeLimitExceeded()
     with patch("backend.extensions.celery_app.AsyncResult", return_value=mock_result):
         response = client.get(f"/api/runs/{run_id}/status")
 
     assert response.status_code == 200
-    assert response.get_json()["status"] == "failure"
-    assert "finished_at" in mongo.db.runs.find_one({"_id": run_id})
+    assert response.get_json()["status"] == "timeout"
+    assert mongo.db.runs.find_one({"_id": run_id})["status"] == "timeout"
 
 
 def test_get_run_status_no_update_if_state_unchanged(client, run_id, dummy_user):
@@ -328,57 +337,18 @@ def test_get_run_status_no_update_if_state_unchanged(client, run_id, dummy_user)
     assert response.get_json()["status"] == "success"
 
 
-def test_get_run_status_includes_error_when_already_failure(client, run_id, dummy_user):
-    """When status is already 'failure' in DB, error must be in the status response."""
-    create_test_run(
-        run_id,
-        user_id=dummy_user.id,
-        status="failure",
-        task_id="test-task-id",
-        error_message=TIMEOUT_ERROR_MESSAGE,
-    )
-
-    body = client.get(f"/api/runs/{run_id}/status").get_json()
-
-    assert body["status"] == "failure"
-    assert body.get("error") == TIMEOUT_ERROR_MESSAGE
-
-
-def test_get_run_status_includes_error_on_first_failure_transition(client, run_id, dummy_user):
-    """On the first transition to failure, the worker error must be surfaced."""
-    create_test_run(run_id, user_id=dummy_user.id, status="started", task_id="test-task-id")
-    mongo.db.runs.update_one({"_id": run_id}, {"$set": {"error_message": TIMEOUT_ERROR_MESSAGE}})
-
-    mock_result = make_async_result("FAILURE", successful=False)
-    mock_result.info = Exception("pipeline error")
-    with patch("backend.extensions.celery_app.AsyncResult", return_value=mock_result):
-        body = client.get(f"/api/runs/{run_id}/status").get_json()
-
-    assert body["status"] == "failure"
-    assert body.get("error") == TIMEOUT_ERROR_MESSAGE
-
-
 # ---------------------------------------------------------------------------
-# run_pipeline task: error_message on soft timeout
+# run_pipeline task: task outcome propagation
 # ---------------------------------------------------------------------------
 
 
-def test_run_pipeline_writes_error_message_on_soft_time_limit():
-    # push_request is Celery's test helper for setting task.request.id
-    run_pipeline.push_request(id="test-task-id")
-    try:
-        with patch("backend.worker.tasks.PipelineRunner") as mock_runner_class:
-            mock_runner_class.return_value.run.side_effect = SoftTimeLimitExceeded()
-            with patch_worker_db("backend.worker.tasks") as (_, mock_db):
-                with pytest.raises(SoftTimeLimitExceeded):
-                    run_pipeline.run("merfish", {}, "/upload", "/output")
-    finally:
-        run_pipeline.pop_request()
-
-    mock_db.runs.update_one.assert_called_once_with(
-        {"task_id": "test-task-id"},
-        {"$set": {"error_message": TIMEOUT_ERROR_MESSAGE}},
-    )
+def test_run_pipeline_propagates_soft_time_limit_without_db_write():
+    with patch("backend.worker.tasks.PipelineRunner") as mock_runner_class:
+        mock_runner_class.return_value.run.side_effect = SoftTimeLimitExceeded()
+        with patch("backend.worker.tasks.get_worker_db") as mock_ctx:
+            with pytest.raises(SoftTimeLimitExceeded):
+                run_pipeline.run("merfish", {}, "/upload", "/output")
+            mock_ctx.assert_not_called()
 
 
 def test_run_pipeline_does_not_catch_time_limit_exceeded():
@@ -392,7 +362,7 @@ def test_run_pipeline_does_not_catch_time_limit_exceeded():
             mock_ctx.assert_not_called()
 
 
-def test_run_pipeline_does_not_write_error_message_on_success():
+def test_run_pipeline_does_not_write_to_db_on_success():
     with patch("backend.worker.tasks.PipelineRunner") as mock_runner_class:
         mock_runner_class.return_value.run.return_value = True
         with patch("backend.worker.tasks.get_worker_db") as mock_ctx:
@@ -401,7 +371,7 @@ def test_run_pipeline_does_not_write_error_message_on_success():
 
 
 # ---------------------------------------------------------------------------
-# on_task_prerun: started_at written for pipeline tasks only
+# worker signals: started_at / finished_at tracking
 # ---------------------------------------------------------------------------
 
 
@@ -415,6 +385,7 @@ def test_on_task_prerun_writes_started_at_for_run_pipeline():
     mock_db.runs.update_one.assert_called_once()
     filter_arg, update_arg = mock_db.runs.update_one.call_args[0]
     assert filter_arg == {"task_id": "test-task-id"}
+    assert update_arg["$set"]["status"] == "started"
     assert "started_at" in update_arg["$set"]
     assert isinstance(update_arg["$set"]["started_at"], datetime.datetime)
 
@@ -428,6 +399,63 @@ def test_on_task_prerun_ignores_other_tasks():
         mock_ctx.assert_not_called()
 
 
+def test_on_task_postrun_marks_timeout(client):
+    mock_task = MagicMock()
+    mock_task.name = "backend.worker.tasks.run_pipeline"
+    mock_task.request = MagicMock(
+        headers={"pipeline": "merfish", "run_id": "run-1", "gene_count": 100, "publish_time": 1.0},
+        prerun_time=2.0,
+        started_at=datetime.datetime.now(datetime.UTC),
+    )
+
+    with patch_worker_db("backend.worker.signals") as (_, mock_db):
+        with patch("backend.worker.signals.time.time", return_value=5.0):
+            on_task_postrun(task_id="task-1", task=mock_task, state="FAILURE", retval=SoftTimeLimitExceeded())
+
+    mock_db.runs.update_one.assert_called_once()
+    _, update_arg = mock_db.runs.update_one.call_args[0]
+    assert update_arg["$set"]["status"] == "timeout"
+    mock_db.__getitem__.return_value.update_one.assert_not_called()
+
+
+def test_on_task_postrun_persists_success_duration_stats(client):
+    mock_task = MagicMock()
+    mock_task.name = "backend.worker.tasks.run_pipeline"
+    started_at = datetime.datetime.now(datetime.UTC)
+    mock_task.request = MagicMock(
+        headers={
+            "pipeline": "merfish",
+            "run_id": "run-1",
+            "user_id": "user-1",
+            "session_id": "session-1",
+            "gene_count": 100,
+            "publish_time": 1.0,
+        },
+        prerun_time=2.0,
+        started_at=started_at,
+    )
+
+    with patch_worker_db("backend.worker.signals") as (_, mock_db):
+        stats_collection = MagicMock()
+        mock_db.__getitem__.return_value = stats_collection
+        with patch("backend.worker.signals.time.time", return_value=5.0):
+            on_task_postrun(task_id="task-1", task=mock_task, state="SUCCESS", retval=True)
+
+    _, update_arg = mock_db.runs.update_one.call_args[0]
+    assert update_arg["$set"]["status"] == "success"
+    stats_collection.update_one.assert_called_once()
+    _, stats_update_arg = stats_collection.update_one.call_args[0]
+    assert stats_update_arg["$set"]["pipeline"] == "merfish"
+    assert stats_update_arg["$set"]["gene_count"] == 100
+    assert stats_update_arg["$set"]["execution_seconds"] == 3.0
+    assert stats_update_arg["$set"]["queue_wait_seconds"] == 1.0
+    assert stats_update_arg["$set"]["total_seconds"] == 4.0
+
+
+def test_resolve_pipeline_task_status_maps_timeout():
+    assert resolve_pipeline_task_status("FAILURE", SoftTimeLimitExceeded()) == "timeout"
+
+
 # ---------------------------------------------------------------------------
 # refresh_pipeline_duration_stats: per-pipeline aggregation
 # ---------------------------------------------------------------------------
@@ -439,7 +467,9 @@ def test_refresh_pipeline_duration_stats_computes_seconds_per_gene():
     runs_data = make_run_docs("merfish", count=10, duration_seconds=200, gene_count=100)
 
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
-        mock_db.runs.find.side_effect = pipeline_find(runs_data)
+        stats_collection = MagicMock()
+        stats_collection.find.side_effect = pipeline_find(runs_data)
+        mock_db.__getitem__.return_value = stats_collection
         refresh_pipeline_duration_stats.run()
 
     _, update_arg = mock_db.cache.update_one.call_args[0]
@@ -453,7 +483,9 @@ def test_refresh_pipeline_duration_stats_skips_pipeline_with_fewer_than_5_runs()
     runs_data = make_run_docs("merfish", count=4, duration_seconds=3600, gene_count=100)
 
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
-        mock_db.runs.find.side_effect = pipeline_find(runs_data)
+        stats_collection = MagicMock()
+        stats_collection.find.side_effect = pipeline_find(runs_data)
+        mock_db.__getitem__.return_value = stats_collection
         refresh_pipeline_duration_stats.run()
 
     _, update_arg = mock_db.cache.update_one.call_args[0]
@@ -463,7 +495,9 @@ def test_refresh_pipeline_duration_stats_skips_pipeline_with_fewer_than_5_runs()
 def test_refresh_pipeline_duration_stats_always_writes_cache_even_when_empty():
     """Cache must be written even with no data so stale keys are cleared."""
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
-        mock_db.runs.find.side_effect = pipeline_find([])
+        stats_collection = MagicMock()
+        stats_collection.find.side_effect = pipeline_find([])
+        mock_db.__getitem__.return_value = stats_collection
         refresh_pipeline_duration_stats.run()
 
     mock_db.cache.update_one.assert_called_once()
@@ -495,12 +529,17 @@ def test_enqueue_pipeline_passes_soft_time_limit_to_send_task(app):
                     output_path=Path("/tmp/output"),
                     is_authenticated=False,
                     task_id="test-task-id",
+                    run_id="run-id",
+                    user_id="user-id",
+                    session_id="session-id",
                     gene_count=None,
                 )
 
     _, kwargs = mock_celery.send_task.call_args
     assert kwargs["soft_time_limit"] == 3600
     assert kwargs["time_limit"] == 3900  # soft + hard margin
+    assert kwargs["headers"]["run_id"] == "run-id"
+    assert kwargs["headers"]["pipeline"] == "merfish"
 
 
 def test_call_subprocess_propagates_soft_time_limit(pipeline_runner):

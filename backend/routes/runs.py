@@ -25,8 +25,7 @@ from flask_login import current_user
 
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_run_or_404, get_task_id, get_user_context
-from backend.utilities.formatting import format_run_status_response
-from backend.utilities.pipeline import delete_pipeline_run_files_and_db
+from backend.utilities.pipeline import delete_pipeline_run_files_and_db, resolve_pipeline_task_status
 from backend.utilities.typed_values import (
     deserialize_path,
     path_for_display,
@@ -38,7 +37,7 @@ from backend.utilities.typed_values import (
 runs_bp = Blueprint("runs", __name__)
 
 
-TERMINAL_RUN_STATES = {"success", "failure"}
+TERMINAL_RUN_STATES = {"success", "failure", "timeout"}
 
 
 def resolve_run_state(run: dict[Any, Any]) -> str:
@@ -52,12 +51,10 @@ def resolve_run_state(run: dict[Any, Any]) -> str:
         return state
 
     result_promise = celery_app.AsyncResult(task_id)
-    if result_promise.successful():
-        ok = result_promise.get()
-        # overwrite "success" state if pipeline failed but output was delivered successfully
-        # -> literally "task failed successfully"
-        return result_promise.state.lower() if ok else "failure"
-    return result_promise.state.lower()
+    task_result = (
+        result_promise.get() if result_promise.successful() else getattr(result_promise, "info", None)
+    )
+    return resolve_pipeline_task_status(result_promise.state, task_result)
 
 
 def refresh_run_status(run: dict[Any, Any]) -> dict[Any, Any]:
@@ -305,31 +302,4 @@ def get_run_status(run_id: ObjectId):
     :rtype: flask.Response
     """
     run = refresh_run_status(get_run_or_404(run_id))
-    state = run["status"]
-
-    if state in {"success", "failure"}:
-        if not run.get("finished_at"):
-            update_run_in_DB(run_id, {"finished_at": utc_now()})
-        return jsonify(format_run_status_response(state, run))
-
-    # Check for potential state changes
-    task_id = get_task_id(run)
-    result_promise = celery_app.AsyncResult(task_id)
-
-    if result_promise.successful():
-        ok = result_promise.get()
-        # overwrite "success" state if pipeline failed but output was delivered successfully
-        # -> literally "task failed successfully"
-        state = result_promise.state.lower() if ok else "failure"
-    else:
-        state = result_promise.state.lower()
-
-    if run["status"] != state:
-        update_run_in_DB(run_id, {"status": state, "finished_at": utc_now()})
-
-    response_run = None
-    if state == "failure":
-        # Re-fetch run to pick up error_message written by the worker on timeout
-        response_run = mongo.db.runs.find_one({"_id": run_id})
-
-    return jsonify(format_run_status_response(state, response_run)), HTTPStatus.OK
+    return jsonify({"status": run["status"]}), HTTPStatus.OK

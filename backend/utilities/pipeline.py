@@ -4,11 +4,14 @@ import json
 import logging
 import shutil
 from http import HTTPStatus
+from typing import Any
 
 from bson import ObjectId
+from celery.exceptions import SoftTimeLimitExceeded
 from flask import abort
 
 from backend.config import CeleryConfig
+from backend.constants import PIPELINE_TIMEOUTS_CACHE_KEY
 from backend.extensions import mongo
 from backend.utilities.typed_values import deserialize_path, path_for_display
 
@@ -61,7 +64,7 @@ def _get_heuristic_rate(pipeline_name: str) -> float | None:
 
     Returns the cached seconds-per-gene rate, or None if unavailable.
     """
-    doc = mongo.db.cache.find_one({"_id": "pipeline_timeouts"})
+    doc = mongo.db.cache.find_one({"_id": PIPELINE_TIMEOUTS_CACHE_KEY})
     if doc:
         rate = doc.get("data", {}).get(pipeline_name, {}).get("seconds_per_gene")
         if isinstance(rate, int | float):
@@ -100,6 +103,16 @@ def get_timeout_multiplier(is_authenticated: bool) -> float:
 def _get_config_timeout(is_authenticated: bool) -> int:
     """Return the configured fixed timeout for the current user type."""
     return int(CeleryConfig.pipeline_timeout_anon * get_timeout_multiplier(is_authenticated))
+
+
+def resolve_pipeline_task_status(celery_state: str, task_result: Any) -> str:
+    """Map Celery task outcome data to the persisted pipeline run status."""
+    normalized_state = celery_state.lower()
+    if normalized_state == "success":
+        return "success" if task_result else "failure"
+    if normalized_state == "failure" and isinstance(task_result, SoftTimeLimitExceeded):
+        return "timeout"
+    return normalized_state
 
 
 def resolve_timeout(pipeline_name: str, is_authenticated: bool, gene_count: int | None) -> int:

@@ -14,11 +14,6 @@ from pymongo.database import Database
 from backend.config import CeleryConfig
 from backend.constants import MONGO_DB_NAME
 
-TIMEOUT_ERROR_MESSAGE = (
-    "This pipeline run exceeded the maximum allowed runtime and was stopped. "
-    "Please reduce the input size or contact support."
-)
-
 
 @contextmanager
 def get_worker_db() -> Iterator[Database]:

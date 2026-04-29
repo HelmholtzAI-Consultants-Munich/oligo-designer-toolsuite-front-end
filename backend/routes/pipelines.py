@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -97,6 +98,9 @@ def enqueue_pipeline(
     output_path: Path,
     is_authenticated: bool,
     task_id: str,
+    run_id: ObjectId,
+    user_id: str | None,
+    session_id: str | None,
     gene_count: int | None = None,
 ) -> AsyncResult:
     soft_limit = resolve_timeout(pipeline_name, is_authenticated, gene_count)
@@ -105,6 +109,14 @@ def enqueue_pipeline(
         "backend.worker.tasks.run_pipeline",
         (pipeline_name, form_data, str(upload_path), str(output_path)),
         task_id=task_id,
+        headers={
+            "run_id": str(run_id),
+            "pipeline": pipeline_name,
+            "user_id": user_id,
+            "session_id": session_id,
+            "gene_count": gene_count,
+            "publish_time": time.time(),
+        },
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
     )
@@ -177,6 +189,9 @@ def start_pipeline(pipeline_name: str):
             context.output_path,
             is_authenticated,
             task_id,
+            run_id,
+            context.user_id,
+            context.session_id,
             gene_count,
         )
     except Exception:

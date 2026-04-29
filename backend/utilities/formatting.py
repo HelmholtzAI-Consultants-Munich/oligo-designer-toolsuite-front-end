@@ -101,11 +101,3 @@ def format_feedback(feedback):
         "user": user_info,
         "metadata": feedback.get("metadata") or {},
     }
-
-
-def format_run_status_response(status: str, run: dict | None = None) -> dict[str, str]:
-    """Format the run status endpoint response payload."""
-    response = {"status": status}
-    if status == "failure" and run and run.get("error_message"):
-        response["error"] = run["error_message"]
-    return response
