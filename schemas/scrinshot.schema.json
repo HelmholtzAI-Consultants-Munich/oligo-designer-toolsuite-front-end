@@ -35,9 +35,11 @@
       "description": "file with a list the genes used to generate the oligos sequences, leave empty if all the genes are used"
     },
     "files_fasta_target_probe_database": {
+      "title": "Files Fasta Target Probe Database",
       "$ref": "#/definitions/genomic_input"
     },
     "files_fasta_reference_database_target_probe": {
+      "title": "Files Fasta Reference Database Target Probe",
       "$ref": "#/definitions/genomic_input"
     },
     "target_probe_length_min": {

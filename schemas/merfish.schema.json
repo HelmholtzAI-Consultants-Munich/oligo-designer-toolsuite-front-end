@@ -35,9 +35,11 @@
       "description": "file with a list the genes used to generate the probe sequences, leave empty if all the genes are used"
     },
     "files_fasta_target_probe_database": {
+      "title": "Files Fasta Target Probe Database",
       "$ref": "#/definitions/genomic_input"
     },
     "files_fasta_reference_database_target_probe": {
+      "title": "Files Fasta Reference Database Target Probe",
       "$ref": "#/definitions/genomic_input"
     },
     "target_probe_length_min": {
@@ -183,6 +185,7 @@
       "description": "weight of the Tm of the probe in the efficiency score"
     },
     "files_fasta_reference_database_readout_probe": {
+      "title": "Files Fasta Reference Database Readout Probe",
       "$ref": "#/definitions/genomic_input"
     },
     "readout_probe_base_probabilities": {
@@ -268,6 +271,7 @@
       "description": "names of fluorescent channels"
     },
     "files_fasta_reference_database_primer": {
+      "title": "Files Fasta Reference Database Primer",
       "$ref": "#/definitions/genomic_input"
     },
     "reverse_primer_sequence": {
