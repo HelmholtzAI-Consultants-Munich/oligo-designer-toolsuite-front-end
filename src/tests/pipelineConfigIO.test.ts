@@ -7,33 +7,10 @@ import {
     importAndValidate,
     EXCLUDED_FIELDS,
 } from "../components/forms/pipelineConfigIO";
+import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
 // Minimal schema that mirrors the real pipeline schemas
-const testSchema = {
-    $schema: "https://json-schema.org/draft/2020-12/schema",
-    $id: "odt:test",
-    description: "1.0.0",
-    type: "object",
-    properties: {
-        n_jobs: { type: "integer", default: 4, title: "N Jobs" },
-        top_n_sets: { type: "integer", default: 3, title: "Top N Sets" },
-        heuristic: { type: "boolean", default: true, title: "Heuristic" },
-        // file fields that must be excluded
-        file_regions: { type: "string", default: "" },
-        files_fasta_target_probe_database: {
-            type: "array",
-            items: { type: "string" },
-            default: [],
-        },
-    },
-} as unknown as RJSFSchema;
-
-const fastaForms = {
-    files_fasta_target_probe_database: [],
-    files_fasta_reference_database_target_probe: [],
-    files_fasta_reference_database_readout_probe: [],
-    files_fasta_reference_database_primer: [],
-};
+const testSchema = PIPELINE_CONFIG["scrinshot"].schema;
 
 // ---- isVersionCompatible ----
 
@@ -151,7 +128,6 @@ describe("triggerDownload", () => {
                 exportedAt: "2026-04-10T12:00:00.000Z",
             },
             config: { n_jobs: 4 },
-            fastaForms,
         };
         triggerDownload(payload);
         const mockLink = document.createElement("a") as unknown as {
@@ -170,7 +146,6 @@ describe("triggerDownload", () => {
                 exportedAt: "2026-04-10T12:00:00.000Z",
             },
             config: {},
-            fastaForms,
         };
         triggerDownload(payload);
         expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
@@ -197,8 +172,60 @@ describe("importAndValidate", () => {
             pipeline: "scrinshot",
             exportedAt: "2026-04-10T12:00:00.000Z",
         },
-        config: { n_jobs: 8, top_n_sets: 5 },
-        fastaForms,
+        config: {
+            n_jobs: 8,
+            top_n_sets: 5,
+            files_fasta_target_probe_database: {
+                fasta_form: [
+                    {
+                        selectedSource: "ncbi",
+                        formDataNcbi: {
+                            dir_output: "output_genomic_region_generator_ncbi",
+                            source: "ncbi",
+                            source_params: {
+                                species: "Homo_sapiens",
+                                annotation_release: "110",
+                                taxon: "vertebrate_mammalian",
+                            },
+                            genomic_regions: {
+                                gene: "false",
+                                intergenic: "false",
+                                exon: "true",
+                                exon_exon_junction: "false",
+                                utr: "false",
+                                cds: "false",
+                                intron: "false",
+                            },
+                            exon_exon_junction_block_size: "50",
+                        },
+                        formDataEns: {
+                            dir_output:
+                                "output_genomic_region_generator_ensembl",
+                            source: "ensembl",
+                            source_params: {
+                                species: "homo_sapiens",
+                                annotation_release: "current",
+                            },
+                            genomic_regions: {
+                                gene: "false",
+                                intergenic: "false",
+                                exon: "true",
+                                exon_exon_junction: "false",
+                                utr: "false",
+                                cds: "false",
+                                intron: "false",
+                            },
+                            exon_exon_junction_block_size: "50",
+                        },
+                    },
+                ],
+                files: [],
+            },
+            files_fasta_reference_database_target_probe: {
+                files: [],
+                fasta_form: [],
+            },
+        },
     };
 
     it("accepts a valid export payload", () => {
@@ -216,46 +243,33 @@ describe("importAndValidate", () => {
     });
 
     it("rejects a plain object missing _meta", () => {
-        negativeTestImportAndValidate(
-            { config: { n_jobs: 4 }, fastaForms },
-            /_meta/
-        );
+        negativeTestImportAndValidate({ config: { n_jobs: 4 } }, /_meta/);
     });
 
     it("rejects a plain object missing config", () => {
         negativeTestImportAndValidate(
-            { _meta: { version: "1.0.0", pipeline: "scrinshot" }, fastaForms },
+            { _meta: { version: "1.0.0", pipeline: "scrinshot" } },
             /config/
-        );
-    });
-
-    it("reject a plain object missing fastaForms", () => {
-        negativeTestImportAndValidate(
-            {
-                _meta: { version: "1.0.0", pipeline: "scrinshot" },
-                config: { n_jobs: 4 },
-            },
-            /fastaForms/
         );
     });
 
     it("rejects when config is not a plain object (array)", () => {
         negativeTestImportAndValidate(
-            { _meta: validPayload._meta, config: [1, 2, 3], fastaForms },
+            { _meta: validPayload._meta, config: [1, 2, 3] },
             /config must be an object/
         );
     });
 
     it("rejects when config is not a plain object (string)", () => {
         negativeTestImportAndValidate(
-            { _meta: validPayload._meta, config: "not-an-object", fastaForms },
+            { _meta: validPayload._meta, config: "not-an-object" },
             /config must be an object/
         );
     });
 
     it("rejects when config is null", () => {
         negativeTestImportAndValidate(
-            { _meta: validPayload._meta, config: null, fastaForms },
+            { _meta: validPayload._meta, config: null },
             /config must be an object/
         );
     });
@@ -273,7 +287,7 @@ describe("importAndValidate", () => {
 
     it("rejects when _meta.version is missing", () => {
         negativeTestImportAndValidate(
-            { _meta: { pipeline: "scrinshot" }, config: {}, fastaForms },
+            { _meta: { pipeline: "scrinshot" }, config: {} },
             /version/
         );
     });
@@ -283,7 +297,6 @@ describe("importAndValidate", () => {
             {
                 ...validPayload,
                 _meta: { ...validPayload._meta, version: "99.0.0" },
-                fastaForms,
             },
             /99\.0\.0/
         );
@@ -293,7 +306,6 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             _meta: { ...validPayload._meta, version: "1.5.3" },
-            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
@@ -305,25 +317,24 @@ describe("importAndValidate", () => {
             config: {
                 n_jobs: 4,
                 file_regions: "/should/be/removed",
-                files_fasta_target_probe_database: ["/also/removed"],
             },
-            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) {
             expect(result.config).not.toHaveProperty("file_regions");
-            expect(result.config).not.toHaveProperty(
-                "files_fasta_target_probe_database"
-            );
         }
     });
 
     it("skips fields not in the schema and reports them", () => {
         const payload = {
             ...validPayload,
-            config: { n_jobs: 4, unknown_field: 42, another_unknown: "hello" },
-            fastaForms,
+            config: {
+                ...validPayload.config,
+                n_jobs: 4,
+                unknown_field: 42,
+                another_unknown: "hello",
+            },
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
@@ -337,20 +348,20 @@ describe("importAndValidate", () => {
 
     it("rejects when a field has the wrong type", () => {
         negativeTestImportAndValidate(
-            { ...validPayload, config: { n_jobs: "not-a-number" }, fastaForms },
+            { ...validPayload, config: { n_jobs: "not-a-number" } },
             /invalid/i
         );
     });
 
     it("accepts a partial config (only some fields present)", () => {
-        const payload = { ...validPayload, config: { n_jobs: 12 }, fastaForms };
+        const payload = { ...validPayload, config: { n_jobs: 12 } };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(result.config.n_jobs).toBe(12);
     });
 
     it("accepts an empty config object", () => {
-        const payload = { ...validPayload, config: {}, fastaForms };
+        const payload = { ...validPayload, config: {} };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
         if (result.ok) expect(Object.keys(result.config)).toHaveLength(0);
@@ -360,7 +371,6 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             config: { heuristic: false },
-            fastaForms,
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);

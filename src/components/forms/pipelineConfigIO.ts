@@ -204,7 +204,7 @@ export function importAndValidate(
     // 8. Remove File fields from imported form
     for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
         .genomicInputFields!) {
-        incoming[field]["files"] = [];
+        if (incoming[field]) incoming[field]["files"] = [];
     }
 
     return {
