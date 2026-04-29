@@ -187,7 +187,7 @@ class BaseGenomicDataBase:
     def _get_checksum_map(self, context: GenomicEntityContext) -> dict[str, str]:
         """Returns map of filenames to their respective checksum"""
 
-        # Combined checksum map for gtf and fasta files
+        # Combined checksum map for annotation (GTF) and sequence (FASTA) files
         filename_to_checksum_map: dict[str, str] = {}
         checksums_file_name = self._checksum_file_name()
 
@@ -221,8 +221,10 @@ class BaseGenomicDataBase:
                 - Download from source, verify checksum of compressed file and uncompress if possible.
 
         Raises:
-            RuntimeError: When no cache_dir was set, a resource cannot be located, a download fails or
-                a checksum cannot be verified.
+            RuntimeError: No cache_dir was set.
+            RuntimeError: A resource cannot be located.
+            RuntimeError: A download fails.
+            RuntimeError: A checksum cannot be verified.
 
         Returns:
             dict[str, str] -- A dict containing the file paths and the resolved release and assembly.
@@ -323,8 +325,8 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         else:
             return (f"pub/release-{release}/gtf", f"pub/release-{release}/fasta")
 
-    def _pick_files(self, gtf_dir: str, fasta_dir: str) -> tuple[str, str, str]:
-        """Chooses annotation and sequence files from specified remote directories.
+    def _pick_files(self, annotation_remote_dir: str, sequence_remote_dir: str) -> tuple[str, str, str]:
+        """Chooses annotation (GTF) and sequence (FASTA) files from specified remote directories.
 
         Notes:
             Chooses one .gtf.gz file and one .fa.gz file out of potentially multiple
@@ -332,32 +334,34 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
             Prefers primary_assembly for annotation (FASTA) with toplevel as fallback.
 
         Returns:
-            tuple[str, str, str] -- (gtf_filename, fasta_filename, assembly_name)
+            tuple[str, str, str] -- (annotation_filename, sequence_filename, genome_assembly)
         """
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
 
-            # GTF directory (already includes species)
-            ftp.cwd(gtf_dir)
-            gtf_listing = ftp.nlst()
-            gtf_gz = None
-            for name in sorted(gtf_listing):  # sort for determinism
+            # Annotation (GTF) directory (already includes species)
+            ftp.cwd(annotation_remote_dir)
+            annotation_dir_listing = ftp.nlst()
+            annotation_filename = None
+            for name in sorted(annotation_dir_listing):  # sort for determinism
                 # ends with NUMBER.gtf.gz
                 if re.search(r"^.+\.\d+\.gtf.gz$", name):
-                    gtf_gz = name
+                    annotation_filename = name
                     break
-            if not gtf_gz:
-                raise RuntimeError(f"No .gtf.gz found in {gtf_dir}")
+            if not annotation_filename:
+                raise RuntimeError(f"No .gtf.gz found in {annotation_remote_dir}")
 
-            # Try to parse assembly from GTF filename: e.g., Homo_sapiens.GRCh38.110.gtf.gz
-            asm_match = re.match(r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.", gtf_gz)
-            assembly_from_gtf = asm_match.group(1) if asm_match else None
+            # Try to parse assembly from annotation filename: e.g. Homo_sapiens.GRCh38.110.gtf.gz
+            assembly_from_annotation_match = re.match(r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.", annotation_filename)
+            assembly_from_annotation = (
+                assembly_from_annotation_match.group(1) if assembly_from_annotation_match else None
+            )
 
-            # FASTA directory (already includes species + dna)
-            ftp.cwd(f"/{fasta_dir}")
-            fa_listing = sorted(ftp.nlst())  # sort for determinism
+            # Sequence (FASTA) directory (already includes species + dna)
+            ftp.cwd(f"/{sequence_remote_dir}")
+            sequence_dir_listing = sorted(ftp.nlst())  # sort for determinism
 
-            fasta_gz = None
+            sequence_filename = None
             suffix_precedence = [
                 ".dna_sm.primary_assembly.fa.gz",
                 ".dna.primary_assembly.fa.gz",
@@ -365,26 +369,30 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
                 ".dna.toplevel.fa.gz",
             ]
             for suffix in suffix_precedence:
-                for name in fa_listing:
+                for name in sequence_dir_listing:
                     if name.endswith(suffix):
-                        fasta_gz = name
+                        sequence_filename = name
                         break
-                if fasta_gz:
+                if sequence_filename:
                     break
 
-            if not fasta_gz:
+            if not sequence_filename:
                 raise RuntimeError(
-                    f"No suitable DNA FASTA found in {fasta_dir} (tried primary_assembly and toplevel, with dna_sm and dna)."
+                    f"No suitable sequence (FASTA) file found in {sequence_remote_dir} (tried primary_assembly and toplevel, with dna_sm and dna)."
                 )
 
-            # Try to parse assembly from FASTA filename: Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
-            asm_match_fa = re.match(r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.dna\.", fasta_gz)
-            assembly_from_fa = asm_match_fa.group(1) if asm_match_fa else None
+            # Try to parse assembly from sequence filename: e.g. Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+            assembly_from_sequence_match = re.match(
+                r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.dna\.", sequence_filename
+            )
+            assembly_from_sequence = (
+                assembly_from_sequence_match.group(1) if assembly_from_sequence_match else None
+            )
 
-        # Prefer assembly parsed from FASTA; otherwise fallback to GTF-derived
-        assembly = assembly_from_fa or assembly_from_gtf or "unknown"
+        # Prefer assembly parsed from sequence; annotation-based as fallback
+        genome_assembly = assembly_from_sequence or assembly_from_annotation or "unknown"
 
-        return gtf_gz, fasta_gz, assembly
+        return annotation_filename, sequence_filename, genome_assembly
 
     def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
         annotation_remote_root_dir, sequence_remote_root_dir = self._release_dirs(entity.release)

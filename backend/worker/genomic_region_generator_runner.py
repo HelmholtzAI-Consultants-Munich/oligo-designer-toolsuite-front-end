@@ -82,7 +82,7 @@ class GenomicRegionGeneratorRunner:
         ann_rel = str(source_params.get("annotation_release"))
         if species is None or ann_rel is None:
             raise ValueError(
-                "Custom genomic (NCBI) requires 'species' and 'annotation_release' in source_params."
+                "Genomic region generation requires 'species' and 'annotation_release' in source_params."
             )
         genomic_entity = GenomicEntity(taxon=taxon, species=species, release=ann_rel)
 
