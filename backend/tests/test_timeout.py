@@ -1,19 +1,18 @@
 """Tests for the pipeline timeout feature.
 
 Covers:
-- extract_gene_count (pipelines.py)
+- extract_gene_count (utilities/pipeline.py)
 - resolve_timeout (utilities/pipeline.py)
 - start_pipeline: ordering guarantee and enqueue failure rollback
-- get_run_status: finished_at written on transition, error_message surfaced
+- get_run_status: finished_at written on transition, error surfaced
 - run_pipeline: error_message written on soft timeout (tasks.py)
 - on_task_prerun: started_at written for pipeline tasks only (signals.py)
-- refresh_pipeline_timeouts: per-pipeline aggregation (tasks.py)
+- refresh_pipeline_duration_stats: per-pipeline aggregation (tasks.py)
 - enqueue_pipeline: soft_time_limit and time_limit passed to Celery
-- call_subprocess: child process killed on timeout (pipeline_runner.py)
+- call_subprocess: subprocess failures propagate (pipeline_runner.py)
 """
 
 import datetime
-import subprocess
 from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
@@ -23,13 +22,13 @@ from celery.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 
 from backend.config import CeleryConfig
 from backend.extensions import mongo
-from backend.routes.pipelines import enqueue_pipeline, extract_gene_count
+from backend.routes.pipelines import enqueue_pipeline
 from backend.tests.conftest import create_test_run
-from backend.utilities.pipeline import resolve_timeout
+from backend.utilities.pipeline import extract_gene_count, resolve_timeout
 from backend.worker.helpers import TIMEOUT_ERROR_MESSAGE
 from backend.worker.pipeline_runner import PipelineRunner
 from backend.worker.signals import on_task_prerun
-from backend.worker.tasks import refresh_pipeline_timeouts, run_pipeline
+from backend.worker.tasks import refresh_pipeline_duration_stats, run_pipeline
 
 # ---------------------------------------------------------------------------
 # Shared helpers and fixtures
@@ -291,7 +290,7 @@ def test_enqueue_failure_marks_run_as_failed(client, run_id, session_user):
 
 
 # ---------------------------------------------------------------------------
-# get_run_status: finished_at and error_message
+# get_run_status: finished_at and error
 # ---------------------------------------------------------------------------
 
 
@@ -329,8 +328,8 @@ def test_get_run_status_no_update_if_state_unchanged(client, run_id, dummy_user)
     assert response.get_json()["status"] == "success"
 
 
-def test_get_run_status_includes_error_message_when_already_failure(client, run_id, dummy_user):
-    """When status is already 'failure' in DB, error_message must be in the status response."""
+def test_get_run_status_includes_error_when_already_failure(client, run_id, dummy_user):
+    """When status is already 'failure' in DB, error must be in the status response."""
     create_test_run(
         run_id,
         user_id=dummy_user.id,
@@ -342,11 +341,11 @@ def test_get_run_status_includes_error_message_when_already_failure(client, run_
     body = client.get(f"/api/runs/{run_id}/status").get_json()
 
     assert body["status"] == "failure"
-    assert body.get("error_message") == TIMEOUT_ERROR_MESSAGE
+    assert body.get("error") == TIMEOUT_ERROR_MESSAGE
 
 
-def test_get_run_status_includes_error_message_on_first_failure_transition(client, run_id, dummy_user):
-    """On the first transition to failure, error_message written by the worker must be surfaced."""
+def test_get_run_status_includes_error_on_first_failure_transition(client, run_id, dummy_user):
+    """On the first transition to failure, the worker error must be surfaced."""
     create_test_run(run_id, user_id=dummy_user.id, status="started", task_id="test-task-id")
     mongo.db.runs.update_one({"_id": run_id}, {"$set": {"error_message": TIMEOUT_ERROR_MESSAGE}})
 
@@ -356,7 +355,7 @@ def test_get_run_status_includes_error_message_on_first_failure_transition(clien
         body = client.get(f"/api/runs/{run_id}/status").get_json()
 
     assert body["status"] == "failure"
-    assert body.get("error_message") == TIMEOUT_ERROR_MESSAGE
+    assert body.get("error") == TIMEOUT_ERROR_MESSAGE
 
 
 # ---------------------------------------------------------------------------
@@ -430,18 +429,18 @@ def test_on_task_prerun_ignores_other_tasks():
 
 
 # ---------------------------------------------------------------------------
-# refresh_pipeline_timeouts: per-pipeline aggregation
+# refresh_pipeline_duration_stats: per-pipeline aggregation
 # ---------------------------------------------------------------------------
 
 
-def test_refresh_pipeline_timeouts_computes_seconds_per_gene():
+def test_refresh_pipeline_duration_stats_computes_seconds_per_gene():
     # 10 merfish runs, 200s each for 100 genes → 2.0 s/gene
     # Other pipelines return no docs so only merfish appears in output.
     runs_data = make_run_docs("merfish", count=10, duration_seconds=200, gene_count=100)
 
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
         mock_db.runs.find.side_effect = pipeline_find(runs_data)
-        refresh_pipeline_timeouts.run()
+        refresh_pipeline_duration_stats.run()
 
     _, update_arg = mock_db.cache.update_one.call_args[0]
     data = update_arg["$set"]["data"]
@@ -450,22 +449,22 @@ def test_refresh_pipeline_timeouts_computes_seconds_per_gene():
     assert data["merfish"]["sample_count"] == 10
 
 
-def test_refresh_pipeline_timeouts_skips_pipeline_with_fewer_than_5_runs():
+def test_refresh_pipeline_duration_stats_skips_pipeline_with_fewer_than_5_runs():
     runs_data = make_run_docs("merfish", count=4, duration_seconds=3600, gene_count=100)
 
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
         mock_db.runs.find.side_effect = pipeline_find(runs_data)
-        refresh_pipeline_timeouts.run()
+        refresh_pipeline_duration_stats.run()
 
     _, update_arg = mock_db.cache.update_one.call_args[0]
     assert "merfish" not in update_arg["$set"]["data"]
 
 
-def test_refresh_pipeline_timeouts_always_writes_cache_even_when_empty():
+def test_refresh_pipeline_duration_stats_always_writes_cache_even_when_empty():
     """Cache must be written even with no data so stale keys are cleared."""
     with patch_worker_db("backend.worker.tasks") as (_, mock_db):
         mock_db.runs.find.side_effect = pipeline_find([])
-        refresh_pipeline_timeouts.run()
+        refresh_pipeline_duration_stats.run()
 
     mock_db.cache.update_one.assert_called_once()
     _, update_arg = mock_db.cache.update_one.call_args[0]
@@ -504,15 +503,8 @@ def test_enqueue_pipeline_passes_soft_time_limit_to_send_task(app):
     assert kwargs["time_limit"] == 3900  # soft + hard margin
 
 
-def test_call_subprocess_kills_child_on_soft_time_limit(pipeline_runner):
-    """When SoftTimeLimitExceeded fires inside communicate(), the child process
-    must be killed before the exception propagates — otherwise it becomes an orphan."""
-    mock_proc = MagicMock(spec=subprocess.Popen)
-    mock_proc.communicate.side_effect = SoftTimeLimitExceeded()
-
-    with patch("subprocess.Popen", return_value=mock_proc):
+def test_call_subprocess_propagates_soft_time_limit(pipeline_runner):
+    """SoftTimeLimitExceeded should propagate when subprocess execution is interrupted."""
+    with patch("subprocess.run", side_effect=SoftTimeLimitExceeded()):
         with pytest.raises(SoftTimeLimitExceeded):
             pipeline_runner.call_subprocess("/tmp/config.yml")
-
-    mock_proc.kill.assert_called_once()
-    mock_proc.wait.assert_called_once()

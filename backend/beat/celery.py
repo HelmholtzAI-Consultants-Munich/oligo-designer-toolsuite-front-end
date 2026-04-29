@@ -18,8 +18,8 @@ def setup(sender, **kwargs):
     )
     sender.add_periodic_task(
         MIDNIGHT_CRON,
-        signature("backend.worker.tasks.refresh_pipeline_timeouts"),
-        name="refresh-pipeline-timeouts-task",
+        signature("backend.worker.tasks.refresh_pipeline_duration_stats"),
+        name="refresh-pipeline-duration-stats-task",
     )
 
 

@@ -25,6 +25,7 @@ from flask_login import current_user
 
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_run_or_404, get_task_id, get_user_context
+from backend.utilities.formatting import format_run_status_response
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
@@ -288,13 +289,6 @@ def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
 
 def update_run_status_in_DB(run_id: ObjectId, status: str):
     return update_run_in_DB(run_id, {"status": status})
-
-
-def format_run_status_response(status: str, run: dict[str, Any] | None = None):
-    response = {"status": status}
-    if status == "failure" and run and run.get("error_message"):
-        response["error_message"] = run["error_message"]
-    return response
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/status", methods=["GET"])

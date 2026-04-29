@@ -16,7 +16,7 @@ from backend.constants import PIPELINE_NAMES
 from backend.extensions import celery_app
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.routes.runs import update_run_in_DB
-from backend.utilities.pipeline import resolve_timeout
+from backend.utilities.pipeline import extract_gene_count, resolve_timeout
 from backend.utilities.typed_values import (
     sanitize_pipeline_form_paths,
     serialize_path,
@@ -67,29 +67,6 @@ def create_context(pipeline_name: str) -> RunContext:
         timestamp=timestamp,
         output_path=output_path,
     )
-
-
-def extract_gene_count(form_data: dict) -> int | None:
-    """Extract the number of genes from form_data for heuristic timeout normalization.
-
-    file_regions is either a comma-separated gene list or a path to an uploaded .txt file.
-    Returns None if the count cannot be determined.
-    """
-    file_regions = form_data.get("file_regions", "")
-    if not file_regions:
-        return None
-    if not file_regions.endswith(".txt"):
-        # Inline comma-separated gene list
-        genes = [g.strip() for g in file_regions.split(",") if g.strip()]
-        return len(genes) if genes else None
-    # Uploaded .txt file — count non-empty lines
-    try:
-        with open(file_regions) as f:
-            count = sum(1 for line in f if line.strip())
-        return count if count > 0 else None
-    except OSError:
-        current_app.logger.warning(f"Could not read gene count from file_regions path: {file_regions}")
-        return None
 
 
 def write_run_to_DB(
@@ -204,7 +181,7 @@ def start_pipeline(pipeline_name: str):
         )
     except Exception:
         update_run_in_DB(run_id, {"status": "failure"})
-        current_app.logger.exception("Failed to enqueue pipeline task")
+        current_app.logger.error("Failed to enqueue pipeline task")
         abort(
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to submit pipeline run. Please try again."
         )

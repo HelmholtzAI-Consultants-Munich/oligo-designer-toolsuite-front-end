@@ -6,7 +6,7 @@ from celery import Celery
 from celery.exceptions import SoftTimeLimitExceeded
 
 from backend.config import CeleryConfig
-from backend.constants import PIPELINE_NAMES
+from backend.constants import GENOMIC_DROPDOWN_CACHE_KEY, PIPELINE_NAMES
 from backend.genomic_databases import prefetch_dropdown_options
 from backend.utilities.typed_values import utc_now
 from backend.worker.celery import app
@@ -41,10 +41,10 @@ def fetch_dropdown_options(self: Celery.Task):
 
         cache = db["cache"]
 
-        doc = cache.find_one({"_id": 1})
+        doc = cache.find_one({"_id": GENOMIC_DROPDOWN_CACHE_KEY})
         if doc is None or (datetime.datetime.today() - doc["timestamp"]).days >= 1:
             cache.update_one(
-                {"_id": 1},
+                {"_id": GENOMIC_DROPDOWN_CACHE_KEY},
                 {"$set": {"timestamp": datetime.datetime.today(), "data": prefetch_dropdown_options()}},
                 upsert=True,
             )
@@ -52,8 +52,8 @@ def fetch_dropdown_options(self: Celery.Task):
 
 
 @app.task(bind=True)
-def refresh_pipeline_timeouts(self: Celery.Task):
-    """Compute a percentile run-duration rate per pipeline and cache the results.
+def refresh_pipeline_duration_stats(self: Celery.Task):
+    """Compute and cache per-pipeline run-duration statistics.
 
     Used by heuristic timeout mode to automatically tune soft_time_limit values.
     Requires at least the configured minimum number of successful runs per pipeline;
@@ -61,7 +61,7 @@ def refresh_pipeline_timeouts(self: Celery.Task):
     values at enqueue time.
     """
     window = utc_now() - timedelta(days=CeleryConfig.pipeline_timeout_heuristic_window_days)
-    timeouts = {}
+    duration_stats = {}
 
     with get_worker_db() as db:
         for pipeline in PIPELINE_NAMES:
@@ -89,16 +89,14 @@ def refresh_pipeline_timeouts(self: Celery.Task):
             if not rates:
                 continue
             percentile_rate = compute_percentile(rates, CeleryConfig.pipeline_timeout_heuristic_percentile)
-            # Store the raw percentile rate — the safety factor is applied at enqueue
-            # time so it remains visible and configurable without re-running aggregation.
-            timeouts[pipeline] = {
+            duration_stats[pipeline] = {
                 "seconds_per_gene": percentile_rate,
                 "sample_count": len(rates),
             }
 
         db.cache.update_one(
             {"_id": "pipeline_timeouts"},
-            {"$set": {"data": timeouts, "updated_at": utc_now()}},
+            {"$set": {"data": duration_stats, "updated_at": utc_now()}},
             upsert=True,
         )
-    print(f"Updated pipeline timeout heuristics: {timeouts}")
+    print(f"Updated pipeline duration stats: {duration_stats}")

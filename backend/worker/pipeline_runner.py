@@ -96,21 +96,14 @@ class PipelineRunner:
         return config_path
 
     def call_subprocess(self, config_path: str) -> bool:
-        proc = subprocess.Popen(
+        result = subprocess.run(
             [self.subprocess_name, "-c", config_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
         )
-        try:
-            stdout, stderr = proc.communicate()
-        except BaseException:
-            proc.kill()
-            proc.wait()
-            raise
-        self.logger.debug(f"STDERR: {stderr}")
-        self.logger.debug(f"STDOUT (partial logs): {stdout}")
-        return proc.returncode == 0
+        self.logger.debug(f"STDERR: {result.stderr}")
+        self.logger.debug(f"STDOUT (partial logs): {result.stdout}")
+        return result.returncode == 0
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it

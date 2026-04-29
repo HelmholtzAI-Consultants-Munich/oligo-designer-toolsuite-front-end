@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from backend.constants import GENOMIC_DROPDOWN_CACHE_KEY
 from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.tests.conftest import assert_error_sanitized
@@ -33,7 +34,7 @@ def verify_file_mock(monkeypatch):
 @pytest.fixture
 def dropdown_mock(monkeypatch):
     mongo.db.cache.update_one(
-        {"_id": 1},
+        {"_id": GENOMIC_DROPDOWN_CACHE_KEY},
         {
             "$set": {
                 "data": {
@@ -45,7 +46,7 @@ def dropdown_mock(monkeypatch):
         upsert=True,
     )
     yield
-    mongo.db.cache.delete_one({"_id": 1})
+    mongo.db.cache.delete_one({"_id": GENOMIC_DROPDOWN_CACHE_KEY})
 
 
 @pytest.fixture

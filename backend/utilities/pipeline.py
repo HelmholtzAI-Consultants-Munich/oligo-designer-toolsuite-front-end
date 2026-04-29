@@ -69,6 +69,27 @@ def _get_heuristic_rate(pipeline_name: str) -> float | None:
     return None
 
 
+def extract_gene_count(form_data: dict) -> int | None:
+    """Extract the number of genes from form_data for heuristic timeout normalization.
+
+    file_regions is either a comma-separated gene list or a path to an uploaded .txt file.
+    Returns None if the count cannot be determined.
+    """
+    file_regions = form_data.get("file_regions", "")
+    if not file_regions:
+        return None
+    if not file_regions.endswith(".txt"):
+        genes = [g.strip() for g in file_regions.split(",") if g.strip()]
+        return len(genes) if genes else None
+    try:
+        with open(file_regions) as f:
+            count = sum(1 for line in f if line.strip())
+        return count if count > 0 else None
+    except OSError:
+        logger.warning(f"Could not read gene count from file_regions path: {file_regions}")
+        return None
+
+
 def get_timeout_multiplier(is_authenticated: bool) -> float:
     """Return the configured timeout multiplier for the current user type."""
     if is_authenticated:

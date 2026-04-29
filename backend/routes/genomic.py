@@ -15,6 +15,7 @@ from pathlib import Path
 import yaml
 from flask import Blueprint, abort, current_app, jsonify, request
 
+from backend.constants import GENOMIC_DROPDOWN_CACHE_KEY
 from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.routes.route_helpers import get_user_context_with_directory
@@ -61,7 +62,7 @@ def _validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | No
 def genomic_dropdown_dict():
     dropdown_options = None
     for i in range(3):
-        dropdown_options = mongo.db.cache.find_one({"_id": 1})
+        dropdown_options = mongo.db.cache.find_one({"_id": GENOMIC_DROPDOWN_CACHE_KEY})
 
         if dropdown_options is not None:
             break

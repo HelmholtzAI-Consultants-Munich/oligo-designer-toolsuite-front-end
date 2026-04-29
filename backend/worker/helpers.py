@@ -7,6 +7,7 @@ framework-agnostic and rely only on PyMongo and stdlib.
 from collections.abc import Iterator
 from contextlib import contextmanager
 
+import numpy as np
 from pymongo import MongoClient
 from pymongo.database import Database
 
@@ -30,7 +31,7 @@ def get_worker_db() -> Iterator[Database]:
 
 
 def compute_percentile(values: list[float], p: int) -> float:
-    """Return the p-th percentile of a non-empty sorted list of values.
+    """Return the p-th percentile of a non-empty list of values.
 
     Args:
         values: Non-empty list of numeric values.
@@ -43,7 +44,4 @@ def compute_percentile(values: list[float], p: int) -> float:
         raise ValueError("Cannot compute percentile of an empty list")
     if not 0 <= p <= 100:
         raise ValueError(f"Percentile must be between 0 and 100, got {p}")
-    sorted_values = sorted(values)
-    index = int(len(sorted_values) * p / 100)
-    # Clamp to last index in case p == 100
-    return sorted_values[min(index, len(sorted_values) - 1)]
+    return float(np.percentile(values, p, method="higher"))
