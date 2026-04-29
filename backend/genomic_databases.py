@@ -28,9 +28,9 @@ class GenomicEntity:
 @dataclass
 class GenomicEntityContext:
     annotation_remote_dir: str
-    annotation_remote_file_name: str
+    annotation_remote_filename: str
     sequence_remote_dir: str
-    sequence_remote_file_name: str
+    sequence_remote_filename: str
     annotation_release: str
     genome_assembly: str
     accession: str | None  # Ensembl doesn't use GCF/GCA accessions in filenames
@@ -126,7 +126,7 @@ class BaseGenomicDataBase:
         pass
 
     @file_cache_region.cache_on_arguments()
-    def _download_and_process(self, dir: str, remote_file_name: str, expected_checksum: str | None) -> Path:
+    def _download_and_process(self, dir: str, remote_filename: str, expected_checksum: str | None) -> Path:
         """Downloads the file and processes it as needed.
 
         Handles:
@@ -139,11 +139,11 @@ class BaseGenomicDataBase:
         Returns:
             pathlib.Path -- The local file path of the downloaded resource.
         """
-        url = f"https://{self.host}/{dir}/{remote_file_name}"
+        url = f"https://{self.host}/{dir}/{remote_filename}"
         url_hash = hashlib.md5(url.encode()).hexdigest()
         if self.cache_dir is None:
             raise RuntimeError("No caching directory set for genomic downloads.")
-        file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_file_name}").resolve()
+        file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_filename}").resolve()
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Download file
@@ -177,7 +177,7 @@ class BaseGenomicDataBase:
         pass
 
     @abstractmethod
-    def _checksum_file_name(self) -> str:
+    def _checksum_filename(self) -> str:
         pass
 
     @abstractmethod
@@ -189,11 +189,11 @@ class BaseGenomicDataBase:
 
         # Combined checksum map for annotation (GTF) and sequence (FASTA) files
         filename_to_checksum_map: dict[str, str] = {}
-        checksums_file_name = self._checksum_file_name()
+        checksums_filename = self._checksum_filename()
 
         # set -> if the dirs are equal, the checksums are only downloaded once
         for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
-            checksums_path = self._download_and_process(dir, checksums_file_name, expected_checksum=None)
+            checksums_path = self._download_and_process(dir, checksums_filename, expected_checksum=None)
             with open(checksums_path) as checksums_file:
                 for line in checksums_file:
                     if (parsed_line := self._parse_checksum_line(line)) is not None:
@@ -202,12 +202,12 @@ class BaseGenomicDataBase:
 
         return filename_to_checksum_map
 
-    def _get_checksum(self, checksum_map: dict[str, str], file_name: str) -> str:
+    def _get_checksum(self, checksum_map: dict[str, str], filename: str) -> str:
         try:
-            return checksum_map[file_name]
+            return checksum_map[filename]
         except KeyError as e:
             raise RuntimeError(
-                f"Required file missing in {self.name}'s {self._checksum_file_name()}: {e}"
+                f"Required file missing in {self.name}'s {self._checksum_filename()}: {e}"
             ) from e
 
     def fetch_genomic_entity(self, entity: GenomicEntity) -> dict[str, str]:
@@ -234,15 +234,15 @@ class BaseGenomicDataBase:
         checksum_map = self._get_checksum_map(context)
 
         # Annotation (GTF)
-        annotation_checksum = self._get_checksum(checksum_map, context.annotation_remote_file_name)
+        annotation_checksum = self._get_checksum(checksum_map, context.annotation_remote_filename)
         annotation_file = self._download_and_process(
-            context.annotation_remote_dir, context.annotation_remote_file_name, annotation_checksum
+            context.annotation_remote_dir, context.annotation_remote_filename, annotation_checksum
         )
 
         # Sequence (FASTA)
-        sequence_checksum = self._get_checksum(checksum_map, context.sequence_remote_file_name)
+        sequence_checksum = self._get_checksum(checksum_map, context.sequence_remote_filename)
         sequence_file = self._download_and_process(
-            context.sequence_remote_dir, context.sequence_remote_file_name, sequence_checksum
+            context.sequence_remote_dir, context.sequence_remote_filename, sequence_checksum
         )
 
         return {
@@ -301,7 +301,7 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         except subprocess.CalledProcessError:
             return False
 
-    def _checksum_file_name(self) -> str:
+    def _checksum_filename(self) -> str:
         return "CHECKSUMS"
 
     def _parse_checksum_line(self, line: str) -> tuple[str, str] | None:
@@ -402,15 +402,15 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         annotation_release = entity.release
 
         # Resolve filenames and assembly
-        annotation_remote_file_name, sequence_remote_file_name, genome_assembly = self._pick_files(
+        annotation_remote_filename, sequence_remote_filename, genome_assembly = self._pick_files(
             annotation_remote_dir, sequence_remote_dir
         )
 
         return GenomicEntityContext(
             annotation_remote_dir,
-            annotation_remote_file_name,
+            annotation_remote_filename,
             sequence_remote_dir,
-            sequence_remote_file_name,
+            sequence_remote_filename,
             annotation_release,
             genome_assembly,
             accession=None,
@@ -459,8 +459,8 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         return dirs
 
     # ---- Genomic Asset Fetching ----
-    def _get_assembly_information(self, rel_dir: str, file_name: str) -> tuple[str | None, str | None]:
-        file_path = self._download_and_process(rel_dir, file_name, expected_checksum=None)
+    def _get_assembly_information(self, rel_dir: str, filename: str) -> tuple[str | None, str | None]:
+        file_path = self._download_and_process(rel_dir, filename, expected_checksum=None)
         with open(file_path) as file:
             assembly_name, accession = None, None
             for line in file:
@@ -477,7 +477,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
         return digest.hexdigest() == expected_checksum
 
-    def _checksum_file_name(self) -> str:
+    def _checksum_filename(self) -> str:
         return "md5checksums.txt"
 
     def _parse_checksum_line(self, line: str) -> tuple[str, str] | None:
@@ -543,14 +543,14 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         annotation_release, genome_assembly, accession, remote_dir = self._resolve_release_and_dir(entity)
 
         annotation_remote_dir = sequence_remote_dir = remote_dir
-        annotation_remote_file_name = f"{accession}_{genome_assembly}_genomic.gtf.gz"
-        sequence_remote_file_name = f"{accession}_{genome_assembly}_genomic.fna.gz"
+        annotation_remote_filename = f"{accession}_{genome_assembly}_genomic.gtf.gz"
+        sequence_remote_filename = f"{accession}_{genome_assembly}_genomic.fna.gz"
 
         return GenomicEntityContext(
             annotation_remote_dir,
-            annotation_remote_file_name,
+            annotation_remote_filename,
             sequence_remote_dir,
-            sequence_remote_file_name,
+            sequence_remote_filename,
             annotation_release,
             genome_assembly,
             accession,
