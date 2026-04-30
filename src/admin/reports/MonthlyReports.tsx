@@ -17,7 +17,7 @@ import ExpandedRow from "./ExpandedRow";
 import TrendChart from "./TrendChart";
 import { exportReportToCSV } from "./exportUtils";
 import { useMonthlyReports } from "./useMonthlyReports";
-import type { MonthlyReport } from "./types";
+import type { MonthlyReport, ReportPeriod } from "./types";
 const REFRESH_MS = 2000,
     REFRESH_TRIES = 10;
 const NOW = new Date();
@@ -67,8 +67,8 @@ function monthsBetween(
     fromMonth: number,
     toYear: number,
     toMonth: number
-) {
-    const out: { year: number; month: number }[] = [];
+): ReportPeriod[] {
+    const out: ReportPeriod[] = [];
     let year = fromYear,
         month = fromMonth;
     while (year < toYear || (year === toYear && month <= toMonth)) {
@@ -113,10 +113,23 @@ const MonthlyReports: React.FC = () => {
             return s;
         });
 
-    const waitForReports = async (ids: string[]) => {
+    const waitForReports = async (
+        reportsToRefresh: Array<{ id: string; previousGeneratedAt?: string }>
+    ) => {
         for (let i = 0; i < REFRESH_TRIES; i++) {
             const next = await fetchReports({ showLoading: false });
-            if (ids.every((id) => next.some((r) => r.id === id))) return;
+            const nextById = new Map(next.map((report) => [report.id, report]));
+            if (
+                reportsToRefresh.every(({ id, previousGeneratedAt }) => {
+                    const report = nextById.get(id);
+                    if (!report) return false;
+                    return previousGeneratedAt == null
+                        ? true
+                        : report.generated_at !== previousGeneratedAt;
+                })
+            ) {
+                return;
+            }
             if (i < REFRESH_TRIES - 1) await delay(REFRESH_MS);
         }
     };
@@ -138,14 +151,19 @@ const MonthlyReports: React.FC = () => {
             return;
         }
         const months = monthsBetween(fromYear, fromMonth, toYear, toMonth);
-        if (!(await triggerGenerate(months))) return;
+        const previousGeneratedAtById = new Map(
+            reports.map((report) => [report.id, report.generated_at])
+        );
+        const generatedReportIds = await triggerGenerate(months);
+        if (!generatedReportIds) return;
         setShowModal(false);
         setFromValue("");
         setToValue("");
         await waitForReports(
-            months.map(
-                ({ year, month }) => `${year}-${String(month).padStart(2, "0")}`
-            )
+            generatedReportIds.map((id) => ({
+                id,
+                previousGeneratedAt: previousGeneratedAtById.get(id),
+            }))
         );
     };
 

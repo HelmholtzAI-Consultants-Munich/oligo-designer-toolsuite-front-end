@@ -1,3 +1,8 @@
+export interface ReportPeriod {
+    year: number;
+    month: number;
+}
+
 export interface MonthlyReport {
     id: string;
     year: number;

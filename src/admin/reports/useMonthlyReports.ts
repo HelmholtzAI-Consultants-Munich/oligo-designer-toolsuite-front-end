@@ -1,7 +1,12 @@
 import { useCallback, useState } from "react";
 import axios from "axios";
 import { BACKEND_URL } from "../../config";
-import type { MonthlyReport } from "./types";
+import {
+    compareReportPeriods,
+    formatReportId,
+    getNextReportPeriod,
+} from "./periods";
+import type { MonthlyReport, ReportPeriod } from "./types";
 
 const axiosMsg = (err: unknown, fallback: string) =>
     axios.isAxiosError(err) ? err.response?.data?.error || fallback : fallback;
@@ -35,33 +40,46 @@ export function useMonthlyReports() {
     );
 
     const triggerGenerate = useCallback(
-        async (
-            months: Array<{ year: number; month: number }>
-        ): Promise<boolean> => {
+        async (months: ReportPeriod[]): Promise<string[] | null> => {
             setIsGenerating(true);
             setError(null);
             try {
-                await Promise.all(
-                    months.map(({ year, month }) =>
-                        axios.post(
-                            BACKEND_URL + "/api/admin/reports/generate",
-                            { year, month },
-                            {
-                                withCredentials: true,
-                                headers: { "Content-Type": "application/json" },
-                            }
-                        )
-                    )
-                );
-                return true;
+                const orderedMonths = [...months].sort(compareReportPeriods);
+                const lastMonth = orderedMonths.at(-1);
+                const nextMonth =
+                    lastMonth == null ? null : getNextReportPeriod(lastMonth);
+                const shouldRefreshNextMonth =
+                    nextMonth != null &&
+                    reports.some(
+                        (report) =>
+                            report.year === nextMonth.year &&
+                            report.month === nextMonth.month
+                    );
+                const monthsToGenerate =
+                    nextMonth != null && shouldRefreshNextMonth
+                        ? [...orderedMonths, nextMonth]
+                        : orderedMonths;
+
+                for (const { year, month } of monthsToGenerate) {
+                    await axios.post(
+                        BACKEND_URL + "/api/admin/reports/generate",
+                        { year, month },
+                        {
+                            withCredentials: true,
+                            headers: { "Content-Type": "application/json" },
+                        }
+                    );
+                }
+
+                return monthsToGenerate.map(formatReportId);
             } catch (err) {
                 setError(axiosMsg(err, "Failed to trigger report generation"));
-                return false;
+                return null;
             } finally {
                 setIsGenerating(false);
             }
         },
-        []
+        [reports]
     );
 
     const deleteReport = useCallback(async (reportId: string) => {
