@@ -282,6 +282,28 @@ def get_run_files(run_id: ObjectId):
     return jsonify(files), HTTPStatus.OK
 
 
+@runs_bp.route("/api/runs/<ObjectId:run_id>/config", methods=["GET"])
+def get_run_config(run_id: ObjectId):
+    """
+    Return the stored UI config for a specific pipeline run.
+
+    The config is a PipelineConfigExport JSON object saved when the run was started.
+    Older runs that pre-date this feature will return 404.
+
+    :param run_id: The ObjectId of the run.
+    :type run_id: ObjectId
+    :returns: PipelineConfigExport JSON or 404.
+    :rtype: flask.Response
+    """
+    run = get_run_or_404(run_id, require_ownership=True)
+
+    ui_config = run.get("ui_config")
+    if ui_config is None:
+        abort(HTTPStatus.NOT_FOUND, description="No saved config for this run.")
+
+    return jsonify(ui_config), HTTPStatus.OK
+
+
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
     return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
 

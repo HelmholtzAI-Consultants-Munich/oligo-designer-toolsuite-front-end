@@ -120,19 +120,20 @@ def write_run_to_DB(
     run_id: ObjectId,
     context: RunContext,
     task_id: str | None,
+    ui_config: dict | None = None,
 ):
-    return update_run_in_DB(
-        run_id,
-        {
-            "session_id": context.session_id,
-            "user_id": context.user_id,
-            "timestamp": context.timestamp,
-            "output_path": serialize_path(context.output_path),
-            "status": "pending",
-            "pipeline": pipeline_name,
-            "task_id": task_id,
-        },
-    )
+    data: dict = {
+        "session_id": context.session_id,
+        "user_id": context.user_id,
+        "timestamp": context.timestamp,
+        "output_path": serialize_path(context.output_path),
+        "status": "pending",
+        "pipeline": pipeline_name,
+        "task_id": task_id,
+    }
+    if ui_config is not None:
+        data["ui_config"] = ui_config
+    return update_run_in_DB(run_id, data)
 
 
 def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
@@ -245,7 +246,8 @@ def start_pipeline(pipeline_name: str):
     )
 
     # Mark Run as Enqueued in DB
-    update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
+    ui_config = json.get("ui_config") if isinstance(json.get("ui_config"), dict) else None
+    update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id, ui_config)
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 

@@ -14,6 +14,7 @@ import {
     type NestedObject,
     type UploadFastaFormData,
 } from "./types";
+import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
 import { Link } from "react-router";
 
@@ -235,7 +236,8 @@ export const handleSubmit = async (
     fastaForms: FastaFormState,
     formData: RJSFFormData,
     pipeline: string,
-    updateRuns: () => void
+    updateRuns: () => void,
+    uiConfig?: PipelineConfigExport
 ) => {
     const isInputValid = validateInput(pipeline, files, fastaForms);
 
@@ -273,7 +275,7 @@ export const handleSubmit = async (
     try {
         await axios.post(
             BACKEND_URL + `/api/${pipeline}`,
-            { formdata: formData, runid: newId },
+            { formdata: formData, runid: newId, ui_config: uiConfig ?? null },
             {
                 withCredentials: true,
                 headers: { "Content-Type": "application/json" },

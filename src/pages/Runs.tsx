@@ -10,13 +10,14 @@ import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../utils/toastUtil";
 import { Horizontal } from "../components/ui/Alignment";
 import { confirmWithModal } from "../utils/modalUtil";
+import type { PipelineRun } from "../types";
+import { navigateWithRunConfig } from "../utils/runConfigHelper";
 
 const Runs = () => {
     const { loading } = useAuth();
     const { runs, updateRuns } = useRuns();
     const navigate = useNavigate();
 
-    // Add this handler function
     const handleDeleteRun = async (runId: string) => {
         confirmWithModal({
             title: "Confirm Deletion",
@@ -30,7 +31,7 @@ const Runs = () => {
                         await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
                             withCredentials: true,
                         });
-                        updateRuns(); // Refresh the list of runs after deletion
+                        updateRuns();
                         navigate("/runs");
                     } catch (error) {
                         console.error("Error deleting run:", error);
@@ -46,6 +47,9 @@ const Runs = () => {
             },
         });
     };
+
+    const handleUseConfig = (run: PipelineRun) =>
+        navigateWithRunConfig(run, navigate);
 
     const goToRun = (runId: string) => {
         if (runId) {
@@ -127,6 +131,16 @@ const Runs = () => {
                                         onClick={() => {}}
                                     >
                                         View
+                                    </Button>
+                                    <Button
+                                        variant="outline-secondary"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleUseConfig(run);
+                                        }}
+                                    >
+                                        Use Settings
                                     </Button>
                                     <Button
                                         variant="outline-danger"

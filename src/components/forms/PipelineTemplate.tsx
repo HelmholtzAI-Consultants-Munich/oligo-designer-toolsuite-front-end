@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
@@ -31,6 +31,7 @@ import GenomicInput from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import genomicEnsForm from "./schemas/genomicEnsForm";
 import genomicNcbiForm from "./schemas/genomicNcbiForm";
+import { useLocation } from "react-router";
 
 type Props = {
     pipeline: string;
@@ -105,6 +106,57 @@ const PipelineTemplate: React.FC<Props> = ({
     });
 
     const { updateRuns } = useRuns();
+    const location = useLocation();
+    const configApplied = useRef(false);
+
+    // Apply a config that was passed via navigation location state (e.g. "Use Settings" in Runs page).
+    // This mirrors the existing file-import flow exactly.
+    useEffect(() => {
+        if (configApplied.current) return;
+        const importedConfig = location.state?.importedConfig;
+        if (!importedConfig) return;
+
+        configApplied.current = true;
+        // Clear the state so re-renders don't re-apply the config
+        window.history.replaceState(
+            { ...window.history.state, importedConfig: undefined },
+            ""
+        );
+
+        const result = importAndValidate(importedConfig, schema, pipeline);
+        if (!result.ok) {
+            showToast({
+                title: "Load Config Failed",
+                content: result.error,
+                type: "danger",
+            });
+            return;
+        }
+        setFormData((prev) => ({ ...prev, ...result.config }));
+        setFastaForms(convertImportedFastaForms(result.fastaForms));
+        const exportedAt = (
+            importedConfig as { _meta?: { exportedAt?: string } }
+        )._meta?.exportedAt;
+        const dateStr = exportedAt
+            ? new Date(exportedAt).toLocaleString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+              })
+            : "unknown date";
+        const skipNote =
+            result.skippedFields.length > 0
+                ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
+                : "";
+        showToast({
+            title: "Config Loaded",
+            content: `Configuration from run started on ${dateStr} was applied.${skipNote}`,
+            type: "success",
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const widgets = {
         fileSelection: GenomicInput,
@@ -165,6 +217,23 @@ const PipelineTemplate: React.FC<Props> = ({
         reader.readAsText(file);
     };
 
+    const runPipeline = () => {
+        const uiConfig = buildExportPayload(
+            formData,
+            pipeline,
+            schema,
+            fastaForms
+        );
+        handleSubmit(
+            files,
+            fastaForms,
+            formData,
+            pipeline,
+            updateRuns,
+            uiConfig
+        );
+    };
+
     return (
         <Page
             title={title}
@@ -194,14 +263,7 @@ const PipelineTemplate: React.FC<Props> = ({
                     label: "Run Pipeline",
                     icon: Send,
                     variant: "primary",
-                    onClick: () =>
-                        handleSubmit(
-                            files,
-                            fastaForms,
-                            formData,
-                            pipeline,
-                            updateRuns
-                        ),
+                    onClick: runPipeline,
                 },
             ]}
             stickyHeader
@@ -230,15 +292,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 widgets={widgets}
                 validator={validator}
                 onChange={(e) => setFormData(e.formData)}
-                onSubmit={() =>
-                    handleSubmit(
-                        files,
-                        fastaForms,
-                        formData,
-                        pipeline,
-                        updateRuns
-                    )
-                }
+                onSubmit={runPipeline}
             >
                 <Button type="submit" variant="primary">
                     Run Pipeline <Send className="ms-2" />
