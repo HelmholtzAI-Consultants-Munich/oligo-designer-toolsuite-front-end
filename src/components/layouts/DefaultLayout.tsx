@@ -17,7 +17,7 @@ export default function DefaultLayout() {
             {!loading && (
                 <>
                     <Sidebar />
-                    <Vertical align="stretch" fillWidth>
+                    <Vertical align="stretch" fillWidth grow>
                         <Toasts />
                         <Modal />
                         <Outlet key={user?.id} />{" "}

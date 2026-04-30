@@ -139,6 +139,9 @@ const PipelineTemplate: React.FC<Props> = ({
                         "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing.",
                     type: "danger",
                 });
+                const acceptanceElement =
+                    document.getElementById("terms-acceptance");
+                acceptanceElement?.scrollIntoView({ behavior: "smooth" });
                 return;
             }
             setIsAcceptingTerms(true);
@@ -265,7 +268,10 @@ const PipelineTemplate: React.FC<Props> = ({
                 onSubmit={() => void handleRunPipeline()}
             >
                 {requiresTermsAcceptance && (
-                    <div className="border rounded p-3 mt-3 bg-light">
+                    <div
+                        className="border rounded p-3 mt-5 bg-light"
+                        id="terms-acceptance"
+                    >
                         <p className="mb-2">
                             Before running this pipeline, please accept the{" "}
                             <Link to="/terms">Terms of Service</Link> and review
@@ -288,6 +294,7 @@ const PipelineTemplate: React.FC<Props> = ({
                     type="submit"
                     variant="primary"
                     disabled={isAcceptingTerms}
+                    className={requiresTermsAcceptance ? "mt-3" : "mt-5"}
                 >
                     {isAcceptingTerms ? (
                         "Saving..."

@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Alert, Card, Container, Spinner } from "react-bootstrap";
+import { Alert, Card, Spinner } from "react-bootstrap";
 
 import { BACKEND_URL } from "../../config";
 import type { LegalDocument } from "../../types";
+import Page from "./Page";
 
 interface LegalDocumentPageProps {
     endpoint: string;
+    title: string;
 }
 
-const LegalDocumentPage: React.FC<LegalDocumentPageProps> = ({ endpoint }) => {
+const LegalDocumentPage: React.FC<LegalDocumentPageProps> = ({
+    endpoint,
+    title,
+}) => {
     const [document, setDocument] = useState<LegalDocument | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -50,28 +55,26 @@ const LegalDocumentPage: React.FC<LegalDocumentPageProps> = ({ endpoint }) => {
     }, [endpoint]);
 
     return (
-        <>
-            <Container className="py-4">
-                {error && <Alert variant="danger">{error}</Alert>}
-                {isLoading && !error && (
-                    <div className="d-flex justify-content-center py-5">
-                        <Spinner animation="border" role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </Spinner>
-                    </div>
-                )}
-                {document && (
-                    <Card>
-                        <Card.Body>
-                            <p className="text-muted mb-2">
-                                Version {document.version}
-                            </p>
-                            <ReactMarkdown>{document.body}</ReactMarkdown>
-                        </Card.Body>
-                    </Card>
-                )}
-            </Container>
-        </>
+        <Page title={title}>
+            {error && <Alert variant="danger">{error}</Alert>}
+            {isLoading && !error && (
+                <div className="d-flex justify-content-center py-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </div>
+            )}
+            {document && (
+                <Card>
+                    <Card.Body>
+                        <p className="text-muted mb-2">
+                            Version {document.version}
+                        </p>
+                        <ReactMarkdown>{document.body}</ReactMarkdown>
+                    </Card.Body>
+                </Card>
+            )}
+        </Page>
     );
 };
 

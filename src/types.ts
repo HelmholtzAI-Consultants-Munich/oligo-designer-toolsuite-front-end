@@ -11,11 +11,17 @@ export interface TermsAcceptanceStatus {
     terms_accepted_at?: string | null;
 }
 
-export interface AuthState {
-    authenticated: boolean;
-    user: User | null;
-    legal: TermsAcceptanceStatus | null;
-}
+export type AuthState =
+    | {
+          authenticated: true;
+          user: User;
+          legal: TermsAcceptanceStatus | null;
+      }
+    | {
+          authenticated: false;
+          user: null;
+          legal: TermsAcceptanceStatus | null;
+      };
 
 export interface LegalDocument {
     document: string;
