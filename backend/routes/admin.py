@@ -13,6 +13,7 @@ Endpoints:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo)
 """
 
+import datetime
 from http import HTTPStatus
 
 from bson import ObjectId
@@ -584,7 +585,7 @@ def trigger_monthly_report():
 
     kwargs = {}
     if year is None and month is None:
-        kwargs = {}
+        pass
     elif year is None or month is None:
         abort(HTTPStatus.BAD_REQUEST, description="Year and month must both be provided.")
     else:
@@ -598,6 +599,12 @@ def trigger_monthly_report():
             abort(HTTPStatus.BAD_REQUEST, description="Year must be a positive integer.")
         if not 1 <= target_month <= 12:
             abort(HTTPStatus.BAD_REQUEST, description="Month must be between 1 and 12.")
+        today = datetime.date.today()
+        if (target_year, target_month) >= (today.year, today.month):
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                description="Cannot generate reports for the current or future month.",
+            )
 
         kwargs = {"target_year": target_year, "target_month": target_month}
 

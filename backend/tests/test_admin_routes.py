@@ -378,6 +378,20 @@ def test_trigger_monthly_report_rejects_invalid_month(admin_client):
     mock_send_task.assert_not_called()
 
 
+def test_trigger_monthly_report_rejects_current_month(admin_client):
+    """Test current-month report generation is rejected."""
+    today = datetime.now()
+    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
+        response = admin_client.post(
+            "/api/admin/reports/generate",
+            json={"year": today.year, "month": today.month},
+        )
+
+    assert response.status_code == 400
+    assert "Cannot generate reports for the current or future month" in response.get_json()["error"]
+    mock_send_task.assert_not_called()
+
+
 def test_trigger_monthly_report_rejects_non_integer_values(admin_client):
     """Test malformed year/month values return a validation error."""
     with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:

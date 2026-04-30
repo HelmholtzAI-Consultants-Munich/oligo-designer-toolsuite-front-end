@@ -106,12 +106,12 @@ def format_feedback(feedback):
 def format_monthly_report(report):
     return {
         "id": report["_id"],
-        "year": report.get("year"),
-        "month": report.get("month"),
+        "year": report["year"],
+        "month": report["month"],
         "generated_at": report["generated_at"].isoformat(),
-        "generated_by": report.get("generated_by"),
-        "users": report.get("users", {}),
-        "runs": report.get("runs", {}),
-        "conversions": report.get("conversions", {}),
-        "feedback": report.get("feedback", {}),
+        "generated_by": report["generated_by"],
+        "users": report["users"],
+        "runs": report["runs"],
+        "conversions": report["conversions"],
+        "feedback": report["feedback"],
     }

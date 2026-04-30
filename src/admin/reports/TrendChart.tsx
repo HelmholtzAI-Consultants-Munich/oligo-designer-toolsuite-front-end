@@ -54,51 +54,57 @@ const GRID_COLOR = "#dee2e6";
 const LABEL_COLOR = "#6c757d";
 
 type TrendPoint = {
-    id: string;
-    label: string;
-    year: number;
-    value: number;
+    reportId: string;
+    monthLabel: string;
+    reportYear: number;
+    metricValue: number;
 };
 
 const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
     const [metricIndex, setMetricIndex] = useState(0);
 
-    const chart = useMemo(() => {
-        const data = reports.slice(0, 12).reverse();
-        if (data.length < 2) {
+    const chartData = useMemo(() => {
+        const recentReports = reports.slice(0, 12).reverse();
+        if (recentReports.length < 2) {
             return null;
         }
 
         const selectedMetric = METRICS[metricIndex] ?? METRICS[0];
-        const points: TrendPoint[] = data.map((report) => ({
-            id: `${report.year}-${String(report.month).padStart(2, "0")}`,
-            label: formatReportMonth(report.month, "short"),
-            year: report.year,
-            value: selectedMetric.getValue(report),
+        const trendPoints: TrendPoint[] = recentReports.map((report) => ({
+            reportId: `${report.year}-${String(report.month).padStart(2, "0")}`,
+            monthLabel: formatReportMonth(report.month, "short"),
+            reportYear: report.year,
+            metricValue: selectedMetric.getValue(report),
         }));
 
         const xScale = scalePoint<string>()
-            .domain(points.map((point) => point.id))
+            .domain(trendPoints.map((point) => point.reportId))
             .range([MARGINS.left, WIDTH - MARGINS.right]);
 
         const yScale = scaleLinear()
-            .domain([0, Math.max(max(points, (point) => point.value) ?? 0, 1)])
+            .domain([
+                0,
+                Math.max(
+                    max(trendPoints, (point) => point.metricValue) ?? 0,
+                    1
+                ),
+            ])
             .nice(4)
             .range([HEIGHT - MARGINS.bottom, MARGINS.top]);
 
         const linePath =
             line<TrendPoint>()
-                .x((point) => xScale(point.id) ?? MARGINS.left)
-                .y((point) => yScale(point.value))(points) ?? "";
+                .x((point) => xScale(point.reportId) ?? MARGINS.left)
+                .y((point) => yScale(point.metricValue))(trendPoints) ?? "";
 
         const areaPath =
             area<TrendPoint>()
-                .x((point) => xScale(point.id) ?? MARGINS.left)
+                .x((point) => xScale(point.reportId) ?? MARGINS.left)
                 .y0(yScale(0))
-                .y1((point) => yScale(point.value))(points) ?? "";
+                .y1((point) => yScale(point.metricValue))(trendPoints) ?? "";
 
         return {
-            points,
+            trendPoints,
             ticks: yScale.ticks(5),
             xScale,
             yScale,
@@ -107,7 +113,7 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
         };
     }, [metricIndex, reports]);
 
-    if (!chart) return null;
+    if (!chartData) return null;
 
     return (
         <Card className="mb-4">
@@ -116,7 +122,9 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
                 <Form.Select
                     size="sm"
                     value={String(metricIndex)}
-                    onChange={(e) => setMetricIndex(Number(e.target.value))}
+                    onChange={(event) =>
+                        setMetricIndex(Number(event.target.value))
+                    }
                     style={{ width: "auto" }}
                 >
                     {METRICS.map(({ label }, index) => (
@@ -132,8 +140,8 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
                     width="100%"
                     aria-label="Trend chart"
                 >
-                    {chart.ticks.map((tick) => {
-                        const y = chart.yScale(tick);
+                    {chartData.ticks.map((tick) => {
+                        const y = chartData.yScale(tick);
                         return (
                             <g key={tick}>
                                 <line
@@ -158,12 +166,12 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
                     })}
 
                     <path
-                        d={chart.areaPath}
+                        d={chartData.areaPath}
                         fill={LINE_COLOR}
                         fillOpacity="0.08"
                     />
                     <path
-                        d={chart.linePath}
+                        d={chartData.linePath}
                         fill="none"
                         stroke={LINE_COLOR}
                         strokeWidth="2.5"
@@ -171,13 +179,14 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
                         strokeLinecap="round"
                     />
 
-                    {chart.points.map((point) => {
-                        const x = chart.xScale(point.id) ?? MARGINS.left;
-                        const y = chart.yScale(point.value);
+                    {chartData.trendPoints.map((point) => {
+                        const x =
+                            chartData.xScale(point.reportId) ?? MARGINS.left;
+                        const y = chartData.yScale(point.metricValue);
 
                         return (
-                            <g key={point.id}>
-                                <title>{`${point.label} ${point.year}: ${point.value}`}</title>
+                            <g key={point.reportId}>
+                                <title>{`${point.monthLabel} ${point.reportYear}: ${point.metricValue}`}</title>
                                 <circle
                                     cx={x}
                                     cy={y}
@@ -193,7 +202,7 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
                                     fontSize="10"
                                     fill={LABEL_COLOR}
                                 >
-                                    {point.label}
+                                    {point.monthLabel}
                                 </text>
                             </g>
                         );

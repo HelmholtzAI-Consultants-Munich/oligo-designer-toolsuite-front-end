@@ -1,9 +1,6 @@
 import type { MonthlyReport } from "./types";
+import { formatPercentage, formatPercentagePoints } from "./formatters";
 
-const pct = (v: number | null) =>
-    v != null ? `${(v * 100).toFixed(1)}%` : "N/A";
-const pp = (v: number | null) =>
-    v != null ? `${(v * 100).toFixed(1)}pp` : "N/A";
 const num = (v: number | null) => (v != null ? String(v) : "N/A");
 
 export function exportReportToCSV(report: MonthlyReport): void {
@@ -31,7 +28,11 @@ export function exportReportToCSV(report: MonthlyReport): void {
         ["Failure", String(runs.by_status.failure), ""],
         ["Pending", String(runs.by_status.pending), ""],
         ["Started", String(runs.by_status.started), ""],
-        ["Success Rate", pct(runs.success_rate), pp(runs.delta_success_rate)],
+        [
+            "Success Rate",
+            formatPercentage(runs.success_rate),
+            formatPercentagePoints(runs.delta_success_rate),
+        ],
         ["Authenticated", String(runs.authenticated), ""],
         ["Anonymous", String(runs.anonymous), ""],
         ...Object.entries(runs.by_pipeline).map(([k, v]) => [k, String(v), ""]),
@@ -44,8 +45,8 @@ export function exportReportToCSV(report: MonthlyReport): void {
         ],
         [
             "Conversion Rate",
-            pct(conversions.conversion_rate),
-            pp(conversions.delta_conversion_rate),
+            formatPercentage(conversions.conversion_rate),
+            formatPercentagePoints(conversions.delta_conversion_rate),
         ],
         [],
         ["--- FEEDBACK ---"],

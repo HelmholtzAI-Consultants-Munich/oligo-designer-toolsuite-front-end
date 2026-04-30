@@ -2,13 +2,10 @@ import React from "react";
 import { Badge, Card, Col, ProgressBar, Row } from "react-bootstrap";
 import { STATUS_CONFIG } from "../shared/types";
 import { getReportPipelineDisplayName, REPORT_PIPELINES } from "./display";
+import { formatPercentage } from "./formatters";
 import DeltaBadge from "./DeltaBadge";
 import type { MonthlyReport } from "./types";
 const STATUSES = ["success", "failure"] as const;
-
-function fmtRate(v: number | null) {
-    return v != null ? `${(v * 100).toFixed(1)}%` : "N/A";
-}
 
 const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
     report,
@@ -60,11 +57,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                                 </span>
                                             </div>
                                             <ProgressBar
-                                                now={
-                                                    pct > 0
-                                                        ? Math.max(pct, 2)
-                                                        : 0
-                                                }
+                                                now={pct}
                                                 variant={
                                                     STATUS_CONFIG.colors[status]
                                                 }
@@ -138,11 +131,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                                 </span>
                                             </div>
                                             <ProgressBar
-                                                now={
-                                                    pct > 0
-                                                        ? Math.max(pct, 2)
-                                                        : 0
-                                                }
+                                                now={pct}
                                                 variant="info"
                                                 style={{ height: "6px" }}
                                             />
@@ -223,7 +212,9 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                         Conversion Rate
                                     </div>
                                     <div className="fs-5 fw-bold">
-                                        {fmtRate(conversions.conversion_rate)}
+                                        {formatPercentage(
+                                            conversions.conversion_rate
+                                        )}
                                     </div>
                                     <DeltaBadge
                                         delta={

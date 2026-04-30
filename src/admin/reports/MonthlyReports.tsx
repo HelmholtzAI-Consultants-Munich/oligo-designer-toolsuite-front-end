@@ -12,6 +12,7 @@ import {
 import { Eye, EyeSlash, Trash, Download } from "react-bootstrap-icons";
 import { formatAdminDateTime } from "../shared/date";
 import { formatReportMonth } from "./display";
+import { formatPercentage } from "./formatters";
 import DeltaBadge from "./DeltaBadge";
 import ExpandedRow from "./ExpandedRow";
 import TrendChart from "./TrendChart";
@@ -20,8 +21,12 @@ import { useMonthlyReports } from "./useMonthlyReports";
 import type { MonthlyReport, ReportPeriod } from "./types";
 const REFRESH_MS = 2000,
     REFRESH_TRIES = 10;
-const NOW = new Date();
-const MAX_MONTH = `${NOW.getFullYear()}-${String(NOW.getMonth() + 1).padStart(2, "0")}`;
+const LAST_COMPLETED_MONTH = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    0
+);
+const MAX_MONTH = `${LAST_COMPLETED_MONTH.getFullYear()}-${String(LAST_COMPLETED_MONTH.getMonth() + 1).padStart(2, "0")}`;
 
 const SUMMARY_COLS = [
     {
@@ -36,13 +41,14 @@ const SUMMARY_COLS = [
     },
     {
         label: "Success Rate",
-        val: (r: MonthlyReport) => fmtRate(r.runs.success_rate),
+        val: (r: MonthlyReport) => formatPercentage(r.runs.success_rate),
         delta: (r: MonthlyReport) => r.runs.delta_success_rate,
         isRate: true,
     },
     {
         label: "Conversion Rate",
-        val: (r: MonthlyReport) => fmtRate(r.conversions.conversion_rate),
+        val: (r: MonthlyReport) =>
+            formatPercentage(r.conversions.conversion_rate),
         delta: (r: MonthlyReport) => r.conversions.delta_conversion_rate,
         isRate: true,
     },
@@ -59,9 +65,6 @@ const SUMMARY_COLS = [
 
 const COL_COUNT = SUMMARY_COLS.length + 3; // expand + Period + summaries + Actions
 
-function fmtRate(v: number | null) {
-    return v != null ? `${(v * 100).toFixed(1)}%` : "N/A";
-}
 function monthsBetween(
     fromYear: number,
     fromMonth: number,
@@ -147,7 +150,9 @@ const MonthlyReports: React.FC = () => {
             return;
         }
         if (toValue > MAX_MONTH) {
-            setRangeError("Cannot generate reports for future months.");
+            setRangeError(
+                "Cannot generate reports for the current or future month."
+            );
             return;
         }
         const months = monthsBetween(fromYear, fromMonth, toYear, toMonth);
