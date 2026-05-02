@@ -69,17 +69,38 @@ class GenomeAlignment extends React.Component<Props> {
         }
         return (
             <>
-                {/* SVG element for D3 to hook into */}
-                <svg
-                    ref={(el) => {
-                        this.el = el;
-                    }}
-                ></svg>
+                <Horizontal gap="md">
+                    <Vertical gap="md" fillHeight className="small">
+                        <div
+                            style={{
+                                writingMode: "vertical-rl",
+                                transform: "rotate(180deg)",
+                            }}
+                        >
+                            Oligos
+                        </div>
+                        <div
+                            className="flex-grow-1 text-center"
+                            style={{
+                                writingMode: "vertical-rl",
+                                transform: "rotate(180deg)",
+                            }}
+                        >
+                            Transcripts
+                        </div>
+                    </Vertical>
+                    {/* SVG element for D3 to hook into */}
+                    <svg
+                        ref={(el) => {
+                            this.el = el;
+                        }}
+                    ></svg>
+                </Horizontal>
 
                 {/* Legend and strand information */}
                 <Vertical>
                     <Horizontal wrap gap="md">
-                        <strong>Legend:</strong>
+                        <strong>Regions:</strong>
                         {Object.keys(Regions)
                             .filter((type) => {
                                 return Object.values(
@@ -113,6 +134,21 @@ class GenomeAlignment extends React.Component<Props> {
                                     </Horizontal>
                                 );
                             })}
+                    </Horizontal>
+                    <Horizontal wrap gap="md">
+                        <strong>Legend:</strong>
+                        <Horizontal gap="sm" align="baseline">
+                            <span
+                                style={{
+                                    display: "inline-block",
+                                    width: "12px",
+                                    height: "12px",
+                                    backgroundColor: "#22bd28",
+                                    marginRight: "5px",
+                                }}
+                            ></span>
+                            Oligo matches transcript
+                        </Horizontal>
                     </Horizontal>
                     <strong>
                         Strand:{" "}

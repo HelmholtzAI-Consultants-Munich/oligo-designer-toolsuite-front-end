@@ -14,11 +14,8 @@ type VisualizationContext = {
     xAxis: d3.Selection<SVGGElement, unknown, null, unknown>;
     zoomBehavior: d3.ZoomBehavior<Element, unknown>;
     currentZoomTransform: d3.ZoomTransform;
-    innerWidth: number;
-    innerHeight: number;
     width: number;
     height: number;
-    margin: number;
 };
 
 const contextByElement = new WeakMap<Element, VisualizationContext>();
@@ -48,11 +45,8 @@ const createContext = (
     genomicRegions: GenomicRegions
 ): VisualizationContext => {
     const svg = d3.select(el);
-    const margin = 20;
     const width = 800;
-    const height = Object.keys(genomicRegions).length * 12 + 150;
-    const innerWidth = width - margin * 2;
-    const innerHeight = height - margin * 2;
+    const height = Object.keys(genomicRegions).length * 12 + 150; // TODO:
 
     const plot = svg.append("g");
     const positionLabel = plot.append("text");
@@ -79,11 +73,8 @@ const createContext = (
         xAxis,
         zoomBehavior,
         currentZoomTransform: d3.zoomIdentity,
-        innerWidth,
-        innerHeight,
         width,
         height,
-        margin,
     };
 };
 
@@ -113,13 +104,13 @@ const setupScalesAndAxes = (
             .flat()
             .flatMap((d: GenomicRegion) => [d.start, d.end]),
     ]) as [number, number];
-    ctx.xScale.domain([ext[0] - 100, ext[1] + 100]).range([0, ctx.innerWidth]);
+    ctx.xScale.domain([ext[0] - 100, ext[1] + 100]).range([0, ctx.width]);
     const axis = d3.axisBottom(ctx.xScale).ticks(8);
 
     // Append the x-axis inside the plot area
     ctx.xAxis
         .attr("class", "x-axis")
-        .attr("transform", `translate(0,${ctx.innerHeight})`)
+        .attr("transform", `translate(0, ${ctx.height - 20})`)
         .call(axis);
 };
 
@@ -135,14 +126,12 @@ const setupElements = (
         .attr("height", ctx.height)
         .attr("style", "width: 100%; height: auto;");
 
-    ctx.plot.attr("transform", `translate(${ctx.margin},${ctx.margin})`);
-
     ctx.locationIndicator
         .attr("id", "location-indicator")
         .attr("x", 0)
         .attr("y", 0)
         .attr("width", ctx.xScale(1) - ctx.xScale(0))
-        .attr("height", ctx.innerHeight)
+        .attr("height", ctx.height)
         .attr("fill", "black")
         .attr("opacity", 0.3)
         .attr("visibility", "hidden")
@@ -157,6 +146,19 @@ const setupElements = (
         .attr("opacity", 0)
         .attr("visibility", "hidden");
 
+    ctx.tooltip
+        .style("opacity", 0)
+        .attr("id", "region-tooltip")
+        .style("background-color", "white")
+        .style("border", "1px solid #b0b0b0")
+        .style("border-width", "1px")
+        .style("border-radius", "5px")
+        .style("box-shadow", "0 0.5rem 1rem rgba(0, 0, 0, 0.1)")
+        .style("padding", "5px")
+        .style("position", "absolute")
+        .style("pointer-events", "none")
+        .style("z-index", "1000");
+
     ctx.oligosGroup
         .attr("class", "oligos")
         .selectAll("rect")
@@ -169,7 +171,34 @@ const setupElements = (
             (d) => ctx.xScale(d.end + 0.5) - ctx.xScale(d.start - 0.5)
         )
         .attr("height", 20)
-        .attr("opacity", (d) => (d.type === "gap" ? 0.5 : 1.0));
+        .attr("opacity", (d) => (d.type === "gap" ? 0.5 : 1.0))
+        .on("mouseover", function () {
+            ctx.tooltip.style("opacity", 1);
+        })
+        .on("mousemove", (event, d) => {
+            ctx.tooltip
+                .html(
+                    `${encodeURI(d.id)}<br>Transcripts:<br>${d.transcript_ids
+                        .map((id) => encodeURI(id))
+                        .join(", ")}`
+                )
+                .style(
+                    "left",
+                    event.pageX > window.innerWidth / 2
+                        ? ""
+                        : event.pageX + 20 + "px"
+                )
+                .style(
+                    "right",
+                    event.pageX > window.innerWidth / 2
+                        ? window.innerWidth - event.pageX + 10 + "px"
+                        : ""
+                )
+                .style("top", event.pageY + "px");
+        })
+        .on("mouseleave", function () {
+            ctx.tooltip.style("opacity", 0);
+        });
 
     // Append line to oligo gaps
     ctx.oligosGroup
@@ -183,22 +212,10 @@ const setupElements = (
         .attr("stroke-width", 2)
         .attr("pointer-events", "none"); // allow clicks to pass through to rects
 
-    ctx.tooltip
-        .style("opacity", 0)
-        .attr("id", "region-tooltip")
-        .style("background-color", "white")
-        .style("border", "1px solid black")
-        .style("border-width", "2px")
-        .style("border-radius", "5px")
-        .style("padding", "5px")
-        .style("position", "absolute")
-        .style("pointer-events", "none")
-        .style("z-index", "1000");
-
     ctx.regionsGroup.attr("class", "genome-regions");
     const transcriptHeight = calculateTranscriptHeight(
         genomicRegions,
-        ctx.innerHeight
+        ctx.height
     );
     Object.entries(genomicRegions).forEach(([transcriptName, regions]) => {
         const yOffset =
@@ -221,12 +238,10 @@ const setupElements = (
                 (d: GenomicRegion) =>
                     `translate(${ctx.xScale(d.start - 0.5)}, 0)`
             )
-            .attr("opacity", (d) => (d.inferred === true ? 0.6 : 0.9))
+            .attr("opacity", 0.9)
             .on("mouseover", function () {
                 ctx.tooltip.style("opacity", 1);
-                d3.select(this).attr("opacity", (d) =>
-                    (d as GenomicRegion).inferred === true ? 0.7 : 1.0
-                );
+                d3.select(this).attr("opacity", 1.0);
             })
             .on("mousemove", (event, d: GenomicRegion) => {
                 ctx.tooltip
@@ -235,17 +250,25 @@ const setupElements = (
                             (d.exon_number
                                 ? " " + encodeURI(d.exon_number.toString())
                                 : "") +
-                            `<br>Transcript: ${encodeURI(transcriptName)}` +
-                            (d.inferred ? "<br><i>(inferred)</i>" : "")
+                            `<br>Transcript: ${encodeURI(transcriptName)}`
                     )
-                    .style("left", event.pageX + 30 + "px")
+                    .style(
+                        "left",
+                        event.pageX > window.innerWidth / 2
+                            ? ""
+                            : event.pageX + 20 + "px"
+                    )
+                    .style(
+                        "right",
+                        event.pageX > window.innerWidth / 2
+                            ? window.innerWidth - event.pageX + 10 + "px"
+                            : ""
+                    )
                     .style("top", event.pageY + "px");
             })
             .on("mouseleave", function () {
                 ctx.tooltip.style("opacity", 0);
-                d3.select(this).attr("opacity", (d) =>
-                    (d as GenomicRegion).inferred === true ? 0.6 : 0.9
-                );
+                d3.select(this).attr("opacity", 0.9);
             });
 
         // Draw a rect for each region
@@ -298,9 +321,9 @@ const setupElements = (
             .append("rect")
             .data([transcriptName])
             .attr("class", "transcript-match-marker")
-            .attr("x", -ctx.margin)
+            .attr("x", 0)
             .attr("y", 0)
-            .attr("width", ctx.margin / 4)
+            .attr("width", 5)
             .attr("height", transcriptHeight)
             .attr("fill", "transparent");
     });
@@ -361,10 +384,9 @@ const setupZoom = (
 ) => {
     const extent: [[number, number], [number, number]] = [
         [0, 0],
-        [ctx.innerWidth, ctx.innerHeight],
+        [ctx.width, ctx.height],
     ];
 
-    // TODO: zoom not centered correctly on mouse position
     ctx.zoomBehavior
         .scaleExtent([
             1,
@@ -434,7 +456,7 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
             .data(bases)
             .join("text")
             .attr("x", (d) => zx(d.position))
-            .attr("y", ctx.innerHeight - 10)
+            .attr("y", ctx.height - 10)
             .attr("font-size", 10)
             .attr("text-anchor", "middle")
             .text((d) => d.char);
@@ -454,7 +476,7 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
             );
             const transcriptHeight = calculateTranscriptHeight(
                 genomicRegions,
-                ctx.innerHeight
+                ctx.height
             );
             visible_regions
                 .selectAll<SVGGElement, GenomicRegion>(".strand-arrows")
@@ -635,8 +657,7 @@ const GenomeAlignmentD3 = {
 
             // Smoothly zoom and pan to center the selected oligo
             const zoomScale = Math.min(
-                (ctx.innerWidth /
-                    (ctx.xScale(oligoEnd) - ctx.xScale(oligoStart))) *
+                (ctx.width / (ctx.xScale(oligoEnd) - ctx.xScale(oligoStart))) *
                     0.9, // add some padding
                 ctx.zoomBehavior.scaleExtent()[1] // don't exceed max zoom
             );
@@ -647,7 +668,7 @@ const GenomeAlignmentD3 = {
                 .call(
                     ctx.zoomBehavior.transform,
                     d3.zoomIdentity
-                        .translate(ctx.innerWidth / 2, 0)
+                        .translate(ctx.width / 2, 0)
                         .scale(zoomScale)
                         .translate(
                             -(
