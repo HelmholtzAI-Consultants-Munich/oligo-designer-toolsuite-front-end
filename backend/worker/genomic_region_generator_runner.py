@@ -1,5 +1,3 @@
-import hashlib
-import json
 import os
 import subprocess
 import uuid
@@ -13,27 +11,6 @@ from filelock import SoftFileLock
 from backend.cache import file_cache_region
 from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
 from backend.worker.converters import to_bool, to_int
-
-
-def get_form_cache_key(_: Any, region_form: dict[str, Any]) -> str:
-    """Generate cache key from genomic region generator form.
-
-    Notes:
-        The first argument gets ignored. For the purpose of this function, see:
-        https://dogpilecache.sqlalchemy.org/en/latest/usage.html#dogpile.cache.region.CacheRegion.params.function_key_generator
-
-    TODO:
-        Investigate why "exon_exon_junction_block_size" gets ignored for this.
-        If it didn't we could avoid using this custom function.
-
-    """
-    relevant_part = {
-        "source": region_form.get("source"),
-        "source_params": region_form.get("source_params"),
-        "genomic_regions": region_form.get("genomic_regions"),
-    }
-    serialized = json.dumps(relevant_part, sort_keys=True)
-    return hashlib.sha256(serialized.encode()).hexdigest()
 
 
 class GenomicRegionGeneratorRunner:
@@ -53,7 +30,7 @@ class GenomicRegionGeneratorRunner:
 
         return self.collect_result_paths(output_path)
 
-    @file_cache_region.cache_on_arguments(function_key_generator=lambda namespace, fn: get_form_cache_key)
+    @file_cache_region.cache_on_arguments()
     def generate_regions(self, region_form: dict[str, Any]) -> Path:
         """Executes the genomic region generator.
 
@@ -115,7 +92,9 @@ class GenomicRegionGeneratorRunner:
                 "genome_assembly": genome_assembly,  # optional
             },
             "genomic_regions": {key: to_bool(val) for key, val in region_form["genomic_regions"].items()},
-            "exon_exon_junction_block_size": to_int(region_form["exon_exon_junction_block_size"]),
+            "exon_exon_junction_block_size": to_int(
+                region_form["exon_exon_junction_block_size"]
+            ),  # TODO: confirm whether users should be able to set this
         }
 
         with open(config_path, "w") as yaml_file:
