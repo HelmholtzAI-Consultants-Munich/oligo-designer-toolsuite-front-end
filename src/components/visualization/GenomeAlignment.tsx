@@ -1,7 +1,8 @@
 import React from "react";
 import type { GenomicRegions, Probe } from "../../types";
-import GenomeAlignmentD3, { Regions } from "./GenomeAlignmentD3";
+import GenomeAlignmentD3 from "./GenomeAlignmentD3";
 import { Horizontal, Vertical } from "../ui/Alignment";
+import { Regions } from "./visualizationHelpers";
 
 type Props = {
     probes: Probe[];

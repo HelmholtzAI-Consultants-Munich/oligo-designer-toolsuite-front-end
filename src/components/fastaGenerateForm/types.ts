@@ -39,15 +39,13 @@ export interface BaseFastaFormDataGeneric<WithComments> {
     exon_exon_junction_block_size: MaybeCommentEntry<WithComments>;
 }
 
-export interface EnsFastaFormDataGeneric<
-    WithComments,
-> extends BaseFastaFormDataGeneric<WithComments> {
+export interface EnsFastaFormDataGeneric<WithComments>
+    extends BaseFastaFormDataGeneric<WithComments> {
     source_params: EnsSourceParams<WithComments>;
 }
 
-export interface NcbiFastaFormDataGeneric<
-    WithComments,
-> extends BaseFastaFormDataGeneric<WithComments> {
+export interface NcbiFastaFormDataGeneric<WithComments>
+    extends BaseFastaFormDataGeneric<WithComments> {
     source_params: NcbiSourceParams<WithComments>;
 }
 
