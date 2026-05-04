@@ -26,7 +26,7 @@ class FileCacheProxy(ProxyBackend):
     """
 
     def _get_path_from_value(self, value: bytes) -> Path:
-        """Inspired by dogpile.cache.CacheRegion._parseserialized_from_backend"""
+        """Inspired by dogpile.cache.CacheRegion._parse_serialized_from_backend"""
         assert self.proxied.deserializer
 
         _, _, bytes_payload = value.partition(b"|")
@@ -85,15 +85,13 @@ class FileCacheProxy(ProxyBackend):
         self.proxied.delete(key)
 
 
-file_cache_region: Annotated[CacheRegion, "see backend.cache.FileCacheProxy"] = (
-    make_region().configure(  # test
-        "dogpile.cache.redis",
-        arguments={
-            "host": Config.REDIS_HOST,
-            "redis_expiration_time": Config.REDIS_EXPIRATION_TIME,
-            "distributed_lock": True,
-            "thread_local_lock": False,
-        },
-        wrap=[FileCacheProxy],
-    )
+file_cache_region: Annotated[CacheRegion, "see backend.cache.FileCacheProxy"] = make_region().configure(
+    "dogpile.cache.redis",
+    arguments={
+        "host": Config.REDIS_HOST,
+        "redis_expiration_time": Config.REDIS_EXPIRATION_TIME,
+        "distributed_lock": True,
+        "thread_local_lock": False,
+    },
+    wrap=[FileCacheProxy],
 )
