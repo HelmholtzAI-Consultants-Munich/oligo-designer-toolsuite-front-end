@@ -48,6 +48,9 @@ export function useMonthlyReports() {
                 const lastMonth = orderedMonths.at(-1);
                 const nextMonth =
                     lastMonth == null ? null : getNextReportPeriod(lastMonth);
+                // Regenerating a month changes its stored values, which the next
+                // month's report reads to compute its delta_* fields — so it must
+                // be regenerated too.
                 const shouldRefreshNextMonth =
                     nextMonth != null &&
                     reports.some(
