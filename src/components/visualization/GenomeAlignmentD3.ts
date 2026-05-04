@@ -327,6 +327,7 @@ const updateLocationIndicator = (ctx: VisualizationContext, xPos: number) => {
     ctx.locationIndicator.attr("x", x);
     ctx.positionLabel
         .attr("x", x)
+        // insert commas for thousands
         .text(snapX.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
 };
 
