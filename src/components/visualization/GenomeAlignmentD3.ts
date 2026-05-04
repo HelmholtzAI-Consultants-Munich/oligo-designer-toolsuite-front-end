@@ -104,7 +104,10 @@ const setupScalesAndAxes = (
             .flat()
             .flatMap((d: GenomicRegion) => [d.start, d.end]),
     ]) as [number, number];
-    ctx.xScale.domain([ext[0] - 100, ext[1] + 100]).range([0, ctx.width]);
+    const extentPadding = (ext[1] - ext[0]) * 0.01; // add % padding on each side
+    ctx.xScale
+        .domain([ext[0] - extentPadding, ext[1] + extentPadding])
+        .range([8, ctx.width - 1]);
     const axis = d3.axisBottom(ctx.xScale).ticks(8);
 
     // Append the x-axis inside the plot area
@@ -139,7 +142,7 @@ const setupElements = (
 
     ctx.positionLabel
         .attr("id", "position-label")
-        .attr("y", -5)
+        .attr("y", ctx.height - 40 + 1) // position above x-axis
         .attr("text-anchor", "middle")
         .attr("font-size", 9)
         .attr("fill", "black")
@@ -157,7 +160,7 @@ const setupElements = (
         .style("padding", "5px")
         .style("position", "absolute")
         .style("pointer-events", "none")
-        .style("z-index", "1000");
+        .style("z-index", "2000");
 
     ctx.oligosGroup
         .attr("class", "oligos")
@@ -165,7 +168,7 @@ const setupElements = (
         .data(oligoPositions)
         .join("rect")
         .attr("x", (d) => ctx.xScale(d.start - 0.5))
-        .attr("y", 10)
+        .attr("y", 0)
         .attr(
             "width",
             (d) => ctx.xScale(d.end + 0.5) - ctx.xScale(d.start - 0.5)
@@ -178,9 +181,11 @@ const setupElements = (
         .on("mousemove", (event, d) => {
             ctx.tooltip
                 .html(
-                    `${encodeURI(d.id)}<br>Transcripts:<br>${d.transcript_ids
-                        .map((id) => encodeURI(id))
-                        .join(", ")}`
+                    `${d.id}<br>Transcripts:<br>${
+                        d.transcript_ids.length < 10
+                            ? d.transcript_ids.join(", ")
+                            : `${d.transcript_ids.length} of ${Object.keys(genomicRegions).length} transcripts match this oligo`
+                    }`
                 )
                 .style(
                     "left",
@@ -207,8 +212,8 @@ const setupElements = (
         .join("line")
         .attr("x1", (d) => ctx.xScale(d.start - 0.5))
         .attr("x2", (d) => ctx.xScale(d.end + 0.5))
-        .attr("y1", 20)
-        .attr("y2", 20)
+        .attr("y1", 10)
+        .attr("y2", 10)
         .attr("stroke-width", 2)
         .attr("pointer-events", "none"); // allow clicks to pass through to rects
 
@@ -238,19 +243,17 @@ const setupElements = (
                 (d: GenomicRegion) =>
                     `translate(${ctx.xScale(d.start - 0.5)}, 0)`
             )
-            .attr("opacity", 0.9)
             .on("mouseover", function () {
                 ctx.tooltip.style("opacity", 1);
-                d3.select(this).attr("opacity", 1.0);
             })
             .on("mousemove", (event, d: GenomicRegion) => {
                 ctx.tooltip
                     .html(
                         Regions[d.regiontype || "unknown"].label +
                             (d.exon_number
-                                ? " " + encodeURI(d.exon_number.toString())
+                                ? " " + d.exon_number.toString()
                                 : "") +
-                            `<br>Transcript: ${encodeURI(transcriptName)}`
+                            `<br>Transcript: ${transcriptName}`
                     )
                     .style(
                         "left",
@@ -268,7 +271,6 @@ const setupElements = (
             })
             .on("mouseleave", function () {
                 ctx.tooltip.style("opacity", 0);
-                d3.select(this).attr("opacity", 0.9);
             });
 
         // Draw a rect for each region
@@ -322,10 +324,34 @@ const setupElements = (
             .data([transcriptName])
             .attr("class", "transcript-match-marker")
             .attr("x", 0)
-            .attr("y", 0)
-            .attr("width", 5)
-            .attr("height", transcriptHeight)
-            .attr("fill", "transparent");
+            .attr("y", 5)
+            .attr("width", 8)
+            .attr("height", transcriptHeight - 10)
+            .attr("fill", "transparent")
+            .on("mouseover", function () {
+                ctx.tooltip.style("opacity", 1);
+            })
+            .on("mousemove", (event, d) => {
+                const matchingOligos = oligoPositions.filter((oligo) =>
+                    oligo.transcript_ids.includes(d)
+                );
+                const uniqueOligoIds = Array.from(
+                    new Set(matchingOligos.map((o) => o.id))
+                );
+                ctx.tooltip
+                    .html(
+                        `Transcript: ${d}<br>Matching Oligos:<br>${
+                            uniqueOligoIds.length < 10
+                                ? uniqueOligoIds.join(", ")
+                                : `${uniqueOligoIds.length} oligos match this transcript`
+                        }`
+                    )
+                    .style("left", event.pageX + 20 + "px")
+                    .style("top", event.pageY + "px");
+            })
+            .on("mouseleave", function () {
+                ctx.tooltip.style("opacity", 0);
+            });
     });
 
     ctx.baseGroup.attr("class", "reference-bases");
@@ -337,7 +363,7 @@ const calculateTranscriptHeight = (
     innerHeight: number
 ) => {
     const transcriptCount = Object.keys(genomicRegions).length;
-    return (innerHeight - 60) / transcriptCount;
+    return (innerHeight - 70) / transcriptCount;
 };
 
 // Set up mouse events for showing location indicator and handling oligo clicks
@@ -347,7 +373,11 @@ const setupMouseEvents = (
     ctx: VisualizationContext,
     setSelectedOligo: (id: string) => void
 ) => {
+    const preventPageScroll: EventListener = (event) => {
+        event.preventDefault();
+    };
     ctx.svg
+        .on("wheel", preventPageScroll, { passive: false })
         .on("mouseenter", () => {
             ctx.locationIndicator.attr("visibility", "visible");
             ctx.positionLabel.attr("visibility", "visible");
@@ -394,7 +424,6 @@ const setupZoom = (
         ]) // max zoom to 100bp width
         .translateExtent(extent)
         .extent(extent)
-        .filter(filter)
         .on("zoom", zoomed(ctx, genomicRegions));
 
     ctx.svg.call(ctx.zoomBehavior);
@@ -456,7 +485,7 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
             .data(bases)
             .join("text")
             .attr("x", (d) => zx(d.position))
-            .attr("y", ctx.height - 10)
+            .attr("y", ctx.height - 25)
             .attr("font-size", 10)
             .attr("text-anchor", "middle")
             .text((d) => d.char);
@@ -484,16 +513,13 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
                     const arrowGroup = d3.select(this);
                     arrowGroup.selectAll("*").remove();
 
-                    // arrows 3 bases apart
-                    const arrowSpacing = 3;
-                    const arrowPath = "M0,-3 L0,3 L5,0 Z"; // simple triangle
-                    const arrowPathInverted = "M0,0 L5,3 L5,-3 Z";
+                    const arrowPath = "M0,-3 L5,0 L0,3";
+                    const arrowPathInverted = "M5,-3 L0,0 L5,3";
 
+                    const arrowSpacing = 5;
                     const startPos =
-                        d.strand === "+"
-                            ? (3 - (d.reading_grid_offset || 0)) % 3
-                            : (d.end - d.start + (d.reading_grid_offset || 0)) %
-                              3;
+                        Math.ceil(d.start / arrowSpacing) * arrowSpacing -
+                        d.start;
 
                     for (
                         let pos = startPos;
@@ -501,17 +527,17 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
                         pos += arrowSpacing
                     ) {
                         const columnWidth = zx(1) - zx(0);
-                        const regionHeight = Math.min(transcriptHeight / 2, 10);
                         arrowGroup
                             .append("path")
                             .attr(
                                 "d",
                                 d.strand === "+" ? arrowPath : arrowPathInverted
                             )
-                            .attr("fill", "white")
+                            .attr("stroke", "white")
+                            .attr("fill", "transparent")
                             .attr(
                                 "transform",
-                                `translate(${pos * columnWidth}, ${transcriptHeight / 2}) scale(${regionHeight / 13})`
+                                `translate(${pos * columnWidth}, ${transcriptHeight / 2})`
                             );
                     }
                 });
@@ -534,15 +560,6 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
             ctx.positionLabel.attr("opacity", 0);
         }
     };
-};
-
-// Prevent scrolling the whole page when zooming inside the SVG
-const filter = (event: d3.D3ZoomEvent<Element, unknown>) => {
-    event.sourceEvent?.preventDefault();
-    return (
-        (!event.sourceEvent?.ctrlKey || event.type === "wheel") &&
-        !event.sourceEvent?.button
-    );
 };
 
 // Collect one base per position from genomic regions within the specified range
@@ -639,7 +656,7 @@ const GenomeAlignmentD3 = {
                 );
                 if (selected) {
                     const isSelected = selected.transcript_ids.includes(d);
-                    return isSelected ? "#22bd28" : "transparent";
+                    return isSelected ? "#22bd28" : "#b0b0b0";
                 }
                 return "transparent";
             });

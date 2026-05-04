@@ -136,7 +136,7 @@ class GenomeAlignment extends React.Component<Props> {
                             })}
                     </Horizontal>
                     <Horizontal wrap gap="md">
-                        <strong>Legend:</strong>
+                        <strong>Transcripts:</strong>
                         <Horizontal gap="sm" align="baseline">
                             <span
                                 style={{
@@ -147,15 +147,17 @@ class GenomeAlignment extends React.Component<Props> {
                                     marginRight: "5px",
                                 }}
                             ></span>
-                            Oligo matches transcript
+                            Selected oligo matches transcript
                         </Horizontal>
                     </Horizontal>
-                    <strong>
-                        Strand:{" "}
+                    <Horizontal wrap gap="md">
+                        <strong>Strand:</strong>
                         {Object.values(this.props.genomicRegions)[0][0][
                             "strand"
-                        ] || "unknown"}
-                    </strong>
+                        ] == "+"
+                            ? "plus"
+                            : "minus"}
+                    </Horizontal>
                 </Vertical>
             </>
         );
