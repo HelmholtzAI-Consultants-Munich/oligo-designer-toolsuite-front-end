@@ -5,12 +5,11 @@ import { BACKEND_URL } from "../config";
 import { Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
-import { pipelineDisplayNames } from "../components/ui/utils";
+import { pipelineDisplayNames, formatDateTime } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../utils/toastUtil";
 import { Horizontal } from "../components/ui/Alignment";
 import { confirmWithModal } from "../utils/modalUtil";
-import type { PipelineRun } from "../types";
 import { navigateWithRunConfig } from "../utils/runConfigHelper";
 
 const Runs = () => {
@@ -31,7 +30,7 @@ const Runs = () => {
                         await axios.delete(BACKEND_URL + `/api/runs/${runId}`, {
                             withCredentials: true,
                         });
-                        updateRuns();
+                        updateRuns(); // Refresh the list of runs after deletion
                         navigate("/runs");
                     } catch (error) {
                         console.error("Error deleting run:", error);
@@ -47,9 +46,6 @@ const Runs = () => {
             },
         });
     };
-
-    const handleUseConfig = (run: PipelineRun) =>
-        navigateWithRunConfig(run, navigate);
 
     const goToRun = (runId: string) => {
         if (runId) {
@@ -111,18 +107,7 @@ const Runs = () => {
                                 {pipelineDisplayNames[run.pipeline] ||
                                     run.pipeline}
                             </td>
-                            <td>
-                                {new Date(run.timestamp).toLocaleString(
-                                    "en-US",
-                                    {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    }
-                                )}
-                            </td>
+                            <td>{formatDateTime(run.timestamp)}</td>
                             <td>
                                 <Horizontal gap="md">
                                     <Button
@@ -137,7 +122,10 @@ const Runs = () => {
                                         size="sm"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleUseConfig(run);
+                                            navigateWithRunConfig(
+                                                run,
+                                                navigate
+                                            );
                                         }}
                                     >
                                         Use Settings

@@ -33,7 +33,7 @@ import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
-import { navigateWithRunConfig } from "../utils/runConfigHelper";
+import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
 
 interface RunFile {
     name: string;
@@ -403,10 +403,7 @@ const RunDetail = () => {
         );
     };
 
-    const handleUseSettings = useCallback(
-        () => (run ? navigateWithRunConfig(run, navigate) : Promise.resolve()),
-        [run, navigate]
-    );
+    const handleUseSettings = useNavigateWithRunConfig(run, navigate);
 
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
 

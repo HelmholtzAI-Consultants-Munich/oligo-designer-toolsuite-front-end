@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useCallback } from "react";
 import { type NavigateFunction } from "react-router";
 import { BACKEND_URL } from "../config";
 import { pipelineDisplayNames, pipelineRoutes } from "../components/ui/utils";
@@ -47,4 +48,18 @@ export async function navigateWithRunConfig(
             });
         }
     }
+}
+
+/**
+ * Hook that returns a stable callback for navigating to a pipeline form
+ * with a run's config pre-loaded. Shared by Runs and RunDetail pages.
+ */
+export function useNavigateWithRunConfig(
+    run: PipelineRun | null | undefined,
+    navigate: NavigateFunction
+) {
+    return useCallback(
+        () => (run ? navigateWithRunConfig(run, navigate) : Promise.resolve()),
+        [run, navigate]
+    );
 }

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
@@ -8,6 +8,7 @@ import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
+import { formatDateTime } from "../ui/utils";
 import {
     BoxArrowInDown,
     BoxArrowUp,
@@ -18,6 +19,7 @@ import {
     buildExportPayload,
     triggerDownload,
     importAndValidate,
+    type ImportResult,
 } from "./pipelineConfigIO";
 import { useRuns } from "../../hooks/useRuns";
 import { Button } from "react-bootstrap";
@@ -109,6 +111,32 @@ const PipelineTemplate: React.FC<Props> = ({
     const location = useLocation();
     const configApplied = useRef(false);
 
+    const applyValidatedConfig = useCallback(
+        (
+            result: Extract<ImportResult, { ok: true }>,
+            importedConfig: unknown,
+            successTitle: string
+        ) => {
+            setFormData((prev) => ({ ...prev, ...result.config }));
+            setFastaForms(convertImportedFastaForms(result.fastaForms));
+            const exportedAt = (
+                importedConfig as { _meta?: { exportedAt?: string } }
+            )._meta?.exportedAt;
+            const dateStr = exportedAt ? formatDateTime(exportedAt) : undefined;
+            const skipNote =
+                result.skippedFields.length > 0
+                    ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
+                    : "";
+            const datePart = dateStr ? ` from ${dateStr}` : "";
+            showToast({
+                title: successTitle,
+                content: `Configuration${datePart} loaded.${skipNote}`,
+                type: "success",
+            });
+        },
+        [setFormData, setFastaForms]
+    );
+
     // Apply a config that was passed via navigation location state (e.g. "Use Settings" in Runs page).
     // This mirrors the existing file-import flow exactly.
     useEffect(() => {
@@ -132,29 +160,7 @@ const PipelineTemplate: React.FC<Props> = ({
             });
             return;
         }
-        setFormData((prev) => ({ ...prev, ...result.config }));
-        setFastaForms(convertImportedFastaForms(result.fastaForms));
-        const exportedAt = (
-            importedConfig as { _meta?: { exportedAt?: string } }
-        )._meta?.exportedAt;
-        const dateStr = exportedAt
-            ? new Date(exportedAt).toLocaleString("en-US", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-              })
-            : "unknown date";
-        const skipNote =
-            result.skippedFields.length > 0
-                ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
-                : "";
-        showToast({
-            title: "Config Loaded",
-            content: `Configuration from run started on ${dateStr} was applied.${skipNote}`,
-            type: "success",
-        });
+        applyValidatedConfig(result, importedConfig, "Config Loaded");
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -199,20 +205,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 });
                 return;
             }
-            setFormData((prev) => ({
-                ...prev,
-                ...result.config,
-            }));
-            setFastaForms(convertImportedFastaForms(result.fastaForms));
-            const skipNote =
-                result.skippedFields.length > 0
-                    ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
-                    : "";
-            showToast({
-                title: "Import Successful",
-                content: `Configuration loaded.${skipNote}`,
-                type: "success",
-            });
+            applyValidatedConfig(result, parsed, "Import Successful");
         };
         reader.readAsText(file);
     };
