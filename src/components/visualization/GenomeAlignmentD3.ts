@@ -17,7 +17,7 @@ type VisualizationContext = {
     svg: d3.Selection<Element, unknown, null, unknown>;
     plot: d3.Selection<SVGGElement, unknown, null, unknown>;
     locationIndicator: d3.Selection<SVGRectElement, unknown, null, unknown>;
-    positionLabel: d3.Selection<SVGTextElement, unknown, null, unknown>;
+    positionLabelGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     oligosGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown>;
     regionsGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
@@ -53,7 +53,6 @@ const createContext = (
 
     const plot = svg.append("g");
     const locationIndicator = plot.append("rect");
-    const positionLabel = plot.append("text");
     const oligosGroup = plot.append("g");
     const tooltip = d3.select("body").append("div");
     const regionsGroup = plot.append("g");
@@ -63,12 +62,17 @@ const createContext = (
     const zoomBehavior = d3.zoom();
     const xScale = d3.scaleLinear();
     const xAxis = plot.append("g");
+    const positionLabelGroup = plot
+        .append("g")
+        .attr("id", "position-label-group");
+    positionLabelGroup.append("rect");
+    positionLabelGroup.append("text");
 
     return {
         svg,
         plot,
         locationIndicator,
-        positionLabel,
+        positionLabelGroup,
         oligosGroup,
         tooltip,
         regionsGroup,
@@ -125,20 +129,30 @@ const setupElements = (
         .attr("x", 0)
         .attr("y", 0)
         .attr("width", ctx.xScale(1) - ctx.xScale(0))
-        .attr("height", ctx.height)
+        .attr("height", ctx.height - AXIS_HEIGHT)
         .attr("fill", "black")
-        .attr("opacity", 0.3)
+        .attr("opacity", 0.25)
         .attr("visibility", "hidden")
         .attr("pointer-events", "none"); // allow mouse events to pass through
 
-    ctx.positionLabel
+    ctx.positionLabelGroup
+        .select("text")
         .attr("id", "position-label")
         .attr("y", OLIGO_HEIGHT + GAP / 2 + 5) // position above x-axis
-        .attr("text-anchor", "left")
+        .attr("text-anchor", "start")
         .attr("font-size", 9)
-        .attr("fill", "black")
+        .attr("fill", "black");
+
+    ctx.positionLabelGroup
+        .select("rect")
+        .attr("fill", "rgb(242.25, 245.1, 246.55)")
+        .attr("opacity", 1)
+        .attr("pointer-events", "none");
+
+    ctx.positionLabelGroup
         .attr("opacity", 0)
-        .attr("visibility", "hidden");
+        .attr("visibility", "hidden")
+        .attr("pointer-events", "none");
 
     ctx.tooltip
         .style("opacity", 0)
@@ -193,9 +207,10 @@ const setupElements = (
 
     // Append line to oligo gaps
     ctx.oligosGroup
-        .selectAll("line")
+        .selectAll("line.gap")
         .data(oligoPositions.filter((d) => d.type === "gap"))
         .join("line")
+        .attr("class", "gap")
         .attr("x1", (d) => ctx.xScale(d.start - 0.5))
         .attr("x2", (d) => ctx.xScale(d.end + 0.5))
         .attr("y1", OLIGO_HEIGHT / 2)
@@ -330,10 +345,28 @@ const updateLocationIndicator = (ctx: VisualizationContext, xPos: number) => {
     const x = zx(snapX - 0.5);
 
     ctx.locationIndicator.attr("x", x);
-    ctx.positionLabel
+    ctx.positionLabelGroup
+        .select("text")
         .attr("x", x + 10) // add some padding from the indicator
         // insert commas for thousands
         .text(snapX.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+
+    const positionLabelNode = ctx.positionLabelGroup
+        .select("text")
+        .node() as SVGTextElement;
+    if (!positionLabelNode) {
+        return;
+    }
+
+    const { x: labelX, y: labelY, width, height } = positionLabelNode.getBBox();
+    const paddingX = 1;
+    const paddingY = 5;
+    ctx.positionLabelGroup
+        .select("rect")
+        .attr("x", labelX - paddingX)
+        .attr("y", labelY - paddingY)
+        .attr("width", width + paddingX * 2)
+        .attr("height", height + paddingY * 2);
 };
 
 // Set up mouse events for showing location indicator and handling oligo clicks
@@ -350,7 +383,7 @@ const setupMouseEvents = (
         .on("wheel", preventPageScroll, { passive: false })
         .on("mouseenter", () => {
             ctx.locationIndicator.attr("visibility", "visible");
-            ctx.positionLabel.attr("visibility", "visible");
+            ctx.positionLabelGroup.attr("visibility", "visible");
         })
         .on("mousemove", (event) => {
             const [xPos] = d3.pointer(event, ctx.plot.node());
@@ -358,7 +391,7 @@ const setupMouseEvents = (
         })
         .on("mouseleave", () => {
             ctx.locationIndicator.attr("visibility", "hidden");
-            ctx.positionLabel.attr("visibility", "hidden");
+            ctx.positionLabelGroup.attr("visibility", "hidden");
         });
 
     ctx.oligosGroup
@@ -422,7 +455,7 @@ const zoomed = (
 
         // Rescale oligo gap lines
         ctx.oligosGroup
-            .selectAll<SVGLineElement, OligoPosition>("line")
+            .selectAll<SVGLineElement, OligoPosition>("line.gap")
             .attr("x1", (d) => zx(d.start - 0.5))
             .attr("x2", (d) => zx(d.end + 0.5));
 
@@ -483,37 +516,19 @@ const zoomed = (
             .attr("text-anchor", "middle")
             .text((d) => d.char);
 
-        // Show reading grid ticks only when zoomed in and only if in view
-        const readingGridTicks = showBases
-            ? collectReadingGridTicks(
-                  genomicRegions,
-                  Math.floor(domain[0]),
-                  Math.ceil(domain[1])
-              )
-            : [];
-        ctx.readingGridTicksGroup
-            .selectAll<SVGLineElement, ReadingGridTick>("line")
-            .data(readingGridTicks, (d) => `${d.position}-${d.transcriptIndex}`)
+        // Show bindings of the oligos to transcripts when zoomed in
+        ctx.regionsGroup
+            .selectAll<SVGLineElement, OligoPosition>("line.binding")
+            .data(oligoBases)
             .join("line")
-            .attr("x1", (d) => zx(d.position + 0.5))
-            .attr("x2", (d) => zx(d.position + 0.5))
-            .attr("y1", (d) => {
-                const yOffset =
-                    OLIGO_HEIGHT +
-                    GAP +
-                    d.transcriptIndex * TRANSCRIPT_HEIGHT;
-                return yOffset + TRANSCRIPT_HEIGHT / 2 - 2;
-            })
-            .attr("y2", (d) => {
-                const yOffset =
-                    OLIGO_HEIGHT +
-                    GAP +
-                    d.transcriptIndex * TRANSCRIPT_HEIGHT;
-                return yOffset + TRANSCRIPT_HEIGHT / 2 + 2;
-            })
-            .attr("stroke", "#cccccc")
+            .attr("class", "binding")
+            .attr("x1", (d) => zx(d.position))
+            .attr("x2", (d) => zx(d.position))
+            .attr("y1", OLIGO_HEIGHT + 20)
+            .attr("y2", OLIGO_HEIGHT + GAP - 15)
+            .attr("stroke", "#999")
             .attr("stroke-width", 1)
-            .attr("pointer-events", "none");
+            .attr("pointer-events", "none"); // allow mouse events to pass through
 
         // Generate and render strand arrows
         if (showArrows) {
@@ -574,65 +589,13 @@ const zoomed = (
 
         // Show location when bases are shown
         if (showBases) {
-            ctx.locationIndicator.attr("opacity", 0.3);
-            ctx.positionLabel.attr("opacity", 1);
+            ctx.locationIndicator.attr("opacity", 0.25);
+            ctx.positionLabelGroup.attr("opacity", 1);
         } else {
             ctx.locationIndicator.attr("opacity", 0);
-            ctx.positionLabel.attr("opacity", 0);
+            ctx.positionLabelGroup.attr("opacity", 0);
         }
     };
-};
-
-// Collect reading grid ticks from genomic regions within the specified range
-// Ticks appear after every 3 bases in the reading frame
-type ReadingGridTick = { position: number; transcriptIndex: number };
-
-const collectReadingGridTicks = (
-    genomicRegions: GenomicRegions,
-    start: number,
-    end: number
-): ReadingGridTick[] => {
-    const ticks: ReadingGridTick[] = [];
-    let transcriptIndex = 0;
-
-    console.log("Collecting reading grid ticks for range:", genomicRegions);
-
-    Object.entries(genomicRegions).forEach(([, regions]) => {
-        const exonRegions = regions.filter(
-            (region) =>
-                region.exom_position !== undefined
-        );
-
-        exonRegions.forEach((region) => {
-            if (region.end < start || region.start > end) {
-                return; // region not in visible range
-            }
-
-            // Calculate the first tick position in this region
-            const direction = region.strand === "+" ? 1 : -1;
-            const offset = region.exom_position! % 3;
-            const firstTickInRegion = direction === 1
-                ? region.start + ((3 - offset) % 3)
-                : region.end - ((3 - offset) % 3);
-            const regionStart = Math.max(region.start, start);
-            const regionEnd = Math.min(region.end, end);
-
-            // Collect all tick positions in this region and visible range
-            for (
-                let pos = firstTickInRegion;
-                direction === 1 ? pos <= regionEnd : pos >= regionStart;
-                pos += 3 * direction
-            ) {
-                if (pos >= regionStart) {
-                    ticks.push({ position: pos, transcriptIndex });
-                }
-            }
-        });
-
-        transcriptIndex++;
-    });
-
-    return ticks;
 };
 
 const GenomeAlignmentD3 = {
@@ -678,7 +641,7 @@ const GenomeAlignmentD3 = {
             );
 
         ctx.oligosGroup
-            .selectAll<SVGLineElement, OligoPosition>("line")
+            .selectAll<SVGLineElement, OligoPosition>("line.gap")
             .data(oligoPositions.filter((d) => d.type === "gap"))
             .join("line")
             .attr("stroke", (d) =>

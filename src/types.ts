@@ -17,7 +17,6 @@ export interface GenomicRegion {
     start: number;
     end: number;
     sequence: string;
-    exom_position?: number;
     strand?: "+" | "-";
     regiontype?: string;
     inferred?: boolean;

@@ -326,15 +326,6 @@ class GenomicRegionsFile:
 
                 if last_region is not None:
                     merged_regions.append(last_region)
-                
-                # if there are no exon-exon-junctions left, we can calculate exom_position for all exons
-                if not any(r["regiontype"] == "exonexonjunction" for r in merged_regions):
-                    exom_cursor = 0
-                    for region in sorted(merged_regions, key=lambda x: x["start"] if strand == "+" else x["end"], reverse=(strand == "-")):
-                        if region["regiontype"] == "exon":
-                            region["exom_position"] = exom_cursor
-                            if region["sequence"] is not None:
-                                exom_cursor += region["end"] - region["start"] + 1
 
                 processed_regions[gene][transcript_id] = merged_regions
 
