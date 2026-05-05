@@ -98,8 +98,24 @@ class BaseGenomicDataBase:
         return self.name, self._build_directory_dict(top_dirs, species_dirs)
 
     # ---- Genomic Asset Fetching ----
-    def _download(self, url: str, file_path: Path) -> None:
-        """Downloads the file if it changed."""
+    def _download(self, dir: str, remote_filename: str) -> Path:
+        """Downloads the file if it changed.
+
+        Notes:
+            This function avoids redownloads if the file is already present and up-to-date.
+            Since compressed files are deleted after decompression, this does not suffice as
+            a caching solution for genomic downloads - see _download_and_process for that.
+
+        Returns:
+            pathlib.Path -- The local file path of the downloaded resource.
+        """
+        url = f"https://{self.host}/{dir}/{remote_filename}"
+        url_hash = hashlib.md5(url.encode()).hexdigest()
+        if self.cache_dir is None:
+            raise RuntimeError("No caching directory set for genomic downloads.")
+        file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_filename}").resolve()
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
         headers: dict[str, str] = {}
 
         if file_path.exists():
@@ -110,7 +126,7 @@ class BaseGenomicDataBase:
             response.raise_for_status()
 
             if response.status_code == requests.codes.not_modified:  # type: ignore
-                return
+                return file_path
 
             if response.status_code == requests.codes.ok:  # type: ignore
                 with open(file_path, "wb") as f:
@@ -120,6 +136,7 @@ class BaseGenomicDataBase:
                 if last_modified := response.headers.get("last-modified"):
                     new_mtime = parsedate_to_datetime(last_modified).timestamp()
                     os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
+        return file_path
 
     @abstractmethod
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
@@ -135,19 +152,14 @@ class BaseGenomicDataBase:
 
         Notes:
             This function is decorated with our file cache to serve as the level 2 cache.
+            Since expected_checksum is part of the caching key and the download of checksums
+            is not being cached, a redownload will occur if the checksum changes.
 
         Returns:
             pathlib.Path -- The local file path of the downloaded resource.
         """
-        url = f"https://{self.host}/{dir}/{remote_filename}"
-        url_hash = hashlib.md5(url.encode()).hexdigest()
-        if self.cache_dir is None:
-            raise RuntimeError("No caching directory set for genomic downloads.")
-        file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_filename}").resolve()
-        file_path.parent.mkdir(parents=True, exist_ok=True)
-
         # Download file
-        self._download(url, file_path)
+        file_path = self._download(dir, remote_filename)
 
         # Verify checksum if provided
         if expected_checksum is not None and not self._verify_file(file_path, expected_checksum):
@@ -161,13 +173,8 @@ class BaseGenomicDataBase:
                 with open(uncompressed_file_path, "wb") as extract:
                     shutil.copyfileobj(archive, extract)
 
-            # NOTE: The compressed files are currently still kept since the _download caching
-            #   is based on their file metadata.
-            # TODO: Find a neat solution for avoiding redundant files.
-            #   Option 1: rely solely on the TTL-based file_cache_region caching
-            #   Option 2: never uncompress files & make genomic region generator handle compressed files
-            # # Delete compressed file
-            # file_path.unlink()
+            # Delete compressed file
+            file_path.unlink()
             file_path = uncompressed_file_path
 
         return file_path
@@ -193,7 +200,8 @@ class BaseGenomicDataBase:
 
         # set -> if the dirs are equal, the checksums are only downloaded once
         for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
-            checksums_path = self._download_and_process(dir, checksums_filename, expected_checksum=None)
+            # always download without caching in case checksums changed
+            checksums_path = self._download(dir, checksums_filename)
             with open(checksums_path) as checksums_file:
                 for line in checksums_file:
                     if (parsed_line := self._parse_checksum_line(line)) is not None:
@@ -460,7 +468,8 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
     # ---- Genomic Asset Fetching ----
     def _get_assembly_information(self, rel_dir: str, filename: str) -> tuple[str | None, str | None]:
-        file_path = self._download_and_process(rel_dir, filename, expected_checksum=None)
+        # always download without caching since accession of "latest" release could change
+        file_path = self._download(rel_dir, filename)
         with open(file_path) as file:
             assembly_name, accession = None, None
             for line in file:
