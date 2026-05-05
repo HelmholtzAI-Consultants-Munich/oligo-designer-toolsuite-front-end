@@ -467,17 +467,31 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         return dirs
 
     # ---- Genomic Asset Fetching ----
-    def _get_assembly_information(self, rel_dir: str, filename: str) -> tuple[str | None, str | None]:
+    def _get_assembly_information(self, rel_dir: str, filename: str) -> tuple[str, str]:
+        assembly_prefix = "# Assembly name:"
+        accession_prefix = "# RefSeq assembly accession:"
+
+        def _extract_identifier(line: str, prefix: str) -> str:
+            return "_".join(line.removeprefix(prefix).strip().split())
+
         # always download without caching since accession of "latest" release could change
         file_path = self._download(rel_dir, filename)
         with open(file_path) as file:
             assembly_name, accession = None, None
             for line in file:
-                if line.startswith("# Assembly name:"):
-                    _, assembly_name = line.strip().rsplit(maxsplit=1)
-                if line.startswith("# RefSeq assembly accession:"):
-                    _, accession = line.strip().rsplit(maxsplit=1)
+                if line.startswith(assembly_prefix):
+                    assembly_name = _extract_identifier(line, assembly_prefix)
+                    continue
+                if line.startswith(accession_prefix):
+                    accession = _extract_identifier(line, accession_prefix)
                     break
+
+        if assembly_name is None:
+            raise ValueError("Failed to parse assembly name from assembly report.")
+
+        if accession is None:
+            raise ValueError("Failed to parse accession from assembly report.")
+
         return assembly_name, accession
 
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
@@ -534,8 +548,6 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 raise RuntimeError(f"No assembly report found in {rel_dir}")
 
         assembly_name, accession = self._get_assembly_information(rel_dir, assembly_report)
-        if not assembly_name or not accession:
-            raise RuntimeError("Failed to parse assembly/accession from README.")
 
         nested = f"{rel_dir}{accession}_{assembly_name}/"
 
