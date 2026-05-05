@@ -83,11 +83,11 @@ export const transcriptTooltipHTML = (
 };
 
 export const calculeArrowSpacing = (visibleRange: number) => {
-    if (visibleRange <= 200) return 5;
-    if (visibleRange <= 400) return 10;
-    if (visibleRange <= 800) return 20;
-    if (visibleRange <= 1600) return 40;
-    return 80;
+    if (visibleRange <= 150) return 10;
+    if (visibleRange <= 300) return 20;
+    if (visibleRange <= 600) return 40;
+    if (visibleRange <= 1200) return 80;
+    return 160;
 };
 
 // Collect one base per position from genomic regions within the specified range

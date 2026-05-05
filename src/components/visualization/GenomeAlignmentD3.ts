@@ -22,6 +22,7 @@ type VisualizationContext = {
     tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown>;
     regionsGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     baseGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
+    readingGridTicksGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     xScale: d3.ScaleLinear<number, number>;
     xAxis: d3.Selection<SVGGElement, unknown, null, unknown>;
     zoomBehavior: d3.ZoomBehavior<Element, unknown>;
@@ -33,7 +34,7 @@ const contextByElement = new WeakMap<Element, VisualizationContext>();
 
 const WIDTH = 800;
 const OLIGO_HEIGHT = 20;
-const TRANSCRIPT_HEIGHT = 25;
+const TRANSCRIPT_HEIGHT = 20;
 const TRANSCRIPT_MARKER_WIDTH = 8;
 const GAP = 50;
 const AXIS_HEIGHT = 20;
@@ -57,6 +58,7 @@ const createContext = (
     const tooltip = d3.select("body").append("div");
     const regionsGroup = plot.append("g");
     const baseGroup = plot.append("g");
+    const readingGridTicksGroup = plot.append("g");
 
     const zoomBehavior = d3.zoom();
     const xScale = d3.scaleLinear();
@@ -71,6 +73,7 @@ const createContext = (
         tooltip,
         regionsGroup,
         baseGroup,
+        readingGridTicksGroup,
         xScale,
         xAxis,
         zoomBehavior,
@@ -316,6 +319,7 @@ const setupElements = (
     });
 
     ctx.baseGroup.attr("class", "reference-bases");
+    ctx.readingGridTicksGroup.attr("class", "reading-grid-ticks");
 };
 
 // helper function to update location indicator and position label
@@ -479,6 +483,38 @@ const zoomed = (
             .attr("text-anchor", "middle")
             .text((d) => d.char);
 
+        // Show reading grid ticks only when zoomed in and only if in view
+        const readingGridTicks = showBases
+            ? collectReadingGridTicks(
+                  genomicRegions,
+                  Math.floor(domain[0]),
+                  Math.ceil(domain[1])
+              )
+            : [];
+        ctx.readingGridTicksGroup
+            .selectAll<SVGLineElement, ReadingGridTick>("line")
+            .data(readingGridTicks, (d) => `${d.position}-${d.transcriptIndex}`)
+            .join("line")
+            .attr("x1", (d) => zx(d.position + 0.5))
+            .attr("x2", (d) => zx(d.position + 0.5))
+            .attr("y1", (d) => {
+                const yOffset =
+                    OLIGO_HEIGHT +
+                    GAP +
+                    d.transcriptIndex * TRANSCRIPT_HEIGHT;
+                return yOffset + TRANSCRIPT_HEIGHT / 2 - 2;
+            })
+            .attr("y2", (d) => {
+                const yOffset =
+                    OLIGO_HEIGHT +
+                    GAP +
+                    d.transcriptIndex * TRANSCRIPT_HEIGHT;
+                return yOffset + TRANSCRIPT_HEIGHT / 2 + 2;
+            })
+            .attr("stroke", "#cccccc")
+            .attr("stroke-width", 1)
+            .attr("pointer-events", "none");
+
         // Generate and render strand arrows
         if (showArrows) {
             const regions = ctx.regionsGroup.selectAll<
@@ -545,6 +581,58 @@ const zoomed = (
             ctx.positionLabel.attr("opacity", 0);
         }
     };
+};
+
+// Collect reading grid ticks from genomic regions within the specified range
+// Ticks appear after every 3 bases in the reading frame
+type ReadingGridTick = { position: number; transcriptIndex: number };
+
+const collectReadingGridTicks = (
+    genomicRegions: GenomicRegions,
+    start: number,
+    end: number
+): ReadingGridTick[] => {
+    const ticks: ReadingGridTick[] = [];
+    let transcriptIndex = 0;
+
+    console.log("Collecting reading grid ticks for range:", genomicRegions);
+
+    Object.entries(genomicRegions).forEach(([, regions]) => {
+        const exonRegions = regions.filter(
+            (region) =>
+                region.exom_position !== undefined
+        );
+
+        exonRegions.forEach((region) => {
+            if (region.end < start || region.start > end) {
+                return; // region not in visible range
+            }
+
+            // Calculate the first tick position in this region
+            const direction = region.strand === "+" ? 1 : -1;
+            const offset = region.exom_position! % 3;
+            const firstTickInRegion = direction === 1
+                ? region.start + ((3 - offset) % 3)
+                : region.end - ((3 - offset) % 3);
+            const regionStart = Math.max(region.start, start);
+            const regionEnd = Math.min(region.end, end);
+
+            // Collect all tick positions in this region and visible range
+            for (
+                let pos = firstTickInRegion;
+                direction === 1 ? pos <= regionEnd : pos >= regionStart;
+                pos += 3 * direction
+            ) {
+                if (pos >= regionStart) {
+                    ticks.push({ position: pos, transcriptIndex });
+                }
+            }
+        });
+
+        transcriptIndex++;
+    });
+
+    return ticks;
 };
 
 const GenomeAlignmentD3 = {
