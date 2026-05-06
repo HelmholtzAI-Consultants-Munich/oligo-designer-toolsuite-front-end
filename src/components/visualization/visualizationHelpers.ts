@@ -1,3 +1,5 @@
+import type { GenomicRegion, GenomicRegions, Probe } from "../../types";
+
 export const reverseComplement = (sequence: string): string => {
     return sequence
         .split("")
@@ -18,8 +20,6 @@ export const reverseComplement = (sequence: string): string => {
         })
         .join("");
 };
-
-import type { GenomicRegion, GenomicRegions, Probe } from "../../types";
 
 export type OligoPosition = {
     start: number;
@@ -47,10 +47,12 @@ export const oligoTooltipHTML = (d: Probe, genomicRegions: GenomicRegions) => {
     const totalTranscripts = Object.keys(genomicRegions).length;
     return (
         d.oligo_id +
-        "<br>Transcripts:<br>" +
-        (matchingTranscripts < 10
-            ? d.transcript_ids.join(", ")
-            : `${matchingTranscripts} of ${totalTranscripts} transcripts match this oligo`)
+        (matchingTranscripts !== 0
+            ? "<br>Transcripts:<br>" +
+              (matchingTranscripts < 10
+                  ? d.transcript_ids.join(", ")
+                  : `${matchingTranscripts} of ${totalTranscripts} transcripts match this oligo`)
+            : "")
     );
 };
 
@@ -58,7 +60,9 @@ export const regionTooltipHTML = (d: GenomicRegion, transcriptName: string) => {
     return (
         Regions[d.regiontype || "unknown"].label +
         (d.exon_number ? " " + d.exon_number.toString() : "") +
-        `<br>Transcript: ${transcriptName}`
+        (transcriptName !== "unknown"
+            ? `<br>Transcript: ${transcriptName}`
+            : "")
     );
 };
 
@@ -93,12 +97,17 @@ export const collectReferenceBases = (
     start: number,
     end: number
 ) => {
-    const allRegions = Object.values(regions).flat();
-    allRegions.sort((a, b) => a.start - b.start);
+    const visibleRegions = Object.values(regions).flatMap((regions) =>
+        regions.filter(
+            (region) =>
+                region.end >= start && region.start <= end && region.sequence
+        )
+    );
+    visibleRegions.sort((a, b) => a.start - b.start);
     let collectingPosition = start;
     const bases: Base[] = [];
 
-    allRegions.forEach((region) => {
+    visibleRegions.forEach((region) => {
         if (!region.sequence) {
             return;
         }

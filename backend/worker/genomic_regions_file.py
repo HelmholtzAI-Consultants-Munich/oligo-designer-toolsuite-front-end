@@ -74,7 +74,7 @@ class GenomicRegionsFile:
                 if strand == "-":
                     # reverse sequence for negative strand
                     region_sequence = region_sequence[::-1]
-                transcript_ids = additional_info.get("transcript_id", ["transcript_unknown"])
+                transcript_ids = additional_info.get("transcript_id", ["unknown"])
 
                 for transcript_index, transcript_id in enumerate(transcript_ids):
                     transcript_sequence = region_sequence
@@ -155,16 +155,11 @@ class GenomicRegionsFile:
                     # only keep entries whose key begins with "Oligo "
                     oligos = filter(lambda x: x[0].startswith("Oligo "), oligoset_entries.items())
                     for _, oligo_info in oligos:
-                        regiontype = (
-                            oligo_info.get("regiontype", [])[0][0]
-                            if "regiontype" in oligo_info
-                            else "unknown"
-                        )
-                        start = oligo_info.get("start", [])[0][0]
-                        end = oligo_info.get("end", [])[0][0]
-                        transcript_ids = oligo_info.get("transcript_id", [])[0]
-                        exon_num_raw = oligo_info.get("exon_number", [None])[0]
-                        exon_numbers = list(exon_num_raw) if isinstance(exon_num_raw, list) else exon_num_raw
+                        regiontype = oligo_info.get("regiontype", [["unknown"]])[0][0]
+                        start = oligo_info["start"][0][0]
+                        end = oligo_info["end"][0][0]
+                        transcript_ids = oligo_info.get("transcript_id", [[]])[0]
+                        exon_numbers = oligo_info.get("exon_number", [[]])[0]
 
                         components = []
 
@@ -173,6 +168,8 @@ class GenomicRegionsFile:
                             components.append({"start": start, "end": end, "type": "probe"})
                         else:
                             # for exon-exon junction probes, add gaps between exons as components
+                            # use canonical transcript and exon number to determine exon boundaries for gaps
+                            # they have to be available in exon-exon junction probes
                             canonical_transcript_id = transcript_ids[0]
                             canonical_exon_number = exon_numbers[0]
                             canonical_regions = sorted(
@@ -183,7 +180,7 @@ class GenomicRegionsFile:
                                 ],
                                 key=lambda x: x["start"],
                             )
-                            if canonical_regions is None:
+                            if not canonical_regions:
                                 print(
                                     f"Warning: Could not find canonical region for probe {oligo_info.get('oligo_id', '')} in gene {gene}, skipping."
                                 )

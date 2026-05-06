@@ -60,6 +60,10 @@ class GenomeAlignment extends React.Component<Props> {
     }
 
     render() {
+        const transcriptIds = Object.keys(this.props.genomicRegions || {});
+        const isGene =
+            transcriptIds.length === 1 && transcriptIds[0] === "unknown";
+
         if (!this.props.genomicRegions) {
             return (
                 <p>
@@ -87,7 +91,7 @@ class GenomeAlignment extends React.Component<Props> {
                                 transform: "rotate(180deg)",
                             }}
                         >
-                            Transcripts
+                            {isGene ? "Gene" : "Transcripts"}
                         </div>
                     </Vertical>
                     {/* SVG element for D3 to hook into */}

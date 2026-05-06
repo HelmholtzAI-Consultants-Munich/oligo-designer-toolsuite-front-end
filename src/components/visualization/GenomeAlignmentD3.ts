@@ -141,6 +141,7 @@ const setupElements = (
         .attr("height", ctx.height)
         .attr("style", "width: 100%; height: auto;");
 
+    // Location indicator as vertical bar following the mouse
     ctx.locationIndicator
         .attr("id", "location-indicator")
         .attr("x", 0)
@@ -152,25 +153,29 @@ const setupElements = (
         .attr("visibility", "hidden")
         .attr("pointer-events", "none"); // allow mouse events to pass through
 
+    // Position label text (number)
     ctx.positionLabelGroup
         .select("text")
         .attr("id", "position-label")
-        .attr("y", OLIGO_HEIGHT + GAP / 2 + 5) // position above x-axis
+        .attr("y", OLIGO_HEIGHT + GAP / 2 + 5) // position within the gap between oligos and transcripts
         .attr("text-anchor", "start")
         .attr("font-size", 9)
         .attr("fill", "black");
 
+    // Position label background
     ctx.positionLabelGroup
         .select("rect")
         .attr("fill", "rgb(242.25, 245.1, 246.55)")
         .attr("opacity", 1)
         .attr("pointer-events", "none");
 
+    // Initially hide position label until mouse enters
     ctx.positionLabelGroup
         .attr("opacity", 0)
         .attr("visibility", "hidden")
         .attr("pointer-events", "none");
 
+    // Tooltip div for oligos, regions, and transcripts
     ctx.tooltip
         .style("opacity", 0)
         .attr("id", "region-tooltip")
@@ -184,6 +189,7 @@ const setupElements = (
         .style("pointer-events", "none")
         .style("z-index", "2000");
 
+    // Draw oligo components (probes and gaps)
     ctx.oligosGroup
         .selectAll("g.components")
         .selectAll("rect")
@@ -198,6 +204,7 @@ const setupElements = (
         .attr("height", (d) => (d.type === "gap" ? 2 : OLIGO_HEIGHT))
         .attr("pointer-events", "none"); // allow mouse events to pass through to probe rects
 
+    // Draw probe rectangles
     ctx.oligosGroup
         .selectAll("g.probes")
         .selectAll("rect")
@@ -247,6 +254,7 @@ const setupElements = (
             ctx.tooltip.style("opacity", 0);
         });
 
+    // Draw genomic regions grouped by transcript
     ctx.regionsGroup.attr("class", "genome-regions");
     Object.entries(genomicRegions).forEach(([transcriptName, regions]) => {
         const yOffset =
@@ -338,28 +346,30 @@ const setupElements = (
         regionsContainer.append("g").attr("class", "strand-arrows");
 
         // Marker for transcript match with oligo
-        transcriptGroup
-            .append("rect")
-            .data([transcriptName])
-            .attr("class", "transcript-marker")
-            .attr("x", 0)
-            .attr("y", TRANSCRIPT_HEIGHT * 0.05)
-            .attr("width", 8)
-            .attr("height", TRANSCRIPT_HEIGHT * 0.9)
-            .attr("fill", "transparent")
-            .on("mouseover", function () {
-                ctx.tooltip.style("opacity", 1);
-            })
-            .on("mousemove", (event, d) => {
-                ctx.tooltip
-                    .html(transcriptTooltipHTML(d, oligoComponents))
-                    .style("left", event.pageX + 20 + "px")
-                    .style("top", event.pageY + "px")
-                    .style("bottom", ""); // reset bottom in case it was set before
-            })
-            .on("mouseleave", function () {
-                ctx.tooltip.style("opacity", 0);
-            });
+        if (transcriptName !== "unknown") {
+            transcriptGroup
+                .append("rect")
+                .data([transcriptName])
+                .attr("class", "transcript-marker")
+                .attr("x", 0)
+                .attr("y", TRANSCRIPT_HEIGHT * 0.05)
+                .attr("width", 8)
+                .attr("height", TRANSCRIPT_HEIGHT * 0.9)
+                .attr("fill", "transparent")
+                .on("mouseover", function () {
+                    ctx.tooltip.style("opacity", 1);
+                })
+                .on("mousemove", (event, d) => {
+                    ctx.tooltip
+                        .html(transcriptTooltipHTML(d, oligoComponents))
+                        .style("left", event.pageX + 20 + "px")
+                        .style("top", event.pageY + "px")
+                        .style("bottom", ""); // reset bottom in case it was set before
+                })
+                .on("mouseleave", function () {
+                    ctx.tooltip.style("opacity", 0);
+                });
+        }
     });
 
     ctx.baseGroup.attr("class", "reference-bases");
