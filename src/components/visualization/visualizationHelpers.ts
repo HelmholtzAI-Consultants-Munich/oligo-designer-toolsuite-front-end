@@ -42,14 +42,11 @@ export const Regions: { [key: string]: { color: string; label: string } } = {
     unknown: { color: "lightgray", label: "Unknown" },
 };
 
-export const oligoTooltipHTML = (
-    d: OligoPosition,
-    genomicRegions: GenomicRegions
-) => {
+export const oligoTooltipHTML = (d: Probe, genomicRegions: GenomicRegions) => {
     const matchingTranscripts = d.transcript_ids.length;
     const totalTranscripts = Object.keys(genomicRegions).length;
     return (
-        d.id +
+        d.oligo_id +
         "<br>Transcripts:<br>" +
         (matchingTranscripts < 10
             ? d.transcript_ids.join(", ")
@@ -67,9 +64,9 @@ export const regionTooltipHTML = (d: GenomicRegion, transcriptName: string) => {
 
 export const transcriptTooltipHTML = (
     d: string,
-    oligoPositions: OligoPosition[]
+    oligoComponents: OligoPosition[]
 ) => {
-    const matchingOligos = oligoPositions.filter((oligo) =>
+    const matchingOligos = oligoComponents.filter((oligo) =>
         oligo.transcript_ids.includes(d)
     );
     const uniqueOligoIds = Array.from(new Set(matchingOligos.map((o) => o.id)));
@@ -127,7 +124,7 @@ export const collectReferenceBases = (
 };
 
 // Collect oligo positions for all components of all probes
-export const collectOligoPositions = (probes: Probe[]): OligoPosition[] => {
+export const collectOligoComponents = (probes: Probe[]): OligoPosition[] => {
     return probes.flatMap((oligo) =>
         oligo.components.map((component) => ({
             start: component.start,

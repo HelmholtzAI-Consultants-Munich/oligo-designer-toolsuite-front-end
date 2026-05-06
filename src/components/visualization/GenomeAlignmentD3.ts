@@ -3,7 +3,7 @@ import type { GenomicRegions, GenomicRegion, Probe } from "../../types";
 import {
     calculeArrowSpacing,
     collectOligoBases,
-    collectOligoPositions,
+    collectOligoComponents,
     collectReferenceBases,
     oligoTooltipHTML,
     Regions,
@@ -38,6 +38,20 @@ const TRANSCRIPT_HEIGHT = 20;
 const TRANSCRIPT_MARKER_WIDTH = 8;
 const GAP = 50;
 const AXIS_HEIGHT = 20;
+const MIN_PROBE_WIDTH = 2;
+
+const centeredMinWidthRect = (startX: number, endX: number) => {
+    const width = endX - startX;
+    if (width >= MIN_PROBE_WIDTH) {
+        return { x: startX, width };
+    }
+
+    const center = (startX + endX) / 2;
+    return {
+        x: center - MIN_PROBE_WIDTH / 2,
+        width: MIN_PROBE_WIDTH,
+    };
+};
 
 // Set up the SVG and initial elements
 const createContext = (
@@ -54,6 +68,8 @@ const createContext = (
     const plot = svg.append("g");
     const locationIndicator = plot.append("rect");
     const oligosGroup = plot.append("g");
+    oligosGroup.append("g").attr("class", "probes");
+    oligosGroup.append("g").attr("class", "components");
     const tooltip = d3.select("body").append("div");
     const regionsGroup = plot.append("g");
     const baseGroup = plot.append("g");
@@ -90,11 +106,11 @@ const createContext = (
 const setupScalesAndAxes = (
     ctx: VisualizationContext,
     genomicRegions: GenomicRegions,
-    oligoPositions: OligoPosition[]
+    oligoComponents: OligoPosition[]
 ) => {
     // Define x scale based on combined extent of oligos and genomic regions
     const ext = d3.extent([
-        ...oligoPositions.flatMap((d) => [d.start, d.end]),
+        ...oligoComponents.flatMap((d) => [d.start, d.end]),
         ...Object.values(genomicRegions)
             .flat()
             .flatMap((d: GenomicRegion) => [d.start, d.end]),
@@ -116,7 +132,8 @@ const setupScalesAndAxes = (
 const setupElements = (
     ctx: VisualizationContext,
     genomicRegions: GenomicRegions,
-    oligoPositions: OligoPosition[]
+    oligoComponents: OligoPosition[],
+    probes: Probe[]
 ) => {
     ctx.svg
         .attr("viewBox", [0, 0, WIDTH, ctx.height])
@@ -168,18 +185,43 @@ const setupElements = (
         .style("z-index", "2000");
 
     ctx.oligosGroup
-        .attr("class", "oligos")
+        .selectAll("g.components")
         .selectAll("rect")
-        .data(oligoPositions)
+        .data(oligoComponents)
         .join("rect")
         .attr("x", (d) => ctx.xScale(d.start - 0.5))
-        .attr("y", 0)
+        .attr("y", (d) => (d.type === "gap" ? OLIGO_HEIGHT / 2 - 1 : 0))
         .attr(
             "width",
             (d) => ctx.xScale(d.end + 0.5) - ctx.xScale(d.start - 0.5)
         )
+        .attr("height", (d) => (d.type === "gap" ? 2 : OLIGO_HEIGHT))
+        .attr("pointer-events", "none"); // allow mouse events to pass through to probe rects
+
+    ctx.oligosGroup
+        .selectAll("g.probes")
+        .selectAll("rect")
+        .data(probes)
+        .join("rect")
         .attr("height", OLIGO_HEIGHT)
-        .attr("opacity", (d) => (d.type === "gap" ? 0.5 : 1.0))
+        .attr(
+            "x",
+            (d) =>
+                centeredMinWidthRect(
+                    ctx.xScale(d.details.start - 0.5),
+                    ctx.xScale(d.details.end + 0.5)
+                ).x
+        )
+        .attr("y", 0)
+        .attr(
+            "width",
+            (d) =>
+                centeredMinWidthRect(
+                    ctx.xScale(d.details.start - 0.5),
+                    ctx.xScale(d.details.end + 0.5)
+                ).width
+        )
+        .attr("opacity", 0.5)
         .on("mouseover", function () {
             ctx.tooltip.style("opacity", 1);
         })
@@ -204,19 +246,6 @@ const setupElements = (
         .on("mouseleave", function () {
             ctx.tooltip.style("opacity", 0);
         });
-
-    // Append line to oligo gaps
-    ctx.oligosGroup
-        .selectAll("line.gap")
-        .data(oligoPositions.filter((d) => d.type === "gap"))
-        .join("line")
-        .attr("class", "gap")
-        .attr("x1", (d) => ctx.xScale(d.start - 0.5))
-        .attr("x2", (d) => ctx.xScale(d.end + 0.5))
-        .attr("y1", OLIGO_HEIGHT / 2)
-        .attr("y2", OLIGO_HEIGHT / 2)
-        .attr("stroke-width", 2)
-        .attr("pointer-events", "none"); // allow clicks to pass through to rects
 
     ctx.regionsGroup.attr("class", "genome-regions");
     Object.entries(genomicRegions).forEach(([transcriptName, regions]) => {
@@ -323,7 +352,7 @@ const setupElements = (
             })
             .on("mousemove", (event, d) => {
                 ctx.tooltip
-                    .html(transcriptTooltipHTML(d, oligoPositions))
+                    .html(transcriptTooltipHTML(d, oligoComponents))
                     .style("left", event.pageX + 20 + "px")
                     .style("top", event.pageY + "px")
                     .style("bottom", ""); // reset bottom in case it was set before
@@ -338,7 +367,10 @@ const setupElements = (
 };
 
 // helper function to update location indicator and position label
-const updateLocationIndicator = (ctx: VisualizationContext, xPos: number) => {
+const updateLocationIndicatorAndTooltip = (
+    ctx: VisualizationContext,
+    xPos: number
+) => {
     const zx = ctx.currentZoomTransform.rescaleX(ctx.xScale);
     const domainX = zx.invert(xPos);
     const snapX = Math.floor(domainX + 0.5);
@@ -359,13 +391,14 @@ const updateLocationIndicator = (ctx: VisualizationContext, xPos: number) => {
     }
 
     const { x: labelX, y: labelY, width, height } = positionLabelNode.getBBox();
-    const paddingX = 1;
+    const paddingRight = 4;
+    const paddingLeft = 2;
     const paddingY = 5;
     ctx.positionLabelGroup
         .select("rect")
-        .attr("x", labelX - paddingX)
+        .attr("x", labelX - paddingLeft)
         .attr("y", labelY - paddingY)
-        .attr("width", width + paddingX * 2)
+        .attr("width", width + paddingLeft + paddingRight)
         .attr("height", height + paddingY * 2);
 };
 
@@ -387,7 +420,7 @@ const setupMouseEvents = (
         })
         .on("mousemove", (event) => {
             const [xPos] = d3.pointer(event, ctx.plot.node());
-            updateLocationIndicator(ctx, xPos);
+            updateLocationIndicatorAndTooltip(ctx, xPos);
         })
         .on("mouseleave", () => {
             ctx.locationIndicator.attr("visibility", "hidden");
@@ -395,11 +428,12 @@ const setupMouseEvents = (
         });
 
     ctx.oligosGroup
-        .selectAll<SVGRectElement, OligoPosition>("rect")
+        .select("g.probes")
+        .selectAll<SVGRectElement, Probe>("rect")
         .on("click", (_, data) => {
-            setSelectedOligo(data.id);
+            setSelectedOligo(data.oligo_id);
             // Zoom into selected oligo (even if already selected)
-            GenomeAlignmentD3.update(el, probes, data.id, true);
+            GenomeAlignmentD3.update(el, probes, data.oligo_id, true);
         });
 };
 
@@ -441,7 +475,7 @@ const zoomed = (
         const plotNode = ctx.plot.node();
         if (source instanceof MouseEvent && plotNode) {
             const [xPos] = d3.pointer(source, plotNode);
-            updateLocationIndicator(ctx, xPos);
+            updateLocationIndicatorAndTooltip(ctx, xPos);
         }
 
         // Rescale location indicator
@@ -449,15 +483,30 @@ const zoomed = (
 
         // Rescale oligos
         ctx.oligosGroup
+            .select("g.components")
             .selectAll<SVGRectElement, OligoPosition>("rect")
             .attr("x", (d) => zx(d.start - 0.5))
             .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
 
-        // Rescale oligo gap lines
         ctx.oligosGroup
-            .selectAll<SVGLineElement, OligoPosition>("line.gap")
-            .attr("x1", (d) => zx(d.start - 0.5))
-            .attr("x2", (d) => zx(d.end + 0.5));
+            .select("g.probes")
+            .selectAll<SVGRectElement, Probe>("rect")
+            .attr(
+                "x",
+                (d) =>
+                    centeredMinWidthRect(
+                        zx(d.details.start - 0.5),
+                        zx(d.details.end + 0.5)
+                    ).x
+            )
+            .attr(
+                "width",
+                (d) =>
+                    centeredMinWidthRect(
+                        zx(d.details.start - 0.5),
+                        zx(d.details.end + 0.5)
+                    ).width
+            );
 
         // Rescale x axis
         const axis = d3.axisBottom(zx).ticks(8);
@@ -518,7 +567,7 @@ const zoomed = (
 
         // Show bindings of the oligos to transcripts when zoomed in
         ctx.regionsGroup
-            .selectAll<SVGLineElement, OligoPosition>("line.binding")
+            .selectAll<SVGLineElement, OligoPosition>("line")
             .data(oligoBases)
             .join("line")
             .attr("class", "binding")
@@ -606,12 +655,12 @@ const GenomeAlignmentD3 = {
         selectedOligo: string,
         setSelectedOligo: (id: string) => void
     ) => {
-        const oligoPositions = collectOligoPositions(probes);
+        const oligoComponents = collectOligoComponents(probes);
         const ctx = createContext(el, genomicRegions);
         contextByElement.set(el, ctx);
 
-        setupScalesAndAxes(ctx, genomicRegions, oligoPositions);
-        setupElements(ctx, genomicRegions, oligoPositions);
+        setupScalesAndAxes(ctx, genomicRegions, oligoComponents);
+        setupElements(ctx, genomicRegions, oligoComponents, probes);
         setupMouseEvents(el, probes, ctx, setSelectedOligo);
         setupZoom(ctx, genomicRegions, probes);
 
@@ -629,23 +678,25 @@ const GenomeAlignmentD3 = {
             return;
         }
 
-        const oligoPositions = collectOligoPositions(probes);
+        const oligoComponents = collectOligoComponents(probes);
 
         // Update oligo colors based on selection
         ctx.oligosGroup
+            .select("g.components")
             .selectAll<SVGRectElement, OligoPosition>("rect")
-            .data(oligoPositions)
+            .data(oligoComponents)
             .join("rect")
             .attr("fill", (d) =>
                 d.id === selectedOligo ? "orange" : "steelblue"
             );
 
         ctx.oligosGroup
-            .selectAll<SVGLineElement, OligoPosition>("line.gap")
-            .data(oligoPositions.filter((d) => d.type === "gap"))
-            .join("line")
-            .attr("stroke", (d) =>
-                d.id === selectedOligo ? "orange" : "steelblue"
+            .select("g.probes")
+            .selectAll<SVGRectElement, Probe>("rect")
+            .data(probes)
+            .join("rect")
+            .attr("fill", (d) =>
+                d.oligo_id === selectedOligo ? "orange" : "steelblue"
             );
 
         ctx.svg
@@ -662,19 +713,17 @@ const GenomeAlignmentD3 = {
             });
 
         if (zoomIntoOligo) {
-            const oligoComponents = oligoPositions.filter(
-                (d) => d.id === selectedOligo
+            const zoomedOligo = probes.find(
+                (d) => d.oligo_id === selectedOligo
             );
-            if (oligoComponents.length === 0) {
-                return;
-            }
-            // Get the min start and max end of all components of the selected oligo
-            const oligoStart = Math.min(...oligoComponents.map((d) => d.start));
-            const oligoEnd = Math.max(...oligoComponents.map((d) => d.end));
+            if (!zoomedOligo) return;
 
             // Smoothly zoom and pan to center the selected oligo
             const zoomScale = Math.min(
-                (WIDTH / (ctx.xScale(oligoEnd) - ctx.xScale(oligoStart))) * 0.9, // add some padding
+                (WIDTH /
+                    (ctx.xScale(zoomedOligo.details.end) -
+                        ctx.xScale(zoomedOligo.details.start))) *
+                    0.9, // add some padding
                 ctx.zoomBehavior.scaleExtent()[1] // don't exceed max zoom
             );
             ctx.svg
@@ -688,8 +737,8 @@ const GenomeAlignmentD3 = {
                         .scale(zoomScale)
                         .translate(
                             -(
-                                (ctx.xScale(oligoStart) +
-                                    ctx.xScale(oligoEnd)) /
+                                (ctx.xScale(zoomedOligo.details.start) +
+                                    ctx.xScale(zoomedOligo.details.end)) /
                                 2
                             ),
                             0
