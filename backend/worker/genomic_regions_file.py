@@ -160,7 +160,9 @@ class GenomicRegionsFile:
                         )
                         start = oligo_info.get("start", [])[0][0]
                         end = oligo_info.get("end", [])[0][0]
-                        transcript_ids = oligo_info.get("transcript_id", [])[0]
+                        # ignore this when merging with properly fixed branch
+                        gene_id = oligo_info.get("gene_id", [[None]])[0][0]
+                        transcript_ids = oligo_info.get("transcript_id", [gene_id])[0]
                         exon_num_raw = oligo_info.get("exon_number", [None])[0]
                         exon_numbers = list(exon_num_raw) if isinstance(exon_num_raw, list) else exon_num_raw
 

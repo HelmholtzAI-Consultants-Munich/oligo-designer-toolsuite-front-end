@@ -53,7 +53,7 @@ const Sidebar: React.FC = () => {
                 <Vertical
                     justify="space-between"
                     align="stretch"
-                    gap="lg"
+                    gap="md"
                     fillHeight
                     fillWidth
                 >
@@ -91,6 +91,11 @@ const Sidebar: React.FC = () => {
                         </Nav.Link>
                     </Nav>
 
+                    <div
+                        className="spacer"
+                        style={{ flex: 1, maxHeight: "5rem" }}
+                    />
+
                     <Vertical gap="sm" align="stretch">
                         <h5>Pipelines</h5>
 
@@ -119,6 +124,8 @@ const Sidebar: React.FC = () => {
 
                         <RecentRuns />
                     </Vertical>
+
+                    <div className="spacer" style={{ flex: 1 }} />
 
                     <UserDropdown noUserCallback={handleNoUser} />
                 </Vertical>

@@ -7,6 +7,7 @@
 # Ignore directory contents in the backend directory except for specific files and directories
 /backend/*
 !/backend/__init__.py
+!/backend/cache.py
 !/backend/config.py
 !/backend/extensions.py
 !/backend/genomic_databases.py

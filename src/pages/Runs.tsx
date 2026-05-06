@@ -47,33 +47,10 @@ const Runs = () => {
         });
     };
 
-    const goToRun = (runId: string) => {
-        if (runId) {
-            navigate(`/runs/${runId}`);
-        } else {
-            showToast({
-                title: "Please enter a RunID",
-                content:
-                    "The RunID cannot be empty. Please enter a valid RunID.",
-                type: "danger",
-            });
-        }
-    };
-
     if (loading) return <div>Loading...</div>;
 
     return (
-        <Page
-            title="Pipeline Runs"
-            actions={[
-                {
-                    type: "search",
-                    label: "Go to Run",
-                    placeholder: "Enter RunID",
-                    onSearch: (query: string) => goToRun(query),
-                },
-            ]}
-        >
+        <Page title="Pipeline Runs">
             <Table responsive hover>
                 <thead>
                     <tr>

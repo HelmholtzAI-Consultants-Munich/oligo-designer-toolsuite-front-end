@@ -110,6 +110,8 @@ body.modal-open {
     align-items: center;
     z-index: 1050;
     isolation: isolate;
+    max-height: 100vh;
+    overflow-y: auto;
 
     .navbar-collapse {
         flex-direction: column;
@@ -143,7 +145,6 @@ body.modal-open {
 @include media-breakpoint-up(lg) {
     .navbar-main {
         height: 100vh;
-        overflow-y: auto;
         padding: 2rem;
         width: 25rem;
         flex-direction: column;
