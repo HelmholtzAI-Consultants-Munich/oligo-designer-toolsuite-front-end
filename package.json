@@ -47,7 +47,7 @@
     "docker:build": "docker compose build",
     "docker:update": "docker compose build --pull && docker compose pull --ignore-buildable",
     "docker:prune": "docker system prune",
-    "docker:test": "docker compose --profile tests up -d --build odt-db odt-mq odt-server odt-worker odt-web odt-tests && docker compose --profile tests run --rm odt-tests",
+    "docker:test": "docker compose --profile tests up -d --build odt-db odt-redis odt-server odt-worker odt-web odt-tests && docker compose --profile tests run --rm odt-tests",
     "docker:test:smoke": "docker compose --profile tests run --rm odt-tests test --grep @smoke",
     "docker:test:full": "docker compose --profile tests run --rm odt-tests test --grep @full"
   },

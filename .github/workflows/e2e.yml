@@ -61,7 +61,7 @@ jobs:
       - name: Start application stack
         run: |
           set -euxo pipefail
-          docker compose --profile tests up -d odt-db odt-mq odt-server odt-worker odt-web
+          docker compose --profile tests up -d odt-db odt-redis odt-server odt-worker odt-web
 
       - name: Wait for application readiness
         run: |

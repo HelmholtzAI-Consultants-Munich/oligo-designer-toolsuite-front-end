@@ -11,10 +11,10 @@ See .env.sample for available configuration options.
 """
 
 import os
+from collections.abc import Mapping
 from datetime import timedelta
 
 from dotenv import load_dotenv
-from kombu import Queue
 
 # Load environment variables from .env file
 # This ensures environment variables are available for both from_prefixed_env() and os.environ.get()
@@ -56,7 +56,8 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
-    MONGO_URI = "mongodb://localhost:27017/oligo_db"
+    MONGO_HOST = os.environ.get("MONGO_HOST", "mongodb://localhost:27017")
+    MONGO_URI = MONGO_HOST + "/oligo_db"
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"
@@ -144,22 +145,18 @@ class CeleryConfig:
     configuration mechanism (see https://github.com/celery/celery/issues/7309).
     """
 
-    broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
-    result_backend: str = os.environ.get("CELERY_MONGO_URI", "mongodb://localhost:27017/")
+    broker_url: str = os.environ.get("CELERY_BROKER", "redis://" + Config.REDIS_HOST)
+    result_backend: str = os.environ.get("CELERY_RESULT_BACKEND", "redis://" + Config.REDIS_HOST)
     task_track_started: bool = True
     task_compression: str = "zlib"
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
 
-    task_queue_max_priority = 10
+    # Redis task priorities
+    broker_transport_options: Mapping[str, str] = {
+        "queue_order_strategy": "priority",
+    }
     task_default_priority = 5
     task_high_priority = 10
-    task_queues = (
-        Queue(
-            "celery",
-            routing_key="default",
-            queue_arguments={"x-max-priority": task_queue_max_priority},
-        ),
-    )
-    worker_prefetch_multiplier = 1
+    worker_disable_prefetch = True

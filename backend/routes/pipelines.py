@@ -11,10 +11,10 @@ from bson import ObjectId
 from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
+from flask_login import current_user
 
 from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app, mongo
-from backend.routes.auth import check_auth
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.routes.runs import delete_run
 from backend.utilities.pipeline import generate_single_region_forms
@@ -142,9 +142,8 @@ def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
         abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
 
 
-def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> AsyncResult:
-    authenticated = check_auth().get_json()["authenticated"]
-    if not authenticated:
+def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
+    if not current_user.is_authenticated:
         check_gene_threshold(form_data, run_id)
         priority = CeleryConfig.task_default_priority
     else:
