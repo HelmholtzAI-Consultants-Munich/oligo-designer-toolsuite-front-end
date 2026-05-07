@@ -140,21 +140,23 @@ class GenomeAlignment extends React.Component<Props> {
                                 );
                             })}
                     </Horizontal>
-                    <Horizontal wrap gap="md">
-                        <strong>Transcripts:</strong>
-                        <Horizontal gap="sm" align="baseline">
-                            <span
-                                style={{
-                                    display: "inline-block",
-                                    width: "12px",
-                                    height: "12px",
-                                    backgroundColor: "#22bd28",
-                                    marginRight: "5px",
-                                }}
-                            ></span>
-                            Selected oligo matches transcript
+                    {!isGene && (
+                        <Horizontal wrap gap="md">
+                            <strong>Transcripts:</strong>
+                            <Horizontal gap="sm" align="baseline">
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: "12px",
+                                        height: "12px",
+                                        backgroundColor: "#22bd28",
+                                        marginRight: "5px",
+                                    }}
+                                ></span>
+                                Selected oligo matches transcript
+                            </Horizontal>
                         </Horizontal>
-                    </Horizontal>
+                    )}
                     <Horizontal wrap gap="md">
                         <strong>Strand:</strong>
                         {Object.values(this.props.genomicRegions)[0][0][
