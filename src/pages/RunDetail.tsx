@@ -656,7 +656,8 @@ const RunDetail = () => {
                                 </Table>
                                 <span className="text-muted">
                                     Click an oligo in the table to focus it in
-                                    the visualization.
+                                    the visualization. Use the mouse wheel to
+                                    zoom in for more details.
                                 </span>
                             </Vertical>
                             <Divider />
