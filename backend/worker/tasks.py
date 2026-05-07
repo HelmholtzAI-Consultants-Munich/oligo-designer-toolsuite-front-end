@@ -1,17 +1,18 @@
 import calendar
 import datetime
+from logging import Logger
 from typing import Any
 
 from bson import ObjectId
 from celery.utils.log import get_task_logger
 from pymongo import MongoClient
 
-from backend.config import CeleryConfig
-from backend.genomic_databases import prefetch_dropdown_options
+from backend.config import Config
+from backend.genomic_databases import fetch_dropdown_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 
-logger = get_task_logger(__name__)
+logger: Logger = get_task_logger(__name__)
 
 
 @app.task()
@@ -31,30 +32,15 @@ def run_genomic_region_generator(form_data: Any, id: str) -> tuple[str, list[str
 
 
 @app.task()
-def fetch_dropdown_options():
-    client = MongoClient(CeleryConfig.result_backend)
-
-    db = client["oligo_db"]
-
-    if "cache" not in db.list_collection_names():
-        db.create_collection("cache")
-        print("setup cache collection")
-
-    cache = db["cache"]
-
-    doc = cache.find_one({"_id": 1})
-    if doc is None or (datetime.datetime.today() - doc["timestamp"]).days >= 1:
-        cache.update_one(
-            {"_id": 1},
-            {"$set": {"timestamp": datetime.datetime.today(), "data": prefetch_dropdown_options()}},
-            upsert=True,
-        )
-        print("Inserted/ Updated outdated dropdown options")
+def trigger_dropdown_options_fetching():
+    logger.debug("Updating genomic dropdown options cache")
+    # Ignore results since we only want to update the function's cache
+    _ = fetch_dropdown_options()
 
 
 @app.task()
 def generate_monthly_report(target_year: int | None = None, target_month: int | None = None) -> None:
-    client = MongoClient(CeleryConfig.result_backend)
+    client = MongoClient(Config.MONGO_HOST)
     try:
         db = client["oligo_db"]
 

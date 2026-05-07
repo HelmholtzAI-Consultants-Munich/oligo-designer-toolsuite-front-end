@@ -82,8 +82,11 @@ class Config:
 
     # Caching Settings
     REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-    REDIS_EXPIRATION_TIME = int(
-        os.environ.get("REDIS_EXPIRATION_TIME", 60 * 60 * 24 * 30)
+    REDIS_GENERIC_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_GENERIC_EXPIRATION_TIME", 3600 * 24)
+    )  # in seconds (default: 1 day)
+    REDIS_FILE_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
 
     @staticmethod
