@@ -40,7 +40,7 @@ def trigger_dropdown_options_fetching():
 
 @app.task()
 def generate_monthly_report(target_year: int | None = None, target_month: int | None = None) -> None:
-    client = MongoClient(Config.MONGO_HOST)
+    client = MongoClient(Config.MONGO_URI)
     try:
         db = client["oligo_db"]
 
