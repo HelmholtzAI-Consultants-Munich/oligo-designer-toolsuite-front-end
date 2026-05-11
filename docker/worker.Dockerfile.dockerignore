@@ -14,6 +14,7 @@
 !/backend/genomic_databases.py
 !/backend/pyproject.toml
 !/backend/worker_environment.yml
+!/backend/utilities
 !/backend/worker
 !/backend/data-access
 /backend/data-access/*
