@@ -116,6 +116,8 @@ class GenomicRegionGeneratorRunner:
             self.cleanup_temp_files(config_path)
             raise ValueError("The pipeline failed to execute. Please check your input and try again.")
 
+        self.cleanup_temp_files(config_path)
+
         return output_path
 
     def collect_result_paths(self, output_path: Path) -> list[str]:

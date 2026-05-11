@@ -76,53 +76,6 @@ def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
     return resolved_target
 
 
-def sanitize_submitted_path(raw_path: str, allowed_roots: list[Path]) -> Path:
-    """Sanitize user-provided absolute file paths against allowed roots."""
-    candidate = Path(raw_path.strip())
-    if not candidate.is_absolute():
-        raise ValueError("File paths must be absolute")
-
-    resolved_candidate = candidate.resolve(strict=False)
-
-    for root in allowed_roots:
-        resolved_root = root.resolve(strict=False)
-        if resolved_candidate.is_relative_to(resolved_root):
-            return resolved_candidate
-
-    raise ValueError("File path is outside the allowed directories")
-
-
-def sanitize_pipeline_form_paths(form_data: dict[str, Any], allowed_roots: list[Path]) -> dict[str, Any]:
-    """Sanitize file path fields in pipeline form payloads."""
-    sanitized = dict(form_data)
-
-    for key, value in form_data.items():
-        if key == "file_regions" and isinstance(value, str):
-            # If file_regions is a text file path, sanitize it. Otherwise, it can be gene text input.
-            if value and value.endswith(".txt"):
-                sanitized[key] = str(sanitize_submitted_path(value, allowed_roots))
-            continue
-
-        if key.startswith("files_") and value["files"] and isinstance(value["files"], list):
-            sanitized_paths = []
-            for item in value["files"]:
-                if not isinstance(item, str):
-                    raise ValueError(f"Expected string path in '{key}'")
-                sanitized_paths.append(str(sanitize_submitted_path(item, allowed_roots)))
-            sanitized[key]["files"] = sanitized_paths
-            continue
-
-        if (
-            key.startswith("file_")
-            and key != "file_regions"
-            and value["files"]
-            and isinstance(value["files"], str)
-        ):
-            sanitized[key]["files"] = str(sanitize_submitted_path(value["files"], allowed_roots))
-
-    return sanitized
-
-
 def sanitize_relative_redirect_path(raw_url: str | None) -> str | None:
     """Allow only relative frontend redirect paths and normalize them."""
     if raw_url is None:

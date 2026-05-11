@@ -23,7 +23,6 @@ from backend.routes.route_helpers import get_user_context_with_directory
 from backend.routes.runs import delete_run
 from backend.utilities.pipeline import generate_single_region_forms
 from backend.utilities.typed_values import (
-    sanitize_pipeline_form_paths,
     serialize_path,
     utc_now,
 )
@@ -255,14 +254,13 @@ def start_pipeline(pipeline_name: str):
 
     if request.form is None or len(request.form) == 0 or "payload" not in request.form:
         abort(
-            HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+            HTTPStatus.BAD_REQUEST,
             description="Expected a Multipart form data with payload JSON field",
         )
     form = json.loads(request.form["payload"])
-    files = request.files
 
     if form is None or len(form) == 0:
-        abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, description="Expected JSON")
+        abort(HTTPStatus.BAD_REQUEST, description="Expected JSON")
 
     run_id_str = form.get("runid")  # Run ID from React
     run_id = parse_run_id(run_id_str)
@@ -275,23 +273,11 @@ def start_pipeline(pipeline_name: str):
     # genomic_region_generator
     generated_regions = parse_region_generation(form_data, pipeline_name)
 
+    files = request.files
+
     file_inputs = save_files(form_data, pipeline_name, files)
     for field, file_paths in file_inputs.items():
         form_data[field]["files"] = [file_path.as_posix() for file_path in file_paths]
-
-    # TODO: the allowed paths shouldn't be defined here
-    allowed_roots = [
-        Path(current_app.config["UPLOAD_PATH"]),
-        Path("/app/uploads"),
-        Path(current_app.root_path) / "cache",
-        Path(current_app.config["USERDATA_PATH"]),
-    ]
-    try:
-        sanitized_form_data = sanitize_pipeline_form_paths(form_data, allowed_roots)
-    except ValueError as error:
-        abort(
-            HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}"
-        )  # TODO: investigate potential data leakage due to this plain error output
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
@@ -299,7 +285,7 @@ def start_pipeline(pipeline_name: str):
     priority = get_task_priority(form_data, run_id)
 
     result_promise = enqueue_pipeline(
-        pipeline_name, sanitized_form_data, generated_regions, context.output_path, priority
+        pipeline_name, form_data, generated_regions, context.output_path, priority
     )
 
     # Mark Run as Enqueued in DB
