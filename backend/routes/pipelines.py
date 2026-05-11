@@ -128,16 +128,15 @@ def write_run_to_DB(
     return update_run_in_DB(run_id, data)
 
 
-def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
-    gene_count = len(form_data["file_regions"].split(","))
-    if gene_count > Config.GENE_COUNT_THRESHOLD:
+def check_gene_threshold(gene_count: int | None, run_id: ObjectId):
+    if gene_count is not None and gene_count > Config.GENE_COUNT_THRESHOLD:
         delete_run(run_id)
         abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
 
 
-def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
+def get_task_priority(gene_count: int | None, run_id: ObjectId) -> int:
     if not current_user.is_authenticated:
-        check_gene_threshold(form_data, run_id)
+        check_gene_threshold(gene_count, run_id)
         priority = CeleryConfig.task_default_priority
     else:
         priority = CeleryConfig.task_high_priority
@@ -259,13 +258,12 @@ def start_pipeline(pipeline_name: str):
     # Pipeline timeout durations should be multiplied by number of genes in a run
     gene_count = extract_gene_count(sanitized_form_data)
 
-    priority = get_task_priority(form_data, run_id)
+    priority = get_task_priority(gene_count, run_id)
 
     update_result = write_run_to_DB(pipeline_name, run_id, context, task_id, gene_count)
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
-    is_authenticated = current_user.is_authenticated
     try:
         enqueue_pipeline(
             pipeline_name,
@@ -273,7 +271,7 @@ def start_pipeline(pipeline_name: str):
             generated_regions,
             context.output_path,
             priority,
-            is_authenticated,
+            current_user.is_authenticated,
             task_id,
             run_id,
             context.user_id,
