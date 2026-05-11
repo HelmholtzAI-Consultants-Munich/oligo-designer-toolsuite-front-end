@@ -189,7 +189,7 @@ const GenomicInput = ({
                                     (
                                         schema.properties!
                                             .fasta_form as JSONSchema7
-                                    ).items as unknown as NestedObject,
+                                    ).items as NestedObject,
                                     fastaformSchema as unknown as NestedObject,
                                     "default",
                                     true

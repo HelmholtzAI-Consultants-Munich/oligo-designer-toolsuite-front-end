@@ -64,7 +64,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         // the definitions section is the same for every schema, so we just use "scrinshot" here
         const descriptionOnlySchema = getKeyObjectFromSchema(
             (schema.properties!.fasta_form as JSONSchema7)
-                .items as unknown as NestedObject,
+                .items as NestedObject,
             PIPELINE_CONFIG["scrinshot"].schema,
             "description"
         ) as RJSFSchema;
@@ -117,7 +117,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
 
             const keys = name.split(".");
             const newFormData = { ...formData };
-            let formTarget = newFormData as unknown as NestedObject;
+            let formTarget = newFormData as NestedObject;
             // only index n-1 key to keep a reference to the parent object for onChange
             for (const key of keys.slice(0, -1)) {
                 formTarget[key as keyof typeof formTarget] = {

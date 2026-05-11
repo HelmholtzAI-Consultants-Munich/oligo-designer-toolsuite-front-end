@@ -169,8 +169,7 @@ const applyPipelineModifiers = (
                 pipeline
             ),
         ])
-    ) as unknown as PipelineConfig;
+    ) as PipelineConfig;
 
 // TODO: Probably there is a way to ensure all necessary properties are set here during the pipelineConfigModifiers
-const PIPELINE_CONFIG_TEST = applyPipelineModifiers(PIPELINE_CONFIG_RAW);
-export const PIPELINE_CONFIG = PIPELINE_CONFIG_TEST;
+export const PIPELINE_CONFIG = applyPipelineModifiers(PIPELINE_CONFIG_RAW);

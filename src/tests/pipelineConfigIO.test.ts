@@ -79,7 +79,7 @@ describe("buildExportPayload", () => {
         const schemaWithoutVersion = {
             ...testSchema,
             description: undefined,
-        } as unknown as RJSFSchema;
+        } as RJSFSchema;
         const payload = buildExportPayload(
             {},
             "scrinshot",
