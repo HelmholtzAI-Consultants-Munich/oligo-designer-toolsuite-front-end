@@ -15,7 +15,7 @@ from backend.constants import (
     PIPELINE_RUN_LIFECYCLE_COLLECTION,
     PIPELINE_TIMEOUTS_CACHE_KEY,
 )
-from backend.genomic_databases import fetch_dropdown_options, prefetch_dropdown_options
+from backend.genomic_databases import fetch_dropdown_options
 from backend.utilities.timestamps import utc_now
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
@@ -53,7 +53,7 @@ def update_dropdown_options_cache(self):
         if doc is None or (datetime.datetime.today() - doc["timestamp"]).days >= 1:
             cache.update_one(
                 {"_id": GENOMIC_DROPDOWN_CACHE_KEY},
-                {"$set": {"timestamp": datetime.datetime.today(), "data": prefetch_dropdown_options()}},
+                {"$set": {"timestamp": datetime.datetime.today(), "data": fetch_dropdown_options()}},
                 upsert=True,
             )
             print("Inserted/ Updated outdated dropdown options")
