@@ -1,4 +1,10 @@
-import { useRef, useState, useEffect, useEffectEvent } from "react";
+import {
+    useRef,
+    useState,
+    useEffect,
+    useCallback,
+    useEffectEvent,
+} from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
@@ -109,7 +115,7 @@ const PipelineTemplate: React.FC<Props> = ({
     const { updateRuns } = useRuns();
     const location = useLocation();
 
-    const applyValidatedConfig = useEffectEvent(
+    const applyValidatedConfig = useCallback(
         (importedConfig: unknown, successTitle: string, errorTitle: string) => {
             const result = importAndValidate(importedConfig, schema, pipeline);
             if (!result.ok) {
@@ -136,14 +142,16 @@ const PipelineTemplate: React.FC<Props> = ({
                 content: `Configuration${datePart} loaded.${skipNote}`,
                 type: "success",
             });
-        }
+        },
+        [schema, pipeline, setFormData, setFastaForms]
     );
+    const applyValidatedConfigEvent = useEffectEvent(applyValidatedConfig);
 
     // Apply a config that was passed via navigation location state (e.g. "Use Settings" in Runs page).
     useEffect(() => {
         const importedConfig = location.state?.importedConfig;
         if (!importedConfig) return;
-        applyValidatedConfig(
+        applyValidatedConfigEvent(
             importedConfig,
             "Config Loaded",
             "Load Config Failed"
