@@ -79,6 +79,45 @@ class PipelineRunner:
         else:
             form_data["file_regions"] = None
 
+    def populate_form_data_path_fields(
+        self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
+    ) -> None:
+        """
+        This method converts the form_data send by the frontend to the format used by ODT.
+        It is necessary because the Oligo Designer Toolsuite expects per files_ field an array of file paths like
+        ```py
+        {"files_field" : ["input_file.fna"]}
+        ```
+        But because we can not allow passing through file names directly and we allow creation of your own genomic regions through the region generator, the form_data has the following scheme:
+        ```py
+        {"files_field" : {
+            "files" : [FileStorageObject],
+            "fasta_form" : [FastaFormObject]
+        }}
+        ```
+        The `FileStorageObjects` are saved and the resulting path is written into the form data.
+        The `FastaFormObjects` are processed by the genomic_region_generator and this results in a list of tuples like
+        ```py
+        [("files_field",["generated_genomic_regions_file_path"])]
+        ```
+        These now need to be combined to achieve the expected format of ODT.
+
+        Arguments:
+            config {dict} -- Form Data of request
+            generated_region_paths {list[tuple[str, list[str]]]} -- list of tuples of input_field_id and belonging paths of generated genomic regions
+        """
+
+        # Overwrite fields with their respective file values or an empty array as fallback for None
+        for field in PIPELINE_GENOMIC_INPUT[self.pipeline_name]:
+            if config[field]["files"] is None:
+                config[field] = []
+            else:
+                config[field] = config[field]["files"]
+
+        # Add paths of generated regions to config
+        for id, paths in generated_region_paths:
+            config[id].extend(paths)
+
     def write_config_file(
         self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
     ) -> str:
@@ -87,18 +126,7 @@ class PipelineRunner:
         # Override output directory
         config["dir_output"] = output_path
 
-        # Add generated region paths to config
-        for field in PIPELINE_GENOMIC_INPUT[self.pipeline_name]:
-            if config[field]["files"] is None:
-                config[field] = []
-            else:
-                config[field] = config[field]["files"]
-
-        for id, paths in generated_region_paths:
-            if id not in config:
-                config[id] = []
-            for path in paths:
-                config[id].append(path)
+        self.populate_form_data_path_fields(config, generated_region_paths)
 
         # Write config to YAML file
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
