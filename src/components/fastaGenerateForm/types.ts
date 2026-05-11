@@ -32,7 +32,6 @@ export interface FastaFormUncommented {
  * via the `definition` "NcbiFastaFormDataUncommented".
  */
 export interface NcbiFastaFormDataUncommented {
-    dir_output: string;
     source: string;
     source_params: NcbiSourceParamsUncommented;
     genomic_regions: GenomicRegionsUncommented;
@@ -65,7 +64,6 @@ export interface GenomicRegionsUncommented {
  * via the `definition` "EnsFastaFormDataUncommented".
  */
 export interface EnsFastaFormDataUncommented {
-    dir_output: string;
     source: string;
     source_params: EnsSourceParamsUncommented;
     genomic_regions: GenomicRegionsUncommented;

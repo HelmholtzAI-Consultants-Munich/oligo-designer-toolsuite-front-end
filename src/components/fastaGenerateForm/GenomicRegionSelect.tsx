@@ -82,7 +82,7 @@ export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
                             placeholder="50"
                         />
                         <ToolTip
-                            id={`dir_output-${id}`}
+                            id={`exon_exon_junction_block_size-${id}`}
                             tip={
                                 schema.exon_exon_junction_block_size
                                     .description ?? ""

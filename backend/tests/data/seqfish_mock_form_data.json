@@ -1,7 +1,6 @@
 {
   "formdata": {
     "n_jobs": 4,
-    "dir_output": "output_seqfishplus_probe_designer",
     "write_intermediate_steps": true,
     "top_n_sets": 3,
     "file_regions": "AARS1",
@@ -10,7 +9,6 @@
       "fasta_form": [
         {
           "source": "NCBI",
-          "dir_output": "output_genomic_region_generator_ncbi",
           "source_params": {
             "species": "Homo_sapiens",
             "annotation_release": "110",
@@ -34,7 +32,6 @@
       "fasta_form": [
         {
           "source": "NCBI",
-          "dir_output": "output_genomic_region_generator_ncbi",
           "source_params": {
             "species": "Homo_sapiens",
             "annotation_release": "110",
@@ -77,7 +74,6 @@
       "fasta_form": [
         {
           "source": "NCBI",
-          "dir_output": "output_genomic_region_generator_ncbi",
           "source_params": {
             "species": "Homo_sapiens",
             "annotation_release": "110",
@@ -114,7 +110,6 @@
       "fasta_form": [
         {
           "source": "NCBI",
-          "dir_output": "output_genomic_region_generator_ncbi",
           "source_params": {
             "species": "Homo_sapiens",
             "annotation_release": "110",

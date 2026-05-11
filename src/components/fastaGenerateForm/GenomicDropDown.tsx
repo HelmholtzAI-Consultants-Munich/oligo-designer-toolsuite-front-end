@@ -29,7 +29,7 @@ export const GenomicDropDown: React.FC<
                 >
                     {children}
                 </Form.Select>
-                {tooltip && <ToolTip id={"dir_output"} tip={tooltip} />}
+                {tooltip && <ToolTip id={`${nameAndId}-${id}`} tip={tooltip} />}
             </div>
         </div>
     );

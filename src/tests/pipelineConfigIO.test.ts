@@ -180,7 +180,6 @@ describe("importAndValidate", () => {
                     {
                         selectedSource: "ncbi",
                         formDataNcbi: {
-                            dir_output: "output_genomic_region_generator_ncbi",
                             source: "ncbi",
                             source_params: {
                                 species: "Homo_sapiens",
@@ -199,8 +198,6 @@ describe("importAndValidate", () => {
                             exon_exon_junction_block_size: "50",
                         },
                         formDataEns: {
-                            dir_output:
-                                "output_genomic_region_generator_ensembl",
                             source: "ensembl",
                             source_params: {
                                 species: "homo_sapiens",

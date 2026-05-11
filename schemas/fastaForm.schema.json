@@ -141,7 +141,6 @@
     "NcbiFastaFormDataUncommented": {
       "type": "object",
       "required": [
-        "dir_output",
         "source",
         "source_params",
         "genomic_regions",
@@ -149,11 +148,6 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "dir_output": {
-          "type": "string",
-          "default": "output_genomic_region_generator_ncbi",
-          "description": "name of the directory where the output files will be written"
-        },
         "source": {
           "type": "string",
           "default": "ncbi",
@@ -174,7 +168,6 @@
     "EnsFastaFormDataUncommented": {
       "type": "object",
       "required": [
-        "dir_output",
         "source",
         "source_params",
         "genomic_regions",
@@ -182,11 +175,6 @@
       ],
       "additionalProperties": false,
       "properties": {
-        "dir_output": {
-          "type": "string",
-          "description": "name of the directory where the output files will be written",
-          "default": "output_genomic_region_generator_ensembl"
-        },
         "source": {
           "type": "string",
           "default": "ensembl"

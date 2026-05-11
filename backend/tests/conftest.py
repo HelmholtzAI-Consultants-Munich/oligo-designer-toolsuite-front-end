@@ -284,7 +284,6 @@ def mock_schema():
     """Mock schema for PipelineRunner."""
     return {
         "properties": {
-            "dir_output": {"type": "string"},
             "test_param": {"type": "integer"},
         }
     }
