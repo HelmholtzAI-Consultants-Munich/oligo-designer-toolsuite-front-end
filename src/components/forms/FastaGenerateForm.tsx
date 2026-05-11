@@ -206,29 +206,46 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             closeModal();
         };
 
+        const FastaGenerateFormHeader = () => (
+            <Modal.Header closeButton>
+                <Modal.Title>Configure FASTA Generation</Modal.Title>
+            </Modal.Header>
+        );
+
         if (isLoading) {
             return (
-                <div className="d-flex justify-content-center p-5">
-                    <Spinner animation="border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </Spinner>
-                </div>
+                <>
+                    <FastaGenerateFormHeader />
+                    <Modal.Body>
+                        <div className="d-flex justify-content-center p-5">
+                            <Spinner animation="border" role="status">
+                                <span className="visually-hidden">
+                                    Loading...
+                                </span>
+                            </Spinner>
+                        </div>
+                    </Modal.Body>
+                </>
             );
         }
 
         if (error || !dropDown) {
             console.error("Could not fetch dropdown data: ", error);
             return (
-                <Alert key="warning" variant="warning">
-                    Could not fetch required data. Please try again.
-                </Alert>
+                <>
+                    <FastaGenerateFormHeader />
+                    <Modal.Body>
+                        <Alert key="warning" variant="warning">
+                            Could not fetch required data. Please try again.
+                        </Alert>
+                    </Modal.Body>
+                </>
             );
         }
+
         return (
             <>
-                <Modal.Header closeButton>
-                    <Modal.Title>Configure FASTA Generation</Modal.Title>
-                </Modal.Header>
+                <FastaGenerateFormHeader />
                 <Modal.Body>
                     {formState.selectedSource === "ncbi" && (
                         <div>
