@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react";
-import { ToolTip } from "./Tooltip";
 import { Form } from "react-bootstrap";
+import { ToolTip } from "../ui/Tooltip";
 
 interface GenomicSelectProps {
     id: string;

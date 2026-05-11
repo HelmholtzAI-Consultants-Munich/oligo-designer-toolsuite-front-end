@@ -1,7 +1,7 @@
 import type { RJSFSchema } from "@rjsf/utils";
 import { regionDisplayNames } from "./helpers";
-import { ToolTip } from "./Tooltip";
 import type { GenomicRegionsUncommented } from "./types";
+import { ToolTip } from "../ui/Tooltip";
 
 interface GenomicRegionSelectProps {
     id: string;
