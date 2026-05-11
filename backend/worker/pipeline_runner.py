@@ -8,8 +8,8 @@ from typing import Any
 
 import yaml
 
+from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.worker.genomic_regions_file import GenomicRegionsFile
-from backend.worker.shared_constants import PIPELINE_GENOMIC_INPUT
 
 
 class PipelineRunner:
@@ -184,7 +184,7 @@ class PipelineRunner:
                     os.remove(fname)
 
         if os.path.exists(config_path):
-            # os.remove(config_path)
+            os.remove(config_path)
             self.logger.debug(f"deleted config: {config_path}")
         else:
             self.logger.debug(f"config not found, skipped: {config_path}")

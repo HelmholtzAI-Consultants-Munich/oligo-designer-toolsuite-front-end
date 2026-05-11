@@ -1,6 +1,6 @@
-from typing import Final
+from collections.abc import Mapping
 
-PIPELINE_GENOMIC_INPUT: Final[dict[str, list[str]]] = dict(
+PIPELINE_GENOMIC_INPUT: Mapping[str, list[str]] = dict(
     **{
         pipeline: [
             "files_fasta_target_probe_database",

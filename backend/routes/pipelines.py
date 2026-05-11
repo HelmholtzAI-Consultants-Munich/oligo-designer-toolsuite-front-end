@@ -16,6 +16,7 @@ from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
+from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import celery_app, mongo
 from backend.routes.auth import check_auth
 from backend.routes.route_helpers import get_user_context_with_directory
@@ -27,7 +28,6 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
-from backend.worker.shared_constants import PIPELINE_GENOMIC_INPUT
 from backend.worker.task_index import Tasks
 
 # Blueprint for Merfish endpoints
@@ -185,11 +185,12 @@ def save_file(
     file_name: str, files: ImmutableMultiDict[str, FileStorage], saved_files: dict[FileStorage, Path]
 ):
     if file := files.get(file_name):
+        # Step 1: Check if file was already saved
         if file in saved_files:
             return saved_files[file]
 
         # Step 2: Check if the user actually selected a file (filename should not be empty)
-        if file is None or file.filename == "":
+        if file.filename == "":
             abort(HTTPStatus.BAD_REQUEST, description="No selected file")
 
         # Step 3: Sanitize the filename to prevent path traversal attacks
@@ -197,14 +198,10 @@ def save_file(
         if not safe_filename:
             abort(HTTPStatus.BAD_REQUEST, description="Invalid filename")
 
-        # Step 4: Generate a unique filename by prefixing with a UUID
-        unique_filename = f"{uuid.uuid4().hex}_{safe_filename}"
-
-        # Step 5: Build the full path in the uploads directory (from Flask app config)
-        upload_root = Path(current_app.config["UPLOAD_PATH"]).resolve(strict=False)
-        file_path = (upload_root / unique_filename).resolve(strict=False)
-        if not file_path.is_relative_to(upload_root):
-            abort(HTTPStatus.BAD_REQUEST, description="Invalid upload path")
+        # Step 4: Generate a unique filename by prefixing with a UUID and append to upload root
+        upload_root = Path(current_app.config["UPLOAD_PATH"]).resolve()
+        unique_filename = Path(f"{uuid.uuid4().hex}_{safe_filename}")
+        file_path = (upload_root / unique_filename).resolve()
 
         # Step 6: Save the file to disk and write file path into form_data
         file.save(file_path)
