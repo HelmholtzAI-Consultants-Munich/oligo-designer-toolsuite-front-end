@@ -14,7 +14,7 @@ from pathlib import Path
 
 import requests
 
-from backend.cache import file_cache_region
+from backend.cache import file_cache_region, generic_cache_region
 from backend.config import Config
 
 
@@ -452,6 +452,7 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
         return None
 
+    @generic_cache_region.cache_on_arguments()
     def fetch_annotations_releases(self, taxon: str, species: str) -> list[str] | None:
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
@@ -578,7 +579,8 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
         )
 
 
-def prefetch_dropdown_options():
+@generic_cache_region.cache_on_arguments()
+def fetch_dropdown_options() -> dict[str, dict[str, list[str]]]:
     # TODO: check allowlists to apply same behaviour like before
 
     return dict(
