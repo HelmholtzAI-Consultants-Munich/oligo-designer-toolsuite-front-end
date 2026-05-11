@@ -458,8 +458,7 @@ const RunDetail = () => {
 
             {run?.status === "failure" && (
                 <Alert variant="danger">
-                    {run.error_message ??
-                        "Run failed. Please check the logs for more details."}
+                    {"Run failed. Please check the logs for more details."}
                 </Alert>
             )}
 

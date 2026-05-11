@@ -4,7 +4,6 @@ import json
 import logging
 import shutil
 from http import HTTPStatus
-from typing import Any
 
 from bson import ObjectId
 from celery.exceptions import SoftTimeLimitExceeded
@@ -105,7 +104,7 @@ def _get_config_timeout(is_authenticated: bool) -> int:
     return int(CeleryConfig.pipeline_timeout_anon * get_timeout_multiplier(is_authenticated))
 
 
-def resolve_pipeline_task_status(celery_state: str, task_result: Any) -> str:
+def resolve_pipeline_task_status(celery_state: str, task_result: bool | Exception | None) -> str:
     """Map Celery task outcome data to the persisted pipeline run status."""
     normalized_state = celery_state.lower()
     if normalized_state == "success":

@@ -1,6 +1,8 @@
+import logging
 import time
 from typing import Any
 
+from celery import Task
 from celery.signals import task_postrun, task_prerun
 
 from backend.constants import PIPELINE_RUN_LIFECYCLE_COLLECTION
@@ -8,16 +10,16 @@ from backend.utilities.pipeline import resolve_pipeline_task_status
 from backend.utilities.timestamps import utc_now
 from backend.worker.helpers import get_worker_db
 
-
-def _is_pipeline_task(task) -> bool:
-    return getattr(task, "name", "") == "backend.worker.tasks.run_pipeline"
+logger = logging.getLogger(__name__)
 
 
-def _get_request_header(task, key: str) -> Any:
-    headers = getattr(task.request, "headers", {}) or {}
-    if key in headers:
-        return headers[key]
-    return getattr(task.request, key, None)
+def _is_pipeline_task(task: Task) -> bool:
+    return task.name == "backend.worker.tasks.run_pipeline"
+
+
+def _get_request_header(task: Task, key: str) -> Any:
+    # Custom headers passed at dispatch time are stored in task.request.headers.
+    return task.request.headers.get(key)
 
 
 def _get_lifecycle_collection(db):
@@ -37,20 +39,10 @@ def _get_lifecycle_metadata(task_id: str, task) -> dict[str, Any]:
 
 @task_prerun.connect
 def on_task_prerun(task_id, task, *args, **kwargs):
-    """Record start time of pipeline tasks for heuristic timeout calculation."""
+    """Capture start time of pipeline tasks for heuristic timeout calculation."""
     if _is_pipeline_task(task):
-        started_at = utc_now()
         task.request.prerun_time = time.time()
-        task.request.started_at = started_at
-        with get_worker_db() as db:
-            _get_lifecycle_collection(db).update_one(
-                {"task_id": task_id},
-                {
-                    "$set": _get_lifecycle_metadata(task_id, task)
-                    | {"started_at": started_at, "status": "started"}
-                },
-                upsert=True,
-            )
+        task.request.started_at = utc_now()
 
 
 @task_postrun.connect
@@ -65,30 +57,30 @@ def on_task_postrun(task_id, task, state, retval=None, *args, **kwargs):
     prerun_time = getattr(task.request, "prerun_time", None)
     publish_time = _get_request_header(task, "publish_time")
 
-    execution_seconds = None
-    queue_wait_seconds = None
-    total_seconds = None
+    if started_at is None or prerun_time is None or publish_time is None:
+        logger.warning(
+            "Missing timing data for task %s (started_at=%s, prerun_time=%s, publish_time=%s); "
+            "skipping lifecycle DB write.",
+            task_id,
+            started_at,
+            prerun_time,
+            publish_time,
+        )
+        return
 
     current_time = time.time()
-    if prerun_time is not None:
-        execution_seconds = current_time - prerun_time
-    if publish_time is not None and prerun_time is not None:
-        queue_wait_seconds = prerun_time - float(publish_time)
-    if publish_time is not None:
-        total_seconds = current_time - float(publish_time)
+    execution_seconds = current_time - prerun_time
+    queue_wait_seconds = prerun_time - float(publish_time)
+    total_seconds = current_time - float(publish_time)
 
     lifecycle_update = _get_lifecycle_metadata(task_id, task) | {
         "status": final_status,
         "finished_at": finished_at,
+        "started_at": started_at,
+        "queue_wait_seconds": queue_wait_seconds,
+        "execution_seconds": execution_seconds,
+        "total_seconds": total_seconds,
     }
-    if started_at is not None:
-        lifecycle_update["started_at"] = started_at
-    if queue_wait_seconds is not None:
-        lifecycle_update["queue_wait_seconds"] = queue_wait_seconds
-    if execution_seconds is not None:
-        lifecycle_update["execution_seconds"] = execution_seconds
-    if total_seconds is not None:
-        lifecycle_update["total_seconds"] = total_seconds
 
     with get_worker_db() as db:
         _get_lifecycle_collection(db).update_one(

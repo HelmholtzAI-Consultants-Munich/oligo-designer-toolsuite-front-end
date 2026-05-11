@@ -51,9 +51,15 @@ def resolve_run_state(run: dict[Any, Any]) -> str:
         return state
 
     result_promise = celery_app.AsyncResult(task_id)
-    task_result = (
-        result_promise.get() if result_promise.successful() else getattr(result_promise, "info", None)
-    )
+    if result_promise.successful():
+        # task_result is the return value of the Celery task
+        task_result = result_promise.get()
+    elif result_promise.ready():
+        # task_result is the exception info (failure/revoked); .info is always set once the task has finished
+        task_result = result_promise.info
+    else:
+        # Task is still pending/running — no result yet
+        task_result = None
     return resolve_pipeline_task_status(result_promise.state, task_result)
 
 

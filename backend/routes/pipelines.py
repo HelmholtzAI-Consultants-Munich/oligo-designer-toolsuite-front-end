@@ -141,6 +141,9 @@ def start_pipeline(pipeline_name: str):
     :returns: JSON response containing the run ID.
     :rtype: flask.Response
 
+    Note: this endpoint only *enqueues* the pipeline run and returns immediately. The run ID in the
+    response can then be used to poll the task status via ``GET /api/runs/<run_id>``.
+
     For more information on the input parameters and configuration options, refer to the pipeline documentation.
 
     """
@@ -170,10 +173,12 @@ def start_pipeline(pipeline_name: str):
     except ValueError as error:
         abort(HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}")
 
+    # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
     task_id = str(uuid.uuid4())
 
+    # Pipeline timeout durations should be multiplied by number of genes in a run
     gene_count = extract_gene_count(sanitized_form_data)
 
     update_result = write_run_to_DB(pipeline_name, run_id, context, task_id, gene_count)
