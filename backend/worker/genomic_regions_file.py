@@ -91,7 +91,7 @@ class GenomicRegionsFile:
                         ]
 
                     if len(exon_numbers) != len(start_ends):
-                        print(
+                        self.logger.debug(
                             f"Warning: Number of exon numbers does not match number of components for record {idx} in gene {gene}, skipping  processing."
                         )
                         continue
@@ -143,7 +143,7 @@ class GenomicRegionsFile:
         probes = defaultdict(lambda: defaultdict(list))
 
         if not os.path.exists(self.probes_path):
-            print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
+            self.logger.debug(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
             return probes
 
         with open(self.probes_path) as f:
@@ -181,7 +181,7 @@ class GenomicRegionsFile:
                                 key=lambda x: x["start"],
                             )
                             if not canonical_regions:
-                                print(
+                                self.logger.debug(
                                     f"Warning: Could not find canonical region for probe {oligo_info.get('oligo_id', '')} in gene {gene}, skipping."
                                 )
                                 continue

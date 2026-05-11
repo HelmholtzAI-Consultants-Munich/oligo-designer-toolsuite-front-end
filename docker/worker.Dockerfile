@@ -32,4 +32,4 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 COPY --chown=$MAMBA_USER:$MAMBA_USER schemas schemas
 
 
-CMD ["celery", "-A", "backend.worker", "worker", "-l", "INFO", "--concurrency", "2"]
+CMD ["celery", "-A", "backend.worker", "worker", "--concurrency", "2"]

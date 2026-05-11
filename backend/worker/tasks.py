@@ -1,5 +1,6 @@
 import calendar
 import datetime
+import os
 from logging import Logger
 from typing import Any
 
@@ -13,6 +14,7 @@ from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 
 logger: Logger = get_task_logger(__name__)
+logger.setLevel(os.environ.get("LOG_LEVEL"))
 
 
 @app.task()
@@ -180,6 +182,6 @@ def generate_monthly_report(target_year: int | None = None, target_month: int | 
         }
 
         db.monthly_reports.replace_one({"_id": period_id}, report, upsert=True)
-        print(f"Monthly report generated: {period_id} (triggered_by={triggered_by})")
+        logger.info(f"Monthly report generated: {period_id} (triggered_by={triggered_by})")
     finally:
         client.close()

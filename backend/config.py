@@ -89,17 +89,13 @@ class Config:
     )  # in seconds (default: 30 days)
 
     @staticmethod
-    def get_logging_config(debug: bool = False) -> dict:
+    def get_logging_config() -> dict:
         """Get logging configuration dictionary for Flask application.
-
-        Args:
-            debug: Whether Flask is in debug mode. If True, uses DEBUG log level,
-                   otherwise uses INFO level for production.
 
         Returns:
             Dictionary compatible with logging.config.dictConfig()
         """
-        log_level = "DEBUG" if debug else "INFO"
+        log_level = os.environ.get("LOG_LEVEL")
         return {
             "version": 1,
             "formatters": {
