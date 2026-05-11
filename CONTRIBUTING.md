@@ -107,6 +107,10 @@ User stories are significant tasks, which are labeled with `user story`. descrip
 
 These issues are easy tasks, e.g. easily fixable bugs, small changes or quick tasks that don't deserve being treated like a full user story. The description should be enough to understand and resolve the issue. Further the Project fields can be left empty. While they are small and easy, simple issues should still be solved on a separate branch, to avoid time intensive reviews and merge conflicts.
 
+#### Claiming issues
+
+If you want to work on an issue check if there is already an assignee and if not assign yourself to show that you are working on it and avoid duplicate work.
+
 #### Branches
 
 Every issue should be solved on a separate branch, therefore you must first create one for your issue. Branches must follow the naming convention: `<type>-#<issue_number>-NAME1-NAME2`, where
@@ -127,7 +131,7 @@ Commits should adhere to [Conventional Commits](https://www.conventionalcommits.
 
 Before submitting a Pull Request ensure that you followed our [Style guide](docs/styleguide.md), ran the [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks and [tests](docs/tests.md).
 
-A Pull Request should include a short summary at the top and a bullet list of key changes. Furthermore it should include a `resolves <issue-number>` to link the respective User Story. Also all merge conflicts should be solved when submitting a PR. After submitting a PR it gets reviewed by at least one person. After the PR is reviewed and the tests are passing, the PR gets merged by the author. There could be changes in the merge order which are communicated in advance. Use Merge Commit as the merging strategy.
+A Pull Request should include a short summary at the top and a bullet list of key changes. Furthermore it should include a `resolves <issue-number>` to link the respective User Story. Also all merge conflicts should be solved when submitting a PR ([remember](#working-on-an-issue)). After submitting a PR it gets reviewed by at least one person. After the PR is reviewed and the tests are passing, the PR gets merged by the author. There could be changes in the merge order which are communicated in advance. Use Merge Commit as the merging strategy.
 
 ##### Reviews
 
@@ -156,6 +160,10 @@ Before starting to contribute code read and follow the [README](README.md), [Get
 #### Style guide
 
 The formatting rules are enforced by our [pre-commit](docs/ide-setup.md#installing-pre-commit), so please set it up properly. Further refer to the [style guide](docs/styleguide.md) to get information about other conventions we use.
+
+#### Working on an issue
+
+Remember to always fetch and pull the current changes from the upstream repository to avoid any merging conflicts. This reminder is most important when wanting to merge main into your branch to submit a pull request for your branch. If main is not in sync with the upstream main, it could cause problems later on.
 
 #### Testing
 
