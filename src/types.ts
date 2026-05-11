@@ -17,7 +17,6 @@ export interface GenomicRegion {
     start: number;
     end: number;
     sequence: string;
-    reading_grid_offset?: 0 | 1 | 2;
     strand?: "+" | "-";
     regiontype?: string;
     inferred?: boolean;

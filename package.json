@@ -47,7 +47,7 @@
     "docker:build": "docker compose build",
     "docker:update": "docker compose build --pull && docker compose pull --ignore-buildable",
     "docker:prune": "docker system prune",
-    "docker:test": "docker compose --profile tests up -d --build odt-db odt-mq odt-server odt-worker odt-web odt-tests && docker compose --profile tests run --rm odt-tests",
+    "docker:test": "docker compose --profile tests up -d --build odt-db odt-redis odt-server odt-worker odt-web odt-tests && docker compose --profile tests run --rm odt-tests",
     "docker:test:smoke": "docker compose --profile tests run --rm odt-tests test --grep @smoke",
     "docker:test:full": "docker compose --profile tests run --rm odt-tests test --grep @full"
   },
@@ -92,7 +92,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "jsdom": "^27.1.0",
-    "prettier": "^3.6.2",
+    "prettier": "^3.8.3",
     "sass": "^1.94.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.3",

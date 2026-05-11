@@ -77,14 +77,14 @@ The `docker-compose.yml` at the project root defines the containers used for ODT
 
 Currently, the project consists of the following containers:
 
-|    Service    |    Name    | Self-Built? |    Dockerfile     |            Base Image            |
-| :-----------: | :--------: | :---------: | :---------------: | :------------------------------: |
-|   Frontend    |  odt-web   |     yes     |  web.Dockerfile   |        node:22-alpine3.22        |
-|    Backend    | odt-server |     yes     | server.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
-|    Worker     | odt-worker |     yes     | worker.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
-|   Database    |   odt-db   |     no      |         -         |             mongo:8              |
-| Message Queue |   odt-mq   |     no      |         -         |        rabbitmq:4-alpine         |
-|  Playwright   | odt-tests  |     yes     | tests.Dockerfile  |           node:22-slim           |
+|     Service      |    Name    | Self-Built? |    Dockerfile     |            Base Image            |
+| :--------------: | :--------: | :---------: | :---------------: | :------------------------------: |
+|     Frontend     |  odt-web   |     yes     |  web.Dockerfile   |        node:22-alpine3.22        |
+|     Backend      | odt-server |     yes     | server.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
+|      Worker      | odt-worker |     yes     | worker.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
+|     Database     |   odt-db   |     no      |         -         |             mongo:8              |
+| Celery / Caching | odt-redis  |     no      |         -         |          redis:8-alpine          |
+|    Playwright    | odt-tests  |     yes     | tests.Dockerfile  |           node:22-slim           |
 
 ## Build Configuration
 
@@ -100,12 +100,12 @@ Naturally, regular Docker commands not specified in the `package.json` can be us
 
 ## Local Development with Docker
 
-While ODT Cloud can be run with Docker alone, you might prefer to develop locally and only use Docker for supporting services like the database and message queue. Because of this, the supporting containers (currently `odt-db` and `odt-mq`) are accessible on localhost by default.
+While ODT Cloud can be run with Docker alone, you might prefer to develop locally and only use Docker for supporting services like the database and message queue. Because of this, the supporting containers (currently `odt-db` and `odt-redis`) are accessible on localhost by default.
 
 To start just the supporting services, run:
 
 ```bash
-docker compose up odt-db odt-mq -d
+docker compose up odt-db odt-redis -d
 ```
 
 ## Building and Running the Playwright Tests
@@ -162,3 +162,23 @@ The code contained in the `odt-server` image might be out of date compared to th
 ## Additional Tips for using Docker
 
 You can check Docker's disk usage using `docker system df`. To reclaim disk space used by Docker (e.g. images, volumes, build cache), run `npm run docker:prune`. Be aware that this might cause significantly increased container building times because of deleted build cache.
+
+## Execute commands inside docker container
+
+To enter the shell inside the docker containers you can use the basic docker compose exec command like this
+
+```bash
+docker compose exec <container-name> <command>
+# for example to enter the shell of the server container use
+docker compose exec odt-server bash
+```
+
+Our python environments are managed via conda/micromamba, so if you want to use commands provided via python packages inside of our docker containers you have to prefix them with `micromamba run`. You also have to do this if you are in a `sh` shell inside a container, but if you are using the bash shell you can omit this prefix.
+
+```bash
+# register a new user using flask cli command
+docker compose exec odt-server micromamba run flask user register
+# run pipeline in a shell inside of odt-worker
+docker compose exec odt-worker bash
+(base) 1337c977958a:/app$ genomic_region_generator [ARGUMENTS]
+```

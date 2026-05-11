@@ -7,6 +7,7 @@
 # Ignore directory contents in the backend directory except for specific files and directories
 /backend/*
 !/backend/__init__.py
+!/backend/cache.py
 !/backend/config.py
 !/backend/constants.py
 !/backend/extensions.py
@@ -14,6 +15,10 @@
 !/backend/pyproject.toml
 !/backend/worker_environment.yml
 !/backend/worker
+!/backend/data-access
+/backend/data-access/*
+!/backend/cache
+/backend/cache/*
 
 # Python artifacts
 **/__pycache__

@@ -13,21 +13,28 @@ Endpoints:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo)
 """
 
+import datetime
 from http import HTTPStatus
 
 from bson import ObjectId
 from flask import Blueprint, abort, jsonify, request
 from flask_login import current_user, login_required
 
-from backend.extensions import mongo
+from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
-from backend.utilities.formatting import format_feedback, format_pipeline_run, format_user
+from backend.utilities.formatting import (
+    format_feedback,
+    format_monthly_report,
+    format_pipeline_run,
+    format_user,
+)
 from backend.utilities.pipeline import (
     delete_pipeline_run_files_and_db,
     execute_bulk_pipeline_run_deletion,
     get_valid_pipeline_statuses,
 )
 from backend.utilities.validation import validate_and_convert_ids, validate_id_array
+from backend.worker.task_index import Tasks
 
 admin_bp = Blueprint("admin", __name__)
 
@@ -538,3 +545,68 @@ def bulk_update_pipeline_status():
         response["invalid_ids"] = invalid_ids
 
     return jsonify(response), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/reports", methods=["GET"])
+@login_required
+@require_admin
+def get_monthly_reports():
+    year = request.args.get("year", type=int)
+    month = request.args.get("month", type=int)
+
+    if year and month:
+        report_id = f"{year}-{month:02d}"
+        doc = mongo.db.monthly_reports.find_one({"_id": report_id})
+        if not doc:
+            abort(HTTPStatus.NOT_FOUND, description=f"No report found for {report_id}")
+        return jsonify(format_monthly_report(doc)), HTTPStatus.OK
+
+    reports = list(mongo.db.monthly_reports.find({}).sort([("year", -1), ("month", -1)]))
+    return jsonify([format_monthly_report(r) for r in reports]), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/reports/<string:report_id>", methods=["DELETE"])
+@login_required
+@require_admin
+def delete_monthly_report(report_id):
+    result = mongo.db.monthly_reports.delete_one({"_id": report_id})
+    if result.deleted_count == 0:
+        abort(HTTPStatus.NOT_FOUND, description=f"No report found for {report_id}")
+    return jsonify({"message": f"Report {report_id} deleted"}), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/reports/generate", methods=["POST"])
+@login_required
+@require_admin
+def trigger_monthly_report():
+    data = request.get_json(silent=True) or {}
+    year = data.get("year")
+    month = data.get("month")
+
+    kwargs = {}
+    if year is None and month is None:
+        pass
+    elif year is None or month is None:
+        abort(HTTPStatus.BAD_REQUEST, description="Year and month must both be provided.")
+    else:
+        try:
+            target_year = int(year)
+            target_month = int(month)
+        except (TypeError, ValueError):
+            abort(HTTPStatus.BAD_REQUEST, description="Year and month must be valid integers.")
+
+        if target_year < 1:
+            abort(HTTPStatus.BAD_REQUEST, description="Year must be a positive integer.")
+        if not 1 <= target_month <= 12:
+            abort(HTTPStatus.BAD_REQUEST, description="Month must be between 1 and 12.")
+        today = datetime.date.today()
+        if (target_year, target_month) >= (today.year, today.month):
+            abort(
+                HTTPStatus.BAD_REQUEST,
+                description="Cannot generate reports for the current or future month.",
+            )
+
+        kwargs = {"target_year": target_year, "target_month": target_month}
+
+    celery_app.send_task(Tasks.GENERATE_MONTHLY_REPORT, kwargs=kwargs)
+    return jsonify({"message": "Report generation started"}), HTTPStatus.ACCEPTED

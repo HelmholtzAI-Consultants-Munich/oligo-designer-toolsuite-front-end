@@ -113,10 +113,11 @@ function Header({
 
     const navigate = useNavigate();
 
-    // Set initial active tab offset and width on mount
     useEffect(() => {
+        // Set initial active tab offset and width on mount
         if (activeSize[0] === 0 && tabs && tabs.length > 0) {
             requestAnimationFrame(() => {
+                console.log("Measuring active tab for animation");
                 const activeElement = document.querySelector(
                     `.nav-header .nav-link.active`
                 ) as HTMLElement;
@@ -137,28 +138,28 @@ function Header({
         }
     }, [tabs, activeSize]);
 
+    const handleResize = () => {
+        const activeElement = document.querySelector(
+            `.nav-header .nav-link.active`
+        ) as HTMLElement;
+        setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
+        if (activeElement) {
+            setActiveOffset([
+                activeElement.offsetLeft,
+                activeElement.offsetTop,
+            ]);
+            setActiveSize([
+                activeElement.offsetWidth,
+                activeElement.offsetHeight,
+            ]);
+        }
+        requestAnimationFrame(() => {
+            setAnimationReady(1); // Set animation ready flag after measurement
+        });
+    };
+
     useEffect(() => {
         if (!tabs || tabs.length === 0) return; // No tabs, no need to set up resize listener
-
-        const handleResize = () => {
-            const activeElement = document.querySelector(
-                `.nav-header .nav-link.active`
-            ) as HTMLElement;
-            setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
-            if (activeElement) {
-                setActiveOffset([
-                    activeElement.offsetLeft,
-                    activeElement.offsetTop,
-                ]);
-                setActiveSize([
-                    activeElement.offsetWidth,
-                    activeElement.offsetHeight,
-                ]);
-            }
-            requestAnimationFrame(() => {
-                setAnimationReady(1); // Set animation ready flag after measurement
-            });
-        };
 
         window.addEventListener("resize", handleResize);
 
@@ -174,9 +175,11 @@ function Header({
     return (
         <>
             {stickyHeader && (
-                <Container className="sticky-header-title">
-                    <h1>{title}</h1>
-                </Container>
+                <div className="sticky-header-title">
+                    <Container>
+                        <h1>{title}</h1>
+                    </Container>
+                </div>
             )}
             <header className={`header ${stickyHeader ? "sticky-header" : ""}`}>
                 <title>{extendedTitle}</title>

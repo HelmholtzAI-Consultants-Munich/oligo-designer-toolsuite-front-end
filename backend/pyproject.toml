@@ -3,7 +3,14 @@
 
 # see https://packaging.python.org/en/latest/specifications/dependency-groups/
 [dependency-groups]
-shared = ["celery >=5.6, <6", "pymongo >=4.15, <5", "PyYAML >=6, <7", "python-dotenv >=1.2, <2"]
+shared = [
+    "celery[redis] >=5.6, <6",
+    "pymongo >=4.15, <5",
+    "PyYAML >=6, <7",
+    "python-dotenv >=1.2, <2",
+    "filelock >=3.28, <4",
+    "dogpile.cache[redis] >=1.5, <2",
+]
 server = [
     { include-group = "shared" },
     "Authlib >=1.6, <2",

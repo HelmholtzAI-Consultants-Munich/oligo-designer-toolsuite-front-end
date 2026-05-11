@@ -11,12 +11,13 @@ See .env.sample for available configuration options.
 """
 
 import os
+from collections.abc import Mapping
 from datetime import timedelta
 
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-# This ensures environment variables are available for both from_prefixed_env() and CeleryConfig
+# This ensures environment variables are available for both from_prefixed_env() and os.environ.get()
 load_dotenv()
 
 
@@ -47,6 +48,9 @@ class Config:
     Environment variables prefixed with FLASK_ will override these defaults
     when app.config.from_prefixed_env() is called in create_app().
 
+    Variables also used by the Celery worker need to use os.environ.get since
+    Flask's from_prefixed_env() does not get called by the worker.
+
     For example, to override MONGO_URI, set FLASK_MONGO_URI in your environment.
     See .env.sample for all available options.
     """
@@ -73,7 +77,7 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
-    MONGO_URI = "mongodb://localhost:27017/oligo_db"
+    MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost/oligo_db")
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"
@@ -94,6 +98,16 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+    GENE_COUNT_THRESHOLD = 10
+
+    # Caching Settings
+    REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")
+    REDIS_GENERIC_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_GENERIC_EXPIRATION_TIME", 3600 * 24)
+    )  # in seconds (default: 1 day)
+    REDIS_FILE_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
+    )  # in seconds (default: 30 days)
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
@@ -154,13 +168,21 @@ class CeleryConfig:
     configuration mechanism (see https://github.com/celery/celery/issues/7309).
     """
 
-    broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
-    result_backend: str = os.environ.get("CELERY_MONGO_URI", "mongodb://localhost:27017/")
+    broker_url: str = Config.REDIS_URI
+    result_backend: str = Config.REDIS_URI
     task_track_started: bool = True
     task_compression: str = "zlib"
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
+
+    # Redis task priorities
+    broker_transport_options: Mapping[str, str] = {
+        "queue_order_strategy": "priority",
+    }
+    task_default_priority = 5
+    task_high_priority = 10
+    worker_disable_prefetch = True
 
     # Timeout mode: "config" (fixed env vars) or "heuristic" (configured percentile of past runs)
     pipeline_timeout_mode: str = os.environ.get("PIPELINE_TIMEOUT_MODE", "config")
