@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useEffectEvent } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
@@ -19,7 +19,6 @@ import {
     buildExportPayload,
     triggerDownload,
     importAndValidate,
-    type ImportResult,
 } from "./pipelineConfigIO";
 import { useRuns } from "../../hooks/useRuns";
 import { Button } from "react-bootstrap";
@@ -109,14 +108,18 @@ const PipelineTemplate: React.FC<Props> = ({
 
     const { updateRuns } = useRuns();
     const location = useLocation();
-    const configApplied = useRef(false);
 
-    const applyValidatedConfig = useCallback(
-        (
-            result: Extract<ImportResult, { ok: true }>,
-            importedConfig: unknown,
-            successTitle: string
-        ) => {
+    const applyValidatedConfig = useEffectEvent(
+        (importedConfig: unknown, successTitle: string, errorTitle: string) => {
+            const result = importAndValidate(importedConfig, schema, pipeline);
+            if (!result.ok) {
+                showToast({
+                    title: errorTitle,
+                    content: result.error,
+                    type: "danger",
+                });
+                return;
+            }
             setFormData((prev) => ({ ...prev, ...result.config }));
             setFastaForms(convertImportedFastaForms(result.fastaForms));
             const exportedAt = (
@@ -133,36 +136,19 @@ const PipelineTemplate: React.FC<Props> = ({
                 content: `Configuration${datePart} loaded.${skipNote}`,
                 type: "success",
             });
-        },
-        [setFormData, setFastaForms]
+        }
     );
 
     // Apply a config that was passed via navigation location state (e.g. "Use Settings" in Runs page).
-    // This mirrors the existing file-import flow exactly.
     useEffect(() => {
-        if (configApplied.current) return;
         const importedConfig = location.state?.importedConfig;
         if (!importedConfig) return;
-
-        configApplied.current = true;
-        // Clear the state so re-renders don't re-apply the config
-        window.history.replaceState(
-            { ...window.history.state, importedConfig: undefined },
-            ""
+        applyValidatedConfig(
+            importedConfig,
+            "Config Loaded",
+            "Load Config Failed"
         );
-
-        const result = importAndValidate(importedConfig, schema, pipeline);
-        if (!result.ok) {
-            showToast({
-                title: "Load Config Failed",
-                content: result.error,
-                type: "danger",
-            });
-            return;
-        }
-        applyValidatedConfig(result, importedConfig, "Config Loaded");
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [location.state]);
 
     const widgets = {
         fileSelection: GenomicInput,
@@ -196,16 +182,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 });
                 return;
             }
-            const result = importAndValidate(parsed, schema, pipeline);
-            if (!result.ok) {
-                showToast({
-                    title: "Import Failed",
-                    content: result.error,
-                    type: "danger",
-                });
-                return;
-            }
-            applyValidatedConfig(result, parsed, "Import Successful");
+            applyValidatedConfig(parsed, "Import Successful", "Import Failed");
         };
         reader.readAsText(file);
     };
