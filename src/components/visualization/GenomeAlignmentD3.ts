@@ -1,45 +1,56 @@
 import * as d3 from "d3";
 import type { GenomicRegions, GenomicRegion, Probe } from "../../types";
+import {
+    calculeArrowSpacing,
+    collectOligoBases,
+    collectOligoComponents,
+    collectReferenceBases,
+    oligoTooltipHTML,
+    Regions,
+    regionTooltipHTML,
+    transcriptTooltipHTML,
+    type Base,
+    type OligoPosition,
+} from "./visualizationHelpers";
 
 type VisualizationContext = {
     svg: d3.Selection<Element, unknown, null, unknown>;
     plot: d3.Selection<SVGGElement, unknown, null, unknown>;
     locationIndicator: d3.Selection<SVGRectElement, unknown, null, unknown>;
-    positionLabel: d3.Selection<SVGTextElement, unknown, null, unknown>;
+    positionLabelGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     oligosGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     tooltip: d3.Selection<HTMLDivElement, unknown, HTMLElement, unknown>;
     regionsGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     baseGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
+    readingGridTicksGroup: d3.Selection<SVGGElement, unknown, null, unknown>;
     xScale: d3.ScaleLinear<number, number>;
     xAxis: d3.Selection<SVGGElement, unknown, null, unknown>;
     zoomBehavior: d3.ZoomBehavior<Element, unknown>;
     currentZoomTransform: d3.ZoomTransform;
-    innerWidth: number;
-    innerHeight: number;
-    width: number;
     height: number;
-    margin: number;
 };
 
 const contextByElement = new WeakMap<Element, VisualizationContext>();
 
-type OligoPosition = {
-    start: number;
-    end: number;
-    id: string;
-    transcript_ids: string[];
-    type: "probe" | "gap";
-};
+const WIDTH = 800;
+const OLIGO_HEIGHT = 20;
+const TRANSCRIPT_HEIGHT = 20;
+const TRANSCRIPT_MARKER_WIDTH = 8;
+const GAP = 50;
+const AXIS_HEIGHT = 20;
+const MIN_PROBE_WIDTH = 2;
 
-export const Regions: { [key: string]: { color: string; label: string } } = {
-    exon: { color: "blue", label: "Exon" },
-    intron: { color: "red", label: "Intron" },
-    CDS: { color: "green", label: "CDS" },
-    three_prime_UTR: { color: "orange", label: "3' UTR" },
-    five_prime_UTR: { color: "orange", label: "5' UTR" },
-    exonexonjunction: { color: "darkblue", label: "Start / End of Exon" },
-    gene: { color: "purple", label: "Gene" },
-    unknown: { color: "lightgray", label: "Unknown" },
+const centeredMinWidthRect = (startX: number, endX: number) => {
+    const width = endX - startX;
+    if (width >= MIN_PROBE_WIDTH) {
+        return { x: startX, width };
+    }
+
+    const center = (startX + endX) / 2;
+    return {
+        x: center - MIN_PROBE_WIDTH / 2,
+        width: MIN_PROBE_WIDTH,
+    };
 };
 
 // Set up the SVG and initial elements
@@ -48,78 +59,72 @@ const createContext = (
     genomicRegions: GenomicRegions
 ): VisualizationContext => {
     const svg = d3.select(el);
-    const margin = 20;
-    const width = 800;
-    const height = Object.keys(genomicRegions).length * 12 + 150;
-    const innerWidth = width - margin * 2;
-    const innerHeight = height - margin * 2;
+    const height =
+        Object.keys(genomicRegions).length * TRANSCRIPT_HEIGHT +
+        OLIGO_HEIGHT +
+        GAP +
+        AXIS_HEIGHT;
 
     const plot = svg.append("g");
-    const positionLabel = plot.append("text");
+    const locationIndicator = plot.append("rect");
     const oligosGroup = plot.append("g");
+    oligosGroup.append("g").attr("class", "probes");
+    oligosGroup.append("g").attr("class", "components");
     const tooltip = d3.select("body").append("div");
     const regionsGroup = plot.append("g");
     const baseGroup = plot.append("g");
-    const locationIndicator = plot.append("rect");
+    const readingGridTicksGroup = plot.append("g");
 
     const zoomBehavior = d3.zoom();
     const xScale = d3.scaleLinear();
     const xAxis = plot.append("g");
+    const positionLabelGroup = plot
+        .append("g")
+        .attr("id", "position-label-group");
+    positionLabelGroup.append("rect");
+    positionLabelGroup.append("text");
 
     return {
         svg,
         plot,
         locationIndicator,
-        positionLabel,
+        positionLabelGroup,
         oligosGroup,
         tooltip,
         regionsGroup,
         baseGroup,
+        readingGridTicksGroup,
         xScale,
         xAxis,
         zoomBehavior,
         currentZoomTransform: d3.zoomIdentity,
-        innerWidth,
-        innerHeight,
-        width,
         height,
-        margin,
     };
-};
-
-// Collect oligo positions for all components of all probes
-const collectOligoPositions = (probes: Probe[]): OligoPosition[] => {
-    return probes.flatMap((oligo) =>
-        oligo.components.map((component) => ({
-            start: component.start,
-            end: component.end,
-            id: oligo.oligo_id,
-            transcript_ids: oligo.transcript_ids,
-            type: component.type,
-        }))
-    );
 };
 
 // Set up x scale and axis based on the extent of oligo positions and genomic regions
 const setupScalesAndAxes = (
     ctx: VisualizationContext,
     genomicRegions: GenomicRegions,
-    oligoPositions: OligoPosition[]
+    oligoComponents: OligoPosition[]
 ) => {
     // Define x scale based on combined extent of oligos and genomic regions
     const ext = d3.extent([
-        ...oligoPositions.flatMap((d) => [d.start, d.end]),
+        ...oligoComponents.flatMap((d) => [d.start, d.end]),
         ...Object.values(genomicRegions)
             .flat()
             .flatMap((d: GenomicRegion) => [d.start, d.end]),
     ]) as [number, number];
-    ctx.xScale.domain([ext[0] - 100, ext[1] + 100]).range([0, ctx.innerWidth]);
+    const extentPadding = (ext[1] - ext[0]) * 0.01; // add % padding on each side
+    ctx.xScale
+        .domain([ext[0] - extentPadding, ext[1] + extentPadding])
+        .range([TRANSCRIPT_MARKER_WIDTH, WIDTH - 1]);
     const axis = d3.axisBottom(ctx.xScale).ticks(8);
 
     // Append the x-axis inside the plot area
     ctx.xAxis
         .attr("class", "x-axis")
-        .attr("transform", `translate(0,${ctx.innerHeight})`)
+        .attr("transform", `translate(0, ${ctx.height - AXIS_HEIGHT})`)
         .call(axis);
 };
 
@@ -127,84 +132,136 @@ const setupScalesAndAxes = (
 const setupElements = (
     ctx: VisualizationContext,
     genomicRegions: GenomicRegions,
-    oligoPositions: OligoPosition[]
+    oligoComponents: OligoPosition[],
+    probes: Probe[]
 ) => {
     ctx.svg
-        .attr("viewBox", [0, 0, ctx.width, ctx.height])
-        .attr("width", ctx.width)
+        .attr("viewBox", [0, 0, WIDTH, ctx.height])
+        .attr("width", WIDTH)
         .attr("height", ctx.height)
         .attr("style", "width: 100%; height: auto;");
 
-    ctx.plot.attr("transform", `translate(${ctx.margin},${ctx.margin})`);
-
+    // Location indicator as vertical bar following the mouse
     ctx.locationIndicator
         .attr("id", "location-indicator")
         .attr("x", 0)
         .attr("y", 0)
         .attr("width", ctx.xScale(1) - ctx.xScale(0))
-        .attr("height", ctx.innerHeight)
+        .attr("height", ctx.height - AXIS_HEIGHT)
         .attr("fill", "black")
-        .attr("opacity", 0.3)
+        .attr("opacity", 0.25)
         .attr("visibility", "hidden")
         .attr("pointer-events", "none"); // allow mouse events to pass through
 
-    ctx.positionLabel
+    // Position label text (number)
+    ctx.positionLabelGroup
+        .select("text")
         .attr("id", "position-label")
-        .attr("y", -5)
-        .attr("text-anchor", "middle")
+        .attr("y", OLIGO_HEIGHT + GAP / 2 + 5) // position within the gap between oligos and transcripts
+        .attr("text-anchor", "start")
         .attr("font-size", 9)
-        .attr("fill", "black")
+        .attr("fill", "black");
+
+    // Position label background
+    ctx.positionLabelGroup
+        .select("rect")
+        .attr("fill", "rgb(242.25, 245.1, 246.55)")
+        .attr("opacity", 1)
+        .attr("pointer-events", "none");
+
+    // Initially hide position label until mouse enters
+    ctx.positionLabelGroup
         .attr("opacity", 0)
-        .attr("visibility", "hidden");
+        .attr("visibility", "hidden")
+        .attr("pointer-events", "none");
 
-    ctx.oligosGroup
-        .attr("class", "oligos")
-        .selectAll("rect")
-        .data(oligoPositions)
-        .join("rect")
-        .attr("x", (d) => ctx.xScale(d.start - 0.5))
-        .attr("y", 10)
-        .attr(
-            "width",
-            (d) => ctx.xScale(d.end + 0.5) - ctx.xScale(d.start - 0.5)
-        )
-        .attr("height", 20)
-        .attr("opacity", (d) => (d.type === "gap" ? 0.5 : 1.0));
-
-    // Append line to oligo gaps
-    ctx.oligosGroup
-        .selectAll("line")
-        .data(oligoPositions.filter((d) => d.type === "gap"))
-        .join("line")
-        .attr("x1", (d) => ctx.xScale(d.start - 0.5))
-        .attr("x2", (d) => ctx.xScale(d.end + 0.5))
-        .attr("y1", 20)
-        .attr("y2", 20)
-        .attr("stroke-width", 2)
-        .attr("pointer-events", "none"); // allow clicks to pass through to rects
-
+    // Tooltip div for oligos, regions, and transcripts
     ctx.tooltip
         .style("opacity", 0)
         .attr("id", "region-tooltip")
         .style("background-color", "white")
-        .style("border", "1px solid black")
-        .style("border-width", "2px")
+        .style("border", "1px solid #b0b0b0")
+        .style("border-width", "1px")
         .style("border-radius", "5px")
+        .style("box-shadow", "0 0.5rem 1rem rgba(0, 0, 0, 0.1)")
         .style("padding", "5px")
         .style("position", "absolute")
         .style("pointer-events", "none")
-        .style("z-index", "1000");
+        .style("z-index", "2000");
 
+    // Draw oligo components (probes and gaps)
+    ctx.oligosGroup
+        .selectAll("g.components")
+        .selectAll("rect")
+        .data(oligoComponents)
+        .join("rect")
+        .attr("x", (d) => ctx.xScale(d.start - 0.5))
+        .attr("y", (d) => (d.type === "gap" ? OLIGO_HEIGHT / 2 - 1 : 0))
+        .attr(
+            "width",
+            (d) => ctx.xScale(d.end + 0.5) - ctx.xScale(d.start - 0.5)
+        )
+        .attr("height", (d) => (d.type === "gap" ? 2 : OLIGO_HEIGHT))
+        .attr("pointer-events", "none"); // allow mouse events to pass through to probe rects
+
+    // Draw probe rectangles
+    ctx.oligosGroup
+        .selectAll("g.probes")
+        .selectAll("rect")
+        .data(probes)
+        .join("rect")
+        .attr("height", OLIGO_HEIGHT)
+        .attr(
+            "x",
+            (d) =>
+                centeredMinWidthRect(
+                    ctx.xScale(d.details.start - 0.5),
+                    ctx.xScale(d.details.end + 0.5)
+                ).x
+        )
+        .attr("y", 0)
+        .attr(
+            "width",
+            (d) =>
+                centeredMinWidthRect(
+                    ctx.xScale(d.details.start - 0.5),
+                    ctx.xScale(d.details.end + 0.5)
+                ).width
+        )
+        .attr("opacity", 0.5)
+        .on("mouseover", function () {
+            ctx.tooltip.style("opacity", 1);
+        })
+        .on("mousemove", (event, d) => {
+            ctx.tooltip
+                .html(oligoTooltipHTML(d, genomicRegions))
+                .style(
+                    "left",
+                    event.pageX > window.innerWidth / 2
+                        ? ""
+                        : event.pageX + 20 + "px"
+                )
+                .style(
+                    "right",
+                    event.pageX > window.innerWidth / 2
+                        ? window.innerWidth - event.pageX + 10 + "px"
+                        : ""
+                )
+                .style("bottom", window.innerHeight - event.pageY + "px")
+                .style("top", ""); // reset top in case it was set before
+        })
+        .on("mouseleave", function () {
+            ctx.tooltip.style("opacity", 0);
+        });
+
+    // Draw genomic regions grouped by transcript
     ctx.regionsGroup.attr("class", "genome-regions");
-    const transcriptHeight = calculateTranscriptHeight(
-        genomicRegions,
-        ctx.innerHeight
-    );
     Object.entries(genomicRegions).forEach(([transcriptName, regions]) => {
         const yOffset =
-            40 +
+            OLIGO_HEIGHT +
+            GAP +
             Object.keys(genomicRegions).indexOf(transcriptName) *
-                transcriptHeight;
+                TRANSCRIPT_HEIGHT;
 
         const transcriptGroup = ctx.regionsGroup
             .append("g")
@@ -221,31 +278,29 @@ const setupElements = (
                 (d: GenomicRegion) =>
                     `translate(${ctx.xScale(d.start - 0.5)}, 0)`
             )
-            .attr("opacity", (d) => (d.inferred === true ? 0.6 : 0.9))
             .on("mouseover", function () {
                 ctx.tooltip.style("opacity", 1);
-                d3.select(this).attr("opacity", (d) =>
-                    (d as GenomicRegion).inferred === true ? 0.7 : 1.0
-                );
             })
             .on("mousemove", (event, d: GenomicRegion) => {
                 ctx.tooltip
-                    .html(
-                        Regions[d.regiontype || "unknown"].label +
-                            (d.exon_number
-                                ? " " + encodeURI(d.exon_number.toString())
-                                : "") +
-                            `<br>Transcript: ${encodeURI(transcriptName)}` +
-                            (d.inferred ? "<br><i>(inferred)</i>" : "")
+                    .html(regionTooltipHTML(d, transcriptName))
+                    .style(
+                        "left",
+                        event.pageX > window.innerWidth / 2
+                            ? ""
+                            : event.pageX + 20 + "px"
                     )
-                    .style("left", event.pageX + 30 + "px")
-                    .style("top", event.pageY + "px");
+                    .style(
+                        "right",
+                        event.pageX > window.innerWidth / 2
+                            ? window.innerWidth - event.pageX + 10 + "px"
+                            : ""
+                    )
+                    .style("top", event.pageY + "px")
+                    .style("bottom", ""); // reset bottom in case it was set before
             })
             .on("mouseleave", function () {
                 ctx.tooltip.style("opacity", 0);
-                d3.select(this).attr("opacity", (d) =>
-                    (d as GenomicRegion).inferred === true ? 0.6 : 0.9
-                );
             });
 
         // Draw a rect for each region
@@ -259,13 +314,13 @@ const setupElements = (
             )
             .attr("height", (d: GenomicRegion) =>
                 d.regiontype === "intron"
-                    ? Math.min(transcriptHeight / 10, 2)
-                    : Math.min(transcriptHeight / 2, 10)
+                    ? TRANSCRIPT_HEIGHT / 10
+                    : TRANSCRIPT_HEIGHT / 2
             )
             .attr("x", 0)
             .attr("y", function () {
                 const height = d3.select(this).attr("height");
-                return transcriptHeight / 2 - Number(height) / 2;
+                return TRANSCRIPT_HEIGHT / 2 - Number(height) / 2;
             })
             .attr(
                 "fill",
@@ -282,53 +337,79 @@ const setupElements = (
                 (d: GenomicRegion) =>
                     ctx.xScale(d.end + 0.5) - ctx.xScale(d.start - 0.5)
             )
-            .attr("height", Math.min(transcriptHeight / 2, 10))
+            .attr("height", TRANSCRIPT_HEIGHT / 2)
             .attr("x", 0)
-            .attr(
-                "y",
-                transcriptHeight / 2 - Math.min(transcriptHeight / 2, 10) / 2
-            )
+            .attr("y", TRANSCRIPT_HEIGHT / 4)
             .attr("fill", "transparent");
 
         // Strand arrows
         regionsContainer.append("g").attr("class", "strand-arrows");
 
         // Marker for transcript match with oligo
-        transcriptGroup
-            .append("rect")
-            .data([transcriptName])
-            .attr("class", "transcript-match-marker")
-            .attr("x", -ctx.margin)
-            .attr("y", 0)
-            .attr("width", ctx.margin / 4)
-            .attr("height", transcriptHeight)
-            .attr("fill", "transparent");
+        if (transcriptName !== "unknown") {
+            transcriptGroup
+                .append("rect")
+                .data([transcriptName])
+                .attr("class", "transcript-marker")
+                .attr("x", 0)
+                .attr("y", TRANSCRIPT_HEIGHT * 0.05)
+                .attr("width", 8)
+                .attr("height", TRANSCRIPT_HEIGHT * 0.9)
+                .attr("fill", "transparent")
+                .on("mouseover", function () {
+                    ctx.tooltip.style("opacity", 1);
+                })
+                .on("mousemove", (event, d) => {
+                    ctx.tooltip
+                        .html(transcriptTooltipHTML(d, oligoComponents))
+                        .style("left", event.pageX + 20 + "px")
+                        .style("top", event.pageY + "px")
+                        .style("bottom", ""); // reset bottom in case it was set before
+                })
+                .on("mouseleave", function () {
+                    ctx.tooltip.style("opacity", 0);
+                });
+        }
     });
 
     ctx.baseGroup.attr("class", "reference-bases");
-};
-
-// Calculate transcript height based on number of transcripts and available vertical space
-const calculateTranscriptHeight = (
-    genomicRegions: GenomicRegions,
-    innerHeight: number
-) => {
-    const transcriptCount = Object.keys(genomicRegions).length;
-    return (innerHeight - 60) / transcriptCount;
+    ctx.readingGridTicksGroup.attr("class", "reading-grid-ticks");
 };
 
 // helper function to update location indicator and position label
-const updateLocationIndicator = (ctx: VisualizationContext, xPos: number) => {
+const updateLocationIndicatorAndTooltip = (
+    ctx: VisualizationContext,
+    xPos: number
+) => {
     const zx = ctx.currentZoomTransform.rescaleX(ctx.xScale);
     const domainX = zx.invert(xPos);
     const snapX = Math.floor(domainX + 0.5);
     const x = zx(snapX - 0.5);
 
     ctx.locationIndicator.attr("x", x);
-    ctx.positionLabel
-        .attr("x", x)
+    ctx.positionLabelGroup
+        .select("text")
+        .attr("x", x + 10) // add some padding from the indicator
         // insert commas for thousands
         .text(snapX.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+
+    const positionLabelNode = ctx.positionLabelGroup
+        .select("text")
+        .node() as SVGTextElement;
+    if (!positionLabelNode) {
+        return;
+    }
+
+    const { x: labelX, y: labelY, width, height } = positionLabelNode.getBBox();
+    const paddingRight = 4;
+    const paddingLeft = 2;
+    const paddingY = 5;
+    ctx.positionLabelGroup
+        .select("rect")
+        .attr("x", labelX - paddingLeft)
+        .attr("y", labelY - paddingY)
+        .attr("width", width + paddingLeft + paddingRight)
+        .attr("height", height + paddingY * 2);
 };
 
 // Set up mouse events for showing location indicator and handling oligo clicks
@@ -338,40 +419,45 @@ const setupMouseEvents = (
     ctx: VisualizationContext,
     setSelectedOligo: (id: string) => void
 ) => {
+    const preventPageScroll: EventListener = (event) => {
+        event.preventDefault();
+    };
     ctx.svg
+        .on("wheel", preventPageScroll, { passive: false })
         .on("mouseenter", () => {
             ctx.locationIndicator.attr("visibility", "visible");
-            ctx.positionLabel.attr("visibility", "visible");
+            ctx.positionLabelGroup.attr("visibility", "visible");
         })
         .on("mousemove", (event) => {
             const [xPos] = d3.pointer(event, ctx.plot.node());
-            updateLocationIndicator(ctx, xPos);
+            updateLocationIndicatorAndTooltip(ctx, xPos);
         })
         .on("mouseleave", () => {
             ctx.locationIndicator.attr("visibility", "hidden");
-            ctx.positionLabel.attr("visibility", "hidden");
+            ctx.positionLabelGroup.attr("visibility", "hidden");
         });
 
     ctx.oligosGroup
-        .selectAll<SVGRectElement, OligoPosition>("rect")
+        .select("g.probes")
+        .selectAll<SVGRectElement, Probe>("rect")
         .on("click", (_, data) => {
-            setSelectedOligo(data.id);
+            setSelectedOligo(data.oligo_id);
             // Zoom into selected oligo (even if already selected)
-            GenomeAlignmentD3.update(el, probes, data.id, true);
+            GenomeAlignmentD3.update(el, probes, data.oligo_id, true);
         });
 };
 
 // Set up zoom behavior and event handling
 const setupZoom = (
     ctx: VisualizationContext,
-    genomicRegions: GenomicRegions
+    genomicRegions: GenomicRegions,
+    probes: Probe[]
 ) => {
     const extent: [[number, number], [number, number]] = [
-        [ctx.margin, ctx.margin],
-        [ctx.margin + ctx.innerWidth, ctx.margin + ctx.innerHeight],
+        [0, 0],
+        [WIDTH, ctx.height],
     ];
 
-    // TODO: zoom not centered correctly on mouse position
     ctx.zoomBehavior
         .scaleExtent([
             1,
@@ -379,14 +465,17 @@ const setupZoom = (
         ]) // max zoom to 100bp width
         .translateExtent(extent)
         .extent(extent)
-        .filter(filter)
-        .on("zoom", zoomed(ctx, genomicRegions));
+        .on("zoom", zoomed(ctx, genomicRegions, probes));
 
     ctx.svg.call(ctx.zoomBehavior);
 };
 
 // Handle zoom events to rescale all elements accordingly
-const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
+const zoomed = (
+    ctx: VisualizationContext,
+    genomicRegions: GenomicRegions,
+    probes: Probe[]
+) => {
     return (event: d3.D3ZoomEvent<Element, unknown>) => {
         ctx.currentZoomTransform = event.transform;
         const zx = event.transform.rescaleX(ctx.xScale);
@@ -396,7 +485,7 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
         const plotNode = ctx.plot.node();
         if (source instanceof MouseEvent && plotNode) {
             const [xPos] = d3.pointer(source, plotNode);
-            updateLocationIndicator(ctx, xPos);
+            updateLocationIndicatorAndTooltip(ctx, xPos);
         }
 
         // Rescale location indicator
@@ -404,15 +493,30 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
 
         // Rescale oligos
         ctx.oligosGroup
+            .select("g.components")
             .selectAll<SVGRectElement, OligoPosition>("rect")
             .attr("x", (d) => zx(d.start - 0.5))
             .attr("width", (d) => zx(d.end + 0.5) - zx(d.start - 0.5));
 
-        // Rescale oligo gap lines
         ctx.oligosGroup
-            .selectAll<SVGLineElement, OligoPosition>("line")
-            .attr("x1", (d) => zx(d.start - 0.5))
-            .attr("x2", (d) => zx(d.end + 0.5));
+            .select("g.probes")
+            .selectAll<SVGRectElement, Probe>("rect")
+            .attr(
+                "x",
+                (d) =>
+                    centeredMinWidthRect(
+                        zx(d.details.start - 0.5),
+                        zx(d.details.end + 0.5)
+                    ).x
+            )
+            .attr(
+                "width",
+                (d) =>
+                    centeredMinWidthRect(
+                        zx(d.details.start - 0.5),
+                        zx(d.details.end + 0.5)
+                    ).width
+            );
 
         // Rescale x axis
         const axis = d3.axisBottom(zx).ticks(8);
@@ -433,8 +537,9 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
         const domain = zx.domain();
         const visibleRange = domain[1] - domain[0];
         const showBases = visibleRange <= 120;
+        const showArrows = visibleRange <= 3000;
 
-        // Show bases only when zoomed in to 200bp or less, and only if in view
+        // Show bases only when zoomed in and only if in view
         const bases = showBases
             ? collectReferenceBases(
                   genomicRegions,
@@ -443,19 +548,49 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
               )
             : [];
         ctx.baseGroup
-            .selectAll<SVGTextElement, { char: string; position: number }>(
-                "text"
-            )
+            .selectAll<SVGTextElement, Base>("text")
             .data(bases)
             .join("text")
             .attr("x", (d) => zx(d.position))
-            .attr("y", ctx.innerHeight - 10)
+            .attr("y", OLIGO_HEIGHT + GAP - 2)
             .attr("font-size", 10)
             .attr("text-anchor", "middle")
             .text((d) => d.char);
 
+        // Show oligo bases only when zoomed in and only if in view
+        const oligoBases = showBases
+            ? collectOligoBases(
+                  probes,
+                  Math.floor(domain[0]),
+                  Math.ceil(domain[1])
+              )
+            : [];
+        ctx.oligosGroup
+            .selectAll<SVGTextElement, Base>("text")
+            .data(oligoBases)
+            .join("text")
+            .attr("x", (d) => zx(d.position))
+            .attr("y", OLIGO_HEIGHT + 15)
+            .attr("font-size", 10)
+            .attr("text-anchor", "middle")
+            .text((d) => d.char);
+
+        // Show bindings of the oligos to transcripts when zoomed in
+        ctx.regionsGroup
+            .selectAll<SVGLineElement, OligoPosition>("line")
+            .data(oligoBases)
+            .join("line")
+            .attr("class", "binding")
+            .attr("x1", (d) => zx(d.position))
+            .attr("x2", (d) => zx(d.position))
+            .attr("y1", OLIGO_HEIGHT + 20)
+            .attr("y2", OLIGO_HEIGHT + GAP - 15)
+            .attr("stroke", "#999")
+            .attr("stroke-width", 1)
+            .attr("pointer-events", "none"); // allow mouse events to pass through
+
         // Generate and render strand arrows
-        if (showBases) {
+        if (showArrows) {
             const regions = ctx.regionsGroup.selectAll<
                 SVGGElement,
                 GenomicRegion
@@ -467,26 +602,19 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
                     d.start <= domain[1] &&
                     d.regiontype !== "intron"
             );
-            const transcriptHeight = calculateTranscriptHeight(
-                genomicRegions,
-                ctx.innerHeight
-            );
             visible_regions
                 .selectAll<SVGGElement, GenomicRegion>(".strand-arrows")
                 .each(function (d) {
                     const arrowGroup = d3.select(this);
                     arrowGroup.selectAll("*").remove();
 
-                    // arrows 3 bases apart
-                    const arrowSpacing = 3;
-                    const arrowPath = "M0,-3 L0,3 L5,0 Z"; // simple triangle
-                    const arrowPathInverted = "M0,0 L5,3 L5,-3 Z";
+                    const arrowPath = "M0,-3 L5,0 L0,3";
+                    const arrowPathInverted = "M5,-3 L0,0 L5,3";
 
+                    const arrowSpacing = calculeArrowSpacing(visibleRange);
                     const startPos =
-                        d.strand === "+"
-                            ? (3 - (d.reading_grid_offset || 0)) % 3
-                            : (d.end - d.start + (d.reading_grid_offset || 0)) %
-                              3;
+                        Math.ceil(d.start / arrowSpacing) * arrowSpacing -
+                        d.start;
 
                     for (
                         let pos = startPos;
@@ -494,17 +622,17 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
                         pos += arrowSpacing
                     ) {
                         const columnWidth = zx(1) - zx(0);
-                        const regionHeight = Math.min(transcriptHeight / 2, 10);
                         arrowGroup
                             .append("path")
                             .attr(
                                 "d",
                                 d.strand === "+" ? arrowPath : arrowPathInverted
                             )
-                            .attr("fill", "white")
+                            .attr("stroke", "white")
+                            .attr("fill", "transparent")
                             .attr(
                                 "transform",
-                                `translate(${pos * columnWidth}, ${transcriptHeight / 2}) scale(${regionHeight / 13})`
+                                `translate(${pos * columnWidth}, ${TRANSCRIPT_HEIGHT / 2})`
                             );
                     }
                 });
@@ -520,58 +648,13 @@ const zoomed = (ctx: VisualizationContext, genomicRegions: GenomicRegions) => {
 
         // Show location when bases are shown
         if (showBases) {
-            ctx.locationIndicator.attr("opacity", 0.3);
-            ctx.positionLabel.attr("opacity", 1);
+            ctx.locationIndicator.attr("opacity", 0.25);
+            ctx.positionLabelGroup.attr("opacity", 1);
         } else {
             ctx.locationIndicator.attr("opacity", 0);
-            ctx.positionLabel.attr("opacity", 0);
+            ctx.positionLabelGroup.attr("opacity", 0);
         }
     };
-};
-
-// Prevent scrolling the whole page when zooming inside the SVG
-const filter = (event: d3.D3ZoomEvent<Element, unknown>) => {
-    event.sourceEvent?.preventDefault();
-    return (
-        (!event.sourceEvent?.ctrlKey || event.type === "wheel") &&
-        !event.sourceEvent?.button
-    );
-};
-
-// Collect one base per position from genomic regions within the specified range
-const collectReferenceBases = (
-    regions: GenomicRegions,
-    start: number,
-    end: number
-) => {
-    const allRegions = Object.values(regions).flat();
-    allRegions.sort((a, b) => a.start - b.start);
-    let collectingPosition = start;
-    const bases: { char: string; position: number }[] = [];
-
-    allRegions.forEach((region) => {
-        if (!region.sequence) {
-            return;
-        }
-        if (collectingPosition >= region.end + 1) {
-            return; // already collected this region
-        }
-        if (collectingPosition > end) {
-            return; // beyond desired end
-        }
-
-        // Start collecting from the max of current collecting position or region start
-        const regionStartPos = Math.max(collectingPosition, region.start);
-        for (let pos = regionStartPos; pos <= region.end && pos <= end; pos++) {
-            bases.push({
-                char: region.sequence[pos - region.start],
-                position: pos,
-            });
-        }
-        collectingPosition = region.end + 1;
-    });
-
-    return bases;
 };
 
 const GenomeAlignmentD3 = {
@@ -582,14 +665,14 @@ const GenomeAlignmentD3 = {
         selectedOligo: string,
         setSelectedOligo: (id: string) => void
     ) => {
-        const oligoPositions = collectOligoPositions(probes);
+        const oligoComponents = collectOligoComponents(probes);
         const ctx = createContext(el, genomicRegions);
         contextByElement.set(el, ctx);
 
-        setupScalesAndAxes(ctx, genomicRegions, oligoPositions);
-        setupElements(ctx, genomicRegions, oligoPositions);
+        setupScalesAndAxes(ctx, genomicRegions, oligoComponents);
+        setupElements(ctx, genomicRegions, oligoComponents, probes);
         setupMouseEvents(el, probes, ctx, setSelectedOligo);
-        setupZoom(ctx, genomicRegions);
+        setupZoom(ctx, genomicRegions, probes);
 
         GenomeAlignmentD3.update(el, probes, selectedOligo);
     },
@@ -605,53 +688,51 @@ const GenomeAlignmentD3 = {
             return;
         }
 
-        const oligoPositions = collectOligoPositions(probes);
+        const oligoComponents = collectOligoComponents(probes);
 
         // Update oligo colors based on selection
         ctx.oligosGroup
+            .select("g.components")
             .selectAll<SVGRectElement, OligoPosition>("rect")
-            .data(oligoPositions)
+            .data(oligoComponents)
             .join("rect")
             .attr("fill", (d) =>
                 d.id === selectedOligo ? "orange" : "steelblue"
             );
 
         ctx.oligosGroup
-            .selectAll<SVGLineElement, OligoPosition>("line")
-            .data(oligoPositions.filter((d) => d.type === "gap"))
-            .join("line")
-            .attr("stroke", (d) =>
-                d.id === selectedOligo ? "orange" : "steelblue"
+            .select("g.probes")
+            .selectAll<SVGRectElement, Probe>("rect")
+            .data(probes)
+            .join("rect")
+            .attr("fill", (d) =>
+                d.oligo_id === selectedOligo ? "orange" : "steelblue"
             );
 
         ctx.svg
-            .selectAll<SVGRectElement, string>(".transcript-match-marker")
+            .selectAll<SVGRectElement, string>(".transcript-marker")
             .attr("fill", (d) => {
                 const selected = probes.find(
                     (oligo) => oligo.oligo_id === selectedOligo
                 );
                 if (selected) {
                     const isSelected = selected.transcript_ids.includes(d);
-                    return isSelected ? "#22bd28" : "transparent";
+                    return isSelected ? "#22bd28" : "#b0b0b0";
                 }
                 return "transparent";
             });
 
         if (zoomIntoOligo) {
-            const oligoComponents = oligoPositions.filter(
-                (d) => d.id === selectedOligo
+            const zoomedOligo = probes.find(
+                (d) => d.oligo_id === selectedOligo
             );
-            if (oligoComponents.length === 0) {
-                return;
-            }
-            // Get the min start and max end of all components of the selected oligo
-            const oligoStart = Math.min(...oligoComponents.map((d) => d.start));
-            const oligoEnd = Math.max(...oligoComponents.map((d) => d.end));
+            if (!zoomedOligo) return;
 
             // Smoothly zoom and pan to center the selected oligo
             const zoomScale = Math.min(
-                (ctx.innerWidth /
-                    (ctx.xScale(oligoEnd) - ctx.xScale(oligoStart))) *
+                (WIDTH /
+                    (ctx.xScale(zoomedOligo.details.end) -
+                        ctx.xScale(zoomedOligo.details.start))) *
                     0.9, // add some padding
                 ctx.zoomBehavior.scaleExtent()[1] // don't exceed max zoom
             );
@@ -662,12 +743,12 @@ const GenomeAlignmentD3 = {
                 .call(
                     ctx.zoomBehavior.transform,
                     d3.zoomIdentity
-                        .translate(ctx.innerWidth / 2, 0)
+                        .translate(WIDTH / 2, 0)
                         .scale(zoomScale)
                         .translate(
                             -(
-                                (ctx.xScale(oligoStart) +
-                                    ctx.xScale(oligoEnd)) /
+                                (ctx.xScale(zoomedOligo.details.start) +
+                                    ctx.xScale(zoomedOligo.details.end)) /
                                 2
                             ),
                             0

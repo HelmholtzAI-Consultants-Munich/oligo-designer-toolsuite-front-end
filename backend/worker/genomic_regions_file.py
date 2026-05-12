@@ -63,7 +63,7 @@ class GenomicRegionsFile:
                 region_type = (
                     additional_info["regiontype"][0] if "regiontype" in additional_info else "unknown"
                 )
-                total_sequence = str(record.seq)
+                region_sequence = str(record.seq)
 
                 starts = coordinates["start"]
                 ends = coordinates["end"]
@@ -73,10 +73,11 @@ class GenomicRegionsFile:
                 strand = coordinates["strand"][0] if "strand" in coordinates else "+"
                 if strand == "-":
                     # reverse sequence for negative strand
-                    total_sequence = total_sequence[::-1]
-                transcript_ids = additional_info.get("transcript_id", ["transcript_unknown"])
+                    region_sequence = region_sequence[::-1]
+                transcript_ids = additional_info.get("transcript_id", ["unknown"])
 
                 for transcript_index, transcript_id in enumerate(transcript_ids):
+                    transcript_sequence = region_sequence
                     if region_type == "exonexonjunction":
                         exon_numbers = additional_info.get("exon_number", [""])[transcript_index].split(
                             "__JUNC__"
@@ -97,9 +98,10 @@ class GenomicRegionsFile:
 
                     for i, (start, end) in enumerate(start_ends):
                         # assume start < end
-                        sequence, total_sequence = (
-                            total_sequence[: end - start + 1],
-                            total_sequence[end - start + 1 :],
+                        # usually we expect just one start and end per record
+                        sequence, transcript_sequence = (
+                            transcript_sequence[: end - start + 1],
+                            transcript_sequence[end - start + 1 :],
                         )
                         regions[gene][transcript_id].append(
                             {
@@ -153,18 +155,11 @@ class GenomicRegionsFile:
                     # only keep entries whose key begins with "Oligo "
                     oligos = filter(lambda x: x[0].startswith("Oligo "), oligoset_entries.items())
                     for _, oligo_info in oligos:
-                        regiontype = (
-                            oligo_info.get("regiontype", [])[0][0]
-                            if "regiontype" in oligo_info
-                            else "unknown"
-                        )
-                        start = oligo_info.get("start", [])[0][0]
-                        end = oligo_info.get("end", [])[0][0]
-                        # ignore this when merging with properly fixed branch
-                        gene_id = oligo_info.get("gene_id", [[None]])[0][0]
-                        transcript_ids = oligo_info.get("transcript_id", [gene_id])[0]
-                        exon_num_raw = oligo_info.get("exon_number", [None])[0]
-                        exon_numbers = list(exon_num_raw) if isinstance(exon_num_raw, list) else exon_num_raw
+                        regiontype = oligo_info.get("regiontype", [["unknown"]])[0][0]
+                        start = oligo_info["start"][0][0]
+                        end = oligo_info["end"][0][0]
+                        transcript_ids = oligo_info.get("transcript_id", [[]])[0]
+                        exon_numbers = oligo_info.get("exon_number", [[]])[0]
 
                         components = []
 
@@ -173,6 +168,8 @@ class GenomicRegionsFile:
                             components.append({"start": start, "end": end, "type": "probe"})
                         else:
                             # for exon-exon junction probes, add gaps between exons as components
+                            # use canonical transcript and exon number to determine exon boundaries for gaps
+                            # they have to be available in exon-exon junction probes
                             canonical_transcript_id = transcript_ids[0]
                             canonical_exon_number = exon_numbers[0]
                             canonical_regions = sorted(
@@ -183,7 +180,7 @@ class GenomicRegionsFile:
                                 ],
                                 key=lambda x: x["start"],
                             )
-                            if canonical_regions is None:
+                            if not canonical_regions:
                                 print(
                                     f"Warning: Could not find canonical region for probe {oligo_info.get('oligo_id', '')} in gene {gene}, skipping."
                                 )
@@ -251,12 +248,10 @@ class GenomicRegionsFile:
                 regions.sort(key=lambda x: x["start"] if strand == "+" else x["end"], reverse=(strand == "-"))
                 merged_regions = []
                 last_region = None
-                read_counter = 0
 
                 for region in regions:
                     if last_region is None:
                         last_region = region
-                        last_region["reading_grid_offset"] = 0
                         continue
                     overlap_length = (
                         last_region["end"] - region["start"] + 1
@@ -285,8 +280,6 @@ class GenomicRegionsFile:
                     # non-overlapping region, add last_region to merged list
                     elif overlap_length < 0:
                         merged_regions.append(last_region)
-                        if last_region["regiontype"] != "intron":
-                            read_counter += last_region["end"] - last_region["start"] + 1
                         gap_start = last_region["end"] + 1 if strand == "+" else region["end"] + 1
                         gap_end = region["start"] - 1 if strand == "+" else last_region["start"] - 1
 
@@ -310,36 +303,29 @@ class GenomicRegionsFile:
                                 case ("intron", "intron"):
                                     regiontype = "exon"
 
-                        merged_regions.append(
-                            {
-                                "regiontype": regiontype,
-                                "exon_number": exon_number,
-                                "sequence": None,
-                                "reading_grid_offset": None if regiontype == "intron" else read_counter % 3,
-                                "start": gap_start,
-                                "end": gap_end,
-                                "chromosome": last_region["chromosome"],
-                                "strand": last_region["strand"],
-                                "inferred": True,
-                            }
-                        )
-                        if regiontype != "intron":
-                            read_counter += gap_end - gap_start + 1
+                        region_dict = {
+                            "regiontype": regiontype,
+                            "exon_number": exon_number,
+                            "sequence": None,
+                            "start": gap_start,
+                            "end": gap_end,
+                            "chromosome": last_region["chromosome"],
+                            "strand": last_region["strand"],
+                            "inferred": True,
+                        }
+                        merged_regions.append(region_dict)
                         last_region = region
-                        last_region["reading_grid_offset"] = read_counter % 3
 
                     # overlapping or contiguous regions of different types, keep both
                     else:
                         merged_regions.append(last_region)
-                        if last_region["regiontype"] != "intron":
-                            read_counter += last_region["end"] - last_region["start"] + 1
                         last_region = region
-                        last_region["reading_grid_offset"] = read_counter % 3
 
                 if last_region is not None:
                     merged_regions.append(last_region)
 
                 processed_regions[gene][transcript_id] = merged_regions
+
         return processed_regions
 
     def _mergable_regions(self, region1, region2):

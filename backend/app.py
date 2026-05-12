@@ -46,7 +46,7 @@ def initial_dropdown_prefetch(celery_app, app):
         try:
             app.logger.debug("try dropdown prefetch")
             celery_app.send_task(
-                Tasks.FETCH_DROPDOWN_OPTIONS,
+                Tasks.TRIGGER_DROPDOWN_OPTIONS_FETCHING,
             )
             app.logger.debug("dropdown prefetch done")
             break
