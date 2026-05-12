@@ -51,7 +51,7 @@ class TestHTTPExceptionHandler:
 
     def test_abort_returns_json_with_error_key(self, client):
         """All abort responses have a consistent {"error": "..."} shape."""
-        response = client.get("/api/runs/000000000000000000000000/files")
+        response = client.get("/api/runs/000000000000000000000000/files/000.txt")
         # Anonymous user without session -> triggers abort in route helpers
         data = response.get_json()
         assert "error" in data

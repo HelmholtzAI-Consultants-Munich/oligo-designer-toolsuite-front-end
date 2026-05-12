@@ -247,19 +247,16 @@ const pollRunFiles = async (
     page: Page,
     runId: string,
     timeoutMs: number
-): Promise<RunFile[]> => {
+): Promise<RunFile> => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGetOk(page, `/api/runs/${runId}/files`);
-            const files: RunFile[] = await res.json();
-            const hasGenomic = files.some(
-                (f) => f.name === "genomic_regions.yaml"
+            const res = await backendGetOk(
+                page,
+                `/api/runs/${runId}/files/genomic_regions.yaml`
             );
-            const hasConfig = files.some((f) =>
-                /\.(?:ya?ml|txt|log)$/i.test(f.name)
-            );
+            const file: RunFile = await res.json();
 
-            return hasGenomic && hasConfig ? files : false;
+            return file;
         },
         timeoutMs,
         intervalMs: POLL_INTERVAL_MS,
