@@ -118,7 +118,7 @@ const Runs = () => {
                                         View
                                     </Button>
                                     <Button
-                                        variant="outline-secondary"
+                                        variant="outline-border"
                                         size="sm"
                                         onClick={(e) => {
                                             e.stopPropagation();

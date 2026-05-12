@@ -437,7 +437,7 @@ const RunDetail = () => {
         const useSettingsAction = {
             type: "button",
             label: "Use Settings",
-            variant: "outline-secondary",
+            variant: "outline-border",
             icon: GearFill,
             onClick: handleUseSettings,
         };
