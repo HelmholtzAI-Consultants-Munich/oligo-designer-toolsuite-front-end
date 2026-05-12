@@ -83,24 +83,24 @@ class PipelineRunner:
         self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
     ) -> None:
         """
-        This method converts the form_data send by the frontend to the format used by ODT.
-        It is necessary because the Oligo Designer Toolsuite expects per files_ field an array of file paths like
+        This method converts the form_data sent by the frontend to the format used by ODT.
+        It is necessary because the Oligo Designer Toolsuite expects a list of file paths per `files_[...]` field like:
         ```py
-        {"files_field" : ["input_file.fna"]}
+        {"files_field": ["input_file.fna"]}
         ```
-        But because we can not allow passing through file names directly and we allow creation of your own genomic regions through the region generator, the form_data has the following scheme:
+        Since we forbid passing file paths directly and we allow creation of custom genomic regions via the region generator, the form_data has the following scheme:
         ```py
-        {"files_field" : {
-            "files" : [FileStorageObject],
-            "fasta_form" : [FastaFormObject]
+        {"files_field": {
+            "files": [FileStorageObject],
+            "fasta_form": [FastaFormObject]
         }}
         ```
-        The `FileStorageObjects` are saved and the resulting path is written into the form data.
-        The `FastaFormObjects` are processed by the genomic_region_generator and this results in a list of tuples like
+        The files listed under `"files":` are saved to disk and the resulting paths are injected into the form data.
+        The forms listed under `"fasta_form":` are processed by the genomic_region_generator which results in a list of tuples like:
         ```py
-        [("files_field",["generated_genomic_regions_file_path"])]
+        [("files_field", ["generated_genomic_regions_file_path"])]
         ```
-        These now need to be combined to achieve the expected format of ODT.
+        These paths also get injected into the form data here.
 
         Arguments:
             config {dict} -- Form Data of request
