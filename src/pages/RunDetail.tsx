@@ -27,7 +27,7 @@ import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
-import { PIPELINE_CONFIG, type PipelineConfig } from "../pipelineConfig/config";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
 
 interface RunFile {
     name: string;
@@ -435,7 +435,7 @@ const RunDetail = () => {
 
     return (
         <Page
-            title={`Run Result - ${run ? PIPELINE_CONFIG[run?.pipeline as keyof PipelineConfig].displayName : "Unknown Pipeline"}`}
+            title={`Run Result - ${run ? getPipelineDisplayName(run.pipeline) : "Unknown Pipeline Run"}`}
             actions={actions as Action[] | undefined}
             backTo={{
                 label: fromAdmin ? "Admin Panel" : "All Runs",

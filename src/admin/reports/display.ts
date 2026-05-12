@@ -11,9 +11,3 @@ export function formatReportMonth(month: number, format: "long" | "short") {
         month: format,
     });
 }
-
-export function getReportPipelineDisplayName(pipeline: ReportPipelineKey) {
-    return PIPELINE_CONFIG[pipeline]
-        ? PIPELINE_CONFIG[pipeline].displayName
-        : pipeline;
-}

@@ -8,6 +8,7 @@ import {
     PIPELINE_CONFIG,
     type PipelineConfig,
 } from "../../pipelineConfig/config";
+import { getPipelineDisplayName } from "../../pipelineConfig/utils";
 
 export const EXCLUDED_FIELDS = ["file_regions"];
 
@@ -147,7 +148,7 @@ export function importAndValidate(
     if (typed._meta?.pipeline !== pipeline) {
         return {
             ok: false,
-            error: `This config is for "${PIPELINE_CONFIG[typed._meta?.pipeline as keyof PipelineConfig].displayName}", but the current pipeline is "${PIPELINE_CONFIG[pipeline as keyof PipelineConfig].displayName}".`,
+            error: `This config is for "${getPipelineDisplayName(typed._meta?.pipeline)}", but the current pipeline is "${getPipelineDisplayName(pipeline)}".`,
         };
     }
 

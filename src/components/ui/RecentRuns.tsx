@@ -4,10 +4,7 @@ import { useRuns } from "../../hooks/useRuns";
 import { Horizontal } from "./Alignment";
 import RunStatus from "./RunStatus";
 import { ArrowRight } from "react-bootstrap-icons";
-import {
-    PIPELINE_CONFIG,
-    type PipelineConfig,
-} from "../../pipelineConfig/config";
+import { getPipelineDisplayName } from "../../pipelineConfig/utils";
 
 // TODO: update the timeAgo regularly (e.g. every minute) to keep it accurate without needing a page refresh
 const timeAgo = (timestamp: string) => {
@@ -41,11 +38,7 @@ export default function RecentRuns() {
                     >
                         <Horizontal gap="lg" align="center">
                             <RunStatus status={run.status} />
-                            <span>
-                                {PIPELINE_CONFIG[
-                                    run.pipeline as keyof PipelineConfig
-                                ].displayName || run.pipeline}
-                            </span>
+                            <span>{getPipelineDisplayName(run.pipeline)}</span>
                             <span className="small text-muted">
                                 {timeAgo(run.timestamp)}
                             </span>

@@ -9,7 +9,7 @@ import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../utils/toastUtil";
 import { Horizontal } from "../components/ui/Alignment";
 import { confirmWithModal } from "../utils/modalUtil";
-import { PIPELINE_CONFIG, type PipelineConfig } from "../pipelineConfig/config";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
 
 const Runs = () => {
     const { loading } = useAuth();
@@ -80,11 +80,7 @@ const Runs = () => {
                                         </div>
                                     )}
                             </td>
-                            <td>
-                                {PIPELINE_CONFIG[
-                                    run.pipeline as keyof PipelineConfig
-                                ].displayName || run.pipeline}
-                            </td>
+                            <td>{getPipelineDisplayName(run.pipeline)}</td>
                             <td>
                                 {new Date(run.timestamp).toLocaleString(
                                     "en-US",
