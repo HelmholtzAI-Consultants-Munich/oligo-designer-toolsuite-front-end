@@ -19,7 +19,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # activate conda environment to use pip during build
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 RUN --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
-    pip install git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git
+    pip install git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git@v1.0.1
 RUN --mount=source=backend/pyproject.toml,target=pyproject.toml \
     --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
     pip install --group worker
