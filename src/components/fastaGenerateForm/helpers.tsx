@@ -168,10 +168,10 @@ export const handleSubmit = async (
                 ].fasta_form.map((fastaForm: FastaFormUncommented) =>
                     prepareForUpload(fastaForm)
                 );
-            } else if (formData[field].files.length > 0) {
+            } else if (uploadFormData[field].files.length > 0) {
                 upload = {
                     ...upload,
-                    ...formData[field].files.reduce(
+                    ...uploadFormData[field].files.reduce(
                         (acc: Record<string, File>, cur: File) => ({
                             ...acc,
                             ...{ [cur.name]: cur },
@@ -179,7 +179,7 @@ export const handleSubmit = async (
                         {}
                     ),
                 };
-                uploadFormData[field].files = formData[field].files.map(
+                uploadFormData[field].files = uploadFormData[field].files.map(
                     (file: File) => file.name
                 );
             }
