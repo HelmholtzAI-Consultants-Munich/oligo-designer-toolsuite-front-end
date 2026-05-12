@@ -77,6 +77,8 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "timestamp": timestamp_to_iso(run.get("timestamp")),
         "output_path": path_for_display(run.get("output_path")),
         "user_id": run.get("user_id", "unknown"),
+        "priority": run.get("priority", "unknown"),
+        "queue_position": run.get("queue_position", "unknown"),
     }
 
     if run.get("status") == "failure" and run.get("error_message"):

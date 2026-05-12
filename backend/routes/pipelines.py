@@ -120,6 +120,8 @@ def write_run_to_DB(
     run_id: ObjectId,
     context: RunContext,
     task_id: str | None,
+    priority: int = CeleryConfig.task_default_priority,
+    queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
 ):
     return update_run_in_DB(
         run_id,
@@ -131,6 +133,8 @@ def write_run_to_DB(
             "status": "pending",
             "pipeline": pipeline_name,
             "task_id": task_id,
+            "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
+            "queue_position": queue_position,
         },
     )
 
@@ -244,7 +248,20 @@ def start_pipeline(pipeline_name: str):
     )
 
     # Mark Run as Enqueued in DB
-    update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
+    if priority == CeleryConfig.task_high_priority:
+        high_priority_ahead = mongo.db.runs.count_documents({"status": "pending", "priority": "high"})
+        low_priority_ahead = 0
+        # add one high priority run ahead for all low priority runs
+        mongo.db.runs.update_many(
+            {"status": "pending", "priority": "default"},
+            {"$inc": {"queue_position.0": 1}},
+        )
+    else:
+        high_priority_ahead = mongo.db.runs.count_documents({"status": "pending", "priority": "high"})
+        low_priority_ahead = mongo.db.runs.count_documents({"status": "pending", "priority": "default"})
+    update_result = write_run_to_DB(
+        pipeline_name, run_id, context, result_promise.id, priority, (high_priority_ahead, low_priority_ahead)
+    )
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
