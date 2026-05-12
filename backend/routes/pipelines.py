@@ -275,9 +275,13 @@ def start_pipeline(pipeline_name: str):
 
     files = request.files
 
-    file_inputs = save_files(form_data, pipeline_name, files)
+    try:
+        file_inputs = save_files(form_data, pipeline_name, files)
+    except KeyError:
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
+
     for field, file_paths in file_inputs.items():
-        form_data[field]["files"] = [file_path.as_posix() for file_path in file_paths]
+        form_data[field]["files"] = [str(file_path) for file_path in file_paths]
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)

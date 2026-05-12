@@ -168,7 +168,8 @@ export const handleSubmit = async (
                 ].fasta_form.map((fastaForm: FastaFormUncommented) =>
                     prepareForUpload(fastaForm)
                 );
-            } else if (uploadFormData[field].files.length > 0) {
+            }
+            if (uploadFormData[field].files.length > 0) {
                 upload = {
                     ...upload,
                     ...uploadFormData[field].files.reduce(
