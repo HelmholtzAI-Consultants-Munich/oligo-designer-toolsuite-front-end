@@ -271,7 +271,7 @@ export const handleSubmit = async (
     }
 
     try {
-        await axios.post(
+        const response = await axios.post(
             BACKEND_URL + `/api/${pipeline}`,
             { formdata: formData, runid: newId },
             {
@@ -280,11 +280,16 @@ export const handleSubmit = async (
             }
         );
 
+        const { queue_position } = response.data;
+        const [highPriorityAhead, lowPriorityAhead] = queue_position;
+        const ownPosition = highPriorityAhead + lowPriorityAhead + 1; // +1 to include the current run itself
+
         showToast({
             title: "Pipeline Enqueued",
             content: (
                 <>
                     <p>The pipeline run was successfully added to the queue.</p>
+                    <p>Queue Position: {ownPosition}</p>
                     <Link to={`/runs/${newId}`}>
                         View the run here <ArrowRight />
                     </Link>

@@ -453,7 +453,9 @@ const RunDetail = () => {
             {(run?.status == "pending" || run?.status == "started") && (
                 <Vertical align="center" className="my-5" gap="lg">
                     <RunStatus status={run.status} size={100} />
-                    <h3 className="mt-3">Run {run.status}...</h3>
+                    {run.status !== "pending" && (
+                        <h3 className="mt-3">Run {run.status}...</h3>
+                    )}
                     <QueuePosition run={run} />
                 </Vertical>
             )}

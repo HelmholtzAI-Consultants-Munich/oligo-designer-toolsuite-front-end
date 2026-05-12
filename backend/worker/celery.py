@@ -16,13 +16,13 @@ def task_prerun_handler(sender=None, task_id=None, task=None, **kwargs):
     if task.priority == CeleryConfig.task_high_priority:
         # remove one high priority task ahead of all pending tasks
         db.runs.update_many(
-            {"status": "pending"},
+            {"status": "pending", "queue_position.0": {"$gt": 0}},
             {"$inc": {"queue_position.0": -1}},
         )
     else:
         # remove one low priority task ahead of all pending low priority tasks
         db.runs.update_many(
-            {"status": "pending", "priority": "default"},
+            {"status": "pending", "priority": "default", "queue_position.1": {"$gt": 0}},
             {"$inc": {"queue_position.1": -1}},
         )
 

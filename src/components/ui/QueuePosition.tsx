@@ -1,3 +1,4 @@
+import { Alert } from "react-bootstrap";
 import type { PipelineRun } from "../../types";
 
 export default function QueuePosition({ run }: { run: PipelineRun }) {
@@ -5,27 +6,26 @@ export default function QueuePosition({ run }: { run: PipelineRun }) {
         return null;
     }
     const [highPriorityAhead, lowPriorityAhead] = run.queue_position;
+    const runsAhead = highPriorityAhead + lowPriorityAhead;
     return (
-        <div>
-            {highPriorityAhead > 0 && (
-                <div>
-                    {highPriorityAhead} logged in user
-                    {highPriorityAhead > 1 ? "s" : ""} are ahead of you.
-                </div>
+        <Alert>
+            <Alert.Heading className="text-center fs-3 mb-4 mt-2">
+                Run pending...
+            </Alert.Heading>
+            <p>
+                {runsAhead === 0
+                    ? "Your run is next in line to be processed!"
+                    : `There ${runsAhead === 1 ? "is" : "are"} ${runsAhead} run${runsAhead !== 1 ? "s" : ""} ahead of you.`}
+            </p>
+            {run.priority === "default" && (
+                <>
+                    <hr />
+                    <p>
+                        Note: Logged in users have priority. Consider logging in
+                        to move up the queue!
+                    </p>
+                </>
             )}
-            {lowPriorityAhead > 0 && (
-                <div>
-                    {lowPriorityAhead} user
-                    {lowPriorityAhead > 1 ? "s" : ""} without an account are
-                    ahead of you.
-                    <br />
-                    Logged in users have priority in the queue. Consider
-                    creating an account to speed up your run!
-                </div>
-            )}
-            {highPriorityAhead <= 0 && lowPriorityAhead <= 0 && (
-                <div>Your run is next in line!</div>
-            )}
-        </div>
+        </Alert>
     );
 }

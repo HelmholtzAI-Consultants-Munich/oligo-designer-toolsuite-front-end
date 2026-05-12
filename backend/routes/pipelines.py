@@ -267,4 +267,4 @@ def start_pipeline(pipeline_name: str):
 
     # The task state can be polled using get_run_state(run_id_str).
 
-    return jsonify({"run_id": run_id_str})
+    return jsonify({"run_id": run_id_str, "queue_position": (high_priority_ahead, low_priority_ahead)})
