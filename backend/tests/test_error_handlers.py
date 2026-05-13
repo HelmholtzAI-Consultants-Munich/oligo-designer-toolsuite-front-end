@@ -42,7 +42,7 @@ class TestHTTPExceptionHandler:
         data = response.get_json()
         assert "error" in data
 
-    def test_abort_415_incorrect_multiform_request(self, client, authenticated_user):
+    def test_abort_400_incorrect_multiform_request(self, client, authenticated_user):
         """Pipeline route with no JSON body triggers abort(415)."""
         response = client.post("/api/merfish", content_type="text/plain", data="not json")
         assert response.status_code == 400
