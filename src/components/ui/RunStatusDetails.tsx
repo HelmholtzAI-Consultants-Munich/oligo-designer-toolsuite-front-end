@@ -1,12 +1,12 @@
 import { Alert } from "react-bootstrap";
 import type { PipelineRun } from "../../types";
+import { unwrapQueuePosition } from "../fastaGenerateForm/helpers";
 
-export default function QueuePosition({ run }: { run: PipelineRun }) {
+export default function RunStatusDetails({ run }: { run: PipelineRun }) {
     if (run.status !== "pending") {
-        return null;
+        return <h3 className="mt-3">Run {run.status}...</h3>;
     }
-    const [highPriorityAhead, lowPriorityAhead] = run.queue_position;
-    const runsAhead = highPriorityAhead + lowPriorityAhead;
+    const { runsAhead } = unwrapQueuePosition(run.queue_position);
     return (
         <Alert style={{ width: "30rem", maxWidth: "100%" }}>
             <Alert.Heading className="text-center fs-3 mb-4 mt-2">

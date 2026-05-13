@@ -230,6 +230,17 @@ export const validateInput = (
     return true;
 };
 
+export const unwrapQueuePosition = (queue_position: [number, number]) => {
+    const [highPriorityAhead, defaultPriorityAhead] = queue_position;
+    const runsAhead = highPriorityAhead + defaultPriorityAhead;
+    return {
+        runsAhead,
+        highPriorityAhead,
+        defaultPriorityAhead,
+        ownPosition: runsAhead + 1,
+    };
+};
+
 export const handleSubmit = async (
     files: FileState,
     fastaForms: FastaFormState,
@@ -281,8 +292,7 @@ export const handleSubmit = async (
         );
 
         const { queue_position } = response.data;
-        const [highPriorityAhead, lowPriorityAhead] = queue_position;
-        const ownPosition = highPriorityAhead + lowPriorityAhead + 1; // +1 to include the current run itself
+        const { ownPosition } = unwrapQueuePosition(queue_position);
 
         showToast({
             title: "Pipeline Enqueued",

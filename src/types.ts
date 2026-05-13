@@ -161,5 +161,5 @@ export interface PipelineRun {
     user_id: string;
     error_message?: string;
     priority: "high" | "default";
-    queue_position: number[];
+    queue_position: [number, number]; // [highPriorityAhead, defaultPriorityAhead]
 }

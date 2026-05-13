@@ -12,6 +12,7 @@ from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
+from redis import Redis
 
 from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app, mongo
@@ -247,24 +248,32 @@ def start_pipeline(pipeline_name: str):
         pipeline_name, sanitized_form_data, generated_regions, context.output_path, priority
     )
 
-    # Mark Run as Enqueued in DB
+    # mark run as enqueued in DB
+    redis = Redis.from_url(Config.REDIS_URI)
+    default_priority_queue_length = redis.llen(f"celery:{CeleryConfig.task_default_priority}")
+    high_priority_queue_length = redis.llen(f"celery:{CeleryConfig.task_high_priority}")
     if priority == CeleryConfig.task_high_priority:
-        high_priority_ahead = mongo.db.runs.count_documents({"status": "pending", "priority": "high"})
-        low_priority_ahead = 0
+        high_priority_ahead = max(high_priority_queue_length - 1, 0)
+        default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
         mongo.db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
     else:
-        high_priority_ahead = mongo.db.runs.count_documents({"status": "pending", "priority": "high"})
-        low_priority_ahead = mongo.db.runs.count_documents({"status": "pending", "priority": "default"})
+        high_priority_ahead = high_priority_queue_length
+        default_priority_ahead = max(default_priority_queue_length - 1, 0)
     update_result = write_run_to_DB(
-        pipeline_name, run_id, context, result_promise.id, priority, (high_priority_ahead, low_priority_ahead)
+        pipeline_name,
+        run_id,
+        context,
+        result_promise.id,
+        priority,
+        (high_priority_ahead, default_priority_ahead),
     )
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
     # The task state can be polled using get_run_state(run_id_str).
 
-    return jsonify({"run_id": run_id_str, "queue_position": (high_priority_ahead, low_priority_ahead)})
+    return jsonify({"run_id": run_id_str, "queue_position": (high_priority_ahead, default_priority_ahead)})
