@@ -73,8 +73,6 @@ export type PipelineDefinition = {
     representativeFieldChecks?: Array<{ tab: RegExp; label: RegExp }>;
 };
 
-type RunFile = { name: string; type: string; size: number };
-
 // ---------------------------------------------------------------------------
 // Pipeline definitions (used by the smoke test)
 // ---------------------------------------------------------------------------
@@ -243,20 +241,18 @@ const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     });
 };
 
-const pollRunFiles = async (
+const pollGenomicRegionsFile = async (
     page: Page,
     runId: string,
     timeoutMs: number
-): Promise<RunFile> => {
+): Promise<boolean> => {
     return pollUntil({
         condition: async () => {
             const res = await backendGetOk(
                 page,
                 `/api/runs/${runId}/files/genomic_regions.yaml`
             );
-            const file: RunFile = await res.json();
-
-            return file;
+            return res.ok();
         },
         timeoutMs,
         intervalMs: POLL_INTERVAL_MS,
@@ -271,7 +267,7 @@ export const waitForSuccessfulRun = async (
 ) => {
     const deadline = Date.now() + timeoutMs;
     await pollRunState(page, runId, timeoutMs);
-    return pollRunFiles(page, runId, deadline - Date.now());
+    return pollGenomicRegionsFile(page, runId, deadline - Date.now());
 };
 
 export const submitAndVerifyRun = async (page: Page) => {
