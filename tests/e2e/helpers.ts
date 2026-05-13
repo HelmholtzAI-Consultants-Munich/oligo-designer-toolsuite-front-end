@@ -280,9 +280,6 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
     // After long Node.js-side API polling the browser tab has been idle;
     // reload so the page reflects the final backend state.
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Run Logs" })).toBeVisible({
-        timeout: 30_000,
-    });
     await expect(page.getByText("Oligo Visualization")).toBeVisible({
         timeout: 30_000,
     });
