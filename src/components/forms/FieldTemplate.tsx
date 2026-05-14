@@ -1,5 +1,4 @@
-import { Form, OverlayTrigger, Popover } from "react-bootstrap";
-import { InfoCircle } from "react-bootstrap-icons";
+import { Form } from "react-bootstrap";
 import type { FieldTemplateProps } from "@rjsf/utils";
 import { Vertical } from "../ui/Alignment";
 import { isRootField } from "./utils";

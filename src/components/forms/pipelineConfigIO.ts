@@ -10,11 +10,6 @@ import {
 } from "../../pipelineConfig/config";
 import { getPipelineDisplayName } from "../../pipelineConfig/utils";
 
-export const EXCLUDED_FIELDS = ["file_regions"];
-
-// Set for O(1) lookups instead of repeated array .includes() calls
-const EXCLUDED_FIELDS_SET = new Set<string>(EXCLUDED_FIELDS);
-
 export interface PipelineConfigExport {
     _meta: {
         version: string;
@@ -58,20 +53,13 @@ export function buildExportPayload(
     pipeline: string,
     schema: RJSFSchema
 ): PipelineConfigExport {
-    const config: RJSFFormData = {};
-    for (const key of Object.keys(formData)) {
-        if (!EXCLUDED_FIELDS_SET.has(key)) {
-            config[key] = formData[key];
-        }
-    }
-
     return {
         _meta: {
             version: getSchemaVersion(schema),
             pipeline,
             exportedAt: new Date().toISOString(),
         },
-        config,
+        config: formData,
     };
 }
 
@@ -164,13 +152,8 @@ export function importAndValidate(
         };
     }
 
-    // 5. Strip excluded fields (defensive — they should not be present)
+    // 5. Drop fields not in current schema, collect for warning
     const incoming = { ...(typed.config ?? {}) };
-    for (const f of EXCLUDED_FIELDS) {
-        delete incoming[f];
-    }
-
-    // 6. Drop fields not in current schema, collect for warning
     const knownFields = new Set(Object.keys(schema.properties ?? {}));
     const skippedFields: string[] = [];
     for (const key of Object.keys(incoming)) {
@@ -182,7 +165,7 @@ export function importAndValidate(
         }
     }
 
-    // 7. AJV validation against a partial schema built from only the present fields.
+    // 6. AJV validation against a partial schema built from only the present fields.
     //    No $id to avoid collision with the form's already-registered schema.
     // TODO: check how to make this validation save, fails to validate fasta
     const schemaProps = schema.properties as Record<
@@ -202,7 +185,7 @@ export function importAndValidate(
     const configError = validationFailure(errors, "Config values are invalid:");
     if (configError) return configError;
 
-    // 8. Remove File fields from imported form
+    // 7. Remove File fields from imported form
     for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
         .genomicInputFields!) {
         if (incoming[field]) incoming[field]["files"] = [];
