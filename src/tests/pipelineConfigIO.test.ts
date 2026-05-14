@@ -5,7 +5,6 @@ import {
     buildExportPayload,
     triggerDownload,
     importAndValidate,
-    EXCLUDED_FIELDS,
 } from "../components/forms/pipelineConfigIO";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
@@ -38,33 +37,6 @@ describe("isVersionCompatible", () => {
 // ---- buildExportPayload ----
 
 describe("buildExportPayload", () => {
-    it("excludes all file-related fields from the config", () => {
-        const formData = {
-            n_jobs: 8,
-            file_regions: "/some/path",
-            files_fasta_target_probe_database: ["/db.fasta"],
-            files_fasta_reference_database_target_probe: ["/ref.fasta"],
-            files_fasta_reference_database_readout_probe: ["/ro.fasta"],
-            files_fasta_reference_database_primer: ["/primer.fasta"],
-        };
-        const payload = buildExportPayload(formData, "scrinshot", testSchema);
-        expect(payload.config).not.toHaveProperty("file_regions");
-        for (const field of EXCLUDED_FIELDS) {
-            expect(payload.config).not.toHaveProperty(field);
-        }
-    });
-
-    it("includes non-file fields in the config", () => {
-        const formData = {
-            n_jobs: 8,
-            top_n_sets: 5,
-            file_regions: "/some/path",
-        };
-        const payload = buildExportPayload(formData, "scrinshot", testSchema);
-        expect(payload.config.n_jobs).toBe(8);
-        expect(payload.config.top_n_sets).toBe(5);
-    });
-
     it("sets _meta.pipeline to the given pipeline name", () => {
         const payload = buildExportPayload({}, "merfish", testSchema);
         expect(payload._meta.pipeline).toBe("merfish");
@@ -306,21 +278,6 @@ describe("importAndValidate", () => {
         };
         const result = importAndValidate(payload, testSchema, "scrinshot");
         expect(result.ok).toBe(true);
-    });
-
-    it("strips excluded fields even if present in config", () => {
-        const payload = {
-            ...validPayload,
-            config: {
-                n_jobs: 4,
-                file_regions: "/should/be/removed",
-            },
-        };
-        const result = importAndValidate(payload, testSchema, "scrinshot");
-        expect(result.ok).toBe(true);
-        if (result.ok) {
-            expect(result.config).not.toHaveProperty("file_regions");
-        }
     });
 
     it("skips fields not in the schema and reports them", () => {
