@@ -1,10 +1,11 @@
+import json
 import os
 from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
 
-from backend.tests.conftest import create_test_run
+from backend.tests.conftest import create_test_run, post
 
 
 @pytest.fixture
@@ -73,9 +74,9 @@ def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_
 
 
 def test_runid_null(client, mock_celery):
-    form = {"runid": None}
+    form = {"payload": json.dumps({"runid": None})}
 
-    response = client.post("/api/scrinshot", json=form)
+    response = post(client, "/api/scrinshot", form)
     assert response.status_code == 400
 
 

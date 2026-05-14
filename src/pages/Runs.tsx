@@ -5,11 +5,11 @@ import { BACKEND_URL } from "../config";
 import { Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
-import { pipelineDisplayNames } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../utils/toastUtil";
 import { Horizontal } from "../components/ui/Alignment";
 import { confirmWithModal } from "../utils/modalUtil";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
 
 const Runs = () => {
     const { loading } = useAuth();
@@ -80,10 +80,7 @@ const Runs = () => {
                                         </div>
                                     )}
                             </td>
-                            <td>
-                                {pipelineDisplayNames[run.pipeline] ||
-                                    run.pipeline}
-                            </td>
+                            <td>{getPipelineDisplayName(run.pipeline)}</td>
                             <td>
                                 {new Date(run.timestamp).toLocaleString(
                                     "en-US",

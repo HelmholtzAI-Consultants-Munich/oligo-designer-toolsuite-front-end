@@ -447,6 +447,7 @@ form.rjsf {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 
     .pulse-outer {
         position: absolute;
@@ -493,4 +494,12 @@ form.rjsf {
 .text-muted {
     color: $text-muted !important;
     font-weight: 300;
+}
+
+.modal-wide {
+    max-width: 50rem;
+    margin: auto;
+    .modal-content {
+        margin: var(--bs-modal-margin);
+    }
 }

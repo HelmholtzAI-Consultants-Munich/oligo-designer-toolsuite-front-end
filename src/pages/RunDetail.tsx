@@ -17,7 +17,6 @@ import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
 import {
-    pipelineDisplayNames,
     visualizationDisplayNames,
     type VisualizationType,
 } from "../components/ui/utils";
@@ -28,6 +27,7 @@ import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
 
 interface RunFile {
     name: string;
@@ -435,7 +435,7 @@ const RunDetail = () => {
 
     return (
         <Page
-            title={`Run Result - ${run ? pipelineDisplayNames[run?.pipeline] : "Unknown Pipeline"}`}
+            title={`Run Result - ${run ? getPipelineDisplayName(run.pipeline) : "Unknown Pipeline Run"}`}
             actions={actions as Action[] | undefined}
             backTo={{
                 label: fromAdmin ? "Admin Panel" : "All Runs",

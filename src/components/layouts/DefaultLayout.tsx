@@ -2,7 +2,7 @@ import { Outlet } from "react-router";
 import Sidebar from "../ui/Sidebar";
 import Toasts from "../notifications/Toasts";
 import { Vertical } from "../ui/Alignment";
-import Modal from "../notifications/Modal";
+import Modal from "../notifications/ModalComponent";
 import { useAuth } from "../../hooks/useAuth";
 import { useRuns } from "../../hooks/useRuns";
 import Footer from "../ui/Footer";
