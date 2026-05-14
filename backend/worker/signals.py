@@ -1,6 +1,7 @@
 from celery import Task
 from celery.signals import task_prerun
 from pymongo import MongoClient
+from redis import Redis
 
 from backend.config import CeleryConfig, Config
 
@@ -16,6 +17,7 @@ def on_task_prerun(task_id, task, *args, **kwargs):
         return
     client = MongoClient(Config.MONGO_URI)
     db = client["oligo_db"]
+    redis = Redis.from_url(Config.REDIS_URI)
     if (
         task.request.delivery_info.get("priority", CeleryConfig.task_default_priority)
         == CeleryConfig.task_high_priority
@@ -25,9 +27,11 @@ def on_task_prerun(task_id, task, *args, **kwargs):
             {"status": "pending", "queue_position.0": {"$gt": 0}},
             {"$inc": {"queue_position.0": -1}},
         )
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", -1)
     else:
         # remove one low priority task ahead of all pending low priority tasks
         db.runs.update_many(
             {"status": "pending", "priority": "default", "queue_position.1": {"$gt": 0}},
             {"$inc": {"queue_position.1": -1}},
         )
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", -1)

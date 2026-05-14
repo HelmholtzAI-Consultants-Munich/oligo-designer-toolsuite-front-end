@@ -184,6 +184,35 @@ def enqueue_pipeline(
     return chord(region_generation_signatures)(pipeline_signature)
 
 
+def calculate_queue_position(priority: int) -> tuple[int, int]:
+    """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
+    redis = Redis.from_url(Config.REDIS_URI)
+    queue_length_key = Config.REDIS_QUEUE_LENGTH_KEY
+
+    # Initialize queue lengths if not present, then fetch and convert to int
+    redis.hsetnx(queue_length_key, "default", 0)
+    redis.hsetnx(queue_length_key, "high", 0)
+    default_priority_queue_length, high_priority_queue_length = map(
+        int, redis.hmget(queue_length_key, ["default", "high"])
+    )
+
+    if priority == CeleryConfig.task_high_priority:
+        high_priority_ahead = high_priority_queue_length
+        default_priority_ahead = 0
+        # add one high priority run ahead for all low priority runs
+        mongo.db.runs.update_many(
+            {"status": "pending", "priority": "default"},
+            {"$inc": {"queue_position.0": 1}},
+        )
+        redis.hincrby(queue_length_key, "high", 1)
+    else:
+        high_priority_ahead = high_priority_queue_length
+        default_priority_ahead = default_priority_queue_length
+        redis.hincrby(queue_length_key, "default", 1)
+
+    return high_priority_ahead, default_priority_ahead
+
+
 def save_file(
     file_name: str, files: ImmutableMultiDict[str, FileStorage], saved_files: dict[FileStorage, Path]
 ):
@@ -242,6 +271,7 @@ def start_pipeline(pipeline_name: str):
     - Builds chord of tasks, consisting of a group of region generation tasks  and the specified pipeline
         as their callback.
     - Adds chord to the Celery queue for execution.
+    - Calculate the queue position and update queue lengths in Redis.
     - Writes updated run information to database.
     - Returns the run ID as a JSON response.
 
@@ -296,21 +326,9 @@ def start_pipeline(pipeline_name: str):
         pipeline_name, form_data, generated_regions, context.output_path, priority
     )
 
+    high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
+
     # mark run as enqueued in DB
-    redis = Redis.from_url(Config.REDIS_URI)
-    default_priority_queue_length = redis.llen(f"celery:{CeleryConfig.task_default_priority}")
-    high_priority_queue_length = redis.llen(f"celery:{CeleryConfig.task_high_priority}")
-    if priority == CeleryConfig.task_high_priority:
-        high_priority_ahead = max(high_priority_queue_length - 1, 0)
-        default_priority_ahead = 0
-        # add one high priority run ahead for all low priority runs
-        mongo.db.runs.update_many(
-            {"status": "pending", "priority": "default"},
-            {"$inc": {"queue_position.0": 1}},
-        )
-    else:
-        high_priority_ahead = high_priority_queue_length
-        default_priority_ahead = max(default_priority_queue_length - 1, 0)
     update_result = write_run_to_DB(
         pipeline_name,
         run_id,
