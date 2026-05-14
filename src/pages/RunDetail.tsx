@@ -28,7 +28,6 @@ import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
-import QueuePosition from "../components/ui/RunStatusDetails";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 
 interface RunFile {
