@@ -3,149 +3,113 @@ import { BACKEND_URL } from "../../config";
 import { createRunId } from "../../contexts/authHelpers";
 import { showToast } from "../../utils/toastUtil";
 import { extractSubmissionError } from "../errorHandler";
-import type { RJSFFormData } from "../componentTypes";
-import {
-    type CommentEntry,
-    type EnsFastaFormDataGeneric,
-    type FastaForm,
-    type FastaFormState,
-    type FileState,
-    type NcbiFastaFormDataGeneric,
-    type NestedObject,
-    type UploadFastaFormData,
-} from "./types";
+import type { NestedObject, RJSFFormData } from "../componentTypes";
+import { type FastaFormUncommented, type FastaFormUpload } from "./types";
 import axios from "axios";
 import { Link } from "react-router";
+import {
+    PIPELINE_CONFIG,
+    type PipelineConfig,
+} from "../../pipelineConfig/config";
 
 export const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
 
-export const allFieldsFilled = (
-    files: FileState,
-    required_files: (keyof FileState)[]
+export const firstLetterUppercase = (s: string) =>
+    s.charAt(0).toUpperCase() + s.slice(1);
+
+export const regionDisplayNames = {
+    gene: "Gene",
+    intergenic: "Intergenic",
+    exon: "Exon",
+    utr: "UTR",
+    cds: "CDS",
+    intron: "Intron",
+    exon_exon_junction: "Exon-exon-junction",
+};
+
+const findReference = (
+    ref: string,
+    baseSchema: NestedObject
+): Record<string, unknown> | null => {
+    if (!ref.startsWith("#/")) return null;
+
+    const path = ref.split("/").slice(-1);
+    for (const part of path) {
+        if (part in baseSchema) {
+            baseSchema = baseSchema[part] as NestedObject;
+        } else {
+            return null;
+        }
+    }
+    return baseSchema as Record<string, unknown>;
+};
+
+export const getKeyObjectFromSchema = (
+    fastaFormSchema: NestedObject,
+    baseSchema: NestedObject,
+    extractKey: string,
+    overwriteObject: boolean = false
 ) => {
-    let uploaded = true;
-    for (const file of required_files) {
-        if (files[file].length == 0) {
-            uploaded = false;
-        }
-    }
-    return uploaded;
-};
+    const references = new Set<string>();
 
-export const uploadFiles = async (files: FileState, formData: RJSFFormData) => {
-    for (const key of Object.keys(files) as (keyof FileState)[]) {
-        if (files[key]) {
-            for (const file of files[key]) {
-                const formDataU = new FormData();
-                formDataU.append("file", file);
-                try {
-                    const response = await axios.post(
-                        BACKEND_URL + "/api/upload",
-                        formDataU,
-                        {
-                            headers: {
-                                "Content-Type": "multipart/form-data",
-                            },
-                        }
-                    );
-                    // update formData to contain server-side file path
-                    formData[key].push(response.data.filePath);
-                } catch (error) {
-                    console.error(`Error uploading ${key}:`, error);
-                    throw new Error(
-                        `Error uploading ${file.name} for field ${key}`
-                    );
-                }
-            }
-        }
-    }
-};
-
-export const removeComments = (fastaFormData: NestedObject) => {
-    const stripComments = (value: unknown): unknown => {
+    const extractValue = (value: unknown): unknown => {
         if (Array.isArray(value)) {
-            return value.map((entry) => stripComments(entry));
+            return value.map((entry) => extractValue(entry));
         }
 
         if (value && typeof value === "object") {
-            const record = value as Record<string, unknown>;
-            if ("value" in record) {
-                return record.value;
+            let record = value as Record<string, unknown>;
+
+            if ("$ref" in record) {
+                if (references.has(record.$ref as string)) {
+                    return null;
+                }
+                references.add(record.$ref as string);
+                const result = findReference(record.$ref as string, baseSchema);
+                if (!result) {
+                    return null;
+                }
+                record = result;
+                references.delete(record.$ref as string);
+            }
+            if ("properties" in record) {
+                record = record.properties as Record<string, unknown>;
+            }
+
+            if (extractKey in record) {
+                if (overwriteObject) return record[extractKey];
+                else return { [extractKey]: record[extractKey] };
             }
 
             const cleaned: Record<string, unknown> = {};
             for (const [key, nestedValue] of Object.entries(record)) {
-                cleaned[key] = stripComments(nestedValue);
+                cleaned[key] = extractValue(nestedValue);
+                if (
+                    cleaned[key] === null ||
+                    (typeof cleaned[key] === "object" &&
+                        "type" in cleaned[key] &&
+                        cleaned[key].type === null)
+                ) {
+                    cleaned[key] = {};
+                }
             }
-            return cleaned;
+            if (Object.keys(cleaned).length > 0) return cleaned;
         }
-
-        return value;
+        return null;
     };
 
-    return stripComments(fastaFormData) as NestedObject;
+    return extractValue(fastaFormSchema) as NestedObject;
 };
 
-export const addComments = (
-    fastaFormData: NestedObject,
-    commentedFastaFormData: NestedObject
-) => {
-    const mergeComments = (data: unknown, template: unknown): unknown => {
-        if (Array.isArray(data)) {
-            return data.map((entry, idx) =>
-                mergeComments(
-                    entry,
-                    Array.isArray(template) ? template[idx] : template
-                )
-            );
-        }
-
-        if (data && typeof data === "object") {
-            const merged: Record<string, unknown> = {};
-            for (const [key, value] of Object.entries(
-                data as Record<string, unknown>
-            )) {
-                merged[key] = mergeComments(
-                    value,
-                    (template as Record<string, unknown> | undefined)?.[key]
-                );
-            }
-            return merged;
-        }
-
-        if (
-            template &&
-            typeof template === "object" &&
-            "value" in template &&
-            "comment" in template
-        ) {
-            return {
-                value: data,
-                comment: (template as CommentEntry).comment,
-            };
-        }
-
-        return data;
-    };
-
-    return mergeComments(fastaFormData, commentedFastaFormData) as NestedObject;
-};
-
-const prepareForUpload = (fastaForm: FastaForm) => {
-    let uploadReadyFastaForm;
+const prepareForUpload = (fastaForm: FastaFormUncommented) => {
+    let uploadReadyFastaForm: FastaFormUpload;
     switch (fastaForm.selectedSource) {
         case "ncbi":
-            uploadReadyFastaForm = removeComments(
-                fastaForm.formDataNcbi as unknown as NestedObject
-            ) as unknown as UploadFastaFormData<
-                NcbiFastaFormDataGeneric<false>
-            >;
+            uploadReadyFastaForm = fastaForm.formDataNcbi;
             uploadReadyFastaForm.source = "NCBI";
             break;
         case "ensembl":
-            uploadReadyFastaForm = removeComments(
-                fastaForm.formDataEns as unknown as NestedObject
-            ) as unknown as UploadFastaFormData<EnsFastaFormDataGeneric<false>>;
+            uploadReadyFastaForm = fastaForm.formDataEns;
             uploadReadyFastaForm.source = "Ensembl";
             break;
         default:
@@ -154,76 +118,12 @@ const prepareForUpload = (fastaForm: FastaForm) => {
     return uploadReadyFastaForm;
 };
 
-export const handleSubmitGenomicAll = async (
-    fastaForms: FastaFormState,
-    formData: RJSFFormData // Accept forms as argument
-) => {
-    for (const key of Object.keys(fastaForms) as (keyof FileState)[]) {
-        if (fastaForms[key]) {
-            for (const form of fastaForms[key]) {
-                const payload = prepareForUpload(form);
-
-                if (!payload) {
-                    console.error(
-                        "Error while processing Genomic Region Generator Form"
-                    );
-                    continue;
-                }
-
-                try {
-                    const response = await axios.post(
-                        BACKEND_URL + `/api/genomic/cascaded/custom`,
-                        payload,
-                        {
-                            withCredentials: true,
-                            headers: { "Content-Type": "application/json" },
-                        }
-                    );
-                    formData[key] = response.data.output;
-                } catch (error) {
-                    console.error("Error submitting genomic form:", error);
-                    throw new Error(
-                        `Error uploading Genomic Region Generator for field ${key}`
-                    );
-                }
-            }
-        }
-    }
-};
-
-export const getRequiredFields = (
-    pipeline: string
-): (keyof FileState & keyof FastaFormState)[] => {
-    if (pipeline === "scrinshot" || pipeline === "oligoseq") {
-        return [
-            "files_fasta_target_probe_database",
-            "files_fasta_reference_database_target_probe",
-        ];
-    } else {
-        return [
-            "files_fasta_target_probe_database",
-            "files_fasta_reference_database_target_probe",
-            "files_fasta_reference_database_readout_probe",
-            "files_fasta_reference_database_primer",
-        ];
-    }
-};
-
-export const validateInput = (
-    pipeline: string,
-    files: FileState,
-    fastaForms: FastaFormState
-) => {
-    for (const field of getRequiredFields(pipeline)) {
-        if (files[field].length != 0 && fastaForms[field].length != 0) {
-            return [
-                false,
-                "You should either provide a file or use the genomic region generator, not both",
-            ];
-        } else if (
-            files[field].length === 0 &&
-            fastaForms[field].length === 0
-        ) {
+export const validateInput = (pipeline: string, formData: RJSFFormData) => {
+    for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
+        .genomicInputFields!) {
+        const files = formData[field].files;
+        const fastaForms = formData[field].fasta_form;
+        if (files.length === 0 && fastaForms.length === 0) {
             return false;
         }
     }
@@ -242,30 +142,18 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
 };
 
 export const handleSubmit = async (
-    files: FileState,
-    fastaForms: FastaFormState,
     formData: RJSFFormData,
     pipeline: string,
     updateRuns: () => void
 ) => {
-    const isInputValid = validateInput(pipeline, files, fastaForms);
+    // copy to avoid modifying formData
+    const uploadFormData = structuredClone(formData);
+    const isInputValid = validateInput(pipeline, uploadFormData);
 
     if (!isInputValid) {
         showToast({
             title: "Submission Failed",
             content: "Please upload all required files before submitting.",
-            type: "danger",
-        });
-        return;
-    }
-
-    try {
-        await uploadFiles(files, formData);
-        await handleSubmitGenomicAll(fastaForms, formData);
-    } catch {
-        showToast({
-            title: "Submitting Failed",
-            content: "There was an error while processing your input",
             type: "danger",
         });
         return;
@@ -282,12 +170,47 @@ export const handleSubmit = async (
     }
 
     try {
+        let upload = {};
+        for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
+            .genomicInputFields!) {
+            if (uploadFormData[field].fasta_form.length > 0) {
+                uploadFormData[field].fasta_form = uploadFormData[
+                    field
+                ].fasta_form.map((fastaForm: FastaFormUncommented) =>
+                    prepareForUpload(fastaForm)
+                );
+            }
+            if (uploadFormData[field].files.length > 0) {
+                upload = {
+                    ...upload,
+                    ...uploadFormData[field].files.reduce(
+                        (acc: Record<string, File>, cur: File) => ({
+                            ...acc,
+                            ...{ [cur.name]: cur },
+                        }),
+                        {}
+                    ),
+                };
+                uploadFormData[field].files = uploadFormData[field].files.map(
+                    (file: File) => file.name
+                );
+            }
+        }
+
+        upload = {
+            ...upload,
+            payload: JSON.stringify({
+                formdata: uploadFormData,
+                runid: newId,
+            }),
+        };
+
         const response = await axios.post(
             BACKEND_URL + `/api/${pipeline}`,
-            { formdata: formData, runid: newId },
+            upload,
             {
                 withCredentials: true,
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "multipart/form-data" },
             }
         );
 
@@ -334,10 +257,6 @@ export const handleSubmit = async (
             });
         }
     } finally {
-        // remove uploaded filepaths added in uploadFiles
-        for (const key in files) {
-            formData[key] = [];
-        }
         updateRuns();
     }
 };
