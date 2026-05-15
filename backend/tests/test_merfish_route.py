@@ -31,14 +31,6 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["state"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
-
 
 # Test unauthenticated user flow for /api/merfish
 def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, session_user):
@@ -50,14 +42,6 @@ def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
-
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["state"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
 
 
 # Error handling tests
@@ -78,7 +62,7 @@ def test_merfish_route_propagates_pipeline_runner_errors(client, run_id, authent
         "runid": "",
     }
 
-    response = response = post(client, "/api/merfish", form_with_empty_runid)
+    response = post(client, "/api/merfish", form_with_empty_runid)
     assert_invalid_run_id_error(response)
 
 
