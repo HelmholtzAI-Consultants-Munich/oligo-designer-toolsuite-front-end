@@ -12,8 +12,10 @@
 !/backend/config.py
 !/backend/extensions.py
 !/backend/genomic_databases.py
+!/backend/types.py
 !/backend/pyproject.toml
 !/backend/worker_environment.yml
+!/backend/utilities
 !/backend/worker
 !/backend/data-access
 /backend/data-access/*
