@@ -1,3 +1,5 @@
+import logging
+
 from celery import Celery
 
 from backend.config import CeleryConfig
@@ -11,6 +13,8 @@ app.conf.update(
     main="worker",
     include=[TASK_ROOT, CALLBACK_ROOT],
 )
+
+logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     app.start()

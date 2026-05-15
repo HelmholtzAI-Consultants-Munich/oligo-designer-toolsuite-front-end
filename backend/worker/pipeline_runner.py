@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 from backend.constants import PIPELINE_GENOMIC_INPUT
-from backend.utilities.exceptions import ODTPipelineError
+from backend.exceptions import ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
