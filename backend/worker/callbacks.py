@@ -28,26 +28,26 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
         logger.error(f"Pipeline chord errback received invalid run id: {run_id_str}")
         return
 
-    status = RunStatus.FAILURE
-    error_message: str
-
     # Extract original exception from ChordError if available
     # NOTE: This is adapted from Celery's `backends.base.Backend._handle_group_chord_error`.
     if isinstance(exc, ChordError) and hasattr(exc, "__cause__") and exc.__cause__:
         exc = exc.__cause__
 
-    if isinstance(exc, ChordError):
-        # Exceptions raised in chord header without known original exception
-        error_message = "An error occured during genomic region generation."
-    # The following lines could be added once we directly call ODT from within the same Python process.
-    # elif isinstance(exc, OligoDesignerError):
-    #     error_message = "An error occured during pipeline execution."
-    elif isinstance(exc, ODTCloudError):
-        error_message = str(exc)
-    elif isinstance(exc, TimeLimitExceeded | SoftTimeLimitExceeded):
-        status = RunStatus.TIMEOUT  # override run status
-        error_message = "The pipeline exceeded the time limit."
-    else:
-        error_message = "An unexpected error occured."
+    status = RunStatus.FAILURE
+    error_message: str
+
+    match exc:
+        case ChordError():
+            error_message = "An error occured during genomic region generation."
+        # The following lines could be added once we directly call ODT from within the same Python process.
+        # case OligoDesignerError():
+        #     error_message = "An error occured during pipeline execution."
+        case ODTCloudError():
+            error_message = str(exc)
+        case TimeLimitExceeded() | SoftTimeLimitExceeded():
+            status = RunStatus.TIMEOUT  # override run status
+            error_message = "The pipeline exceeded the time limit."
+        case _:
+            error_message = "An unexpected error occured."
 
     _update_run(run_id, {"status": status, "error_message": error_message})
