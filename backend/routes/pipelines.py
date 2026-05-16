@@ -187,28 +187,26 @@ def enqueue_pipeline(
 def calculate_queue_position(priority: int) -> tuple[int, int]:
     """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
     redis = Redis.from_url(Config.REDIS_URI)
-    queue_length_key = Config.REDIS_QUEUE_LENGTH_KEY
 
     # Initialize queue lengths if not present, then fetch and convert to int
-    redis.hsetnx(queue_length_key, "default", 0)
-    redis.hsetnx(queue_length_key, "high", 0)
+    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
+    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "high", 0)
     default_priority_queue_length, high_priority_queue_length = map(
-        int, redis.hmget(queue_length_key, ["default", "high"])
+        int, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
     )
+    high_priority_ahead = high_priority_queue_length
 
     if priority == CeleryConfig.task_high_priority:
-        high_priority_ahead = high_priority_queue_length
         default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
         mongo.db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
-        redis.hincrby(queue_length_key, "high", 1)
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
     else:
-        high_priority_ahead = high_priority_queue_length
         default_priority_ahead = default_priority_queue_length
-        redis.hincrby(queue_length_key, "default", 1)
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
 
     return high_priority_ahead, default_priority_ahead
 

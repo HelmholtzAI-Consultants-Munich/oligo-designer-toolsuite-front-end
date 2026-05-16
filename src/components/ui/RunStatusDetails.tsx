@@ -3,14 +3,15 @@ import type { PipelineRun } from "../../types";
 import { unwrapQueuePosition } from "../fastaGenerateForm/helpers";
 
 export default function RunStatusDetails({ run }: { run: PipelineRun }) {
+    const runStatusText = `Run ${run.status}...`;
     if (run.status !== "pending") {
-        return <h3 className="mt-3">Run {run.status}...</h3>;
+        return <h3 className="mt-3">{runStatusText}</h3>;
     }
     const { runsAhead } = unwrapQueuePosition(run.queue_position);
     return (
         <Alert style={{ width: "30rem", maxWidth: "100%" }}>
             <Alert.Heading className="text-center fs-3 mb-4 mt-2">
-                Run pending...
+                {runStatusText}
             </Alert.Heading>
             <p className="text-center">
                 {runsAhead === 0

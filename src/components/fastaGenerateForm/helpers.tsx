@@ -135,8 +135,6 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
     const runsAhead = highPriorityAhead + defaultPriorityAhead;
     return {
         runsAhead,
-        highPriorityAhead,
-        defaultPriorityAhead,
         ownPosition: runsAhead + 1,
     };
 };
