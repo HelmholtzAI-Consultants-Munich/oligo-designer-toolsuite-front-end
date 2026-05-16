@@ -23,8 +23,8 @@ from bson import ObjectId
 from flask import Blueprint, abort, jsonify, send_file, session
 from flask_login import current_user
 
-from backend.extensions import celery_app, mongo
-from backend.routes.route_helpers import get_run_or_404, get_task_id, get_user_context
+from backend.extensions import mongo
+from backend.routes.route_helpers import get_run_or_404, get_user_context
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
@@ -35,37 +35,6 @@ from backend.utilities.typed_values import (
 )
 
 runs_bp = Blueprint("runs", __name__)
-
-
-TERMINAL_RUN_STATES = {"success", "failure"}
-
-
-def resolve_run_state(run: dict[Any, Any]) -> str:
-    """Resolve current run state from DB/Celery without mutating DB."""
-    state = run.get("status", "unknown")
-    if state in TERMINAL_RUN_STATES:
-        return state
-
-    task_id = get_task_id(run)
-    if not task_id:
-        return state
-
-    result_promise = celery_app.AsyncResult(task_id)
-    if result_promise.successful():
-        ok = result_promise.get()
-        # overwrite "success" state if pipeline failed but output was delivered successfully
-        # -> literally "task failed successfully"
-        return result_promise.state.lower() if ok else "failure"
-    return result_promise.state.lower()
-
-
-def refresh_run_status(run: dict[Any, Any]) -> dict[Any, Any]:
-    """Refresh run status from Celery and persist changes if needed."""
-    state = resolve_run_state(run)
-    if run.get("status") != state:
-        update_run_status_in_DB(run["_id"], state)
-        run["status"] = state
-    return run
 
 
 def format_run(run: dict[Any, Any]) -> dict[str, Any]:
@@ -155,7 +124,7 @@ def get_pipeline_runs():
 
     formatted_runs = []
     for run in runs:
-        formatted_runs.append(format_run(refresh_run_status(run)))
+        formatted_runs.append(format_run(run))
     return jsonify(formatted_runs), HTTPStatus.OK
 
 
@@ -176,7 +145,7 @@ def get_pipeline_run(run_id: ObjectId):
         2. Return run details or error if not found.
     """
     # Auth or session check
-    run = refresh_run_status(get_run_or_404(run_id, require_ownership=True))
+    run = get_run_or_404(run_id, require_ownership=True)
     formatted_run = format_run(run)
     return jsonify(formatted_run), HTTPStatus.OK
 
@@ -303,7 +272,6 @@ def get_run_status(run_id: ObjectId):
     :returns: Run status or JSON error.
     :rtype: flask.Response
     """
-    run = refresh_run_status(get_run_or_404(run_id))
-    state = run["status"]
+    run = get_run_or_404(run_id)
 
-    return jsonify({"state": state}), HTTPStatus.OK
+    return jsonify({"state": run["status"]}), HTTPStatus.OK

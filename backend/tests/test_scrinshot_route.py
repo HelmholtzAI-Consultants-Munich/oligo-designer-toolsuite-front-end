@@ -33,14 +33,6 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
     assert isinstance(updated["timestamp"], datetime)
     assert isinstance(updated["output_path"], dict)
 
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["state"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
-
 
 def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, session_user):
     response = post(client, "/api/scrinshot", dummy_form)
@@ -51,14 +43,6 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, sess
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
-
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["state"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
 
 
 def test_invalid_session(client, dummy_form, mock_celery, run_id):

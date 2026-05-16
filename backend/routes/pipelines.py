@@ -27,7 +27,7 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
-from backend.worker.task_index import Tasks
+from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -155,6 +155,7 @@ def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
 
 
 def enqueue_pipeline(
+    run_id: ObjectId,
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
@@ -166,17 +167,21 @@ def enqueue_pipeline(
     finish executing before the pipeline is started.
     """
 
+    # the chord header tasks get executed simultaneously as a group
     region_generation_signatures = (
         celery_app.signature(Tasks.RUN_GENOMIC_REGION_GENERATOR, args=(form, id))
         for id, forms in generated_regions.items()
         for form in forms
     )
 
+    # the chord body task gets executed once all header tasks finished
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path)), priority=priority
     )
 
-    return chord(region_generation_signatures)(pipeline_signature)
+    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
+
+    return chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
 
 
 def save_file(
@@ -288,7 +293,7 @@ def start_pipeline(pipeline_name: str):
     priority = get_task_priority(form_data, run_id)
 
     result_promise = enqueue_pipeline(
-        pipeline_name, form_data, generated_regions, context.output_path, priority
+        run_id, pipeline_name, form_data, generated_regions, context.output_path, priority
     )
 
     # Mark Run as Enqueued in DB

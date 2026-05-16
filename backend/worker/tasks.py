@@ -11,18 +11,19 @@ from backend.config import Config
 from backend.genomic_databases import fetch_dropdown_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
+from backend.worker.handlers import PipelineTask
 
 logger: Logger = get_task_logger(__name__)
 
 
-@app.task()
+@app.task(base=PipelineTask)
 def run_pipeline(
     generated_region_paths: list[tuple[str, list[str]]], pipeline_name: str, form_data: Any, output_path: str
-) -> bool:
+) -> None:
     from backend.worker.pipeline_runner import PipelineRunner  # lazy: avoids Bio at import time
 
     runner = PipelineRunner(pipeline_name, logger=logger)
-    return runner.run(form_data, output_path, generated_region_paths)
+    runner.run(form_data, output_path, generated_region_paths)
 
 
 @app.task()
