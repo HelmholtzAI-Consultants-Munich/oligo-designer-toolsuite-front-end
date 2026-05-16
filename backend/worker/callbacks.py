@@ -9,7 +9,7 @@ from backend.worker.database import _parse_run_id, _update_run
 
 
 @app.task()
-def pipeline_chord_errback(request: Request, exc: Exception, traceback: str | None, run_id_str: str) -> None:
+def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | None, run_id_str: str) -> None:
     """Error handling callback (errback) for pipeline chords.
 
     Notes:
@@ -30,8 +30,14 @@ def pipeline_chord_errback(request: Request, exc: Exception, traceback: str | No
 
     status = RunStatus.FAILURE
     error_message: str
+
+    # Extract original exception from ChordError if available
+    # NOTE: This is adapted from Celery's `backends.base.Backend._handle_group_chord_error`.
+    if isinstance(exc, ChordError) and hasattr(exc, "__cause__") and exc.__cause__:
+        exc = exc.__cause__
+
     if isinstance(exc, ChordError):
-        # Any exceptions raised in a chord header will be wrapped in a ChordError.
+        # Exceptions raised in chord header without known original exception
         error_message = "An error occured during genomic region generation."
     # The following lines could be added once we directly call ODT from within the same Python process.
     # elif isinstance(exc, OligoDesignerError):
