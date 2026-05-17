@@ -148,7 +148,7 @@ class PipelineRunner:
             # check if error is due to empty result
             if "The oligo database is empty" in result.stdout:
                 raise ODTEmptyResultError(
-                    "The pipeline was unable to generate any results. Please tweak your input parameters."
+                    "The pipeline did not generate any results. Please tweak your input parameters."
                 )
             raise ODTPipelineError(
                 "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
