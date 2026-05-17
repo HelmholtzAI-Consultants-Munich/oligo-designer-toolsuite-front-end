@@ -3,6 +3,7 @@ import logging
 from celery import Celery
 
 from backend.config import CeleryConfig
+from backend.worker import signals  # noqa: F401
 from backend.worker.task_index import CALLBACK_ROOT, TASK_ROOT
 
 app = Celery()

@@ -19,7 +19,7 @@ function Pulse({ color, size, paused, title }: PulseProps) {
             title={title}
         >
             {!paused && <div className="pulse-outer"></div>}
-            <div className="pulse-inner"></div>
+            <div className={"pulse-inner" + (paused ? " paused" : "")}></div>
         </div>
     );
 }
