@@ -1,5 +1,5 @@
 ---
-title: Caching FASTA Files
+title: Style Guide
 layout: default
 nav_order: 8
 parent: Development
