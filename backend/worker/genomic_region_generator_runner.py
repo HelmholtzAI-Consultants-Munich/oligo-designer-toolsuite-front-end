@@ -9,6 +9,7 @@ import yaml
 from filelock import SoftFileLock
 
 from backend.cache import file_cache_region
+from backend.exceptions import ODTPipelineError
 from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
 from backend.worker.converters import to_bool, to_int
 
@@ -114,7 +115,10 @@ class GenomicRegionGeneratorRunner:
         if result.returncode != 0:
             self.logger.error(f"Custom pipeline failed: {result.stderr}")
             self.cleanup_temp_files(config_path)
-            raise ValueError("The pipeline failed to execute. Please check your input and try again.")
+            other_files_source = "Ensembl" if files_source == "NCBI" else "NCBI"
+            raise ODTPipelineError(
+                f"An error occured while fetching data from {files_source}. Please try again. If the error persists, please inform us of the issue and consider switching to {other_files_source} data for now."
+            )
 
         self.cleanup_temp_files(config_path)
 

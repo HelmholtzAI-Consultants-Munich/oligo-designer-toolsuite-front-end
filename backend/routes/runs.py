@@ -48,7 +48,7 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "user_id": run.get("user_id", "unknown"),
     }
 
-    if run.get("status") == "failure" and run.get("error_message"):
+    if run.get("status") in ["failure", "timeout", "empty_result"] and run.get("error_message"):
         formatted["error_message"] = run.get("error_message")
     return formatted
 

@@ -73,12 +73,6 @@ const Runs = () => {
                         >
                             <td>
                                 <RunStatus status={run.status} />
-                                {run.status === "failure" &&
-                                    run.error_message && (
-                                        <div className="text-danger small mt-1">
-                                            {run.error_message}
-                                        </div>
-                                    )}
                             </td>
                             <td>{getPipelineDisplayName(run.pipeline)}</td>
                             <td>

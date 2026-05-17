@@ -28,6 +28,7 @@ import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
+import RunError from "../components/ui/RunError";
 
 interface RunFile {
     name: string;
@@ -456,11 +457,10 @@ const RunDetail = () => {
                 </Vertical>
             )}
 
-            {run?.status === "failure" && (
-                <Alert variant="danger">
-                    Run failed. Please check the logs for more details.
-                </Alert>
-            )}
+            {run &&
+                ["failure", "empty_result", "timeout"].includes(run.status) && (
+                    <RunError run={run} />
+                )}
 
             {/* YAML/table logic remains unchanged below */}
             {run?.status === "success" && (

@@ -150,7 +150,13 @@ export interface Probesets {
 
 export type ProbeDetailsValue = string | number | string[] | number[];
 
-export type RunState = "started" | "success" | "failure" | "pending";
+export type RunState =
+    | "started"
+    | "success"
+    | "failure"
+    | "pending"
+    | "timeout"
+    | "empty_result";
 
 export interface PipelineRun {
     _id: string;

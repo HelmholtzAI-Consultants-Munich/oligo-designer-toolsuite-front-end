@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 from backend.constants import PIPELINE_GENOMIC_INPUT
-from backend.exceptions import ODTPipelineError
+from backend.exceptions import ODTEmptyResultError, ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
@@ -145,7 +145,14 @@ class PipelineRunner:
         if result.returncode != 0:
             self.logger.debug(f"STDOUT: {result.stdout}")
             self.logger.debug(f"STDERR: {result.stderr}")
-            raise ODTPipelineError("An error occured during pipeline execution.")
+            # check if error is due to empty result
+            if "The oligo database is empty" in result.stdout:
+                raise ODTEmptyResultError(
+                    "The pipeline was unable to generate any results. Please tweak your input parameters."
+                )
+            raise ODTPipelineError(
+                "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
+            )
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
