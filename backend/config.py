@@ -78,6 +78,7 @@ class Config:
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
     GENE_COUNT_THRESHOLD = 10
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024))
 
     # Caching Settings
     REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")
