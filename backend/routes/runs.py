@@ -23,9 +23,9 @@ from bson import ObjectId
 from flask import Blueprint, abort, jsonify, send_file, session
 from flask_login import current_user
 
-from backend.extensions import celery_app, mongo
-from backend.routes.route_helpers import get_run_or_404, get_task_id, get_user_context
-from backend.utilities.pipeline import delete_pipeline_run_files_and_db, resolve_pipeline_task_status
+from backend.extensions import mongo
+from backend.routes.route_helpers import get_run_or_404, get_user_context
+from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
     path_for_display,
@@ -35,36 +35,6 @@ from backend.utilities.typed_values import (
 )
 
 runs_bp = Blueprint("runs", __name__)
-
-
-TERMINAL_RUN_STATES = {"success", "failure", "timeout"}
-
-
-def resolve_run_state(run: dict[Any, Any]) -> str:
-    """Resolve current run state from DB/Celery without mutating DB."""
-    state = run.get("status", "unknown")
-    if state in TERMINAL_RUN_STATES:
-        return state
-
-    task_id = get_task_id(run)
-    if not task_id:
-        return state
-
-    result_promise = celery_app.AsyncResult(task_id)
-    if result_promise.ready():
-        task_result = result_promise.info
-    else:
-        task_result = None
-    return resolve_pipeline_task_status(result_promise.state, task_result)
-
-
-def refresh_run_status(run: dict[Any, Any]) -> dict[Any, Any]:
-    """Refresh run status from Celery and persist changes if needed."""
-    state = resolve_run_state(run)
-    if run.get("status") != state:
-        update_run_status_in_DB(run["_id"], state)
-        run["status"] = state
-    return run
 
 
 def format_run(run: dict[Any, Any]) -> dict[str, Any]:
@@ -287,10 +257,6 @@ def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
     return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
 
 
-def update_run_status_in_DB(run_id: ObjectId, status: str):
-    return update_run_in_DB(run_id, {"status": status})
-
-
 @runs_bp.route("/api/runs/<ObjectId:run_id>/status", methods=["GET"])
 def get_run_status(run_id: ObjectId):
     """
@@ -304,5 +270,5 @@ def get_run_status(run_id: ObjectId):
     :returns: Run status or JSON error.
     :rtype: flask.Response
     """
-    run = refresh_run_status(get_run_or_404(run_id))
+    run = get_run_or_404(run_id)
     return jsonify({"status": run["status"]}), HTTPStatus.OK
