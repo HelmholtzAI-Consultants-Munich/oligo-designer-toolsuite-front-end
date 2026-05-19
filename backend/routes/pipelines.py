@@ -1,5 +1,4 @@
 import os
-import time
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -182,7 +181,7 @@ def enqueue_pipeline(
             "user_id": user_id,
             "session_id": session_id,
             "gene_count": gene_count,
-            "publish_time": time.time(),
+            "published_at": utc_now(),
         },
     )
 
