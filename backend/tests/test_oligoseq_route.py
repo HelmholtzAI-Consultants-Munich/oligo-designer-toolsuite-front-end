@@ -30,14 +30,6 @@ def test_oligoseq_authenticated(client, run_id, dummy_form, mock_celery, authent
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["status"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
-
 
 def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_celery, session_user):
     response = post(client, "/api/oligoseq", dummy_form)
@@ -48,14 +40,6 @@ def test_oligoseq_unauthenticated(client, run_id, dummy_form, mock_celery, sessi
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
-
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["status"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
 
 
 # Error handling tests

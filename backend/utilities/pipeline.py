@@ -5,7 +5,6 @@ from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
-from celery.exceptions import SoftTimeLimitExceeded
 from flask import abort
 
 from backend.config import CeleryConfig
@@ -83,16 +82,6 @@ def get_timeout_multiplier(is_authenticated: bool) -> float:
 def _get_config_timeout(is_authenticated: bool) -> int:
     """Return the configured fixed timeout for the current user type."""
     return int(CeleryConfig.pipeline_timeout_anon * get_timeout_multiplier(is_authenticated))
-
-
-def resolve_pipeline_task_status(celery_state: str, task_result: bool | Exception | None) -> str:
-    """Map Celery task outcome data to the persisted pipeline run status."""
-    normalized_state = celery_state.lower()
-    if normalized_state == "success":
-        return "success" if task_result else "failure"
-    if normalized_state == "failure" and isinstance(task_result, SoftTimeLimitExceeded):
-        return "timeout"
-    return normalized_state
 
 
 def resolve_timeout(pipeline_name: str, is_authenticated: bool, gene_count: int | None) -> int:
