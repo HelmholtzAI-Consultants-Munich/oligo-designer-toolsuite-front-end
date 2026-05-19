@@ -1,8 +1,15 @@
 # using https://micromamba-docker.readthedocs.io/en/latest/index.html
 FROM mambaorg/micromamba:2-alpine3.22
 
-# --- Set up environment ---
-RUN --mount=source=backend/worker_environment.yml,target=/tmp/env.yml \
+# --- Set up Python environment ---
+RUN --mount=source=backend/environment.yml,target=/tmp/env.yml \
+    --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
+    micromamba install -y -n base -f /tmp/env.yml
+
+# --- Add worker-specific dependencies ---
+# disable sharded repodata as workaround for https://github.com/mamba-org/mamba/issues/4277
+RUN micromamba config set use_sharded_repodata false
+RUN --mount=source=backend/worker.environment.yml,target=/tmp/env.yml \
     --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
     micromamba install -y -n base -f /tmp/env.yml
 

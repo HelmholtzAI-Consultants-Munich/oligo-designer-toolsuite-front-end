@@ -1,8 +1,4 @@
 name: odt
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
 dependencies:
   # Core runtime
   - python=3.12
