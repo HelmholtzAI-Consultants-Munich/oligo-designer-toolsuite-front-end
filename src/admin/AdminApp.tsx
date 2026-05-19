@@ -7,7 +7,7 @@ import UserEdit from "./users/UserEdit";
 import PipelineList from "./pipelines/PipelineList";
 import FeedbackList from "./feedback/FeedbackList";
 import MonthlyReports from "./reports/MonthlyReports";
-import Modal from "../components/notifications/Modal";
+import Modal from "../components/notifications/ModalComponent";
 import Toasts from "../components/notifications/Toasts";
 
 const AdminApp: React.FC = () => {

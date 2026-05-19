@@ -5,7 +5,7 @@ from datetime import datetime
 import pytest
 
 from backend.extensions import mongo
-from backend.tests.conftest import assert_invalid_run_id_error, create_test_run
+from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
     # Ensure run exists with correct user_id for authenticated user
     create_test_run(run_id, user_id="test_user_id", status="created")
 
-    response = client.post("/api/scrinshot", json=dummy_form)
+    response = post(client, "/api/scrinshot", dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
@@ -43,7 +43,7 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
 
 
 def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, session_user):
-    response = client.post("/api/scrinshot", json=dummy_form)
+    response = post(client, "/api/scrinshot", dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
@@ -68,7 +68,7 @@ def test_invalid_session(client, dummy_form, mock_celery, run_id):
     with client.session_transaction() as session:
         session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
 
-    response = client.post("/api/scrinshot", json=dummy_form)
+    response = post(client, "/api/scrinshot", dummy_form)
     assert response.status_code == 200
 
 
@@ -78,7 +78,7 @@ def test_scrinshot_route_invalid_run_id(client, dummy_form, authenticated_user):
     invalid_form = dummy_form.copy()
     invalid_form["runid"] = "invalid_id"
 
-    response = client.post("/api/scrinshot", json=invalid_form)
+    response = post(client, "/api/scrinshot", invalid_form)
     assert_invalid_run_id_error(response)
 
 
@@ -90,7 +90,7 @@ def test_scrinshot_route_propagates_pipeline_runner_errors(client, run_id, authe
         "runid": "",
     }
 
-    response = client.post("/api/scrinshot", json=form_with_empty_runid)
+    response = post(client, "/api/scrinshot", form_with_empty_runid)
     assert_invalid_run_id_error(response)
 
 
@@ -101,5 +101,5 @@ def test_scrinshot_session_without_directory(client, dummy_form, run_id, mock_ce
         session["session_id"] = "existing-session-123"
 
     # With makedirs mock disabled, directories will be created and request should succeed
-    response = client.post("/api/scrinshot", json=dummy_form)
+    response = post(client, "/api/scrinshot", dummy_form)
     assert response.status_code == 200

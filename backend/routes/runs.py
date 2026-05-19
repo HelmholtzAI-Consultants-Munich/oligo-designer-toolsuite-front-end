@@ -76,6 +76,8 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "timestamp": timestamp_to_iso(run.get("timestamp")),
         "output_path": path_for_display(run.get("output_path")),
         "user_id": run.get("user_id", "unknown"),
+        "priority": run.get("priority", "unknown"),
+        "queue_position": run.get("queue_position", "unknown"),
     }
 
     if run.get("status") == "failure" and run.get("error_message"):
@@ -154,7 +156,7 @@ def get_pipeline_runs():
 
     formatted_runs = []
     for run in runs:
-        formatted_runs.append(format_run(refresh_run_status(run)))
+        formatted_runs.append(format_run(run))
     return jsonify(formatted_runs), HTTPStatus.OK
 
 
@@ -175,7 +177,7 @@ def get_pipeline_run(run_id: ObjectId):
         2. Return run details or error if not found.
     """
     # Auth or session check
-    run = refresh_run_status(get_run_or_404(run_id, require_ownership=True))
+    run = get_run_or_404(run_id, require_ownership=True)
     formatted_run = format_run(run)
     return jsonify(formatted_run), HTTPStatus.OK
 

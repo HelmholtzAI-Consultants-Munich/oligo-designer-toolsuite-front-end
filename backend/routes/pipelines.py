@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from collections import defaultdict
@@ -12,20 +13,22 @@ from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
+from redis import Redis
+from werkzeug.datastructures import FileStorage, ImmutableMultiDict
+from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
-from backend.constants import PIPELINE_NAMES
+from backend.constants import PIPELINE_GENOMIC_INPUT, PIPELINE_NAMES
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.routes.runs import delete_run
 from backend.utilities.pipeline import extract_gene_count, generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
-    sanitize_pipeline_form_paths,
     serialize_path,
     utc_now,
 )
 from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
-from backend.worker.task_index import Tasks
+from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -81,18 +84,18 @@ def unpack_genomic_form_data(region_generation_forms: list[dict[str, Any]]) -> l
     return forms
 
 
-def parse_region_generation(form_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> dict[str, list[dict[str, Any]]]:
     """
     Parses the region_generation_forms field of the provided form.
     Returns a dict mapping ids to a list of dicts, each representing a single region form.
     """
-    if "genomic_region_generation_forms" not in form_data:
-        return {}
 
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = form_data[
-        "genomic_region_generation_forms"
-    ]
+    region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
+        field: form_data[field]["fasta_form"]
+        for field in PIPELINE_GENOMIC_INPUT[pipeline_name]
+        if len(form_data[field]["fasta_form"]) > 0
+    }
 
     for id, region_generation_forms in region_generation_forms_by_id.items():
         validate_file_key(id)
@@ -112,6 +115,8 @@ def write_run_to_DB(
     context: RunContext,
     task_id: str,
     gene_count: int | None = None,
+    priority: int = CeleryConfig.task_default_priority,
+    queue_position: tuple[int, int] = (0, 0),
 ):
     data: dict[str, Any] = {
         "session_id": context.session_id,
@@ -121,6 +126,8 @@ def write_run_to_DB(
         "status": "pending",
         "pipeline": pipeline_name,
         "task_id": task_id,
+        "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
+        "queue_position": queue_position,
     }
     if gene_count is not None:
         data["gene_count"] = gene_count
@@ -162,12 +169,14 @@ def enqueue_pipeline(
     soft_limit = resolve_timeout(pipeline_name, is_authenticated, gene_count)
     hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
 
+    # the chord header tasks get executed simultaneously as a group
     region_generation_signatures = (
         celery_app.signature(Tasks.RUN_GENOMIC_REGION_GENERATOR, args=(form, id))
         for id, forms in generated_regions.items()
         for form in forms
     )
 
+    # the chord body task gets executed once all header tasks finished
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE,
         args=(pipeline_name, form_data, str(output_path)),
@@ -185,7 +194,78 @@ def enqueue_pipeline(
         },
     )
 
-    return chord(region_generation_signatures)(pipeline_signature)
+    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
+
+    return chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
+
+
+def calculate_queue_position(priority: int) -> tuple[int, int]:
+    """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
+    redis = Redis.from_url(Config.REDIS_URI)
+
+    # Initialize queue lengths if not present, then fetch and convert to int
+    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
+    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "high", 0)
+    default_priority_queue_length, high_priority_queue_length = map(
+        int, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
+    )
+    high_priority_ahead = high_priority_queue_length
+
+    if priority == CeleryConfig.task_high_priority:
+        default_priority_ahead = 0
+        # add one high priority run ahead for all low priority runs
+        mongo.db.runs.update_many(
+            {"status": "pending", "priority": "default"},
+            {"$inc": {"queue_position.0": 1}},
+        )
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
+    else:
+        default_priority_ahead = default_priority_queue_length
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+
+    return high_priority_ahead, default_priority_ahead
+
+
+def save_file(
+    file_name: str, files: ImmutableMultiDict[str, FileStorage], saved_files: dict[FileStorage, Path]
+):
+    if file := files.get(file_name):
+        # Step 1: Check if file was already saved
+        if file in saved_files:
+            return saved_files[file]
+
+        # Step 2: Check if the user actually selected a file (filename should not be empty)
+        if file.filename == "":
+            abort(HTTPStatus.BAD_REQUEST, description="No selected file")
+
+        # Step 3: Sanitize the filename to prevent path traversal attacks
+        safe_filename = secure_filename(file.filename)
+        if not safe_filename:
+            abort(HTTPStatus.BAD_REQUEST, description="Invalid filename")
+
+        # Step 4: Generate a unique filename by prefixing with a UUID and append to upload root
+        upload_root = Path(current_app.config["UPLOAD_PATH"]).resolve()
+        unique_filename = Path(f"{uuid.uuid4().hex}_{safe_filename}")
+        file_path = (upload_root / unique_filename).resolve()
+
+        # Step 6: Save the file to disk and write file path into form_data
+        file.save(file_path)
+        saved_files[file] = file_path
+        return file_path
+
+
+def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMultiDict[str, FileStorage]):
+    file_inputs: dict[str, list[Path]] = {}
+    # Because duplicated File Objects only get uploaded once via the browser we need to map the Filestorage object
+    # to the corresponding path to avoid reading an empty stream
+    saved_files: dict[FileStorage, Path] = {}
+
+    for field in PIPELINE_GENOMIC_INPUT[pipeline_name]:
+        file_inputs[field] = [
+            save_file(file_name, files, saved_files) for file_name in form_data[field]["files"]
+        ]
+
+    return file_inputs
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
@@ -204,6 +284,7 @@ def start_pipeline(pipeline_name: str):
     - Builds chord of tasks, consisting of a group of region generation tasks  and the specified pipeline
         as their callback.
     - Adds chord to the Celery queue for execution.
+    - Calculate the queue position and update queue lengths in Redis.
     - Writes updated run information to database.
     - Returns the run ID as a JSON response.
 
@@ -221,33 +302,36 @@ def start_pipeline(pipeline_name: str):
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
-    json = request.get_json(silent=True)
-    if json is None:
-        abort(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, description="Expected JSON")
+    if request.form is None or len(request.form) == 0 or "payload" not in request.form:
+        abort(
+            HTTPStatus.BAD_REQUEST,
+            description="Expected a Multipart form data with payload JSON field",
+        )
+    form = json.loads(request.form["payload"])
 
-    run_id_str = json.get("runid")  # Run ID from React
+    if form is None or len(form) == 0:
+        abort(HTTPStatus.BAD_REQUEST, description="Expected JSON")
+
+    run_id_str = form.get("runid")  # Run ID from React
     run_id = parse_run_id(run_id_str)
 
-    form_data = json.get("formdata")  # Form data from React
+    form_data = form.get("formdata")  # Form data from React
+
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
 
-    # TODO: the allowed paths shouldn't be defined here
-    allowed_roots = [
-        Path(current_app.config["UPLOAD_PATH"]),
-        Path("/app/uploads"),
-        Path(current_app.root_path) / "cache",
-        Path(current_app.config["USERDATA_PATH"]),
-    ]
-    try:
-        sanitized_form_data = sanitize_pipeline_form_paths(form_data, allowed_roots)
-    except ValueError as error:
-        abort(
-            HTTPStatus.BAD_REQUEST, description=f"Invalid file path input: {error!s}"
-        )  # TODO: investigate potential data leakage due to this plain error output
-
     # genomic_region_generator
-    generated_regions = parse_region_generation(form_data)
+    generated_regions = parse_region_generation(form_data, pipeline_name)
+
+    files = request.files
+
+    try:
+        file_inputs = save_files(form_data, pipeline_name, files)
+    except KeyError:
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
+
+    for field, file_paths in file_inputs.items():
+        form_data[field]["files"] = [str(file_path) for file_path in file_paths]
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
@@ -255,18 +339,18 @@ def start_pipeline(pipeline_name: str):
     task_id = str(uuid.uuid4())
 
     # Pipeline timeout durations should be multiplied by number of genes in a run
-    gene_count = extract_gene_count(sanitized_form_data)
+    gene_count = extract_gene_count(form_data)
 
     priority = get_task_priority(gene_count, run_id)
 
-    update_result = write_run_to_DB(pipeline_name, run_id, context, task_id, gene_count)
+    update_result = write_run_to_DB(pipeline_name, run_id, context, task_id, gene_count, priority)
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
     try:
         enqueue_pipeline(
             pipeline_name,
-            sanitized_form_data,
+            form_data,
             generated_regions,
             context.output_path,
             priority,

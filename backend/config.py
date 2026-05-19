@@ -108,6 +108,7 @@ class Config:
     REDIS_FILE_EXPIRATION_TIME = int(
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
+    REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
@@ -179,9 +180,10 @@ class CeleryConfig:
     # Redis task priorities
     broker_transport_options: Mapping[str, str] = {
         "queue_order_strategy": "priority",
+        "sep": ":",  # queue names: celery, celery:3, celery:6, celery:9
     }
-    task_default_priority = 5
-    task_high_priority = 10
+    task_default_priority = 6
+    task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
 
     # Timeout mode: "config" (fixed env vars) or "heuristic" (configured percentile of past runs)

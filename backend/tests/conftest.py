@@ -8,8 +8,10 @@ Important Note:
 """
 
 import builtins
+import json
 import os
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -24,6 +26,10 @@ from backend.utilities.typed_values import serialize_path, utc_now
 #     """Auto-use fixture to mock os.makedirs across all tests"""
 #     with patch("os.makedirs"):
 #         yield
+
+
+def post(client, link: str, data: dict[str, Any]):
+    return client.post(link, data={"payload": json.dumps(data)}, content_type="multipart/form-data")
 
 
 @pytest.fixture(autouse=True)
@@ -94,31 +100,15 @@ def run_id(app):
 
 @pytest.fixture
 def mock_celery():
+    """This was impossible to do properly, leaving this up to #197"""
+
     class MockPendingAsyncResult:
         id = "123"
         state = "pending"
 
-        def successful(self):
-            return False
-
-        def get(self):
-            return False, b""
-
-    class MockSuccessfulAsyncResult:
-        id = "123"
-        state = "success"
-
-        def successful(self):
-            return True
-
-        def get(self):
-            return True, b""
-
     with patch("backend.routes.pipelines.enqueue_pipeline") as mock_pending:
         mock_pending.return_value = MockPendingAsyncResult()
-        with patch("backend.extensions.celery_app.AsyncResult") as mock_success:
-            mock_success.return_value = MockSuccessfulAsyncResult()
-            yield mock_success
+        yield mock_pending
 
 
 @pytest.fixture
@@ -278,7 +268,6 @@ def mock_schema():
     """Mock schema for PipelineRunner."""
     return {
         "properties": {
-            "dir_output": {"type": "string"},
             "test_param": {"type": "integer"},
         }
     }
