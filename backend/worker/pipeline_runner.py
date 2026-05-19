@@ -141,12 +141,20 @@ class PipelineRunner:
 
     def call_subprocess(self, config_path: str) -> None:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
-        result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
-        if result.returncode != 0:
-            self.logger.debug(f"STDOUT: {result.stdout}")
-            self.logger.debug(f"STDERR: {result.stderr}")
-            # check if error is due to empty result
-            if "The oligo database is empty" in result.stdout:
+        try:
+            subprocess.run(
+                [self.subprocess_name, "-c", config_path], capture_output=True, text=True, check=True
+            )
+        except subprocess.CalledProcessError as error:
+            self.logger.debug(f"STDOUT: {error.stdout}")
+            self.logger.debug(f"STDERR: {error.stderr}")
+            if (
+                error.returncode == -9
+            ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
+                raise ODTPipelineError(
+                    "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
+                )
+            if "The oligo database is empty" in error.stdout:
                 raise ODTEmptyResultError(
                     "The pipeline did not generate any results. Please tweak your input parameters."
                 )
