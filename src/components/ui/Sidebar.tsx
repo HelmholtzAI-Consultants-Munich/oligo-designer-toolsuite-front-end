@@ -15,7 +15,7 @@ const Sidebar: React.FC = () => {
     const pipelines: { name: string; path: string }[] = Object.entries(
         PIPELINE_CONFIG
     )
-        .filter(([key]) => key !== "generator")
+        .filter(([key, pipeline]) => key !== "generator" && !pipeline.disabled)
         .map(([key, pipeline]: [string, Pipeline]) => ({
             name: pipeline.displayName,
             path: `/pipelines/${key}`,

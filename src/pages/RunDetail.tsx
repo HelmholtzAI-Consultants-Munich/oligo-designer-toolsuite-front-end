@@ -607,7 +607,7 @@ const RunDetail = () => {
                                     <tbody>
                                         {probes[selectedGene][
                                             selectedOligoset
-                                        ].map(({ details: oligo }) => (
+                                        ].map((oligo) => (
                                             <tr key={oligo.oligo_id}>
                                                 {tableColumns.map((column) => (
                                                     <td
@@ -628,7 +628,7 @@ const RunDetail = () => {
                                                         {column === "location"
                                                             ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
                                                             : formatValue(
-                                                                  oligo[
+                                                                  oligo.details[
                                                                       column as keyof ProbeDetails
                                                                   ]
                                                               )}

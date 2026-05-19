@@ -23,7 +23,7 @@ server = [
     "Flask-PyMongo >=3, <4",
     "prometheus-flask-exporter >=0.23, <0.24",
 ]
-worker = [{ include-group = "shared" }, "biopython >=1.86, <2"]
+worker = [{ include-group = "shared" }, "biopython >=1.86, <2", "oligo-designer-toolsuite >=2.0, <3"]
 test = [
     { include-group = "server" },
     "coverage >=7.12, <8",

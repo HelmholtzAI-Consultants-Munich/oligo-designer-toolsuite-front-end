@@ -215,8 +215,8 @@ const setupElements = (
             "x",
             (d) =>
                 centeredMinWidthRect(
-                    ctx.xScale(d.details.start - 0.5),
-                    ctx.xScale(d.details.end + 0.5)
+                    ctx.xScale(d.start - 0.5),
+                    ctx.xScale(d.end + 0.5)
                 ).x
         )
         .attr("y", 0)
@@ -224,8 +224,8 @@ const setupElements = (
             "width",
             (d) =>
                 centeredMinWidthRect(
-                    ctx.xScale(d.details.start - 0.5),
-                    ctx.xScale(d.details.end + 0.5)
+                    ctx.xScale(d.start - 0.5),
+                    ctx.xScale(d.end + 0.5)
                 ).width
         )
         .attr("opacity", 0.5)
@@ -504,18 +504,13 @@ const zoomed = (
             .attr(
                 "x",
                 (d) =>
-                    centeredMinWidthRect(
-                        zx(d.details.start - 0.5),
-                        zx(d.details.end + 0.5)
-                    ).x
+                    centeredMinWidthRect(zx(d.start - 0.5), zx(d.end + 0.5)).x
             )
             .attr(
                 "width",
                 (d) =>
-                    centeredMinWidthRect(
-                        zx(d.details.start - 0.5),
-                        zx(d.details.end + 0.5)
-                    ).width
+                    centeredMinWidthRect(zx(d.start - 0.5), zx(d.end + 0.5))
+                        .width
             );
 
         // Rescale x axis
@@ -731,8 +726,8 @@ const GenomeAlignmentD3 = {
             // Smoothly zoom and pan to center the selected oligo
             const zoomScale = Math.min(
                 (WIDTH /
-                    (ctx.xScale(zoomedOligo.details.end) -
-                        ctx.xScale(zoomedOligo.details.start))) *
+                    (ctx.xScale(zoomedOligo.end) -
+                        ctx.xScale(zoomedOligo.start))) *
                     0.9, // add some padding
                 ctx.zoomBehavior.scaleExtent()[1] // don't exceed max zoom
             );
@@ -747,8 +742,8 @@ const GenomeAlignmentD3 = {
                         .scale(zoomScale)
                         .translate(
                             -(
-                                (ctx.xScale(zoomedOligo.details.start) +
-                                    ctx.xScale(zoomedOligo.details.end)) /
+                                (ctx.xScale(zoomedOligo.start) +
+                                    ctx.xScale(zoomedOligo.end)) /
                                 2
                             ),
                             0

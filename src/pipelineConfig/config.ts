@@ -26,6 +26,7 @@ interface BasePipeline {
     detailedLink: string;
     link?: string;
     genomicInputFields?: (keyof RJSFFormData)[];
+    disabled: boolean;
 }
 
 type ScrinshotPipeline = BasePipeline & {
@@ -67,6 +68,7 @@ const PIPELINE_CONFIG_RAW: PipelineConfig = {
         detailedLink:
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/scrinshot_probe_designer.html",
         img: scrinshotImage,
+        disabled: true,
     },
     merfish: {
         name: "merfish",
@@ -78,6 +80,7 @@ const PIPELINE_CONFIG_RAW: PipelineConfig = {
         detailedLink:
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/merfish_probe_designer.html",
         img: merfishImage,
+        disabled: true,
     },
     seqfish: {
         name: "seqfish",
@@ -89,6 +92,7 @@ const PIPELINE_CONFIG_RAW: PipelineConfig = {
         detailedLink:
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/seqfishplus_probe_designer.html",
         img: seqfishImage,
+        disabled: true,
     },
     oligoseq: {
         name: "oligoseq",
@@ -100,6 +104,7 @@ const PIPELINE_CONFIG_RAW: PipelineConfig = {
         detailedLink:
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/oligoseq_probe_designer.html",
         img: oligoseqImage,
+        disabled: false,
     },
 };
 
@@ -115,10 +120,16 @@ const addGenomicInputFields = (pipeline: Pipeline) => {
     const getGenomicInputFields = (
         pipelineName: Pipeline["name"]
     ): (keyof RJSFFormData)[] => {
-        if (pipelineName === "scrinshot" || pipelineName === "oligoseq") {
+        if (pipelineName === "scrinshot") {
             return [
                 "files_fasta_target_probe_database",
                 "files_fasta_reference_database_target_probe",
+            ];
+        } else if (pipelineName === "oligoseq") {
+            return [
+                "files_fasta_target_probe_database",
+                "files_fasta_reference_database_target_probe",
+                "files_vcf_reference_database_target_probe",
             ];
         } else {
             return [

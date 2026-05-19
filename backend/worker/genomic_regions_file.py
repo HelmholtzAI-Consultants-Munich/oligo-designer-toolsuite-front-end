@@ -4,7 +4,7 @@ from collections import defaultdict
 
 import yaml
 from Bio import SeqIO
-from fasta import FastaParser
+from oligo_designer_toolsuite.utils import FastaParser
 
 
 class GenomicRegionsFile:
@@ -105,6 +105,7 @@ class GenomicRegionsFile:
             regiontype = probe_entry.get("regiontype", "unknown")
             start = probe_entry["start"]
             end = probe_entry["end"]
+            chromosome = probe_entry["chromosome"]
             transcript_ids = probe_entry.get("transcript_id", [])
             exon_numbers = probe_entry.get("exon_number", [])
 
@@ -127,7 +128,10 @@ class GenomicRegionsFile:
                     "exon_numbers": exon_numbers,
                     "regiontype": regiontype,
                     "pipeline": self.pipeline_name,
-                    "details": {field: probe_entry[field] for field in probe_entry},
+                    "start": start if regiontype != "exonexonjunction" else start[0],
+                    "end": end if regiontype != "exonexonjunction" else end[1],
+                    "chromosome": chromosome if regiontype != "exonexonjunction" else chromosome[0],
+                    "details": {field: probe_entry[field][0] for field in probe_entry},
                 }
             )
         return probes
