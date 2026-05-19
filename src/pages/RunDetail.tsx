@@ -625,13 +625,23 @@ const RunDetail = () => {
                                                             )
                                                         }
                                                     >
-                                                        {column === "location"
-                                                            ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                            : formatValue(
-                                                                  oligo.details[
-                                                                      column as keyof ProbeDetails
-                                                                  ]
-                                                              )}
+                                                        {
+                                                            column ===
+                                                                "oligo_id" &&
+                                                                oligo.oligo_id /* contains index for oligo with multiple locations */
+                                                        }
+                                                        {column ===
+                                                            "location" &&
+                                                            `chr${oligo.details.chromosome}:${oligo.start}-${oligo.end}`}
+                                                        {column !==
+                                                            "oligo_id" &&
+                                                            column !==
+                                                                "location" &&
+                                                            formatValue(
+                                                                oligo.details[
+                                                                    column as keyof ProbeDetails
+                                                                ]
+                                                            )}
                                                     </td>
                                                 ))}
                                             </tr>

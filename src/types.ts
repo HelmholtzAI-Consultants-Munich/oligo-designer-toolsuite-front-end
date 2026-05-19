@@ -37,7 +37,6 @@ export interface BaseProbe {
     transcript_ids: string[];
     start: number;
     end: number;
-    chromosome: number;
     details: BaseProbeDetails;
 }
 

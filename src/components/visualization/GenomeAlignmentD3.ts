@@ -192,8 +192,10 @@ const setupElements = (
     // Draw oligo components (probes and gaps)
     ctx.oligosGroup
         .selectAll("g.components")
-        .selectAll("rect")
-        .data(oligoComponents)
+        .selectAll<SVGRectElement, OligoPosition>("rect")
+        .data(oligoComponents, function (d: OligoPosition) {
+            return d ? `${d.id}-${d.start}` : (this as SVGRectElement).id;
+        })
         .join("rect")
         .attr("x", (d) => ctx.xScale(d.start - 0.5))
         .attr("y", (d) => (d.type === "gap" ? OLIGO_HEIGHT / 2 - 1 : 0))
@@ -207,8 +209,10 @@ const setupElements = (
     // Draw probe rectangles
     ctx.oligosGroup
         .selectAll("g.probes")
-        .selectAll("rect")
-        .data(probes)
+        .selectAll<SVGRectElement, Probe>("rect")
+        .data(probes, function (d: Probe) {
+            return d ? `${d.oligo_id}` : (this as SVGRectElement).id;
+        })
         .join("rect")
         .attr("height", OLIGO_HEIGHT)
         .attr(
@@ -689,20 +693,28 @@ const GenomeAlignmentD3 = {
         ctx.oligosGroup
             .select("g.components")
             .selectAll<SVGRectElement, OligoPosition>("rect")
-            .data(oligoComponents)
+            .data(oligoComponents, function (d: OligoPosition) {
+                return d ? `${d.id}-${d.start}` : (this as SVGRectElement).id;
+            })
             .join("rect")
             .attr("fill", (d) =>
                 d.id === selectedOligo ? "orange" : "steelblue"
-            );
+            )
+            .filter((d) => d.id === selectedOligo)
+            .raise();
 
         ctx.oligosGroup
             .select("g.probes")
             .selectAll<SVGRectElement, Probe>("rect")
-            .data(probes)
+            .data(probes, function (d: Probe) {
+                return d ? `${d.oligo_id}` : (this as SVGRectElement).id;
+            })
             .join("rect")
             .attr("fill", (d) =>
                 d.oligo_id === selectedOligo ? "orange" : "steelblue"
-            );
+            )
+            .filter((d) => d.oligo_id === selectedOligo)
+            .raise();
 
         ctx.svg
             .selectAll<SVGRectElement, string>(".transcript-marker")

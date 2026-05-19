@@ -10,11 +10,12 @@ dependencies:
   - git # required by setuptools-scm for local odt install
 
   # Oligo Designer Toolsuite dependencies
-  - bcftools>=1.22 # required in next ODT version
+  - bcftools>=1.22
   - bedtools>=2.30
   - blast>=2.15.0
   - bowtie>=1.3.1
   - bowtie2>=2.5
+  - samtools>=1.22
 
   # Oligo Designer Toolsuite AI filters dependencies
   - pytorch # conda chooses PyTorch backend, avoids CUDA if not available

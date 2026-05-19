@@ -8,7 +8,7 @@ from oligo_designer_toolsuite.utils import FastaParser
 
 
 class GenomicRegionsFile:
-    LIST_FIELDS = ("transcript_id", "exon_number")
+    LIST_FIELDS = ("transcript_id", "exon_number", "start", "end")
 
     def __init__(
         self, regions_path: str, fasta_paths: list[str], probes_path: str, pipeline_name: str, logger=None
@@ -71,53 +71,52 @@ class GenomicRegionsFile:
 
     def _generate_probes_from_probe_info(self, probe_info):
         """Generate probe entries from probe info, handling multiple locations for the same probe sequence and filling gaps for exon-exon junction probes."""
-        # cast entries to lists if they are not already
+        # cast entries to lists of lists if they are not already
         for field in probe_info:
             if not isinstance(probe_info[field], list):
                 probe_info[field] = [probe_info[field]]
-            # list fields must also have lists as entries
-            if field in self.LIST_FIELDS:
-                list_field = []
-                for entry in probe_info[field]:
-                    if isinstance(entry, list):
-                        list_field.append(entry)
-                    else:
-                        list_field.append([entry])
-                probe_info[field] = list_field
+            entries_list = []
+            for entry in probe_info[field]:
+                if isinstance(entry, list):
+                    entries_list.append(entry)
+                else:
+                    entries_list.append([entry])
+            probe_info[field] = entries_list
 
         # explode all fields of probe_info into separate probe entries (assume all fields have the same length, fall back to first entry if field has different length)
-        # in most cases, there will only be only one entry
+        # in most cases, there will only be one entry
         # in rare cases, the same probe sequence can be located at multiple positions
         # -> then some fields (e.g. start, end) will have multiple entries, while others (e.g. sequence_...) will only have one entry that applies to all locations
         probe_entries = []
         probes_count = len(probe_info["start"])
         for i in range(probes_count):
-            probe_entry = {
-                field: probe_info[field][i]
-                if field in probe_info and len(probe_info[field]) == probes_count
-                else probe_info[field][0]
-                for field in probe_info
-            }
-            probe_entries.append(probe_entry)
+            probe_entry: dict
+            index = i if len(probe_info[field]) == probes_count else 0
+            probe_entries.append(
+                {
+                    field: (lst if field in self.LIST_FIELDS else lst[0])
+                    for field in probe_info
+                    if (lst := probe_info[field][index])
+                }
+            )
 
         probes = []
         for probe_index, probe_entry in enumerate(probe_entries):
             regiontype = probe_entry.get("regiontype", "unknown")
-            start = probe_entry["start"]
-            end = probe_entry["end"]
-            chromosome = probe_entry["chromosome"]
+            starts = probe_entry["start"]
+            ends = probe_entry["end"]
             transcript_ids = probe_entry.get("transcript_id", [])
             exon_numbers = probe_entry.get("exon_number", [])
 
             components = []
             if regiontype != "exonexonjunction":
                 # single continous probe, add as single component
-                components.append({"start": start, "end": end, "type": "probe"})
+                components.append({"start": starts[0], "end": ends[0], "type": "probe"})
             else:
                 # for exon-exon junction probes, add gaps between exons as components
-                components.append({"start": start[0], "end": end[0], "type": "probe"})
-                components.append({"start": end[0] + 1, "end": start[1] - 1, "type": "gap"})
-                components.append({"start": start[1], "end": end[1], "type": "probe"})
+                components.append({"start": starts[0], "end": ends[0], "type": "probe"})
+                components.append({"start": ends[0] + 1, "end": starts[1] - 1, "type": "gap"})
+                components.append({"start": starts[1], "end": ends[1], "type": "probe"})
 
             probes.append(
                 {
@@ -128,10 +127,9 @@ class GenomicRegionsFile:
                     "exon_numbers": exon_numbers,
                     "regiontype": regiontype,
                     "pipeline": self.pipeline_name,
-                    "start": start if regiontype != "exonexonjunction" else start[0],
-                    "end": end if regiontype != "exonexonjunction" else end[1],
-                    "chromosome": chromosome if regiontype != "exonexonjunction" else chromosome[0],
-                    "details": {field: probe_entry[field][0] for field in probe_entry},
+                    "start": starts[0],
+                    "end": ends[-1],
+                    "details": probe_entry,
                 }
             )
         return probes
