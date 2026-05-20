@@ -136,8 +136,12 @@ const PipelineTemplate: React.FC<Props> = ({
     };
 
     const runPipeline = () => {
-        const uiConfig = buildExportPayload(formData, pipeline, schema);
-        handleSubmit(formData, pipeline, updateRuns, uiConfig);
+        const pipelineRunConfig = buildExportPayload(
+            formData,
+            pipeline,
+            schema
+        );
+        handleSubmit(formData, pipeline, updateRuns, pipelineRunConfig);
     };
 
     return (

@@ -230,7 +230,7 @@ def test_all_errors_use_create_user_error_response(client, dummy_user, run_id):
 
 # ---- /api/runs/<run_id>/config tests ----
 
-SAMPLE_UI_CONFIG = {
+SAMPLE_RUN_CONFIG = {
     "_meta": {
         "version": "1.0.0",
         "pipeline": "scrinshot",
@@ -247,8 +247,8 @@ SAMPLE_UI_CONFIG = {
 
 
 def test_get_run_config_success(client, dummy_user, run_id):
-    """GET /api/runs/<run_id>/config returns 200 + stored ui_config."""
-    create_test_run(run_id, user_id=dummy_user.id, ui_config=SAMPLE_UI_CONFIG)
+    """GET /api/runs/<run_id>/config returns 200 + stored pipeline_run_config."""
+    create_test_run(run_id, user_id=dummy_user.id, pipeline_run_config=SAMPLE_RUN_CONFIG)
 
     response = client.get(f"/api/runs/{run_id}/config")
     assert response.status_code == 200
@@ -258,7 +258,7 @@ def test_get_run_config_success(client, dummy_user, run_id):
 
 
 def test_get_run_config_no_config(client, dummy_user, run_id):
-    """GET /api/runs/<run_id>/config returns 404 when run has no ui_config."""
+    """GET /api/runs/<run_id>/config returns 404 when run has no pipeline_run_config."""
     create_test_run(run_id, user_id=dummy_user.id)
 
     response = client.get(f"/api/runs/{run_id}/config")
@@ -274,7 +274,7 @@ def test_get_run_config_not_found(client, dummy_user):
 def test_get_run_config_unauthorized(client, dummy_user, run_id):
     """GET /api/runs/<run_id>/config returns 404 for another user's run."""
     other_user_id = str(ObjectId())
-    create_test_run(run_id, user_id=other_user_id, ui_config=SAMPLE_UI_CONFIG)
+    create_test_run(run_id, user_id=other_user_id, pipeline_run_config=SAMPLE_RUN_CONFIG)
 
     response = client.get(f"/api/runs/{run_id}/config")
     assert response.status_code == 404

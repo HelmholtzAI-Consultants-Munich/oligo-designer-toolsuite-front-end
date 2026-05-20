@@ -268,11 +268,11 @@ def get_run_config(run_id: ObjectId):
     """
     run = get_run_or_404(run_id, require_ownership=True)
 
-    ui_config = run.get("ui_config")
-    if ui_config is None:
+    pipeline_run_config = run.get("pipeline_run_config")
+    if pipeline_run_config is None:
         abort(HTTPStatus.NOT_FOUND, description="No saved config for this run.")
 
-    return jsonify(ui_config), HTTPStatus.OK
+    return jsonify(pipeline_run_config), HTTPStatus.OK
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):

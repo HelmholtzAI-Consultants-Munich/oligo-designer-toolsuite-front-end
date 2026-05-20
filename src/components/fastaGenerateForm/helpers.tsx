@@ -144,7 +144,7 @@ export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
     updateRuns: () => void,
-    uiConfig?: PipelineConfigExport
+    pipelineRunConfig?: PipelineConfigExport
 ) => {
     // copy to avoid modifying formData
     const uploadFormData = structuredClone(formData);
@@ -202,7 +202,7 @@ export const handleSubmit = async (
             payload: JSON.stringify({
                 formdata: uploadFormData,
                 runid: newId,
-                ui_config: uiConfig ?? null,
+                pipeline_run_config: pipelineRunConfig ?? null,
             }),
         };
 

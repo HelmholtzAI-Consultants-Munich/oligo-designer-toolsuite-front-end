@@ -126,7 +126,7 @@ def write_run_to_DB(
     task_id: str | None,
     priority: int = CeleryConfig.task_default_priority,
     queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
-    ui_config: dict | None = None,
+    pipeline_run_config: dict | None = None,
 ):
     data: dict = {
         "session_id": context.session_id,
@@ -139,8 +139,8 @@ def write_run_to_DB(
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
         "queue_position": queue_position,
     }
-    if ui_config is not None:
-        data["ui_config"] = ui_config
+    if pipeline_run_config is not None:
+        data["pipeline_run_config"] = pipeline_run_config
     return update_run_in_DB(run_id, data)
 
 
@@ -333,7 +333,9 @@ def start_pipeline(pipeline_name: str):
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
 
     # mark run as enqueued in DB
-    ui_config = form.get("ui_config") if isinstance(form.get("ui_config"), dict) else None
+    pipeline_run_config = (
+        form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
+    )
     update_result = write_run_to_DB(
         pipeline_name,
         run_id,
@@ -341,7 +343,7 @@ def start_pipeline(pipeline_name: str):
         result_promise.id,
         priority,
         (high_priority_ahead, default_priority_ahead),
-        ui_config,
+        pipeline_run_config,
     )
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
