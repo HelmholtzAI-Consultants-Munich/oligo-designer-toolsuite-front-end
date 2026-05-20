@@ -10,6 +10,7 @@ import {
     Gear,
     Speedometer2,
     ChatDots,
+    BarChartFill,
 } from "react-bootstrap-icons";
 
 interface NavItemConfig {
@@ -71,6 +72,7 @@ const navItems: NavItemConfig[] = [
     { path: "/admin/users", label: "User Management", icon: People },
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
     { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
+    { path: "/admin/reports", label: "Monthly Reports", icon: BarChartFill },
 ];
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
@@ -170,7 +172,11 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                 className="d-flex flex-column flex-grow-1"
                 style={{
                     marginLeft: isLargeScreen ? sidebarWidth : 0,
+                    width: isLargeScreen
+                        ? `calc(100% - ${sidebarWidth})`
+                        : "100%",
                     transition: "margin-left 0.3s ease",
+                    minWidth: 0,
                 }}
             >
                 {/* Top Navbar */}

@@ -7,11 +7,11 @@ services:
       - 27017:27017
     restart: on-failure
 
-  odt-mq:
-    image: rabbitmq:4.2-alpine
-    container_name: odt-mq
+  odt-redis:
+    image: redis:8-alpine
+    container_name: odt-redis
     ports:
-      - 5672:5672
+      - 6379:6379
     restart: on-failure
 
   odt-server:
@@ -28,7 +28,7 @@ services:
       - .env.docker # Docker overrides (service hostnames instead of localhost)
     depends_on:
       - odt-db
-      - odt-mq
+      - odt-redis
     restart: on-failure
     develop:
       watch:
@@ -47,7 +47,7 @@ services:
       - .env.docker # Docker overrides (service hostnames instead of localhost)
     depends_on:
       - odt-db
-      - odt-mq
+      - odt-redis
       - odt-worker
     restart: on-failure
     command: celery -A backend.beat beat
@@ -71,7 +71,7 @@ services:
       - .env.docker # Docker overrides (service hostnames instead of localhost)
     depends_on:
       - odt-db
-      - odt-mq
+      - odt-redis
     restart: on-failure
     develop:
       watch:
@@ -109,7 +109,7 @@ services:
       - odt-web
       - odt-server
       - odt-worker
-      - odt-mq
+      - odt-redis
       - odt-db
     volumes:
       - ./playwright/report:/app/playwright-report

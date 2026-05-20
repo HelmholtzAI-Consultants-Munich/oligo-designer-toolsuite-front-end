@@ -8,14 +8,20 @@ app = Celery()
 app.config_from_object(CeleryConfig)
 
 MIDNIGHT_CRON = crontab(minute=0, hour=0)
+FIRST_OF_MONTH_CRON = crontab(minute=0, hour=1, day_of_month=1)
 
 
 @app.on_after_finalize.connect  # type: ignore
 def setup(sender, **kwargs):
     sender.add_periodic_task(
         MIDNIGHT_CRON,
-        signature(Tasks.FETCH_DROPDOWN_OPTIONS),
+        signature(Tasks.TRIGGER_DROPDOWN_OPTIONS_FETCHING),
         name="fetch-dropdown-options-task",
+    )
+    sender.add_periodic_task(
+        FIRST_OF_MONTH_CRON,
+        signature(Tasks.GENERATE_MONTHLY_REPORT),
+        name="generate-monthly-report-task",
     )
 
 

@@ -1,6 +1,9 @@
 import os
 import time
 
+# TODO: adjust to file caching from backend/cache.py
+# e.g. build set of cached file paths from Redis cache, then iterate and delete every file not in this set (i.e. expired files)
+
 CACHE_DIRS = [
     "backend/data-access/user_data/anon",
     "backend/cache",

@@ -450,6 +450,7 @@ form.rjsf {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 
     .pulse-outer {
         position: absolute;
@@ -465,6 +466,11 @@ form.rjsf {
         height: 40%;
         border-radius: 50%;
         background-color: var(--pulse-color);
+
+        &.paused {
+            animation: pulse-paused 1s infinite alternate;
+            animation-timing-function: ease-in-out;
+        }
     }
 }
 @keyframes pulse {
@@ -475,6 +481,16 @@ form.rjsf {
     100% {
         transform: scale(1.5);
         opacity: 0;
+    }
+}
+@keyframes pulse-paused {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.2);
+        opacity: 1;
     }
 }
 
@@ -496,4 +512,12 @@ form.rjsf {
 .text-muted {
     color: $text-muted !important;
     font-weight: 300;
+}
+
+.modal-wide {
+    max-width: 50rem;
+    margin: auto;
+    .modal-content {
+        margin: var(--bs-modal-margin);
+    }
 }

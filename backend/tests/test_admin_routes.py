@@ -344,6 +344,76 @@ def test_get_feedback_unauthenticated(unauthenticated_client):
     assert response.status_code == 401 or response.status_code == 403
 
 
+# ==================== Monthly Report Tests ====================
+
+
+def test_trigger_monthly_report_success(admin_client):
+    """Test triggering monthly report generation for a specific month."""
+    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
+        response = admin_client.post("/api/admin/reports/generate", json={"year": 2026, "month": 3})
+
+    assert response.status_code == 202
+    mock_send_task.assert_called_once_with(
+        "backend.worker.tasks.generate_monthly_report",
+        kwargs={"target_year": 2026, "target_month": 3},
+    )
+
+
+def test_trigger_monthly_report_without_payload_uses_default_schedule(admin_client):
+    """Test triggering monthly report generation without an explicit period."""
+    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
+        response = admin_client.post("/api/admin/reports/generate", json={})
+
+    assert response.status_code == 202
+    mock_send_task.assert_called_once_with("backend.worker.tasks.generate_monthly_report", kwargs={})
+
+
+def test_trigger_monthly_report_rejects_invalid_month(admin_client):
+    """Test invalid month values are rejected before queueing a task."""
+    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
+        response = admin_client.post("/api/admin/reports/generate", json={"year": 2026, "month": 13})
+
+    assert response.status_code == 400
+    assert "Month must be between 1 and 12" in response.get_json()["error"]
+    mock_send_task.assert_not_called()
+
+
+def test_trigger_monthly_report_rejects_current_month(admin_client):
+    """Test current-month report generation is rejected."""
+    today = datetime.now()
+    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
+        response = admin_client.post(
+            "/api/admin/reports/generate",
+            json={"year": today.year, "month": today.month},
+        )
+
+    assert response.status_code == 400
+    assert "Cannot generate reports for the current or future month" in response.get_json()["error"]
+    mock_send_task.assert_not_called()
+
+
+def test_trigger_monthly_report_rejects_non_integer_values(admin_client):
+    """Test malformed year/month values return a validation error."""
+    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
+        response = admin_client.post(
+            "/api/admin/reports/generate", json={"year": "two thousand", "month": "3"}
+        )
+
+    assert response.status_code == 400
+    assert "Year and month must be valid integers" in response.get_json()["error"]
+    mock_send_task.assert_not_called()
+
+
+def test_trigger_monthly_report_requires_both_year_and_month(admin_client):
+    """Test partial monthly report payloads are rejected."""
+    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
+        response = admin_client.post("/api/admin/reports/generate", json={"year": 2026})
+
+    assert response.status_code == 400
+    assert "Year and month must both be provided" in response.get_json()["error"]
+    mock_send_task.assert_not_called()
+
+
 # ==================== Bulk Operations Tests ====================
 
 

@@ -17,7 +17,6 @@ export interface GenomicRegion {
     start: number;
     end: number;
     sequence: string;
-    reading_grid_offset?: 0 | 1 | 2;
     strand?: "+" | "-";
     regiontype?: string;
     inferred?: boolean;
@@ -161,4 +160,6 @@ export interface PipelineRun {
     output_path: string;
     user_id: string;
     error_message?: string;
+    priority: "high" | "default";
+    queue_position: [number, number]; // [highPriorityAhead, defaultPriorityAhead]
 }

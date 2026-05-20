@@ -1,50 +1,78 @@
+import { useEffect, useState } from "react";
+import { type ModalProps } from "../../utils/modalUtil";
 import { Button, Modal } from "react-bootstrap";
 
-export function ModalComponent({
-    show,
-    close,
-    title,
-    content,
-    primaryAction,
-    secondaryAction,
-}: {
-    show: boolean;
-    close: () => void;
-    title: string;
-    content: React.ReactNode;
-    primaryAction: {
-        label: string;
-        callback: () => void;
-        variant?: string;
+export default function ModalComponent() {
+    const [modal, setModal] = useState<ModalProps | null>(null);
+    const [show, setShow] = useState(false);
+
+    const handleShow = (event: CustomEvent) => {
+        setModal(event.detail);
+        setShow(true);
     };
-    secondaryAction?: {
-        label: string;
-        callback: () => void;
-        variant?: string;
+
+    const handleClose = () => {
+        setShow(false);
     };
-}) {
+
+    useEffect(() => {
+        window.addEventListener("modal:show", handleShow as EventListener);
+        window.addEventListener("modal:close", handleClose as EventListener);
+
+        return () => {
+            window.removeEventListener(
+                "modal:show",
+                handleShow as EventListener
+            );
+            window.removeEventListener(
+                "modal:close",
+                handleClose as EventListener
+            );
+        };
+    }, []);
+
+    if (!modal) return null;
+
     return (
-        <Modal show={show} onHide={close}>
-            <Modal.Header closeButton>
-                <Modal.Title>{title}</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>{content}</Modal.Body>
-            <Modal.Footer>
-                {secondaryAction && (
-                    <Button
-                        variant={secondaryAction.variant || "secondary"}
-                        onClick={secondaryAction.callback}
-                    >
-                        {secondaryAction.label}
-                    </Button>
-                )}
-                <Button
-                    variant={primaryAction.variant || "primary"}
-                    onClick={primaryAction.callback}
-                >
-                    {primaryAction.label}
-                </Button>
-            </Modal.Footer>
+        <Modal
+            show={show}
+            onHide={handleClose}
+            centered={modal.centered}
+            backdrop={modal.ignoreBackdropClick ? "static" : true}
+            dialogClassName={modal.dialogClassName}
+        >
+            {"rawContent" in modal ? (
+                modal.rawContent
+            ) : (
+                <>
+                    <Modal.Header closeButton>
+                        <Modal.Title>{modal.title}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>{modal.content}</Modal.Body>
+                    <Modal.Footer>
+                        {modal.secondaryAction && (
+                            <Button
+                                variant={
+                                    modal.secondaryAction.variant || "secondary"
+                                }
+                                onClick={modal.secondaryAction.callback}
+                            >
+                                {modal.secondaryAction.label}
+                            </Button>
+                        )}
+                        {modal.primaryAction && (
+                            <Button
+                                variant={
+                                    modal.primaryAction.variant || "primary"
+                                }
+                                onClick={modal.primaryAction.callback}
+                            >
+                                {modal.primaryAction.label}
+                            </Button>
+                        )}
+                    </Modal.Footer>
+                </>
+            )}
         </Modal>
     );
 }

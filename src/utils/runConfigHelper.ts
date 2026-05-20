@@ -2,9 +2,10 @@ import axios from "axios";
 import { useCallback } from "react";
 import { type NavigateFunction } from "react-router";
 import { BACKEND_URL } from "../config";
-import { pipelineDisplayNames, pipelineRoutes } from "../components/ui/utils";
 import { showToast } from "./toastUtil";
 import type { PipelineRun } from "../types";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
+import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
 /**
  * Fetches the saved config for a run from the API and navigates to the
@@ -16,11 +17,12 @@ export async function navigateWithRunConfig(
     run: PipelineRun,
     navigate: NavigateFunction
 ): Promise<void> {
-    const route = pipelineRoutes[run.pipeline];
+    const route =
+        PIPELINE_CONFIG[run.pipeline as keyof typeof PIPELINE_CONFIG]?.link;
     if (!route) {
         showToast({
             title: "Not Supported",
-            content: `Loading config is not supported for the "${pipelineDisplayNames[run.pipeline] ?? run.pipeline}" pipeline.`,
+            content: `Loading config is not supported for the "${getPipelineDisplayName(run.pipeline)}" pipeline.`,
             type: "danger",
         });
         return;

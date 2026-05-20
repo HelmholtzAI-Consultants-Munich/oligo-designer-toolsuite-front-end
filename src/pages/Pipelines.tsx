@@ -1,59 +1,23 @@
 import React from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import scrinshot from "../images/scrinshot.jpg";
-import merfish from "../images/merfish.jpg";
-import seqfish from "../images/seqfish.jpg";
-import oligoseq from "../images/oligoseq.jpg";
 import { Alert, Button, Card } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
 import { Grid, Vertical } from "../components/ui/Alignment";
-import { pipelineDisplayNames, pipelineRoutes } from "../components/ui/utils";
 import { ArrowRight } from "react-bootstrap-icons";
-
-const pipelineDetails: Record<
-    string,
-    { description: string; detailedLink: string; img: string }
-> = {
-    scrinshot: {
-        description:
-            "Spatial gene expression analysis using scrinshot technology.",
-        detailedLink:
-            "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/scrinshot_probe_designer.html",
-        img: scrinshot,
-    },
-    merfish: {
-        description:
-            "Highly multiplexed imaging for spatially resolved transcriptomics.",
-        detailedLink:
-            "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/merfish_probe_designer.html",
-        img: merfish,
-    },
-    seqfish: {
-        description:
-            "Sequential imaging for probing complex spatial transcriptomes.",
-        detailedLink:
-            "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/seqfishplus_probe_designer.html",
-        img: seqfish,
-    },
-    oligoseq: {
-        description:
-            "High-throughput sequencing tailored for spatial transcriptomics.",
-        detailedLink:
-            "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/oligoseq_probe_designer.html",
-        img: oligoseq,
-    },
-};
+import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
     const navigate = useNavigate();
 
-    const pipelines = Object.entries(pipelineRoutes).map(([key, link]) => ({
-        title: pipelineDisplayNames[key],
-        link,
-        ...pipelineDetails[key],
+    const pipelines = Object.values(PIPELINE_CONFIG).map((pipeline) => ({
+        title: pipeline.displayName,
+        description: pipeline.description,
+        link: pipeline.link!,
+        detailedLink: pipeline.detailedLink,
+        img: pipeline.img,
     }));
 
     if (loading) return <div>Loading...</div>;

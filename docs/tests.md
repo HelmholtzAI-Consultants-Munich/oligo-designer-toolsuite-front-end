@@ -97,7 +97,7 @@ npm run test:watch
 
 ## 3) End-to-End (E2E) Tests (Playwright)
 
-**Goal:** Prove a real user can run a pipeline from the UI to a **successful terminal state** with the Dockerized full stack (frontend, Flask API, Celery worker, MongoDB, and RabbitMQ).
+**Goal:** Prove a real user can run a pipeline from the UI to a **successful terminal state** with the Dockerized full stack (frontend, Flask API, Celery worker, MongoDB, and Redis).
 
 ### Scope
 

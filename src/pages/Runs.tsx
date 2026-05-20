@@ -5,11 +5,12 @@ import { BACKEND_URL } from "../config";
 import { Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
-import { pipelineDisplayNames, formatDateTime } from "../components/ui/utils";
+import { formatDateTime } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../utils/toastUtil";
 import { Horizontal } from "../components/ui/Alignment";
 import { confirmWithModal } from "../utils/modalUtil";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import { navigateWithRunConfig } from "../utils/runConfigHelper";
 
 const Runs = () => {
@@ -47,33 +48,10 @@ const Runs = () => {
         });
     };
 
-    const goToRun = (runId: string) => {
-        if (runId) {
-            navigate(`/runs/${runId}`);
-        } else {
-            showToast({
-                title: "Please enter a RunID",
-                content:
-                    "The RunID cannot be empty. Please enter a valid RunID.",
-                type: "danger",
-            });
-        }
-    };
-
     if (loading) return <div>Loading...</div>;
 
     return (
-        <Page
-            title="Pipeline Runs"
-            actions={[
-                {
-                    type: "search",
-                    label: "Go to Run",
-                    placeholder: "Enter RunID",
-                    onSearch: (query: string) => goToRun(query),
-                },
-            ]}
-        >
+        <Page title="Pipeline Runs">
             <Table responsive hover>
                 <thead>
                     <tr>
@@ -103,10 +81,7 @@ const Runs = () => {
                                         </div>
                                     )}
                             </td>
-                            <td>
-                                {pipelineDisplayNames[run.pipeline] ||
-                                    run.pipeline}
-                            </td>
+                            <td>{getPipelineDisplayName(run.pipeline)}</td>
                             <td>{formatDateTime(run.timestamp)}</td>
                             <td>
                                 <Horizontal gap="md">

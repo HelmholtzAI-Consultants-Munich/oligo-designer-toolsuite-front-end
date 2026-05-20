@@ -17,7 +17,6 @@ import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
 import {
-    pipelineDisplayNames,
     visualizationDisplayNames,
     type VisualizationType,
 } from "../components/ui/utils";
@@ -33,6 +32,8 @@ import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
+import RunStatusDetails from "../components/ui/RunStatusDetails";
 import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
 
 interface RunFile {
@@ -444,13 +445,13 @@ const RunDetail = () => {
 
         if (probes) {
             return [
-                deleteAction,
                 useSettingsAction,
                 downloadExcelAction,
                 downloadCSVAction,
+                deleteAction,
             ];
         } else {
-            return [deleteAction, useSettingsAction];
+            return [useSettingsAction, deleteAction];
         }
     }, [
         run,
@@ -463,7 +464,7 @@ const RunDetail = () => {
 
     return (
         <Page
-            title={`Run Result - ${run ? pipelineDisplayNames[run?.pipeline] : "Unknown Pipeline"}`}
+            title={`Run Result - ${run ? getPipelineDisplayName(run.pipeline) : "Unknown Pipeline Run"}`}
             actions={actions as Action[] | undefined}
             backTo={{
                 label: fromAdmin ? "Admin Panel" : "All Runs",
@@ -480,7 +481,7 @@ const RunDetail = () => {
             {(run?.status == "pending" || run?.status == "started") && (
                 <Vertical align="center" className="my-5" gap="lg">
                     <RunStatus status={run.status} size={100} />
-                    <h3 className="mt-3">Run {run.status}...</h3>
+                    <RunStatusDetails run={run} />
                 </Vertical>
             )}
 
@@ -684,7 +685,8 @@ const RunDetail = () => {
                                 </Table>
                                 <span className="text-muted">
                                     Click an oligo in the table to focus it in
-                                    the visualization.
+                                    the visualization. Use the mouse wheel to
+                                    zoom in for more details.
                                 </span>
                             </Vertical>
                             <Divider />
