@@ -6,3 +6,11 @@ export function getPipelineDisplayName(pipeline: string) {
         ? PIPELINE_CONFIG[pipelineConfigKey].displayName
         : "Unknown Pipeline";
 }
+
+export function getPipelineConfig() {
+    return Object.fromEntries(
+        Object.entries(PIPELINE_CONFIG).filter(
+            ([, pipeline]) => !pipeline.disabled
+        )
+    );
+}

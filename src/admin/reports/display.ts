@@ -1,9 +1,10 @@
-import { PIPELINE_CONFIG, type Pipeline } from "../../pipelineConfig/config";
+import { type Pipeline } from "../../pipelineConfig/config";
+import { getPipelineConfig } from "../../pipelineConfig/utils";
 
 export type ReportPipelineKey = Pipeline["name"];
 
 export const REPORT_PIPELINES: ReportPipelineKey[] = Object.values(
-    PIPELINE_CONFIG
+    getPipelineConfig()
 ).map((pipeline) => pipeline.name);
 
 export function formatReportMonth(month: number, format: "long" | "short") {

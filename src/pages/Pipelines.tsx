@@ -6,13 +6,13 @@ import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
 import { Grid, Vertical } from "../components/ui/Alignment";
 import { ArrowRight } from "react-bootstrap-icons";
-import { PIPELINE_CONFIG } from "../pipelineConfig/config";
+import { getPipelineConfig } from "../pipelineConfig/utils";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
     const navigate = useNavigate();
 
-    const pipelines = Object.values(PIPELINE_CONFIG).map((pipeline) => ({
+    const pipelines = Object.values(getPipelineConfig()).map((pipeline) => ({
         title: pipeline.displayName,
         description: pipeline.description,
         link: pipeline.link!,
