@@ -150,6 +150,15 @@ export interface Probesets {
     [probeset_name: string]: Probe[];
 }
 
+export interface ProbesetScores {
+    [probeset_name: string]: ProbeScore;
+}
+
+export interface ProbeScore {
+    average: number;
+    worst: number;
+}
+
 export type ProbeDetailsValue = string | number | string[] | number[];
 
 export type RunState = "started" | "success" | "failure" | "pending";

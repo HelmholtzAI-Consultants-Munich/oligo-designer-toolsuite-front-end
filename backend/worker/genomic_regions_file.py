@@ -20,7 +20,7 @@ class GenomicRegionsFile:
         self.logger = logger or logging.getLogger(__name__)
 
         self.genes = self._load_genes()
-        self.probes = self._load_probes()
+        self.probes, self.scores = self._load_probes_and_scores()
         self.regions = self._load_regions()
 
     # write regions to a yaml file
@@ -30,6 +30,7 @@ class GenomicRegionsFile:
                 {
                     "regions": self.regions if self.regions else None,
                     "probes": self.probes if self.probes else None,
+                    "scores": self.scores if self.scores else None,
                 },
                 yaml_file,
             )
@@ -42,13 +43,14 @@ class GenomicRegionsFile:
                 genes.add(line.strip())
         return list(genes)
 
-    def _load_probes(self):
-        """Load probes from probes yaml file, match them to regions, and fill gaps for exon-exon junction probes."""
+    def _load_probes_and_scores(self):
+        """Load probes and scores from probes yaml file, match probes to regions, and fill gaps for exon-exon junction probes."""
         probes = defaultdict(lambda: defaultdict(list))
+        scores = defaultdict(lambda: defaultdict(list))
 
         if not os.path.exists(self.probes_path):
             print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
-            return probes
+            return probes, scores
 
         with open(self.probes_path) as f:
             probe_data = yaml.safe_load(f)
@@ -56,6 +58,11 @@ class GenomicRegionsFile:
                 if gene not in self.genes:
                     continue
                 for oligoset_name, oligoset_entries in oligosets.items():
+                    score = oligoset_entries["Oligoset Score"]
+                    scores[gene][oligoset_name] = {
+                        "average": score["set_score_average"],
+                        "worst": score["set_score_worst"],
+                    }
                     # only keep entries whose key begins with "Oligo "
                     oligo_probes = filter(lambda x: x[0].startswith("Oligo "), oligoset_entries.items())
                     for _, probe_info in oligo_probes:
@@ -64,10 +71,12 @@ class GenomicRegionsFile:
                         for probe in probes_list:
                             probes[gene][oligoset_name].append(probe)
 
-        # convert defaultdict to dict for cleaner output
+        # convert defaultdict to dict for clean output
         for gene in probes:
             probes[gene] = dict(probes[gene])
-        return dict(probes)
+        for gene in scores:
+            scores[gene] = dict(scores[gene])
+        return dict(probes), dict(scores)
 
     def _generate_probes_from_probe_info(self, probe_info):
         """Generate probe entries from probe info, handling multiple locations for the same probe sequence and filling gaps for exon-exon junction probes."""
@@ -166,18 +175,24 @@ class GenomicRegionsFile:
         if gene not in self.genes:
             return
 
-        region_type = additional_info["regiontype"][0] if "regiontype" in additional_info else "unknown"
-        region_sequence = str(record.seq)
-        starts = coordinates["start"]
-        ends = coordinates["end"]
+        region_sequence = str(record.seq)  # required in FASTA
+        starts = coordinates["start"]  # required, despite ODT docs saying otherwise
+        ends = coordinates["end"]  # required, despite ODT docs saying otherwise
         start_ends = list(zip(starts, ends))
         start_ends.sort(key=lambda x: x[0])  # sort by start position
-
-        strand = coordinates["strand"][0] if "strand" in coordinates else "+"
+        chromosome = coordinates["chromosome"][  # required, despite ODT docs saying otherwise
+            0  # assume one chromosome per region
+        ]
+        strand = coordinates["strand"][  # required, despite ODT docs saying otherwis
+            0  # assume one strand per region
+        ]
         if strand == "-":
             # reverse sequence for negative strand
             region_sequence = region_sequence[::-1]
+
+        # optional fields, always lists if present
         transcript_ids = additional_info.get("transcript_id", ["unknown"])
+        region_type = additional_info.get("regiontype", ["unknown"])[0]
 
         for transcript_index, transcript_id in enumerate(transcript_ids):
             transcript_sequence = region_sequence
@@ -211,11 +226,8 @@ class GenomicRegionsFile:
                         "sequence": sequence,
                         "start": start,
                         "end": end,
-                        "chromosome": coordinates["chromosome"][i],
+                        "chromosome": chromosome,
                         "strand": strand,
-                        "junction_number": additional_info.get("exon_number", [None])[transcript_index]
-                        if region_type == "exonexonjunction"
-                        else None,
                     }
                 )
 
@@ -231,8 +243,8 @@ class GenomicRegionsFile:
                             "sequence": None,
                             "start": intron_start,
                             "end": intron_end,
-                            "chromosome": coordinates["chromosome"][0],
-                            "strand": coordinates["strand"][0],
+                            "chromosome": chromosome,
+                            "strand": strand,
                         }
                     )
 
