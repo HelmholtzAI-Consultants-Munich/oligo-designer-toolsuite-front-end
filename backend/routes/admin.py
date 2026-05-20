@@ -410,7 +410,7 @@ def bulk_update_user_role():
     role = data.get("role", "").strip().lower()
 
     if role not in ["user", "admin"]:
-        abort(HTTPStatus.BAD_REQUEST, description="role must be 'user' or 'admin'")
+        abort(HTTPStatus.BAD_REQUEST, description=f"Role must be 'user' or 'admin', is {role}")
 
     # Filter out current user's ID if demoting from admin (prevent self-demotion)
     current_user_id = str(current_user.id)
@@ -518,13 +518,14 @@ def bulk_update_pipeline_status():
     status = data.get("status", "").strip().lower()
 
     if not status:
-        abort(HTTPStatus.BAD_REQUEST, description="status field is required")
+        abort(HTTPStatus.BAD_REQUEST, description="Status field is required")
 
     # Validate status
     valid_statuses = get_valid_pipeline_statuses()
     if status not in valid_statuses:
         abort(
-            HTTPStatus.BAD_REQUEST, description=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+            HTTPStatus.BAD_REQUEST,
+            description=f"Invalid status: {status} Must be one of: {', '.join(valid_statuses)}",
         )
 
     # Convert to ObjectIds and validate

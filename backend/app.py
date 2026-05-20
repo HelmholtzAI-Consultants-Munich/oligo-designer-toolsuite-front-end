@@ -44,11 +44,11 @@ def prepare_paths(app: Flask):
 def initial_dropdown_prefetch(celery_app, app):
     while True:
         try:
-            app.logger.debug("try dropdown prefetch")
+            app.logger.debug("Prefetching dropdown")
             celery_app.send_task(
                 Tasks.TRIGGER_DROPDOWN_OPTIONS_FETCHING,
             )
-            app.logger.debug("dropdown prefetch done")
+            app.logger.debug("Dropdown prefetch done")
             break
         except celery.exceptions.OperationalError:
             time.sleep(2)

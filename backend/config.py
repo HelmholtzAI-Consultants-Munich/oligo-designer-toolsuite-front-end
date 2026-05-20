@@ -95,7 +95,7 @@ class Config:
         Returns:
             Dictionary compatible with logging.config.dictConfig()
         """
-        log_level = os.environ.get("LOG_LEVEL")
+        log_level = os.environ.get("LOG_LEVEL", "INFO")
         return {
             "version": 1,
             "formatters": {
@@ -158,3 +158,4 @@ class CeleryConfig:
     task_default_priority = 5
     task_high_priority = 10
     worker_disable_prefetch = True
+    worker_redirect_stdouts = False

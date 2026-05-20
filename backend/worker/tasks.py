@@ -14,7 +14,7 @@ from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 
 logger: Logger = get_task_logger(__name__)
-logger.setLevel(os.environ.get("LOG_LEVEL"))
+logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
 
 @app.task()
