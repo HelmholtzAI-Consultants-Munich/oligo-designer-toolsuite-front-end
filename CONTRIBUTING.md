@@ -55,7 +55,7 @@ Before adding any type of issue, check if the issue is related to this project. 
 
 ### Reporting Bugs
 
-Before creating a bug report,  search the issue tracker to validate that the problem has not been reported so far. Also check if your version of ODT Cloud is up-to-date before reporting a bug.
+Before creating a bug report, search the issue tracker to validate that the problem has not been reported so far. Also check if your version of ODT Cloud is up-to-date before reporting a bug.
 
 Bug reports should include:
 
@@ -64,7 +64,7 @@ Bug reports should include:
 - Docker version
 - Docker logs (input/ output)
 - Whether it is possible to reproduce the issue?
--  Screenshots/screen recordings of observed behavior, if possible
+- Screenshots/screen recordings of observed behavior, if possible
 
 We use GitHub issues to track bugs and errors. If you verified that your bug is not a duplicate and you collected all necessary information, you can open a bug report.
 
@@ -175,7 +175,7 @@ When fixing a security issue or otherwise adding a security check, you must docu
 
 #### Documentation
 
-Code should be commented, especially if it is not self-explanatory. Therefore, refer to our [style guide](docs/styleguide.md) to see how comments in the code should be structured.
+Non self-explanatory must be commented, so when writing a non-trivial function or especially a class remember to add a docstring. To see how comments in the code should be structured, refer to our [style guide](docs/styleguide.md).
 
 ### Improving the documentation
 
