@@ -144,8 +144,11 @@ class GenomicRegionsFile:
         return probes
 
     def _load_regions(self):
-        """Collect regions from fasta files, parse fasta headers to extract region information, and group regions by gene and transcript."""
-        """Then process regions to fill gaps between exons and merge overlapping or contiguous regions of the same type."""
+        """Load and process regions from fasta files.
+
+        Collect regions from fasta files, parse fasta headers to extract region information, and group regions by gene and transcript.
+        Then process regions to fill gaps between exons and merge overlapping or contiguous regions of the same type.
+        """
         regions = defaultdict(lambda: defaultdict(list))
         fasta_parser = FastaParser()
 
