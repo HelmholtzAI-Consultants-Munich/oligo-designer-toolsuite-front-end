@@ -7,7 +7,7 @@ export function getPipelineDisplayName(pipeline: string) {
         : "Unknown Pipeline";
 }
 
-export function getPipelineConfig() {
+export function getEnabledPipelinesOnly() {
     return Object.fromEntries(
         Object.entries(PIPELINE_CONFIG).filter(
             ([, pipeline]) => !pipeline.disabled

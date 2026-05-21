@@ -6,19 +6,21 @@ import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
 import { Grid, Vertical } from "../components/ui/Alignment";
 import { ArrowRight } from "react-bootstrap-icons";
-import { getPipelineConfig } from "../pipelineConfig/utils";
+import { getEnabledPipelinesOnly } from "../pipelineConfig/utils";
 
 const Pipelines: React.FC = () => {
     const { user, loading } = useAuth();
     const navigate = useNavigate();
 
-    const pipelines = Object.values(getPipelineConfig()).map((pipeline) => ({
-        title: pipeline.displayName,
-        description: pipeline.description,
-        link: pipeline.link!,
-        detailedLink: pipeline.detailedLink,
-        img: pipeline.img,
-    }));
+    const pipelines = Object.values(getEnabledPipelinesOnly()).map(
+        (pipeline) => ({
+            title: pipeline.displayName,
+            description: pipeline.description,
+            link: pipeline.link!,
+            detailedLink: pipeline.detailedLink,
+            img: pipeline.img,
+        })
+    );
 
     if (loading) return <div>Loading...</div>;
 

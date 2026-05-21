@@ -148,7 +148,15 @@ const addGenomicInputFieldToUi = (pipeline: Pipeline) => {
     const genomicInputFieldUi = pipeline.genomicInputFields!.reduce(
         (acc, genomicInputField) => ({
             ...acc,
-            ...{ [genomicInputField]: { "ui:field": "fileSelection" } },
+            ...{
+                [genomicInputField]: {
+                    "ui:field":
+                        genomicInputField !==
+                        "files_vcf_reference_database_target_probe"
+                            ? "genomicInput"
+                            : "fileUpload",
+                },
+            },
         }),
         {}
     );

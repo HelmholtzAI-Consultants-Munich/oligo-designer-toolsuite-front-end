@@ -49,9 +49,8 @@ const findReference = (
     return baseSchema as Record<string, unknown>;
 };
 
-export const getKeyObjectFromSchema = (
+export const getKeyObjectFromFastaFormBaseSchema = (
     fastaFormSchema: NestedObject,
-    baseSchema: NestedObject,
     extractKey: string,
     overwriteObject: boolean = false
 ) => {
@@ -70,7 +69,10 @@ export const getKeyObjectFromSchema = (
                     return null;
                 }
                 references.add(record.$ref as string);
-                const result = findReference(record.$ref as string, baseSchema);
+                const result = findReference(
+                    record.$ref as string,
+                    fastaFormSchema
+                );
                 if (!result) {
                     return null;
                 }

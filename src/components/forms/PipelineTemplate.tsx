@@ -50,7 +50,7 @@ const PipelineTemplate: React.FC<Props> = ({
     const { updateRuns } = useRuns();
 
     const fields = {
-        fileSelection: GenomicInput,
+        genomicInput: GenomicInput,
         fileUpload: FileInput,
     };
 

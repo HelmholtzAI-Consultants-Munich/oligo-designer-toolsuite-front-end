@@ -1,4 +1,3 @@
-import fastaformSchema from "@schemas/fastaForm.schema.json";
 import type { JSONSchema7 } from "json-schema";
 import type { FieldProps } from "@rjsf/utils";
 import { type FastaFormUncommented, type setterCallback } from "./types";
@@ -8,14 +7,12 @@ import {
     buildFileFunctions,
     changeHandlerAbstractFactory,
     firstLetterUppercase,
-    getKeyObjectFromSchema,
+    getKeyObjectFromFastaFormBaseSchema,
     regionDisplayNames,
     replaceUnderscore,
 } from "./helpers";
-import { Button, Form, InputGroup } from "react-bootstrap";
-import { Trash } from "react-bootstrap-icons";
+import { Button } from "react-bootstrap";
 import { Grid, Vertical } from "../ui/Alignment";
-import { useCallback } from "react";
 import type { NestedObject } from "../componentTypes";
 import { FileUpload } from "./FileInput";
 import { InputList } from "./InputList";
@@ -132,27 +129,22 @@ const GenomicInput = ({
                 previewCallback={FilePreview}
             />
             <Grid gap="md" className="w-100">
-                {name !== "files_vcf_reference_database_target_probe" && (
-                    <Button
-                        name={name}
-                        onClick={() =>
-                            handleFastaFormNew(
-                                getKeyObjectFromSchema(
-                                    (
-                                        schema.properties!
-                                            .fasta_form as JSONSchema7
-                                    ).items as NestedObject,
-                                    fastaformSchema as unknown as NestedObject,
-                                    "default",
-                                    true
-                                ) as unknown as FastaFormUncommented,
-                                handleFastaFormChange
-                            )
-                        }
-                    >
-                        Generate FASTA+
-                    </Button>
-                )}
+                <Button
+                    name={name}
+                    onClick={() =>
+                        handleFastaFormNew(
+                            getKeyObjectFromFastaFormBaseSchema(
+                                (schema.properties!.fasta_form as JSONSchema7)
+                                    .items as NestedObject,
+                                "default",
+                                true
+                            ) as unknown as FastaFormUncommented,
+                            handleFastaFormChange
+                        )
+                    }
+                >
+                    Generate FASTA+
+                </Button>
                 <FileUpload id={id} name={name} setFiles={setFiles} />
             </Grid>
         </Vertical>

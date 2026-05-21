@@ -7,14 +7,14 @@ import UserDropdown from "./UserDropdown";
 import { Horizontal, Vertical } from "./Alignment";
 import { useState } from "react";
 import { type Pipeline } from "../../pipelineConfig/config";
-import { getPipelineConfig } from "../../pipelineConfig/utils";
+import { getEnabledPipelinesOnly } from "../../pipelineConfig/utils";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
     const pipelines: { name: string; path: string }[] = Object.entries(
-        getPipelineConfig()
+        getEnabledPipelinesOnly()
     )
         .filter(([key, pipeline]) => key !== "generator" && !pipeline.disabled)
         .map(([key, pipeline]: [string, Pipeline]) => ({
