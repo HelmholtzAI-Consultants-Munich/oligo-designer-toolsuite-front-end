@@ -24,7 +24,7 @@ const UserDisplay = forwardRef(
             <Button
                 ref={ref}
                 onClick={user ? onClick : noUserCallback}
-                className="w-100 user-dropdown"
+                className="w-100 user-dropdown filled"
                 variant="outline-border"
             >
                 <Horizontal align="center" gap="sm">

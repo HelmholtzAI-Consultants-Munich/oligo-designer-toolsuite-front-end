@@ -5,18 +5,19 @@ import { BACKEND_URL } from "../config";
 import { Button, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
+import { formatDateTime } from "../components/ui/utils";
 import RunStatus from "../components/ui/RunStatus";
 import { showToast } from "../utils/toastUtil";
 import { Horizontal } from "../components/ui/Alignment";
 import { confirmWithModal } from "../utils/modalUtil";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
+import { navigateWithRunConfig } from "../utils/runConfigHelper";
 
 const Runs = () => {
     const { loading } = useAuth();
     const { runs, updateRuns } = useRuns();
     const navigate = useNavigate();
 
-    // Add this handler function
     const handleDeleteRun = async (runId: string) => {
         confirmWithModal({
             title: "Confirm Deletion",
@@ -81,18 +82,7 @@ const Runs = () => {
                                     )}
                             </td>
                             <td>{getPipelineDisplayName(run.pipeline)}</td>
-                            <td>
-                                {new Date(run.timestamp).toLocaleString(
-                                    "en-US",
-                                    {
-                                        year: "numeric",
-                                        month: "long",
-                                        day: "numeric",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                    }
-                                )}
-                            </td>
+                            <td>{formatDateTime(run.timestamp)}</td>
                             <td>
                                 <Horizontal gap="md">
                                     <Button
@@ -101,6 +91,19 @@ const Runs = () => {
                                         onClick={() => {}}
                                     >
                                         View
+                                    </Button>
+                                    <Button
+                                        variant="outline-border"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigateWithRunConfig(
+                                                run,
+                                                navigate
+                                            );
+                                        }}
+                                    >
+                                        Use Settings
                                     </Button>
                                     <Button
                                         variant="outline-danger"

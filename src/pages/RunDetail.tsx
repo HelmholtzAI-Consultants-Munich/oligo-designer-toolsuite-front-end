@@ -22,13 +22,19 @@ import {
 } from "../components/ui/utils";
 import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
-import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
+import {
+    CardList,
+    FileEarmarkSpreadsheet,
+    GearFill,
+    Trash,
+} from "react-bootstrap-icons";
 import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
+import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
 
 interface RunFile {
     name: string;
@@ -398,6 +404,8 @@ const RunDetail = () => {
         );
     };
 
+    const handleUseSettings = useNavigateWithRunConfig(run, navigate);
+
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
 
     const actions = useMemo(() => {
@@ -427,12 +435,32 @@ const RunDetail = () => {
             onClick: handleDownloadCSV,
         };
 
+        const useSettingsAction = {
+            type: "button",
+            label: "Use Settings",
+            variant: "outline-border",
+            icon: GearFill,
+            onClick: handleUseSettings,
+        };
+
         if (probes) {
-            return [deleteAction, downloadExcelAction, downloadCSVAction];
+            return [
+                useSettingsAction,
+                downloadExcelAction,
+                downloadCSVAction,
+                deleteAction,
+            ];
         } else {
-            return [deleteAction];
+            return [useSettingsAction, deleteAction];
         }
-    }, [run, probes, handleDelete, handleDownloadCSV, handleDownloadExcel]);
+    }, [
+        run,
+        probes,
+        handleDelete,
+        handleUseSettings,
+        handleDownloadCSV,
+        handleDownloadExcel,
+    ]);
 
     return (
         <Page

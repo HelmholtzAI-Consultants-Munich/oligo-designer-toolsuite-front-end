@@ -5,6 +5,7 @@ import { showToast } from "../../utils/toastUtil";
 import { extractSubmissionError } from "../errorHandler";
 import type { NestedObject, RJSFFormData } from "../componentTypes";
 import { type FastaFormUncommented, type FastaFormUpload } from "./types";
+import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
 import { Link } from "react-router";
 import {
@@ -142,7 +143,8 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
 export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
-    updateRuns: () => void
+    updateRuns: () => void,
+    pipelineRunConfig?: PipelineConfigExport
 ) => {
     // copy to avoid modifying formData
     const uploadFormData = structuredClone(formData);
@@ -200,6 +202,7 @@ export const handleSubmit = async (
             payload: JSON.stringify({
                 formdata: uploadFormData,
                 runid: newId,
+                pipeline_run_config: pipelineRunConfig ?? null,
             }),
         };
 
