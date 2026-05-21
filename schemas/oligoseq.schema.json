@@ -67,7 +67,7 @@
       "$ref": "#/definitions/genomic_input"
     },
     "files_vcf_reference_database_target_probe": {
-      "title": "Files Fasta Reference Database Target Probe",
+      "title": "Files Vcf Reference Database Target Probe",
       "$ref": "#/definitions/genomic_input"
     },
     "target_probe_length_min": {
