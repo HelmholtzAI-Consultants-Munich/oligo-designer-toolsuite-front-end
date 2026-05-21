@@ -581,9 +581,13 @@ const RunDetail = () => {
                                     <h3>{selectedOligoset}</h3>
                                     <p className="mb-0">
                                         Average Score:{" "}
-                                        {scores?.[selectedGene][selectedOligoset]?.average || "N/A"} |
-                                        Worst Score:{" "}
-                                        {scores?.[selectedGene][selectedOligoset]?.worst || "N/A"}
+                                        {scores?.[selectedGene][
+                                            selectedOligoset
+                                        ]?.average || "N/A"}{" "}
+                                        | Worst Score:{" "}
+                                        {scores?.[selectedGene][
+                                            selectedOligoset
+                                        ]?.worst || "N/A"}
                                     </p>
                                 </Vertical.Item>
 
