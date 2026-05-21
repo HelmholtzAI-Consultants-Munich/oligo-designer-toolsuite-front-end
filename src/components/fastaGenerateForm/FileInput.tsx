@@ -1,8 +1,7 @@
 import { Form } from "react-bootstrap";
 import type { setterCallback } from "./types";
-import { buildFileFunctions, changeHandlerAbstractFactory } from "./helpers";
-import type { FieldPathList, FieldProps } from "@rjsf/utils";
-import type { RJSFFormData } from "../componentTypes";
+import { buildFileFunctions } from "./helpers";
+import type { FieldProps } from "@rjsf/utils";
 import type React from "react";
 import { Grid, Vertical } from "../ui/Alignment";
 import { InputList } from "./InputList";

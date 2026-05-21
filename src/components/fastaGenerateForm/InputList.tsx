@@ -1,7 +1,6 @@
 import { Button, InputGroup } from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
 import type { FastaFormUncommented } from "./types";
-import type { JSX } from "react";
 
 type Input = File | FastaFormUncommented;
 
