@@ -148,15 +148,3 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     if not run:
         abort(HTTPStatus.NOT_FOUND)
     return run
-
-
-def get_task_id(run) -> str:
-    """Extract task_id from a run document.
-
-    :param run: The run document from MongoDB
-    :returns: The Celery task ID
-    :rtype: str
-    :raises: 500 if task_id is not found
-    """
-    task_id = run.get("task_id")
-    return task_id

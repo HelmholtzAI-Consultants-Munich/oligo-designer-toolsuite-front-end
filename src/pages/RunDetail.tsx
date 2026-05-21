@@ -29,6 +29,7 @@ import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
+import RunStatusDetails from "../components/ui/RunStatusDetails";
 
 interface RunFile {
     name: string;
@@ -437,7 +438,7 @@ const RunDetail = () => {
             {(run?.status == "pending" || run?.status == "started") && (
                 <Vertical align="center" className="my-5" gap="lg">
                     <RunStatus status={run.status} size={100} />
-                    <h3 className="mt-3">Run {run.status}...</h3>
+                    <RunStatusDetails run={run} />
                 </Vertical>
             )}
 

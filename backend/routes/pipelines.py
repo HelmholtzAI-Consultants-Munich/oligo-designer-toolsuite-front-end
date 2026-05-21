@@ -13,6 +13,7 @@ from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
+from redis import Redis
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
@@ -27,7 +28,7 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
-from backend.worker.task_index import Tasks
+from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
@@ -123,6 +124,8 @@ def write_run_to_DB(
     run_id: ObjectId,
     context: RunContext,
     task_id: str | None,
+    priority: int = CeleryConfig.task_default_priority,
+    queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
 ):
     return update_run_in_DB(
         run_id,
@@ -134,6 +137,8 @@ def write_run_to_DB(
             "status": "pending",
             "pipeline": pipeline_name,
             "task_id": task_id,
+            "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
+            "queue_position": queue_position,
         },
     )
 
@@ -155,6 +160,7 @@ def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
 
 
 def enqueue_pipeline(
+    run_id: ObjectId,
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
@@ -166,17 +172,48 @@ def enqueue_pipeline(
     finish executing before the pipeline is started.
     """
 
+    # the chord header tasks get executed simultaneously as a group
     region_generation_signatures = (
         celery_app.signature(Tasks.RUN_GENOMIC_REGION_GENERATOR, args=(form, id))
         for id, forms in generated_regions.items()
         for form in forms
     )
 
+    # the chord body task gets executed once all header tasks finished
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path)), priority=priority
     )
 
-    return chord(region_generation_signatures)(pipeline_signature)
+    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
+
+    return chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
+
+
+def calculate_queue_position(priority: int) -> tuple[int, int]:
+    """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
+    redis = Redis.from_url(Config.REDIS_URI)
+
+    # Initialize queue lengths if not present, then fetch and convert to int
+    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
+    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "high", 0)
+    default_priority_queue_length, high_priority_queue_length = map(
+        int, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
+    )
+    high_priority_ahead = high_priority_queue_length
+
+    if priority == CeleryConfig.task_high_priority:
+        default_priority_ahead = 0
+        # add one high priority run ahead for all low priority runs
+        mongo.db.runs.update_many(
+            {"status": "pending", "priority": "default"},
+            {"$inc": {"queue_position.0": 1}},
+        )
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
+    else:
+        default_priority_ahead = default_priority_queue_length
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+
+    return high_priority_ahead, default_priority_ahead
 
 
 def save_file(
@@ -237,6 +274,7 @@ def start_pipeline(pipeline_name: str):
     - Builds chord of tasks, consisting of a group of region generation tasks  and the specified pipeline
         as their callback.
     - Adds chord to the Celery queue for execution.
+    - Calculate the queue position and update queue lengths in Redis.
     - Writes updated run information to database.
     - Returns the run ID as a JSON response.
 
@@ -288,14 +326,23 @@ def start_pipeline(pipeline_name: str):
     priority = get_task_priority(form_data, run_id)
 
     result_promise = enqueue_pipeline(
-        pipeline_name, form_data, generated_regions, context.output_path, priority
+        run_id, pipeline_name, form_data, generated_regions, context.output_path, priority
     )
 
-    # Mark Run as Enqueued in DB
-    update_result = write_run_to_DB(pipeline_name, run_id, context, result_promise.id)
+    high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
+
+    # mark run as enqueued in DB
+    update_result = write_run_to_DB(
+        pipeline_name,
+        run_id,
+        context,
+        result_promise.id,
+        priority,
+        (high_priority_ahead, default_priority_ahead),
+    )
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
     # The task state can be polled using get_run_state(run_id_str).
 
-    return jsonify({"run_id": run_id_str})
+    return jsonify({"run_id": run_id_str, "queue_position": (high_priority_ahead, default_priority_ahead)})

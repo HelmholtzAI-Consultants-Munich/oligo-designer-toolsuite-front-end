@@ -137,6 +137,15 @@ export const validateInput = (pipeline: string, formData: RJSFFormData) => {
     return true;
 };
 
+export const unwrapQueuePosition = (queue_position: [number, number]) => {
+    const [highPriorityAhead, defaultPriorityAhead] = queue_position;
+    const runsAhead = highPriorityAhead + defaultPriorityAhead;
+    return {
+        runsAhead,
+        ownPosition: runsAhead + 1,
+    };
+};
+
 export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
@@ -201,16 +210,24 @@ export const handleSubmit = async (
             }),
         };
 
-        await axios.post(BACKEND_URL + `/api/${pipeline}`, upload, {
-            withCredentials: true,
-            headers: { "Content-Type": "multipart/form-data" },
-        });
+        const response = await axios.post(
+            BACKEND_URL + `/api/${pipeline}`,
+            upload,
+            {
+                withCredentials: true,
+                headers: { "Content-Type": "multipart/form-data" },
+            }
+        );
+
+        const { queue_position } = response.data;
+        const { ownPosition } = unwrapQueuePosition(queue_position);
 
         showToast({
             title: "Pipeline Enqueued",
             content: (
                 <>
                     <p>The pipeline run was successfully added to the queue.</p>
+                    <p>Queue Position: {ownPosition}</p>
                     <Link to={`/runs/${newId}`}>
                         View the run here <ArrowRight />
                     </Link>

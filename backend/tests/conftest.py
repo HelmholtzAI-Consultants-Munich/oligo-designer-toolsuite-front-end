@@ -100,31 +100,15 @@ def run_id(app):
 
 @pytest.fixture
 def mock_celery():
+    """This was impossible to do properly, leaving this up to #197"""
+
     class MockPendingAsyncResult:
         id = "123"
         state = "pending"
 
-        def successful(self):
-            return False
-
-        def get(self):
-            return False, b""
-
-    class MockSuccessfulAsyncResult:
-        id = "123"
-        state = "success"
-
-        def successful(self):
-            return True
-
-        def get(self):
-            return True, b""
-
     with patch("backend.routes.pipelines.enqueue_pipeline") as mock_pending:
         mock_pending.return_value = MockPendingAsyncResult()
-        with patch("backend.extensions.celery_app.AsyncResult") as mock_success:
-            mock_success.return_value = MockSuccessfulAsyncResult()
-            yield mock_success
+        yield mock_pending
 
 
 @pytest.fixture

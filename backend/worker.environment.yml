@@ -5,8 +5,6 @@ channels:
   - defaults
 dependencies:
   # Core runtime
-  - python=3.12
-  - pip>=25.1 # min version supporting dependency groups
   - git # required by setuptools-scm for local odt install
 
   # Oligo Designer Toolsuite dependencies

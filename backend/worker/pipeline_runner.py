@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from backend.constants import PIPELINE_GENOMIC_INPUT
+from backend.exceptions import ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
@@ -48,24 +49,22 @@ class PipelineRunner:
 
     def run(
         self, form_data: dict[str, Any], output_path: str, generated_region_paths: list[tuple[str, list[str]]]
-    ) -> bool:
+    ) -> None:
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
 
         # Build Config and Write to YAML
         config_path = self.write_config_file(form_data, output_path, generated_region_paths)
 
-        # Subprocess Call
-        ok = self.call_subprocess(config_path)
+        try:
+            # Subprocess Call
+            self.call_subprocess(config_path)
 
-        # Generate Visualization Files
-        self.generate_genomic_regions_file(form_data, output_path)
-
-        # Cleanup of Temporary Files
-        self.cleanup_temp_files(form_data, config_path)
-
-        # Response
-        return ok
+            # Generate Visualization Files
+            self.generate_genomic_regions_file(form_data, output_path)
+        finally:
+            # Cleanup of Temporary Files
+            self.cleanup_temp_files(form_data, config_path)
 
     def populate_temp_file(self, form_data: dict) -> None:
         if form_data["file_regions"] != "":
@@ -146,12 +145,13 @@ class PipelineRunner:
             yaml.dump(config, f, sort_keys=False)
         return config_path
 
-    def call_subprocess(self, config_path: str) -> bool:
+    def call_subprocess(self, config_path: str) -> None:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
         result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
-        self.logger.debug(f"STDERR: {result.stderr}")
-        self.logger.debug(f"STDOUT (partial logs): {result.stdout}")
-        return result.returncode == 0
+        if result.returncode != 0:
+            self.logger.debug(f"STDOUT: {result.stdout}")
+            self.logger.debug(f"STDERR: {result.stderr}")
+            raise ODTPipelineError("An error occured during pipeline execution.")
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
