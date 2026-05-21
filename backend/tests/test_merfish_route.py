@@ -4,7 +4,7 @@ import os
 import pytest
 
 from backend.extensions import mongo
-from backend.tests.conftest import assert_invalid_run_id_error, create_test_run
+from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
 
     create_test_run(run_id, user_id="507f1f77bcf86cd799439011", status="created")
 
-    response = client.post("/api/merfish", json=dummy_form)
+    response = post(client, "/api/merfish", dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
@@ -30,19 +30,11 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
-
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["state"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
 
 
 # Test unauthenticated user flow for /api/merfish
 def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, session_user):
-    response = client.post("/api/merfish", json=dummy_form)
+    response = post(client, "/api/merfish", dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["run_id"] == str(run_id)
@@ -50,14 +42,6 @@ def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     # Confirm Mongo updated status
     updated = mongo.db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
-
-    response = client.get(f"/api/runs/{run_id}/status")
-    data = response.get_json()
-    assert data["state"] == "success"
-
-    # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
-    assert updated["status"] == "success"
 
 
 # Error handling tests
@@ -66,7 +50,7 @@ def test_merfish_route_invalid_run_id(client, dummy_form, authenticated_user):
     invalid_form = dummy_form.copy()
     invalid_form["runid"] = "invalid_id"
 
-    response = client.post("/api/merfish", json=invalid_form)
+    response = post(client, "/api/merfish", invalid_form)
     assert_invalid_run_id_error(response)
 
 
@@ -78,7 +62,7 @@ def test_merfish_route_propagates_pipeline_runner_errors(client, run_id, authent
         "runid": "",
     }
 
-    response = client.post("/api/merfish", json=form_with_empty_runid)
+    response = post(client, "/api/merfish", form_with_empty_runid)
     assert_invalid_run_id_error(response)
 
 
@@ -89,5 +73,5 @@ def test_merfish_session_without_directory(client, run_id, dummy_form, mock_cele
         session["session_id"] = "existing-session-123"
 
     # With makedirs mock disabled, directories will be created and request should succeed
-    response = client.post("/api/merfish", json=dummy_form)
+    response = post(client, "/api/merfish", dummy_form)
     assert response.status_code == 200

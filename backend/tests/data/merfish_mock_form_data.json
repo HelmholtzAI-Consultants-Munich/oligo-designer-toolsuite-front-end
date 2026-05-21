@@ -1,16 +1,55 @@
 {
   "formdata": {
     "n_jobs": 4,
-    "dir_output": "output_merfish_probe_designer",
     "write_intermediate_steps": true,
     "top_n_sets": 3,
     "file_regions": "AARS1",
-    "files_fasta_target_probe_database": [
-      "/app/uploads/df11d532ac2c4fb6b4e8c5d01c474950_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
-    ],
-    "files_fasta_reference_database_target_probe": [
-      "/app/uploads/dca53b479de346b9ba3be747975323b0_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
-    ],
+    "files_fasta_target_probe_database": {
+      "files": [],
+      "fasta_form": [
+        {
+          "source": "NCBI",
+          "source_params": {
+            "species": "Homo_sapiens",
+            "annotation_release": "110",
+            "taxon": "vertebrate_mammalian"
+          },
+          "genomic_regions": {
+            "gene": "false",
+            "intergenic": "false",
+            "exon": "true",
+            "exon_exon_junction": "false",
+            "utr": "false",
+            "cds": "false",
+            "intron": "false"
+          },
+          "exon_exon_junction_block_size": "50"
+        }
+      ]
+    },
+    "files_fasta_reference_database_target_probe": {
+      "files": [],
+      "fasta_form": [
+        {
+          "source": "NCBI",
+          "source_params": {
+            "species": "Homo_sapiens",
+            "annotation_release": "110",
+            "taxon": "vertebrate_mammalian"
+          },
+          "genomic_regions": {
+            "gene": "false",
+            "intergenic": "false",
+            "exon": "true",
+            "exon_exon_junction": "false",
+            "utr": "false",
+            "cds": "false",
+            "intron": "false"
+          },
+          "exon_exon_junction_block_size": "50"
+        }
+      ]
+    },
     "target_probe_length_min": 30,
     "target_probe_length_max": 30,
     "target_probe_isoform_consensus": 50,
@@ -34,9 +73,29 @@
     "target_probe_secondary_structures_threshold_deltaG": 0,
     "target_probe_isoform_weight": 2,
     "target_probe_Tm_weight": 1,
-    "files_fasta_reference_database_readout_probe": [
-      "/app/uploads/4f602af6d9864dfb84d60658ceb0a4d7_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
-    ],
+    "files_fasta_reference_database_readout_probe": {
+      "files": [],
+      "fasta_form": [
+        {
+          "source": "NCBI",
+          "source_params": {
+            "species": "Homo_sapiens",
+            "annotation_release": "110",
+            "taxon": "vertebrate_mammalian"
+          },
+          "genomic_regions": {
+            "gene": "false",
+            "intergenic": "false",
+            "exon": "true",
+            "exon_exon_junction": "false",
+            "utr": "false",
+            "cds": "false",
+            "intron": "false"
+          },
+          "exon_exon_junction_block_size": "50"
+        }
+      ]
+    },
     "readout_probe_base_probabilities": {
       "A": 0.25,
       "T": 0.25,
@@ -56,9 +115,29 @@
     "min_hamming_dist": 4,
     "hamming_weight": 4,
     "channels_ids": ["Alexa488", "Cy3b", "Alexa647"],
-    "files_fasta_reference_database_primer": [
-      "/app/uploads/80753b6490de4a089a9432229dbba1d2_exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
-    ],
+    "files_fasta_reference_database_primer": {
+      "files": [],
+      "fasta_form": [
+        {
+          "source": "NCBI",
+          "source_params": {
+            "species": "Homo_sapiens",
+            "annotation_release": "110",
+            "taxon": "vertebrate_mammalian"
+          },
+          "genomic_regions": {
+            "gene": "false",
+            "intergenic": "false",
+            "exon": "true",
+            "exon_exon_junction": "false",
+            "utr": "false",
+            "cds": "false",
+            "intron": "false"
+          },
+          "exon_exon_junction_block_size": "50"
+        }
+      ]
+    },
     "reverse_primer_sequence": "CCCTATAGTGAGTCGTATTA",
     "primer_length": 20,
     "primer_base_probabilities": { "A": 0.25, "T": 0.25, "C": 0.25, "G": 0.25 },

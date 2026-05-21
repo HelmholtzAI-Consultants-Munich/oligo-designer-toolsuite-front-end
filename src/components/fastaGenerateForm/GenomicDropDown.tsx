@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from "react";
-import { ToolTip } from "./Tooltip";
 import { Form } from "react-bootstrap";
+import { ToolTip } from "../ui/Tooltip";
 
 interface GenomicSelectProps {
     id: string;
@@ -29,7 +29,7 @@ export const GenomicDropDown: React.FC<
                 >
                     {children}
                 </Form.Select>
-                {tooltip && <ToolTip id={"dir_output"} tip={tooltip} />}
+                {tooltip && <ToolTip id={`${nameAndId}-${id}`} tip={tooltip} />}
             </div>
         </div>
     );
