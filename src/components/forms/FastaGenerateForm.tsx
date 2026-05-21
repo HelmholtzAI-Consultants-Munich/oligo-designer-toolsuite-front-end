@@ -59,8 +59,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [dropDown, setDropDown] = useState<DropDown>();
         const [formState, setFormState] = useState(form);
 
-        // TODO: could be made cleaner
-        // the definitions section is the same for every schema, so we just use "scrinshot" here
         const descriptionOnlySchema = getKeyObjectFromFastaFormBaseSchema(
             (schema.properties!.fasta_form as JSONSchema7)
                 .items as NestedObject,

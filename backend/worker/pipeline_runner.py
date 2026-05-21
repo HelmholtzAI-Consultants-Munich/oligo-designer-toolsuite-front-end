@@ -128,7 +128,6 @@ class PipelineRunner:
         self.populate_form_data_path_fields(config, generated_region_paths)
 
         if "target_probe_kmer_abundance_threshold" in form_data:
-            self.logger.warning(form_data["target_probe_kmer_abundance_threshold"])
             form_data["target_probe_kmer_abundance_threshold"] = {
                 int(k): v for k, v in form_data["target_probe_kmer_abundance_threshold"].items()
             }

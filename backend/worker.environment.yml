@@ -4,9 +4,6 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  # Core runtime
-  - git # required by setuptools-scm for local odt install
-
   # Oligo Designer Toolsuite dependencies
   - bcftools>=1.22
   - bedtools>=2.30
