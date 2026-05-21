@@ -49,7 +49,7 @@ class GenomicRegionsFile:
 
         for fname in self.fasta_paths:
             if not os.path.exists(fname):
-                self.logger.warning(f"Warning: Fasta file {fname} not found, skipping.")
+                self.logger.debug(f"Warning: Fasta file {fname} not found, skipping.")
                 continue
 
             seq_record = SeqIO.index(fname, "fasta")

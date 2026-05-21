@@ -111,7 +111,7 @@ class PipelineRunner:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
         result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
         if result.stderr:
-            self.logger.warning(f"STDERR: {result.stderr}")
+            self.logger.error(f"STDERR: {result.stderr}")
         self.logger.debug(f"STDOUT (partial logs): {result.stdout}")
         return result.returncode == 0
 
