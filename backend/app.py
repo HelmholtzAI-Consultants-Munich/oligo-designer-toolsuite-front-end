@@ -17,17 +17,6 @@ from backend.routes.error_handlers import register_error_handlers
 from backend.worker.task_index import Tasks
 
 
-def register_teardown_handler(app):
-    @app.teardown_appcontext
-    def teardown(exception=None):
-
-        # Trigger lazy initialization of flask-limiter storage backend
-        limiter_storage = limiter.limiter.storage.storage
-
-        # Close underlying connection to avoid errors in flask-limiter destructor
-        limiter_storage.close()
-
-
 def prepare_paths(app: Flask):
     """Extract and expand relative path definitions in the app's config.
 
@@ -126,9 +115,6 @@ def create_app():
 
     # Register CLI commands
     register_cli_commands(app)
-
-    # Register Teardown Handler
-    register_teardown_handler(app)
 
     return app
 
