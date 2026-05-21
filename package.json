@@ -49,7 +49,6 @@
     "docker:test:smoke": "docker compose --profile tests run --rm odt-tests test --grep @smoke",
     "docker:test:full": "docker compose --profile tests run --rm odt-tests test --grep @full",
     "docker:test:build": "docker compose --profile tests build",
-    "docker:test:start": "docker compose --profile tests up -d",
     "docker:test:watch": "docker compose --profile tests watch"
   },
   "prettier": {
