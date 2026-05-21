@@ -225,3 +225,55 @@ def test_all_errors_use_create_user_error_response(client, dummy_user, run_id):
     # Should have "error" field
     assert "error" in data
     assert isinstance(data["error"], str)
+
+
+# ---- /api/runs/<run_id>/config tests ----
+
+SAMPLE_RUN_CONFIG = {
+    "_meta": {
+        "version": "1.0.0",
+        "pipeline": "scrinshot",
+        "exportedAt": "2024-01-01T00:00:00.000Z",
+    },
+    "config": {"top_n_sets": 3},
+    "fastaForms": {
+        "files_fasta_target_probe_database": [],
+        "files_fasta_reference_database_target_probe": [],
+        "files_fasta_reference_database_readout_probe": [],
+        "files_fasta_reference_database_primer": [],
+    },
+}
+
+
+def test_get_run_config_success(client, dummy_user, run_id):
+    """GET /api/runs/<run_id>/config returns 200 + stored pipeline_run_config."""
+    create_test_run(run_id, user_id=dummy_user.id, pipeline_run_config=SAMPLE_RUN_CONFIG)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["_meta"]["pipeline"] == "scrinshot"
+    assert data["config"] == {"top_n_sets": 3}
+
+
+def test_get_run_config_no_config(client, dummy_user, run_id):
+    """GET /api/runs/<run_id>/config returns 404 when run has no pipeline_run_config."""
+    create_test_run(run_id, user_id=dummy_user.id)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+    assert response.status_code == 404
+
+
+def test_get_run_config_not_found(client, dummy_user):
+    """GET /api/runs/<run_id>/config returns 404 for a non-existent run."""
+    response = client.get(f"/api/runs/{ObjectId()}/config")
+    assert response.status_code == 404
+
+
+def test_get_run_config_unauthorized(client, dummy_user, run_id):
+    """GET /api/runs/<run_id>/config returns 404 for another user's run."""
+    other_user_id = str(ObjectId())
+    create_test_run(run_id, user_id=other_user_id, pipeline_run_config=SAMPLE_RUN_CONFIG)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+    assert response.status_code == 404

@@ -1,4 +1,10 @@
-import { useRef, useState } from "react";
+import {
+    useRef,
+    useState,
+    useEffect,
+    useCallback,
+    useEffectEvent,
+} from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
@@ -8,6 +14,7 @@ import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
+import { formatDateTime } from "../ui/utils";
 import {
     BoxArrowInDown,
     BoxArrowUp,
@@ -24,6 +31,7 @@ import { Button } from "react-bootstrap";
 import GenomicInput from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
+import { useLocation } from "react-router";
 import { FileInput } from "../fastaGenerateForm/FileInput";
 
 type Props = {
@@ -48,6 +56,50 @@ const PipelineTemplate: React.FC<Props> = ({
     const validator = customizeValidator({ AjvClass: Ajv2020 });
 
     const { updateRuns } = useRuns();
+
+    const location = useLocation();
+
+    const applyValidatedConfig = useCallback(
+        (importedConfig: unknown, successTitle: string, errorTitle: string) => {
+            const result = importAndValidate(importedConfig, schema, pipeline);
+            if (!result.ok) {
+                showToast({
+                    title: errorTitle,
+                    content: result.error,
+                    type: "danger",
+                });
+                return;
+            }
+            setFormData((prev) => ({ ...prev, ...result.config }));
+            const exportedAt = (
+                importedConfig as { _meta?: { exportedAt?: string } }
+            )._meta?.exportedAt;
+            const dateStr = exportedAt ? formatDateTime(exportedAt) : undefined;
+            const skipNote =
+                result.skippedFields.length > 0
+                    ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
+                    : "";
+            const datePart = dateStr ? ` from ${dateStr}` : "";
+            showToast({
+                title: successTitle,
+                content: `Configuration${datePart} loaded.${skipNote}`,
+                type: "success",
+            });
+        },
+        [schema, pipeline]
+    );
+    const applyValidatedConfigEvent = useEffectEvent(applyValidatedConfig);
+
+    // Apply a config that was passed via navigation location state (e.g. "Use Settings" in Runs page).
+    useEffect(() => {
+        const importedConfig = location.state?.importedConfig;
+        if (!importedConfig) return;
+        applyValidatedConfigEvent(
+            importedConfig,
+            "Config Loaded",
+            "Load Config Failed"
+        );
+    }, [location.state]);
 
     const fields = {
         genomicInput: GenomicInput,
@@ -80,30 +132,18 @@ const PipelineTemplate: React.FC<Props> = ({
                 });
                 return;
             }
-            const result = importAndValidate(parsed, schema, pipeline);
-            if (!result.ok) {
-                showToast({
-                    title: "Import Failed",
-                    content: result.error,
-                    type: "danger",
-                });
-                return;
-            }
-            setFormData((prev) => ({
-                ...prev,
-                ...result.config,
-            }));
-            const skipNote =
-                result.skippedFields.length > 0
-                    ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
-                    : "";
-            showToast({
-                title: "Import Successful",
-                content: `Configuration loaded.${skipNote}`,
-                type: "success",
-            });
+            applyValidatedConfig(parsed, "Import Successful", "Import Failed");
         };
         reader.readAsText(file);
+    };
+
+    const runPipeline = () => {
+        const pipelineRunConfig = buildExportPayload(
+            formData,
+            pipeline,
+            schema
+        );
+        handleSubmit(formData, pipeline, updateRuns, pipelineRunConfig);
     };
 
     return (
@@ -135,7 +175,7 @@ const PipelineTemplate: React.FC<Props> = ({
                     label: "Run Pipeline",
                     icon: Send,
                     variant: "primary",
-                    onClick: () => handleSubmit(formData, pipeline, updateRuns),
+                    onClick: runPipeline,
                 },
             ]}
             stickyHeader
@@ -158,7 +198,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 fields={fields}
                 validator={validator}
                 onChange={(e) => setFormData(e.formData)}
-                onSubmit={() => handleSubmit(formData, pipeline, updateRuns)}
+                onSubmit={runPipeline}
             >
                 <Button type="submit" variant="primary">
                     Run Pipeline <Send className="ms-2" />
