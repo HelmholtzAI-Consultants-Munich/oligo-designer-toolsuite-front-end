@@ -2,12 +2,12 @@
 
 First off, thanks for taking the time to contribute! ❤️
 
-All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how we handle them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and smooth out the experience for all involved. The community looks forward to your contributions. 🎉
+All types of contributions are encouraged and valued. See the [Table of Contents](#table-of-contents) for different ways to help and details about how we handle them. Please make sure to read the relevant section before making your contribution. It will make it a lot easier for us maintainers and will smooth out the experience for all involved. The community looks forward to your contributions. 🎉
 
 > If you like the project, but just don't have time to contribute, that's fine. There are other easy ways to support the project and show your appreciation, which we would also be very happy about:
 >
 > - Star the project
-> - Refer this project in your project's readme
+> - Refer to this project in your project's README
 > - Mention the project and the [Oligo Designer Toolsuite Project](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite)
 
 ## Table of contents
@@ -25,19 +25,19 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 ## Short links
 
 - [Documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/)
-- [Bugs/ Enhancements](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
+- [Bugs/Enhancements](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
 
 ## I Have a Question
 
 > If you want to ask a question, we assume that you have read the available [Documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/).
 
-Before you ask a question, it is best to search for existing [Issues](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question as a comment on this issue. It is also advisable to search the internet for answers first.
+Before you ask a question, it is best to search for existing [Issues](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question as a comment on the issue. It is also advisable to search the internet for answers first.
 
-If you then still feel the need to ask a question and need clarification, we recommend the following:
+If you still feel the need to ask a question, we recommend the following:
 
 - Open an [Issue](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues/new).
 - Provide as much context as you can about what you're running into.
-- Provide project and platform versions (nodejs, npm, docker, conda, python, pip), depending on what seems relevant.
+- Provide project and platform versions (Node.js, npm, docker, conda, python, pip), depending on what seems relevant.
 
 We will then take care of the issue.
 
@@ -51,22 +51,22 @@ We will then take care of the issue.
 
 > NOTE: if in doubt open the issue in this Repo and we will investigate the source
 
-Before adding any type of issue check if the issue is related to this project. Because this project serves as a webserver for [Oligo Designer Toolsuite Project](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite), the source of issues that are related to running a pipeline could also be in the Oligo Designer Toolsuite. Therefore verify that using your configs and input files produces a valid pipeline run when directly using Oligo Designer Toolsuite.
+Before adding any type of issue, check if the issue is related to this project. Because this project serves as a webserver for the [Oligo Designer Toolsuite Project](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite), the source of issues that are related to running a pipeline could also be in the Oligo Designer Toolsuite. Therefore, verify that using your configs and input files produces a valid pipeline run when directly using Oligo Designer Toolsuite.
 
 ### Reporting Bugs
 
-Before creating a bug report check search the issue tracker to validate that the problems has not been reported so far. Also check if your Version of ODT Cloud is up-to-date before reporting a bug.
+Before creating a bug report,  search the issue tracker to validate that the problem has not been reported so far. Also check if your version of ODT Cloud is up-to-date before reporting a bug.
 
 Bug reports should include:
 
-- Version ODT Cloud you are using
-- OS information (Which Linux?, Arm / x86)
-- docker version
-- docker logs input/ output
-- is it possible to reproduce the issue?
-- possibly screenshots/ screen recordings of observed behavior
+- The version of ODT Cloud you are using
+- OS information (which Linux distribution?, Arm / x86)
+- Docker version
+- Docker logs (input/ output)
+- Whether it is possible to reproduce the issue?
+-  Screenshots/screen recordings of observed behavior, if possible
 
-We use GitHub issues to track bugs and errors. If you verified your bug is not a duplicate and you collected all necessary information you can open a bug report.
+We use GitHub issues to track bugs and errors. If you verified that your bug is not a duplicate and you collected all necessary information, you can open a bug report.
 
 #### How to make a good bug report?
 
@@ -77,14 +77,14 @@ We use GitHub issues to track bugs and errors. If you verified your bug is not a
 
 ### Suggesting Enhancements
 
-Any ideas on enhancing ODT Cloud are welcome, whether you have one for a minor quality-of-life improvement or a completely new feature, we are happy to read about it. Before suggesting an enhancement follow this list:
+Any ideas on enhancing ODT Cloud are welcome, whether you have one for a minor quality-of-life improvement or a completely new feature. We are happy to read about it. Before suggesting an enhancement, follow this list:
 
 - Make sure you are using the latest version of ODT Cloud
-- read the documentation and check that your idea is not already mentioned
-- read through the issues and check that your enhancement has not been suggested already
-- Think about if your idea belongs here, as it should add value for most users
+- Read the documentation and check that your idea is not already mentioned
+- Read through the issues and check that your enhancement has not been suggested already
+- Think about whether your idea belongs here, as it should add value for most users
 
-If you could tick every box, then you can submit your enhancement to our Github Issues.
+If you could tick every box, then you can submit your enhancement to our GitHub Issues.
 
 #### How to write a good enhancement suggestion?
 
@@ -93,7 +93,7 @@ If you could tick every box, then you can submit your enhancement to our Github 
 - Describe current behavior and compare it to the behavior you want to see
 - You could include screenshots/ screen recordings of the current behavior and mockups using e.g. Figma to show what you wish the enhancement should look like
 - Explain which benefit your enhancement will provide to the project
-- Also showing examples of other projects which include a similar feature could be helpful
+- Showing examples of other projects which include a similar feature could be helpful
 
 ### Development Process
 
@@ -101,15 +101,15 @@ Before working on any issue, the bug/enhancement should be converted into a user
 
 #### Adding User Stories
 
-User stories are significant tasks, which are labeled with `user story`. description should include a summary and a list of acceptance criteria. Further the project fields should be populated.
+User stories are significant tasks, which are labeled with `user story`. The description should include a summary and a list of acceptance criteria. Further, the project fields should be populated.
 
 #### Adding Simple Issues
 
-These issues are easy tasks, e.g. easily fixable bugs, small changes or quick tasks that don't deserve being treated like a full user story. The description should be enough to understand and resolve the issue. Further the Project fields can be left empty. While they are small and easy, simple issues should still be solved on a separate branch, to avoid time intensive reviews and merge conflicts.
+These issues are easy tasks, e.g. easily fixable bugs, small changes or quick tasks that don't deserve to be treated as a full user story. The description should be enough to understand and resolve the issue. Further, the Project fields can be left empty. While they are small and easy, simple issues should still be solved on a separate branch to avoid time-intensive reviews and merge conflicts.
 
 #### Claiming issues
 
-If you want to work on an issue check if there is already an assignee and if not assign yourself to show that you are working on it and avoid duplicate work.
+If you want to work on an issue, check if there is already an assignee and if not, assign yourself to show that you are working on it and avoid duplicate work.
 
 #### Branches
 
@@ -129,19 +129,19 @@ Commits should adhere to [Conventional Commits](https://www.conventionalcommits.
 
 #### Pull Requests
 
-Before submitting a Pull Request ensure that you followed our [Style guide](docs/styleguide.md), ran the [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks and [tests](docs/tests.md).
+Before submitting a Pull Request, ensure that you followed our [Style guide](docs/styleguide.md), and have run the [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks as well as all the [tests](docs/tests.md).
 
-A Pull Request should include a short summary at the top and a bullet list of key changes. Furthermore it should include a `resolves <issue-number>` to link the respective User Story. Also all merge conflicts should be solved when submitting a PR ([remember](#working-on-an-issue)). After submitting a PR it gets reviewed by at least one person. After the PR is reviewed and the tests are passing, the PR gets merged by the author. There could be changes in the merge order which are communicated in advance. Use Merge Commit as the merging strategy.
+A Pull Request should include a short summary at the top and a bullet list of key changes. Furthermore, it should include a `resolves/fixes <issue-number>` to link the respective User Story. Also, all merge conflicts should be solved when submitting a PR ([remember](#working-on-an-issue)). After submitting a PR, it gets reviewed by at least one person. After the PR is reviewed and the tests are passing, the PR gets merged by the author. There could be changes in the merge order, which are communicated in advance. Use Merge Commit as the merging strategy.
 
 ##### Reviews
 
-Pull Request review should ensure that the described functionality in the PR is working properly and the code quality is matching the standards.
+A Pull Request review should ensure that the described functionality in the PR is working properly and the code quality matches the standards.
 
 Reviewers **SHOULD**:
 
 - verify that the issue is solved
-- check the PR adheres to the style guide
-- validate the scope od the user story was respected
+- check that the PR adheres to the style guide
+- validate that the scope of the user story was respected
 
 Reviewers **SHOULD NOT**:
 
@@ -159,7 +159,7 @@ Before starting to contribute code read and follow the [README](README.md), [Get
 
 #### Style guide
 
-The formatting rules are enforced by our [pre-commit](docs/ide-setup.md#installing-pre-commit), so please set it up properly. Further refer to the [style guide](docs/styleguide.md) to get information about other conventions we use.
+The formatting rules are enforced by our [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks, so please set them up properly. Further, refer to the [style guide](docs/styleguide.md) to get information about other conventions we use.
 
 #### Working on an issue
 
@@ -167,7 +167,7 @@ Remember to always fetch and pull the current changes from the upstream reposito
 
 #### Testing
 
-The code should pass all tests, while they are run via github actions, you can also run them locally ([see](docs/tests.md)). Also new functionality must include unit-tests verifying correct behavior.
+The code should pass all tests. While they are run via GitHub Actions, you can also run them locally ([see](docs/tests.md)). Also, new functionality must include unit tests verifying correct behavior.
 
 #### Security
 
@@ -175,14 +175,14 @@ When fixing a security issue or otherwise adding a security check, you must docu
 
 #### Documentation
 
-Code should be commented, especially if it is not self-explanatory. Therefore refer to our [style guide](docs/styleguide.md) to see how comments in the code should be structured.
+Code should be commented, especially if it is not self-explanatory. Therefore, refer to our [style guide](docs/styleguide.md) to see how comments in the code should be structured.
 
 ### Improving the documentation
 
-> **NOTE:** this section is about user-facing documentation and basic development documentation such as setup/ how to run tests. When you want to document code or certain behavior that is mostly interesting to developers, please refer to the [Code Documentation section](#documentation).
+> **NOTE:** this section is about user-facing documentation and basic development documentation such as setup/how to run tests. When you want to document code or certain behavior that is mostly interesting to developers, please refer to the [Code Documentation section](#documentation).
 
-The documentation is written in the `docs` folder and is user-facing, if you want to add documentation that is relevant to developers refer to the [style guide](docs/styleguide.md) to see our code comment style.
-The documentation is written in markdown style and we use [jekyll-build-pages](https://github.com/actions/jekyll-build-pages) with the [Just the docs](https://github.com/just-the-docs/just-the-docs) to build the documentation for deployment on github pages.
+The documentation is written in the `docs` folder and is user-facing. If you want to add documentation that is relevant to developers, refer to the [style guide](docs/styleguide.md) to see our code comment style.
+The documentation is written in markdown style and we use [jekyll-build-pages](https://github.com/actions/jekyll-build-pages) with the [Just the docs](https://github.com/just-the-docs/just-the-docs) to build the documentation for deployment on GitHub pages.
 
 <!--
 This Contributing.md is based on
