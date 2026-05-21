@@ -1,4 +1,3 @@
-import json
 import os
 from unittest.mock import patch
 
@@ -74,7 +73,7 @@ def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_
 
 
 def test_runid_null(client, mock_celery):
-    form = {"payload": json.dumps({"runid": None})}
+    form = {"runid": None}
 
     response = post(client, "/api/scrinshot", form)
     assert response.status_code == 400
