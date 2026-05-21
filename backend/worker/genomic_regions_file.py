@@ -1,6 +1,7 @@
 import logging
 import os
 from collections import defaultdict
+from typing import Any
 
 import yaml
 from Bio import SeqIO
@@ -45,8 +46,8 @@ class GenomicRegionsFile:
 
     def _load_probes_and_scores(self):
         """Load probes and scores from probes yaml file, match probes to regions, and fill gaps for exon-exon junction probes."""
-        probes = defaultdict(lambda: defaultdict(list))
-        scores = defaultdict(lambda: defaultdict(list))
+        probes: defaultdict[Any, dict] = defaultdict(lambda: defaultdict(list))
+        scores: defaultdict[Any, dict] = defaultdict(lambda: defaultdict(list))
 
         if not os.path.exists(self.probes_path):
             print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
