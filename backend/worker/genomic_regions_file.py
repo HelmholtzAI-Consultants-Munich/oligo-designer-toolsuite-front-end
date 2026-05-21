@@ -47,7 +47,7 @@ class GenomicRegionsFile:
     def _load_probes_and_scores(self):
         """Load probes and scores from probes yaml file, match probes to regions, and fill gaps for exon-exon junction probes."""
         probes: defaultdict[Any, dict] = defaultdict(lambda: defaultdict(list))
-        scores: defaultdict[Any, dict] = defaultdict(lambda: defaultdict(list))
+        scores: defaultdict[Any, dict] = defaultdict(dict)
 
         if not os.path.exists(self.probes_path):
             print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
@@ -75,8 +75,6 @@ class GenomicRegionsFile:
         # convert defaultdict to dict for clean output
         for gene in probes:
             probes[gene] = dict(probes[gene])
-        for gene in scores:
-            scores[gene] = dict(scores[gene])
         return dict(probes), dict(scores)
 
     def _generate_probes_from_probe_info(self, probe_info):
