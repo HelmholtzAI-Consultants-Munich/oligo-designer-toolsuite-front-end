@@ -35,6 +35,8 @@ export interface BaseProbe {
         type: "probe" | "gap";
     }[];
     transcript_ids: string[];
+    start: number;
+    end: number;
     details: BaseProbeDetails;
 }
 
@@ -146,6 +148,15 @@ export type ProbeDetails = BaseProbeDetails &
 
 export interface Probesets {
     [probeset_name: string]: Probe[];
+}
+
+export interface ProbesetScores {
+    [probeset_name: string]: ProbeScore;
+}
+
+export interface ProbeScore {
+    average: number;
+    worst: number;
 }
 
 export type ProbeDetailsValue = string | number | string[] | number[];

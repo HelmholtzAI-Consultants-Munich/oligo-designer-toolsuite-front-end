@@ -4,7 +4,11 @@ import { createRunId } from "../../contexts/authHelpers";
 import { showToast } from "../../utils/toastUtil";
 import { extractSubmissionError } from "../errorHandler";
 import type { NestedObject, RJSFFormData } from "../componentTypes";
-import { type FastaFormUncommented, type FastaFormUpload } from "./types";
+import {
+    type FastaFormUncommented,
+    type FastaFormUpload,
+    type setterCallback,
+} from "./types";
 import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
 import { Link } from "react-router";
@@ -12,6 +16,7 @@ import {
     PIPELINE_CONFIG,
     type PipelineConfig,
 } from "../../pipelineConfig/config";
+import type { FieldPathList, FieldProps } from "@rjsf/utils";
 
 export const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
 
@@ -45,9 +50,8 @@ const findReference = (
     return baseSchema as Record<string, unknown>;
 };
 
-export const getKeyObjectFromSchema = (
+export const getKeyObjectFromFastaFormBaseSchema = (
     fastaFormSchema: NestedObject,
-    baseSchema: NestedObject,
     extractKey: string,
     overwriteObject: boolean = false
 ) => {
@@ -66,7 +70,10 @@ export const getKeyObjectFromSchema = (
                     return null;
                 }
                 references.add(record.$ref as string);
-                const result = findReference(record.$ref as string, baseSchema);
+                const result = findReference(
+                    record.$ref as string,
+                    fastaFormSchema
+                );
                 if (!result) {
                     return null;
                 }
@@ -260,4 +267,47 @@ export const handleSubmit = async (
     } finally {
         updateRuns();
     }
+};
+
+export const changeHandlerAbstractFactory =
+    (
+        fieldPath: string[],
+        path: FieldPathList,
+        onChange: FieldProps["onChange"]
+    ) =>
+    (newValue: unknown) => {
+        onChange(newValue, [...path, ...fieldPath]);
+    };
+
+export const buildFileFunctions = (
+    formData: RJSFFormData,
+    path: FieldPathList,
+    onChange: FieldProps["onChange"]
+) => {
+    const files: File[] = formData.files;
+
+    const setFiles = (callback: setterCallback<File>) => {
+        changeHandlerAbstractFactory(
+            ["files"],
+            path,
+            onChange
+        )(callback(files));
+    };
+
+    const handleFileRemove = (fileIndex: number) => {
+        setFiles((prevFiles) =>
+            prevFiles.filter((_, idx) => idx !== fileIndex)
+        );
+    };
+
+    const FilePreview = (file: File) => {
+        return `${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+    };
+
+    return {
+        files,
+        setFiles,
+        handleFileRemove,
+        FilePreview,
+    };
 };

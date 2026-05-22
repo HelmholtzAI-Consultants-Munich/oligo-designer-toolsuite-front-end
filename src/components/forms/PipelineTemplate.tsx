@@ -32,6 +32,7 @@ import GenomicInput from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
 import { useLocation } from "react-router";
+import { FileInput } from "../fastaGenerateForm/FileInput";
 
 type Props = {
     pipeline: Pipeline["name"];
@@ -101,7 +102,8 @@ const PipelineTemplate: React.FC<Props> = ({
     }, [location.state]);
 
     const fields = {
-        fileSelection: GenomicInput,
+        genomicInput: GenomicInput,
+        fileUpload: FileInput,
     };
 
     const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;

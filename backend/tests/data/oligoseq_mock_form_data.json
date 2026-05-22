@@ -50,6 +50,10 @@
         }
       ]
     },
+    "files_vcf_reference_database_target_probe": {
+      "files": ["data/oligoseq_mock_form_data.json"],
+      "fasta_form": []
+    },
     "target_probe_length_min": 26,
     "target_probe_length_max": 30,
     "target_probe_isoform_consensus": 0,
