@@ -9,6 +9,7 @@ import yaml
 from filelock import SoftFileLock
 
 from backend.cache import file_cache_region
+from backend.exceptions import ODTPipelineError
 from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
 from backend.worker.converters import to_bool, to_int
 
@@ -107,14 +108,26 @@ class GenomicRegionGeneratorRunner:
         sequence_file_lock = SoftFileLock(Path(sequence_file + ".lock"))
         with annotation_file_lock, sequence_file_lock:
             # start Genomic Region Generator
-            result = subprocess.run(
-                ["genomic_region_generator", "-c", config_path], capture_output=True, text=True
-            )
-
-        if result.returncode != 0:
-            self.logger.error(f"Custom pipeline failed: {result.stderr}")
-            self.cleanup_temp_files(config_path)
-            raise ValueError("The pipeline failed to execute. Please check your input and try again.")
+            try:
+                subprocess.run(
+                    ["genomic_region_generator", "-c", config_path],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+            except subprocess.CalledProcessError as error:
+                self.logger.error(f"Custom pipeline failed: {error.stderr}")
+                self.cleanup_temp_files(config_path)
+                other_files_source = "Ensembl" if files_source == "NCBI" else "NCBI"
+                if (
+                    error.returncode == -9
+                ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
+                    raise ODTPipelineError(
+                        "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
+                    )
+                raise ODTPipelineError(
+                    f"An error occured while fetching data from {files_source}. Please try again. If the error persists, please inform us of the issue and consider switching to {other_files_source} data for now."
+                )
 
         self.cleanup_temp_files(config_path)
 

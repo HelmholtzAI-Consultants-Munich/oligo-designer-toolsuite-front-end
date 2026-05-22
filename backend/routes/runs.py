@@ -50,7 +50,7 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "queue_position": run.get("queue_position", "unknown"),
     }
 
-    if run.get("status") == "failure" and run.get("error_message"):
+    if run.get("status") in ["failure", "timeout", "empty_result"] and run.get("error_message"):
         formatted["error_message"] = run.get("error_message")
     return formatted
 

@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 from backend.constants import PIPELINE_GENOMIC_INPUT
-from backend.exceptions import ODTPipelineError
+from backend.exceptions import ODTEmptyResultError, ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
@@ -146,11 +146,26 @@ class PipelineRunner:
 
     def call_subprocess(self, config_path: str) -> None:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
-        result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
-        if result.returncode != 0:
-            self.logger.debug(f"STDOUT: {result.stdout}")
-            self.logger.debug(f"STDERR: {result.stderr}")
-            raise ODTPipelineError("An error occured during pipeline execution.")
+        try:
+            subprocess.run(
+                [self.subprocess_name, "-c", config_path], capture_output=True, text=True, check=True
+            )
+        except subprocess.CalledProcessError as error:
+            self.logger.debug(f"STDOUT: {error.stdout}")
+            self.logger.debug(f"STDERR: {error.stderr}")
+            if (
+                error.returncode == -9
+            ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
+                raise ODTPipelineError(
+                    "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
+                )
+            if "The oligo database is empty" in error.stdout:
+                raise ODTEmptyResultError(
+                    "The pipeline did not generate any results. Please tweak your input parameters."
+                )
+            raise ODTPipelineError(
+                "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
+            )
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
