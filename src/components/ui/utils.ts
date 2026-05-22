@@ -40,3 +40,12 @@ export const runStatusDisplay = {
         icon: Pulse.Paused,
     },
 };
+
+export const formatDateTime = (date: string | Date): string =>
+    new Date(date).toLocaleString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    });

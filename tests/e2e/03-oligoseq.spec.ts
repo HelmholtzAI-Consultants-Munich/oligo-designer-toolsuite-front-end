@@ -8,18 +8,27 @@ import {
     submitAndVerifyRun,
 } from "./helpers";
 
-test("@full oligoseq run completes and exposes artifacts", async ({ page }) => {
+test("@smoke @full oligoseq run completes and exposes artifacts", async ({
+    page,
+}) => {
     await openPipeline(page, OLIGOSEQ_PIPELINE);
 
     await fillTargetProbeParameters(page, {
         fileRegions: "AARS1",
-        fastaTargetFiles: [FASTA_FIXTURES.cds, FASTA_FIXTURES.utr],
-        fastaReferenceFiles: [FASTA_FIXTURES.cds, FASTA_FIXTURES.utr],
+        fastaTargetFiles: [
+            FASTA_FIXTURES.exon,
+            FASTA_FIXTURES.exon_exon_junction,
+        ],
+        fastaReferenceFiles: [
+            FASTA_FIXTURES.exon,
+            FASTA_FIXTURES.exon_exon_junction,
+        ],
+        fastaVcfFiles: [FASTA_FIXTURES.vcf],
     });
 
     await fillDeveloperSettings(page, {
-        maxGraphSize: "2500",
-        nAttempts: "30000",
+        maxGraphSize: "6000",
+        nAttempts: "120000",
     });
 
     await submitAndVerifyRun(page);

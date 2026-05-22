@@ -8,7 +8,7 @@ import {
     submitAndVerifyRun,
 } from "./helpers";
 
-test("@smoke @full scrinshot run completes and exposes artifacts", async ({
+test("@full scrinshot run completes and exposes artifacts", async ({
     page,
 }) => {
     await openPipeline(page, SCRINSHOT_PIPELINE);

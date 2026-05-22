@@ -6,7 +6,15 @@ PIPELINE_GENOMIC_INPUT: Mapping[str, list[str]] = dict(
             "files_fasta_target_probe_database",
             "files_fasta_reference_database_target_probe",
         ]
-        for pipeline in ["scrinshot", "oligoseq"]
+        for pipeline in ["scrinshot"]
+    },
+    **{
+        pipeline: [
+            "files_fasta_target_probe_database",
+            "files_fasta_reference_database_target_probe",
+            "files_vcf_reference_database_target_probe",
+        ]
+        for pipeline in ["oligoseq"]
     },
     **{
         pipeline: [

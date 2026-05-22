@@ -374,7 +374,7 @@ footer,
 /* Buttons & Links */
 .btn-outline-border {
     @include button-variant(
-        $white,
+        transparent,
         $border-color,
         $text-muted,
         tint-color($border-color, 90%),
@@ -387,6 +387,9 @@ footer,
         $border-color,
         $border-color
     );
+    &.filled {
+        --bs-btn-bg: white;
+    }
 }
 
 .btn.icon-button {
