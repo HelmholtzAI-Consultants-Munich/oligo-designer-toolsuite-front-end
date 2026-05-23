@@ -181,7 +181,7 @@ class CeleryConfig:
 
     # Static pipeline execution limits in seconds. The soft limit lets Celery
     # interrupt the task cleanly; the hard margin is a SIGKILL backstop.
-    pipeline_timeout_anon: int = _get_positive_int_env("PIPELINE_TIMEOUT_ANON", 5)
+    pipeline_timeout_anon: int = _get_positive_int_env("PIPELINE_TIMEOUT_ANON", 7200)  # in seconds
     pipeline_timeout_authenticated_multiplier: float = _get_positive_float_env(
         "PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER", 2.0
     )
