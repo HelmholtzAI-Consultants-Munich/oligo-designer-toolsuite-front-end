@@ -1,13 +1,20 @@
-import { useRef, useState } from "react";
+import {
+    useRef,
+    useState,
+    useEffect,
+    useCallback,
+    useEffectEvent,
+} from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
-import type { FileState, RJSFFormData } from "../componentTypes";
-import { addComments, handleSubmit } from "../fastaGenerateForm/helpers";
+import type { RJSFFormData } from "../componentTypes";
+import { handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
 import { TabsLayout } from "./TabsLayout";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
+import { formatDateTime } from "../ui/utils";
 import {
     BoxArrowInDown,
     BoxArrowUp,
@@ -22,20 +29,14 @@ import {
 import { useRuns } from "../../hooks/useRuns";
 import { useAuth } from "../../hooks/useAuth";
 import { Button, Form as BootstrapForm } from "react-bootstrap";
-import { Link } from "react-router";
-import type {
-    FastaForm,
-    FastaFormState,
-    FastaFormStateUncommented,
-    NestedObject,
-} from "../fastaGenerateForm/types";
+import { Link, useLocation } from "react-router";
 import GenomicInput from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
-import genomicEnsForm from "./schemas/genomicEnsForm";
-import genomicNcbiForm from "./schemas/genomicNcbiForm";
+import type { Pipeline } from "../../pipelineConfig/config";
+import { FileInput } from "../fastaGenerateForm/FileInput";
 
 type Props = {
-    pipeline: string;
+    pipeline: Pipeline["name"];
     title: string;
     schema: RJSFSchema;
     uiSchema: UiSchema;
@@ -46,43 +47,6 @@ interface TabConfig {
     fields: Array<string | string[]>;
 }
 
-const convertImportedFastaForms = (
-    importedFastaForms: FastaFormStateUncommented
-): FastaFormState => {
-    const convertForm = (
-        form: FastaFormStateUncommented[keyof FastaFormStateUncommented][number]
-    ): FastaForm => ({
-        selectedSource: form.selectedSource,
-        formDataNcbi: addComments(
-            form.formDataNcbi as unknown as NestedObject,
-            genomicNcbiForm as unknown as NestedObject
-        ) as unknown as FastaForm["formDataNcbi"],
-        formDataEns: addComments(
-            form.formDataEns as unknown as NestedObject,
-            genomicEnsForm as unknown as NestedObject
-        ) as unknown as FastaForm["formDataEns"],
-    });
-
-    return {
-        files_fasta_target_probe_database:
-            importedFastaForms.files_fasta_target_probe_database.map(
-                convertForm
-            ),
-        files_fasta_reference_database_target_probe:
-            importedFastaForms.files_fasta_reference_database_target_probe.map(
-                convertForm
-            ),
-        files_fasta_reference_database_readout_probe:
-            importedFastaForms.files_fasta_reference_database_readout_probe.map(
-                convertForm
-            ),
-        files_fasta_reference_database_primer:
-            importedFastaForms.files_fasta_reference_database_primer.map(
-                convertForm
-            ),
-    };
-};
-
 const PipelineTemplate: React.FC<Props> = ({
     pipeline,
     title,
@@ -91,20 +55,6 @@ const PipelineTemplate: React.FC<Props> = ({
 }) => {
     const [formData, setFormData] = useState<RJSFFormData>({});
     const validator = customizeValidator({ AjvClass: Ajv2020 });
-
-    const [fastaForms, setFastaForms] = useState<FastaFormState>({
-        files_fasta_target_probe_database: [],
-        files_fasta_reference_database_target_probe: [],
-        files_fasta_reference_database_readout_probe: [],
-        files_fasta_reference_database_primer: [],
-    });
-
-    const [files, setFiles] = useState<FileState>({
-        files_fasta_target_probe_database: [],
-        files_fasta_reference_database_target_probe: [],
-        files_fasta_reference_database_readout_probe: [],
-        files_fasta_reference_database_primer: [],
-    });
 
     const { updateRuns } = useRuns();
     const auth = useAuth();
@@ -117,8 +67,52 @@ const PipelineTemplate: React.FC<Props> = ({
         auth.legal?.accepted_terms_version !==
         auth.legal?.current_terms_version;
 
-    const widgets = {
-        fileSelection: GenomicInput,
+    const location = useLocation();
+
+    const applyValidatedConfig = useCallback(
+        (importedConfig: unknown, successTitle: string, errorTitle: string) => {
+            const result = importAndValidate(importedConfig, schema, pipeline);
+            if (!result.ok) {
+                showToast({
+                    title: errorTitle,
+                    content: result.error,
+                    type: "danger",
+                });
+                return;
+            }
+            setFormData((prev) => ({ ...prev, ...result.config }));
+            const exportedAt = (
+                importedConfig as { _meta?: { exportedAt?: string } }
+            )._meta?.exportedAt;
+            const dateStr = exportedAt ? formatDateTime(exportedAt) : undefined;
+            const skipNote =
+                result.skippedFields.length > 0
+                    ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
+                    : "";
+            const datePart = dateStr ? ` from ${dateStr}` : "";
+            showToast({
+                title: successTitle,
+                content: `Configuration${datePart} loaded.${skipNote}`,
+                type: "success",
+            });
+        },
+        [schema, pipeline]
+    );
+    const applyValidatedConfigEvent = useEffectEvent(applyValidatedConfig);
+
+    useEffect(() => {
+        const importedConfig = location.state?.importedConfig;
+        if (!importedConfig) return;
+        applyValidatedConfigEvent(
+            importedConfig,
+            "Config Loaded",
+            "Load Config Failed"
+        );
+    }, [location.state]);
+
+    const fields = {
+        genomicInput: GenomicInput,
+        fileUpload: FileInput,
     };
 
     const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
@@ -126,11 +120,33 @@ const PipelineTemplate: React.FC<Props> = ({
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleExport = () =>
-        triggerDownload(
-            buildExportPayload(formData, pipeline, schema, fastaForms)
-        );
+        triggerDownload(buildExportPayload(formData, pipeline, schema));
 
-    const handleRunPipeline = async () => {
+    const handleImport = () => importInputRef.current?.click();
+
+    const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = "";
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            let parsed: unknown;
+            try {
+                parsed = JSON.parse(ev.target?.result as string);
+            } catch {
+                showToast({
+                    title: "Import Failed",
+                    content: "The file is not valid JSON.",
+                    type: "danger",
+                });
+                return;
+            }
+            applyValidatedConfig(parsed, "Import Successful", "Import Failed");
+        };
+        reader.readAsText(file);
+    };
+
+    const runPipeline = async () => {
         if (requiresTermsAcceptance) {
             if (!hasAcceptedTerms) {
                 showToast({
@@ -158,53 +174,13 @@ const PipelineTemplate: React.FC<Props> = ({
             }
             setHasAcceptedTerms(false);
         }
-        handleSubmit(files, fastaForms, formData, pipeline, updateRuns);
-    };
 
-    const handleImport = () => importInputRef.current?.click();
-
-    const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        e.target.value = "";
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            let parsed: unknown;
-            try {
-                parsed = JSON.parse(ev.target?.result as string);
-            } catch {
-                showToast({
-                    title: "Import Failed",
-                    content: "The file is not valid JSON.",
-                    type: "danger",
-                });
-                return;
-            }
-            const result = importAndValidate(parsed, schema, pipeline);
-            if (!result.ok) {
-                showToast({
-                    title: "Import Failed",
-                    content: result.error,
-                    type: "danger",
-                });
-                return;
-            }
-            setFormData((prev) => ({
-                ...prev,
-                ...result.config,
-            }));
-            setFastaForms(convertImportedFastaForms(result.fastaForms));
-            const skipNote =
-                result.skippedFields.length > 0
-                    ? ` Fields not in current schema were skipped: ${result.skippedFields.join(", ")}.`
-                    : "";
-            showToast({
-                title: "Import Successful",
-                content: `Configuration loaded.${skipNote}`,
-                type: "success",
-            });
-        };
-        reader.readAsText(file);
+        const pipelineRunConfig = buildExportPayload(
+            formData,
+            pipeline,
+            schema
+        );
+        handleSubmit(formData, pipeline, updateRuns, pipelineRunConfig);
     };
 
     return (
@@ -236,7 +212,7 @@ const PipelineTemplate: React.FC<Props> = ({
                     label: "Run Pipeline",
                     icon: Send,
                     variant: "primary",
-                    onClick: () => void handleRunPipeline(),
+                    onClick: () => void runPipeline(),
                 },
             ]}
             stickyHeader
@@ -251,21 +227,15 @@ const PipelineTemplate: React.FC<Props> = ({
             <Form
                 schema={schema}
                 uiSchema={uiSchema}
-                formContext={{
-                    files,
-                    setFiles,
-                    fastaForms,
-                    setFastaForms,
-                }}
                 formData={formData}
                 templates={{
                     FieldTemplate: FieldTemplate,
                     ObjectFieldTemplate: TabsLayout,
                 }}
-                widgets={widgets}
+                fields={fields}
                 validator={validator}
                 onChange={(e) => setFormData(e.formData)}
-                onSubmit={() => void handleRunPipeline()}
+                onSubmit={() => void runPipeline()}
             >
                 {requiresTermsAcceptance && (
                     <div

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import { useNavigate, Outlet, Link, useLocation } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { Navbar, Nav, Container, Spinner, Button } from "react-bootstrap";
@@ -11,6 +11,7 @@ import {
     Speedometer2,
     ChatDots,
     FileEarmarkText,
+    BarChartFill,
 } from "react-bootstrap-icons";
 
 interface NavItemConfig {
@@ -73,6 +74,7 @@ const navItems: NavItemConfig[] = [
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
     { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
     { path: "/admin/legal", label: "Legal Documents", icon: FileEarmarkText },
+    { path: "/admin/reports", label: "Monthly Reports", icon: BarChartFill },
 ];
 
 const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
@@ -81,35 +83,35 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
     const navigate = useNavigate();
     const location = useLocation();
     const auth = useAuth();
-    const { loading } = auth;
+    const { loading, logoutWithConfirmation } = auth;
     const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar collapse state
 
-    const [isLargeScreen, setIsLargeScreen] = useState(
-        window.matchMedia("(min-width: 992px)").matches
-    );
-
-    useEffect(() => {
-        // Responsive screen detection using matchMedia
-        const mediaQuery = window.matchMedia("(min-width: 992px)");
-        const handleChange = (e: MediaQueryListEvent) =>
-            setIsLargeScreen(e.matches);
-        mediaQuery.addEventListener("change", handleChange);
-
-        if (!loading) {
-            if (!auth.authenticated) {
-                navigate(
-                    `/login?redirect=${encodeURIComponent(location.pathname)}`
-                );
-            } else if (auth.user?.role !== "admin") {
-                navigate("/");
-            }
+    if (!loading) {
+        if (!auth.authenticated) {
+            navigate(
+                `/login?redirect=${encodeURIComponent(location.pathname)}`
+            );
+        } else if (auth.user?.role !== "admin") {
+            navigate("/");
         }
+    }
 
-        return () => mediaQuery.removeEventListener("change", handleChange);
-    }, [auth, loading, navigate, location.pathname]);
+    function subscribeToScreenChanges(callback: () => void) {
+        window
+            .matchMedia("(min-width: 992px)")
+            .addEventListener("change", callback);
+        return () => {
+            window
+                .matchMedia("(min-width: 992px)")
+                .removeEventListener("change", callback);
+        };
+    }
 
-    const { logoutWithConfirmation } = useAuth();
+    const isLargeScreen = useSyncExternalStore(
+        subscribeToScreenChanges,
+        () => window.matchMedia("(min-width: 992px)").matches
+    );
 
     if (loading) {
         return (
@@ -170,7 +172,11 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                 className="d-flex flex-column flex-grow-1"
                 style={{
                     marginLeft: isLargeScreen ? sidebarWidth : 0,
+                    width: isLargeScreen
+                        ? `calc(100% - ${sidebarWidth})`
+                        : "100%",
                     transition: "margin-left 0.3s ease",
+                    minWidth: 0,
                 }}
             >
                 {/* Top Navbar */}
@@ -258,9 +264,9 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                     position: "fixed",
                     left: sidebarOpen ? 0 : "-250px",
                     top: 0,
-                    zIndex: 1001,
-                    transition: "left 0.3s ease",
+                    zIndex: 1000,
                     paddingTop: "56px",
+                    transition: "left 0.3s ease",
                 }}
             >
                 <div className="p-3">

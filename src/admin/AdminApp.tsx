@@ -6,8 +6,9 @@ import UserList from "./users/UserList";
 import UserEdit from "./users/UserEdit";
 import PipelineList from "./pipelines/PipelineList";
 import FeedbackList from "./feedback/FeedbackList";
+import MonthlyReports from "./reports/MonthlyReports";
 import LegalDocuments from "./legal/LegalDocuments";
-import Modal from "../components/notifications/Modal";
+import Modal from "../components/notifications/ModalComponent";
 import Toasts from "../components/notifications/Toasts";
 
 const AdminApp: React.FC = () => {
@@ -26,6 +27,7 @@ const AdminApp: React.FC = () => {
                 <Route path="pipelines" element={<PipelineList />} />
                 <Route path="feedback" element={<FeedbackList />} />
                 <Route path="legal" element={<LegalDocuments />} />
+                <Route path="reports" element={<MonthlyReports />} />
             </Routes>
         </AdminLayout>
     );

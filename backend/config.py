@@ -11,13 +11,13 @@ See .env.sample for available configuration options.
 """
 
 import os
+from collections.abc import Mapping
 from datetime import timedelta
-from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-# This ensures environment variables are available for both from_prefixed_env() and CeleryConfig
+# This ensures environment variables are available for both from_prefixed_env() and os.environ.get()
 load_dotenv()
 
 
@@ -26,6 +26,9 @@ class Config:
 
     Environment variables prefixed with FLASK_ will override these defaults
     when app.config.from_prefixed_env() is called in create_app().
+
+    Variables also used by the Celery worker need to use os.environ.get since
+    Flask's from_prefixed_env() does not get called by the worker.
 
     For example, to override MONGO_URI, set FLASK_MONGO_URI in your environment.
     See .env.sample for all available options.
@@ -53,12 +56,7 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
-    # Read env here as well because Celery worker tasks import Config directly and do not
-    # go through Flask's app.config.from_prefixed_env() override step.
-    MONGO_URI = os.environ.get("FLASK_MONGO_URI") or os.environ.get(
-        "MONGO_URI", "mongodb://localhost:27017/oligo_db"
-    )
-    MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME", urlparse(MONGO_URI).path.lstrip("/") or "oligo_db")
+    MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost/oligo_db")
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"
@@ -67,6 +65,9 @@ class Config:
     HELMHOLTZ_USERINFO_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/userinfo"
     HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
+
+    # GPDR settings
+    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
 
     # OAuth2 client credentials (required, no defaults)
     HELMHOLTZ_CLIENT_ID = None
@@ -79,7 +80,17 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
-    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+    GENE_COUNT_THRESHOLD = 10
+
+    # Caching Settings
+    REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")
+    REDIS_GENERIC_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_GENERIC_EXPIRATION_TIME", 3600 * 24)
+    )  # in seconds (default: 1 day)
+    REDIS_FILE_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
+    )  # in seconds (default: 30 days)
+    REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
@@ -132,12 +143,6 @@ class Config:
             raise ValueError(f"Missing required environment variable(s): {', '.join(missing)}")
 
 
-# Shared constants used by both the Flask server and Celery worker.
-# Defined here to avoid circular imports between routes and worker modules.
-MONGO_DB_NAME: str = "oligo_db"
-PIPELINE_NAMES: frozenset[str] = frozenset({"scrinshot", "seqfish", "merfish", "oligoseq"})
-
-
 class CeleryConfig:
     """Celery configuration with default values.
 
@@ -146,30 +151,20 @@ class CeleryConfig:
     configuration mechanism (see https://github.com/celery/celery/issues/7309).
     """
 
-    broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
-    result_backend: str = os.environ.get("CELERY_MONGO_URI", "mongodb://localhost:27017/")
+    broker_url: str = Config.REDIS_URI
+    result_backend: str = Config.REDIS_URI
     task_track_started: bool = True
     task_compression: str = "zlib"
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
 
-    # Timeout mode: "config" (fixed env vars) or "heuristic" (configured percentile of past runs)
-    pipeline_timeout_mode: str = os.environ.get("PIPELINE_TIMEOUT_MODE", "config")
-
-    # Fixed timeout values — used in "config" mode, and as fallback in "heuristic" mode
-    pipeline_timeout_anon: int = int(os.environ.get("PIPELINE_TIMEOUT_ANON", 3600))  # 1 hour
-    pipeline_timeout_auth: int = int(os.environ.get("PIPELINE_TIMEOUT_AUTH", 7200))  # 2 hours
-    pipeline_timeout_hard_margin: int = int(
-        os.environ.get("PIPELINE_TIMEOUT_HARD_MARGIN", 300)
-    )  # 5 min SIGKILL backstop
-
-    # Heuristic mode settings
-    pipeline_timeout_heuristic_factor: float = float(os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_FACTOR", 3.0))
-    pipeline_timeout_heuristic_percentile: int = int(
-        os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_PERCENTILE", 95)
-    )
-    pipeline_timeout_heuristic_window_days: int = int(
-        os.environ.get("PIPELINE_TIMEOUT_HEURISTIC_WINDOW_DAYS", 30)
-    )
+    # Redis task priorities
+    broker_transport_options: Mapping[str, str] = {
+        "queue_order_strategy": "priority",
+        "sep": ":",  # queue names: celery, celery:3, celery:6, celery:9
+    }
+    task_default_priority = 6
+    task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
+    worker_disable_prefetch = True
     anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))

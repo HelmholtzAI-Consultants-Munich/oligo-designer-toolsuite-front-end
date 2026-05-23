@@ -4,6 +4,7 @@ import { BACKEND_URL } from "../config";
 import { AuthContext } from "../hooks/useAuth";
 import { useRuns } from "../hooks/useRuns";
 import { confirmWithModal } from "../utils/modalUtil";
+import { showToast } from "../utils/toastUtil";
 
 export default function AuthProvider({
     children,
@@ -58,25 +59,31 @@ export default function AuthProvider({
     };
 
     const logout = () => {
-        setAuthState({ authenticated: false, user: null, legal: null });
-        updateRuns();
+        fetch(BACKEND_URL + "/logout", {
+            method: "POST",
+            credentials: "include",
+        })
+            .then(() => {
+                setUser(null);
+                updateRuns();
+            })
+            .catch(() => {
+                showToast({
+                    title: "Logout Failed",
+                    content:
+                        "An error occurred while logging out. Please try again.",
+                    type: "danger",
+                });
+            });
     };
 
     const logoutWithConfirmation = () => {
-        const callback = () =>
-            fetch(BACKEND_URL + "/logout", {
-                method: "POST",
-                credentials: "include",
-            }).then(() => {
-                logout();
-            });
-
         confirmWithModal({
             title: "Confirm Logout",
             content: "Are you sure you want to log out?",
             primaryAction: {
                 label: "Logout",
-                callback,
+                callback: logout,
                 variant: "danger",
             },
         });

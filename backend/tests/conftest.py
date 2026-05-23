@@ -8,13 +8,16 @@ Important Note:
 """
 
 import builtins
+import json
 import os
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from backend.app import create_app
+from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import mongo
 from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
@@ -25,6 +28,22 @@ from backend.utilities.typed_values import serialize_path, utc_now
 #     """Auto-use fixture to mock os.makedirs across all tests"""
 #     with patch("os.makedirs"):
 #         yield
+
+
+def post(client, link: str, data: dict[str, Any]):
+    print("Modifying data")
+    pipeline = link.split("/")[-1]
+    file_uploads = {}
+    if "formdata" in data:
+        form_data = data["formdata"]
+        for field in PIPELINE_GENOMIC_INPUT[pipeline]:
+            if field in form_data:
+                for file in form_data[field]["files"]:
+                    file_uploads[file] = open(os.path.join(os.path.dirname(__file__), str(file)), "rb")
+
+    return client.post(
+        link, data={**file_uploads, "payload": json.dumps(data)}, content_type="multipart/form-data"
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -41,10 +60,11 @@ def mock_user_dir_exists(monkeypatch):
     def mock_exists(path):
         path_str = str(path)
         # Allow user directories to exist for authenticated users
-        # Pattern: .../user_data/test_user_id or .../user_data/dummy_user
+        # Pattern: .../user_data/507f1f77bcf86cd799439011 or .../user_data/dummy_user
+        # 507f1f77bcf86cd799439011 is a test user id
         if "/user_data/" in path_str or "cache" in path_str or path_str.endswith("user_data"):
             # Check if it's for a test user
-            if any(user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]):
+            if any(user_id in path_str for user_id in ["507f1f77bcf86cd799439011", "dummy_user", "anon"]):
                 # Return True for directory existence checks
                 # This allows PipelineRunner.create_context() to succeed
                 return True
@@ -55,7 +75,7 @@ def mock_user_dir_exists(monkeypatch):
         """Mock makedirs to silently succeed for test user directories."""
         path_str = str(path)
         if "/user_data/" in path_str:
-            if any(user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]):
+            if any(user_id in path_str for user_id in ["507f1f77bcf86cd799439011", "dummy_user", "anon"]):
                 # Silently succeed for test user directories
                 return
         if "cache" in path_str:
@@ -67,7 +87,7 @@ def mock_user_dir_exists(monkeypatch):
         """Mock open() to succeed for config files in test user directories."""
         path_str = str(file_path)
         if "/user_data/" in path_str and any(
-            user_id in path_str for user_id in ["test_user_id", "dummy_user", "anon"]
+            user_id in path_str for user_id in ["507f1f77bcf86cd799439011", "dummy_user", "anon"]
         ):
             if "config" in path_str and mode == "w":
                 # For config files, return a mock file object that can be written to
@@ -80,6 +100,7 @@ def mock_user_dir_exists(monkeypatch):
         return original_open(file_path, mode, *args, **kwargs)
 
     monkeypatch.setattr("os.path.exists", mock_exists)
+    monkeypatch.setattr("pathlib.Path.exists", mock_exists)
     monkeypatch.setattr("os.makedirs", mock_makedirs)
     monkeypatch.setattr("builtins.open", mock_open)
 
@@ -93,31 +114,15 @@ def run_id(app):
 
 @pytest.fixture
 def mock_celery():
+    """This was impossible to do properly, leaving this up to #197"""
+
     class MockPendingAsyncResult:
         id = "123"
         state = "pending"
 
-        def successful(self):
-            return False
-
-        def get(self):
-            return False, b""
-
-    class MockSuccessfulAsyncResult:
-        id = "123"
-        state = "success"
-
-        def successful(self):
-            return True
-
-        def get(self):
-            return True, b""
-
     with patch("backend.routes.pipelines.enqueue_pipeline") as mock_pending:
         mock_pending.return_value = MockPendingAsyncResult()
-        with patch("backend.extensions.celery_app.AsyncResult") as mock_success:
-            mock_success.return_value = MockSuccessfulAsyncResult()
-            yield mock_success
+        yield mock_pending
 
 
 @pytest.fixture
@@ -185,7 +190,7 @@ def authenticated_user(app, monkeypatch):
     # Simulate an authenticated user
     class DummyUser:
         is_authenticated = True
-        id = "test_user_id"
+        id = "507f1f77bcf86cd799439011"
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
     with app.app_context():
@@ -319,7 +324,6 @@ def mock_schema():
     """Mock schema for PipelineRunner."""
     return {
         "properties": {
-            "dir_output": {"type": "string"},
             "test_param": {"type": "integer"},
         }
     }

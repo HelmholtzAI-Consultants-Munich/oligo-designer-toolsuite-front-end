@@ -3,11 +3,14 @@ import os
 import subprocess
 import tempfile
 from collections.abc import Mapping
+from logging import Logger
 from typing import Any
 
 import yaml
-from celery import Celery
-from celery.utils.log import get_task_logger
+
+from backend.constants import PIPELINE_GENOMIC_INPUT
+from backend.exceptions import ODTEmptyResultError, ODTPipelineError
+from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
 class PipelineRunner:
@@ -31,8 +34,11 @@ class PipelineRunner:
         "oligoseq": "oligo_seq_probe_designer",
     }
 
-    def __init__(self, pipeline_name: str, task: Celery.Task):
+    def __init__(self, pipeline_name: str, logger: Logger):
+        self.logger = logger
+
         # TODO: pass root_dir config to worker, use config for absolute path
+        #   here and in genomic_region_generator_runner.py
         schema_path = os.path.join(os.path.dirname(__file__), f"../../schemas/{pipeline_name}.schema.json")
         with open(schema_path) as f:
             schema = json.load(f)
@@ -40,28 +46,25 @@ class PipelineRunner:
         self.pipeline_name = pipeline_name  # e.g., 'merfish'
         self.subprocess_name = self.PIPELINE_SUBPROCESS[pipeline_name]  # e.g., 'merfish_probe_designer'
         self.schema = schema  # JSON schema
-        self.task = task
-        # Create logger using task name (Celery tasks have a 'name' attribute)
-        self.logger = get_task_logger(getattr(task, "name", __name__))
 
-    def run(self, form_data: dict[str, Any], upload_path: str, output_path: str) -> bool:
+    def run(
+        self, form_data: dict[str, Any], output_path: str, generated_region_paths: list[tuple[str, list[str]]]
+    ) -> None:
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
 
         # Build Config and Write to YAML
-        config_path = self.write_config_file(form_data, output_path)
+        config_path = self.write_config_file(form_data, output_path, generated_region_paths)
 
-        # Subprocess Call
-        ok = self.call_subprocess(config_path)
+        try:
+            # Subprocess Call
+            self.call_subprocess(config_path)
 
-        # Generate Visualization Files
-        self.generate_genomic_regions_file(form_data, output_path)
-
-        # Cleanup of Temporary Files
-        self.cleanup_temp_files(form_data, config_path)
-
-        # Response
-        return ok
+            # Generate Visualization Files
+            self.generate_genomic_regions_file(form_data, output_path)
+        finally:
+            # Cleanup of Temporary Files
+            self.cleanup_temp_files(form_data, config_path)
 
     def populate_temp_file(self, form_data: dict) -> None:
         if form_data["file_regions"] != "":
@@ -75,11 +78,59 @@ class PipelineRunner:
         else:
             form_data["file_regions"] = None
 
-    def write_config_file(self, form_data: dict, output_path: str) -> str:
+    def populate_form_data_path_fields(
+        self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
+    ) -> None:
+        """
+        This method converts the form_data sent by the frontend to the format used by ODT.
+        It is necessary because the Oligo Designer Toolsuite expects a list of file paths per `files_[...]` field like:
+        ```py
+        {"files_field": ["input_file.fna"]}
+        ```
+        Since we forbid passing file paths directly and we allow creation of custom genomic regions via the region generator, the form_data has the following scheme:
+        ```py
+        {"files_field": {
+            "files": [FileStorageObject],
+            "fasta_form": [FastaFormObject]
+        }}
+        ```
+        The files listed under `"files":` are saved to disk and the resulting paths are injected into the form data.
+        The forms listed under `"fasta_form":` are processed by the genomic_region_generator which results in a list of tuples like:
+        ```py
+        [("files_field", ["generated_genomic_regions_file_path"])]
+        ```
+        These paths also get injected into the form data here.
+
+        Arguments:
+            config {dict} -- Form Data of request
+            generated_region_paths {list[tuple[str, list[str]]]} -- list of tuples of input_field_id and belonging paths of generated genomic regions
+        """
+
+        # Overwrite fields with their respective file values or an empty array as fallback for None
+        for field in PIPELINE_GENOMIC_INPUT[self.pipeline_name]:
+            if config[field]["files"] is None:
+                config[field] = []
+            else:
+                config[field] = config[field]["files"]
+
+        # Add paths of generated regions to config
+        for id, paths in generated_region_paths:
+            config[id].extend(paths)
+
+    def write_config_file(
+        self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
+    ) -> str:
         config = form_data
 
         # Override output directory
         config["dir_output"] = output_path
+
+        self.populate_form_data_path_fields(config, generated_region_paths)
+
+        if "target_probe_kmer_abundance_threshold" in form_data:
+            form_data["target_probe_kmer_abundance_threshold"] = {
+                int(k): v for k, v in form_data["target_probe_kmer_abundance_threshold"].items()
+            }
 
         # Write config to YAML file
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
@@ -93,30 +144,30 @@ class PipelineRunner:
             yaml.dump(config, f, sort_keys=False)
         return config_path
 
-    def call_subprocess(self, config_path: str) -> bool:
-        proc = subprocess.Popen(
-            [self.subprocess_name, "-c", config_path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+    def call_subprocess(self, config_path: str) -> None:
+        # NOTE: This might require locking input files once we add automatic cleanup for generated regions
         try:
-            stdout, stderr = proc.communicate()
-        except BaseException:
-            proc.kill()
-            proc.wait()
-            raise
-        self.logger.debug(f"STDERR: {stderr}")
-        self.logger.debug(f"STDOUT (partial logs): {stdout}")
-        return proc.returncode == 0
+            subprocess.run(
+                [self.subprocess_name, "-c", config_path], capture_output=True, text=True, check=True
+            )
+        except subprocess.CalledProcessError as error:
+            self.logger.debug(f"STDOUT: {error.stdout}")
+            self.logger.debug(f"STDERR: {error.stderr}")
+            if (
+                error.returncode == -9
+            ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
+                raise ODTPipelineError(
+                    "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
+                )
+            if "The oligo database is empty" in error.stdout:
+                raise ODTEmptyResultError(
+                    "The pipeline did not generate any results. Please tweak your input parameters."
+                )
+            raise ODTPipelineError(
+                "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
+            )
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
-        # Imported here rather than at module level because GenomicRegionsFile
-        # pulls in Bio (biopython), which is only needed for visualization.
-        # Keeping it lazy avoids forcing Bio as a hard dependency of PipelineRunner
-        # itself, which matters in the test suite where biopython is not installed.
-        from backend.worker.genomic_regions_file import GenomicRegionsFile
-
         # find files_fasta_target_probe_database fasta file and read it
         self.logger.info("Generating visualization files...")
         regions_file = form_data.get("file_regions", None)
@@ -141,7 +192,7 @@ class PipelineRunner:
             None,
         )
         if not output_yaml:
-            print(
+            self.logger.warning(
                 "No output YAML file containing 'probes' or 'probeset' found, skipping visualization generation."
             )
             return
@@ -175,7 +226,9 @@ class PipelineRunner:
                 continue
             files_list = form_data[field]
             for fname in files_list:
-                if os.path.exists(fname):
+                # Delete user-uploaded files, but not generated regions so they can be cached
+                # TODO: make the distinction logic more robust
+                if os.path.exists(fname) and "user_data" in fname:
                     os.remove(fname)
 
         if os.path.exists(config_path):

@@ -1,7 +1,8 @@
 import React from "react";
 import type { GenomicRegions, Probe } from "../../types";
-import GenomeAlignmentD3, { Regions } from "./GenomeAlignmentD3";
+import GenomeAlignmentD3 from "./GenomeAlignmentD3";
 import { Horizontal, Vertical } from "../ui/Alignment";
+import { Regions } from "./visualizationHelpers";
 
 type Props = {
     probes: Probe[];
@@ -59,6 +60,10 @@ class GenomeAlignment extends React.Component<Props> {
     }
 
     render() {
+        const transcriptIds = Object.keys(this.props.genomicRegions || {});
+        const isGene =
+            transcriptIds.length === 1 && transcriptIds[0] === "unknown";
+
         if (!this.props.genomicRegions) {
             return (
                 <p>
@@ -69,17 +74,38 @@ class GenomeAlignment extends React.Component<Props> {
         }
         return (
             <>
-                {/* SVG element for D3 to hook into */}
-                <svg
-                    ref={(el) => {
-                        this.el = el;
-                    }}
-                ></svg>
+                <Horizontal gap="md">
+                    <Vertical gap="md" fillHeight className="small">
+                        <div
+                            style={{
+                                writingMode: "vertical-rl",
+                                transform: "rotate(180deg)",
+                            }}
+                        >
+                            Oligos
+                        </div>
+                        <div
+                            className="flex-grow-1 text-center"
+                            style={{
+                                writingMode: "vertical-rl",
+                                transform: "rotate(180deg)",
+                            }}
+                        >
+                            {isGene ? "Gene" : "Transcripts"}
+                        </div>
+                    </Vertical>
+                    {/* SVG element for D3 to hook into */}
+                    <svg
+                        ref={(el) => {
+                            this.el = el;
+                        }}
+                    ></svg>
+                </Horizontal>
 
                 {/* Legend and strand information */}
                 <Vertical>
                     <Horizontal wrap gap="md">
-                        <strong>Legend:</strong>
+                        <strong>Regions:</strong>
                         {Object.keys(Regions)
                             .filter((type) => {
                                 return Object.values(
@@ -114,12 +140,31 @@ class GenomeAlignment extends React.Component<Props> {
                                 );
                             })}
                     </Horizontal>
-                    <strong>
-                        Strand:{" "}
+                    {!isGene && (
+                        <Horizontal wrap gap="md">
+                            <strong>Transcripts:</strong>
+                            <Horizontal gap="sm" align="baseline">
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: "12px",
+                                        height: "12px",
+                                        backgroundColor: "#22bd28",
+                                        marginRight: "5px",
+                                    }}
+                                ></span>
+                                Selected oligo matches transcript
+                            </Horizontal>
+                        </Horizontal>
+                    )}
+                    <Horizontal wrap gap="md">
+                        <strong>Strand:</strong>
                         {Object.values(this.props.genomicRegions)[0][0][
                             "strand"
-                        ] || "unknown"}
-                    </strong>
+                        ] == "+"
+                            ? "plus"
+                            : "minus"}
+                    </Horizontal>
                 </Vertical>
             </>
         );

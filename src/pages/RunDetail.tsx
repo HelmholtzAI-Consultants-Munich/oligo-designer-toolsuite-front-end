@@ -9,6 +9,7 @@ import type {
     Probesets,
     ProbeDetailsValue,
     RunState,
+    ProbesetScores,
 } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
@@ -17,17 +18,25 @@ import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
 import {
-    pipelineDisplayNames,
     visualizationDisplayNames,
     type VisualizationType,
 } from "../components/ui/utils";
 import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
-import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
+import {
+    CardList,
+    FileEarmarkSpreadsheet,
+    GearFill,
+    Trash,
+} from "react-bootstrap-icons";
 import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
+import { getPipelineDisplayName } from "../pipelineConfig/utils";
+import RunStatusDetails from "../components/ui/RunStatusDetails";
+import RunError from "../components/ui/RunError";
+import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
 
 interface RunFile {
     name: string;
@@ -40,28 +49,6 @@ function getAllOligoColumns(oligos: ProbeDetails[]): string[] {
     const columns = new Set<string>();
     oligos.forEach((o) => Object.keys(o).forEach((k) => columns.add(k)));
     return Array.from(columns);
-}
-
-type OligoComponentDefinition = {
-    type: "columns";
-    value: string[];
-};
-
-function getColumnsFromDefinition(
-    definition: OligoComponentDefinition[] | undefined
-): string[] {
-    if (!definition) {
-        return [];
-    }
-
-    const columnsEntry = definition.find((item) => item.type === "columns");
-
-    if (!columnsEntry) {
-        console.error("No target field found in component definition");
-        return []; // fallback
-    }
-
-    return columnsEntry.value;
 }
 
 interface LocationState {
@@ -93,13 +80,15 @@ const RunDetail = () => {
         | null
         | undefined
     >(undefined); // undefined = not loaded yet, null = no probes available or error loading
+    const [scores, setScores] = useState<{
+        [key: string]: ProbesetScores;
+    } | null>(null);
 
     const run = useMemo(() => runs.find((r) => r._id === runId), [runs, runId]);
 
-    const definition = ComponentDefinition[
+    const tableColumns = ComponentDefinition[
         run?.pipeline as keyof typeof ComponentDefinition
-    ] as OligoComponentDefinition[] | undefined;
-    const tableColumns = getColumnsFromDefinition(definition);
+    ].columns as string[];
 
     // --- Polling/log state variables ---
     const fetchAndParseRunFiles = useCallback(
@@ -127,6 +116,9 @@ const RunDetail = () => {
                             probes: {
                                 [gene: string]: Probesets;
                             };
+                            scores: {
+                                [gene: string]: ProbesetScores;
+                            };
                         };
 
                         const genes = Object.keys(regionsYaml.probes || {});
@@ -141,6 +133,7 @@ const RunDetail = () => {
 
                         setGenomicRegions(regionsYaml.regions);
                         setProbes(regionsYaml.probes);
+                        setScores(regionsYaml.scores);
                         setSelectedGene(firstGene);
                         setSelectedOligoset(firstOligoset);
                         setSelectedOligo(firstOligo);
@@ -397,6 +390,8 @@ const RunDetail = () => {
         );
     };
 
+    const handleUseSettings = useNavigateWithRunConfig(run, navigate);
+
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
 
     const actions = useMemo(() => {
@@ -426,16 +421,36 @@ const RunDetail = () => {
             onClick: handleDownloadCSV,
         };
 
+        const useSettingsAction = {
+            type: "button",
+            label: "Use Settings",
+            variant: "outline-border",
+            icon: GearFill,
+            onClick: handleUseSettings,
+        };
+
         if (probes) {
-            return [deleteAction, downloadExcelAction, downloadCSVAction];
+            return [
+                useSettingsAction,
+                downloadExcelAction,
+                downloadCSVAction,
+                deleteAction,
+            ];
         } else {
-            return [deleteAction];
+            return [useSettingsAction, deleteAction];
         }
-    }, [run, probes, handleDelete, handleDownloadCSV, handleDownloadExcel]);
+    }, [
+        run,
+        probes,
+        handleDelete,
+        handleUseSettings,
+        handleDownloadCSV,
+        handleDownloadExcel,
+    ]);
 
     return (
         <Page
-            title={`Run Result - ${run ? pipelineDisplayNames[run?.pipeline] : "Unknown Pipeline"}`}
+            title={`Run Result - ${run ? getPipelineDisplayName(run.pipeline) : "Unknown Pipeline Run"}`}
             actions={actions as Action[] | undefined}
             backTo={{
                 label: fromAdmin ? "Admin Panel" : "All Runs",
@@ -452,16 +467,14 @@ const RunDetail = () => {
             {(run?.status == "pending" || run?.status == "started") && (
                 <Vertical align="center" className="my-5" gap="lg">
                     <RunStatus status={run.status} size={100} />
-                    <h3 className="mt-3">Run {run.status}...</h3>
+                    <RunStatusDetails run={run} />
                 </Vertical>
             )}
 
-            {run?.status === "failure" && (
-                <Alert variant="danger">
-                    {run.error_message ??
-                        "Run failed. Please check the logs for more details."}
-                </Alert>
-            )}
+            {run &&
+                ["failure", "empty_result", "timeout"].includes(run.status) && (
+                    <RunError run={run} />
+                )}
 
             {/* YAML/table logic remains unchanged below */}
             {run?.status === "success" && (
@@ -591,6 +604,21 @@ const RunDetail = () => {
                                         selectedVisualization
                                     }
                                 />
+
+                                <Vertical.Item className="mt-3">
+                                    <h3>{selectedOligoset}</h3>
+                                    <p className="mb-0">
+                                        Average Score:{" "}
+                                        {scores?.[selectedGene][
+                                            selectedOligoset
+                                        ]?.average || "N/A"}{" "}
+                                        | Worst Score:{" "}
+                                        {scores?.[selectedGene][
+                                            selectedOligoset
+                                        ]?.worst || "N/A"}
+                                    </p>
+                                </Vertical.Item>
+
                                 <Table responsive bordered hover>
                                     <thead className="table-light">
                                         <tr>
@@ -608,7 +636,7 @@ const RunDetail = () => {
                                     <tbody>
                                         {probes[selectedGene][
                                             selectedOligoset
-                                        ].map(({ details: oligo }) => (
+                                        ].map((oligo) => (
                                             <tr key={oligo.oligo_id}>
                                                 {tableColumns.map((column) => (
                                                     <td
@@ -626,13 +654,23 @@ const RunDetail = () => {
                                                             )
                                                         }
                                                     >
-                                                        {column === "location"
-                                                            ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                            : formatValue(
-                                                                  oligo[
-                                                                      column as keyof ProbeDetails
-                                                                  ]
-                                                              )}
+                                                        {
+                                                            column ===
+                                                                "oligo_id" &&
+                                                                oligo.oligo_id /* contains index for oligo with multiple locations */
+                                                        }
+                                                        {column ===
+                                                            "location" &&
+                                                            `chr${oligo.details.chromosome}:${oligo.start}-${oligo.end}`}
+                                                        {column !==
+                                                            "oligo_id" &&
+                                                            column !==
+                                                                "location" &&
+                                                            formatValue(
+                                                                oligo.details[
+                                                                    column as keyof ProbeDetails
+                                                                ]
+                                                            )}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -657,7 +695,8 @@ const RunDetail = () => {
                                 </Table>
                                 <span className="text-muted">
                                     Click an oligo in the table to focus it in
-                                    the visualization.
+                                    the visualization. Use the mouse wheel to
+                                    zoom in for more details.
                                 </span>
                             </Vertical>
                             <Divider />

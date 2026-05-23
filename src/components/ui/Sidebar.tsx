@@ -5,19 +5,20 @@ import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";
 import { Horizontal, Vertical } from "./Alignment";
-import { pipelineDisplayNames } from "./utils";
 import { useState } from "react";
+import { type Pipeline } from "../../pipelineConfig/config";
+import { getEnabledPipelinesOnly } from "../../pipelineConfig/utils";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
     const pipelines: { name: string; path: string }[] = Object.entries(
-        pipelineDisplayNames
+        getEnabledPipelinesOnly()
     )
-        .filter(([key]) => key !== "generator")
-        .map(([key, name]: [string, string]) => ({
-            name,
+        .filter(([key, pipeline]) => key !== "generator" && !pipeline.disabled)
+        .map(([key, pipeline]: [string, Pipeline]) => ({
+            name: pipeline.displayName,
             path: `/pipelines/${key}`,
         }));
 
@@ -53,7 +54,7 @@ const Sidebar: React.FC = () => {
                 <Vertical
                     justify="space-between"
                     align="stretch"
-                    gap="lg"
+                    gap="md"
                     fillHeight
                     fillWidth
                 >
@@ -91,6 +92,11 @@ const Sidebar: React.FC = () => {
                         </Nav.Link>
                     </Nav>
 
+                    <div
+                        className="spacer"
+                        style={{ flex: 1, maxHeight: "5rem" }}
+                    />
+
                     <Vertical gap="sm" align="stretch">
                         <h5>Pipelines</h5>
 
@@ -119,6 +125,8 @@ const Sidebar: React.FC = () => {
 
                         <RecentRuns />
                     </Vertical>
+
+                    <div className="spacer" style={{ flex: 1 }} />
 
                     <UserDropdown noUserCallback={handleNoUser} />
                 </Vertical>

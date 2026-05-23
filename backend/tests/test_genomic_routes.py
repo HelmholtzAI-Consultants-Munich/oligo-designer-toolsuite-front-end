@@ -6,7 +6,7 @@ import pytest
 
 from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
-from backend.tests.conftest import assert_error_sanitized
+from backend.tests.conftest import assert_error_sanitized, post
 
 """
 This tests the genomic api routes and therefore also the Genomic Database classes.
@@ -54,27 +54,39 @@ def cache_dir_mock(monkeypatch, app):
 
 
 @pytest.fixture
-def dummy_form_ncbi():
+def dummy_form(run_id):
+    # Full dummy form data for oligoseq API
+    form_path = os.path.join(os.path.dirname(__file__), "data/oligoseq_mock_form_data.json")
+    with open(form_path) as f:
+        form = json.load(f)
+    form["runid"] = str(run_id)
+    return form
+
+
+@pytest.fixture
+def dummy_form_ncbi(dummy_form):
     form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ncbi_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    return form
+    dummy_form["formdata"]["files_fasta_target_probe_database"] = {"fasta_form": [form], "files": []}
+    dummy_form["formdata"]["files_fasta_reference_database_target_probe"] = {
+        "fasta_form": [form],
+        "files": [],
+    }
+    return dummy_form
 
 
 @pytest.fixture
-def dummy_form_ensembl():
+def dummy_form_ensembl(dummy_form):
     form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ensembl_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    return form
-
-
-@pytest.fixture
-def dummy_form_custom():
-    form_path = os.path.join(os.path.dirname(__file__), "data/genomic_custom_mock_form_data.json")
-    with open(form_path) as f:
-        form = json.load(f)
-    return form
+    dummy_form["formdata"]["files_fasta_target_probe_database"] = {"fasta_form": [form], "files": []}
+    dummy_form["formdata"]["files_fasta_reference_database_target_probe"] = {
+        "fasta_form": [form],
+        "files": [],
+    }
+    return dummy_form
 
 
 @pytest.fixture
@@ -86,12 +98,12 @@ def release_queries():
 
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
-def test_genomic_cascaded_custom_ncbi(
-    client, dummy_form_ncbi, mock_run, authenticated_user, verify_file_mock, cache_dir_mock
+def test_genomic_cascaded_ncbi(
+    client, dummy_form_ncbi, mock_run, mock_celery, authenticated_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
-    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+    response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "success"
@@ -100,12 +112,12 @@ def test_genomic_cascaded_custom_ncbi(
 
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
-def test_genomic_cascaded_custom_ncbi_unauthenticated(
-    client, dummy_form_ncbi, mock_run, session_user, verify_file_mock, cache_dir_mock
+def test_genomic_cascaded_ncbi_unauthenticated(
+    client, dummy_form_ncbi, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
-    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+    response = client.post("/api/oligoseq", json=dummy_form)
     assert response.status_code == 200
     data = response.get_json()
     assert data["status"] == "success"
@@ -113,30 +125,33 @@ def test_genomic_cascaded_custom_ncbi_unauthenticated(
     assert "output" in data
 
 
-def test_genomic_cascaded_custom_single_ensembl(
-    client, dummy_form_ensembl, mock_run, authenticated_user, verify_file_mock, cache_dir_mock
+def test_genomic_cascaded_single_ensembl(
+    client,
+    run_id,
+    dummy_form_ensembl,
+    mock_run,
+    mock_celery,
+    authenticated_user,
+    verify_file_mock,
+    cache_dir_mock,
 ):
     dummy_form = dummy_form_ensembl
 
-    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+    response = post(client, "/api/oligoseq", dummy_form)
     assert response.status_code == 200
     data = response.get_json()
-    assert data["status"] == "success"
-    assert "message" in data
-    assert "output" in data
+    assert data["run_id"] == str(run_id)
 
 
-def test_genomic_cascaded_custom_single_ensembl_unauthenticated(
-    client, dummy_form_ensembl, mock_run, session_user, verify_file_mock, cache_dir_mock
+def test_genomic_cascaded_single_ensembl_unauthenticated(
+    client, run_id, dummy_form_ensembl, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ensembl
 
-    response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+    response = post(client, "/api/oligoseq", dummy_form)
     assert response.status_code == 200
     data = response.get_json()
-    assert data["status"] == "success"
-    assert "message" in data
-    assert "output" in data
+    assert data["run_id"] == str(run_id)
 
 
 def test_genomic_dropdown(client, dropdown_mock):
@@ -168,8 +183,7 @@ def test_genomic_releases(client, release_queries):
 def _assert_genomic_error_response(
     response,
     expected_status_codes,
-    expected_message_substring=None,
-    expected_error_message=None,
+    expected_error_substring=None,
     forbidden_strings=None,
     check_sanitized=False,
 ):
@@ -179,7 +193,6 @@ def _assert_genomic_error_response(
     Args:
         response: Flask test client response object
         expected_status_codes: Expected status code(s) - can be int or list/tuple
-        expected_message_substring: Substring that should be in data["message"] (optional)
         expected_error_message: Exact error message expected in data["error"] (optional)
         forbidden_strings: List of strings that should NOT be in data["error"] (optional)
         check_sanitized: Whether to call assert_error_sanitized (default: False)
@@ -190,14 +203,10 @@ def _assert_genomic_error_response(
         assert response.status_code == expected_status_codes
 
     data = response.get_json()
-    assert data["status"] == "error"
     assert "error" in data
 
-    if expected_message_substring:
-        assert expected_message_substring in data["message"]
-
-    if expected_error_message:
-        assert data["error"] == expected_error_message
+    if expected_error_substring:
+        assert expected_error_substring in data["error"]
 
     if forbidden_strings:
         for forbidden in forbidden_strings:
@@ -207,26 +216,30 @@ def _assert_genomic_error_response(
         assert_error_sanitized(data)
 
 
-def test_genomic_cascaded_custom_invalid_input(client, authenticated_user):
+def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user, dummy_form_ncbi):
     """Test genomic_cascaded_ncbi with invalid input returns sanitized error."""
-    invalid_form = {"source": "Invalid"}
 
-    response = client.post("/api/genomic/cascaded/custom", json=invalid_form)
+    dummy_form_ncbi["formdata"]["files_fasta_target_probe_database"] = {
+        "fasta_form": [{"source": "Invalid"}],
+        "files": [],
+    }
+
+    response = post(client, "/api/oligoseq", dummy_form_ncbi)
     _assert_genomic_error_response(
         response,
         expected_status_codes=400,
-        expected_message_substring="Invalid input",
+        expected_error_substring="Invalid input",
         check_sanitized=True,
     )
 
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
-def test_genomic_cascaded_custom_ncbi_subprocess_failure(
+def test_genomic_cascaded_ncbi_subprocess_failure(
     client, dummy_form_ncbi, authenticated_user, verify_file_mock, cache_dir_mock
 ):
     """Test genomic_cascaded_ncbi with subprocess failure returns sanitized error."""
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
-        response = client.post("/api/genomic/cascaded/custom", json=dummy_form_ncbi)
+        response = client.post("/api/oligoseq", json=dummy_form_ncbi)
         _assert_genomic_error_response(
             response,
             expected_status_codes=500,
@@ -234,67 +247,25 @@ def test_genomic_cascaded_custom_ncbi_subprocess_failure(
         )
 
 
-def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user):
+def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user, dummy_form_ensembl):
     """Test genomic_cascaded_ensembl with invalid input returns sanitized error."""
-    invalid_form = {"source": "Invalid"}
+    dummy_form_ensembl["formdata"]["files_fasta_target_probe_database"] = {
+        "fasta_form": [{"source": "Invalid"}],
+        "files": [],
+    }
 
-    response = client.post("/api/genomic/cascaded/custom", json=invalid_form)
+    response = post(client, "/api/oligoseq", dummy_form_ensembl)
     _assert_genomic_error_response(
         response,
         expected_status_codes=400,
-        expected_message_substring="Invalid input",
+        expected_error_substring="Invalid input",
         check_sanitized=True,
     )
 
 
-def test_genomic_cascaded_custom_ensembl_subprocess_failure(
-    client, dummy_form_ensembl, authenticated_user, verify_file_mock, cache_dir_mock
-):
-    """Test genomic_cascaded_ensembl with subprocess failure returns sanitized error."""
-    with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
-        response = client.post("/api/genomic/cascaded/custom", json=dummy_form_ensembl)
-        _assert_genomic_error_response(
-            response,
-            expected_status_codes=500,
-            forbidden_strings=["Subprocess failed"],
-        )
-
-
-def test_genomic_routes_no_str_e_exposed(client, authenticated_user, cache_dir_mock):
-    """Test that no str(e) is exposed in genomic route error responses."""
-    # Test with various exception types
-    exceptions = [
-        ValueError("Invalid input"),
-        FileNotFoundError("/path/to/file.txt"),
-        PermissionError("Permission denied"),
-        KeyError("missing_key"),
-    ]
-
-    for exc in exceptions:
-        with patch("backend.routes.genomic.NCBIGenomicDataBase.prepare_cached_assets", side_effect=exc):
-            response = client.post(
-                "/api/genomic/cascaded/custom",
-                json={"source": "NCBI", "genomic_regions": {"gene": "true"}},
-            )
-            data = response.get_json()
-            assert data["status"] == "error"
-            # Verify no raw exception strings exposed
-            # Check that the full exception representation isn't exposed
-            # (e.g., "ValueError('Invalid input')" should not appear)
-            exc_repr = repr(exc)
-            assert exc_repr not in str(data)
-            # Also check that sensitive parts aren't exposed
-            if isinstance(exc, FileNotFoundError):
-                assert "/path/to/file.txt" not in str(data)
-            # Verify error field contains user-friendly message
-            assert "error" in data
-            assert isinstance(data["error"], str)
-            assert len(data["error"]) > 0
-
-
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
-def test_genomic_cascaded_custom_ncbi_session_without_directory(
-    client, dummy_form_ncbi, mock_run, verify_file_mock, cache_dir_mock, session_user
+def test_genomic_cascaded_ncbi_session_without_directory(
+    client, dummy_form_ncbi, mock_run, mock_celery, verify_file_mock, cache_dir_mock, session_user
 ):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ncbi
@@ -307,29 +278,26 @@ def test_genomic_cascaded_custom_ncbi_session_without_directory(
     # Patch subprocess.run where it's used in genomic routes
     with patch("backend.routes.genomic.subprocess.run", return_value=mock_result):
         # With makedirs mock disabled, directories will be created and request should succeed
-        response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+        response = client.post("/api/oligoseq", json=dummy_form)
         assert response.status_code == 200
 
 
-def test_genomic_single_custom_ensembl_session_without_directory(
-    client, dummy_form_ensembl, mock_run, verify_file_mock, cache_dir_mock, session_user
+def test_genomic_single_ensembl_session_without_directory(
+    client, dummy_form_ensembl, mock_run, mock_celery, verify_file_mock, cache_dir_mock, session_user
 ):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ensembl
-    # Create a mock result that mimics subprocess.CompletedProcess
     mock_result = MagicMock()
     mock_result.returncode = 0
     mock_result.stdout = "success"
     mock_result.stderr = ""
 
-    # Patch subprocess.run where it's used in genomic routes
     with patch("backend.routes.genomic.subprocess.run", return_value=mock_result):
-        # With makedirs mock disabled, directories will be created and request should succeed
-        response = client.post("/api/genomic/cascaded/custom", json=dummy_form)
+        response = client.post("/api/oligoseq", json=dummy_form)
         assert response.status_code == 200
 
 
-def test_genomic_cascaded_custom_requires_terms_acceptance(client, dummy_form_ensembl):
-    response = client.post("/api/genomic/cascaded/custom", json=dummy_form_ensembl)
+def test_genomic_requires_terms_acceptance(client, dummy_form_ensembl):
+    response = client.post("/api/oligoseq", json=dummy_form_ensembl)
     assert response.status_code == 403
     assert "accept the current Terms of Service and Privacy Policy" in response.get_json()["error"]

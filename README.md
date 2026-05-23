@@ -63,7 +63,7 @@ See [Using Docker](docs/using-docker.md) for details on using Docker for this pr
 
 Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend.
 
-### 2. Install frontend dependencies
+### 2. Install ODT Cloud dependencies
 
 Clone this repo and install dependencies:
 "odt" is the name of conda environment that is created in the first step of the installation.
@@ -75,6 +75,7 @@ cd oligo-designer-frontend
 npm install
 conda activate odt
 conda env update -f backend/environment.yml
+conda env update -f backend/worker.environment.yml
 pip install --group backend/pyproject.toml:dev
 ```
 

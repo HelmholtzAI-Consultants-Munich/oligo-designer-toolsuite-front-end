@@ -1,15 +1,12 @@
 import React from "react";
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import scrinshot from "../images/scrinshot.jpg";
-import merfish from "../images/merfish.jpg";
-import seqfish from "../images/seqfish.jpg";
-import oligoseq from "../images/oligoseq.jpg";
 import { Alert, Button, Card } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
 import { Grid, Vertical } from "../components/ui/Alignment";
 import { ArrowRight } from "react-bootstrap-icons";
+import { getEnabledPipelinesOnly } from "../pipelineConfig/utils";
 
 const Pipelines: React.FC = () => {
     const auth = useAuth();
@@ -17,44 +14,15 @@ const Pipelines: React.FC = () => {
     const { loading } = auth;
     const navigate = useNavigate();
 
-    const pipelines = [
-        {
-            title: "Scrinshot",
-            description:
-                "Spatial gene expression analysis using scrinshot technology.",
-            link: "/pipelines/scrinshot",
-            detailedLink:
-                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/scrinshot_probe_designer.html",
-            img: scrinshot,
-        },
-        {
-            title: "Merfish",
-            description:
-                "Highly multiplexed imaging for spatially resolved transcriptomics.",
-            link: "/pipelines/merfish",
-            detailedLink:
-                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/merfish_probe_designer.html",
-            img: merfish,
-        },
-        {
-            title: "SeqFish+",
-            description:
-                "Sequential imaging for probing complex spatial transcriptomes.",
-            link: "/pipelines/seqfish",
-            detailedLink:
-                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/seqfishplus_probe_designer.html",
-            img: seqfish,
-        },
-        {
-            title: "Oligo-Seq",
-            description:
-                "High-throughput sequencing tailored for spatial transcriptomics.",
-            link: "/pipelines/oligoseq",
-            detailedLink:
-                "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/oligoseq_probe_designer.html",
-            img: oligoseq,
-        },
-    ];
+    const pipelines = Object.values(getEnabledPipelinesOnly()).map(
+        (pipeline) => ({
+            title: pipeline.displayName,
+            description: pipeline.description,
+            link: pipeline.link!,
+            detailedLink: pipeline.detailedLink,
+            img: pipeline.img,
+        })
+    );
 
     if (loading) return <div>Loading...</div>;
 

@@ -15,6 +15,18 @@ from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
 from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
+from backend.worker.task_index import Tasks
+
+
+def register_teardown_handler(app):
+    @app.teardown_appcontext
+    def teardown(exception=None):
+
+        # Trigger lazy initialization of flask-limiter storage backend
+        limiter_storage = limiter.limiter.storage.storage
+
+        # Close underlying connection to avoid errors in flask-limiter destructor
+        limiter_storage.close()
 
 
 def ensure_mongo_indexes() -> None:
@@ -71,7 +83,7 @@ def initial_dropdown_prefetch(celery_app, app):
         try:
             app.logger.debug("try dropdown prefetch")
             celery_app.send_task(
-                "backend.worker.tasks.fetch_dropdown_options",
+                Tasks.TRIGGER_DROPDOWN_OPTIONS_FETCHING,
             )
             app.logger.debug("dropdown prefetch done")
             break
@@ -142,6 +154,9 @@ def create_app():
 
     # Register CLI commands
     register_cli_commands(app)
+
+    # Register Teardown Handler
+    register_teardown_handler(app)
 
     return app
 

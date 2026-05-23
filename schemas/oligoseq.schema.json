@@ -4,17 +4,41 @@
   "description": "1.0.0",
   "type": "object",
   "properties": {
+    "n_attempts_graph": {
+      "type": "integer",
+      "default": 20,
+      "title": "N Attempts",
+      "description": "number of randomized graph attempts"
+    },
+    "n_attempts_clique_enum": {
+      "type": "integer",
+      "default": 70,
+      "title": "Heuristic N Attempts",
+      "description": "max cliques enumerated per graph attempt"
+    },
+    "diversification_fraction": {
+      "type": "number",
+      "default": 0.1,
+      "title": "Diversification Fraction",
+      "description": "fraction of oligos to remove from the graph to create diversity in the set selection"
+    },
+    "jaccard_opt": {
+      "type": "number",
+      "default": 0.5,
+      "title": "Jaccard Opt",
+      "description": "optimal maximum Jaccard overlap between selected sets"
+    },
+    "jaccard_step": {
+      "type": "number",
+      "default": 0.1,
+      "title": "Jaccard Step",
+      "description": "step size for the Jaccard overlap if not enough sets are found"
+    },
     "n_jobs": {
       "type": "integer",
       "default": 4,
       "title": "N Jobs",
       "description": "number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime"
-    },
-    "dir_output": {
-      "type": "string",
-      "default": "output_oligo_seq_probe_designer",
-      "title": "Dir Output",
-      "description": "name of the directory where the output files will be written"
     },
     "write_intermediate_steps": {
       "type": "boolean",
@@ -35,18 +59,16 @@
       "description": "file with a list the genes used to generate the oligos sequences, leave empty if all the genes are used"
     },
     "files_fasta_target_probe_database": {
-      "type": "array",
-      "items": { "type": "string" },
-      "default": [],
       "title": "Files Fasta Target Probe Database",
-      "description": "fasta file with sequences form which the oligos should be generated. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest"
+      "$ref": "#/definitions/genomic_input"
     },
     "files_fasta_reference_database_target_probe": {
-      "type": "array",
-      "items": { "type": "string" },
-      "default": [],
       "title": "Files Fasta Reference Database Target Probe",
-      "description": "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest"
+      "$ref": "#/definitions/genomic_input"
+    },
+    "files_vcf_reference_database_target_probe": {
+      "title": "Files Vcf Reference Database Target Probe",
+      "$ref": "#/definitions/genomic_input"
     },
     "target_probe_length_min": {
       "type": "integer",
@@ -65,6 +87,41 @@
       "default": 0,
       "title": "Target Probe Isoform Consensus",
       "description": "min isoform consesnsus for oligos, i.e. how many transcripts of the total number of transcripts of a gene are covered by the oligo, given in %"
+    },
+    "target_probe_isoform_weight": {
+      "type": "integer",
+      "default": 0,
+      "title": "Target Probe Isoform Consensus",
+      "description": "min isoform consesnsus for oligos, i.e. how many transcripts of the total number of transcripts of a gene are covered by the oligo, given in %"
+    },
+    "target_probe_kmer_abundance_threshold": {
+      "type": "object",
+      "additionalProperties": { "type": "number" },
+      "default": {
+        "3": 0.0469,
+        "4": 0.0117,
+        "5": 0.0029,
+        "6": 0.00073
+      }
+    },
+    "target_probe_prohibited_sequences": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["TCT", "CTC"]
+    },
+    "target_probe_read_length_bias": {
+      "type": "integer",
+      "default": 20
+    },
+    "target_probe_targeted_exons_weight": {
+      "type": "integer",
+      "default": 1
+    },
+    "uniform_distance_weight": {
+      "type": "integer",
+      "default": 1
     },
     "target_probe_GC_content_min": {
       "type": "integer",
@@ -214,26 +271,26 @@
       "title": "Target Probe Hybridization Probability Alignment Method",
       "description": "options: blastn, bowtie"
     },
-    "target_probe_hybridization_probability_blastn_search_parameters": {
+    "target_probe_hybridization_probability_search_parameters": {
       "type": "object",
       "properties": {
-        "perc_identity": {
+        "-perc_identity": {
           "type": "integer",
           "default": 80,
           "title": "Perc Identity",
           "description": "the higher the percent identity is, the more significant the match"
         },
-        "strand": {
+        "-strand": {
           "type": "string",
           "default": "minus",
           "title": "Strand",
           "description": "this parameter is fixed, if reference is whole genome, consider using \"both\""
         },
-        "word_size": { "type": "integer", "default": 10, "title": "Word Size" }
+        "-word_size": { "type": "integer", "default": 10, "title": "Word Size" }
       },
       "title": "Target Probe Hybridization Probability Blastn Search Parameters"
     },
-    "target_probe_hybridization_probability_blastn_hit_parameters": {
+    "target_probe_hybridization_probability_hit_parameters": {
       "type": "object",
       "properties": {
         "coverage": {
@@ -245,51 +302,32 @@
       },
       "title": "Target Probe Hybridization Probability Blastn Hit Parameters"
     },
-    "target_probe_hybridization_probability_bowtie_search_parameters": {
-      "type": "object",
-      "properties": {
-        "-v": { "type": "integer", "default": 3, "title": "-V" },
-        "--nofw": {
-          "type": "boolean",
-          "default": false,
-          "title": "--Nofw",
-          "description": "this parameter is fixed, if reference is whole genome, consider using both strands (remove this parameter)"
-        }
-      },
-      "title": "Target Probe Hybridization Probability Bowtie Search Parameters"
-    },
-    "target_probe_hybridization_probability_bowtie_hit_parameters": {
-      "type": "null",
-      "default": null,
-      "title": "Target Probe Hybridization Probability Bowtie Hit Parameters",
-      "description": "No hit parameters available currently"
-    },
     "target_probe_cross_hybridization_alignment_method": {
       "type": "string",
       "default": "blastn",
       "title": "Target Probe Cross Hybridization Alignment Method",
       "description": "options: blastn, bowtie"
     },
-    "target_probe_cross_hybridization_blastn_search_parameters": {
+    "target_probe_cross_hybridization_search_parameters": {
       "type": "object",
       "properties": {
-        "perc_identity": {
+        "-perc_identity": {
           "type": "integer",
           "default": 80,
           "title": "Perc Identity",
           "description": "the higher the percent identity is, the more significant the match"
         },
-        "strand": {
+        "-strand": {
           "type": "string",
           "default": "minus",
           "title": "Strand",
           "description": "this parameter is fixed"
         },
-        "word_size": { "type": "integer", "default": 10, "title": "Word Size" }
+        "-word_size": { "type": "integer", "default": 10, "title": "Word Size" }
       },
       "title": "Target Probe Cross Hybridization Blastn Search Parameters"
     },
-    "target_probe_cross_hybridization_blastn_hit_parameters": {
+    "target_probe_cross_hybridization_hit_parameters": {
       "type": "object",
       "properties": {
         "coverage": {
@@ -300,25 +338,6 @@
         }
       },
       "title": "Target Probe Cross Hybridization Blastn Hit Parameters"
-    },
-    "target_probe_cross_hybridization_bowtie_search_parameters": {
-      "type": "object",
-      "properties": {
-        "-v": { "type": "integer", "default": 3, "title": "-V" },
-        "--nofw": {
-          "type": "boolean",
-          "default": false,
-          "title": "--Nofw",
-          "description": "this parameter is fixed"
-        }
-      },
-      "title": "Target Probe Cross Hybridization Bowtie Search Parameters"
-    },
-    "target_probe_cross_hybridization_bowtie_hit_parameters": {
-      "type": "null",
-      "default": null,
-      "title": "Target Probe Cross Hybridization Bowtie Hit Parameters",
-      "description": "No hit parameters available currently"
     },
     "target_probe_Tm_parameters": {
       "type": "object",

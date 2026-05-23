@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import axios from "axios";
 import {
@@ -33,37 +33,35 @@ const UserEdit: React.FC = () => {
         role: "user" as "user" | "admin",
     });
 
-    useEffect(() => {
-        if (!id) return;
-        const loadUser = async () => {
-            try {
-                setIsLoading(true);
-                setError(null);
-                const response = await axios.get(
-                    BACKEND_URL + `/api/admin/users/${id}`,
-                    { withCredentials: true }
-                );
-                const userData = response.data;
-                setUser(userData);
-                setFormData({
-                    username: userData.username || "",
-                    role: userData.role || "user",
-                });
-            } catch (err: unknown) {
-                if (axios.isAxiosError(err)) {
-                    setError(
-                        err.response?.data?.error || "Failed to load user"
-                    );
-                } else {
-                    setError("Failed to load user");
-                }
-                console.error("Error fetching user:", err);
-            } finally {
-                setIsLoading(false);
+    const loadUser = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const response = await axios.get(
+                BACKEND_URL + `/api/admin/users/${id}`,
+                { withCredentials: true }
+            );
+            const userData = response.data;
+            setUser(userData);
+            setFormData({
+                username: userData.username || "",
+                role: userData.role || "user",
+            });
+        } catch (err: unknown) {
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.error || "Failed to load user");
+            } else {
+                setError("Failed to load user");
             }
-        };
-        loadUser();
+            console.error("Error fetching user:", err);
+        } finally {
+            setIsLoading(false);
+        }
     }, [id]);
+
+    useEffect(() => {
+        loadUser();
+    }, [loadUser]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -121,7 +119,7 @@ const UserEdit: React.FC = () => {
         );
     }
 
-    if (error && !user) {
+    if (!id || (error && !user)) {
         return (
             <div className="container-fluid p-4">
                 <Alert variant="danger">
