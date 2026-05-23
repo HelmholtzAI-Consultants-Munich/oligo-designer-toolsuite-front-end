@@ -1,6 +1,6 @@
 import json
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -269,17 +269,8 @@ def test_genomic_cascaded_ncbi_session_without_directory(
 ):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ncbi
-    # Create a mock result that mimics subprocess.CompletedProcess
-    mock_result = MagicMock()
-    mock_result.returncode = 0
-    mock_result.stdout = "success"
-    mock_result.stderr = ""
-
-    # Patch subprocess.run where it's used in genomic routes
-    with patch("backend.routes.genomic.subprocess.run", return_value=mock_result):
-        # With makedirs mock disabled, directories will be created and request should succeed
-        response = client.post("/api/oligoseq", json=dummy_form)
-        assert response.status_code == 200
+    response = post(client, "/api/oligoseq", dummy_form)
+    assert response.status_code == 200
 
 
 def test_genomic_single_ensembl_session_without_directory(
@@ -287,14 +278,8 @@ def test_genomic_single_ensembl_session_without_directory(
 ):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ensembl
-    mock_result = MagicMock()
-    mock_result.returncode = 0
-    mock_result.stdout = "success"
-    mock_result.stderr = ""
-
-    with patch("backend.routes.genomic.subprocess.run", return_value=mock_result):
-        response = client.post("/api/oligoseq", json=dummy_form)
-        assert response.status_code == 200
+    response = post(client, "/api/oligoseq", dummy_form)
+    assert response.status_code == 200
 
 
 def test_genomic_requires_terms_acceptance(client, dummy_form_ensembl):
