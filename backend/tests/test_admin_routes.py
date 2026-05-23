@@ -192,6 +192,14 @@ def test_update_user_no_fields(admin_client, regular_user):
 
 def test_delete_user_success(admin_client, regular_user):
     """Test deleting a user"""
+    mongo.db.feedback.insert_one(
+        {
+            "_id": ObjectId(),
+            "user_id": str(regular_user["_id"]),
+            "message": "Feedback to remove",
+        }
+    )
+
     response = admin_client.delete(f"/api/admin/users/{regular_user['_id']}")
     assert response.status_code == 200
     assert "deleted successfully" in response.get_json()["message"]
@@ -199,6 +207,7 @@ def test_delete_user_success(admin_client, regular_user):
     # Verify user is deleted
     user = mongo.db.users.find_one({"_id": regular_user["_id"]})
     assert user is None
+    assert mongo.db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
 
 
 def test_delete_user_self(admin_client, admin_user):
@@ -513,6 +522,12 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
     """Test bulk deleting users"""
     # Create additional users
     user2_id = create_test_user()
+    mongo.db.feedback.insert_many(
+        [
+            {"_id": ObjectId(), "user_id": str(regular_user["_id"]), "message": "Feedback 1"},
+            {"_id": ObjectId(), "user_id": str(user2_id), "message": "Feedback 2"},
+        ]
+    )
 
     try:
         response = admin_client.post(
@@ -521,6 +536,8 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
         assert response.status_code == 200
         data = response.get_json()
         assert data["deleted_count"] == 2
+        assert mongo.db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
+        assert mongo.db.feedback.find_one({"user_id": str(user2_id)}) is None
     finally:
         mongo.db.users.delete_one({"_id": user2_id})
 

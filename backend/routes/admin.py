@@ -17,11 +17,12 @@ import datetime
 from http import HTTPStatus
 
 from bson import ObjectId
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
+from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.formatting import (
     format_feedback,
     format_monthly_report,
@@ -192,10 +193,12 @@ def delete_user(user_id: ObjectId):
     if str(current_user.id) == str(user_id):
         abort(HTTPStatus.BAD_REQUEST, description="Cannot delete your own account")
 
-    result = mongo.db.users.delete_one({"_id": user_id})
-
-    if result.deleted_count == 0:
-        abort(HTTPStatus.NOT_FOUND, description="User not found")
+    get_user_by_id_or_404(user_id, exclude_password=True)
+    delete_user_account_data(
+        user_id=str(user_id),
+        upload_root=current_app.config["UPLOAD_PATH"],
+        userdata_root=current_app.config["USERDATA_PATH"],
+    )
 
     return jsonify({"message": "User deleted successfully"}), HTTPStatus.OK
 
@@ -419,12 +422,20 @@ def bulk_delete_users():
     if not object_ids:
         abort(HTTPStatus.BAD_REQUEST, description="No valid user IDs provided")
 
-    # Delete users in batch
-    result = mongo.db.users.delete_many({"_id": {"$in": object_ids}})
+    existing_users = list(mongo.db.users.find({"_id": {"$in": object_ids}}, {"_id": 1}))
+    deleted_count = 0
+
+    for user in existing_users:
+        delete_user_account_data(
+            user_id=str(user["_id"]),
+            upload_root=current_app.config["UPLOAD_PATH"],
+            userdata_root=current_app.config["USERDATA_PATH"],
+        )
+        deleted_count += 1
 
     response = {
-        "deleted_count": result.deleted_count,
-        "message": f"Successfully deleted {result.deleted_count} user(s)",
+        "deleted_count": deleted_count,
+        "message": f"Successfully deleted {deleted_count} user(s)",
     }
 
     if skipped:
