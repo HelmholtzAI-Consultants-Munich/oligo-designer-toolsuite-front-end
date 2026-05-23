@@ -22,7 +22,7 @@ from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import get_user_context_with_directory
 from backend.routes.runs import delete_run
-from backend.utilities.pipeline import generate_single_region_forms
+from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
     utc_now,
@@ -167,11 +167,14 @@ def enqueue_pipeline(
     generated_regions: dict[str, list[dict[str, Any]]],
     output_path: Path,
     priority: int,
+    is_authenticated: bool = False,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
     finish executing before the pipeline is started.
     """
+    soft_limit = resolve_timeout(is_authenticated)
+    hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
 
     # the chord header tasks get executed simultaneously as a group
     region_generation_signatures = (
@@ -181,8 +184,14 @@ def enqueue_pipeline(
     )
 
     # the chord body task gets executed once all header tasks finished
+    # The soft limit is the normal interrupt path; the hard limit is a backstop
+    # for worker processes that do not shut down after the soft timeout.
     pipeline_signature = celery_app.signature(
-        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path)), priority=priority
+        Tasks.RUN_PIPELINE,
+        args=(pipeline_name, form_data, str(output_path)),
+        priority=priority,
+        soft_time_limit=soft_limit,
+        time_limit=hard_limit,
     )
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
@@ -327,7 +336,13 @@ def start_pipeline(pipeline_name: str):
     priority = get_task_priority(form_data, run_id)
 
     result_promise = enqueue_pipeline(
-        run_id, pipeline_name, form_data, generated_regions, context.output_path, priority
+        run_id,
+        pipeline_name,
+        form_data,
+        generated_regions,
+        context.output_path,
+        priority,
+        current_user.is_authenticated,
     )
 
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)

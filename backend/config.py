@@ -21,6 +21,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _get_positive_int_env(name: str, default: int) -> int:
+    value = int(os.environ.get(name, default))
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive integer")
+    return value
+
+
+def _get_positive_float_env(name: str, default: float) -> float:
+    value = float(os.environ.get(name, default))
+    if value <= 0:
+        raise ValueError(f"{name} must be a positive number")
+    return value
+
+
 class Config:
     """Flask configuration with default values.
 
@@ -164,3 +178,11 @@ class CeleryConfig:
     task_default_priority = 6
     task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
+
+    # Static pipeline execution limits in seconds. The soft limit lets Celery
+    # interrupt the task cleanly; the hard margin is a SIGKILL backstop.
+    pipeline_timeout_anon: int = _get_positive_int_env("PIPELINE_TIMEOUT_ANON", 5)
+    pipeline_timeout_authenticated_multiplier: float = _get_positive_float_env(
+        "PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER", 2.0
+    )
+    pipeline_timeout_hard_margin: int = _get_positive_int_env("PIPELINE_TIMEOUT_HARD_MARGIN", 300)
