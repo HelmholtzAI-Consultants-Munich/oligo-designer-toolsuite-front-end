@@ -64,7 +64,7 @@ export default function AuthProvider({
             credentials: "include",
         })
             .then(() => {
-                setUser(null);
+                setAuthState({ authenticated: false, user: null, legal: null });
                 updateRuns();
             })
             .catch(() => {
