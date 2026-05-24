@@ -172,7 +172,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                         </Form.Group>
                         <p className="text-muted small mt-3 mb-0">
                             By submitting feedback, you acknowledge the{" "}
-                            <Link to="/privacy-policy">Privacy Policy</Link>.
+                            <Link target="_blank" to="/privacy-policy">Privacy Policy</Link>.
                         </p>
                     </Modal.Body>
                     <Modal.Footer>
