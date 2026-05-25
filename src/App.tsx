@@ -8,6 +8,8 @@ import SeqFish from "./pages/SeqFish";
 import OligoSeq from "./pages/OligoSeq";
 import Login from "./pages/Login";
 import RunDetail from "./pages/RunDetail";
+import Terms from "./pages/terms";
+import PrivacyPolicy from "./pages/privacy-policy";
 import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
 import FeedbackButton from "./components/feedback/FeedbackButton";
@@ -30,11 +32,11 @@ function RunDetailWrapper() {
 }
 
 function RootLayout() {
-    const { user } = useAuth();
+    const auth = useAuth();
 
     return (
         <>
-            {user && <FeedbackButton floating />}
+            {auth.authenticated && <FeedbackButton floating />}
             <Outlet />
             <ScrollRestoration />
         </>
@@ -48,6 +50,8 @@ const defaultLayoutRoutes = [
     { path: "/", element: <Pipelines /> },
     { path: "/faq", element: <FAQ /> },
     { path: "/contact", element: <Contact /> },
+    { path: "/terms", element: <Terms /> },
+    { path: "/privacy-policy", element: <PrivacyPolicy /> },
     { path: "/pipelines", element: <Pipelines /> },
     { path: "/pipelines/scrinshot", element: <Scrinshot /> },
     { path: "/pipelines/merfish", element: <Merfish /> },

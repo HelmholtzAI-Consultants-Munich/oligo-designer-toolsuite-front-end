@@ -61,8 +61,6 @@ body.modal-open {
 #app-layout {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    justify-content: start;
 
     h1,
     h2,
@@ -266,6 +264,15 @@ body.modal-open {
         .nav-link.active {
             border-radius: 9999px;
         }
+    }
+}
+
+/* Nav variant "tight" */
+.nav-tight {
+    gap: 2rem;
+
+    .nav-link {
+        padding: 0;
     }
 }
 

@@ -176,6 +176,8 @@ def register_cli_commands(app):
                 "username": username,
                 "password": generate_password_hash(password),
                 "role": "user",
+                "accepted_terms_version": None,
+                "terms_accepted_at": None,
             }
         )
         user_id = str(result.inserted_id)

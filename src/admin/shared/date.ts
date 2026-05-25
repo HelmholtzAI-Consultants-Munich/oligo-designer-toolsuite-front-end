@@ -1,5 +1,5 @@
 export function formatAdminDateTime(
-    value?: string,
+    value?: string | null,
     invalidFallback = "N/A"
 ): string {
     if (!value) return "N/A";
