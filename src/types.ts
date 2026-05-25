@@ -5,13 +5,39 @@ export interface User {
     helmholtz_sub?: string;
 }
 
-export interface AuthContextType {
-    user: User | null;
+export interface TermsAcceptanceStatus {
+    current_terms_version: string;
+    accepted_terms_version?: string | null;
+    terms_accepted_at?: string | null;
+}
+
+export type AuthState =
+    | {
+          authenticated: true;
+          user: User;
+          legal: TermsAcceptanceStatus | null;
+      }
+    | {
+          authenticated: false;
+          user: null;
+          legal: TermsAcceptanceStatus | null;
+      };
+
+export interface LegalDocument {
+    document: string;
+    title: string;
+    version: string;
+    body: string;
+    published_at?: string | null;
+}
+
+export type AuthContextType = AuthState & {
     loading: boolean;
+    acceptTerms: () => Promise<boolean>;
     checkAuth: () => Promise<void>;
     logout: () => void;
     logoutWithConfirmation: () => void;
-}
+};
 
 export interface GenomicRegion {
     start: number;

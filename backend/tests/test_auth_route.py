@@ -5,6 +5,7 @@ from bson import ObjectId
 from werkzeug.security import generate_password_hash
 
 from backend.extensions import mongo
+from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 
 
 @pytest.fixture(autouse=True)
@@ -47,7 +48,7 @@ def test_login_success(client, monkeypatch, dummy_user):
 
     monkeypatch.setattr("backend.extensions.mongo.db.users.find_one", mock_find_one)
     monkeypatch.setattr("werkzeug.security.check_password_hash", lambda hashed, plain: True)
-    monkeypatch.setattr("flask_login.login_user", lambda user: None)
+    monkeypatch.setattr("flask_login.login_user", lambda user, remember=True: None)
 
     with patch("os.makedirs"), patch("backend.extensions.mongo.db.runs.update_many"):
         response = client.post(
@@ -78,16 +79,13 @@ def test_check_auth_logged_out(client):
     response = client.get("/api/check_auth")
     data = response.get_json()
     assert data["authenticated"] is False
+    assert "requires_terms_acceptance" not in data["legal"]
+    assert data["legal"]["accepted_terms_version"] is None
 
 
-def test_check_auth_logged_in(client, monkeypatch, dummy_user):
+def test_check_auth_logged_in(client, authenticate_as_user, dummy_user):
     mongo.db.users.insert_one(dummy_user)
-
-    class DummyCurrentUser:
-        is_authenticated = True
-        id = str(dummy_user["_id"])
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyCurrentUser())
+    authenticate_as_user(str(dummy_user["_id"]))
 
     with client.session_transaction() as sess:
         sess["_user_id"] = str(dummy_user["_id"])
@@ -98,11 +96,15 @@ def test_check_auth_logged_in(client, monkeypatch, dummy_user):
     assert data["user"]["id"] == str(dummy_user["_id"])
     assert data["user"]["username"] == dummy_user["username"]
     assert data["user"]["role"] == dummy_user["role"]
+    assert (
+        data["legal"]["current_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
+    )
+    assert data["legal"]["accepted_terms_version"] is None
 
 
-def test_logout(client, monkeypatch):
+def test_logout(client, monkeypatch, authenticate_as_user):
     monkeypatch.setattr("flask_login.logout_user", lambda: None)
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: type("User", (), {"is_authenticated": True})())
+    authenticate_as_user("123")
 
     client.post("/login", json={"username": "fake", "password": "fake"})
     with client.session_transaction() as sess:

@@ -64,12 +64,8 @@ def test_oligoseq_route_propagates_pipeline_runner_errors(client, run_id, authen
     assert_invalid_run_id_error(response)
 
 
-def test_oligoseq_session_without_directory(client, run_id, dummy_form, mock_celery):
+def test_oligoseq_session_without_directory(client, run_id, dummy_form, mock_celery, session_user):
     """Test oligoseq with existing session creates directory and succeeds."""
-    with client.session_transaction() as session:
-        # Set a session_id (simulating an existing permanent session)
-        session["session_id"] = "existing-session-123"
-
     # With makedirs mock disabled, directories will be created and request should succeed
     response = post(client, "/api/oligoseq", dummy_form)
     assert response.status_code == 200
