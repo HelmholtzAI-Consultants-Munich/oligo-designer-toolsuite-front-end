@@ -151,6 +151,11 @@ body.modal-open {
         align-items: start;
         flex-shrink: 0;
         border-right: 1px solid $border-color;
+        overflow-y: hidden;
+
+        &.admin-section-expanded {
+            overflow-y: auto;
+        }
 
         .navbar-brand {
             font-size: 1.6rem;
