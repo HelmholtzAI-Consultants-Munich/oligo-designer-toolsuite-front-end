@@ -167,6 +167,8 @@ def enqueue_pipeline(
     generated_regions: dict[str, list[dict[str, Any]]],
     output_path: Path,
     priority: int,
+    context: RunContext,
+    enqueued_at: datetime,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
@@ -182,7 +184,16 @@ def enqueue_pipeline(
 
     # the chord body task gets executed once all header tasks finished
     pipeline_signature = celery_app.signature(
-        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path)), priority=priority
+        Tasks.RUN_PIPELINE,
+        args=(pipeline_name, form_data, str(output_path)),
+        priority=priority,
+        headers={
+            "run_id": str(run_id),
+            "pipeline": pipeline_name,
+            "user_id": context.user_id,
+            "session_id": context.session_id,
+            "enqueued_at": enqueued_at.isoformat(),
+        },
     )
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
@@ -325,9 +336,17 @@ def start_pipeline(pipeline_name: str):
     context = create_context(pipeline_name)
 
     priority = get_task_priority(form_data, run_id)
+    enqueued_at = utc_now()
 
     result_promise = enqueue_pipeline(
-        run_id, pipeline_name, form_data, generated_regions, context.output_path, priority
+        run_id,
+        pipeline_name,
+        form_data,
+        generated_regions,
+        context.output_path,
+        priority,
+        context,
+        enqueued_at,
     )
 
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)

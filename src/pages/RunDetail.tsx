@@ -37,6 +37,7 @@ import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
 import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
+import RunMetrics from "../components/RunMetrics";
 
 interface RunFile {
     name: string;
@@ -475,6 +476,8 @@ const RunDetail = () => {
                 ["failure", "empty_result", "timeout"].includes(run.status) && (
                     <RunError run={run} />
                 )}
+
+            {run && <RunMetrics metrics={run.metrics} />}
 
             {/* YAML/table logic remains unchanged below */}
             {run?.status === "success" && (
