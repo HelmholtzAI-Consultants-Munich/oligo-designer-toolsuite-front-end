@@ -20,6 +20,10 @@ def format_user(user):
         "username": user.get("username"),
         "role": user.get("role", "user"),
         "helmholtz_sub": user.get("helmholtz_sub"),
+        "accepted_terms_version": user.get("accepted_terms_version"),
+        "terms_accepted_at": user.get("terms_accepted_at").isoformat()
+        if user.get("terms_accepted_at")
+        else None,
         "created_at": user.get("_id").generation_time.isoformat() if user.get("_id") else None,
     }
 

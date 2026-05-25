@@ -20,7 +20,10 @@ from werkzeug.utils import secure_filename
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import celery_app, mongo
-from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.route_helpers import (
+    get_user_context_with_directory,
+    require_terms_acceptance_for_current_context,
+)
 from backend.routes.runs import delete_run
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
@@ -298,6 +301,8 @@ def start_pipeline(pipeline_name: str):
     """
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
+
+    require_terms_acceptance_for_current_context()
 
     if request.form is None or len(request.form) == 0 or "payload" not in request.form:
         abort(

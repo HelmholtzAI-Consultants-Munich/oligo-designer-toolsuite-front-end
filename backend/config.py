@@ -80,6 +80,9 @@ class Config:
     HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
 
+    # GPDR settings
+    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+
     # OAuth2 client credentials (required, no defaults)
     HELMHOLTZ_CLIENT_ID = None
     HELMHOLTZ_CLIENT_SECRET = None
@@ -186,3 +189,4 @@ class CeleryConfig:
         "PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER", 2.0
     )
     pipeline_timeout_hard_margin: int = _get_positive_int_env("PIPELINE_TIMEOUT_HARD_MARGIN", 300)
+    anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
