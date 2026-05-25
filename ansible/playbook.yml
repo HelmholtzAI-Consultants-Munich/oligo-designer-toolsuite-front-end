@@ -1,0 +1,60 @@
+---
+- name: Provision Servers
+  hosts: localhost
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: openstack
+  tasks:
+    - name: Create internal network
+      openstack.cloud.network:
+        name: internal-net
+        external: false
+
+    - name: Create internal subnet
+      openstack.cloud.subnet:
+        name: internal-subnet
+        network: internal-net
+        cidr: 10.20.0.0/24
+        dns_nameservers:
+          - 134.94.32.3
+          - 134.94.32.4
+
+    - name: Create router (dmz<->internal)
+      openstack.cloud.router:
+        name: dmz-router
+        external_gateway_info:
+          network: dmz-jsc-cloud
+        interfaces:
+          - internal-subnet
+
+    - name: Configure http(s) access rules
+      openstack.cloud.security_group:
+        name: allow-http-ingress
+        security_group_rules:
+          - description: Allow http access
+            protocol: tcp
+            direction: ingress
+            port_range_min: 80
+            port_range_max: 80
+          - description: Allow https access
+            protocol: tcp
+            direction: ingress
+            port_range_min: 443
+            port_range_max: 443
+
+    - name: Create server volume
+      openstack.cloud.volume:
+        name: server-volume
+        size: 100
+
+    - name: Create server on OpenStack cloud
+      openstack.cloud.server:
+        name: odt-main
+        image: Ubuntu Noble 24.04 LTS
+        flavor: SCS-1L:1:20n
+        volumes:
+          - server-volume
+        network: internal-net
+        security_groups:
+          - default
+          - allow-http-ingress

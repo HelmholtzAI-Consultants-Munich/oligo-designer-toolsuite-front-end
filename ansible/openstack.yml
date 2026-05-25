@@ -1,0 +1,5 @@
+plugin: openstack.cloud.openstack
+
+all_projects: false
+fail_on_errors: true
+strict: true
