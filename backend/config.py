@@ -110,6 +110,11 @@ class Config:
                     "formatter": "default",
                 },
             },
+            "loggers": {
+                "werkzeug": {
+                    "level": log_level,
+                }
+            },
             "root": {
                 "level": log_level,
                 "handlers": ["wsgi"],
