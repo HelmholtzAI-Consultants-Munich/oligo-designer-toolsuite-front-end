@@ -235,6 +235,7 @@ def auth_callback():
     helmholtz_sub = userinfo.get("sub")
 
     if not helmholtz_sub:
+        current_app.logger.warning(f"Failed to get 'sub' from userinfo: {userinfo}")
         abort(
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )

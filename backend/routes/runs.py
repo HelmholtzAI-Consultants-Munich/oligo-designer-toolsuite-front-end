@@ -20,7 +20,7 @@ from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
-from flask import Blueprint, abort, jsonify, send_file, session
+from flask import Blueprint, abort, current_app, jsonify, send_file, session
 from flask_login import current_user
 
 from backend.extensions import mongo
@@ -180,8 +180,8 @@ def get_run_file(run_id: ObjectId, filename: str):
 
     output_dir = deserialize_path(run.get("output_path"))
     if output_dir is None:
+        current_app.logger.error(f"Output directory is missing for run {run_id}")
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Run output directory is missing")
-
     # Support subdirs (e.g. "annotation/example.fna"), but block path traversal.
     file_path = safe_join_under(output_dir, filename)
     if file_path is None:
@@ -223,6 +223,7 @@ def get_run_files(run_id: ObjectId):
 
     output_dir = deserialize_path(run.get("output_path"))
     if output_dir is None:
+        current_app.logger.error(f"Output directory is missing for run {run_id}")
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Run output directory is missing")
 
     files = []
