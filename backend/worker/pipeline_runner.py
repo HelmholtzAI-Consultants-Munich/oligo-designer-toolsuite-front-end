@@ -8,6 +8,8 @@ from typing import Any
 
 import yaml
 
+from backend.constants import PIPELINE_GENOMIC_INPUT
+from backend.exceptions import ODTEmptyResultError, ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
@@ -47,24 +49,22 @@ class PipelineRunner:
 
     def run(
         self, form_data: dict[str, Any], output_path: str, generated_region_paths: list[tuple[str, list[str]]]
-    ) -> bool:
+    ) -> None:
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
 
         # Build Config and Write to YAML
         config_path = self.write_config_file(form_data, output_path, generated_region_paths)
 
-        # Subprocess Call
-        ok = self.call_subprocess(config_path)
+        try:
+            # Subprocess Call
+            self.call_subprocess(config_path)
 
-        # Generate Visualization Files
-        self.generate_genomic_regions_file(form_data, output_path)
-
-        # Cleanup of Temporary Files
-        self.cleanup_temp_files(form_data, config_path)
-
-        # Response
-        return ok
+            # Generate Visualization Files
+            self.generate_genomic_regions_file(form_data, output_path)
+        finally:
+            # Cleanup of Temporary Files
+            self.cleanup_temp_files(form_data, config_path)
 
     def populate_temp_file(self, form_data: dict) -> None:
         if form_data["file_regions"] != "":
@@ -78,6 +78,45 @@ class PipelineRunner:
         else:
             form_data["file_regions"] = None
 
+    def populate_form_data_path_fields(
+        self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
+    ) -> None:
+        """
+        This method converts the form_data sent by the frontend to the format used by ODT.
+        It is necessary because the Oligo Designer Toolsuite expects a list of file paths per `files_[...]` field like:
+        ```py
+        {"files_field": ["input_file.fna"]}
+        ```
+        Since we forbid passing file paths directly and we allow creation of custom genomic regions via the region generator, the form_data has the following scheme:
+        ```py
+        {"files_field": {
+            "files": [FileStorageObject],
+            "fasta_form": [FastaFormObject]
+        }}
+        ```
+        The files listed under `"files":` are saved to disk and the resulting paths are injected into the form data.
+        The forms listed under `"fasta_form":` are processed by the genomic_region_generator which results in a list of tuples like:
+        ```py
+        [("files_field", ["generated_genomic_regions_file_path"])]
+        ```
+        These paths also get injected into the form data here.
+
+        Arguments:
+            config {dict} -- Form Data of request
+            generated_region_paths {list[tuple[str, list[str]]]} -- list of tuples of input_field_id and belonging paths of generated genomic regions
+        """
+
+        # Overwrite fields with their respective file values or an empty array as fallback for None
+        for field in PIPELINE_GENOMIC_INPUT[self.pipeline_name]:
+            if config[field]["files"] is None:
+                config[field] = []
+            else:
+                config[field] = config[field]["files"]
+
+        # Add paths of generated regions to config
+        for id, paths in generated_region_paths:
+            config[id].extend(paths)
+
     def write_config_file(
         self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
     ) -> str:
@@ -86,14 +125,12 @@ class PipelineRunner:
         # Override output directory
         config["dir_output"] = output_path
 
-        # Add generated region paths to config
-        for id, paths in generated_region_paths:
-            if id not in config:
-                config[id] = []
-            for path in paths:
-                config[id].append(path)
-        if "genomic_region_generation_forms" in config:
-            del config["genomic_region_generation_forms"]
+        self.populate_form_data_path_fields(config, generated_region_paths)
+
+        if "target_probe_kmer_abundance_threshold" in form_data:
+            form_data["target_probe_kmer_abundance_threshold"] = {
+                int(k): v for k, v in form_data["target_probe_kmer_abundance_threshold"].items()
+            }
 
         # Write config to YAML file
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
@@ -107,12 +144,28 @@ class PipelineRunner:
             yaml.dump(config, f, sort_keys=False)
         return config_path
 
-    def call_subprocess(self, config_path: str) -> bool:
+    def call_subprocess(self, config_path: str) -> None:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
-        result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
-        self.logger.debug(f"STDERR: {result.stderr}")
-        self.logger.debug(f"STDOUT (partial logs): {result.stdout}")
-        return result.returncode == 0
+        try:
+            subprocess.run(
+                [self.subprocess_name, "-c", config_path], capture_output=True, text=True, check=True
+            )
+        except subprocess.CalledProcessError as error:
+            self.logger.debug(f"STDOUT: {error.stdout}")
+            self.logger.debug(f"STDERR: {error.stderr}")
+            if (
+                error.returncode == -9
+            ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
+                raise ODTPipelineError(
+                    "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
+                )
+            if "The oligo database is empty" in error.stdout:
+                raise ODTEmptyResultError(
+                    "The pipeline did not generate any results. Please tweak your input parameters."
+                )
+            raise ODTPipelineError(
+                "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
+            )
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it

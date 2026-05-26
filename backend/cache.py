@@ -85,11 +85,22 @@ class FileCacheProxy(ProxyBackend):
         self.proxied.delete(key)
 
 
+generic_cache_region: CacheRegion = make_region().configure(
+    "dogpile.cache.redis",
+    arguments={
+        "url": Config.REDIS_URI,
+        "redis_expiration_time": Config.REDIS_GENERIC_EXPIRATION_TIME,
+        "distributed_lock": True,
+        "thread_local_lock": False,
+    },
+)
+
+
 file_cache_region: Annotated[CacheRegion, "see backend.cache.FileCacheProxy"] = make_region().configure(
     "dogpile.cache.redis",
     arguments={
-        "host": Config.REDIS_HOST,
-        "redis_expiration_time": Config.REDIS_EXPIRATION_TIME,
+        "url": Config.REDIS_URI,
+        "redis_expiration_time": Config.REDIS_FILE_EXPIRATION_TIME,
         "distributed_lock": True,
         "thread_local_lock": False,
     },

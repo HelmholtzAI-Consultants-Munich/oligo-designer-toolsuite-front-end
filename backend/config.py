@@ -11,10 +11,10 @@ See .env.sample for available configuration options.
 """
 
 import os
+from collections.abc import Mapping
 from datetime import timedelta
 
 from dotenv import load_dotenv
-from kombu import Queue
 
 # Load environment variables from .env file
 # This ensures environment variables are available for both from_prefixed_env() and os.environ.get()
@@ -56,7 +56,7 @@ class Config:
     REMEMBER_COOKIE_SAMESITE = "Lax"
 
     # MongoDB settings
-    MONGO_URI = "mongodb://localhost:27017/oligo_db"
+    MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost/oligo_db")
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"
@@ -65,6 +65,9 @@ class Config:
     HELMHOLTZ_USERINFO_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/userinfo"
     HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
+
+    # GPDR settings
+    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
 
     # OAuth2 client credentials (required, no defaults)
     HELMHOLTZ_CLIENT_ID = None
@@ -80,10 +83,14 @@ class Config:
     GENE_COUNT_THRESHOLD = 10
 
     # Caching Settings
-    REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-    REDIS_EXPIRATION_TIME = int(
-        os.environ.get("REDIS_EXPIRATION_TIME", 60 * 60 * 24 * 30)
+    REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")
+    REDIS_GENERIC_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_GENERIC_EXPIRATION_TIME", 3600 * 24)
+    )  # in seconds (default: 1 day)
+    REDIS_FILE_EXPIRATION_TIME = int(
+        os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
+    REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
     def get_logging_config(debug: bool = False) -> dict:
@@ -144,22 +151,20 @@ class CeleryConfig:
     configuration mechanism (see https://github.com/celery/celery/issues/7309).
     """
 
-    broker_url: str = os.environ.get("CELERY_BROKER", "pyamqp://guest@localhost//")
-    result_backend: str = os.environ.get("CELERY_MONGO_URI", "mongodb://localhost:27017/")
+    broker_url: str = Config.REDIS_URI
+    result_backend: str = Config.REDIS_URI
     task_track_started: bool = True
     task_compression: str = "zlib"
     result_compression: str = "zlib"
     result_expires: timedelta = timedelta(weeks=1)
     worker_send_task_events: bool = True
 
-    task_queue_max_priority = 10
-    task_default_priority = 5
-    task_high_priority = 10
-    task_queues = (
-        Queue(
-            "celery",
-            routing_key="default",
-            queue_arguments={"x-max-priority": task_queue_max_priority},
-        ),
-    )
-    worker_prefetch_multiplier = 1
+    # Redis task priorities
+    broker_transport_options: Mapping[str, str] = {
+        "queue_order_strategy": "priority",
+        "sep": ":",  # queue names: celery, celery:3, celery:6, celery:9
+    }
+    task_default_priority = 6
+    task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
+    worker_disable_prefetch = True
+    anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))

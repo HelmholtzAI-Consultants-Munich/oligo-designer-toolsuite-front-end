@@ -28,7 +28,17 @@ from flask_login import LoginManager, UserMixin, current_user, login_required, l
 from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
-from backend.utilities.typed_values import parse_http_url, sanitize_relative_redirect_path
+from backend.utilities.account_cleanup import delete_user_account_data
+from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
+from backend.utilities.legal_acceptance import (
+    get_latest_terms_acceptance,
+    record_terms_acceptance,
+)
+from backend.utilities.session_activity import delete_anonymous_session, touch_anonymous_session
+from backend.utilities.typed_values import (
+    parse_http_url,
+    sanitize_relative_redirect_path,
+)
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -114,8 +124,32 @@ def _login(user: User, remember: bool = True):
             {"session_id": session_id},
             {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}},
         )
+        mongo.db.uploads.update_many(
+            {"session_id": session_id},
+            {"$set": {"user_id": user.id, "session_id": None}},
+        )
+        mongo.db.legal_acceptances.delete_many({"session_id": session_id})
+        delete_anonymous_session(session_id)
         # Clear anonymous session_id from session
         session.pop("session_id", None)
+
+
+def _build_legal_status(user_id: str | None = None, session_id: str | None = None) -> dict:
+    terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
+    latest_acceptance = None
+    accepted_terms_version = None
+    accepted_at = None
+
+    if user_id or session_id:
+        latest_acceptance = get_latest_terms_acceptance(user_id=user_id, session_id=session_id)
+        accepted_terms_version = latest_acceptance.get("terms_version") if latest_acceptance else None
+        accepted_at = latest_acceptance.get("timestamp") if latest_acceptance else None
+
+    return {
+        "current_terms_version": terms_doc["version"],
+        "accepted_terms_version": accepted_terms_version,
+        "terms_accepted_at": accepted_at.isoformat() if accepted_at else None,
+    }
 
 
 # ---- Login Route (OAuth GET + Legacy POST) ----
@@ -182,11 +216,11 @@ def auth_callback():
       1. Exchange authorization code for access token.
       2. Fetch user info from Helmholtz AAI userinfo endpoint.
       3. Check if user exists in MongoDB by helmholtz_sub.
-      4. If new user: create user document with helmholtz_sub and role: "user".
-      5. Create user data directory if needed.
-      6. Log user in via Flask-Login.
-      7. Migrate any anonymous session data to authenticated user.
-      8. Store access token in session for later revocation.
+      4. If new user: create a user document with helmholtz_sub, role, and legal acceptance fields.
+      5. Log user in via Flask-Login with remember-me enabled.
+      6. Let _login() create the user data directory if needed and migrate any anonymous session data.
+      7. Store the access token in session for later revocation.
+      8. Redirect to the frontend, preserving any validated redirect path from the OAuth flow.
     """
     # Exchange authorization code for access token
     token = oauth.helmholtz.authorize_access_token()
@@ -214,10 +248,11 @@ def auth_callback():
             {
                 "helmholtz_sub": helmholtz_sub,
                 "role": "user",  # Default role for Helmholtz users
+                "accepted_terms_version": None,
+                "terms_accepted_at": None,
             }
         ).inserted_id
         user_doc = mongo.db.users.find_one({"_id": user_id})
-
     # Log user in with "Remember Me" to persist login across browser sessions
     # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
     # _login() will create the user directory if it doesn't exist
@@ -226,16 +261,6 @@ def auth_callback():
 
     # Store access token in session for logout/revocation
     session["oauth_token"] = token.get("access_token")
-
-    # If there is an anonymous session, migrate runs to this user
-    session_id = session.get("session_id")
-    if session_id:
-        mongo.db.runs.update_many(
-            {"session_id": session_id},
-            {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}},
-        )
-        # Clear anonymous session_id
-        session.pop("session_id", None)
 
     # Redirect to frontend - check if there's a preserved redirect URL
     frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
@@ -267,6 +292,7 @@ def check_auth():
         role = user_doc.get("role", "user") if user_doc else "user"
         helmholtz_sub = user_doc.get("helmholtz_sub") if user_doc else None
         username = user_doc.get("username") if user_doc else None
+        legal_status = _build_legal_status(user_id=str(current_user.id))
 
         return jsonify(
             {
@@ -277,9 +303,41 @@ def check_auth():
                     "role": role,
                     "helmholtz_sub": helmholtz_sub,
                 },
+                "legal": legal_status,
             }
         )
-    return jsonify({"authenticated": False})
+    return jsonify(
+        {
+            "authenticated": False,
+            "legal": _build_legal_status(session_id=session.get("session_id")),
+        }
+    ), HTTPStatus.OK
+
+
+@auth_bp.route("/api/legal/terms/accept", methods=["POST"])
+def accept_terms():
+    """Record acceptance of the current terms version for the current user or session."""
+    user_id = str(current_user.id) if current_user.is_authenticated else None
+    session_id = None if user_id else session.get("session_id")
+
+    acceptance = record_terms_acceptance(user_id=user_id, session_id=session_id)
+
+    if user_id:
+        mongo.db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {
+                "$set": {
+                    "accepted_terms_version": acceptance["terms_version"],
+                    "terms_accepted_at": acceptance["timestamp"],
+                }
+            },
+        )
+
+    return jsonify(
+        {
+            "legal": _build_legal_status(user_id=user_id, session_id=session_id),
+        }
+    ), HTTPStatus.OK
 
 
 # ---- Logout Route ----
@@ -328,6 +386,23 @@ def logout():
     return jsonify({"message": "Logged out"}), HTTPStatus.OK
 
 
+@auth_bp.route("/api/account", methods=["DELETE"])
+@login_required
+def delete_account():
+    """Delete the current account and the user's associated data."""
+    user_id = str(current_user.id)
+
+    delete_user_account_data(
+        user_id=user_id,
+        upload_root=current_app.config["UPLOAD_PATH"],
+        userdata_root=current_app.config["USERDATA_PATH"],
+    )
+
+    session.clear()
+    logout_user()
+    return jsonify({"message": "Your account and associated data have been deleted."}), HTTPStatus.OK
+
+
 # ---- Before Request Handler to Assign Anonymous Session ID ----
 @auth_bp.before_app_request
 def assign_session_id():
@@ -349,6 +424,7 @@ def assign_session_id():
         session.permanent = True
         if "session_id" not in session:
             session["session_id"] = str(uuid.uuid4())
+        touch_anonymous_session(session.get("session_id"))
         # Ensure directory for anonymous user data associated with this session exists
         user_dir = os.path.join(current_app.config["USERDATA_PATH"], "anon", session["session_id"])
         os.makedirs(user_dir, exist_ok=True)

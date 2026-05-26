@@ -2,13 +2,14 @@ import { Outlet } from "react-router";
 import Sidebar from "../ui/Sidebar";
 import Toasts from "../notifications/Toasts";
 import { Vertical } from "../ui/Alignment";
-import Modal from "../notifications/Modal";
+import Modal from "../notifications/ModalComponent";
 import { useAuth } from "../../hooks/useAuth";
 import { useRuns } from "../../hooks/useRuns";
 import Footer from "../ui/Footer";
 
 export default function DefaultLayout() {
-    const { user } = useAuth();
+    const auth = useAuth();
+    const user = auth.user;
     const { loading } = useRuns();
 
     return (
@@ -16,7 +17,7 @@ export default function DefaultLayout() {
             {!loading && (
                 <>
                     <Sidebar />
-                    <Vertical align="stretch" fillWidth>
+                    <Vertical align="stretch" fillWidth grow>
                         <Toasts />
                         <Modal />
                         <Outlet key={user?.id} />{" "}

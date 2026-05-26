@@ -1,10 +1,10 @@
 import { GenomicDropDown } from "./GenomicDropDown";
-import type { FastaForm } from "./types";
+import type { FastaFormUncommented } from "./types";
 
 interface SourceSelectProps {
     id: string;
-    form: FastaForm;
-    onChange: (newForm: FastaForm) => void;
+    form: FastaFormUncommented;
+    onChange: (newForm: FastaFormUncommented) => void;
 }
 
 export const SourceSelect: React.FC<SourceSelectProps> = ({

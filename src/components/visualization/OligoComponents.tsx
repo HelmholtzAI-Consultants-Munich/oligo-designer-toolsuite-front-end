@@ -47,10 +47,10 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
         const comps: OligoComponent[] = [];
         const pipeline = oligo?.pipeline;
         if (pipeline && Object.keys(ComponentDefinition).includes(pipeline)) {
-            const definition = ComponentDefinition[
+            const components = ComponentDefinition[
                 pipeline as keyof typeof ComponentDefinition
-            ] as OligoComponentDefinition[];
-            definition.forEach((componentDef) => {
+            ].components as OligoComponentDefinition[];
+            components.forEach((componentDef) => {
                 if (componentDef.type === "entry") {
                     let sequence = oligo.details[
                         componentDef.field as keyof Probe["details"]
