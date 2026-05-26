@@ -17,7 +17,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from backend.app import create_app
+from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import mongo
+from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
 
 # Temporarily disabled - see issue for better directory mocking solution
@@ -29,7 +31,19 @@ from backend.utilities.typed_values import serialize_path, utc_now
 
 
 def post(client, link: str, data: dict[str, Any]):
-    return client.post(link, data={"payload": json.dumps(data)}, content_type="multipart/form-data")
+    print("Modifying data")
+    pipeline = link.split("/")[-1]
+    file_uploads = {}
+    if "formdata" in data:
+        form_data = data["formdata"]
+        for field in PIPELINE_GENOMIC_INPUT[pipeline]:
+            if field in form_data:
+                for file in form_data[field]["files"]:
+                    file_uploads[file] = open(os.path.join(os.path.dirname(__file__), str(file)), "rb")
+
+    return client.post(
+        link, data={**file_uploads, "payload": json.dumps(data)}, content_type="multipart/form-data"
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -149,18 +163,55 @@ def client(app, monkeypatch):
             yield client
 
 
+class TestAuthenticatedUser:
+    is_authenticated = True
+
+    def __init__(self, user_id: str):
+        self.id = user_id
+
+
+def _insert_terms_acceptance(**query):
+    mongo.db.legal_acceptances.insert_one(
+        {
+            **query,
+            "document": "terms",
+            "terms_version": get_current_terms_version(),
+            "timestamp": utc_now(),
+        }
+    )
+
+
+def _delete_terms_acceptance(**query):
+    mongo.db.legal_acceptances.delete_many(query)
+
+
 @pytest.fixture
-def authenticated_user(monkeypatch):
+def authenticated_user(app, monkeypatch):
     # Simulate an authenticated user
     class DummyUser:
         is_authenticated = True
         id = "507f1f77bcf86cd799439011"
 
     monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
+    with app.app_context():
+        _insert_terms_acceptance(user_id=DummyUser.id)
+    yield
+    with app.app_context():
+        _delete_terms_acceptance(user_id=DummyUser.id)
+
+
+@pytest.fixture
+def authenticate_as_user(monkeypatch):
+    def _authenticate(user_id: str) -> TestAuthenticatedUser:
+        user = TestAuthenticatedUser(user_id)
+        monkeypatch.setattr("flask_login.utils._get_user", lambda: user)
+        return user
+
+    return _authenticate
 
 
 @pytest.fixture()
-def session_user(client, monkeypatch):
+def session_user(client, app, monkeypatch):
     """Simulate an anonymous user with session (works for both HTTP requests and direct method calls)."""
 
     # Monkeypatch Flask-Login for anonymous user
@@ -172,6 +223,11 @@ def session_user(client, monkeypatch):
     # Set up session for HTTP requests
     with client.session_transaction() as sess:
         sess["session_id"] = "anon-session-123"
+    with app.app_context():
+        _insert_terms_acceptance(session_id="anon-session-123")
+    yield
+    with app.app_context():
+        _delete_terms_acceptance(session_id="anon-session-123")
 
 
 def assert_error_sanitized(response_data):

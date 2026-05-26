@@ -24,7 +24,10 @@ from flask import Blueprint, abort, current_app, jsonify, send_file, session
 from flask_login import current_user
 
 from backend.extensions import mongo
-from backend.routes.route_helpers import get_run_or_404, get_user_context
+from backend.routes.route_helpers import (
+    get_run_or_404,
+    require_terms_acceptance_for_current_context,
+)
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
@@ -50,7 +53,7 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "queue_position": run.get("queue_position", "unknown"),
     }
 
-    if run.get("status") == "failure" and run.get("error_message"):
+    if run.get("status") in ["failure", "timeout", "empty_result"] and run.get("error_message"):
         formatted["error_message"] = run.get("error_message")
     return formatted
 
@@ -91,7 +94,7 @@ def init_run_id():
     :returns: JSON object with new run_id.
     :rtype: flask.Response
     """
-    user_id, session_id = get_user_context()
+    user_id, session_id = require_terms_acceptance_for_current_context()
 
     run_doc = {
         "status": "pending",
@@ -252,6 +255,28 @@ def get_run_files(run_id: ObjectId):
                         }
                     )
     return jsonify(files), HTTPStatus.OK
+
+
+@runs_bp.route("/api/runs/<ObjectId:run_id>/config", methods=["GET"])
+def get_run_config(run_id: ObjectId):
+    """
+    Return the stored UI config for a specific pipeline run.
+
+    The config is a PipelineConfigExport JSON object saved when the run was started.
+    Older runs that pre-date this feature will return 404.
+
+    :param run_id: The ObjectId of the run.
+    :type run_id: ObjectId
+    :returns: PipelineConfigExport JSON or 404.
+    :rtype: flask.Response
+    """
+    run = get_run_or_404(run_id, require_ownership=True)
+
+    pipeline_run_config = run.get("pipeline_run_config")
+    if pipeline_run_config is None:
+        abort(HTTPStatus.NOT_FOUND, description="No saved config for this run.")
+
+    return jsonify(pipeline_run_config), HTTPStatus.OK
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):

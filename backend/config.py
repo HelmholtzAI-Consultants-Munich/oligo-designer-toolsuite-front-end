@@ -66,6 +66,9 @@ class Config:
     HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
 
+    # GPDR settings
+    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+
     # OAuth2 client credentials (required, no defaults)
     HELMHOLTZ_CLIENT_ID = None
     HELMHOLTZ_CLIENT_SECRET = None
@@ -160,4 +163,5 @@ class CeleryConfig:
     task_default_priority = 6
     task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
+    anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
     worker_redirect_stdouts = False

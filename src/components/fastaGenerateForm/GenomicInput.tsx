@@ -1,20 +1,21 @@
-import fastaformSchema from "@schemas/fastaForm.schema.json";
 import type { JSONSchema7 } from "json-schema";
 import type { FieldProps } from "@rjsf/utils";
-import { type FastaFormUncommented } from "./types";
+import { type FastaFormUncommented, type setterCallback } from "./types";
 import FastaGenerateForm from "../forms/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
 import {
+    buildFileFunctions,
+    changeHandlerAbstractFactory,
     firstLetterUppercase,
-    getKeyObjectFromSchema,
+    getKeyObjectFromFastaFormBaseSchema,
     regionDisplayNames,
     replaceUnderscore,
 } from "./helpers";
-import { Button, Form, InputGroup } from "react-bootstrap";
-import { Trash } from "react-bootstrap-icons";
+import { Button } from "react-bootstrap";
 import { Grid, Vertical } from "../ui/Alignment";
-import { useCallback } from "react";
 import type { NestedObject } from "../componentTypes";
+import { FileUpload } from "./FileInput";
+import { InputList } from "./InputList";
 
 const GenomicInput = ({
     fieldPathId: { $id, path },
@@ -24,25 +25,19 @@ const GenomicInput = ({
     onChange,
 }: FieldProps) => {
     const id = $id;
+    console.log(name);
 
-    const changeHandlerAbstractFactory = useCallback(
-        (fieldPath: string[]) => (newValue: unknown) => {
-            onChange(newValue, [...path, ...fieldPath]);
-        },
-        [onChange, path]
-    );
-
-    const files: File[] = formData.files;
     const fastaForms: FastaFormUncommented[] = formData.fasta_form;
 
-    type setterCallback<T> = (prevFiles: T[]) => T[];
-
-    const setFiles = (callback: setterCallback<File>) => {
-        changeHandlerAbstractFactory(["files"])(callback(files));
-    };
+    const { files, setFiles, handleFileRemove, FilePreview } =
+        buildFileFunctions(formData, path, onChange);
 
     const setFastaForms = (callback: setterCallback<FastaFormUncommented>) => {
-        changeHandlerAbstractFactory(["fasta_form"])(callback(fastaForms));
+        changeHandlerAbstractFactory(
+            ["fasta_form"],
+            path,
+            onChange
+        )(callback(fastaForms));
     };
 
     const handleFastaFormNew = (
@@ -93,22 +88,6 @@ const GenomicInput = ({
         });
     };
 
-    const handleFileChange = (
-        e: React.ChangeEvent<HTMLInputElement>,
-        setFiles: (callback: setterCallback<File>) => void
-    ) => {
-        const { files: selectedFiles } = e.target;
-        if (!selectedFiles) return;
-
-        setFiles((prevFiles) => [...prevFiles, ...Array.from(selectedFiles)]);
-    };
-
-    const handleFileRemove = (fileIndex: number) => {
-        setFiles((prevFiles) =>
-            prevFiles.filter((_, idx) => idx !== fileIndex)
-        );
-    };
-
     const FastaFormPreview = (form: FastaFormUncommented) => {
         const formData =
             form.selectedSource === "ncbi"
@@ -127,98 +106,48 @@ const GenomicInput = ({
         return `${species} (${selectedRegions.join(", ") || "no regions selected"})`;
     };
 
-    const FilePreview = (file: File) => {
-        return `${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
-    };
-
     return (
-        <>
-            <Vertical gap="md">
-                {fastaForms.length === 0 && files.length === 0 && (
-                    <div className="text-muted">
-                        No FASTA forms or files uploaded.
-                    </div>
-                )}
-                {fastaForms.map((form, idx) => (
-                    <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
-                        <Button
-                            variant="outline-border"
-                            className="flex-grow-1"
-                            onClick={() =>
-                                handleFastaFormEdit(
-                                    form,
-                                    handleFastaFormChange,
-                                    idx
-                                )
-                            }
-                        >
-                            {FastaFormPreview(form)}
-                        </Button>
-                        <Button
-                            variant="outline-border"
-                            onClick={() => handleFastaFormRemove(idx)}
-                            title="Remove FASTA"
-                        >
-                            <Trash />
-                        </Button>
-                    </InputGroup>
-                ))}
-                {files.map((file, idx) => (
-                    <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
-                        <Button
-                            variant="outline-border"
-                            className="flex-grow-1"
-                        >
-                            {FilePreview(file)}
-                        </Button>
-                        <Button
-                            variant="outline-border"
-                            onClick={() => handleFileRemove(idx)}
-                            title="Remove file"
-                        >
-                            <Trash />
-                        </Button>
-                    </InputGroup>
-                ))}
-                <Grid gap="md" className="w-100">
-                    <Button
-                        name={name}
-                        onClick={() =>
-                            handleFastaFormNew(
-                                getKeyObjectFromSchema(
-                                    (
-                                        schema.properties!
-                                            .fasta_form as JSONSchema7
-                                    ).items as NestedObject,
-                                    fastaformSchema as unknown as NestedObject,
-                                    "default",
-                                    true
-                                ) as unknown as FastaFormUncommented,
-                                handleFastaFormChange
-                            )
-                        }
-                    >
-                        Generate FASTA+
-                    </Button>
-                    <Form.Label className="btn btn-outline-border mb-0">
-                        Upload File(s)
-                        <Form.Control
-                            type="file"
-                            className="visually-hidden"
-                            id={id}
-                            name={name}
-                            onChange={(e) => {
-                                handleFileChange(
-                                    e as React.ChangeEvent<HTMLInputElement>,
-                                    setFiles
-                                );
-                            }}
-                            multiple
-                        />
-                    </Form.Label>
-                </Grid>
-            </Vertical>
-        </>
+        <Vertical gap="md">
+            {fastaForms.length === 0 && files.length === 0 && (
+                <div className="text-muted">
+                    No FASTA forms or files uploaded.
+                </div>
+            )}
+            <InputList
+                id={id}
+                handleInputRemove={handleFastaFormRemove}
+                inputtedList={fastaForms}
+                previewCallback={FastaFormPreview}
+                handleInputEdit={(form: FastaFormUncommented, idx: number) =>
+                    handleFastaFormEdit(form, handleFastaFormChange, idx)
+                }
+            />
+            <InputList
+                id={id}
+                handleInputRemove={handleFileRemove}
+                inputtedList={files}
+                previewCallback={FilePreview}
+            />
+            <Grid gap="md" className="w-100">
+                <Button
+                    name={name}
+                    onClick={() =>
+                        handleFastaFormNew(
+                            getKeyObjectFromFastaFormBaseSchema(
+                                (schema.properties!.fasta_form as JSONSchema7)
+                                    .items as NestedObject,
+                                "default",
+                                true
+                            ) as unknown as FastaFormUncommented,
+                            handleFastaFormChange
+                        )
+                    }
+                >
+                    Generate FASTA+
+                </Button>
+                <FileUpload id={id} name={name} setFiles={setFiles} />
+            </Grid>
+        </Vertical>
     );
 };
 export default GenomicInput;

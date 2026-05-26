@@ -42,3 +42,5 @@ export interface EnsSourceParamsUncommented {
     species: string;
     annotation_release: string;
 }
+
+export type setterCallback<T> = (prevFiles: T[]) => T[];

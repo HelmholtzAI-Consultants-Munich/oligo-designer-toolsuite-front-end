@@ -45,10 +45,9 @@ export const pollUntil = async <T = void>(options: {
 // FASTA fixtures — only the smallest bundled files (~4.8 MB + ~6.4 MB)
 // ---------------------------------------------------------------------------
 
-const GENOMIC_REGIONS_DIR = path.resolve(
-    process.cwd(),
-    "backend/data/genomic_regions"
-);
+const TEST_DATA_DIR = path.resolve(process.cwd(), "backend/data");
+
+const GENOMIC_REGIONS_DIR = path.join(TEST_DATA_DIR, "genomic_regions");
 
 export const FASTA_FIXTURES = {
     utr: path.join(
@@ -58,6 +57,18 @@ export const FASTA_FIXTURES = {
     cds: path.join(
         GENOMIC_REGIONS_DIR,
         "cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ),
+    exon: path.join(
+        GENOMIC_REGIONS_DIR,
+        "exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ),
+    exon_exon_junction: path.join(
+        GENOMIC_REGIONS_DIR,
+        "exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ),
+    vcf: path.join(
+        TEST_DATA_DIR,
+        "annotations/custom_GCF_000001405.40.chr16.vcf"
     ),
 };
 
@@ -305,6 +316,7 @@ export const fillTargetProbeParameters = async (
         fileRegions: string;
         fastaTargetFiles: string[];
         fastaReferenceFiles: string[];
+        fastaVcfFiles?: string[];
     }
 ) => {
     await page
@@ -318,6 +330,14 @@ export const fillTargetProbeParameters = async (
             name: /Files Fasta Reference Database Target Probe/i,
         })
         .setInputFiles(options.fastaReferenceFiles);
+
+    if (!options.fastaVcfFiles) return;
+
+    await page
+        .getByRole("button", {
+            name: /Files Vcf Reference Database Target Probe/i,
+        })
+        .setInputFiles(options.fastaVcfFiles);
 };
 
 export const fillReadoutProbeParameters = async (

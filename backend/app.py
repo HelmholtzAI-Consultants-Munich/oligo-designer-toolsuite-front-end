@@ -14,6 +14,7 @@ from backend.extensions import celery_app, limiter, mongo, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
+from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
 from backend.worker.task_index import Tasks
 
 
@@ -26,6 +27,31 @@ def register_teardown_handler(app):
 
         # Close underlying connection to avoid errors in flask-limiter destructor
         limiter_storage.close()
+
+
+def ensure_mongo_indexes() -> None:
+    """Create MongoDB indexes used by recurring cleanup and consent lookups."""
+    mongo.db.runs.create_index(
+        [("session_id", 1)],
+        name="runs_session_id_idx",
+    )
+    mongo.db.uploads.create_index(
+        [("session_id", 1)],
+        name="uploads_session_id_idx",
+    )
+    mongo.db.legal_acceptances.create_index(
+        [("session_id", 1), ("timestamp", 1)],
+        name="legal_acceptances_session_timestamp_idx",
+    )
+    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
+        [("session_id", 1)],
+        name="anonymous_sessions_session_id_idx",
+        unique=True,
+    )
+    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
+        [("last_activity_at", 1)],
+        name="anonymous_sessions_last_activity_at_idx",
+    )
 
 
 def prepare_paths(app: Flask):
@@ -96,6 +122,8 @@ def create_app():
 
     # Initialize Flask extensions
     mongo.init_app(app)
+    with app.app_context():
+        ensure_mongo_indexes()
     limiter.init_app(app)
     init_login_manager(app)
     CORS(app, supports_credentials=True)
