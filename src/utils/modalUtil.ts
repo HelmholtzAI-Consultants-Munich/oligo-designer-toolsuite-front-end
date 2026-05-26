@@ -1,5 +1,33 @@
+// ModalPropsBase is used for standard modals with independent title, content and actions
+interface ModalPropsBase {
+    title: string;
+    content: React.ReactNode;
+    primaryAction?: {
+        label: string;
+        callback: () => void;
+        variant?: string;
+    };
+    secondaryAction?: {
+        label: string;
+        callback: () => void;
+        variant?: string;
+    };
+    centered?: boolean;
+    ignoreBackdropClick?: boolean;
+    dialogClassName?: string;
+}
+
+// ModalPropsRaw is used for custom modals with full control over the content
+interface ModalPropsRaw {
+    rawContent: React.ReactNode;
+    centered?: boolean;
+    ignoreBackdropClick?: boolean;
+    dialogClassName?: string;
+}
+
+export type ModalProps = ModalPropsBase | ModalPropsRaw;
+
 export interface ConfirmationModalProps {
-    type: "confirmation";
     title: string;
     content: React.ReactNode;
     primaryAction: {
@@ -9,13 +37,34 @@ export interface ConfirmationModalProps {
     };
 }
 
-export type ModalProps = ConfirmationModalProps;
+export const closeModal = () => {
+    window.dispatchEvent(new CustomEvent("modal:close"));
+};
 
-export const confirmWithModal = (
-    props: Omit<ConfirmationModalProps, "type">
-) => {
+export const confirmWithModal = (props: ConfirmationModalProps) => {
     const event = new CustomEvent("modal:show", {
-        detail: { type: "confirmation", ...props },
+        detail: {
+            ...props,
+            primaryAction: {
+                ...props.primaryAction,
+                callback: () => {
+                    props.primaryAction.callback();
+                    closeModal();
+                },
+            },
+            secondaryAction: {
+                label: "Cancel",
+                callback: closeModal,
+                variant: "outline-border",
+            },
+        },
+    });
+    window.dispatchEvent(event);
+};
+
+export const showModal = (props: ModalProps) => {
+    const event = new CustomEvent("modal:show", {
+        detail: props,
     });
     window.dispatchEvent(event);
 };

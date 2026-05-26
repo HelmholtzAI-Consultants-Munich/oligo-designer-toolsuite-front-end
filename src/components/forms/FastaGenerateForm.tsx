@@ -7,13 +7,11 @@
  */
 import React, { memo, useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { Alert, Spinner } from "react-bootstrap";
+import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import type {
-    DropDown,
-    EnsFastaFormDataGeneric,
-    FastaForm,
-    NcbiFastaFormDataGeneric,
-    NestedObject,
+    EnsFastaFormDataUncommented,
+    FastaFormUncommented,
+    NcbiFastaFormDataUncommented,
 } from "../fastaGenerateForm/types";
 import { BACKEND_URL } from "../../config";
 import { SourceSelect } from "../fastaGenerateForm/SourceSelector";
@@ -22,17 +20,24 @@ import {
     SpeciesSelect,
     TaxonSelect,
 } from "../fastaGenerateForm/GenomicDropDown";
-import { replaceUnderscore } from "../fastaGenerateForm/helpers";
+import {
+    firstLetterUppercase,
+    getKeyObjectFromFastaFormBaseSchema,
+    replaceUnderscore,
+} from "../fastaGenerateForm/helpers";
 import { GenomicRegionSelect } from "../fastaGenerateForm/GenomicRegionSelect";
 import { NcbiAnnotationSelect } from "../fastaGenerateForm/NcbiAnnotationSelect";
+import { closeModal } from "../../utils/modalUtil";
+import type { RJSFSchema } from "@rjsf/utils";
+import type { DropDown, NestedObject } from "../componentTypes";
+import type { JSONSchema7 } from "json-schema";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
     id: string;
-    form: FastaForm;
-    onChange: (newForm: FastaForm) => void;
-    onRemove?: () => void;
-    disableRemove?: boolean;
+    form: FastaFormUncommented;
+    onChange: (newForm: FastaFormUncommented) => void;
+    schema: RJSFSchema;
 }
 
 type GenomicDropdownEntries = { [index: string]: string[] };
@@ -48,10 +53,17 @@ interface RawDropDown {
  * Handles all controlled input changes and notifies parent components of updates.
  */
 const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
-    ({ id, form, onChange, onRemove, disableRemove }) => {
+    ({ id, form, onChange, schema }) => {
         const [isLoading, setIsLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [dropDown, setDropDown] = useState<DropDown>();
+        const [formState, setFormState] = useState(form);
+
+        const descriptionOnlySchema = getKeyObjectFromFastaFormBaseSchema(
+            (schema.properties!.fasta_form as JSONSchema7)
+                .items as NestedObject,
+            "description"
+        ) as RJSFSchema;
 
         const fetchDropDownData = useCallback(async () => {
             try {
@@ -101,7 +113,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
 
             const keys = name.split(".");
             const newFormData = { ...formData };
-            let formTarget = newFormData as unknown as NestedObject;
+            let formTarget = newFormData as NestedObject;
             // only index n-1 key to keep a reference to the parent object for onChange
             for (const key of keys.slice(0, -1)) {
                 formTarget[key as keyof typeof formTarget] = {
@@ -115,15 +127,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             }
 
             if (keys[0] === "genomic_regions") {
-                formTarget[keys[keys.length - 1]] = {
-                    ...(formTarget[keys[keys.length - 1]] as NestedObject),
-                    value: checked ? "true" : "false",
-                };
+                formTarget[keys[keys.length - 1]] = checked ? "true" : "false";
             } else {
-                formTarget[keys[keys.length - 1]] = {
-                    ...(formTarget[keys[keys.length - 1]] as NestedObject),
-                    value: value,
-                };
+                formTarget[keys[keys.length - 1]] = value;
             }
 
             if (
@@ -131,22 +137,26 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                 keys[1] !== "annotation_release"
             ) {
                 // Reset annotation release if source params change
-                formTarget["annotation_release"] = {
-                    ...(formTarget["annotation_release"] as NestedObject),
-                    value: "",
-                };
+                formTarget["annotation_release"] = "";
             }
 
             return { newFormData, keys, value };
+        };
+
+        // Handles changes to the source selector
+        const handleSourceChange = (newFastaForm: FastaFormUncommented) => {
+            setFormState(newFastaForm);
         };
 
         // Handles changes to NCBI-specific form fields and checkboxes
         const handleNcbiChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-            const { newFormData, keys, value } = processFormChange<
-                NcbiFastaFormDataGeneric<true>
-            >(e, form.formDataNcbi);
+            const { newFormData, keys, value } =
+                processFormChange<NcbiFastaFormDataUncommented>(
+                    e,
+                    formState.formDataNcbi
+                );
 
             if (keys[0] === "source_params" && keys[1] === "taxon") {
                 // Update dependent fields when source params change
@@ -154,18 +164,15 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                 const speciesOptions = dropDown!.ncbi.get(selectedTaxon) || [];
                 if (
                     !speciesOptions.includes(
-                        form.formDataNcbi.source_params.species.value
+                        formState.formDataNcbi.source_params.species
                     )
                 ) {
-                    newFormData.source_params.species = {
-                        ...newFormData.source_params.species,
-                        value: speciesOptions[0] || "",
-                    };
+                    newFormData.source_params.species = speciesOptions[0] || "";
                 }
             }
 
-            onChange({
-                ...form,
+            setFormState({
+                ...formState,
                 formDataNcbi: {
                     ...newFormData,
                 },
@@ -176,227 +183,245 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const handleEnsChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-            const { newFormData } = processFormChange<
-                EnsFastaFormDataGeneric<true>
-            >(e, form.formDataEns);
+            const { newFormData } =
+                processFormChange<EnsFastaFormDataUncommented>(
+                    e,
+                    formState.formDataEns
+                );
 
-            onChange({
-                ...form,
+            setFormState({
+                ...formState,
                 formDataEns: {
                     ...newFormData,
                 },
             });
         };
 
+        const handleSave = () => {
+            onChange(formState);
+            closeModal();
+        };
+
+        const FastaGenerateFormHeader = () => (
+            <Modal.Header closeButton>
+                <Modal.Title>Configure FASTA Generation</Modal.Title>
+            </Modal.Header>
+        );
+
         if (isLoading) {
             return (
-                <div className="d-flex justify-content-center p-5">
-                    <Spinner animation="border" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </Spinner>
-                </div>
+                <>
+                    <FastaGenerateFormHeader />
+                    <Modal.Body>
+                        <div className="d-flex justify-content-center p-5">
+                            <Spinner animation="border" role="status">
+                                <span className="visually-hidden">
+                                    Loading...
+                                </span>
+                            </Spinner>
+                        </div>
+                    </Modal.Body>
+                </>
             );
         }
 
         if (error || !dropDown) {
             console.error("Could not fetch dropdown data: ", error);
             return (
-                <Alert key="warning" variant="warning">
-                    Could not fetch required data. Please try again.
-                </Alert>
+                <>
+                    <FastaGenerateFormHeader />
+                    <Modal.Body>
+                        <Alert key="warning" variant="warning">
+                            Could not fetch required data. Please try again.
+                        </Alert>
+                    </Modal.Body>
+                </>
             );
         }
 
         return (
-            <div className="border border-primary rounded p-3 mb-3 bg-white">
-                <div className="d-flex align-items-center ">
-                    <div className="col-md-8">
+            <>
+                <FastaGenerateFormHeader />
+                <Modal.Body>
+                    {formState.selectedSource === "ncbi" && (
                         <div>
-                            {form.selectedSource === "ncbi" && (
-                                <div>
-                                    <div className="row g-3">
-                                        <SourceSelect
-                                            id={`ncbi-${id}`}
-                                            form={form}
-                                            onChange={onChange}
-                                        />
-                                        <TaxonSelect
-                                            id={`ncbi-${id}`}
-                                            tooltip={
-                                                form.formDataNcbi.source_params
-                                                    .taxon.comment
-                                            }
-                                            value={
-                                                form.formDataNcbi.source_params
-                                                    .taxon.value
-                                            }
-                                            handleChange={handleNcbiChange}
-                                        >
-                                            {Array.from(
-                                                dropDown!.ncbi.keys()
-                                            ).map((k, idx) => (
-                                                <option key={idx} value={k}>
-                                                    {replaceUnderscore(
-                                                        [
-                                                            k[0].toLocaleUpperCase(),
-                                                            ...k.slice(1),
-                                                        ].join("")
-                                                    )}
-                                                </option>
-                                            ))}
-                                        </TaxonSelect>
-                                        {/* Species selector */}
-                                        <SpeciesSelect
-                                            id={`ncbi-${id}`}
-                                            tooltip={
-                                                form.formDataNcbi.source_params
-                                                    .species.comment
-                                            }
-                                            value={
-                                                form.formDataNcbi.source_params
-                                                    .species.value
-                                            }
-                                            handleChange={handleNcbiChange}
-                                        >
-                                            {dropDown!.ncbi
-                                                ?.get(
-                                                    form.formDataNcbi.source_params.taxon.value.toLowerCase()
-                                                )!
-                                                .map((entry) => (
-                                                    <option
-                                                        key={entry}
-                                                        value={entry}
-                                                    >
-                                                        {replaceUnderscore(
-                                                            entry
-                                                        )}
-                                                    </option>
-                                                ))}
-                                        </SpeciesSelect>
-                                        <NcbiAnnotationSelect
-                                            id={`ncbi-${id}`}
-                                            tooltip={
-                                                form.formDataNcbi.source_params
-                                                    .annotation_release.comment
-                                            }
-                                            value={
-                                                form.formDataNcbi.source_params
-                                                    .annotation_release.value
-                                            }
-                                            handleChange={handleNcbiChange}
-                                            form={form}
-                                        />
-                                    </div>
-                                    <GenomicRegionSelect
-                                        id={`ncbi-${id}`}
-                                        exon_exon_junction_block_size={
-                                            form.formDataNcbi
-                                                .exon_exon_junction_block_size
-                                        }
-                                        genomic_regions={
-                                            form.formDataNcbi.genomic_regions
-                                        }
-                                        handleChange={handleNcbiChange}
-                                    />
-                                </div>
-                            )}
-                            {form.selectedSource === "ensembl" && (
-                                <div>
-                                    {/* Source selector */}
-                                    <div className="row g-3">
-                                        <SourceSelect
-                                            id={`ensembl-${id}`}
-                                            form={form}
-                                            onChange={onChange}
-                                        />
-                                        {/* Species selector */}
-                                        <SpeciesSelect
-                                            id={`ensembl-${id}`}
-                                            tooltip={
-                                                form.formDataEns.source_params
-                                                    .species.comment
-                                            }
-                                            value={
-                                                form.formDataEns.source_params
-                                                    .species.value
-                                            }
-                                            handleChange={handleEnsChange}
-                                        >
-                                            {Array.from(
-                                                dropDown!.ensembl.keys()
-                                            ).map((k, idx) => (
-                                                <option key={idx} value={k}>
-                                                    {replaceUnderscore(
-                                                        [
-                                                            k[0].toLocaleUpperCase(),
-                                                            ...k.slice(1),
-                                                        ].join("")
-                                                    )}
-                                                </option>
-                                            ))}
-                                        </SpeciesSelect>
-                                        {/* Annotation release selector */}
-                                        <AnnotationSelect
-                                            id={`ensembl-${id}`}
-                                            tooltip={
-                                                form.formDataEns.source_params
-                                                    .annotation_release.comment
-                                            }
-                                            value={
-                                                form.formDataEns.source_params
-                                                    .annotation_release.value
-                                            }
-                                            handleChange={handleEnsChange}
-                                        >
-                                            <option value="">
-                                                Select a release
-                                            </option>
-                                            {dropDown!.ensembl
-                                                .get(
-                                                    form.formDataEns
-                                                        .source_params.species
-                                                        .value
-                                                )!
-                                                .map((release, idx) => (
-                                                    <option
-                                                        key={idx}
-                                                        value={release}
-                                                    >
-                                                        {release}
-                                                    </option>
-                                                ))}
-                                        </AnnotationSelect>
-                                    </div>
-                                    <GenomicRegionSelect
-                                        id={`ensembl-${id}`}
-                                        exon_exon_junction_block_size={
-                                            form.formDataEns
-                                                .exon_exon_junction_block_size
-                                        }
-                                        genomic_regions={
-                                            form.formDataEns.genomic_regions
-                                        }
-                                        handleChange={handleEnsChange}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                        {/* Remove button */}
-                        {typeof disableRemove === "undefined" ||
-                        !disableRemove ? (
-                            <div className="mt-3">
-                                <button
-                                    type="button"
-                                    className="btn btn-danger"
-                                    onClick={onRemove}
+                            <div className="row g-3">
+                                <SourceSelect
+                                    id={`ncbi-${id}`}
+                                    form={formState}
+                                    onChange={handleSourceChange}
+                                />
+                                <TaxonSelect
+                                    id={`ncbi-${id}`}
+                                    tooltip={
+                                        descriptionOnlySchema.formDataNcbi
+                                            .source_params.taxon.description
+                                    }
+                                    value={
+                                        formState.formDataNcbi.source_params
+                                            .taxon
+                                    }
+                                    handleChange={handleNcbiChange}
                                 >
-                                    Remove
-                                </button>
+                                    {Array.from(dropDown!.ncbi.keys()).map(
+                                        (k, idx) => (
+                                            <option key={idx} value={k}>
+                                                {replaceUnderscore(
+                                                    firstLetterUppercase(k)
+                                                )}
+                                            </option>
+                                        )
+                                    )}
+                                </TaxonSelect>
+                                {/* Species selector */}
+                                <SpeciesSelect
+                                    id={`ncbi-${id}`}
+                                    tooltip={
+                                        descriptionOnlySchema.formDataNcbi
+                                            .source_params.species.description
+                                    }
+                                    value={
+                                        formState.formDataNcbi.source_params
+                                            .species
+                                    }
+                                    handleChange={handleNcbiChange}
+                                >
+                                    {dropDown!.ncbi
+                                        ?.get(
+                                            formState.formDataNcbi.source_params.taxon.toLowerCase()
+                                        )!
+                                        .map((entry) => (
+                                            <option key={entry} value={entry}>
+                                                {replaceUnderscore(entry)}
+                                            </option>
+                                        ))}
+                                </SpeciesSelect>
+                                <NcbiAnnotationSelect
+                                    id={`ncbi-${id}`}
+                                    tooltip={
+                                        descriptionOnlySchema.formDataNcbi
+                                            .source_params.annotation_release
+                                            .description
+                                    }
+                                    value={
+                                        formState.formDataNcbi.source_params
+                                            .annotation_release
+                                    }
+                                    handleChange={handleNcbiChange}
+                                    form={formState}
+                                />
                             </div>
-                        ) : null}
-                    </div>
-                </div>
-            </div>
+                            <GenomicRegionSelect
+                                id={`ncbi-${id}`}
+                                exon_exon_junction_block_size={
+                                    formState.formDataNcbi
+                                        .exon_exon_junction_block_size
+                                }
+                                genomic_regions={
+                                    formState.formDataNcbi.genomic_regions
+                                }
+                                handleChange={handleNcbiChange}
+                                schema={{
+                                    genomic_regions:
+                                        descriptionOnlySchema.formDataNcbi
+                                            .genomic_regions,
+                                    exon_exon_junction_block_size:
+                                        descriptionOnlySchema.formDataNcbi
+                                            .exon_exon_junction_block_size,
+                                }}
+                            />
+                        </div>
+                    )}
+                    {formState.selectedSource === "ensembl" && (
+                        <div>
+                            {/* Source selector */}
+                            <div className="row g-3">
+                                <SourceSelect
+                                    id={`ensembl-${id}`}
+                                    form={formState}
+                                    onChange={handleSourceChange}
+                                />
+                                {/* Species selector */}
+                                <SpeciesSelect
+                                    id={`ensembl-${id}`}
+                                    tooltip={
+                                        descriptionOnlySchema.formDataEns
+                                            .source_params.species.description
+                                    }
+                                    value={
+                                        formState.formDataEns.source_params
+                                            .species
+                                    }
+                                    handleChange={handleEnsChange}
+                                >
+                                    {Array.from(dropDown!.ensembl.keys()).map(
+                                        (k, idx) => (
+                                            <option key={idx} value={k}>
+                                                {replaceUnderscore(
+                                                    firstLetterUppercase(k)
+                                                )}
+                                            </option>
+                                        )
+                                    )}
+                                </SpeciesSelect>
+                                {/* Annotation release selector */}
+                                <AnnotationSelect
+                                    id={`ensembl-${id}`}
+                                    tooltip={
+                                        descriptionOnlySchema.formDataEns
+                                            .source_params.annotation_release
+                                            .description
+                                    }
+                                    value={
+                                        formState.formDataEns.source_params
+                                            .annotation_release
+                                    }
+                                    handleChange={handleEnsChange}
+                                >
+                                    <option value="">Select a release</option>
+                                    {dropDown!.ensembl
+                                        .get(
+                                            formState.formDataEns.source_params
+                                                .species
+                                        )!
+                                        .map((release, idx) => (
+                                            <option key={idx} value={release}>
+                                                {release}
+                                            </option>
+                                        ))}
+                                </AnnotationSelect>
+                            </div>
+                            <GenomicRegionSelect
+                                id={`ensembl-${id}`}
+                                exon_exon_junction_block_size={
+                                    formState.formDataEns
+                                        .exon_exon_junction_block_size
+                                }
+                                genomic_regions={
+                                    formState.formDataEns.genomic_regions
+                                }
+                                handleChange={handleEnsChange}
+                                schema={{
+                                    genomic_regions:
+                                        descriptionOnlySchema.formDataEns
+                                            .genomic_regions,
+                                    exon_exon_junction_block_size:
+                                        descriptionOnlySchema.formDataEns
+                                            .exon_exon_junction_block_size,
+                                }}
+                            />
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="outline-border" onClick={closeModal}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleSave}>
+                        Save
+                    </Button>
+                </Modal.Footer>
+            </>
         );
     }
 );

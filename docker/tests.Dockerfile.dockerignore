@@ -5,12 +5,7 @@
 !/package.json
 !/package-lock.json
 !/playwright.config.ts
-!/backend/data/genomic_regions
-!/backend/data/genomic_regions/**
-# Smaller build context — E2E only needs cds + utr (see docker/tests.Dockerfile)
-backend/data/genomic_regions/gene_annotation_source-*
-backend/data/genomic_regions/exon_annotation_source-*
-backend/data/genomic_regions/exon_exon_junction_annotation_source-*
+!/backend/data
 
 # Playwright artifacts
 **/test-results

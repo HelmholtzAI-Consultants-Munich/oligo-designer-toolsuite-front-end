@@ -66,6 +66,9 @@ class Config:
     HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
 
+    # GPDR settings
+    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+
     # OAuth2 client credentials (required, no defaults)
     HELMHOLTZ_CLIENT_ID = None
     HELMHOLTZ_CLIENT_SECRET = None
@@ -87,6 +90,7 @@ class Config:
     REDIS_FILE_EXPIRATION_TIME = int(
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
+    REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
     def get_logging_config() -> dict:
@@ -159,8 +163,10 @@ class CeleryConfig:
     # Redis task priorities
     broker_transport_options: Mapping[str, str] = {
         "queue_order_strategy": "priority",
+        "sep": ":",  # queue names: celery, celery:3, celery:6, celery:9
     }
-    task_default_priority = 5
-    task_high_priority = 10
+    task_default_priority = 6
+    task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
+    anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
     worker_redirect_stdouts = False

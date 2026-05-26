@@ -1,10 +1,11 @@
 import React from "react";
 import { Badge, Card, Col, ProgressBar, Row } from "react-bootstrap";
 import { STATUS_CONFIG } from "../shared/types";
-import { getReportPipelineDisplayName, REPORT_PIPELINES } from "./display";
+import { REPORT_PIPELINES } from "./display";
 import { formatPercentage } from "./formatters";
 import DeltaBadge from "./DeltaBadge";
 import type { MonthlyReport } from "./types";
+import { getPipelineDisplayName } from "../../pipelineConfig/utils";
 const STATUSES = ["success", "failure"] as const;
 
 const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
@@ -119,7 +120,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                         <div key={pipeline} className="mb-3">
                                             <div className="d-flex justify-content-between align-items-center mb-1">
                                                 <span className="small fw-medium">
-                                                    {getReportPipelineDisplayName(
+                                                    {getPipelineDisplayName(
                                                         pipeline
                                                     )}
                                                 </span>

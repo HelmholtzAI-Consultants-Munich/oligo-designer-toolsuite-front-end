@@ -1,3 +1,5 @@
+import type { Pipeline } from "../../pipelineConfig/config";
+
 export interface ReportPeriod {
     year: number;
     month: number;
@@ -21,10 +23,7 @@ export interface MonthlyReport {
             "pending" | "started" | "success" | "failure",
             number
         >;
-        by_pipeline: Record<
-            "scrinshot" | "seqfish" | "merfish" | "oligoseq",
-            number
-        >;
+        by_pipeline: Record<Pipeline["name"], number>;
         anonymous: number;
         authenticated: number;
         success_rate: number | null;

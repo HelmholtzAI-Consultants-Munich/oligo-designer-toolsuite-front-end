@@ -10,12 +10,6 @@
       "title": "N Jobs",
       "description": "number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime"
     },
-    "dir_output": {
-      "type": "string",
-      "default": "output_scrinshot_probe_designer",
-      "title": "Dir Output",
-      "description": "name of the directory where the output files will be written"
-    },
     "write_intermediate_steps": {
       "type": "boolean",
       "default": true,
@@ -35,18 +29,12 @@
       "description": "file with a list the genes used to generate the oligos sequences, leave empty if all the genes are used"
     },
     "files_fasta_target_probe_database": {
-      "type": "array",
-      "items": { "type": "string" },
-      "default": [],
       "title": "Files Fasta Target Probe Database",
-      "description": "fasta file with sequences form which the probes should be generated. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest"
+      "$ref": "#/definitions/genomic_input"
     },
     "files_fasta_reference_database_target_probe": {
-      "type": "array",
-      "items": { "type": "string" },
-      "default": [],
       "title": "Files Fasta Reference Database Target Probe",
-      "description": "fasta file with sequences used as reference for the specificity filters. Hint: use the genomic_region_generator pipeline to create fasta files of genomic regions of interest"
+      "$ref": "#/definitions/genomic_input"
     },
     "target_probe_length_min": {
       "type": "integer",

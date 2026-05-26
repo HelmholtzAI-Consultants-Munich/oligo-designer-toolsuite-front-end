@@ -3,6 +3,7 @@
 
 
 TASK_ROOT = "backend.worker.tasks"
+CALLBACK_ROOT = "backend.worker.callbacks"
 
 
 class Tasks:
@@ -10,3 +11,7 @@ class Tasks:
     RUN_GENOMIC_REGION_GENERATOR = TASK_ROOT + ".run_genomic_region_generator"
     TRIGGER_DROPDOWN_OPTIONS_FETCHING = TASK_ROOT + ".trigger_dropdown_options_fetching"
     GENERATE_MONTHLY_REPORT = TASK_ROOT + ".generate_monthly_report"
+
+
+class Callbacks:
+    PIPELINE_CHORD_ERRBACK = CALLBACK_ROOT + ".pipeline_chord_errback"

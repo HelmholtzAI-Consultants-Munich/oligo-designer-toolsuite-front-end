@@ -5,19 +5,20 @@ import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";
 import { Horizontal, Vertical } from "./Alignment";
-import { pipelineDisplayNames } from "./utils";
 import { useState } from "react";
+import { type Pipeline } from "../../pipelineConfig/config";
+import { getEnabledPipelinesOnly } from "../../pipelineConfig/utils";
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
     const pipelines: { name: string; path: string }[] = Object.entries(
-        pipelineDisplayNames
+        getEnabledPipelinesOnly()
     )
-        .filter(([key]) => key !== "generator")
-        .map(([key, name]: [string, string]) => ({
-            name,
+        .filter(([key, pipeline]) => key !== "generator" && !pipeline.disabled)
+        .map(([key, pipeline]: [string, Pipeline]) => ({
+            name: pipeline.displayName,
             path: `/pipelines/${key}`,
         }));
 
