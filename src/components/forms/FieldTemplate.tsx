@@ -1,10 +1,11 @@
 import { Form } from "react-bootstrap";
 import type { FieldTemplateProps } from "@rjsf/utils";
+import { memo } from "react";
 import { Vertical } from "../ui/Alignment";
 import { isRootField } from "./utils";
 import { ToolTip } from "../ui/Tooltip";
 
-const FieldTemplate = (props: FieldTemplateProps) => {
+const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     const { id, label, children, rawDescription, fieldPathId } = props;
 
     const isRoot = isRootField(fieldPathId);
@@ -19,6 +20,7 @@ const FieldTemplate = (props: FieldTemplateProps) => {
             {children}
         </Form.Group>
     );
-};
+});
 
 export default FieldTemplate;
+

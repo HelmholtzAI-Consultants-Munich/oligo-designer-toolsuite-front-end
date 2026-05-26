@@ -442,6 +442,26 @@ form.rjsf {
     button[type="submit"] {
         margin-top: 3rem;
     }
+
+    .form-section {
+        display: grid;
+        grid-template-columns: 25% 1fr;
+        align-items: start;
+        gap: 1.5rem;
+        border-bottom: 1px solid $border-color;
+        padding-bottom: 3rem;
+        margin-bottom: 3rem;
+
+        .form-section-header {
+            position: sticky;
+            top: 7rem;
+
+            h5 {
+                font-weight: 600;
+                font-size: 1.1rem;
+            }
+        }
+    }
 }
 
 /* Pulse */

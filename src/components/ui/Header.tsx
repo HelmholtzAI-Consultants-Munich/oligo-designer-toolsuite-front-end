@@ -7,7 +7,6 @@ import { useNavigate } from "react-router";
 interface TabConfig {
     label: string;
     tabKey: string;
-    icon?: Icon;
 }
 
 interface BackToConfig {
@@ -252,13 +251,7 @@ function Header({
                                                         }
                                                         title={tab.label}
                                                     >
-                                                        {tab.icon ? (
-                                                            <tab.icon
-                                                                size={16}
-                                                            />
-                                                        ) : (
-                                                            tab.label
-                                                        )}
+                                                        {tab.label}
                                                     </Nav.Link>
                                                 </Nav.Item>
                                             ))}

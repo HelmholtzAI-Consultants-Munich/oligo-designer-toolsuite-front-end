@@ -4,6 +4,7 @@ import {
     useEffect,
     useCallback,
     useEffectEvent,
+    useMemo,
 } from "react";
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
@@ -11,14 +12,12 @@ import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 import type { RJSFFormData } from "../componentTypes";
 import { handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
-import { TabsLayout } from "./TabsLayout";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
 import { formatDateTime } from "../ui/utils";
 import {
     BoxArrowInDown,
     BoxArrowUp,
-    CodeSlash,
     Send,
 } from "react-bootstrap-icons";
 import {
@@ -33,6 +32,8 @@ import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
 import { useLocation } from "react-router";
 import { FileInput } from "../fastaGenerateForm/FileInput";
+import { snakeCaseToTitleCase } from "./utils";
+import ObjectFieldTemplate from "./ObjectFieldTemplate";
 
 type Props = {
     pipeline: Pipeline["name"];
@@ -41,11 +42,6 @@ type Props = {
     uiSchema: UiSchema;
 };
 
-interface TabConfig {
-    title: string;
-    fields: Array<string | string[]>;
-}
-
 const PipelineTemplate: React.FC<Props> = ({
     pipeline,
     title,
@@ -53,7 +49,10 @@ const PipelineTemplate: React.FC<Props> = ({
     uiSchema,
 }) => {
     const [formData, setFormData] = useState<RJSFFormData>({});
-    const validator = customizeValidator({ AjvClass: Ajv2020 });
+    const validator = useMemo(
+        () => customizeValidator({ AjvClass: Ajv2020 }),
+        []
+    );
 
     const { updateRuns } = useRuns();
 
@@ -106,7 +105,15 @@ const PipelineTemplate: React.FC<Props> = ({
         fileUpload: FileInput,
     };
 
-    const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
+    const tabs = useMemo(
+        () =>
+            schema.properties
+                ? Object.keys(schema.properties).filter(
+                      (key) => key !== "schema_version"
+                  )
+                : undefined,
+        [schema.properties]
+    );
 
     const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -149,11 +156,9 @@ const PipelineTemplate: React.FC<Props> = ({
     return (
         <Page
             title={title}
-            tabs={tabs?.map((tab) => ({
-                label: tab.title,
-                tabKey: tab.title,
-                icon:
-                    tab.title === "Developer Settings" ? CodeSlash : undefined,
+            tabs={tabs?.map((key) => ({
+                label: snakeCaseToTitleCase(key),
+                tabKey: key,
             }))}
             actions={[
                 {
@@ -192,8 +197,8 @@ const PipelineTemplate: React.FC<Props> = ({
                 uiSchema={uiSchema}
                 formData={formData}
                 templates={{
-                    FieldTemplate: FieldTemplate,
-                    ObjectFieldTemplate: TabsLayout,
+                    // FieldTemplate: FieldTemplate,
+                    ObjectFieldTemplate: ObjectFieldTemplate,
                 }}
                 fields={fields}
                 validator={validator}

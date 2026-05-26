@@ -15,6 +15,7 @@ import {
     oligoseqUiSchema,
     scrinshotUiSchema,
     seqfishUiSchema,
+    uiSchemaFromJsonSchema,
 } from "./uiSchemas";
 
 interface BasePipeline {
