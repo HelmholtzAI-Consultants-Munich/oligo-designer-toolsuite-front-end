@@ -7,10 +7,56 @@ on:
     - cron: "0 2 1 * *"
   workflow_dispatch: # Allow manual runs for testing
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        if: ${{ github.event_name == 'pull_request' }}
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'tests/mock_data/**'
+              - 'schemas/**'
+              - 'docker/server.Dockerfile*'
+              - 'docker/worker.Dockerfile*'
+              - '.env.sample'
+              - '.env.docker.sample'
+              - 'docker-compose.yml'
+              - '.github/workflows/pr_tests.yml'
+            frontend:
+              - 'src/**'
+              - 'public/**'
+              - 'schemas/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'vite.config.ts'
+              - 'tsconfig*.json'
+              - 'eslint.config.js'
+              - 'index.html'
+              - 'docker/web.Dockerfile*'
+              - '.github/workflows/pr_tests.yml'
+
   backend-tests:
     name: Backend Tests
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.backend == 'true' }}
     timeout-minutes: 15
 
     services:
@@ -104,6 +150,8 @@ jobs:
   frontend-tests:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.frontend == 'true' }}
     timeout-minutes: 10
 
     steps:
