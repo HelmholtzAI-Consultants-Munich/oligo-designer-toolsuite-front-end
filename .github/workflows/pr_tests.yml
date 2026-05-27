@@ -31,10 +31,9 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-              - 'tests/mock_data/**'
+              - 'tests/**'
               - 'schemas/**'
-              - 'docker/server.Dockerfile*'
-              - 'docker/worker.Dockerfile*'
+              - 'docker/**'
               - '.env.sample'
               - '.env.docker.sample'
               - 'docker-compose.yml'
@@ -49,7 +48,7 @@ jobs:
               - 'tsconfig*.json'
               - 'eslint.config.js'
               - 'index.html'
-              - 'docker/web.Dockerfile*'
+              - 'docker/**'
               - '.github/workflows/pr_tests.yml'
 
   backend-tests:
