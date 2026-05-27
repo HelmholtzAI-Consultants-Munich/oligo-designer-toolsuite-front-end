@@ -1,0 +1,7 @@
+---
+- name: Mount external OpenStack volume
+  ansible.posix.mount:
+    path: /data
+    src: /dev/vdb
+    fstype: ext4
+    state: present
