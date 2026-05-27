@@ -15,7 +15,6 @@ Features:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
 """
 
-import os
 from http import HTTPStatus
 from typing import Any
 
@@ -199,62 +198,6 @@ def get_run_file(run_id: ObjectId, filename: str):
         return send_file(file_path, mimetype="application/octet-stream")
     else:
         abort(HTTPStatus.BAD_REQUEST, description="Unsupported file type")
-
-
-@runs_bp.route("/api/runs/<ObjectId:run_id>/files", methods=["GET"])
-def get_run_files(run_id: ObjectId):
-    """
-    List all output files for a specific pipeline run.
-
-    Handles both main output directory and special annotation subdirectory for Genomic Region Generator pipeline.
-
-    :param run_id: The ObjectId of the run.
-    :type run_id: ObjectId
-    :returns: List of file metadata dictionaries (name, type, size).
-    :rtype: flask.Response
-
-    Workflow:
-        1. Auth/session check for run.
-        2. List files in run output directory.
-        3. If pipeline is Genomic Region Generator, include files from annotation subdir.
-    """
-    # Auth or session check
-    run = get_run_or_404(run_id, require_ownership=True)
-
-    output_dir = deserialize_path(run.get("output_path"))
-    if output_dir is None:
-        current_app.logger.error(f"Output directory is missing for run {run_id}")
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Run output directory is missing")
-
-    files = []
-
-    # Main output dir files
-    for fname in os.listdir(output_dir):
-        if fname.endswith((".yml", ".yaml", ".txt", ".log")):
-            file = output_dir / fname
-            files.append(
-                {
-                    "name": fname,
-                    "type": "log" if "log" in fname else "config",
-                    "size": file.stat().st_size,
-                }
-            )
-
-    # Special handling for Genomic Region Generator pipeline
-    if run.get("pipeline") == "generator":
-        output_gen = output_dir / "annotation"
-        if output_gen.exists():
-            for fname in os.listdir(output_gen):
-                if fname.endswith((".yml", ".yaml", ".txt", ".log", ".fna")):
-                    file = output_gen / fname
-                    files.append(
-                        {
-                            "name": f"annotation/{fname}",
-                            "type": "log" if "log" in fname else "config",
-                            "size": file.stat().st_size,
-                        }
-                    )
-    return jsonify(files), HTTPStatus.OK
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/config", methods=["GET"])

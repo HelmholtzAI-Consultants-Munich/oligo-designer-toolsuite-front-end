@@ -84,8 +84,6 @@ export type PipelineDefinition = {
     representativeFieldChecks?: Array<{ tab: RegExp; label: RegExp }>;
 };
 
-type RunFile = { name: string; type: string; size: number };
-
 // ---------------------------------------------------------------------------
 // Pipeline definitions (used by the smoke test)
 // ---------------------------------------------------------------------------
@@ -254,23 +252,18 @@ const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     });
 };
 
-const pollRunFiles = async (
+const pollGenomicRegionsFile = async (
     page: Page,
     runId: string,
     timeoutMs: number
-): Promise<RunFile[]> => {
+): Promise<boolean> => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGetOk(page, `/api/runs/${runId}/files`);
-            const files: RunFile[] = await res.json();
-            const hasGenomic = files.some(
-                (f) => f.name === "genomic_regions.yaml"
+            const res = await backendGetOk(
+                page,
+                `/api/runs/${runId}/files/genomic_regions.yaml`
             );
-            const hasConfig = files.some((f) =>
-                /\.(?:ya?ml|txt|log)$/i.test(f.name)
-            );
-
-            return hasGenomic && hasConfig ? files : false;
+            return res.ok();
         },
         timeoutMs,
         intervalMs: POLL_INTERVAL_MS,
@@ -285,7 +278,7 @@ export const waitForSuccessfulRun = async (
 ) => {
     const deadline = Date.now() + timeoutMs;
     await pollRunState(page, runId, timeoutMs);
-    return pollRunFiles(page, runId, deadline - Date.now());
+    return pollGenomicRegionsFile(page, runId, deadline - Date.now());
 };
 
 export const submitAndVerifyRun = async (page: Page) => {
@@ -298,9 +291,6 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
     // After long Node.js-side API polling the browser tab has been idle;
     // reload so the page reflects the final backend state.
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Run Logs" })).toBeVisible({
-        timeout: 30_000,
-    });
     await expect(page.getByText("Oligo Visualization")).toBeVisible({
         timeout: 30_000,
     });
