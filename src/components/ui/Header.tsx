@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button, Container, Form, InputGroup, Nav } from "react-bootstrap";
 import { ArrowLeft, type Icon } from "react-bootstrap-icons";
 import { Grid, Horizontal, Vertical } from "./Alignment";
@@ -109,53 +109,61 @@ function Header({
     const [activeOffset, setActiveOffset] = useState([0, 0]);
     const [activeSize, setActiveSize] = useState([0, 0]);
     const [animationReady, setAnimationReady] = useState(0);
+    const hasMeasuredActiveTab = activeSize[0] !== 0;
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        // Set initial active tab offset and width on mount
-        if (activeSize[0] === 0 && tabs && tabs.length > 0) {
-            requestAnimationFrame(() => {
-                console.log("Measuring active tab for animation");
-                const activeElement = document.querySelector(
-                    `.nav-header .nav-link.active`
-                ) as HTMLElement;
-                if (activeElement) {
-                    setActiveOffset([
-                        activeElement.offsetLeft,
-                        activeElement.offsetTop,
-                    ]);
-                    setActiveSize([
-                        activeElement.offsetWidth,
-                        activeElement.offsetHeight,
-                    ]);
-                }
-                requestAnimationFrame(() => {
-                    setAnimationReady(1); // Set animation ready flag after initial measurement
-                });
-            });
-        }
-    }, [tabs, activeSize]);
-
-    const handleResize = () => {
+    const measureActiveTab = useCallback(() => {
         const activeElement = document.querySelector(
-            `.nav-header .nav-link.active`
+            ".nav-header .nav-link.active"
         ) as HTMLElement;
-        setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
-        if (activeElement) {
-            setActiveOffset([
-                activeElement.offsetLeft,
-                activeElement.offsetTop,
-            ]);
-            setActiveSize([
-                activeElement.offsetWidth,
-                activeElement.offsetHeight,
-            ]);
+
+        if (!activeElement) {
+            return;
         }
+
+        setActiveOffset([activeElement.offsetLeft, activeElement.offsetTop]);
+        setActiveSize([activeElement.offsetWidth, activeElement.offsetHeight]);
+    }, []);
+
+    useEffect(() => {
+        if (!hasMeasuredActiveTab && tabs && tabs.length > 0) {
+            let cancelled = false;
+
+            (async () => {
+                await (document.fonts?.ready ?? Promise.resolve());
+
+                if (cancelled) {
+                    return;
+                }
+
+                requestAnimationFrame(() => {
+                    if (cancelled) {
+                        return;
+                    }
+
+                    measureActiveTab();
+                    requestAnimationFrame(() => {
+                        if (!cancelled) {
+                            setAnimationReady(1); // Set animation ready flag after initial measurement
+                        }
+                    });
+                });
+            })();
+
+            return () => {
+                cancelled = true;
+            };
+        }
+    }, [tabs, hasMeasuredActiveTab, measureActiveTab]);
+
+    const handleResize = useCallback(() => {
+        setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
+        measureActiveTab();
         requestAnimationFrame(() => {
             setAnimationReady(1); // Set animation ready flag after measurement
         });
-    };
+    }, [measureActiveTab]);
 
     useEffect(() => {
         if (!tabs || tabs.length === 0) return; // No tabs, no need to set up resize listener
@@ -165,7 +173,7 @@ function Header({
         return () => {
             window.removeEventListener("resize", handleResize);
         };
-    }, [tabs]);
+    }, [tabs, handleResize]);
 
     if (hideHeader) {
         return <title>{extendedTitle}</title>;

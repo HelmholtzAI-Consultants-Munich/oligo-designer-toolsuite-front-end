@@ -87,7 +87,7 @@ const RunDetail = () => {
 
     const tableColumns = ComponentDefinition[
         run?.pipeline as keyof typeof ComponentDefinition
-    ].columns as string[];
+    ]?.columns as string[];
 
     // --- Polling/log state variables ---
     const fetchAndParseRunFiles = useCallback(

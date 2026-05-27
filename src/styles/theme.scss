@@ -39,6 +39,7 @@ $input-btn-padding-y-sm: 0.5rem;
 // Custom styles
 :root {
     --#{$prefix}text-muted: #{$text-muted};
+    --#{$prefix}primary-bg-subtle: #{$primary-bg-subtle};
 }
 
 .navbar-nav {
@@ -459,6 +460,31 @@ form.rjsf {
             h5 {
                 font-weight: 600;
                 font-size: 1.1rem;
+            }
+        }
+    }
+
+    .form-label {
+        margin-bottom: 0.2rem;
+    }
+
+    .super-label {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .multi-schema-toggle {
+        .multi-schema-selector {
+            display: none;
+
+            + .rjsf-field
+                > div
+                > span:first-child:has(
+                    + div > .rjsf-field-boolean:first-child
+                ) {
+                display: none;
             }
         }
     }

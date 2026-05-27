@@ -15,11 +15,7 @@ import FieldTemplate from "./FieldTemplate";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
 import { formatDateTime } from "../ui/utils";
-import {
-    BoxArrowInDown,
-    BoxArrowUp,
-    Send,
-} from "react-bootstrap-icons";
+import { BoxArrowInDown, BoxArrowUp, Send } from "react-bootstrap-icons";
 import {
     buildExportPayload,
     triggerDownload,
@@ -27,13 +23,19 @@ import {
 } from "./pipelineConfigIO";
 import { useRuns } from "../../hooks/useRuns";
 import { Button } from "react-bootstrap";
-import GenomicInput from "../fastaGenerateForm/GenomicInput";
+import { FileInput, GenomicInput } from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
 import { useLocation } from "react-router";
-import { FileInput } from "../fastaGenerateForm/FileInput";
 import { snakeCaseToTitleCase } from "./utils";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
+import WrappedBaseInputTemplate from "./BaseInputTemplate";
+import MultiSchemaFieldTemplate from "./MultiSchemaFieldTemplate";
+import { WrappedAnyOfField, WrappedOneOfField } from "./MultiSchemaField";
+import {
+    ArrayFieldTitleTemplate,
+    ArrayFieldDescriptionTemplate,
+} from "./ArrayFieldTemplates";
 
 type Props = {
     pipeline: Pipeline["name"];
@@ -103,17 +105,18 @@ const PipelineTemplate: React.FC<Props> = ({
     const fields = {
         genomicInput: GenomicInput,
         fileUpload: FileInput,
+        AnyOfField: WrappedAnyOfField,
+        OneOfField: WrappedOneOfField,
     };
 
-    const tabs = useMemo(
-        () =>
-            schema.properties
-                ? Object.keys(schema.properties).filter(
-                      (key) => key !== "schema_version"
-                  )
-                : undefined,
-        [schema.properties]
-    );
+    const tabs = useMemo(() => {
+        const hiddenTabs = uiSchema?.["ui:hiddenTabs"] as string[] | undefined;
+        return schema.properties
+            ? Object.keys(schema.properties).filter(
+                  (key) => !hiddenTabs?.includes(key)
+              )
+            : undefined;
+    }, [schema.properties, uiSchema]);
 
     const importInputRef = useRef<HTMLInputElement>(null);
 
@@ -196,9 +199,18 @@ const PipelineTemplate: React.FC<Props> = ({
                 schema={schema}
                 uiSchema={uiSchema}
                 formData={formData}
+                experimental_defaultFormStateBehavior={{
+                    arrayMinItems: {
+                        populate: "never",
+                    },
+                }}
                 templates={{
-                    // FieldTemplate: FieldTemplate,
-                    ObjectFieldTemplate: ObjectFieldTemplate,
+                    FieldTemplate,
+                    BaseInputTemplate: WrappedBaseInputTemplate,
+                    ObjectFieldTemplate,
+                    MultiSchemaFieldTemplate,
+                    ArrayFieldTitleTemplate,
+                    ArrayFieldDescriptionTemplate,
                 }}
                 fields={fields}
                 validator={validator}

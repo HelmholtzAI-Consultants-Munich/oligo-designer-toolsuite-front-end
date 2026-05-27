@@ -112,34 +112,38 @@ export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
 
 export const oligoseqUiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,
-    "schema_version": {},
-    "general": {
+    "ui:hiddenTabs": ["schema_version", "general"],
+    target_probe: {
         "ui:ObjectFieldTemplate": TabLayout,
-        "dir_output": {
-            "ui:widget": "hidden",
+        oligo_generation: {
+            "ui:ObjectFieldTemplate": SectionLayout,
+            files_fasta_probe_database: {
+                "ui:field": "genomicInput",
+            },
         },
-        "write_intermediate_steps": {
-            "ui:widget": "hidden",
+        property_filters: {
+            "ui:ObjectFieldTemplate": SectionLayout,
+        },
+        specificity_filters: {
+            "ui:ObjectFieldTemplate": SectionLayout,
+            specificity_blastn_filter: {
+                files_fasta_reference_database: {
+                    "ui:field": "genomicInput",
+                },
+            },
+            variant_filter: {
+                files_vcf_reference_database: {
+                    "ui:field": "fileUpload",
+                },
+            },
+        },
+        probe_set_selection: {
+            "ui:ObjectFieldTemplate": SectionLayout,
+        },
+        global_parameters: {
+            "ui:ObjectFieldTemplate": SectionLayout,
         },
     },
-    "target_probe": {
-        "ui:ObjectFieldTemplate": TabLayout,
-        "oligo_generation": {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        },
-        "property_filters": {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        },
-        "specificity_filters": {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        },
-        "probe_set_selection": {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        },
-        "global_parameters": {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        }
-    }
 };
 
 export const scrinshotUiSchema: UiSchema = {

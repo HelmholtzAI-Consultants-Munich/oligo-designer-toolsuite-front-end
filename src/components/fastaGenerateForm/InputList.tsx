@@ -1,36 +1,41 @@
 import { Button, InputGroup } from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
-import type { FastaFormUncommented } from "./types";
+import type { FilePath, GenomicForm } from "./types";
+import { FilePreview, GenomicFormPreview } from "./helpers";
 
-type Input = File | FastaFormUncommented;
+type IntputListItem =
+    | {
+          type: "form";
+          data: GenomicForm;
+          editHandler: () => void;
+          removeHandler: () => void;
+      }
+    | {
+          type: "file";
+          data: FilePath;
+          removeHandler: () => void;
+      };
 
-interface InputListProps<T extends Input> {
-    handleInputEdit?: (form: T, idx: number) => void;
-    previewCallback: (inputList: T) => string;
-    inputtedList: T[];
+interface InputListProps {
     id: string;
-    handleInputRemove: (inputIndex: number) => void;
+    inputs: IntputListItem[];
 }
-// TODO: Check if there is a more elegant solution to declaring a generic functional component
-export const InputList = <T extends Input>({
-    id,
-    inputtedList,
-    previewCallback,
-    handleInputEdit,
-    handleInputRemove,
-}: InputListProps<T>) => {
-    return inputtedList.map((input, idx) => (
+
+export const InputList = ({ id, inputs }: InputListProps) => {
+    return inputs.map((input, idx) => (
         <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
             <Button
                 variant="outline-border"
                 className="flex-grow-1"
-                onClick={handleInputEdit ? () => handleInputEdit : undefined}
+                onClick={input.type === "form" ? input.editHandler : undefined}
             >
-                {previewCallback(input)}
+                {input.type === "form"
+                    ? GenomicFormPreview(input.data as GenomicForm)
+                    : FilePreview(input.data as FilePath)}
             </Button>
             <Button
                 variant="outline-border"
-                onClick={() => handleInputRemove(idx)}
+                onClick={input.removeHandler}
                 title="Remove FASTA"
             >
                 <Trash />

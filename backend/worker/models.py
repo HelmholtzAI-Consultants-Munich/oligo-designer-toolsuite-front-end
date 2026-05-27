@@ -44,7 +44,7 @@ class SourceParamsNcbi(SourceParamsBase):
     taxon: str = "vertebrate_mammalian"
     species: str = "Homo_sapiens"
     assembly_source: Literal["auto"] = "auto"
-    annotation_release: int = 110
+    annotation_release: str = "110"
 
 
 class SourceParamsEnsembl(SourceParamsBase):

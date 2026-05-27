@@ -1,26 +1,30 @@
-import { Form } from "react-bootstrap";
-import type { FieldTemplateProps } from "@rjsf/utils";
+import { type FieldTemplateProps } from "@rjsf/utils";
 import { memo } from "react";
-import { Vertical } from "../ui/Alignment";
-import { isRootField } from "./utils";
-import { ToolTip } from "../ui/Tooltip";
 
 const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
-    const { id, label, children, rawDescription, fieldPathId } = props;
+    const { children, errors, help, hidden, schema } = props;
 
-    const isRoot = isRootField(fieldPathId);
-    if (isRoot) return <>{children}</>;
+    if (hidden) {
+        return <div className="hidden">{children}</div>;
+    }
+
+    console.log("Rendering FieldTemplate for schema:", schema);
+
+    const spanFullWidth =
+        schema.type === "object" || schema.type === "array" || schema.oneOf;
 
     return (
-        <Form.Group as={Vertical} align="stretch" fillHeight>
-            <Vertical.Item grow>
-                <Form.Label htmlFor={id}>{label}</Form.Label>
-                <ToolTip id={id} tip={rawDescription} />
-            </Vertical.Item>
+        <div
+            style={{
+                gridColumn: spanFullWidth ? "1 / -1" : undefined,
+            }}
+            className={`rjsf-field rjsf-field-${schema.type}`}
+        >
             {children}
-        </Form.Group>
+            {errors}
+            {help}
+        </div>
     );
 });
 
 export default FieldTemplate;
-
