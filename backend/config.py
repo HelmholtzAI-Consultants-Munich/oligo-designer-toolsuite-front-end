@@ -93,17 +93,13 @@ class Config:
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
-    def get_logging_config(debug: bool = False) -> dict:
+    def get_logging_config() -> dict:
         """Get logging configuration dictionary for Flask application.
-
-        Args:
-            debug: Whether Flask is in debug mode. If True, uses DEBUG log level,
-                   otherwise uses INFO level for production.
 
         Returns:
             Dictionary compatible with logging.config.dictConfig()
         """
-        log_level = "DEBUG" if debug else "INFO"
+        log_level = os.environ.get("LOG_LEVEL", "INFO")
         return {
             "version": 1,
             "formatters": {
@@ -117,6 +113,11 @@ class Config:
                     "stream": "ext://flask.logging.wsgi_errors_stream",
                     "formatter": "default",
                 },
+            },
+            "loggers": {
+                "werkzeug": {
+                    "level": log_level,
+                }
             },
             "root": {
                 "level": log_level,
@@ -168,3 +169,4 @@ class CeleryConfig:
     task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
     anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+    worker_redirect_stdouts = False
