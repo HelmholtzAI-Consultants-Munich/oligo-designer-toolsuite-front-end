@@ -2,16 +2,14 @@ import { type FieldTemplateProps } from "@rjsf/utils";
 import { memo } from "react";
 
 const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
-    const { children, errors, help, hidden, schema } = props;
+    const { children, errors, help, hidden, schema, uiSchema } = props;
 
     if (hidden) {
         return <div className="hidden">{children}</div>;
     }
 
-    console.log("Rendering FieldTemplate for schema:", schema);
-
     const spanFullWidth =
-        schema.type === "object" || schema.type === "array" || schema.oneOf;
+        schema.type === "object" || schema.oneOf || uiSchema?.["ui:field"];
 
     return (
         <div

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { RJSFSchema } from "@rjsf/utils";
 import {
-    isVersionCompatible,
     buildExportPayload,
     triggerDownload,
     importAndValidate,
@@ -10,29 +9,6 @@ import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
 // Minimal schema that mirrors the real pipeline schemas
 const testSchema = PIPELINE_CONFIG["scrinshot"].schema;
-
-// ---- isVersionCompatible ----
-
-describe("isVersionCompatible", () => {
-    it("returns true when major versions match", () => {
-        expect(isVersionCompatible("1.0.0", "1.0.0")).toBe(true);
-        expect(isVersionCompatible("1.3.2", "1.0.0")).toBe(true);
-        expect(isVersionCompatible("0.5.1", "0.1.0")).toBe(true);
-    });
-
-    it("returns false when major versions differ", () => {
-        expect(isVersionCompatible("2.0.0", "1.0.0")).toBe(false);
-        expect(isVersionCompatible("0.5.0", "1.0.0")).toBe(false);
-        expect(isVersionCompatible("99.0.0", "1.0.0")).toBe(false);
-    });
-
-    it("returns false for malformed version strings", () => {
-        expect(isVersionCompatible("not-a-version", "1.0.0")).toBe(false);
-        expect(isVersionCompatible("1.0.0", "bad")).toBe(false);
-        expect(isVersionCompatible("1.0", "1.0.0")).toBe(false);
-        expect(isVersionCompatible("1.0.0.0", "1.0.0")).toBe(false);
-    });
-});
 
 // ---- buildExportPayload ----
 
@@ -95,7 +71,7 @@ describe("triggerDownload", () => {
     it("triggers a download with the correct filename", () => {
         const payload = {
             _meta: {
-                version: "1.0.0",
+                version: 1,
                 pipeline: "scrinshot",
                 exportedAt: "2026-04-10T12:00:00.000Z",
             },
@@ -113,7 +89,7 @@ describe("triggerDownload", () => {
     it("revokes the object URL after download", () => {
         const payload = {
             _meta: {
-                version: "1.0.0",
+                version: 1,
                 pipeline: "scrinshot",
                 exportedAt: "2026-04-10T12:00:00.000Z",
             },

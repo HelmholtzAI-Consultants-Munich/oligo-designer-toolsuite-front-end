@@ -25,7 +25,7 @@ export const InputList = ({ id, inputs }: InputListProps) => {
     return inputs.map((input, idx) => (
         <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
             <Button
-                variant="outline-border"
+                variant="outline-border filled"
                 className="flex-grow-1"
                 onClick={input.type === "form" ? input.editHandler : undefined}
             >
@@ -34,7 +34,7 @@ export const InputList = ({ id, inputs }: InputListProps) => {
                     : FilePreview(input.data as FilePath)}
             </Button>
             <Button
-                variant="outline-border"
+                variant="outline-border filled"
                 onClick={input.removeHandler}
                 title="Remove FASTA"
             >

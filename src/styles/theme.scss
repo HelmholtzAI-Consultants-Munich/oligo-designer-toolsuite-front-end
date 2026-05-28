@@ -464,6 +464,10 @@ form.rjsf {
         }
     }
 
+    .rjsf-field {
+        flex-grow: 1;
+    }
+
     .form-label {
         margin-bottom: 0.2rem;
     }
@@ -476,6 +480,7 @@ form.rjsf {
     }
 
     .multi-schema-toggle {
+        /* hide the dropdown for selecting between schemas when the discriminator is "enabled" */
         .multi-schema-selector {
             display: none;
 
@@ -487,6 +492,17 @@ form.rjsf {
                 display: none;
             }
         }
+    }
+
+    .rjsf-field-boolean > div {
+        /* render the description below the checkbox */
+        display: flex;
+        flex-direction: column-reverse;
+    }
+
+    .array-field-item > div > .form-label {
+        /* hide labels for array items */
+        display: none;
     }
 }
 
@@ -543,7 +559,7 @@ form.rjsf {
 /* Utility classes */
 .tight-container {
     width: 100%;
-    max-width: 60rem;
+    max-width: 50rem;
     margin-left: auto;
     margin-right: auto;
 }

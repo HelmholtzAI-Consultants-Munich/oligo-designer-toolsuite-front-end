@@ -30,12 +30,17 @@ import { useLocation } from "react-router";
 import { snakeCaseToTitleCase } from "./utils";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
 import WrappedBaseInputTemplate from "./BaseInputTemplate";
-import MultiSchemaFieldTemplate from "./MultiSchemaFieldTemplate";
-import { WrappedAnyOfField, WrappedOneOfField } from "./MultiSchemaField";
 import {
-    ArrayFieldTitleTemplate,
-    ArrayFieldDescriptionTemplate,
+    WrappedAnyOfField,
+    WrappedOneOfField,
+    MultiSchemaFieldTemplate,
+} from "./MultiSchemaField";
+import DescriptionFieldTemplate from "./DescriptionFieldTemplate";
+import {
+    ArrayFieldTemplate,
+    ArrayFieldItemTemplate,
 } from "./ArrayFieldTemplates";
+import type { IChangeEvent } from "@rjsf/core";
 
 type Props = {
     pipeline: Pipeline["name"];
@@ -51,6 +56,7 @@ const PipelineTemplate: React.FC<Props> = ({
     uiSchema,
 }) => {
     const [formData, setFormData] = useState<RJSFFormData>({});
+    const submitButtonRef = useRef<HTMLButtonElement | null>(null);
     const validator = useMemo(
         () => customizeValidator({ AjvClass: Ajv2020 }),
         []
@@ -148,13 +154,27 @@ const PipelineTemplate: React.FC<Props> = ({
     };
 
     const runPipeline = () => {
-        const pipelineRunConfig = buildExportPayload(
-            formData,
-            pipeline,
-            schema
-        );
-        handleSubmit(formData, pipeline, updateRuns, pipelineRunConfig);
+        submitButtonRef.current?.click();
     };
+
+    const handlePipelineSubmit = useCallback(
+        (data: IChangeEvent<RJSFFormData>) => {
+            const submittedFormData = (data.formData ??
+                formData) as RJSFFormData;
+            const pipelineRunConfig = buildExportPayload(
+                submittedFormData,
+                pipeline,
+                schema
+            );
+            handleSubmit(
+                submittedFormData,
+                pipeline,
+                updateRuns,
+                pipelineRunConfig
+            );
+        },
+        [formData, pipeline, schema, updateRuns]
+    );
 
     return (
         <Page
@@ -209,15 +229,16 @@ const PipelineTemplate: React.FC<Props> = ({
                     BaseInputTemplate: WrappedBaseInputTemplate,
                     ObjectFieldTemplate,
                     MultiSchemaFieldTemplate,
-                    ArrayFieldTitleTemplate,
-                    ArrayFieldDescriptionTemplate,
+                    ArrayFieldTemplate,
+                    ArrayFieldItemTemplate,
+                    DescriptionFieldTemplate,
                 }}
                 fields={fields}
                 validator={validator}
                 onChange={(e) => setFormData(e.formData)}
-                onSubmit={runPipeline}
+                onSubmit={handlePipelineSubmit}
             >
-                <Button type="submit" variant="primary">
+                <Button ref={submitButtonRef} type="submit" variant="primary">
                     Run Pipeline <Send className="ms-2" />
                 </Button>
             </Form>

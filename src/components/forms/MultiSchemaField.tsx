@@ -1,19 +1,33 @@
-import { getDefaultRegistry } from '@rjsf/core';
-import { type FieldProps, type RJSFSchema } from '@rjsf/utils';
-import { ToolTip } from '../ui/Tooltip';
-import { Form } from 'react-bootstrap';
+import { getDefaultRegistry } from "@rjsf/core";
+import {
+    type FieldProps,
+    type MultiSchemaFieldTemplateProps,
+    type RJSFSchema,
+} from "@rjsf/utils";
+import { ToolTip } from "../ui/Tooltip";
+import { Card, Form } from "react-bootstrap";
+import { memo } from "react";
 
 const {
     fields: { AnyOfField, OneOfField },
 } = getDefaultRegistry();
 
-export const WrappedAnyOfField = function WrappedAnyOfField(props: React.ComponentProps<typeof AnyOfField>) {
+const WrappedAnyOfField = memo(function WrappedAnyOfField(
+    props: React.ComponentProps<typeof AnyOfField>
+) {
     const { schema, registry, fieldPathId } = props as FieldProps;
     const { SchemaField } = registry.fields;
 
-    if (schema.anyOf?.length === 2 && schema.anyOf.find((option) => typeof option === "object" && option.type === "null")) {
+    if (
+        schema.anyOf?.length === 2 &&
+        schema.anyOf.find(
+            (option) => typeof option === "object" && option.type === "null"
+        )
+    ) {
         // return just the non-null option and treat it as optional
-        const nonNullIndex = schema.anyOf.findIndex((option) => typeof option === "object" && option.type !== "null");
+        const nonNullIndex = schema.anyOf.findIndex(
+            (option) => typeof option === "object" && option.type !== "null"
+        );
         const baseNonNullSchema = schema.anyOf[nonNullIndex] as RJSFSchema;
         const nonNullUiSchema = props.uiSchema?.[nonNullIndex] || {};
 
@@ -27,19 +41,29 @@ export const WrappedAnyOfField = function WrappedAnyOfField(props: React.Compone
 
         return (
             <>
-                {isEnum && <Form.Label htmlFor={fieldPathId.$id}>{schema.title}</Form.Label>}
-                {isEnum && schema.description ? <ToolTip id={schema.$id!} tip={schema.description} /> : null}
-                <SchemaField {...props} schema={nonNullSchema} uiSchema={nonNullUiSchema} />
+                {isEnum && (
+                    <Form.Label htmlFor={fieldPathId.$id}>
+                        {schema.title}
+                    </Form.Label>
+                )}
+                {isEnum && schema.description ? (
+                    <ToolTip id={schema.$id!} tip={schema.description} />
+                ) : null}
+                <SchemaField
+                    {...props}
+                    schema={nonNullSchema}
+                    uiSchema={nonNullUiSchema}
+                />
             </>
         );
     }
-    
-    return (
-        <AnyOfField {...props} />
-    );
-}
 
-export const WrappedOneOfField = function WrappedOneOfField(props: React.ComponentProps<typeof OneOfField>) {
+    return <AnyOfField {...props} />;
+});
+
+const WrappedOneOfField = memo(function WrappedOneOfField(
+    props: React.ComponentProps<typeof OneOfField>
+) {
     const { schema } = props;
 
     if (schema?.discriminator?.propertyName === "enabled") {
@@ -51,7 +75,32 @@ export const WrappedOneOfField = function WrappedOneOfField(props: React.Compone
         );
     }
 
+    return <OneOfField {...props} />;
+});
+
+const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
+    props: MultiSchemaFieldTemplateProps
+) {
+    const { selector, optionSchemaField, schema } = props;
     return (
-        <OneOfField {...props} />
+        <>
+            {schema.description ? (
+                <ToolTip id={schema.$id!} tip={schema.description} />
+            ) : null}
+            <Card
+                style={{
+                    marginBottom: "1rem",
+                    backgroundColor: "var(--bs-primary-bg-subtle)",
+                }}
+            >
+                <Card.Body>
+                    <span className="super-label">{schema.title}</span>
+                    <div className="multi-schema-selector">{selector}</div>
+                    {optionSchemaField}
+                </Card.Body>
+            </Card>
+        </>
     );
-}
+});
+
+export { WrappedAnyOfField, WrappedOneOfField, MultiSchemaFieldTemplate };

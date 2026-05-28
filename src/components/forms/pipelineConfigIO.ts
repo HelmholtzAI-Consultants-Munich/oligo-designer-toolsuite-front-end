@@ -4,15 +4,11 @@ import { customizeValidator } from "@rjsf/validator-ajv8";
 import Ajv2020 from "ajv/dist/2020";
 
 import type { RJSFFormData } from "../componentTypes";
-import {
-    PIPELINE_CONFIG,
-    type PipelineConfig,
-} from "../../pipelineConfig/config";
 import { getPipelineDisplayName } from "../../pipelineConfig/utils";
 
 export interface PipelineConfigExport {
     _meta: {
-        version: string;
+        version: number;
         pipeline: string;
         exportedAt: string;
     };
@@ -24,26 +20,11 @@ const validator = customizeValidator({ AjvClass: Ajv2020 });
 
 // ---- Version helpers ----
 
-function parseSemver(v: string): [number, number, number] | null {
-    const parts = v.split(".");
-    if (parts.length !== 3) return null;
-    const nums = parts.map(Number);
-    if (nums.some(isNaN)) return null;
-    return nums as [number, number, number];
-}
-
-export function isVersionCompatible(
-    fileVersion: string,
-    schemaVersion: string
-): boolean {
-    const file = parseSemver(fileVersion);
-    const schema = parseSemver(schemaVersion);
-    if (!file || !schema) return false;
-    return file[0] === schema[0];
-}
-
-function getSchemaVersion(schema: RJSFSchema): string {
-    return schema.description ?? "1.0.0";
+function getSchemaVersion(schema: RJSFSchema): number {
+    return (
+        (schema.properties?.schema_version as { const: number } | undefined)
+            ?.const ?? 1
+    );
 }
 
 // ---- Export ----
@@ -77,6 +58,29 @@ export function triggerDownload(payload: PipelineConfigExport): void {
 }
 
 // ---- Import / Validation ----
+
+const removeFilePathsfromObject = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+        return value.map(removeFilePathsfromObject);
+    }
+
+    if (value && typeof value === "object") {
+        const obj = value as Record<string, unknown>;
+        const result: Record<string, unknown> = {};
+
+        for (const [key, child] of Object.entries(obj)) {
+            if (key.startsWith("files_") && Array.isArray(child)) {
+                result[key] = child
+                    .filter((entry) => typeof entry !== "string")
+                    .map(removeFilePathsfromObject);
+            } else {
+                result[key] = removeFilePathsfromObject(child);
+            }
+        }
+        return result;
+    }
+    return value;
+};
 
 function validationFailure(
     errors:
@@ -142,10 +146,10 @@ export function importAndValidate(
 
     // 4. Version check
     const schemaVersion = getSchemaVersion(schema);
-    if (typeof typed._meta?.version !== "string") {
+    if (typeof typed._meta?.version !== "number") {
         return { ok: false, error: "Invalid file format: missing version." };
     }
-    if (!isVersionCompatible(typed._meta.version, schemaVersion)) {
+    if (typed._meta.version !== schemaVersion) {
         return {
             ok: false,
             error: `Incompatible config version "${typed._meta.version}". Current schema uses "${schemaVersion}". Major versions must match.`,
@@ -186,14 +190,13 @@ export function importAndValidate(
     if (configError) return configError;
 
     // 7. Remove File fields from imported form
-    for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
-        .genomicInputFields!) {
-        if (incoming[field]) incoming[field]["files"] = [];
-    }
+    const sanitizedIncoming = removeFilePathsfromObject(
+        incoming
+    ) as RJSFFormData;
 
     return {
         ok: true,
-        config: incoming,
+        config: sanitizedIncoming,
         skippedFields,
     };
 }
