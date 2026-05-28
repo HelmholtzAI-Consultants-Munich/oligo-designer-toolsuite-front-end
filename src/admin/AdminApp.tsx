@@ -8,9 +8,8 @@ import PipelineList from "./pipelines/PipelineList";
 import FeedbackList from "./feedback/FeedbackList";
 import MonthlyReports from "./reports/MonthlyReports";
 import LegalDocuments from "./legal/LegalDocuments";
-import Modal from "../components/notifications/ModalComponent";
-import Toasts from "../components/notifications/Toasts";
 import { useAuth } from "../hooks/useAuth";
+import { Vertical } from "../components/ui/Alignment";
 
 const AdminApp: React.FC = () => {
     const { user, loading } = useAuth();
@@ -18,11 +17,11 @@ const AdminApp: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="d-flex justify-content-center align-items-center p-5">
+            <Vertical align="center" justify="center" className="p-5">
                 <Spinner animation="border" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </Spinner>
-            </div>
+            </Vertical>
         );
     }
 

@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Table, Spinner, Alert, Button, Badge } from "react-bootstrap";
+import { ArrowClockwise } from "react-bootstrap-icons";
 import { BACKEND_URL } from "../../config";
 import { formatAdminDateTime } from "../shared/date";
+import Page from "../../components/ui/Page";
+import { Vertical } from "../../components/ui/Alignment";
 interface FeedbackUser {
     id: string;
     email: string;
@@ -75,38 +78,43 @@ const FeedbackList: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </div>
+            <Page title="Feedback">
+                <Vertical align="center" className="p-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </Vertical>
+            </Page>
         );
     }
 
     if (error) {
         return (
-            <Alert variant="danger">
-                <Alert.Heading>Error loading feedback</Alert.Heading>
-                <p>{error}</p>
-                <Button variant="primary" onClick={fetchFeedbackEntries}>
-                    Retry
-                </Button>
-            </Alert>
+            <Page title="Feedback">
+                <Alert variant="danger">
+                    <Alert.Heading>Error loading feedback</Alert.Heading>
+                    <p>{error}</p>
+                    <Button variant="primary" onClick={fetchFeedbackEntries}>
+                        Retry
+                    </Button>
+                </Alert>
+            </Page>
         );
     }
 
     return (
-        <div className="container-fluid p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Feedback</h2>
-                <Button
-                    variant="outline-primary"
-                    onClick={fetchFeedbackEntries}
-                >
-                    Refresh
-                </Button>
-            </div>
-
+        <Page
+            title="Feedback"
+            actions={[
+                {
+                    type: "button",
+                    label: "Refresh",
+                    icon: ArrowClockwise,
+                    variant: "outline-primary",
+                    onClick: fetchFeedbackEntries,
+                },
+            ]}
+        >
             {feedbackEntries.length === 0 ? (
                 <Alert variant="info">No feedback entries found.</Alert>
             ) : (
@@ -139,7 +147,7 @@ const FeedbackList: React.FC = () => {
                     </tbody>
                 </Table>
             )}
-        </div>
+        </Page>
     );
 };
 

@@ -12,6 +12,10 @@ import {
     Table,
 } from "react-bootstrap";
 
+import Page from "../../components/ui/Page";
+import { Horizontal, Vertical } from "../../components/ui/Alignment";
+import { confirmWithModal } from "../../utils/modalUtil";
+import { showToast } from "../../utils/toastUtil";
 import { formatAdminDateTime } from "../shared/date";
 import {
     type LegalDocumentAdminView,
@@ -31,7 +35,6 @@ const LegalDocuments: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isPublishing, setIsPublishing] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
 
     const detail = documents.find((d) => d.document === activeDocument) ?? null;
     const selectedVersion =
@@ -77,36 +80,57 @@ const LegalDocuments: React.FC = () => {
         setSelectedHistoryVersionId(detail.published.id);
         setIsViewingHistoryVersion(false);
         setBody(detail.published.body);
-        setSuccess(null);
         setError(null);
     }, [activeDocument, detail]);
 
     const handlePublish = async () => {
-        if (
-            !window.confirm(
-                "Publish these changes? The current public document will be replaced."
-            )
-        ) {
-            return;
-        }
-
-        try {
-            setIsPublishing(true);
-            setError(null);
-            setSuccess(null);
-            const data = await publishLegalDocument(activeDocument, body);
-            setDocuments((prev) =>
-                prev.map((d) => (d.document === activeDocument ? data : d))
-            );
-            setSelectedHistoryVersionId(data.published.id);
-            setIsViewingHistoryVersion(false);
-            setBody(data.published.body);
-            setSuccess("Document published successfully.");
-        } catch (err: unknown) {
-            setError(getErrorMessage(err, "Failed to publish document"));
-        } finally {
-            setIsPublishing(false);
-        }
+        confirmWithModal({
+            title: "Publish Document",
+            content:
+                "Publish these changes? The current public document will be replaced.",
+            primaryAction: {
+                label: "Publish",
+                variant: "success",
+                callback: () => {
+                    void (async () => {
+                        try {
+                            setIsPublishing(true);
+                            setError(null);
+                            const data = await publishLegalDocument(
+                                activeDocument,
+                                body
+                            );
+                            setDocuments((prev) =>
+                                prev.map((d) =>
+                                    d.document === activeDocument ? data : d
+                                )
+                            );
+                            setSelectedHistoryVersionId(data.published.id);
+                            setIsViewingHistoryVersion(false);
+                            setBody(data.published.body);
+                            showToast({
+                                type: "success",
+                                title: "Document published",
+                                content: "Document published successfully.",
+                            });
+                        } catch (err: unknown) {
+                            const message = getErrorMessage(
+                                err,
+                                "Failed to publish document"
+                            );
+                            setError(message);
+                            showToast({
+                                type: "danger",
+                                title: "Publish failed",
+                                content: message,
+                            });
+                        } finally {
+                            setIsPublishing(false);
+                        }
+                    })();
+                },
+            },
+        });
     };
 
     const handleResetToCurrent = () => {
@@ -114,7 +138,6 @@ const LegalDocuments: React.FC = () => {
         setIsViewingHistoryVersion(false);
         setSelectedHistoryVersionId(detail.published.id);
         setBody(detail.published.body);
-        setSuccess(null);
         setError(null);
     };
 
@@ -131,24 +154,23 @@ const LegalDocuments: React.FC = () => {
         setSelectedHistoryVersionId(versionId);
         setIsViewingHistoryVersion(true);
         setBody(version.body);
-        setSuccess(null);
         setError(null);
     };
 
     if (isLoading && !detail) {
         return (
-            <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </div>
+            <Page title="Legal Documents">
+                <Vertical align="center" className="p-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </Vertical>
+            </Page>
         );
     }
 
     return (
-        <div className="container-fluid p-4">
-            <h2 className="mb-4">Legal Documents</h2>
-
+        <Page title="Legal Documents">
             {error && (
                 <Alert
                     variant="danger"
@@ -156,15 +178,6 @@ const LegalDocuments: React.FC = () => {
                     dismissible
                 >
                     {error}
-                </Alert>
-            )}
-            {success && (
-                <Alert
-                    variant="success"
-                    onClose={() => setSuccess(null)}
-                    dismissible
-                >
-                    {success}
                 </Alert>
             )}
 
@@ -179,7 +192,10 @@ const LegalDocuments: React.FC = () => {
                             }
                         >
                             <Card.Body>
-                                <div className="d-flex justify-content-between align-items-start">
+                                <Horizontal
+                                    justify="space-between"
+                                    align="start"
+                                >
                                     <div>
                                         <Card.Title>
                                             {document.title}
@@ -202,7 +218,7 @@ const LegalDocuments: React.FC = () => {
                                     >
                                         Open
                                     </Button>
-                                </div>
+                                </Horizontal>
                             </Card.Body>
                         </Card>
                     </Col>
@@ -214,7 +230,11 @@ const LegalDocuments: React.FC = () => {
                     <Col lg={8} className="mb-4">
                         <Card>
                             <Card.Body>
-                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                <Horizontal
+                                    justify="space-between"
+                                    align="center"
+                                    className="mb-3"
+                                >
                                     <div>
                                         <Card.Title className="mb-1">
                                             Edit {detail.title}
@@ -235,7 +255,7 @@ const LegalDocuments: React.FC = () => {
                                     ) : (
                                         <Badge bg="success">Live Version</Badge>
                                     )}
-                                </div>
+                                </Horizontal>
 
                                 <Form>
                                     <Form.Group className="mb-3">
@@ -256,7 +276,7 @@ const LegalDocuments: React.FC = () => {
                                         </Form.Text>
                                     </Form.Group>
 
-                                    <div className="d-flex gap-2">
+                                    <Horizontal gap="sm">
                                         <Button
                                             variant="secondary"
                                             type="button"
@@ -274,7 +294,7 @@ const LegalDocuments: React.FC = () => {
                                                 ? "Publishing..."
                                                 : "Publish Changes"}
                                         </Button>
-                                    </div>
+                                    </Horizontal>
                                 </Form>
                             </Card.Body>
                         </Card>
@@ -360,7 +380,7 @@ const LegalDocuments: React.FC = () => {
                     </Col>
                 </Row>
             )}
-        </div>
+        </Page>
     );
 };
 

@@ -6,6 +6,7 @@ import {
     ChatDots,
     ChevronDown,
     ChevronUp,
+    FileText,
     Gear,
     People,
     Speedometer2,
@@ -26,6 +27,7 @@ const adminLinks = [
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
     { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
     { path: "/admin/reports", label: "Monthly Reports", icon: BarChartFill },
+    { path: "/admin/legal", label: "Legal Documents", icon: FileText },
 ];
 
 const Sidebar: React.FC = () => {

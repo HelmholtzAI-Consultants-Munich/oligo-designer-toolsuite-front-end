@@ -92,6 +92,7 @@ export function useMonthlyReports() {
                 withCredentials: true,
             });
             setReports((prev) => prev.filter((r) => r.id !== reportId));
+            return true;
         } catch (err) {
             if (axios.isAxiosError(err)) {
                 const { status, data } = err.response ?? {};
@@ -110,6 +111,7 @@ export function useMonthlyReports() {
             } else {
                 setError(`Unexpected error: ${String(err)}`);
             }
+            return false;
         } finally {
             setDeletingId(null);
         }

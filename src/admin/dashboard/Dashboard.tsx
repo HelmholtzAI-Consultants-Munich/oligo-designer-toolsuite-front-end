@@ -1,10 +1,18 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Card, Spinner, Alert, Button, Row, Col } from "react-bootstrap";
-import { People, PersonBadge, Person, Folder2 } from "react-bootstrap-icons";
+import {
+    ArrowClockwise,
+    People,
+    PersonBadge,
+    Person,
+    Folder2,
+} from "react-bootstrap-icons";
 import type { Icon } from "react-bootstrap-icons";
 import { STATUS_CONFIG } from "../shared/types";
 import { BACKEND_URL } from "../../config";
+import Page from "../../components/ui/Page";
+import { Horizontal, Vertical } from "../../components/ui/Alignment";
 
 /**
  * Calculate percentage with one decimal place
@@ -39,12 +47,12 @@ const StatCard: React.FC<StatCardProps> = ({
     return (
         <Card className={`h-100 ${showBorder ? `border-${color}` : ""}`}>
             <Card.Body>
-                <div className="d-flex align-items-center mb-2">
-                    <Icon size={32} className={`text-${color} me-3`} />
+                <Horizontal align="center" gap="md" className="mb-2">
+                    <Icon size={32} className={`text-${color}`} />
                     <div>
                         <Card.Title className="mb-0">{title}</Card.Title>
                     </div>
-                </div>
+                </Horizontal>
                 <div className={`display-4 fw-bold text-${color}`}>{value}</div>
                 {showPercentage && total !== undefined && total > 0 && (
                     <small className="text-muted">
@@ -110,17 +118,19 @@ const Dashboard: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="d-flex justify-content-center align-items-center p-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </div>
+            <Page title="Dashboard">
+                <Vertical align="center" justify="center" className="p-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </Vertical>
+            </Page>
         );
     }
 
     if (error) {
         return (
-            <div className="container-fluid p-4">
+            <Page title="Dashboard">
                 <Alert variant="danger">
                     <Alert.Heading>Error loading dashboard</Alert.Heading>
                     <p>{error}</p>
@@ -128,7 +138,7 @@ const Dashboard: React.FC = () => {
                         Retry
                     </Button>
                 </Alert>
-            </div>
+            </Page>
         );
     }
 
@@ -137,14 +147,18 @@ const Dashboard: React.FC = () => {
     }
 
     return (
-        <div className="container-fluid p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Dashboard</h2>
-                <Button variant="outline-primary" onClick={fetchStats}>
-                    Refresh
-                </Button>
-            </div>
-
+        <Page
+            title="Dashboard"
+            actions={[
+                {
+                    type: "button",
+                    label: "Refresh",
+                    icon: ArrowClockwise,
+                    variant: "outline-primary",
+                    onClick: fetchStats,
+                },
+            ]}
+        >
             {/* User Statistics */}
             <Row className="mb-4">
                 <Col md={12}>
@@ -224,7 +238,7 @@ const Dashboard: React.FC = () => {
                     }
                 )}
             </Row>
-        </div>
+        </Page>
     );
 };
 

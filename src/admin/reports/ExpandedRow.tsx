@@ -6,6 +6,7 @@ import { formatPercentage } from "./formatters";
 import DeltaBadge from "./DeltaBadge";
 import type { MonthlyReport } from "./types";
 import { getPipelineDisplayName } from "../../pipelineConfig/utils";
+import { Horizontal } from "../../components/ui/Alignment";
 const STATUSES = ["success", "failure"] as const;
 
 const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
@@ -37,8 +38,15 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                     const Icon = STATUS_CONFIG.icons[status];
                                     return (
                                         <div key={status} className="mb-3">
-                                            <div className="d-flex justify-content-between align-items-center mb-1">
-                                                <span className="d-flex align-items-center gap-1">
+                                            <Horizontal
+                                                justify="space-between"
+                                                align="center"
+                                                className="mb-1"
+                                            >
+                                                <Horizontal
+                                                    align="center"
+                                                    gap="xs"
+                                                >
                                                     <Icon
                                                         size={14}
                                                         className={`text-${STATUS_CONFIG.colors[status]}`}
@@ -49,14 +57,14 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                                                 .labels[status]
                                                         }
                                                     </span>
-                                                </span>
+                                                </Horizontal>
                                                 <span className="small">
                                                     <strong>{count}</strong>
                                                     <span className="text-muted ms-1">
                                                         ({pct.toFixed(0)}%)
                                                     </span>
                                                 </span>
-                                            </div>
+                                            </Horizontal>
                                             <ProgressBar
                                                 now={pct}
                                                 variant={
@@ -70,9 +78,11 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                 <hr className="my-2" />
                                 {(["Authenticated", "Anonymous"] as const).map(
                                     (label) => (
-                                        <div
+                                        <Horizontal
                                             key={label}
-                                            className="d-flex justify-content-between align-items-center mb-2"
+                                            justify="space-between"
+                                            align="center"
+                                            className="mb-2"
                                         >
                                             <span className="small text-muted">
                                                 {label}
@@ -93,7 +103,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                                     ]
                                                 }
                                             </Badge>
-                                        </div>
+                                        </Horizontal>
                                     )
                                 )}
                             </Card.Body>
@@ -118,7 +128,11 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                             : "0";
                                     return (
                                         <div key={pipeline} className="mb-3">
-                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                            <Horizontal
+                                                justify="space-between"
+                                                align="center"
+                                                className="mb-1"
+                                            >
                                                 <span className="small fw-medium">
                                                     {getPipelineDisplayName(
                                                         pipeline
@@ -130,7 +144,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                                         ({share}%)
                                                     </span>
                                                 </span>
-                                            </div>
+                                            </Horizontal>
                                             <ProgressBar
                                                 now={pct}
                                                 variant="info"
@@ -182,18 +196,26 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                 <p className="small fw-semibold text-uppercase text-muted mb-2">
                                     Anon-to-user conversion
                                 </p>
-                                <div className="d-flex align-items-center justify-content-between mb-1">
+                                <Horizontal
+                                    align="center"
+                                    justify="space-between"
+                                    className="mb-1"
+                                >
                                     <span className="small text-muted">
                                         Anonymous sessions
                                     </span>
                                     <Badge bg="secondary" pill>
                                         {runs.anonymous}
                                     </Badge>
-                                </div>
+                                </Horizontal>
                                 <div className="text-center text-muted small my-1">
                                     ↓
                                 </div>
-                                <div className="d-flex align-items-center justify-content-between mb-2">
+                                <Horizontal
+                                    align="center"
+                                    justify="space-between"
+                                    className="mb-2"
+                                >
                                     <span className="small text-muted">
                                         Registered from anon
                                     </span>
@@ -207,7 +229,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                             }
                                         />
                                     </span>
-                                </div>
+                                </Horizontal>
                                 <div className="rounded p-2 text-center bg-light">
                                     <div className="small text-muted">
                                         Conversion Rate

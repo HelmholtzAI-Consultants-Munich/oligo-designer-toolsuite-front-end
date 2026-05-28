@@ -6,6 +6,10 @@ import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { BACKEND_URL } from "../../config";
 import { formatAdminDateTime } from "../shared/date";
+import Page from "../../components/ui/Page";
+import { confirmWithModal } from "../../utils/modalUtil";
+import { showToast } from "../../utils/toastUtil";
+import { Vertical } from "../../components/ui/Alignment";
 
 interface User {
     id: string;
@@ -57,70 +61,97 @@ const UserList: React.FC = () => {
     };
 
     const handleDelete = async (userId: string, userIdentifier: string) => {
-        if (
-            window.confirm(
-                `Are you sure you want to delete user ${userIdentifier}?`
-            )
-        ) {
-            try {
-                await axios.delete(BACKEND_URL + `/api/admin/users/${userId}`, {
-                    withCredentials: true,
-                });
-                // Refresh the list
-                fetchUsers();
-            } catch (err: unknown) {
-                if (axios.isAxiosError(err)) {
-                    alert(
-                        `Failed to delete user: ${err.response?.data?.error || err.message || "Unknown error"}`
-                    );
-                } else {
-                    alert("Failed to delete user");
-                }
-            }
-        }
+        confirmWithModal({
+            title: "Delete User",
+            content: <>Delete user {userIdentifier}?</>,
+            primaryAction: {
+                label: "Delete",
+                variant: "danger",
+                callback: () => {
+                    void (async () => {
+                        try {
+                            await axios.delete(
+                                BACKEND_URL + `/api/admin/users/${userId}`,
+                                {
+                                    withCredentials: true,
+                                }
+                            );
+                            showToast({
+                                type: "success",
+                                title: "User deleted",
+                                content: `Deleted ${userIdentifier}.`,
+                            });
+                            fetchUsers();
+                        } catch (err: unknown) {
+                            showToast({
+                                type: "danger",
+                                title: "Delete failed",
+                                content: axios.isAxiosError(err)
+                                    ? err.response?.data?.error ||
+                                      err.message ||
+                                      "Unknown error"
+                                    : "Failed to delete user",
+                            });
+                        }
+                    })();
+                },
+            },
+        });
     };
 
     const handleBulkDelete = async () => {
         const selectedArray = Array.from(selectedItems);
         if (selectedArray.length === 0) return;
 
-        const confirmed = window.confirm(
-            `Are you sure you want to delete ${selectedArray.length} user(s)? This action cannot be undone.`
-        );
+        confirmWithModal({
+            title: "Delete Users",
+            content: `Delete ${selectedArray.length} user(s)? This action cannot be undone.`,
+            primaryAction: {
+                label: "Delete",
+                variant: "danger",
+                callback: () => {
+                    void (async () => {
+                        setIsBulkOperationLoading(true);
+                        try {
+                            const response = await axios.post(
+                                BACKEND_URL + "/api/admin/users/bulk-delete",
+                                { user_ids: selectedArray },
+                                { withCredentials: true }
+                            );
 
-        if (!confirmed) return;
+                            const result = response.data;
+                            let message =
+                                result.message ||
+                                `Successfully deleted ${result.deleted_count} user(s)`;
 
-        setIsBulkOperationLoading(true);
-        try {
-            const response = await axios.post(
-                BACKEND_URL + "/api/admin/users/bulk-delete",
-                { user_ids: selectedArray },
-                { withCredentials: true }
-            );
+                            if (result.skipped && result.skipped.length > 0) {
+                                message += `. Skipped ${result.skipped.length} (cannot delete own account)`;
+                            }
 
-            const result = response.data;
-            let message =
-                result.message ||
-                `Successfully deleted ${result.deleted_count} user(s)`;
-
-            if (result.skipped && result.skipped.length > 0) {
-                message += `. Skipped ${result.skipped.length} (cannot delete own account)`;
-            }
-
-            alert(message);
-            clearSelection();
-            fetchUsers();
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                alert(
-                    `Failed to delete users: ${err.response?.data?.error || err.message || "Unknown error"}`
-                );
-            } else {
-                alert("Failed to delete users");
-            }
-        } finally {
-            setIsBulkOperationLoading(false);
-        }
+                            showToast({
+                                type: "success",
+                                title: "Users deleted",
+                                content: message,
+                            });
+                            clearSelection();
+                            fetchUsers();
+                        } catch (err: unknown) {
+                            showToast({
+                                type: "danger",
+                                title: "Delete failed",
+                                content: axios.isAxiosError(err)
+                                    ? err.response?.data?.error ||
+                                      err.message ||
+                                      "Unknown error"
+                                    : "Failed to delete users",
+                            });
+                        } finally {
+                            setIsBulkOperationLoading(false);
+                        }
+                    })();
+                },
+            },
+        });
     };
 
     const handleBulkRoleChange = async (newRole: "user" | "admin") => {
@@ -128,64 +159,81 @@ const UserList: React.FC = () => {
         if (selectedArray.length === 0) return;
 
         const roleLabel = newRole === "admin" ? "Admin" : "User";
-        const confirmed = window.confirm(
-            `Are you sure you want to change role of ${selectedArray.length} user(s) to ${roleLabel}?`
-        );
+        confirmWithModal({
+            title: "Change User Roles",
+            content: `Change role of ${selectedArray.length} user(s) to ${roleLabel}?`,
+            primaryAction: {
+                label: "Change Role",
+                variant: "primary",
+                callback: () => {
+                    void (async () => {
+                        setIsBulkOperationLoading(true);
+                        try {
+                            const response = await axios.post(
+                                BACKEND_URL +
+                                    "/api/admin/users/bulk-update-role",
+                                { user_ids: selectedArray, role: newRole },
+                                { withCredentials: true }
+                            );
 
-        if (!confirmed) return;
+                            const result = response.data;
+                            let message =
+                                result.message ||
+                                `Successfully updated role of ${result.updated_count} user(s) to ${newRole}`;
 
-        setIsBulkOperationLoading(true);
-        try {
-            const response = await axios.post(
-                BACKEND_URL + "/api/admin/users/bulk-update-role",
-                { user_ids: selectedArray, role: newRole },
-                { withCredentials: true }
-            );
+                            if (result.skipped && result.skipped.length > 0) {
+                                message += `. Skipped ${result.skipped.length} (cannot demote own admin account)`;
+                            }
 
-            const result = response.data;
-            let message =
-                result.message ||
-                `Successfully updated role of ${result.updated_count} user(s) to ${newRole}`;
-
-            if (result.skipped && result.skipped.length > 0) {
-                message += `. Skipped ${result.skipped.length} (cannot demote own admin account)`;
-            }
-
-            alert(message);
-            clearSelection();
-            fetchUsers();
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                alert(
-                    `Failed to update roles: ${err.response?.data?.error || err.message || "Unknown error"}`
-                );
-            } else {
-                alert("Failed to update roles");
-            }
-        } finally {
-            setIsBulkOperationLoading(false);
-        }
+                            showToast({
+                                type: "success",
+                                title: "Roles updated",
+                                content: message,
+                            });
+                            clearSelection();
+                            fetchUsers();
+                        } catch (err: unknown) {
+                            showToast({
+                                type: "danger",
+                                title: "Update failed",
+                                content: axios.isAxiosError(err)
+                                    ? err.response?.data?.error ||
+                                      err.message ||
+                                      "Unknown error"
+                                    : "Failed to update roles",
+                            });
+                        } finally {
+                            setIsBulkOperationLoading(false);
+                        }
+                    })();
+                },
+            },
+        });
     };
 
     if (isLoading) {
         return (
-            <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </div>
+            <Page title="User Management">
+                <Vertical align="center" className="p-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </Vertical>
+            </Page>
         );
     }
 
     if (error) {
         return (
-            <Alert variant="danger">
-                <Alert.Heading>Error loading users</Alert.Heading>
-                <p>{error}</p>
-                <Button variant="primary" onClick={fetchUsers}>
-                    Retry
-                </Button>
-            </Alert>
+            <Page title="User Management">
+                <Alert variant="danger">
+                    <Alert.Heading>Error loading users</Alert.Heading>
+                    <p>{error}</p>
+                    <Button variant="primary" onClick={fetchUsers}>
+                        Retry
+                    </Button>
+                </Alert>
+            </Page>
         );
     }
 
@@ -195,11 +243,7 @@ const UserList: React.FC = () => {
         allUserIds.every((id) => selectedItems.has(id));
 
     return (
-        <div className="container-fluid p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>User Management</h2>
-            </div>
-
+        <Page title="User Management">
             {/* Bulk Action Toolbar */}
             <BulkActionToolbar
                 selectedCount={selectedCount}
@@ -334,7 +378,7 @@ const UserList: React.FC = () => {
                     </tbody>
                 </Table>
             )}
-        </div>
+        </Page>
     );
 };
 

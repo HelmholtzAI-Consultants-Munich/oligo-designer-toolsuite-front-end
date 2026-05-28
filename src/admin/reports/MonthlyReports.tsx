@@ -9,7 +9,18 @@ import {
     Spinner,
     Table,
 } from "react-bootstrap";
-import { Eye, EyeSlash, Trash, Download } from "react-bootstrap-icons";
+import {
+    ArrowClockwise,
+    Eye,
+    EyeSlash,
+    Trash,
+    Download,
+    PlusCircle,
+} from "react-bootstrap-icons";
+import Page from "../../components/ui/Page";
+import { Horizontal, Vertical } from "../../components/ui/Alignment";
+import { closeModal, confirmWithModal, showModal } from "../../utils/modalUtil";
+import { showToast } from "../../utils/toastUtil";
 import { formatAdminDateTime } from "../shared/date";
 import { formatReportMonth } from "./display";
 import { formatPercentage } from "./formatters";
@@ -87,22 +98,133 @@ function delay(ms: number) {
     return new Promise<void>((r) => window.setTimeout(r, ms));
 }
 
+function GenerateReportsModalContent({
+    maxMonth,
+    onGenerate,
+}: {
+    maxMonth: string;
+    onGenerate: (months: ReportPeriod[]) => Promise<boolean>;
+}) {
+    const [fromValue, setFromValue] = useState("");
+    const [toValue, setToValue] = useState("");
+    const [rangeError, setRangeError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const rangeCount = (() => {
+        if (!fromValue || !toValue) return 0;
+        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
+        const [toYear, toMonth] = toValue.split("-").map(Number);
+        return fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)
+            ? 0
+            : monthsBetween(fromYear, fromMonth, toYear, toMonth).length;
+    })();
+
+    const handleGenerate = async () => {
+        setRangeError(null);
+        if (!fromValue || !toValue) {
+            setRangeError("Please select both From and To months.");
+            return;
+        }
+        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
+        const [toYear, toMonth] = toValue.split("-").map(Number);
+        if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
+            setRangeError('"From" must not be after "To".');
+            return;
+        }
+        if (toValue > maxMonth) {
+            setRangeError(
+                "Cannot generate reports for the current or future month."
+            );
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const didGenerate = await onGenerate(
+                monthsBetween(fromYear, fromMonth, toYear, toMonth)
+            );
+            if (didGenerate) closeModal();
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Generate Reports</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {rangeError && <Alert variant="danger">{rangeError}</Alert>}
+                <Row className="mb-3">
+                    <Col>
+                        <Form.Label>From month</Form.Label>
+                        <Form.Control
+                            type="month"
+                            value={fromValue}
+                            max={maxMonth}
+                            onChange={(e) => setFromValue(e.target.value)}
+                        />
+                    </Col>
+                    <Col>
+                        <Form.Label>To month</Form.Label>
+                        <Form.Control
+                            type="month"
+                            value={toValue}
+                            max={maxMonth}
+                            onChange={(e) => setToValue(e.target.value)}
+                        />
+                    </Col>
+                </Row>
+                {rangeCount > 0 && (
+                    <p className="text-muted mb-0">
+                        This will generate {rangeCount} report
+                        {rangeCount > 1 ? "s" : ""}.
+                    </p>
+                )}
+            </Modal.Body>
+            <Modal.Footer>
+                <Button
+                    variant="secondary"
+                    onClick={closeModal}
+                    disabled={isSubmitting}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    variant="primary"
+                    onClick={() => void handleGenerate()}
+                    disabled={isSubmitting}
+                >
+                    {isSubmitting ? (
+                        <>
+                            <Spinner
+                                animation="border"
+                                size="sm"
+                                className="me-1"
+                            />
+                            Generating...
+                        </>
+                    ) : (
+                        "Generate"
+                    )}
+                </Button>
+            </Modal.Footer>
+        </>
+    );
+}
+
 const MonthlyReports: React.FC = () => {
     const {
         reports,
         isLoading,
         error,
-        isGenerating,
         deletingId,
         fetchReports,
         triggerGenerate,
         deleteReport,
     } = useMonthlyReports();
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
-    const [showModal, setShowModal] = useState(false);
-    const [fromValue, setFromValue] = useState("");
-    const [toValue, setToValue] = useState("");
-    const [rangeError, setRangeError] = useState<string | null>(null);
 
     useEffect(() => {
         void fetchReports();
@@ -137,90 +259,92 @@ const MonthlyReports: React.FC = () => {
         }
     };
 
-    const handleGenerate = async () => {
-        setRangeError(null);
-        if (!fromValue || !toValue) {
-            setRangeError("Please select both From and To months.");
-            return;
-        }
-        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
-        const [toYear, toMonth] = toValue.split("-").map(Number);
-        if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
-            setRangeError('"From" must not be after "To".');
-            return;
-        }
-        if (toValue > MAX_MONTH) {
-            setRangeError(
-                "Cannot generate reports for the current or future month."
-            );
-            return;
-        }
-        const months = monthsBetween(fromYear, fromMonth, toYear, toMonth);
+    const handleGenerate = async (months: ReportPeriod[]) => {
         const previousGeneratedAtById = new Map(
             reports.map((report) => [report.id, report.generated_at])
         );
         const generatedReportIds = await triggerGenerate(months);
-        if (!generatedReportIds) return;
-        setShowModal(false);
-        setFromValue("");
-        setToValue("");
+        if (!generatedReportIds) {
+            showToast({
+                type: "danger",
+                title: "Generation failed",
+                content: "Failed to trigger report generation.",
+            });
+            return false;
+        }
         await waitForReports(
             generatedReportIds.map((id) => ({
                 id,
                 previousGeneratedAt: previousGeneratedAtById.get(id),
             }))
         );
+        showToast({
+            type: "success",
+            title: "Reports generated",
+            content: `Generated ${generatedReportIds.length} report${generatedReportIds.length === 1 ? "" : "s"}.`,
+        });
+        return true;
     };
 
-    const rangeCount = (() => {
-        if (!fromValue || !toValue) return 0;
-        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
-        const [toYear, toMonth] = toValue.split("-").map(Number);
-        return fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)
-            ? 0
-            : monthsBetween(fromYear, fromMonth, toYear, toMonth).length;
-    })();
+    const showGenerateReportsModal = () => {
+        showModal({
+            rawContent: (
+                <GenerateReportsModalContent
+                    maxMonth={MAX_MONTH}
+                    onGenerate={handleGenerate}
+                />
+            ),
+            centered: true,
+        });
+    };
 
     if (isLoading)
         return (
-            <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </div>
+            <Page title="Monthly Reports">
+                <Vertical align="center" className="p-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </Vertical>
+            </Page>
         );
 
     if (error)
         return (
-            <Alert variant="danger">
-                <Alert.Heading>Error loading monthly reports</Alert.Heading>
-                <p>{error}</p>
-                <Button variant="primary" onClick={() => void fetchReports()}>
-                    Retry
-                </Button>
-            </Alert>
+            <Page title="Monthly Reports">
+                <Alert variant="danger">
+                    <Alert.Heading>Error loading monthly reports</Alert.Heading>
+                    <p>{error}</p>
+                    <Button
+                        variant="primary"
+                        onClick={() => void fetchReports()}
+                    >
+                        Retry
+                    </Button>
+                </Alert>
+            </Page>
         );
 
     return (
-        <div className="container-fluid p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Monthly Reports</h2>
-                <div className="d-flex gap-2">
-                    <Button
-                        variant="outline-primary"
-                        onClick={() => void fetchReports()}
-                    >
-                        Refresh
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={() => setShowModal(true)}
-                    >
-                        Generate Reports
-                    </Button>
-                </div>
-            </div>
-
+        <Page
+            title="Monthly Reports"
+            actions={[
+                {
+                    type: "button",
+                    label: "Refresh",
+                    icon: ArrowClockwise,
+                    variant: "outline-primary",
+                    onClick: () => void fetchReports(),
+                },
+                {
+                    type: "button",
+                    label: "Generate Reports",
+                    icon: PlusCircle,
+                    variant: "primary",
+                    onClick: showGenerateReportsModal,
+                },
+            ]}
+        >
             <TrendChart reports={reports} />
 
             {reports.length === 0 ? (
@@ -283,7 +407,7 @@ const MonthlyReports: React.FC = () => {
                                         </td>
                                     ))}
                                     <td>
-                                        <div className="d-flex gap-1">
+                                        <Horizontal gap="xs">
                                             <Button
                                                 variant="outline-secondary"
                                                 size="sm"
@@ -300,14 +424,36 @@ const MonthlyReports: React.FC = () => {
                                                 disabled={
                                                     deletingId === report.id
                                                 }
-                                                onClick={() => {
-                                                    if (
-                                                        window.confirm(
-                                                            `Delete report for ${formatReportMonth(report.month, "long")} ${report.year}?`
-                                                        )
-                                                    )
-                                                        deleteReport(report.id);
-                                                }}
+                                                onClick={() =>
+                                                    confirmWithModal({
+                                                        title: "Delete Report",
+                                                        content: `Delete report for ${formatReportMonth(report.month, "long")} ${report.year}?`,
+                                                        primaryAction: {
+                                                            label: "Delete",
+                                                            variant: "danger",
+                                                            callback: () => {
+                                                                void (async () => {
+                                                                    const deleted =
+                                                                        await deleteReport(
+                                                                            report.id
+                                                                        );
+                                                                    showToast({
+                                                                        type: deleted
+                                                                            ? "success"
+                                                                            : "danger",
+                                                                        title: deleted
+                                                                            ? "Report deleted"
+                                                                            : "Delete failed",
+                                                                        content:
+                                                                            deleted
+                                                                                ? `Deleted report for ${formatReportMonth(report.month, "long")} ${report.year}.`
+                                                                                : "Failed to delete report.",
+                                                                    });
+                                                                })();
+                                                            },
+                                                        },
+                                                    })
+                                                }
                                                 title="Delete report"
                                             >
                                                 {deletingId === report.id ? (
@@ -319,7 +465,7 @@ const MonthlyReports: React.FC = () => {
                                                     <Trash size={14} />
                                                 )}
                                             </Button>
-                                        </div>
+                                        </Horizontal>
                                     </td>
                                 </tr>
                                 {expanded.has(report.id) && (
@@ -333,69 +479,7 @@ const MonthlyReports: React.FC = () => {
                     </tbody>
                 </Table>
             )}
-
-            <Modal show={showModal} onHide={() => setShowModal(false)}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Generate Reports</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {rangeError && <Alert variant="danger">{rangeError}</Alert>}
-                    <Row className="mb-3">
-                        <Col>
-                            <Form.Label>From month</Form.Label>
-                            <Form.Control
-                                type="month"
-                                value={fromValue}
-                                max={MAX_MONTH}
-                                onChange={(e) => setFromValue(e.target.value)}
-                            />
-                        </Col>
-                        <Col>
-                            <Form.Label>To month</Form.Label>
-                            <Form.Control
-                                type="month"
-                                value={toValue}
-                                max={MAX_MONTH}
-                                onChange={(e) => setToValue(e.target.value)}
-                            />
-                        </Col>
-                    </Row>
-                    {rangeCount > 0 && (
-                        <p className="text-muted mb-0">
-                            This will generate {rangeCount} report
-                            {rangeCount > 1 ? "s" : ""}.
-                        </p>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        variant="secondary"
-                        onClick={() => setShowModal(false)}
-                        disabled={isGenerating}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="primary"
-                        onClick={() => void handleGenerate()}
-                        disabled={isGenerating}
-                    >
-                        {isGenerating ? (
-                            <>
-                                <Spinner
-                                    animation="border"
-                                    size="sm"
-                                    className="me-1"
-                                />
-                                Generating…
-                            </>
-                        ) : (
-                            "Generate"
-                        )}
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-        </div>
+        </Page>
     );
 };
 
