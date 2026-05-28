@@ -20,7 +20,10 @@ from werkzeug.utils import secure_filename
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import celery_app, mongo
-from backend.routes.route_helpers import get_user_context_with_directory
+from backend.routes.route_helpers import (
+    get_user_context_with_directory,
+    require_terms_acceptance_for_current_context,
+)
 from backend.routes.runs import delete_run
 from backend.utilities.pipeline import generate_single_region_forms
 from backend.utilities.typed_values import (
@@ -126,21 +129,22 @@ def write_run_to_DB(
     task_id: str | None,
     priority: int = CeleryConfig.task_default_priority,
     queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
+    pipeline_run_config: dict | None = None,
 ):
-    return update_run_in_DB(
-        run_id,
-        {
-            "session_id": context.session_id,
-            "user_id": context.user_id,
-            "timestamp": context.timestamp,
-            "output_path": serialize_path(context.output_path),
-            "status": "pending",
-            "pipeline": pipeline_name,
-            "task_id": task_id,
-            "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
-            "queue_position": queue_position,
-        },
-    )
+    data: dict = {
+        "session_id": context.session_id,
+        "user_id": context.user_id,
+        "timestamp": context.timestamp,
+        "output_path": serialize_path(context.output_path),
+        "status": "pending",
+        "pipeline": pipeline_name,
+        "task_id": task_id,
+        "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
+        "queue_position": queue_position,
+    }
+    if pipeline_run_config is not None:
+        data["pipeline_run_config"] = pipeline_run_config
+    return update_run_in_DB(run_id, data)
 
 
 def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
@@ -289,6 +293,8 @@ def start_pipeline(pipeline_name: str):
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
+    require_terms_acceptance_for_current_context()
+
     if request.form is None or len(request.form) == 0 or "payload" not in request.form:
         abort(
             HTTPStatus.BAD_REQUEST,
@@ -332,6 +338,9 @@ def start_pipeline(pipeline_name: str):
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
 
     # mark run as enqueued in DB
+    pipeline_run_config = (
+        form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
+    )
     update_result = write_run_to_DB(
         pipeline_name,
         run_id,
@@ -339,6 +348,7 @@ def start_pipeline(pipeline_name: str):
         result_promise.id,
         priority,
         (high_priority_ahead, default_priority_ahead),
+        pipeline_run_config,
     )
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")

@@ -22,14 +22,13 @@ import {
 } from "../fastaGenerateForm/GenomicDropDown";
 import {
     firstLetterUppercase,
-    getKeyObjectFromSchema,
+    getKeyObjectFromFastaFormBaseSchema,
     replaceUnderscore,
 } from "../fastaGenerateForm/helpers";
 import { GenomicRegionSelect } from "../fastaGenerateForm/GenomicRegionSelect";
 import { NcbiAnnotationSelect } from "../fastaGenerateForm/NcbiAnnotationSelect";
 import { closeModal } from "../../utils/modalUtil";
 import type { RJSFSchema } from "@rjsf/utils";
-import { PIPELINE_CONFIG } from "../../pipelineConfig/config";
 import type { DropDown, NestedObject } from "../componentTypes";
 import type { JSONSchema7 } from "json-schema";
 
@@ -60,12 +59,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [dropDown, setDropDown] = useState<DropDown>();
         const [formState, setFormState] = useState(form);
 
-        // TODO: could be made cleaner
-        // the definitions section is the same for every schema, so we just use "scrinshot" here
-        const descriptionOnlySchema = getKeyObjectFromSchema(
+        const descriptionOnlySchema = getKeyObjectFromFastaFormBaseSchema(
             (schema.properties!.fasta_form as JSONSchema7)
                 .items as NestedObject,
-            PIPELINE_CONFIG["scrinshot"].schema,
             "description"
         ) as RJSFSchema;
 

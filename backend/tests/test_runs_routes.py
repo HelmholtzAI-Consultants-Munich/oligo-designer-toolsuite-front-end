@@ -1,4 +1,3 @@
-import json
 import os
 from unittest.mock import patch
 
@@ -20,10 +19,16 @@ def output_path(tmp_path, run_id, dummy_user):
     return str(output_path)
 
 
-def test_init_run_id(client):
+def test_init_run_id(client, session_user):
     response = client.post("/api/init_run_id")
     assert response.status_code == 200
     assert "run_id" in response.get_json()
+
+
+def test_init_run_id_requires_terms_acceptance(client):
+    response = client.post("/api/init_run_id")
+    assert response.status_code == 403
+    assert "accept the current Terms of Service and Privacy Policy" in response.get_json()["error"]
 
 
 def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
@@ -32,14 +37,6 @@ def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
     response = client.get("/api/runs")
     assert response.status_code == 200
     assert isinstance(response.get_json(), list)
-
-
-def test_get_run_files(client, dummy_user, run_id, output_path):
-    response = client.get(f"/api/runs/{run_id}/files")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert any("log.txt" in file["name"] for file in data)
-    assert any("config.yaml" in file["name"] for file in data)
 
 
 def test_get_run_file_success(client, dummy_user, run_id, output_path):
@@ -73,25 +70,11 @@ def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_
     assert response.get_json()["error"] == "Invalid file path"
 
 
-def test_runid_null(client, mock_celery):
-    form = {"payload": json.dumps({"runid": None})}
+def test_runid_null(client, mock_celery, session_user):
+    form = {"runid": None}
 
     response = post(client, "/api/scrinshot", form)
     assert response.status_code == 400
-
-
-def test_get_files_valid_runid_unused(client):
-    response = client.get(f"/api/runs/{ObjectId()}/files")
-    assert response.status_code == 404
-
-
-def test_get_files_invalid_runid(client):
-    """Test that invalid ObjectId format returns 404 (URL converter behavior)."""
-    run_id = "hallo"
-
-    response = client.get(f"/api/runs/{run_id}/files")
-    # BSONObjectIdConverter returns 404 for invalid ObjectId format
-    assert response.status_code == 404
 
 
 # Error handling tests
@@ -173,13 +156,6 @@ def test_get_run_file_permission_error_sanitized(client, dummy_user, run_id, tmp
         )
 
 
-def test_get_run_files_invalid_run_id_sanitized(client):
-    """Test get_run_files with invalid run ID returns 404 (URL converter behavior)."""
-    response = client.get("/api/runs/invalid_id/files")
-    # BSONObjectIdConverter returns 404 for invalid ObjectId format
-    assert response.status_code == 404
-
-
 def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id):
     """Test that no raw error strings (str(e)) are exposed in pipeline route responses."""
     # Test get_run_file with various exceptions
@@ -220,9 +196,61 @@ def test_all_errors_use_create_user_error_response(client, dummy_user, run_id):
     create_test_run(run_id, user_id=other_user_id, status="success")
 
     # Test that error responses have consistent format (run exists but unauthorized)
-    response = client.get(f"/api/runs/{run_id}/files")
+    response = client.get(f"/api/runs/{run_id}/files/test.txt")
     assert response.status_code == 404  # Not found because user doesn't own the run
     data = response.get_json()
     # Should have "error" field
     assert "error" in data
     assert isinstance(data["error"], str)
+
+
+# ---- /api/runs/<run_id>/config tests ----
+
+SAMPLE_RUN_CONFIG = {
+    "_meta": {
+        "version": "1.0.0",
+        "pipeline": "scrinshot",
+        "exportedAt": "2024-01-01T00:00:00.000Z",
+    },
+    "config": {"top_n_sets": 3},
+    "fastaForms": {
+        "files_fasta_target_probe_database": [],
+        "files_fasta_reference_database_target_probe": [],
+        "files_fasta_reference_database_readout_probe": [],
+        "files_fasta_reference_database_primer": [],
+    },
+}
+
+
+def test_get_run_config_success(client, dummy_user, run_id):
+    """GET /api/runs/<run_id>/config returns 200 + stored pipeline_run_config."""
+    create_test_run(run_id, user_id=dummy_user.id, pipeline_run_config=SAMPLE_RUN_CONFIG)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["_meta"]["pipeline"] == "scrinshot"
+    assert data["config"] == {"top_n_sets": 3}
+
+
+def test_get_run_config_no_config(client, dummy_user, run_id):
+    """GET /api/runs/<run_id>/config returns 404 when run has no pipeline_run_config."""
+    create_test_run(run_id, user_id=dummy_user.id)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+    assert response.status_code == 404
+
+
+def test_get_run_config_not_found(client, dummy_user):
+    """GET /api/runs/<run_id>/config returns 404 for a non-existent run."""
+    response = client.get(f"/api/runs/{ObjectId()}/config")
+    assert response.status_code == 404
+
+
+def test_get_run_config_unauthorized(client, dummy_user, run_id):
+    """GET /api/runs/<run_id>/config returns 404 for another user's run."""
+    other_user_id = str(ObjectId())
+    create_test_run(run_id, user_id=other_user_id, pipeline_run_config=SAMPLE_RUN_CONFIG)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+    assert response.status_code == 404

@@ -9,11 +9,12 @@ import type {
     Probesets,
     ProbeDetailsValue,
     RunState,
+    ProbesetScores,
 } from "../types";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
-import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
+import { Alert, Button, Form, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
 import {
@@ -22,47 +23,26 @@ import {
 } from "../components/ui/utils";
 import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
-import { CardList, FileEarmarkSpreadsheet, Trash } from "react-bootstrap-icons";
+import {
+    CardList,
+    FileEarmarkSpreadsheet,
+    GearFill,
+    Trash,
+} from "react-bootstrap-icons";
 import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action } from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
-
-interface RunFile {
-    name: string;
-    type: "log" | "config";
-    size: number;
-}
+import RunError from "../components/ui/RunError";
+import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
 
 // Helper to extract all unique columns from an array of oligos
 function getAllOligoColumns(oligos: ProbeDetails[]): string[] {
     const columns = new Set<string>();
     oligos.forEach((o) => Object.keys(o).forEach((k) => columns.add(k)));
     return Array.from(columns);
-}
-
-type OligoComponentDefinition = {
-    type: "columns";
-    value: string[];
-};
-
-function getColumnsFromDefinition(
-    definition: OligoComponentDefinition[] | undefined
-): string[] {
-    if (!definition) {
-        return [];
-    }
-
-    const columnsEntry = definition.find((item) => item.type === "columns");
-
-    if (!columnsEntry) {
-        console.error("No target field found in component definition");
-        return []; // fallback
-    }
-
-    return columnsEntry.value;
 }
 
 interface LocationState {
@@ -75,9 +55,6 @@ const RunDetail = () => {
     const location = useLocation();
     const { runs, updateRuns } = useRuns();
     const prevStatus = useRef<RunState | null>(null);
-    const [files, setFiles] = useState<RunFile[]>([]);
-    const [fileContent, setFileContent] = useState<string | null>(null);
-    const [viewingFilename, setViewingFilename] = useState<string | null>(null);
 
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
@@ -94,25 +71,19 @@ const RunDetail = () => {
         | null
         | undefined
     >(undefined); // undefined = not loaded yet, null = no probes available or error loading
+    const [scores, setScores] = useState<{
+        [key: string]: ProbesetScores;
+    } | null>(null);
 
     const run = useMemo(() => runs.find((r) => r._id === runId), [runs, runId]);
 
-    const definition = ComponentDefinition[
+    const tableColumns = ComponentDefinition[
         run?.pipeline as keyof typeof ComponentDefinition
-    ] as OligoComponentDefinition[] | undefined;
-    const tableColumns = getColumnsFromDefinition(definition);
+    ].columns as string[];
 
     // --- Polling/log state variables ---
-    const fetchAndParseRunFiles = useCallback(
+    const fetchGenomicRegionsFile = useCallback(
         (id: string) => {
-            if (prevStatus.current !== "success") {
-                axios
-                    .get(BACKEND_URL + `/api/runs/${id}/files`, {
-                        withCredentials: true,
-                    })
-                    .then((response) => setFiles(response.data));
-            }
-
             if (run?.status === "success" && prevStatus.current !== "success") {
                 axios
                     .get(
@@ -128,6 +99,9 @@ const RunDetail = () => {
                             probes: {
                                 [gene: string]: Probesets;
                             };
+                            scores: {
+                                [gene: string]: ProbesetScores;
+                            };
                         };
 
                         const genes = Object.keys(regionsYaml.probes || {});
@@ -142,6 +116,7 @@ const RunDetail = () => {
 
                         setGenomicRegions(regionsYaml.regions);
                         setProbes(regionsYaml.probes);
+                        setScores(regionsYaml.scores);
                         setSelectedGene(firstGene);
                         setSelectedOligoset(firstOligoset);
                         setSelectedOligo(firstOligo);
@@ -164,32 +139,9 @@ const RunDetail = () => {
 
     useEffect(() => {
         if (run) {
-            fetchAndParseRunFiles(run._id);
+            fetchGenomicRegionsFile(run._id);
         }
-    }, [runs, run, fetchAndParseRunFiles]); // runs on every poll event
-
-    const fetchFileContent = useCallback(
-        (filename: string) => {
-            axios
-                .get(BACKEND_URL + `/api/runs/${runId}/files/${filename}`, {
-                    withCredentials: true,
-                    responseType: "text",
-                })
-                .then((response) => {
-                    setFileContent(response.data);
-                })
-                .catch((error) =>
-                    console.error("Error fetching file content:", error)
-                );
-        },
-        [runId]
-    );
-
-    useEffect(() => {
-        if (viewingFilename) {
-            fetchFileContent(viewingFilename);
-        }
-    }, [runs, viewingFilename, fetchFileContent]); // runs on every poll event
+    }, [runs, run, fetchGenomicRegionsFile]); // runs on every poll event
 
     const handleDelete = useCallback(async () => {
         if (!run) return;
@@ -381,22 +333,7 @@ const RunDetail = () => {
         XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
     }, [probes, formatValueForExcel]);
 
-    const viewFileContent = (filename: string) => {
-        if (viewingFilename === filename) {
-            setViewingFilename(null);
-            setFileContent(null);
-        } else {
-            setViewingFilename(filename);
-            setFileContent("Loading...");
-        }
-    };
-
-    const downloadFile = (filename: string) => {
-        window.open(
-            BACKEND_URL + `/api/runs/${runId}/files/${filename}`,
-            "_blank"
-        );
-    };
+    const handleUseSettings = useNavigateWithRunConfig(run, navigate);
 
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
 
@@ -427,12 +364,32 @@ const RunDetail = () => {
             onClick: handleDownloadCSV,
         };
 
+        const useSettingsAction = {
+            type: "button",
+            label: "Use Settings",
+            variant: "outline-border",
+            icon: GearFill,
+            onClick: handleUseSettings,
+        };
+
         if (probes) {
-            return [deleteAction, downloadExcelAction, downloadCSVAction];
+            return [
+                useSettingsAction,
+                downloadExcelAction,
+                downloadCSVAction,
+                deleteAction,
+            ];
         } else {
-            return [deleteAction];
+            return [useSettingsAction, deleteAction];
         }
-    }, [run, probes, handleDelete, handleDownloadCSV, handleDownloadExcel]);
+    }, [
+        run,
+        probes,
+        handleDelete,
+        handleUseSettings,
+        handleDownloadCSV,
+        handleDownloadExcel,
+    ]);
 
     return (
         <Page
@@ -457,11 +414,10 @@ const RunDetail = () => {
                 </Vertical>
             )}
 
-            {run?.status === "failure" && (
-                <Alert variant="danger">
-                    Run failed. Please check the logs for more details.
-                </Alert>
-            )}
+            {run &&
+                ["failure", "empty_result", "timeout"].includes(run.status) && (
+                    <RunError run={run} />
+                )}
 
             {/* YAML/table logic remains unchanged below */}
             {run?.status === "success" && (
@@ -477,7 +433,6 @@ const RunDetail = () => {
                         <>
                             <Alert variant="danger">
                                 Results file not found or could not be parsed.
-                                Please check the logs for more details.
                             </Alert>
                         </>
                     )}
@@ -591,6 +546,21 @@ const RunDetail = () => {
                                         selectedVisualization
                                     }
                                 />
+
+                                <Vertical.Item className="mt-3">
+                                    <h3>{selectedOligoset}</h3>
+                                    <p className="mb-0">
+                                        Average Score:{" "}
+                                        {scores?.[selectedGene][
+                                            selectedOligoset
+                                        ]?.average || "N/A"}{" "}
+                                        | Worst Score:{" "}
+                                        {scores?.[selectedGene][
+                                            selectedOligoset
+                                        ]?.worst || "N/A"}
+                                    </p>
+                                </Vertical.Item>
+
                                 <Table responsive bordered hover>
                                     <thead className="table-light">
                                         <tr>
@@ -608,7 +578,7 @@ const RunDetail = () => {
                                     <tbody>
                                         {probes[selectedGene][
                                             selectedOligoset
-                                        ].map(({ details: oligo }) => (
+                                        ].map((oligo) => (
                                             <tr key={oligo.oligo_id}>
                                                 {tableColumns.map((column) => (
                                                     <td
@@ -626,13 +596,23 @@ const RunDetail = () => {
                                                             )
                                                         }
                                                     >
-                                                        {column === "location"
-                                                            ? `chr${oligo.chromosome}:${oligo.start}-${oligo.end}`
-                                                            : formatValue(
-                                                                  oligo[
-                                                                      column as keyof ProbeDetails
-                                                                  ]
-                                                              )}
+                                                        {
+                                                            column ===
+                                                                "oligo_id" &&
+                                                                oligo.oligo_id /* contains index for oligo with multiple locations */
+                                                        }
+                                                        {column ===
+                                                            "location" &&
+                                                            `chr${oligo.details.chromosome}:${oligo.start}-${oligo.end}`}
+                                                        {column !==
+                                                            "oligo_id" &&
+                                                            column !==
+                                                                "location" &&
+                                                            formatValue(
+                                                                oligo.details[
+                                                                    column as keyof ProbeDetails
+                                                                ]
+                                                            )}
                                                     </td>
                                                 ))}
                                             </tr>
@@ -683,79 +663,6 @@ const RunDetail = () => {
                     )}
                 </>
             )}
-
-            {run &&
-                files.filter((file) => file.name.toLowerCase().includes("log"))
-                    .length > 0 && (
-                    <>
-                        <Divider />
-
-                        <h2>Run Logs</h2>
-
-                        <ListGroup>
-                            {files
-                                .filter((file) =>
-                                    file.name.toLowerCase().includes("log")
-                                )
-                                .map((file) => (
-                                    <ListGroup.Item key={file.name}>
-                                        <Horizontal
-                                            gap="md"
-                                            align="center"
-                                            wrap
-                                        >
-                                            {file.name}
-                                            <Horizontal.Item grow>
-                                                <span className="badge bg-secondary">
-                                                    {Math.round(
-                                                        file.size / 1024
-                                                    )}{" "}
-                                                    KB
-                                                </span>
-                                            </Horizontal.Item>
-                                            {file.name.endsWith(".txt") && (
-                                                <Button
-                                                    variant="outline-secondary"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        viewFileContent(
-                                                            file.name
-                                                        )
-                                                    }
-                                                >
-                                                    {viewingFilename ===
-                                                    file.name
-                                                        ? "Hide"
-                                                        : "View"}
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant="outline-primary"
-                                                size="sm"
-                                                onClick={() =>
-                                                    downloadFile(file.name)
-                                                }
-                                            >
-                                                Download
-                                            </Button>
-                                        </Horizontal>
-                                        {fileContent &&
-                                            viewingFilename === file.name && (
-                                                <pre
-                                                    className="bg-light p-3 rounded mt-2"
-                                                    style={{
-                                                        maxHeight: "500px",
-                                                        whiteSpace: "pre-wrap",
-                                                    }}
-                                                >
-                                                    {fileContent}
-                                                </pre>
-                                            )}
-                                    </ListGroup.Item>
-                                ))}
-                        </ListGroup>
-                    </>
-                )}
         </Page>
     );
 };

@@ -1,8 +1,8 @@
 # using https://micromamba-docker.readthedocs.io/en/latest/index.html
 FROM mambaorg/micromamba:2-alpine3.22
 
-# --- Set up environment ---
-RUN --mount=source=backend/flask_environment.yml,target=/tmp/env.yml \
+# --- Set up Python environment ---
+RUN --mount=source=backend/environment.yml,target=/tmp/env.yml \
     --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
     micromamba install -y -n base -f /tmp/env.yml
 

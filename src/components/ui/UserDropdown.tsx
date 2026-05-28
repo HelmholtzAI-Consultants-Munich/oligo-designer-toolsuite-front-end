@@ -18,13 +18,14 @@ const UserDisplay = forwardRef(
         }: { onClick: () => void; noUserCallback: () => void },
         ref: Ref<HTMLButtonElement>
     ) => {
-        const { user } = useAuth();
+        const auth = useAuth();
+        const user = auth.user;
 
         return (
             <Button
                 ref={ref}
                 onClick={user ? onClick : noUserCallback}
-                className="w-100 user-dropdown"
+                className="w-100 user-dropdown filled"
                 variant="outline-border"
             >
                 <Horizontal align="center" gap="sm">
@@ -48,7 +49,9 @@ export default function UserDropdown({
 }: {
     noUserCallback: () => void;
 }) {
-    const { user, logoutWithConfirmation } = useAuth();
+    const auth = useAuth();
+    const user = auth.user;
+    const { logoutWithConfirmation } = auth;
     const [copied, setCopied] = useState(false);
 
     return (

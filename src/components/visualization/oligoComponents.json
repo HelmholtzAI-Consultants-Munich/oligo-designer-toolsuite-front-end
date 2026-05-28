@@ -1,206 +1,202 @@
 {
-  "scrinshot": [
-    {
-      "type": "entry",
-      "field": "sequence_padlock_arm1",
-      "color": "#25a3ff",
-      "label": "Padlock Arm 1",
-      "isBinding": true
-    },
-    {
-      "type": "entry",
-      "field": "sequence_padlock_accessory1",
-      "color": "#c03830",
-      "label": "Padlock Accessory 1",
-      "isBinding": false
-    },
-    {
-      "type": "entry",
-      "field": "sequence_padlock_ISS_anchor",
-      "color": "#5aaa46",
-      "label": "ISS Anchor",
-      "isBinding": false
-    },
-    {
-      "type": "entry",
-      "field": "barcode",
-      "color": "#f2b342",
-      "label": "Barcode",
-      "isBinding": false
-    },
-    {
-      "type": "entry",
-      "field": "sequence_padlock_accessory2",
-      "color": "#8560a8",
-      "label": "Padlock Accessory 2",
-      "isBinding": false
-    },
-    {
-      "type": "entry",
-      "field": "sequence_padlock_arm2",
-      "color": "#25a3ff",
-      "label": "Padlock Arm 2",
-      "isBinding": true
-    },
-    {
-      "type": "columns",
-      "value": [
-        "oligo_id",
-        "location",
-        "length",
-        "Tm_arm1",
-        "Tm_arm2",
-        "sequence_target"
-      ]
-    }
-  ],
-  "merfish": [
-    {
-      "type": "entry",
-      "field": "sequence_forward_primer",
-      "color": "#825ca6",
-      "label": "Forward Primer"
-    },
-    {
-      "type": "entry",
-      "field": "sequence_readout_probe_1",
-      "color": "#5baa47",
-      "label": "Readout Sequence 1",
-      "isReverseComplement": true
-    },
-    {
-      "type": "sequence",
-      "value": "A",
-      "color": "#f2b342",
-      "label": "Spacer Nucleotide"
-    },
-    {
-      "type": "entry",
-      "field": "sequence_target",
-      "color": "#25a3ff",
-      "label": "Target Sequence",
-      "isReverseComplement": true,
-      "isBinding": true
-    },
-    {
-      "type": "sequence",
-      "value": "A",
-      "color": "#f2b342",
-      "label": "Spacer Nucleotide"
-    },
-    {
-      "type": "entry",
-      "field": "sequence_readout_probe_2",
-      "color": "#06948e",
-      "label": "Readout Sequence 2",
-      "isReverseComplement": true
-    },
-    {
-      "type": "entry",
-      "field": "sequence_reverse_primer",
-      "color": "#c43e96",
-      "label": "Reverse Primer"
-    },
-    {
-      "type": "columns",
-      "value": [
-        "oligo_id",
-        "location",
-        "length",
-        "GC_content",
-        "sequence_target"
-      ]
-    }
-  ],
-  "oligoseq": [
-    {
-      "type": "entry",
-      "field": "oligo",
-      "color": "#25a3ff",
-      "label": "Oligo Sequence"
-    },
-    {
-      "type": "columns",
-      "value": [
-        "oligo_id",
-        "location",
-        "length",
-        "GC_content",
-        "TmNN",
-        "target"
-      ]
-    }
-  ],
-  "seqfish": [
-    {
-      "type": "entry",
-      "field": "sequence_forward_primer",
-      "color": "#825ca6",
-      "label": "Forward Primer"
-    },
-    {
-      "type": "entry",
-      "field": "sequence_readout_probe_1",
-      "color": "#5baa47",
-      "label": "Readout Sequence A",
-      "isReverseComplement": true
-    },
-    {
-      "type": "entry",
-      "field": "sequence_readout_probe_2",
-      "color": "#236014",
-      "label": "Readout Sequence B",
-      "isReverseComplement": true
-    },
-    {
-      "type": "sequence",
-      "value": "T",
-      "color": "#f2b342",
-      "label": "Spacer Nucleotide"
-    },
-    {
-      "type": "entry",
-      "field": "sequence_target",
-      "color": "#25a3ff",
-      "label": "Target Sequence",
-      "isReverseComplement": true,
-      "isBinding": true
-    },
-    {
-      "type": "sequence",
-      "value": "T",
-      "color": "#f2b342",
-      "label": "Spacer Nucleotide"
-    },
-    {
-      "type": "entry",
-      "field": "sequence_readout_probe_3",
-      "color": "#186864",
-      "label": "Readout Sequence C",
-      "isReverseComplement": true
-    },
-    {
-      "type": "entry",
-      "field": "sequence_readout_probe_4",
-      "color": "#06948e",
-      "label": "Readout Sequence D",
-      "isReverseComplement": true
-    },
-    {
-      "type": "entry",
-      "field": "sequence_reverse_primer",
-      "color": "#c43e96",
-      "label": "Reverse Primer"
-    },
-    {
-      "type": "columns",
-      "value": [
-        "oligo_id",
-        "location",
-        "length",
-        "GC_content",
-        "sequence_target"
-      ]
-    }
-  ]
+  "scrinshot": {
+    "components": [
+      {
+        "type": "entry",
+        "field": "sequence_padlock_arm1",
+        "color": "#25a3ff",
+        "label": "Padlock Arm 1",
+        "isBinding": true
+      },
+      {
+        "type": "entry",
+        "field": "sequence_padlock_accessory1",
+        "color": "#c03830",
+        "label": "Padlock Accessory 1",
+        "isBinding": false
+      },
+      {
+        "type": "entry",
+        "field": "sequence_padlock_ISS_anchor",
+        "color": "#5aaa46",
+        "label": "ISS Anchor",
+        "isBinding": false
+      },
+      {
+        "type": "entry",
+        "field": "barcode",
+        "color": "#f2b342",
+        "label": "Barcode",
+        "isBinding": false
+      },
+      {
+        "type": "entry",
+        "field": "sequence_padlock_accessory2",
+        "color": "#8560a8",
+        "label": "Padlock Accessory 2",
+        "isBinding": false
+      },
+      {
+        "type": "entry",
+        "field": "sequence_padlock_arm2",
+        "color": "#25a3ff",
+        "label": "Padlock Arm 2",
+        "isBinding": true
+      }
+    ],
+    "columns": [
+      "oligo_id",
+      "location",
+      "length",
+      "Tm_arm1",
+      "Tm_arm2",
+      "sequence_target"
+    ]
+  },
+  "merfish": {
+    "components": [
+      {
+        "type": "entry",
+        "field": "sequence_forward_primer",
+        "color": "#825ca6",
+        "label": "Forward Primer"
+      },
+      {
+        "type": "entry",
+        "field": "sequence_readout_probe_1",
+        "color": "#5baa47",
+        "label": "Readout Sequence 1",
+        "isReverseComplement": true
+      },
+      {
+        "type": "sequence",
+        "value": "A",
+        "color": "#f2b342",
+        "label": "Spacer Nucleotide"
+      },
+      {
+        "type": "entry",
+        "field": "sequence_target",
+        "color": "#25a3ff",
+        "label": "Target Sequence",
+        "isReverseComplement": true,
+        "isBinding": true
+      },
+      {
+        "type": "sequence",
+        "value": "A",
+        "color": "#f2b342",
+        "label": "Spacer Nucleotide"
+      },
+      {
+        "type": "entry",
+        "field": "sequence_readout_probe_2",
+        "color": "#06948e",
+        "label": "Readout Sequence 2",
+        "isReverseComplement": true
+      },
+      {
+        "type": "entry",
+        "field": "sequence_reverse_primer",
+        "color": "#c43e96",
+        "label": "Reverse Primer"
+      }
+    ],
+    "columns": [
+      "oligo_id",
+      "location",
+      "length",
+      "GC_content",
+      "sequence_target"
+    ]
+  },
+  "oligoseq": {
+    "components": [
+      {
+        "type": "entry",
+        "field": "oligo",
+        "color": "#25a3ff",
+        "label": "Oligo Sequence"
+      }
+    ],
+    "columns": [
+      "oligo_id",
+      "location",
+      "length_oligo",
+      "GC_content_oligo",
+      "TmNN_oligo",
+      "target"
+    ]
+  },
+  "seqfish": {
+    "components": [
+      {
+        "type": "entry",
+        "field": "sequence_forward_primer",
+        "color": "#825ca6",
+        "label": "Forward Primer"
+      },
+      {
+        "type": "entry",
+        "field": "sequence_readout_probe_1",
+        "color": "#5baa47",
+        "label": "Readout Sequence A",
+        "isReverseComplement": true
+      },
+      {
+        "type": "entry",
+        "field": "sequence_readout_probe_2",
+        "color": "#236014",
+        "label": "Readout Sequence B",
+        "isReverseComplement": true
+      },
+      {
+        "type": "sequence",
+        "value": "T",
+        "color": "#f2b342",
+        "label": "Spacer Nucleotide"
+      },
+      {
+        "type": "entry",
+        "field": "sequence_target",
+        "color": "#25a3ff",
+        "label": "Target Sequence",
+        "isReverseComplement": true,
+        "isBinding": true
+      },
+      {
+        "type": "sequence",
+        "value": "T",
+        "color": "#f2b342",
+        "label": "Spacer Nucleotide"
+      },
+      {
+        "type": "entry",
+        "field": "sequence_readout_probe_3",
+        "color": "#186864",
+        "label": "Readout Sequence C",
+        "isReverseComplement": true
+      },
+      {
+        "type": "entry",
+        "field": "sequence_readout_probe_4",
+        "color": "#06948e",
+        "label": "Readout Sequence D",
+        "isReverseComplement": true
+      },
+      {
+        "type": "entry",
+        "field": "sequence_reverse_primer",
+        "color": "#c43e96",
+        "label": "Reverse Primer"
+      }
+    ],
+    "columns": [
+      "oligo_id",
+      "location",
+      "length",
+      "GC_content",
+      "sequence_target"
+    ]
+  }
 }

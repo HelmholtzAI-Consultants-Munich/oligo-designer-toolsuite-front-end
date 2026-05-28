@@ -14,6 +14,7 @@ from backend.extensions import celery_app, limiter, mongo, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
+from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
 from backend.worker.task_index import Tasks
 
 
@@ -26,6 +27,31 @@ def register_teardown_handler(app):
 
         # Close underlying connection to avoid errors in flask-limiter destructor
         limiter_storage.close()
+
+
+def ensure_mongo_indexes() -> None:
+    """Create MongoDB indexes used by recurring cleanup and consent lookups."""
+    mongo.db.runs.create_index(
+        [("session_id", 1)],
+        name="runs_session_id_idx",
+    )
+    mongo.db.uploads.create_index(
+        [("session_id", 1)],
+        name="uploads_session_id_idx",
+    )
+    mongo.db.legal_acceptances.create_index(
+        [("session_id", 1), ("timestamp", 1)],
+        name="legal_acceptances_session_timestamp_idx",
+    )
+    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
+        [("session_id", 1)],
+        name="anonymous_sessions_session_id_idx",
+        unique=True,
+    )
+    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
+        [("last_activity_at", 1)],
+        name="anonymous_sessions_last_activity_at_idx",
+    )
 
 
 def prepare_paths(app: Flask):
@@ -55,11 +81,11 @@ def prepare_paths(app: Flask):
 def initial_dropdown_prefetch(celery_app, app):
     while True:
         try:
-            app.logger.debug("try dropdown prefetch")
+            app.logger.debug("Prefetching dropdown")
             celery_app.send_task(
                 Tasks.TRIGGER_DROPDOWN_OPTIONS_FETCHING,
             )
-            app.logger.debug("dropdown prefetch done")
+            app.logger.debug("Dropdown prefetch done")
             break
         except celery.exceptions.OperationalError:
             time.sleep(2)
@@ -68,8 +94,7 @@ def initial_dropdown_prefetch(celery_app, app):
 def create_app():
     # Configure logging before creating Flask app (as Flask docs recommend)
     # This ensures logging is configured before app.logger is accessed
-    debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
-    logging.config.dictConfig(Config.get_logging_config(debug=debug_mode))
+    logging.config.dictConfig(Config.get_logging_config())
 
     app = Flask(__name__)
     PrometheusMetrics(app)
@@ -97,6 +122,8 @@ def create_app():
 
     # Initialize Flask extensions
     mongo.init_app(app)
+    with app.app_context():
+        ensure_mongo_indexes()
     limiter.init_app(app)
     init_login_manager(app)
     CORS(app, supports_credentials=True)
@@ -135,8 +162,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    # When running directly, enable debug mode which will use DEBUG log level
-    app.config["DEBUG"] = True
-    # Reconfigure logging with debug mode
-    logging.config.dictConfig(Config.get_logging_config(debug=True))
+    logging.config.dictConfig(Config.get_logging_config())
     app.run(debug=True, host="0.0.0.0")
