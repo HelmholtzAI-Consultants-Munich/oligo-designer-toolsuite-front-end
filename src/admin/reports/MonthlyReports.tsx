@@ -1,14 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-    Alert,
-    Button,
-    Col,
-    Form,
-    Modal,
-    Row,
-    Spinner,
-    Table,
-} from "react-bootstrap";
+import { Alert, Button, Spinner, Table } from "react-bootstrap";
 import {
     ArrowClockwise,
     Eye,
@@ -19,13 +10,14 @@ import {
 } from "react-bootstrap-icons";
 import Page from "../../components/ui/Page";
 import { Horizontal, Vertical } from "../../components/ui/Alignment";
-import { closeModal, confirmWithModal, showModal } from "../../utils/modalUtil";
+import { confirmWithModal, showModal } from "../../utils/modalUtil";
 import { showToast } from "../../utils/toastUtil";
 import { formatAdminDateTime } from "../shared/date";
 import { formatReportMonth } from "./display";
 import { formatPercentage } from "./formatters";
 import DeltaBadge from "./DeltaBadge";
 import ExpandedRow from "./ExpandedRow";
+import GenerateReportsModalContent from "./GenerateReportsModalContent";
 import TrendChart from "./TrendChart";
 import { exportReportToCSV } from "./exportUtils";
 import { useMonthlyReports } from "./useMonthlyReports";
@@ -76,142 +68,8 @@ const SUMMARY_COLS = [
 
 const COL_COUNT = SUMMARY_COLS.length + 3; // expand + Period + summaries + Actions
 
-function monthsBetween(
-    fromYear: number,
-    fromMonth: number,
-    toYear: number,
-    toMonth: number
-): ReportPeriod[] {
-    const out: ReportPeriod[] = [];
-    let year = fromYear,
-        month = fromMonth;
-    while (year < toYear || (year === toYear && month <= toMonth)) {
-        out.push({ year, month });
-        if (++month > 12) {
-            month = 1;
-            year++;
-        }
-    }
-    return out;
-}
 function delay(ms: number) {
     return new Promise<void>((r) => window.setTimeout(r, ms));
-}
-
-function GenerateReportsModalContent({
-    maxMonth,
-    onGenerate,
-}: {
-    maxMonth: string;
-    onGenerate: (months: ReportPeriod[]) => Promise<boolean>;
-}) {
-    const [fromValue, setFromValue] = useState("");
-    const [toValue, setToValue] = useState("");
-    const [rangeError, setRangeError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const rangeCount = (() => {
-        if (!fromValue || !toValue) return 0;
-        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
-        const [toYear, toMonth] = toValue.split("-").map(Number);
-        return fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)
-            ? 0
-            : monthsBetween(fromYear, fromMonth, toYear, toMonth).length;
-    })();
-
-    const handleGenerate = async () => {
-        setRangeError(null);
-        if (!fromValue || !toValue) {
-            setRangeError("Please select both From and To months.");
-            return;
-        }
-        const [fromYear, fromMonth] = fromValue.split("-").map(Number);
-        const [toYear, toMonth] = toValue.split("-").map(Number);
-        if (fromYear > toYear || (fromYear === toYear && fromMonth > toMonth)) {
-            setRangeError('"From" must not be after "To".');
-            return;
-        }
-        if (toValue > maxMonth) {
-            setRangeError(
-                "Cannot generate reports for the current or future month."
-            );
-            return;
-        }
-
-        setIsSubmitting(true);
-        try {
-            const didGenerate = await onGenerate(
-                monthsBetween(fromYear, fromMonth, toYear, toMonth)
-            );
-            if (didGenerate) closeModal();
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <>
-            <Modal.Header closeButton>
-                <Modal.Title>Generate Reports</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                {rangeError && <Alert variant="danger">{rangeError}</Alert>}
-                <Row className="mb-3">
-                    <Col>
-                        <Form.Label>From month</Form.Label>
-                        <Form.Control
-                            type="month"
-                            value={fromValue}
-                            max={maxMonth}
-                            onChange={(e) => setFromValue(e.target.value)}
-                        />
-                    </Col>
-                    <Col>
-                        <Form.Label>To month</Form.Label>
-                        <Form.Control
-                            type="month"
-                            value={toValue}
-                            max={maxMonth}
-                            onChange={(e) => setToValue(e.target.value)}
-                        />
-                    </Col>
-                </Row>
-                {rangeCount > 0 && (
-                    <p className="text-muted mb-0">
-                        This will generate {rangeCount} report
-                        {rangeCount > 1 ? "s" : ""}.
-                    </p>
-                )}
-            </Modal.Body>
-            <Modal.Footer>
-                <Button
-                    variant="secondary"
-                    onClick={closeModal}
-                    disabled={isSubmitting}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    variant="primary"
-                    onClick={() => void handleGenerate()}
-                    disabled={isSubmitting}
-                >
-                    {isSubmitting ? (
-                        <>
-                            <Spinner
-                                animation="border"
-                                size="sm"
-                                className="me-1"
-                            />
-                            Generating...
-                        </>
-                    ) : (
-                        "Generate"
-                    )}
-                </Button>
-            </Modal.Footer>
-        </>
-    );
 }
 
 const MonthlyReports: React.FC = () => {
