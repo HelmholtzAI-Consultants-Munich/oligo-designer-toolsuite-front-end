@@ -1,6 +1,7 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
 import { ToolTip } from "../ui/Tooltip";
+import { spaceBeforeCapitalLetters } from "./utils";
 
 const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
     props: ObjectFieldTemplateProps
@@ -9,7 +10,11 @@ const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
 
     return (
         <div style={{ gridColumn: "1 / -1" }}>
-            <span className="super-label">{title}</span>
+            {title && (
+                <span className="super-label">
+                    {spaceBeforeCapitalLetters(title)}
+                </span>
+            )}
             {description ? (
                 <ToolTip id={fieldPathId.$id} tip={description.toString()} />
             ) : null}

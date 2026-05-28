@@ -7,6 +7,7 @@ import {
 import { ToolTip } from "../ui/Tooltip";
 import { Card, Form } from "react-bootstrap";
 import { memo } from "react";
+import { spaceBeforeCapitalLetters } from "./utils";
 
 const {
     fields: { AnyOfField, OneOfField },
@@ -15,7 +16,7 @@ const {
 const WrappedAnyOfField = memo(function WrappedAnyOfField(
     props: React.ComponentProps<typeof AnyOfField>
 ) {
-    const { schema, registry, fieldPathId } = props as FieldProps;
+    const { schema, registry, fieldPathId, uiSchema } = props as FieldProps;
     const { SchemaField } = registry.fields;
 
     if (
@@ -29,7 +30,6 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
             (option) => typeof option === "object" && option.type !== "null"
         );
         const baseNonNullSchema = schema.anyOf[nonNullIndex] as RJSFSchema;
-        const nonNullUiSchema = props.uiSchema?.[nonNullIndex] || {};
 
         const nonNullSchema = {
             ...baseNonNullSchema,
@@ -51,8 +51,15 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
                 ) : null}
                 <SchemaField
                     {...props}
+                    onChange={(value) => {
+                        if (value === "") {
+                            props.onChange(null, fieldPathId.path);
+                        } else {
+                            props.onChange(value, fieldPathId.path);
+                        }
+                    }}
                     schema={nonNullSchema}
-                    uiSchema={nonNullUiSchema}
+                    uiSchema={uiSchema}
                 />
             </>
         );
@@ -94,7 +101,11 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
                 }}
             >
                 <Card.Body>
-                    <span className="super-label">{schema.title}</span>
+                    {schema.title && (
+                        <span className="super-label">
+                            {spaceBeforeCapitalLetters(schema.title)}
+                        </span>
+                    )}
                     <div className="multi-schema-selector">{selector}</div>
                     {optionSchemaField}
                 </Card.Body>

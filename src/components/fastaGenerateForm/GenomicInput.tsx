@@ -10,7 +10,8 @@ import { Button, Form } from "react-bootstrap";
 import { Grid, Vertical } from "../ui/Alignment";
 import { InputList } from "./InputList";
 import { ToolTip } from "../ui/Tooltip";
-import { FileEarmarkPlus, Plus } from "react-bootstrap-icons";
+import { FileEarmarkPlus } from "react-bootstrap-icons";
+import { spaceBeforeCapitalLetters } from "../forms/utils";
 
 type ConfigurableGenomicInputProps = FieldProps & {
     formsAllowed: boolean;
@@ -77,9 +78,13 @@ const ConfigurableGenomicInput = ({
     };
 
     return (
-        <Vertical gap="sm">
+        <Vertical gap="sm" className="mb-2">
             <span>
-                <span className="super-label mb-0">{schema.title}</span>
+                {schema.title && (
+                    <span className="super-label mb-0">
+                        {spaceBeforeCapitalLetters(schema.title)}
+                    </span>
+                )}
                 {schema.description && (
                     <ToolTip id={id} tip={schema.description} />
                 )}
@@ -126,7 +131,11 @@ const ConfigurableGenomicInput = ({
 
             <Grid gap="md" className="w-100">
                 {formsAllowed && (
-                    <Button name={name} onClick={handleGenomicFormNew}>
+                    <Button
+                        variant="primary-muted"
+                        name={name}
+                        onClick={handleGenomicFormNew}
+                    >
                         <FileEarmarkPlus size="18" /> Genomic Regions
                     </Button>
                 )}

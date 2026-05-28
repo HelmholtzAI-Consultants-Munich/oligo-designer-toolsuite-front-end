@@ -13,7 +13,7 @@ import { memo } from "react";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import { Vertical } from "../ui/Alignment";
-import { Trash } from "react-bootstrap-icons";
+import { Plus, Trash } from "react-bootstrap-icons";
 import { Button } from "react-bootstrap";
 
 const ArrayFieldTitleTemplate = memo((props: ArrayFieldTitleProps) => {
@@ -52,10 +52,6 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     } = props;
     const uiOptions = getUiOptions(uiSchema);
     const showOptionalDataControlInTitle = !readonly && !disabled;
-    // Button templates are not overridden in the uiSchema
-    const {
-        ButtonTemplates: { AddButton },
-    } = registry.templates;
     return (
         <div>
             <ArrayFieldTitleTemplate
@@ -84,12 +80,14 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
                     : undefined}
                 {items}
                 {canAdd && (
-                    <AddButton
+                    <Button
+                        variant="primary-muted"
                         id={buttonId(fieldPathId, "add")}
                         onClick={onAddClick}
                         disabled={disabled || readonly}
-                        registry={registry}
-                    />
+                    >
+                        <Plus size={18} />
+                    </Button>
                 )}
             </Vertical>
         </div>
@@ -105,7 +103,7 @@ const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
                 <Button
                     variant="outline-border filled"
                     onClick={buttonsProps.onRemoveItem}
-                    title="Remove FASTA"
+                    title="Remove item"
                 >
                     <Trash />
                 </Button>

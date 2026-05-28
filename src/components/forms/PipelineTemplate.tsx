@@ -40,6 +40,8 @@ import {
     ArrayFieldTemplate,
     ArrayFieldItemTemplate,
 } from "./ArrayFieldTemplates";
+import ErrorListTemplate from "./ErrorListTemplate";
+import TxtUploadInput from "./TxtUploadInput";
 import type { IChangeEvent } from "@rjsf/core";
 
 type Props = {
@@ -113,6 +115,7 @@ const PipelineTemplate: React.FC<Props> = ({
         fileUpload: FileInput,
         AnyOfField: WrappedAnyOfField,
         OneOfField: WrappedOneOfField,
+        txtUploadInput: TxtUploadInput,
     };
 
     const tabs = useMemo(() => {
@@ -176,6 +179,16 @@ const PipelineTemplate: React.FC<Props> = ({
         [formData, pipeline, schema, updateRuns]
     );
 
+    const handlePipelineSubmitError = () => {
+        const errorElement = document.getElementById("rjsf-error-list");
+        if (errorElement) {
+            errorElement.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+            });
+        }
+    };
+
     return (
         <Page
             title={title}
@@ -232,11 +245,13 @@ const PipelineTemplate: React.FC<Props> = ({
                     ArrayFieldTemplate,
                     ArrayFieldItemTemplate,
                     DescriptionFieldTemplate,
+                    ErrorListTemplate,
                 }}
                 fields={fields}
                 validator={validator}
                 onChange={(e) => setFormData(e.formData)}
                 onSubmit={handlePipelineSubmit}
+                onError={handlePipelineSubmitError}
             >
                 <Button ref={submitButtonRef} type="submit" variant="primary">
                     Run Pipeline <Send className="ms-2" />

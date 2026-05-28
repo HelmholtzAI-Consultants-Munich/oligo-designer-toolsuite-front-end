@@ -9,7 +9,7 @@ const SectionLayout = memo(function SectionLayout(
         <section className="form-section">
             <div className="form-section-header">
                 <h5>{spaceBeforeCapitalLetters(props.title)}</h5>
-                <p>{props.description}</p>
+                {props.description && <p>{props.description}</p>}
             </div>
             <div
                 className="d-grid row-gap-4 column-gap-3"

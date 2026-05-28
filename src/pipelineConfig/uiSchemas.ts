@@ -117,6 +117,10 @@ export const oligoseqUiSchema: UiSchema = {
         "ui:ObjectFieldTemplate": TabLayout,
         oligo_generation: {
             "ui:ObjectFieldTemplate": SectionLayout,
+            file_region_ids: {
+                "ui:field": "txtUploadInput",
+                "ui:fieldReplacesAnyOrOneOf": true,
+            },
             files_fasta_probe_database: {
                 "ui:field": "genomicInput",
             },
