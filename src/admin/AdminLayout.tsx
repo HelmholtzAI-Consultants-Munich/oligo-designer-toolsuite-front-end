@@ -10,6 +10,7 @@ import {
     Gear,
     Speedometer2,
     ChatDots,
+    FileEarmarkText,
     BarChartFill,
 } from "react-bootstrap-icons";
 
@@ -72,6 +73,7 @@ const navItems: NavItemConfig[] = [
     { path: "/admin/users", label: "User Management", icon: People },
     { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
     { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
+    { path: "/admin/legal", label: "Legal Documents", icon: FileEarmarkText },
     { path: "/admin/reports", label: "Monthly Reports", icon: BarChartFill },
 ];
 
@@ -80,19 +82,17 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, loading, logoutWithConfirmation } = useAuth();
+    const auth = useAuth();
+    const { loading, logoutWithConfirmation } = auth;
     const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile sidebar
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // Desktop sidebar collapse state
 
-    // Check if user is authenticated and is admin
     if (!loading) {
-        if (!user) {
-            // Not logged in - redirect to login with return URL
+        if (!auth.authenticated) {
             navigate(
                 `/login?redirect=${encodeURIComponent(location.pathname)}`
             );
-        } else if (user.role !== "admin") {
-            // Logged in but not admin - redirect to home
+        } else if (auth.user?.role !== "admin") {
             navigate("/");
         }
     }
@@ -126,8 +126,8 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
         );
     }
 
-    if (!user || user.role !== "admin") {
-        return null; // Will redirect
+    if (!auth.authenticated || auth.user?.role !== "admin") {
+        return null;
     }
 
     const isActive = (path: string) => {
@@ -264,9 +264,9 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({
                     position: "fixed",
                     left: sidebarOpen ? 0 : "-250px",
                     top: 0,
-                    zIndex: 1001,
-                    transition: "left 0.3s ease",
+                    zIndex: 1000,
                     paddingTop: "56px",
+                    transition: "left 0.3s ease",
                 }}
             >
                 <div className="p-3">

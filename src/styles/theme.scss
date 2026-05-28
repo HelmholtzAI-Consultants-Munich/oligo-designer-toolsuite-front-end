@@ -8,7 +8,7 @@ $success: #128635;
 $warning: #ffbd11;
 $danger: #c91432;
 $info: $secondary;
-$text-muted: #373737;
+$text-muted: #000000a6; // 65% opacity black
 
 $font-family-sans-serif: "Fustat Variable", sans-serif;
 
@@ -61,8 +61,6 @@ body.modal-open {
 #app-layout {
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    justify-content: start;
 
     h1,
     h2,
@@ -261,6 +259,15 @@ body.modal-open {
         .nav-link.active {
             border-radius: 9999px;
         }
+    }
+}
+
+/* Nav variant "tight" */
+.nav-tight {
+    gap: 2rem;
+
+    .nav-link {
+        padding: 0;
     }
 }
 

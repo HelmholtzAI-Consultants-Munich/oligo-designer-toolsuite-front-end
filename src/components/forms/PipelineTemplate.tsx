@@ -27,11 +27,13 @@ import {
     importAndValidate,
 } from "./pipelineConfigIO";
 import { useRuns } from "../../hooks/useRuns";
-import { Button } from "react-bootstrap";
+import { useAuth } from "../../hooks/useAuth";
+import { Button, Form as BootstrapForm } from "react-bootstrap";
+import { Link, useLocation } from "react-router";
 import GenomicInput from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
-import { useLocation } from "react-router";
+import { FileInput } from "../fastaGenerateForm/FileInput";
 
 type Props = {
     pipeline: Pipeline["name"];
@@ -55,6 +57,15 @@ const PipelineTemplate: React.FC<Props> = ({
     const validator = customizeValidator({ AjvClass: Ajv2020 });
 
     const { updateRuns } = useRuns();
+    const auth = useAuth();
+    const { acceptTerms } = auth;
+
+    const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+    const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
+
+    const requiresTermsAcceptance =
+        auth.legal?.accepted_terms_version !==
+        auth.legal?.current_terms_version;
 
     const location = useLocation();
 
@@ -89,7 +100,6 @@ const PipelineTemplate: React.FC<Props> = ({
     );
     const applyValidatedConfigEvent = useEffectEvent(applyValidatedConfig);
 
-    // Apply a config that was passed via navigation location state (e.g. "Use Settings" in Runs page).
     useEffect(() => {
         const importedConfig = location.state?.importedConfig;
         if (!importedConfig) return;
@@ -101,7 +111,8 @@ const PipelineTemplate: React.FC<Props> = ({
     }, [location.state]);
 
     const fields = {
-        fileSelection: GenomicInput,
+        genomicInput: GenomicInput,
+        fileUpload: FileInput,
     };
 
     const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
@@ -135,7 +146,35 @@ const PipelineTemplate: React.FC<Props> = ({
         reader.readAsText(file);
     };
 
-    const runPipeline = () => {
+    const runPipeline = async () => {
+        if (requiresTermsAcceptance) {
+            if (!hasAcceptedTerms) {
+                showToast({
+                    title: "Terms acceptance required",
+                    content:
+                        "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing.",
+                    type: "danger",
+                });
+                const acceptanceElement =
+                    document.getElementById("terms-acceptance");
+                acceptanceElement?.scrollIntoView({ behavior: "smooth" });
+                return;
+            }
+            setIsAcceptingTerms(true);
+            const accepted = await acceptTerms();
+            setIsAcceptingTerms(false);
+            if (!accepted) {
+                showToast({
+                    title: "Terms acceptance failed",
+                    content:
+                        "We couldn't record your acceptance. Please try again.",
+                    type: "danger",
+                });
+                return;
+            }
+            setHasAcceptedTerms(false);
+        }
+
         const pipelineRunConfig = buildExportPayload(
             formData,
             pipeline,
@@ -173,7 +212,7 @@ const PipelineTemplate: React.FC<Props> = ({
                     label: "Run Pipeline",
                     icon: Send,
                     variant: "primary",
-                    onClick: runPipeline,
+                    onClick: () => void runPipeline(),
                 },
             ]}
             stickyHeader
@@ -196,10 +235,44 @@ const PipelineTemplate: React.FC<Props> = ({
                 fields={fields}
                 validator={validator}
                 onChange={(e) => setFormData(e.formData)}
-                onSubmit={runPipeline}
+                onSubmit={() => void runPipeline()}
             >
-                <Button type="submit" variant="primary">
-                    Run Pipeline <Send className="ms-2" />
+                {requiresTermsAcceptance && (
+                    <div
+                        className="border rounded p-3 mt-5 bg-light"
+                        id="terms-acceptance"
+                    >
+                        <p className="mb-2">
+                            Before running this pipeline, please accept the{" "}
+                            <Link to="/terms">Terms of Service</Link> and review
+                            the <Link to="/privacy-policy">Privacy Policy</Link>
+                            .
+                        </p>
+                        <BootstrapForm.Check
+                            id={`${pipeline}-terms-acceptance`}
+                            type="checkbox"
+                            className="mb-3"
+                            checked={hasAcceptedTerms}
+                            onChange={(e) =>
+                                setHasAcceptedTerms(e.target.checked)
+                            }
+                            label="I accept the Terms of Service and acknowledge the Privacy Policy."
+                        />
+                    </div>
+                )}
+                <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={isAcceptingTerms}
+                    className={requiresTermsAcceptance ? "mt-3" : "mt-5"}
+                >
+                    {isAcceptingTerms ? (
+                        "Saving..."
+                    ) : (
+                        <>
+                            Run Pipeline <Send className="ms-2" />
+                        </>
+                    )}
                 </Button>
             </Form>
         </Page>

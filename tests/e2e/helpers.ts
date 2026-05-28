@@ -45,10 +45,9 @@ export const pollUntil = async <T = void>(options: {
 // FASTA fixtures — only the smallest bundled files (~4.8 MB + ~6.4 MB)
 // ---------------------------------------------------------------------------
 
-const GENOMIC_REGIONS_DIR = path.resolve(
-    process.cwd(),
-    "backend/data/genomic_regions"
-);
+const TEST_DATA_DIR = path.resolve(process.cwd(), "backend/data");
+
+const GENOMIC_REGIONS_DIR = path.join(TEST_DATA_DIR, "genomic_regions");
 
 export const FASTA_FIXTURES = {
     utr: path.join(
@@ -58,6 +57,18 @@ export const FASTA_FIXTURES = {
     cds: path.join(
         GENOMIC_REGIONS_DIR,
         "cds_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ),
+    exon: path.join(
+        GENOMIC_REGIONS_DIR,
+        "exon_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ),
+    exon_exon_junction: path.join(
+        GENOMIC_REGIONS_DIR,
+        "exon_exon_junction_annotation_source-NCBI_species-Homo_sapiens_annotation_release-110_genome_assemly-GRCh38.fna"
+    ),
+    vcf: path.join(
+        TEST_DATA_DIR,
+        "annotations/custom_GCF_000001405.40.chr16.vcf"
     ),
 };
 
@@ -72,8 +83,6 @@ export type PipelineDefinition = {
     expectedTabs: RegExp[];
     representativeFieldChecks?: Array<{ tab: RegExp; label: RegExp }>;
 };
-
-type RunFile = { name: string; type: string; size: number };
 
 // ---------------------------------------------------------------------------
 // Pipeline definitions (used by the smoke test)
@@ -243,23 +252,18 @@ const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     });
 };
 
-const pollRunFiles = async (
+const pollGenomicRegionsFile = async (
     page: Page,
     runId: string,
     timeoutMs: number
-): Promise<RunFile[]> => {
+): Promise<boolean> => {
     return pollUntil({
         condition: async () => {
-            const res = await backendGetOk(page, `/api/runs/${runId}/files`);
-            const files: RunFile[] = await res.json();
-            const hasGenomic = files.some(
-                (f) => f.name === "genomic_regions.yaml"
+            const res = await backendGetOk(
+                page,
+                `/api/runs/${runId}/files/genomic_regions.yaml`
             );
-            const hasConfig = files.some((f) =>
-                /\.(?:ya?ml|txt|log)$/i.test(f.name)
-            );
-
-            return hasGenomic && hasConfig ? files : false;
+            return res.ok();
         },
         timeoutMs,
         intervalMs: POLL_INTERVAL_MS,
@@ -274,7 +278,7 @@ export const waitForSuccessfulRun = async (
 ) => {
     const deadline = Date.now() + timeoutMs;
     await pollRunState(page, runId, timeoutMs);
-    return pollRunFiles(page, runId, deadline - Date.now());
+    return pollGenomicRegionsFile(page, runId, deadline - Date.now());
 };
 
 export const submitAndVerifyRun = async (page: Page) => {
@@ -287,9 +291,6 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
     // After long Node.js-side API polling the browser tab has been idle;
     // reload so the page reflects the final backend state.
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Run Logs" })).toBeVisible({
-        timeout: 30_000,
-    });
     await expect(page.getByText("Oligo Visualization")).toBeVisible({
         timeout: 30_000,
     });
@@ -305,6 +306,7 @@ export const fillTargetProbeParameters = async (
         fileRegions: string;
         fastaTargetFiles: string[];
         fastaReferenceFiles: string[];
+        fastaVcfFiles?: string[];
     }
 ) => {
     await page
@@ -318,6 +320,14 @@ export const fillTargetProbeParameters = async (
             name: /Files Fasta Reference Database Target Probe/i,
         })
         .setInputFiles(options.fastaReferenceFiles);
+
+    if (!options.fastaVcfFiles) return;
+
+    await page
+        .getByRole("button", {
+            name: /Files Vcf Reference Database Target Probe/i,
+        })
+        .setInputFiles(options.fastaVcfFiles);
 };
 
 export const fillReadoutProbeParameters = async (

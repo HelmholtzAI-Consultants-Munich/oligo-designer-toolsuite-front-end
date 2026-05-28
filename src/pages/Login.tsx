@@ -21,7 +21,9 @@ const Login = () => {
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { user, loading, checkAuth } = useAuth();
+    const auth = useAuth();
+    const user = auth.user;
+    const { loading, checkAuth } = auth;
     const { updateRuns } = useRuns();
 
     // Get redirect URL from query params

@@ -25,8 +25,6 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # --- Install Python dependencies ---
 # activate conda environment to use pip during build
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
-RUN --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
-    pip install "git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite.git@dcb39b2a34d465e3a547c9e79167a388c593f30a"
 RUN --mount=source=backend/pyproject.toml,target=pyproject.toml \
     --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
     pip install --group worker
@@ -39,4 +37,4 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 COPY --chown=$MAMBA_USER:$MAMBA_USER schemas schemas
 
 
-CMD ["celery", "-A", "backend.worker", "worker", "-l", "INFO", "--concurrency", "2"]
+CMD ["celery", "-A", "backend.worker", "worker", "--concurrency", "2"]
