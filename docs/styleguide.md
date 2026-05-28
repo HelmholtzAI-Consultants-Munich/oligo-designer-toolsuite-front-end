@@ -39,7 +39,7 @@ We format our code using [prettier](https://prettier.io/docs/). See our [package
 
 ### File Names
 
-Files providing React components or otherwise using JSX  should be named like `PascalCase.tsx`, whereas files that provide non-JSX code, like utility functions, types, etc., should be named `camelCase.ts`
+Files providing React components or otherwise using JSX should be named like `PascalCase.tsx`, whereas files that provide non-JSX code, like utility functions, types, etc., should be named `camelCase.ts`
 
 ### Other
 
