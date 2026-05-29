@@ -14,3 +14,9 @@ class ODTPipelineError(ODTCloudError):
     """
     Raised when the Oligo Designer Toolsuite pipeline execution fails.
     """
+
+
+class ODTEmptyResultError(ODTCloudError):
+    """
+    Raised when the Oligo Designer Toolsuite pipeline execution results in an empty output.
+    """

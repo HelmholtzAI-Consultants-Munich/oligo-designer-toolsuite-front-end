@@ -50,7 +50,7 @@ class GenomicRegionsFile:
         scores: defaultdict[Any, dict] = defaultdict(dict)
 
         if not os.path.exists(self.probes_path):
-            print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
+            self.logger.debug(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
             return probes, scores
 
         with open(self.probes_path) as f:
@@ -153,7 +153,7 @@ class GenomicRegionsFile:
 
         for fname in self.fasta_paths:
             if not os.path.exists(fname):
-                self.logger.warning(f"Warning: Fasta file {fname} not found, skipping.")
+                self.logger.debug(f"Warning: Fasta file {fname} not found, skipping.")
                 continue
             seq_record = SeqIO.index(fname, "fasta")
             for idx in seq_record:
@@ -209,7 +209,7 @@ class GenomicRegionsFile:
                 ]
 
             if len(exon_numbers) != len(start_ends):
-                print(
+                self.logger.debug(
                     f"Warning: Number of exon numbers does not match number of components on transcript {transcript_id} for record {idx} in gene {gene}, skipping  processing."
                 )
                 continue

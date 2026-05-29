@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { User } from "../types";
+import type { AuthState, TermsAcceptanceStatus, User } from "../types";
 import { BACKEND_URL } from "../config";
 import { AuthContext } from "../hooks/useAuth";
 import { useRuns } from "../hooks/useRuns";
@@ -11,7 +11,11 @@ export default function AuthProvider({
 }: {
     children: React.ReactNode;
 }) {
-    const [user, setUser] = useState<User | null>(null);
+    const [authState, setAuthState] = useState<AuthState>({
+        authenticated: false,
+        user: null,
+        legal: null,
+    });
     const [loading, setLoading] = useState(true);
     const { updateRuns } = useRuns();
 
@@ -22,10 +26,14 @@ export default function AuthProvider({
                 credentials: "include",
             });
             const data = await response.json();
-            setUser(data.authenticated ? data.user : null);
+            setAuthState({
+                authenticated: data.authenticated,
+                user: data.authenticated ? (data.user as User) : null,
+                legal: (data.legal as TermsAcceptanceStatus) ?? null,
+            });
         } catch (error) {
             console.error("Auth check failed:", error);
-            setUser(null);
+            setAuthState({ authenticated: false, user: null, legal: null });
         } finally {
             setLoading(false);
         }
@@ -35,13 +43,28 @@ export default function AuthProvider({
         checkAuth();
     }, []);
 
+    const acceptTerms = async (): Promise<boolean> => {
+        try {
+            const response = await fetch(
+                BACKEND_URL + "/api/legal/terms/accept",
+                { method: "POST", credentials: "include" }
+            );
+            if (!response.ok) return false;
+            await checkAuth();
+            return true;
+        } catch (error) {
+            console.error("Terms acceptance failed:", error);
+            return false;
+        }
+    };
+
     const logout = () => {
         fetch(BACKEND_URL + "/logout", {
             method: "POST",
             credentials: "include",
         })
             .then(() => {
-                setUser(null);
+                setAuthState({ authenticated: false, user: null, legal: null });
                 updateRuns();
             })
             .catch(() => {
@@ -68,7 +91,14 @@ export default function AuthProvider({
 
     return (
         <AuthContext.Provider
-            value={{ user, loading, checkAuth, logout, logoutWithConfirmation }}
+            value={{
+                ...authState,
+                loading,
+                acceptTerms,
+                checkAuth,
+                logout,
+                logoutWithConfirmation,
+            }}
         >
             {children}
         </AuthContext.Provider>

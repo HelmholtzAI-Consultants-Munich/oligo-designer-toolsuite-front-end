@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 from backend.constants import PIPELINE_FILE_INPUT
-from backend.exceptions import ODTPipelineError
+from backend.exceptions import ODTEmptyResultError, ODTPipelineError
 from backend.utils import deserialize_form_data_path, retrieve_form_data_value
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
@@ -139,20 +139,35 @@ class PipelineRunner:
 
     def call_subprocess(self, config_path: str) -> None:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
-        result = subprocess.run([self.subprocess_name, "-c", config_path], capture_output=True, text=True)
-        if result.returncode != 0:
-            self.logger.debug(f"STDOUT: {result.stdout}")
-            self.logger.debug(f"STDERR: {result.stderr}")
-            raise ODTPipelineError("An error occured during pipeline execution.")
+        try:
+            subprocess.run(
+                [self.subprocess_name, "-c", config_path], capture_output=True, text=True, check=True
+            )
+        except subprocess.CalledProcessError as error:
+            if error.stderr:
+                self.logger.error(f"STDERR: {error.stderr}")
+            self.logger.debug(f"STDOUT: {error.stdout}")
+            if (
+                error.returncode == -9
+            ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
+                raise ODTPipelineError(
+                    "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
+                )
+            if "The oligo database is empty" in error.stdout:
+                raise ODTEmptyResultError(
+                    "The pipeline did not generate any results. Please tweak your input parameters."
+                )
+            raise ODTPipelineError(
+                "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
+            )
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
-        self.logger.info("Generating visualization files...")
         regions_file = retrieve_form_data_value(
             ["target_probe", "oligo_generation", "file_region_ids"], form_data
         )
         if not regions_file:
-            self.logger.warning("No regions file provided, skipping visualization generation.")
+            self.logger.debug("No regions file provided, skipping visualization generation.")
             return
 
         fasta_paths = retrieve_form_data_value(
@@ -164,7 +179,7 @@ class PipelineRunner:
             form_data,
         )
         if not fasta_paths:
-            self.logger.warning("No fasta files provided, skipping visualization generation.")
+            self.logger.debug("No fasta files provided, skipping visualization generation.")
             return
 
         # find output file name containing "probes" or "probeset"
@@ -179,7 +194,7 @@ class PipelineRunner:
             None,
         )
         if not output_yaml:
-            self.logger.warning(
+            self.logger.debug(
                 "No output YAML file containing 'probes' or 'probeset' found, skipping visualization generation."
             )
             return
@@ -198,10 +213,9 @@ class PipelineRunner:
             temp_path = oligo_generation_form["file_region_ids"].strip()
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-                self.logger.debug(f"deleted temp file_region_ids: {temp_path}")
+                self.logger.debug(f"Deleted temp file_region_ids: {temp_path}")
             else:
-                self.logger.debug(f"file_region_ids not found, skipped: {temp_path}")
-
+                self.logger.debug(f"Temp files cleanup skipped, file_region_ids path not found: {temp_path}")
         for path in PIPELINE_FILE_INPUT[self.pipeline_name]:
             files_list = retrieve_form_data_value(path, form_data)
             if files_list is None or len(files_list) < 1:
@@ -214,6 +228,6 @@ class PipelineRunner:
 
         if os.path.exists(config_path):
             os.remove(config_path)
-            self.logger.debug(f"deleted config: {config_path}")
+            self.logger.debug(f"Deleted config: {config_path}")
         else:
-            self.logger.debug(f"config not found, skipped: {config_path}")
+            self.logger.debug(f"Config cleanup skipped, config file not found: {config_path}")

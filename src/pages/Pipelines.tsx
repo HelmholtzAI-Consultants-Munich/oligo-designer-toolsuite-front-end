@@ -9,7 +9,9 @@ import { ArrowRight } from "react-bootstrap-icons";
 import { getEnabledPipelinesOnly } from "../pipelineConfig/utils";
 
 const Pipelines: React.FC = () => {
-    const { user, loading } = useAuth();
+    const auth = useAuth();
+    const user = auth.user;
+    const { loading } = auth;
     const navigate = useNavigate();
 
     const pipelines = Object.values(getEnabledPipelinesOnly()).map(
