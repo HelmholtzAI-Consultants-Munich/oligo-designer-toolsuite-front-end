@@ -1,4 +1,4 @@
-import type { RJSFSchema } from "@rjsf/utils";
+import type { GenericObjectType, RJSFSchema } from "@rjsf/utils";
 import type { JSONSchema7Definition } from "json-schema";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import Ajv2020 from "ajv/dist/2020";
@@ -29,6 +29,29 @@ function getSchemaVersion(schema: RJSFSchema): number {
 
 // ---- Export ----
 
+const removeFilesfromObject = (value: GenericObjectType): GenericObjectType | undefined => {
+    if (Array.isArray(value)) {
+        return value.map(removeFilesfromObject).filter(v => v !== undefined);
+    }
+
+    if (value instanceof File) {
+        return undefined; // or null, or some placeholder value
+    }
+
+    if (typeof value === "object" && value !== null) {
+        const newObj: GenericObjectType = {};
+        for (const [key, val] of Object.entries(value)) {
+            const cleanedVal = removeFilesfromObject(val);
+            if (cleanedVal !== undefined) {
+                newObj[key] = cleanedVal;
+            }
+        }
+        return newObj;
+    }
+
+    return value; // primitive value, return as is
+};
+
 export function buildExportPayload(
     formData: RJSFFormData,
     pipeline: string,
@@ -40,7 +63,7 @@ export function buildExportPayload(
             pipeline,
             exportedAt: new Date().toISOString(),
         },
-        config: formData,
+        config: removeFilesfromObject(formData)!,
     };
 }
 
@@ -58,29 +81,6 @@ export function triggerDownload(payload: PipelineConfigExport): void {
 }
 
 // ---- Import / Validation ----
-
-const removeFilePathsfromObject = (value: unknown): unknown => {
-    if (Array.isArray(value)) {
-        return value.map(removeFilePathsfromObject);
-    }
-
-    if (value && typeof value === "object") {
-        const obj = value as Record<string, unknown>;
-        const result: Record<string, unknown> = {};
-
-        for (const [key, child] of Object.entries(obj)) {
-            if (key.startsWith("files_") && Array.isArray(child)) {
-                result[key] = child
-                    .filter((entry) => typeof entry !== "string")
-                    .map(removeFilePathsfromObject);
-            } else {
-                result[key] = removeFilePathsfromObject(child);
-            }
-        }
-        return result;
-    }
-    return value;
-};
 
 function validationFailure(
     errors:
@@ -189,14 +189,9 @@ export function importAndValidate(
     const configError = validationFailure(errors, "Config values are invalid:");
     if (configError) return configError;
 
-    // 7. Remove File fields from imported form
-    const sanitizedIncoming = removeFilePathsfromObject(
-        incoming
-    ) as RJSFFormData;
-
     return {
         ok: true,
-        config: sanitizedIncoming,
+        config: incoming,
         skippedFields,
     };
 }

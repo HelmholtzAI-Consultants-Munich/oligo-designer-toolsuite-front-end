@@ -19,25 +19,33 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
     const { schema, registry, fieldPathId, uiSchema } = props as FieldProps;
     const { SchemaField } = registry.fields;
 
-    if (
-        schema.anyOf?.length === 2 &&
-        schema.anyOf.find(
-            (option) => typeof option === "object" && option.type === "null"
-        )
-    ) {
-        // return just the non-null option and treat it as optional
-        const nonNullIndex = schema.anyOf.findIndex(
-            (option) => typeof option === "object" && option.type !== "null"
-        );
-        const baseNonNullSchema = schema.anyOf[nonNullIndex] as RJSFSchema;
+    const constSchema = schema.anyOf?.find(
+        (option) => typeof option === "object" && option.const
+    ) as RJSFSchema | undefined;
+    
+    const nullSchema = schema.anyOf?.find(
+        (option) => typeof option === "object" && option.type === "null"
+    ) as RJSFSchema | undefined;
 
-        const nonNullSchema = {
-            ...baseNonNullSchema,
+    if (schema.anyOf?.length === 2 && constSchema && nullSchema) {
+        // turn const into enum for better handling of optional fields
+        constSchema.enum = [constSchema.const!];
+        constSchema.const = undefined;
+    }
+
+    if (schema.anyOf?.length === 2 && nullSchema) {
+        // return just the non-null option and treat it as optional
+        const nonNullSchema = schema.anyOf.find(
+            (option) => typeof option === "object" && option.type !== "null"
+        ) as RJSFSchema;
+
+        const mergedSchema = {
+            ...nonNullSchema,
             title: schema.title, // preserve title from parent schema
             description: schema.description, // preserve description from parent schema
         };
 
-        const isEnum = nonNullSchema.enum !== undefined;
+        const isEnum = mergedSchema.enum !== undefined;
 
         return (
             <>
@@ -58,7 +66,7 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
                             props.onChange(value, fieldPathId.path);
                         }
                     }}
-                    schema={nonNullSchema}
+                    schema={mergedSchema}
                     uiSchema={uiSchema}
                 />
             </>

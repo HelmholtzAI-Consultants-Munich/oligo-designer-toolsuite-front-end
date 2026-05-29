@@ -1,11 +1,12 @@
-import { type ErrorListProps } from "@rjsf/utils";
+import { type ErrorListProps, type RJSFValidationError } from "@rjsf/utils";
 import { Card, ListGroup } from "react-bootstrap";
+import { ArrowUp } from "react-bootstrap-icons";
 
 const errorId = (property: string) => {
     return "root" + property.replace(/\./g, "_") + "__error";
 }
 
-const scrollToError = (error: any) => {
+const scrollToError = (error: RJSFValidationError) => {
     if (!error.property) {
         return;
     }
@@ -20,8 +21,8 @@ const scrollToError = (error: any) => {
 const ErrorListTemplate = (props: ErrorListProps) => {
     const { errors } = props;
     return (
-        <Card id="rjsf-error-list" border='danger' className='mb-4'>
-            <Card.Header className='alert-danger'>Form Errors</Card.Header>
+        <Card id="rjsf-error-list" border='danger' className='mt-4'>
+            <Card.Header className='alert-danger'>Please correct the following errors:</Card.Header>
             <Card.Body className='p-0'>
                 <ListGroup>
                     {errors.map((error, i: number) => {
@@ -34,7 +35,7 @@ const ErrorListTemplate = (props: ErrorListProps) => {
                                 role='button'
                                 title='Click to jump to error'
                             >
-                                <span className='text-danger'>{error.stack}</span>
+                                <span className='text-danger'>{error.stack} <ArrowUp /></span>
                             </ListGroup.Item>
                         );
                     })}

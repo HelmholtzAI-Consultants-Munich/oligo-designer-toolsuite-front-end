@@ -24,6 +24,7 @@ const ConfigurableGenomicInput = ({
     schema,
     formData,
     onChange,
+    onBlur,
     formsAllowed,
     filesAllowed,
 }: ConfigurableGenomicInputProps) => {
@@ -38,6 +39,7 @@ const ConfigurableGenomicInput = ({
             formData.filter((_: GenomicFormOrFilePath, i: number) => i !== idx),
             path
         );
+        onBlur(id, formData);
     };
 
     const handleGenomicFormEdit = (
@@ -56,6 +58,7 @@ const ConfigurableGenomicInput = ({
             } else {
                 onChange([...formData, updatedForm], path);
             }
+            onBlur(id, formData);
         };
 
         showModal({
@@ -73,8 +76,9 @@ const ConfigurableGenomicInput = ({
         });
     };
 
-    const handleFilesUpload = (newFiles: FilePath[]) => {
+    const handleFilesUpload = (newFiles: File[]) => {
         onChange([...formData, ...newFiles], path);
+        onBlur(id, formData);
     };
 
     return (
@@ -111,7 +115,7 @@ const ConfigurableGenomicInput = ({
                             data: data as GenomicForm,
                             editHandler: () =>
                                 handleGenomicFormEdit(
-                                    data,
+                                    data as GenomicForm,
                                     onChange,
                                     formData.indexOf(data)
                                 ),

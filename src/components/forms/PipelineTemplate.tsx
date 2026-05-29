@@ -58,9 +58,14 @@ const PipelineTemplate: React.FC<Props> = ({
     uiSchema,
 }) => {
     const [formData, setFormData] = useState<RJSFFormData>({});
+    const [submissionTried, setSubmissionTried] = useState(false);
     const submitButtonRef = useRef<HTMLButtonElement | null>(null);
     const validator = useMemo(
-        () => customizeValidator({ AjvClass: Ajv2020 }),
+        () => customizeValidator({ 
+            AjvClass: Ajv2020,
+            // Enable this once ajv supports boolean discriminators
+            // ajvOptionsOverrides: { discriminator: true }
+        }),
         []
     );
 
@@ -175,6 +180,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 updateRuns,
                 pipelineRunConfig
             );
+            setSubmissionTried(true);
         },
         [formData, pipeline, schema, updateRuns]
     );
@@ -187,6 +193,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 block: "center",
             });
         }
+        setSubmissionTried(true);
     };
 
     return (
@@ -237,6 +244,7 @@ const PipelineTemplate: React.FC<Props> = ({
                         populate: "never",
                     },
                 }}
+                showErrorList={"bottom"}
                 templates={{
                     FieldTemplate,
                     BaseInputTemplate: WrappedBaseInputTemplate,
@@ -249,6 +257,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 }}
                 fields={fields}
                 validator={validator}
+                liveValidate={submissionTried ? "onChange" : false}
                 onChange={(e) => setFormData(e.formData)}
                 onSubmit={handlePipelineSubmit}
                 onError={handlePipelineSubmitError}

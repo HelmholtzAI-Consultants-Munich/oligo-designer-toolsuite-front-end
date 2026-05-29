@@ -10,8 +10,6 @@ import {
 } from "@rjsf/utils";
 import { ToolTip } from "../ui/Tooltip";
 import { memo } from "react";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import { Vertical } from "../ui/Alignment";
 import { Plus, Trash } from "react-bootstrap-icons";
 import { Button } from "react-bootstrap";
