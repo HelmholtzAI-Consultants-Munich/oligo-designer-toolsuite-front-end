@@ -1,5 +1,5 @@
 import { useEffect, type ChangeEvent } from "react";
-import type { FieldProps } from "@rjsf/utils"
+import type { FieldProps } from "@rjsf/utils";
 import { Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
 
@@ -20,13 +20,17 @@ const TxtUploadInput = (props: FieldProps) => {
             reader.onload = (event) => {
                 let text = event.target?.result as string;
                 // multi line to comma separated
-                text = text.split("\n").map(line => line.trim()).filter(line => line).join(", ");
+                text = text
+                    .split("\n")
+                    .map((line) => line.trim())
+                    .filter((line) => line)
+                    .join(", ");
                 onChange(text, fieldPathId.path);
             };
             reader.readAsText(file);
         }
         onBlur(fieldPathId.$id, formData);
-    }
+    };
 
     return (
         <>
@@ -34,7 +38,13 @@ const TxtUploadInput = (props: FieldProps) => {
                 Region Ids
             </Form.Label>
             <InputGroup>
-                <Form.Control id={fieldPathId.$id} onBlur={() => onBlur(fieldPathId.$id, formData)} type="input" onChange={(e) => onChange(e.target.value, fieldPathId.path)} value={formData || ""} />
+                <Form.Control
+                    id={fieldPathId.$id}
+                    onBlur={() => onBlur(fieldPathId.$id, formData)}
+                    type="input"
+                    onChange={(e) => onChange(e.target.value, fieldPathId.path)}
+                    value={formData || ""}
+                />
                 <Form.Control
                     type="file"
                     className="visually-hidden"
@@ -42,12 +52,15 @@ const TxtUploadInput = (props: FieldProps) => {
                     name="txt-upload"
                     onChange={handleTxtUpload}
                 />
-                <Form.Label htmlFor="txt-upload" className="btn btn-outline-border filled mb-0">
+                <Form.Label
+                    htmlFor="txt-upload"
+                    className="btn btn-outline-border filled mb-0"
+                >
                     File Upload <FiletypeTxt size={20} className="ms-2" />
                 </Form.Label>
             </InputGroup>
         </>
-    )
-}
+    );
+};
 
-export default TxtUploadInput
+export default TxtUploadInput;

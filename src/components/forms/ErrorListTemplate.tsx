@@ -4,7 +4,7 @@ import { ArrowUp } from "react-bootstrap-icons";
 
 const errorId = (property: string) => {
     return "root" + property.replace(/\./g, "_") + "__error";
-}
+};
 
 const scrollToError = (error: RJSFValidationError) => {
     if (!error.property) {
@@ -16,26 +16,30 @@ const scrollToError = (error: RJSFValidationError) => {
     if (errorElement) {
         errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-}
+};
 
 const ErrorListTemplate = (props: ErrorListProps) => {
     const { errors } = props;
     return (
-        <Card id="rjsf-error-list" border='danger' className='mt-4'>
-            <Card.Header className='alert-danger'>Please correct the following errors:</Card.Header>
-            <Card.Body className='p-0'>
+        <Card id="rjsf-error-list" border="danger" className="mt-4">
+            <Card.Header className="alert-danger">
+                Please correct the following errors:
+            </Card.Header>
+            <Card.Body className="p-0">
                 <ListGroup>
                     {errors.map((error, i: number) => {
                         return (
                             <ListGroup.Item
                                 key={i}
-                                className='border-0'
+                                className="border-0"
                                 action
                                 onClick={() => scrollToError(error)}
-                                role='button'
-                                title='Click to jump to error'
+                                role="button"
+                                title="Click to jump to error"
                             >
-                                <span className='text-danger'>{error.stack} <ArrowUp /></span>
+                                <span className="text-danger">
+                                    {error.stack} <ArrowUp />
+                                </span>
                             </ListGroup.Item>
                         );
                     })}
@@ -43,6 +47,6 @@ const ErrorListTemplate = (props: ErrorListProps) => {
             </Card.Body>
         </Card>
     );
-}
+};
 
 export default ErrorListTemplate;

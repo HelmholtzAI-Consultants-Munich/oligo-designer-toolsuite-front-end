@@ -29,9 +29,11 @@ function getSchemaVersion(schema: RJSFSchema): number {
 
 // ---- Export ----
 
-const removeFilesfromObject = (value: GenericObjectType): GenericObjectType | undefined => {
+const removeFilesfromObject = (
+    value: GenericObjectType
+): GenericObjectType | undefined => {
     if (Array.isArray(value)) {
-        return value.map(removeFilesfromObject).filter(v => v !== undefined);
+        return value.map(removeFilesfromObject).filter((v) => v !== undefined);
     }
 
     if (value instanceof File) {

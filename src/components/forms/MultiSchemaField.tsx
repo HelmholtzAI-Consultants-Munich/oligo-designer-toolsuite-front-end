@@ -22,7 +22,7 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
     const constSchema = schema.anyOf?.find(
         (option) => typeof option === "object" && option.const
     ) as RJSFSchema | undefined;
-    
+
     const nullSchema = schema.anyOf?.find(
         (option) => typeof option === "object" && option.type === "null"
     ) as RJSFSchema | undefined;

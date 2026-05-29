@@ -62,11 +62,12 @@ const PipelineTemplate: React.FC<Props> = ({
     const [submissionTried, setSubmissionTried] = useState(false);
     const submitButtonRef = useRef<HTMLButtonElement | null>(null);
     const validator = useMemo(
-        () => customizeValidator({ 
-            AjvClass: Ajv2020,
-            // Enable this once ajv supports boolean discriminators
-            // ajvOptionsOverrides: { discriminator: true }
-        }),
+        () =>
+            customizeValidator({
+                AjvClass: Ajv2020,
+                // Enable this once ajv supports boolean discriminators
+                // ajvOptionsOverrides: { discriminator: true }
+            }),
         []
     );
 
@@ -179,34 +180,34 @@ const PipelineTemplate: React.FC<Props> = ({
             const submittedFormData = (data.formData ??
                 formData) as RJSFFormData;
             if (requiresTermsAcceptance) {
-            if (!hasAcceptedTerms) {
-                showToast({
-                    title: "Terms acceptance required",
-                    content:
-                        "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing.",
-                    type: "danger",
-                });
-                const acceptanceElement =
-                    document.getElementById("terms-acceptance");
-                acceptanceElement?.scrollIntoView({ behavior: "smooth" });
-                return;
+                if (!hasAcceptedTerms) {
+                    showToast({
+                        title: "Terms acceptance required",
+                        content:
+                            "You must accept the Terms of Service and acknowledge the Privacy Policy before continuing.",
+                        type: "danger",
+                    });
+                    const acceptanceElement =
+                        document.getElementById("terms-acceptance");
+                    acceptanceElement?.scrollIntoView({ behavior: "smooth" });
+                    return;
+                }
+                setIsAcceptingTerms(true);
+                const accepted = await acceptTerms();
+                setIsAcceptingTerms(false);
+                if (!accepted) {
+                    showToast({
+                        title: "Terms acceptance failed",
+                        content:
+                            "We couldn't record your acceptance. Please try again.",
+                        type: "danger",
+                    });
+                    return;
+                }
+                setHasAcceptedTerms(false);
             }
-            setIsAcceptingTerms(true);
-            const accepted = await acceptTerms();
-            setIsAcceptingTerms(false);
-            if (!accepted) {
-                showToast({
-                    title: "Terms acceptance failed",
-                    content:
-                        "We couldn't record your acceptance. Please try again.",
-                    type: "danger",
-                });
-                return;
-            }
-            setHasAcceptedTerms(false);
-        }
 
-        const pipelineRunConfig = buildExportPayload(
+            const pipelineRunConfig = buildExportPayload(
                 submittedFormData,
                 pipeline,
                 schema
@@ -219,7 +220,15 @@ const PipelineTemplate: React.FC<Props> = ({
             );
             setSubmissionTried(true);
         },
-        [formData, pipeline, schema, updateRuns]
+        [
+            formData,
+            pipeline,
+            schema,
+            updateRuns,
+            requiresTermsAcceptance,
+            hasAcceptedTerms,
+            acceptTerms,
+        ]
     );
 
     const handlePipelineSubmitError = () => {

@@ -1,4 +1,8 @@
-import { getUiOptions, type BaseInputTemplateProps, type ErrorSchema } from "@rjsf/utils";
+import {
+    getUiOptions,
+    type BaseInputTemplateProps,
+    type ErrorSchema,
+} from "@rjsf/utils";
 import { getDefaultRegistry } from "@rjsf/core";
 import { Form } from "react-bootstrap";
 import { ToolTip } from "../ui/Tooltip";
@@ -14,9 +18,17 @@ const WrappedBaseInputTemplate = memo((props: BaseInputTemplateProps) => {
     const uiOptions = getUiOptions(uiSchema);
     const isCheckbox = uiOptions.widget === "checkbox";
 
-    const _onChange = (value: unknown, errorSchema?: ErrorSchema, id?: string) => {
+    const _onChange = (
+        value: unknown,
+        errorSchema?: ErrorSchema,
+        id?: string
+    ) => {
         // convert empty string to null, unless the schema explicitly defines an empty value
-        return onChange(value === undefined ? options.emptyValue || null : value, errorSchema, id);
+        return onChange(
+            value === undefined ? options.emptyValue || null : value,
+            errorSchema,
+            id
+        );
     };
 
     return (
