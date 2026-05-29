@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@fontsource-variable/fustat": "^5.2.7",
+    "@marsidev/react-turnstile": "1.5.2",
     "@popperjs/core": "^2.11.8",
     "@rjsf/core": "^6.2.5",
     "@rjsf/react-bootstrap": "^6.2.5",
