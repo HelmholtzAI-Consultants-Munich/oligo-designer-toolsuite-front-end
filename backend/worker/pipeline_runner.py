@@ -8,8 +8,9 @@ from typing import Any
 
 import yaml
 
-from backend.constants import PIPELINE_GENOMIC_INPUT
+from backend.constants import PIPELINE_FILE_INPUT
 from backend.exceptions import ODTPipelineError
+from backend.utils import deserialize_form_data_path, retrieve_form_data_value
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
@@ -67,16 +68,18 @@ class PipelineRunner:
             self.cleanup_temp_files(form_data, config_path)
 
     def populate_temp_file(self, form_data: dict) -> None:
-        if form_data["file_regions"] != "":
-            if ".txt" not in form_data["file_regions"]:
+        oligo_generation_form = retrieve_form_data_value(["target_probe", "oligo_generation"], form_data)
+        file_region_ids = oligo_generation_form["file_region_ids"]
+        if file_region_ids != "":
+            if ".txt" not in file_region_ids:
                 with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
                     file_path = temp_file.name
                     # Write each gene on a new line
-                    temp_file.writelines(gene.strip() + "\n" for gene in form_data["file_regions"].split(","))
+                    temp_file.writelines(gene.strip() + "\n" for gene in file_region_ids.split(","))
                 # Update the path in form_data to point to the temp file
-                form_data["file_regions"] = file_path
+                oligo_generation_form["file_region_ids"] = file_path
         else:
-            form_data["file_regions"] = None
+            oligo_generation_form["file_region_ids"] = None
 
     def populate_form_data_path_fields(
         self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
@@ -106,16 +109,11 @@ class PipelineRunner:
             generated_region_paths {list[tuple[str, list[str]]]} -- list of tuples of input_field_id and belonging paths of generated genomic regions
         """
 
-        # Overwrite fields with their respective file values or an empty array as fallback for None
-        for field in PIPELINE_GENOMIC_INPUT[self.pipeline_name]:
-            if config[field]["files"] is None:
-                config[field] = []
-            else:
-                config[field] = config[field]["files"]
-
         # Add paths of generated regions to config
         for id, paths in generated_region_paths:
-            config[id].extend(paths)
+            genomic_input_field_path = deserialize_form_data_path(id)
+            genomic_input_field_parent = retrieve_form_data_value(genomic_input_field_path[:-1], config)
+            genomic_input_field_parent[genomic_input_field_path[-1]] = paths
 
     def write_config_file(
         self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
@@ -123,14 +121,9 @@ class PipelineRunner:
         config = form_data
 
         # Override output directory
-        config["dir_output"] = output_path
+        config["general"]["dir_output"] = output_path
 
         self.populate_form_data_path_fields(config, generated_region_paths)
-
-        if "target_probe_kmer_abundance_threshold" in form_data:
-            form_data["target_probe_kmer_abundance_threshold"] = {
-                int(k): v for k, v in form_data["target_probe_kmer_abundance_threshold"].items()
-            }
 
         # Write config to YAML file
         config_path = os.path.join(output_path, f"config_{self.pipeline_name}.yml")
@@ -155,12 +148,21 @@ class PipelineRunner:
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
         self.logger.info("Generating visualization files...")
-        regions_file = form_data.get("file_regions", None)
+        regions_file = retrieve_form_data_value(
+            ["target_probe", "oligo_generation", "file_region_ids"], form_data
+        )
         if not regions_file:
             self.logger.warning("No regions file provided, skipping visualization generation.")
             return
 
-        fasta_paths = form_data.get("files_fasta_target_probe_database", [])
+        fasta_paths = retrieve_form_data_value(
+            [
+                "target_probe",
+                "oligo_generation",
+                "files_fasta_probe_database",
+            ],
+            form_data,
+        )
         if not fasta_paths:
             self.logger.warning("No fasta files provided, skipping visualization generation.")
             return
@@ -190,30 +192,24 @@ class PipelineRunner:
         regions_file.yaml_dump(regions_file_path)
 
     def cleanup_temp_files(self, form_data: dict, config_path: str) -> None:
+        oligo_generation_form = retrieve_form_data_value(["target_probe", "oligo_generation"], form_data)
         # Remove temp file for file_regions if it was created
-        if form_data["file_regions"]:
-            temp_path = form_data["file_regions"].strip()
+        if oligo_generation_form["file_region_ids"]:
+            temp_path = oligo_generation_form["file_region_ids"].strip()
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-                self.logger.debug(f"deleted temp file_regions: {temp_path}")
+                self.logger.debug(f"deleted temp file_region_ids: {temp_path}")
             else:
-                self.logger.debug(f"file_regions not found, skipped: {temp_path}")
+                self.logger.debug(f"file_region_ids not found, skipped: {temp_path}")
 
-        # Remove temp files for fasta inputs
-        fasta_fields = [
-            "files_fasta_target_probe_database",
-            "files_fasta_reference_database_target_probe",
-            "files_fasta_reference_database_readout_probe",
-            "files_fasta_reference_database_primer",
-        ]
-        for field in fasta_fields:
-            if field not in form_data:
+        for path in PIPELINE_FILE_INPUT[self.pipeline_name]:
+            files_list = retrieve_form_data_value(path, form_data)
+            if files_list is None or len(files_list) < 1:
                 continue
-            files_list = form_data[field]
             for fname in files_list:
                 # Delete user-uploaded files, but not generated regions so they can be cached
                 # TODO: make the distinction logic more robust
-                if os.path.exists(fname) and "user_data" in fname:
+                if os.path.exists(fname):
                     os.remove(fname)
 
         if os.path.exists(config_path):

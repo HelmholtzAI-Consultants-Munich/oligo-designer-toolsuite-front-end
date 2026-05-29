@@ -4,6 +4,8 @@ from typing import Annotated, Literal
 from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
     OligoSeqSpecificityBlastnFilterDisabled,
     OligoSeqSpecificityBlastnFilterEnabled,
+    OligoSeqVariantFilterDisabled,
+    OligoSeqVariantFilterEnabled,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     OligoSeqProbeDesignerConfig,
@@ -91,8 +93,20 @@ OligoSpecificityBlastnFilterConfigWrapper = Annotated[
 ]
 
 
+class OligoSeqVariantFilterEnabledWrapper(OligoSeqVariantFilterEnabled):
+    # NOTE: this is a small trick. A dict gets converted to type
+    # `object` when building the JSON Schema from the pydantic model.
+    files_vcf_reference_database: list[dict | str]
+
+
+OligoSeqVariantFilterConfigWrapper = Annotated[
+    OligoSeqVariantFilterEnabledWrapper | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
+]
+
+
 class TargetProbeSpecificityFilterWrapper(TargetProbeSpecificityFilter):
     specificity_blastn_filter: OligoSpecificityBlastnFilterConfigWrapper
+    variant_filter: OligoSeqVariantFilterConfigWrapper
 
 
 class TargetProbeWrapper(TargetProbe):

@@ -25,8 +25,8 @@ interface BasePipeline {
     description: string;
     img: string;
     detailedLink: string;
-    link?: string;
-    genomicInputFields?: (keyof RJSFFormData)[];
+    link: string;
+    fileUploadFields?: (keyof RJSFFormData)[][];
     disabled: boolean;
 }
 
@@ -110,5 +110,13 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         img: oligoseqImage,
         disabled: false,
         link: "/pipelines/oligoseq",
+        fileUploadFields: [
+            [
+                "target_probe",
+                "specificity_filters",
+                "variant_filter",
+                "files_vcf_reference_database",
+            ],
+        ],
     },
 };

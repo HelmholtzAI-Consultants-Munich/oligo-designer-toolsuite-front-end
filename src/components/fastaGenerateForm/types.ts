@@ -1,4 +1,4 @@
-export type GenomicFormOrFilePath = FilePath | GenomicForm;
+export type GenomicFormOrFilePath = File | GenomicForm;
 
 export type GenomicForm = NcbiGenomicForm | EnsGenomicForm;
 

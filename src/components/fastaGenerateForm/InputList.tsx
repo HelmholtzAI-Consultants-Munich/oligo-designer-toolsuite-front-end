@@ -12,7 +12,7 @@ type IntputListItem =
       }
     | {
           type: "file";
-          data: FilePath;
+          data: File;
           removeHandler: () => void;
       };
 
@@ -31,7 +31,7 @@ export const InputList = ({ id, inputs }: InputListProps) => {
             >
                 {input.type === "form"
                     ? GenomicFormPreview(input.data as GenomicForm)
-                    : FilePreview(input.data as FilePath)}
+                    : FilePreview(input.data as File)}
             </Button>
             <Button
                 variant="outline-border filled"

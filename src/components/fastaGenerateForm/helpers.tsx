@@ -9,11 +9,14 @@ import axios from "axios";
 import { Link } from "react-router";
 import type {
     EnsGenomicForm,
-    FilePath,
     GenomicForm,
     GenomicRegionsForm,
     NcbiGenomicForm,
 } from "./types";
+import {
+    PIPELINE_CONFIG,
+    type PipelineConfig,
+} from "../../pipelineConfig/config";
 
 export const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
 
@@ -91,8 +94,59 @@ export const handleSubmit = async (
         return;
     }
 
+    const retrieveValueFromFormData = (
+        formData: RJSFFormData,
+        path: (keyof RJSFFormData)[]
+    ) => {
+        for (const part of path) {
+            if (!Object.hasOwn(formData, part)) return;
+            formData = formData[part];
+        }
+        return formData;
+    };
+
+    const prepareFileUploads = (
+        formData: RJSFFormData,
+        uploadFormData: RJSFFormData,
+        pipelineName: string
+    ) => {
+        const fileUploadFieldPath =
+            PIPELINE_CONFIG[pipelineName as keyof PipelineConfig]
+                .fileUploadFields;
+
+        if (!fileUploadFieldPath) return;
+
+        let files = {};
+
+        for (const path of fileUploadFieldPath) {
+            const parentField = retrieveValueFromFormData(
+                uploadFormData,
+                path.slice(0, -1)
+            );
+            const filesField = retrieveValueFromFormData(formData, path);
+
+            if (!parentField || !filesField) continue;
+
+            parentField[path[path.length - 1]] = filesField.map(
+                (file: File) => file.name
+            );
+            files = filesField.reduce(
+                (acc: Record<string, File>, cur: File) => ({
+                    ...acc,
+                    ...{ [cur.name]: cur },
+                }),
+                {}
+            );
+        }
+
+        return files;
+    };
+
     try {
+        const files = prepareFileUploads(formData, uploadFormData, pipeline);
+
         const upload = {
+            ...files,
             payload: JSON.stringify({
                 formdata: uploadFormData,
                 runid: newId,
@@ -156,8 +210,8 @@ export const handleSubmit = async (
     }
 };
 
-export const FilePreview = (file: FilePath) => {
-    return `${file}`;
+export const FilePreview = (file: File) => {
+    return `${file.name}`;
 };
 
 export const GenomicFormPreview = (form: GenomicForm) => {

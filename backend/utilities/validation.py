@@ -66,29 +66,6 @@ def validate_id_array(data: dict, key_name: str) -> list:
     return ids
 
 
-def get_valid_file_keys():
-    """
-    Get the set of valid form data keys that a generated
-    genomic regions file can be used for.
-    """
-    return frozenset(
-        {
-            "files_fasta_target_probe_database",
-            "files_fasta_reference_database_target_probe",
-            "files_fasta_reference_database_readout_probe",
-            "files_fasta_reference_database_primer",
-        }
-    )
-
-
-def validate_file_key(id: str) -> None:
-    if id not in get_valid_file_keys():
-        abort(
-            HTTPStatus.BAD_REQUEST,
-            description="Invalid input: genomic region generation cannot be used for specified key",
-        )
-
-
 def validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | None = None) -> None:
     """
     Validate genomic form data structure and required fields.
@@ -101,7 +78,7 @@ def validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | Non
         400: If validation fails
     """
     if allowed_sources is None:
-        allowed_sources = ["NCBI", "Ensembl"]
+        allowed_sources = ["ncbi", "ensembl"]
 
     if not form_data:
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: form data is required")
@@ -114,5 +91,7 @@ def validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | Non
         )
     if "genomic_regions" not in form_data:
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic_regions is required")
-    if form_data["source"] == "Custom" and "file_regions" not in form_data:
-        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: file_regions is required for Custom source")
+    if form_data["source"] == "Custom" and "file_region_ids" not in form_data:
+        abort(
+            HTTPStatus.BAD_REQUEST, description="Invalid input: file_region_ids is required for Custom source"
+        )

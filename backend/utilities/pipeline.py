@@ -20,7 +20,7 @@ def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
     :param form: Original form dictionary with possibly multiple "true" genomic regions
     :return: List of form dictionaries, each with only one "true" genomic region
     """
-    true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val == "true"]
+    true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val]
 
     form_variants = []
 

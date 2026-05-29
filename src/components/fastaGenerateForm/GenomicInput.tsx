@@ -105,7 +105,7 @@ const ConfigurableGenomicInput = ({
             <InputList
                 id={id}
                 inputs={(formData as GenomicFormOrFilePath[]).map((data) => {
-                    if (typeof data === "object") {
+                    if (Object.hasOwn(data, "source")) {
                         return {
                             type: "form",
                             data: data as GenomicForm,
@@ -121,7 +121,7 @@ const ConfigurableGenomicInput = ({
                     } else {
                         return {
                             type: "file",
-                            data: data as FilePath,
+                            data: data as File,
                             removeHandler: () =>
                                 handleRemove(formData.indexOf(data)),
                         };
@@ -154,7 +154,7 @@ const ConfigurableGenomicInput = ({
 interface FileUploadProps {
     id: string;
     name: string;
-    onUpload: (filePaths: FilePath[]) => void;
+    onUpload: (filePaths: File[]) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -165,9 +165,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { files: selectedFiles } = e.target;
         if (!selectedFiles) return;
-
-        const filePaths = Array.from(selectedFiles).map((file) => file.name);
-        onUpload(filePaths);
+        onUpload(Array.from(selectedFiles));
         e.target.value = ""; // Reset the input so the same file can be uploaded again if needed
     };
 
