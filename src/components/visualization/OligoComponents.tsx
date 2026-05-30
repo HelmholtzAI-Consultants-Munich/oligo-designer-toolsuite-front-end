@@ -44,7 +44,7 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
     const oligo = probes.find((o) => o.oligo_id === selectedOligo);
 
     const components: OligoComponent[] = useMemo(() => {
-        const comps: OligoComponent[] = [];
+        const componentList: OligoComponent[] = [];
         const pipeline = oligo?.pipeline;
         if (pipeline && Object.keys(ComponentDefinition).includes(pipeline)) {
             const components = ComponentDefinition[
@@ -58,14 +58,14 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
                     if (componentDef.isReverseComplement) {
                         sequence = reverseComplement(sequence);
                     }
-                    comps.push({
+                    componentList.push({
                         sequence: sequence,
                         color: componentDef.color,
                         label: componentDef.label,
                         isBinding: componentDef.isBinding ?? false,
                     });
                 } else if (componentDef.type === "sequence") {
-                    comps.push({
+                    componentList.push({
                         sequence: componentDef.value,
                         color: componentDef.color,
                         label: componentDef.label,
@@ -74,27 +74,24 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
                 }
             });
         }
-        return comps;
+        return componentList;
     }, [oligo]);
 
-    const componentsToBases = (components: OligoComponent[]): OligoBase[] => {
-        return components.flatMap((component) =>
-            [...component.sequence].map((char) => {
-                return {
-                    char,
-                    color: component.color,
-                    label: component.label,
-                    isBinding: component.isBinding,
-                };
-            })
-        );
-    };
+    const bases: OligoBase[] = components.flatMap((component) =>
+        [...component.sequence].map((char) => {
+            return {
+                char,
+                color: component.color,
+                label: component.label,
+                isBinding: component.isBinding,
+            };
+        })
+    );
+
+    const width = Math.max(12 * (bases.length + 2), 800);
+    const height = 80;
 
     useEffect(() => {
-        const width = 12 * (componentsToBases(components).length + 2);
-        const height = 100;
-        const margin = 20;
-
         const svg = d3.select("#oligo-components") as d3.Selection<
             Element,
             unknown,
@@ -118,20 +115,23 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
         };
         const zoom = d3
             .zoom()
-            .scaleExtent([1, 5])
+            .scaleExtent([1, 3])
             .translateExtent([
-                [-margin, 30],
-                [width + margin, 70],
+                [0, height / 2],
+                [width, height / 2],
             ])
             .on("zoom", zoomed);
         svg.attr("viewBox", [0, 0, width, height])
             .attr("width", width)
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;")
-            .call(zoom);
+            .call(zoom)
+            .on("wheel", (event) => {
+                event.preventDefault();
+            }); // prevent page scroll on zoom
         const svgBox = svgNode.getBoundingClientRect();
         group.attr("y", `${svgBox.height / 2}`);
-    }, [components]);
+    }, [components, width]);
 
     if (components.length === 0) {
         return (
@@ -143,15 +143,29 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
         return <div>Selected oligo not found.</div>;
     }
 
+    const hasBindingAndNonBinding =
+        components.some((c) => c.isBinding) &&
+        components.some((c) => !c.isBinding);
+
     return (
         <>
             <svg id="oligo-components">
                 <g>
-                    {componentsToBases(components).map((base, index) => (
+                    {bases.map((base, index) => (
                         <text
-                            x={(index + 1) * 12}
-                            y={base.isBinding ? 55 : 45}
-                            style={{ fill: base.color, textAnchor: "middle" }}
+                            x={width / 2 + (index - bases.length / 2) * 12}
+                            y={
+                                hasBindingAndNonBinding
+                                    ? base.isBinding
+                                        ? 45
+                                        : 35
+                                    : 40
+                            }
+                            style={{
+                                fill: base.color,
+                                textAnchor: "middle",
+                                dominantBaseline: "middle",
+                            }}
                             key={oligo.oligo_id + "-" + index}
                         >
                             {base.char}
@@ -162,30 +176,26 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
 
             <Horizontal align="center" wrap gap="md">
                 <strong>Legend:</strong>
-                {Array.from(
-                    new Set(
-                        componentsToBases(components).map((base) => base.label)
-                    )
-                ).map((label, index) => {
-                    const base = componentsToBases(components).find(
-                        (base) => base.label === label
-                    );
-                    if (!base) return null;
-                    return (
-                        <Horizontal key={index} align="baseline">
-                            <span
-                                style={{
-                                    display: "inline-block",
-                                    width: "12px",
-                                    height: "12px",
-                                    backgroundColor: base.color,
-                                    marginRight: "5px",
-                                }}
-                            ></span>
-                            {label}
-                        </Horizontal>
-                    );
-                })}
+                {Array.from(new Set(bases.map((base) => base.label))).map(
+                    (label, index) => {
+                        const base = bases.find((base) => base.label === label);
+                        if (!base) return null;
+                        return (
+                            <Horizontal key={index} align="baseline">
+                                <span
+                                    style={{
+                                        display: "inline-block",
+                                        width: "12px",
+                                        height: "12px",
+                                        backgroundColor: base.color,
+                                        marginRight: "5px",
+                                    }}
+                                ></span>
+                                {label}
+                            </Horizontal>
+                        );
+                    }
+                )}
             </Horizontal>
         </>
     );
