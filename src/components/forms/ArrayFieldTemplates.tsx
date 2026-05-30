@@ -95,7 +95,7 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
 const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
     const { children, hasToolbar, buttonsProps } = props;
     return (
-        <div className="d-flex gap-1 array-field-item">
+        <div className="d-flex gap-1 array-field-item align-items-start">
             {children}
             {hasToolbar && (
                 <Button

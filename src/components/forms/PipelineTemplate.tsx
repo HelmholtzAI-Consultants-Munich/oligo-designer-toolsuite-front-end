@@ -310,7 +310,7 @@ const PipelineTemplate: React.FC<Props> = ({
             >
                 {requiresTermsAcceptance && (
                     <div
-                        className="border rounded p-3 mt-5 bg-light"
+                        className="border rounded p-3 mb-3 bg-light"
                         id="terms-acceptance"
                     >
                         <p className="mb-2">
@@ -336,7 +336,6 @@ const PipelineTemplate: React.FC<Props> = ({
                     type="submit"
                     variant="primary"
                     disabled={isAcceptingTerms}
-                    className={requiresTermsAcceptance ? "mt-3" : "mt-5"}
                 >
                     {isAcceptingTerms ? (
                         "Saving..."

@@ -1,12 +1,16 @@
 import json
 import os
-import subprocess
 import tempfile
-from collections.abc import Mapping
 from logging import Logger
 from typing import Any
 
 import yaml
+from oligo_designer_toolsuite._exceptions import OligoDesignerError
+from oligo_designer_toolsuite.pipelines._oligo_seq_probe_designer import (
+    OligoSeqProbeDesignerConfig,
+    oligo_seq_probe_designer,
+)
+from pydantic import ValidationError
 
 from backend.constants import PIPELINE_FILE_INPUT
 from backend.exceptions import ODTEmptyResultError, ODTPipelineError
@@ -21,19 +25,12 @@ class PipelineRunner:
     - Prepares input files as needed (e.g., writes gene list as a temp file).
     - Builds the configuration dictionary for the probe designer pipeline based on the submitted form.
     - Writes this configuration as a YAML file to the user's directory.
-    - Launches the external `[<pipeline_name>]_probe_designer` process as a subprocess, passing the YAML config.
+    - Invokes the oligo designer toolsuite with the generated config file.
     - Cleans up any temporary files created during input preparation.
 
     For more information on the input parameters and configuration options, refer to the pipeline documentation.
 
     """
-
-    PIPELINE_SUBPROCESS: Mapping[str, str] = {
-        "scrinshot": "scrinshot_probe_designer",
-        "seqfish": "seqfish_plus_probe_designer",
-        "merfish": "merfish_probe_designer",
-        "oligoseq": "oligo_seq_probe_designer",
-    }
 
     def __init__(self, pipeline_name: str, logger: Logger):
         self.logger = logger
@@ -45,7 +42,6 @@ class PipelineRunner:
             schema = json.load(f)
 
         self.pipeline_name = pipeline_name  # e.g., 'merfish'
-        self.subprocess_name = self.PIPELINE_SUBPROCESS[pipeline_name]  # e.g., 'merfish_probe_designer'
         self.schema = schema  # JSON schema
 
     def run(
@@ -58,8 +54,8 @@ class PipelineRunner:
         config_path = self.write_config_file(form_data, output_path, generated_region_paths)
 
         try:
-            # Subprocess Call
-            self.call_subprocess(config_path)
+            # Pipeline Execution
+            self.execute_pipeline(config_path)
 
             # Generate Visualization Files
             self.generate_genomic_regions_file(form_data, output_path)
@@ -137,29 +133,38 @@ class PipelineRunner:
             yaml.dump(config, f, sort_keys=False)
         return config_path
 
-    def call_subprocess(self, config_path: str) -> None:
+    def execute_pipeline(self, config_path: str) -> None:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
+        if self.pipeline_name != "oligoseq":
+            raise NotImplementedError(f"Pipeline execution not implemented for {self.pipeline_name}")
+
+        fallback_error_message = "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
+
         try:
-            subprocess.run(
-                [self.subprocess_name, "-c", config_path], capture_output=True, text=True, check=True
-            )
-        except subprocess.CalledProcessError as error:
-            if error.stderr:
-                self.logger.error(f"STDERR: {error.stderr}")
-            self.logger.debug(f"STDOUT: {error.stdout}")
-            if (
-                error.returncode == -9
-            ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
-                raise ODTPipelineError(
-                    "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
-                )
-            if "The oligo database is empty" in error.stdout:
+            with open(config_path) as handle:
+                config_raw = yaml.safe_load(handle)
+
+            config_validated = OligoSeqProbeDesignerConfig.model_validate(config_raw)
+            oligo_seq_probe_designer(config_validated)
+
+        except ValidationError as e:
+            raise ODTPipelineError(f"Invalid configuration file: {e!s}")
+        except OligoDesignerError as e:
+            raise ODTPipelineError(f"The pipeline failed to execute: {e!s}")
+        except ValueError as e:
+            raise ODTPipelineError(f"The pipeline failed to execute: {e!s}")
+        except SystemExit as e:
+            if e.code == 1:
                 raise ODTEmptyResultError(
                     "The pipeline did not generate any results. Please tweak your input parameters."
                 )
-            raise ODTPipelineError(
-                "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
-            )
+            else:
+                raise ODTPipelineError(fallback_error_message)
+        except Exception as error:
+            if error.stderr:
+                self.logger.error(f"STDERR: {error.stderr}")
+            self.logger.debug(f"STDOUT: {error.stdout}")
+            raise ODTPipelineError(fallback_error_message)
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
