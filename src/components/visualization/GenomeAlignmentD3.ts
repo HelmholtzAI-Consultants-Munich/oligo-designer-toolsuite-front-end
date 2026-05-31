@@ -425,7 +425,7 @@ const setupMouseEvents = (
         event.preventDefault();
     };
     ctx.svg
-        .on("wheel", preventPageScroll)
+        .on("wheel", preventPageScroll, { passive: false }) // some browsers default to passive wheel listeners
         .on("mouseenter", () => {
             ctx.locationIndicator.attr("visibility", "visible");
             ctx.positionLabelGroup.attr("visibility", "visible");

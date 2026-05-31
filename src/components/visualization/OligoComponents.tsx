@@ -126,9 +126,13 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
             .attr("height", height)
             .attr("style", "width: 100%; height: auto;")
             .call(zoom)
-            .on("wheel", (event) => {
-                event.preventDefault();
-            }); // prevent page scroll on zoom
+            .on(
+                "wheel",
+                (event) => {
+                    event.preventDefault();
+                },
+                { passive: false } // some browsers default to passive wheel listeners
+            ); // prevent page scroll on zoom
         const svgBox = svgNode.getBoundingClientRect();
         group.attr("y", `${svgBox.height / 2}`);
     }, [components, width]);
