@@ -1,7 +1,4 @@
 import type { GenericObjectType, RJSFSchema } from "@rjsf/utils";
-import type { JSONSchema7Definition } from "json-schema";
-import { customizeValidator } from "@rjsf/validator-ajv8";
-import Ajv2020 from "ajv/dist/2020";
 
 import type { RJSFFormData } from "../componentTypes";
 import { getPipelineDisplayName } from "../../pipelineConfig/utils";
@@ -14,9 +11,6 @@ export interface PipelineConfigExport {
     };
     config: RJSFFormData;
 }
-
-// Created once at module level — no need to reinstantiate per call
-const validator = customizeValidator({ AjvClass: Ajv2020 });
 
 // ---- Version helpers ----
 
@@ -82,21 +76,7 @@ export function triggerDownload(payload: PipelineConfigExport): void {
     URL.revokeObjectURL(link.href);
 }
 
-// ---- Import / Validation ----
-
-function validationFailure(
-    errors:
-        | Array<{ instancePath?: string; message?: string }>
-        | null
-        | undefined,
-    prefix: string
-): { ok: false; error: string } | null {
-    if (!errors?.length) return null;
-    const msg = errors
-        .map((e) => `${e.instancePath || "root"}: ${e.message}`)
-        .join("; ");
-    return { ok: false, error: `${prefix} ${msg}` };
-}
+// ---- Import ----
 
 export type ImportResult =
     | {

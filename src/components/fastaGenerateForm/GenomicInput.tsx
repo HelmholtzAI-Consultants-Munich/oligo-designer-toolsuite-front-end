@@ -1,9 +1,5 @@
 import type { FieldPathList, FieldProps } from "@rjsf/utils";
-import {
-    type FilePath,
-    type GenomicForm,
-    type GenomicFormOrFilePath,
-} from "./types";
+import { type GenomicForm, type GenomicFormOrFile } from "./types";
 import FastaGenerateForm from "../forms/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
 import { Button, Form } from "react-bootstrap";
@@ -36,7 +32,7 @@ const ConfigurableGenomicInput = ({
 
     const handleRemove = (idx: number) => {
         onChange(
-            formData.filter((_: GenomicFormOrFilePath, i: number) => i !== idx),
+            formData.filter((_: GenomicFormOrFile, i: number) => i !== idx),
             path
         );
         onBlur(id, formData);
@@ -108,7 +104,7 @@ const ConfigurableGenomicInput = ({
 
             <InputList
                 id={id}
-                inputs={(formData as GenomicFormOrFilePath[]).map((data) => {
+                inputs={(formData as GenomicFormOrFile[]).map((data) => {
                     if (Object.hasOwn(data, "source")) {
                         return {
                             type: "form",
@@ -158,7 +154,7 @@ const ConfigurableGenomicInput = ({
 interface FileUploadProps {
     id: string;
     name: string;
-    onUpload: (filePaths: File[]) => void;
+    onUpload: (files: File[]) => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({

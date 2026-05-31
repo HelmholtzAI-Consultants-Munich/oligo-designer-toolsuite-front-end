@@ -1,8 +1,6 @@
-export type GenomicFormOrFilePath = File | GenomicForm;
+export type GenomicFormOrFile = File | GenomicForm;
 
 export type GenomicForm = NcbiGenomicForm | EnsGenomicForm;
-
-export type FilePath = string;
 
 export interface NcbiGenomicForm {
     source: "ncbi";
