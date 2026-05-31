@@ -44,6 +44,7 @@ import {
 import ErrorListTemplate from "./ErrorListTemplate";
 import TxtUploadInput from "./TxtUploadInput";
 import type { IChangeEvent } from "@rjsf/core";
+import { uiSchemaFromJsonSchema } from "../../pipelineConfig/uiSchemas";
 
 type Props = {
     pipeline: Pipeline["name"];
@@ -134,13 +135,10 @@ const PipelineTemplate: React.FC<Props> = ({
     };
 
     const tabs = useMemo(() => {
-        const hiddenTabs = uiSchema?.["ui:hiddenTabs"] as string[] | undefined;
-        return schema.properties
-            ? Object.keys(schema.properties).filter(
-                  (key) => !hiddenTabs?.includes(key)
-              )
-            : undefined;
-    }, [schema.properties, uiSchema]);
+        return schema.properties ? Object.keys(schema.properties) : undefined;
+    }, [schema.properties]);
+
+    console.log(uiSchemaFromJsonSchema(schema));
 
     const importInputRef = useRef<HTMLInputElement>(null);
 

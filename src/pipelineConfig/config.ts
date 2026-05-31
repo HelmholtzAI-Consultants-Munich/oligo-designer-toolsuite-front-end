@@ -5,14 +5,12 @@ import merfishImage from "../images/merfish.jpg";
 import seqfishImage from "../images/seqfish.jpg";
 import oligoseqImage from "../images/oligoseq.jpg";
 
-import fastaFormSchema from "@schemas/fastaForm.schema.json";
 import merfishSchemaRaw from "@schemas/merfish.schema.json";
 import scrinshotSchemaRaw from "@schemas/scrinshot.schema.json";
 import oligoseqSchemaRaw from "@schemas/oligoseq.schema.json";
 import seqfishSchemaRaw from "@schemas/seqfish.schema.json";
 import {
     merfishUiSchema,
-    oligoseqUiSchema,
     scrinshotUiSchema,
     seqfishUiSchema,
     uiSchemaFromJsonSchema,
@@ -51,8 +49,6 @@ export type Pipeline =
     | OligoseqPipeline
     | MerfishPipeline
     | SeqfishPipeline;
-
-type pipelineModifier = (pipeline: Pipeline) => Pipeline;
 
 export type PipelineConfig = {
     [K in Pipeline["name"]]: Pipeline;
@@ -101,7 +97,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
     oligoseq: {
         name: "oligoseq",
         schema: oligoseqSchemaRaw as RJSFSchema,
-        uiSchema: oligoseqUiSchema,
+        uiSchema: uiSchemaFromJsonSchema(oligoseqSchemaRaw as RJSFSchema),
         displayName: "OligoSeq",
         description:
             "High-throughput sequencing tailored for spatial transcriptomics.",

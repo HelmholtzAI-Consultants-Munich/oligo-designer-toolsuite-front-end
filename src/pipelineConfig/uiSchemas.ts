@@ -1,7 +1,8 @@
-import type { RJSFSchema, UiSchema } from "@rjsf/utils";
+import type { GenericObjectType, RJSFSchema, UiSchema } from "@rjsf/utils";
 import TabsLayout from "../components/forms/TabsLayout";
 import TabLayout from "../components/forms/TabLayout";
 import SectionLayout from "../components/forms/SectionLayout";
+import { findSchemaDefinition } from "@rjsf/utils";
 
 export const merfishUiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,
@@ -106,48 +107,110 @@ export const merfishUiSchema: UiSchema = {
 };
 
 export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
-    const uiSchema: UiSchema = {};
+    return uiSchemaFromJsonSchemaRecursive(jsonSchema, jsonSchema, 0);
+};
+
+const uiSchemaFromJsonSchemaRecursive = (
+    baseSchema: RJSFSchema,
+    localSchema: RJSFSchema,
+    level: number
+): UiSchema => {
+    let uiSchema: UiSchema = {};
+
+    if (localSchema.$ref) {
+        try {
+            const refSchema = findSchemaDefinition(
+                localSchema.$ref,
+                baseSchema
+            );
+            return uiSchemaFromJsonSchemaRecursive(
+                baseSchema,
+                refSchema,
+                level
+            );
+        } catch (error) {
+            console.error(
+                `Error resolving reference: ${localSchema.$ref}`,
+                error
+            );
+            return uiSchema;
+        }
+    }
+
+    if (localSchema.oneOf || localSchema.anyOf) {
+        // we deeply merge the uiSchemas of all options, to ensure all possible fields are covered
+        for (const option of localSchema.oneOf || localSchema.anyOf || []) {
+            const optionSchema = option as RJSFSchema;
+            const optionUiSchema = uiSchemaFromJsonSchemaRecursive(
+                baseSchema,
+                optionSchema,
+                level
+            );
+            uiSchema = deepMergeObjects(uiSchema, optionUiSchema);
+        }
+    }
+    if (localSchema.properties) {
+        const fields = Object.keys(localSchema.properties);
+        if (level === 0) {
+            // root -> TabsLayout
+            uiSchema["ui:ObjectFieldTemplate"] = TabsLayout;
+        } else if (level === 1) {
+            // first level -> TabLayout
+            uiSchema["ui:ObjectFieldTemplate"] = TabLayout;
+        } else if (level === 2) {
+            // second level -> SectionLayout
+            uiSchema["ui:ObjectFieldTemplate"] = SectionLayout;
+        }
+
+        for (const field of fields) {
+            const propertySchema = localSchema.properties[field] as RJSFSchema;
+            if (field === "file_region_ids") {
+                // file_region_ids (any level) -> txtUploadInput
+                uiSchema[field] = {
+                    "ui:field": "txtUploadInput",
+                    "ui:fieldReplacesAnyOrOneOf": true,
+                };
+            } else if (field.startsWith("files_fasta_")) {
+                // files_fasta_* (any level) -> genomicInput
+                uiSchema[field] = { "ui:field": "genomicInput" };
+            } else if (field.startsWith("files_vcf_")) {
+                // files_vcf_* (any level) -> fileUpload
+                uiSchema[field] = { "ui:field": "fileUpload" };
+            } else {
+                uiSchema[field] = uiSchemaFromJsonSchemaRecursive(
+                    baseSchema,
+                    propertySchema,
+                    level + 1
+                );
+            }
+        }
+    }
+
     return uiSchema;
 };
 
-export const oligoseqUiSchema: UiSchema = {
-    "ui:ObjectFieldTemplate": TabsLayout,
-    "ui:hiddenTabs": ["schema_version", "general"],
-    target_probe: {
-        "ui:ObjectFieldTemplate": TabLayout,
-        oligo_generation: {
-            "ui:ObjectFieldTemplate": SectionLayout,
-            file_region_ids: {
-                "ui:field": "txtUploadInput",
-                "ui:fieldReplacesAnyOrOneOf": true,
-            },
-            files_fasta_probe_database: {
-                "ui:field": "genomicInput",
-            },
-        },
-        property_filters: {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        },
-        specificity_filters: {
-            "ui:ObjectFieldTemplate": SectionLayout,
-            specificity_blastn_filter: {
-                files_fasta_reference_database: {
-                    "ui:field": "genomicInput",
-                },
-            },
-            variant_filter: {
-                files_vcf_reference_database: {
-                    "ui:field": "fileUpload",
-                },
-            },
-        },
-        probe_set_selection: {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        },
-        global_parameters: {
-            "ui:ObjectFieldTemplate": SectionLayout,
-        },
-    },
+const deepMergeObjects = (
+    obj1: GenericObjectType,
+    obj2: GenericObjectType
+): GenericObjectType => {
+    const merged = { ...obj1 };
+
+    for (const key in obj2) {
+        if (key in merged) {
+            if (
+                typeof merged[key] === "object" &&
+                typeof obj2[key] === "object"
+            ) {
+                merged[key] = deepMergeObjects(merged[key], obj2[key]);
+            } else {
+                merged[key] = obj2[key];
+            }
+        } else {
+            merged[key] = obj2[key];
+        }
+    }
+
+    return merged;
 };
 
 export const scrinshotUiSchema: UiSchema = {
