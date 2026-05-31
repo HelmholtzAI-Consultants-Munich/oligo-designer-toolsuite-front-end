@@ -719,7 +719,6 @@
         "files_fasta_reference_database": {
           "items": {
             "anyOf": [
-              { "type": "string" },
               { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
               { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
             ]
@@ -1016,7 +1015,6 @@
         "files_fasta_probe_database": {
           "items": {
             "anyOf": [
-              { "type": "string" },
               { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
               { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
             ]
@@ -1047,7 +1045,7 @@
           "type": "integer"
         }
       },
-      "required": ["file_region_ids", "files_fasta_probe_database"],
+      "required": ["files_fasta_probe_database"],
       "title": "TargetProbeOligoGenerationWrapper",
       "type": "object"
     },
