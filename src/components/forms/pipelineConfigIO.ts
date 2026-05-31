@@ -171,25 +171,8 @@ export function importAndValidate(
         }
     }
 
-    // 6. AJV validation against a partial schema built from only the present fields.
-    //    No $id to avoid collision with the form's already-registered schema.
-    // TODO: check how to make this validation save, fails to validate fasta
-    const schemaProps = schema.properties as Record<
-        string,
-        JSONSchema7Definition
-    >;
-    const partialSchema: RJSFSchema = {
-        $schema: schema.$schema,
-        type: "object",
-        properties: Object.fromEntries(
-            Object.keys(incoming).map((k) => [k, schemaProps[k]])
-        ),
-        additionalProperties: false,
-    };
-
-    const { errors } = validator.rawValidation(partialSchema, incoming);
-    const configError = validationFailure(errors, "Config values are invalid:");
-    if (configError) return configError;
+    // 6. AJV validation
+    // disabled for now as this might be more of a hindrance than a help for users (e.g. when importing incomplete configs)
 
     return {
         ok: true,

@@ -1,17 +1,10 @@
-import { useEffect, type ChangeEvent } from "react";
+import { type ChangeEvent } from "react";
 import type { FieldProps } from "@rjsf/utils";
 import { Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
 
 const TxtUploadInput = (props: FieldProps) => {
     const { onChange, fieldPathId, formData, onBlur } = props;
-
-    // TODO: figure out why this is field is not set initially
-    useEffect(() => {
-        if (formData === undefined) {
-            onChange(null, fieldPathId.path);
-        }
-    }, [fieldPathId.path, formData, onChange]);
 
     const handleTxtUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -32,6 +25,8 @@ const TxtUploadInput = (props: FieldProps) => {
         onBlur(fieldPathId.$id, formData);
     };
 
+    const emptyStringToNull = (value: string) => (value === "" ? null : value);
+
     return (
         <>
             <Form.Label htmlFor={fieldPathId.$id} className="super-label mb-1">
@@ -42,11 +37,17 @@ const TxtUploadInput = (props: FieldProps) => {
                     id={fieldPathId.$id}
                     onBlur={() => onBlur(fieldPathId.$id, formData)}
                     type="input"
-                    onChange={(e) => onChange(e.target.value, fieldPathId.path)}
+                    onChange={(e) =>
+                        onChange(
+                            emptyStringToNull(e.target.value),
+                            fieldPathId.path
+                        )
+                    }
                     value={formData || ""}
                 />
                 <Form.Control
                     type="file"
+                    accept=".txt"
                     className="visually-hidden"
                     id="txt-upload"
                     name="txt-upload"
@@ -56,7 +57,8 @@ const TxtUploadInput = (props: FieldProps) => {
                     htmlFor="txt-upload"
                     className="btn btn-outline-border filled mb-0"
                 >
-                    File Upload <FiletypeTxt size={20} className="ms-2" />
+                    File Upload
+                    <FiletypeTxt size={20} className="ms-2" />
                 </Form.Label>
             </InputGroup>
         </>

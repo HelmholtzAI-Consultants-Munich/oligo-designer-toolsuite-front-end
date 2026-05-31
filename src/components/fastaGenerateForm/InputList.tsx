@@ -25,7 +25,7 @@ export const InputList = ({ id, inputs }: InputListProps) => {
     return inputs.map((input, idx) => (
         <InputGroup key={`${id} ${idx}`} className="flex-nowrap">
             <Button
-                variant="outline-border filled"
+                variant="outline-border filled text-black"
                 className="flex-grow-1"
                 onClick={input.type === "form" ? input.editHandler : undefined}
             >

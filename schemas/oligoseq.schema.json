@@ -752,6 +752,7 @@
               { "type": "string" }
             ]
           },
+          "minItems": 1,
           "title": "Files Vcf Reference Database",
           "type": "array"
         },
@@ -1008,6 +1009,7 @@
       "properties": {
         "file_region_ids": {
           "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
           "description": "File with a list the genes used to generate the probe sequences, leave empty if all the genes are used. For examples, see 'data/genes'.",
           "title": "File Region Ids"
         },

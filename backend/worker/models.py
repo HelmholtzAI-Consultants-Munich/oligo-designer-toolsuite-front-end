@@ -9,6 +9,7 @@ from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_override
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     OligoSeqProbeDesignerConfig,
+    RegionListT,
     TargetProbe,
     TargetProbeOligoGeneration,
     TargetProbeSpecificityFilter,
@@ -76,10 +77,11 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 
 
 # TODO: remove override when Model exists from ODT side
-GenomicInput = list[str | GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
+GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
 class TargetProbeOligoGenerationWrapper(TargetProbeOligoGeneration):
+    file_region_ids: RegionListT = None
     files_fasta_probe_database: GenomicInput = Field(min_length=1)
 
 
@@ -96,7 +98,7 @@ OligoSpecificityBlastnFilterConfigWrapper = Annotated[
 class OligoSeqVariantFilterEnabledWrapper(OligoSeqVariantFilterEnabled):
     # NOTE: this is a small trick. A dict gets converted to type
     # `object` when building the JSON Schema from the pydantic model.
-    files_vcf_reference_database: list[dict | str]
+    files_vcf_reference_database: list[dict | str] = Field(min_length=1)
 
 
 OligoSeqVariantFilterConfigWrapper = Annotated[

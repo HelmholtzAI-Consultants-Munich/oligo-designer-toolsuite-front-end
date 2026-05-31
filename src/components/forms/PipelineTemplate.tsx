@@ -95,7 +95,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 });
                 return;
             }
-            setFormData((prev) => ({ ...prev, ...result.config }));
+            setFormData(result.config);
             const exportedAt = (
                 importedConfig as { _meta?: { exportedAt?: string } }
             )._meta?.exportedAt;

@@ -66,16 +66,13 @@ class PipelineRunner:
     def populate_temp_file(self, form_data: dict) -> None:
         oligo_generation_form = retrieve_form_data_value(["target_probe", "oligo_generation"], form_data)
         file_region_ids = oligo_generation_form["file_region_ids"]
-        if file_region_ids != "":
-            if ".txt" not in file_region_ids:
-                with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
-                    file_path = temp_file.name
-                    # Write each gene on a new line
-                    temp_file.writelines(gene.strip() + "\n" for gene in file_region_ids.split(","))
-                # Update the path in form_data to point to the temp file
-                oligo_generation_form["file_region_ids"] = file_path
-        else:
-            oligo_generation_form["file_region_ids"] = None
+        if file_region_ids is not None:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
+                file_path = temp_file.name
+                # Write each gene on a new line
+                temp_file.writelines(gene.strip() + "\n" for gene in file_region_ids.split(","))
+            # Update the path in form_data to point to the temp file
+            oligo_generation_form["file_region_ids"] = file_path
 
     def populate_form_data_path_fields(
         self, config: dict, generated_region_paths: list[tuple[str, list[str]]]

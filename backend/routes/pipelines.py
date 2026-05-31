@@ -150,12 +150,18 @@ def write_run_to_DB(
 
 
 def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
-    genes = retrieve_form_data_value(
+    genes_string = retrieve_form_data_value(
         ["target_probe", "oligo_generation", "file_region_ids"], form_data
-    ).split(",")
+    )
+    if genes_string is None:
+        abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
+    genes = genes_string.split(",")
     if len(genes) > Config.GENE_COUNT_THRESHOLD:
         delete_run(run_id)
-        abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description=f"Please login to analyse more than {Config.GENE_COUNT_THRESHOLD} genes.",
+        )
 
 
 def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
@@ -282,7 +288,7 @@ def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
         pipeline_model.model_validate(form_data)
     except ValidationError as v_err:
         current_app.logger.error(v_err)
-        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: Pipeline configuration is not valid")
+        abort(HTTPStatus.BAD_REQUEST, description=f"Invalid input: {v_err!s}")
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
