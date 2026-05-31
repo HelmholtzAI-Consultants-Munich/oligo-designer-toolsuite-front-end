@@ -128,32 +128,17 @@ function Header({
 
     useEffect(() => {
         if (!hasMeasuredActiveTab && tabs && tabs.length > 0) {
-            let cancelled = false;
-
-            (async () => {
+            const setupAnimation = async () => {
+                // Wait for fonts to be ready to ensure accurate measurements
                 await (document.fonts?.ready ?? Promise.resolve());
-
-                if (cancelled) {
-                    return;
-                }
-
                 requestAnimationFrame(() => {
-                    if (cancelled) {
-                        return;
-                    }
-
                     measureActiveTab();
                     requestAnimationFrame(() => {
-                        if (!cancelled) {
-                            setAnimationReady(1); // Set animation ready flag after initial measurement
-                        }
+                        setAnimationReady(1); // Set animation ready flag after initial measurement
                     });
                 });
-            })();
-
-            return () => {
-                cancelled = true;
             };
+            setupAnimation();
         }
     }, [tabs, hasMeasuredActiveTab, measureActiveTab]);
 
