@@ -18,17 +18,6 @@ from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
 from backend.worker.task_index import Tasks
 
 
-def register_teardown_handler(app):
-    @app.teardown_appcontext
-    def teardown(exception=None):
-
-        # Trigger lazy initialization of flask-limiter storage backend
-        limiter_storage = limiter.limiter.storage.storage
-
-        # Close underlying connection to avoid errors in flask-limiter destructor
-        limiter_storage.close()
-
-
 def ensure_mongo_indexes() -> None:
     """Create MongoDB indexes used by recurring cleanup and consent lookups."""
     mongo.db.runs.create_index(
@@ -153,9 +142,6 @@ def create_app():
 
     # Register CLI commands
     register_cli_commands(app)
-
-    # Register Teardown Handler
-    register_teardown_handler(app)
 
     return app
 
