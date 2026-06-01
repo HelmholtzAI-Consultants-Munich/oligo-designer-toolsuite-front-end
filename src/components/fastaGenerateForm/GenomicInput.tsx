@@ -136,7 +136,8 @@ const ConfigurableGenomicInput = ({
                         name={name}
                         onClick={handleGenomicFormNew}
                     >
-                        <FileEarmarkPlus size="18" /> Genomic Regions
+                        <FileEarmarkPlus size="18" className="me-2" />
+                        Genomic Regions
                     </Button>
                 )}
                 {filesAllowed && (
@@ -170,8 +171,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     };
 
     return (
-        <Form.Label className="btn btn-outline-border filled mb-0">
-            <FileEarmarkPlus size="18" />
+        <Form.Label className="btn btn-outline-border filled text-black mb-0">
+            <FileEarmarkPlus size="18" className="me-2" />
             Upload File(s)
             <Form.Control
                 type="file"
