@@ -18,7 +18,7 @@ import pytest
 
 from backend.app import create_app
 from backend.constants import PIPELINE_GENOMIC_INPUT
-from backend.extensions import mongo
+from backend.extensions import dp 
 from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
 
@@ -109,7 +109,7 @@ def mock_user_dir_exists(monkeypatch):
 def run_id(app):
     # Insert dummy run - needs app context for mongo to be initialized
     with app.app_context():
-        return mongo.db.runs.insert_one({"status": "created"}).inserted_id
+        return db.runs.insert_one({"status": "created"}).inserted_id
 
 
 @pytest.fixture
@@ -171,7 +171,7 @@ class TestAuthenticatedUser:
 
 
 def _insert_terms_acceptance(**query):
-    mongo.db.legal_acceptances.insert_one(
+    db.legal_acceptances.insert_one(
         {
             **query,
             "document": "terms",
@@ -182,7 +182,7 @@ def _insert_terms_acceptance(**query):
 
 
 def _delete_terms_acceptance(**query):
-    mongo.db.legal_acceptances.delete_many(query)
+    db.legal_acceptances.delete_many(query)
 
 
 @pytest.fixture
@@ -316,7 +316,7 @@ def create_test_run(run_id, user_id="dummy_user", **kwargs):
         run_doc["user_id"] = user_id
 
     # Use replace_one to handle existing runs (from run_id fixture)
-    return mongo.db.runs.replace_one({"_id": run_id}, run_doc, upsert=True)
+    return db.runs.replace_one({"_id": run_id}, run_doc, upsert=True)
 
 
 @pytest.fixture

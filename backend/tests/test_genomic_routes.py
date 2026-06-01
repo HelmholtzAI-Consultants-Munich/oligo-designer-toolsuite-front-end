@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.tests.conftest import assert_error_sanitized, post
 
@@ -32,7 +32,7 @@ def verify_file_mock(monkeypatch):
 
 @pytest.fixture
 def dropdown_mock(monkeypatch):
-    mongo.db.cache.update_one(
+    db.cache.update_one(
         {"_id": 1},
         {
             "$set": {
@@ -45,7 +45,7 @@ def dropdown_mock(monkeypatch):
         upsert=True,
     )
     yield
-    mongo.db.cache.delete_one({"_id": 1})
+    db.cache.delete_one({"_id": 1})
 
 
 @pytest.fixture

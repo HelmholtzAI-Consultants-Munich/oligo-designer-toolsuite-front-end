@@ -20,7 +20,7 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
-from backend.extensions import celery_app, mongo
+from backend.extensions import celery_app, db
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
 from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.formatting import (
@@ -102,7 +102,7 @@ def get_users():
     :returns: JSON list of users
     :rtype: flask.Response
     """
-    users = list(mongo.db.users.find({}, {"password": 0}))  # Exclude password
+    users = list(db.users.find({}, {"password": 0}))  # Exclude password
 
     # Format for Refine: convert _id to id, format dates
     formatted_users = [format_user(user) for user in users]
@@ -169,7 +169,7 @@ def update_user(user_id: ObjectId):
     get_user_by_id_or_404(user_id, exclude_password=True)
 
     # Update user
-    mongo.db.users.update_one({"_id": user_id}, {"$set": update_doc})
+    db.users.update_one({"_id": user_id}, {"$set": update_doc})
 
     # Fetch updated user
     user = get_user_by_id_or_404(user_id, exclude_password=True)
@@ -251,7 +251,7 @@ def get_pipeline_runs():
     :rtype: flask.Response
     """
     # Get all runs, sorted by created_at descending (newest first)
-    runs = list(mongo.db.runs.find({}).sort("created_at", -1))
+    runs = list(db.runs.find({}).sort("created_at", -1))
 
     # Format for Refine: convert _id to id, format dates
     formatted_runs = [format_pipeline_run(run) for run in runs]
@@ -292,7 +292,7 @@ def update_pipeline_status(run_id: ObjectId):
     get_run_or_404(run_id, require_ownership=False)
 
     # Update pipeline run
-    result = mongo.db.runs.update_one({"_id": run_id}, {"$set": {"status": status}})
+    result = db.runs.update_one({"_id": run_id}, {"$set": {"status": status}})
 
     if result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Pipeline run not found")
@@ -319,7 +319,7 @@ def delete_pipeline_run(run_id: ObjectId):
     :rtype: flask.Response
     """
     # Admin can delete any run - use shared deletion helper
-    delete_pipeline_run_files_and_db(mongo, run_id)
+    delete_pipeline_run_files_and_db(db, run_id)
 
     return jsonify({"message": "Pipeline run deleted successfully"}), HTTPStatus.OK
 
@@ -340,8 +340,8 @@ def get_dashboard_stats():
     :rtype: flask.Response
     """
     # User statistics
-    total_users = mongo.db.users.count_documents({})
-    admin_users = mongo.db.users.count_documents({"role": "admin"})
+    total_users = db.users.count_documents({})
+    admin_users = db.users.count_documents({"role": "admin"})
     regular_users = total_users - admin_users
 
     # Pipeline run statistics by status
@@ -349,11 +349,11 @@ def get_dashboard_stats():
     valid_statuses = get_valid_pipeline_statuses()
 
     for status in valid_statuses:
-        count = mongo.db.runs.count_documents({"status": status})
+        count = db.runs.count_documents({"status": status})
         pipeline_stats[status] = count
 
     # Total pipeline runs
-    total_runs = mongo.db.runs.count_documents({})
+    total_runs = db.runs.count_documents({})
 
     return jsonify(
         {
@@ -382,7 +382,7 @@ def get_feedback():
     :returns: JSON list of feedback entries
     :rtype: flask.Response
     """
-    feedback_cursor = mongo.db.feedback.find({}).sort("created_at", -1)
+    feedback_cursor = db.feedback.find({}).sort("created_at", -1)
     feedback_entries = list(feedback_cursor)
 
     formatted_feedback = [format_feedback(doc) for doc in feedback_entries]
@@ -422,7 +422,7 @@ def bulk_delete_users():
     if not object_ids:
         abort(HTTPStatus.BAD_REQUEST, description="No valid user IDs provided")
 
-    existing_users = list(mongo.db.users.find({"_id": {"$in": object_ids}}, {"_id": 1}))
+    existing_users = list(db.users.find({"_id": {"$in": object_ids}}, {"_id": 1}))
     deleted_count = 0
 
     for user in existing_users:
@@ -494,7 +494,7 @@ def bulk_update_user_role():
         abort(HTTPStatus.BAD_REQUEST, description="No valid user IDs provided")
 
     # Update users in batch
-    result = mongo.db.users.update_many({"_id": {"$in": object_ids}}, {"$set": {"role": role}})
+    result = db.users.update_many({"_id": {"$in": object_ids}}, {"$set": {"role": role}})
 
     response = {
         "updated_count": result.modified_count,
@@ -535,7 +535,7 @@ def bulk_delete_pipeline_runs():
         abort(HTTPStatus.BAD_REQUEST, description="No valid run IDs provided")
 
     # Delete runs using the shared helper function
-    result = execute_bulk_pipeline_run_deletion(mongo, object_ids)
+    result = execute_bulk_pipeline_run_deletion(db, object_ids)
 
     response = {
         "deleted_count": result["deleted_count"],
@@ -593,7 +593,7 @@ def bulk_update_pipeline_status():
         abort(HTTPStatus.BAD_REQUEST, description="No valid run IDs provided")
 
     # Update runs in batch
-    result = mongo.db.runs.update_many({"_id": {"$in": object_ids}}, {"$set": {"status": status}})
+    result = db.runs.update_many({"_id": {"$in": object_ids}}, {"$set": {"status": status}})
 
     response = {
         "updated_count": result.modified_count,
@@ -615,12 +615,12 @@ def get_monthly_reports():
 
     if year and month:
         report_id = f"{year}-{month:02d}"
-        doc = mongo.db.monthly_reports.find_one({"_id": report_id})
+        doc = db.monthly_reports.find_one({"_id": report_id})
         if not doc:
             abort(HTTPStatus.NOT_FOUND, description=f"No report found for {report_id}")
         return jsonify(format_monthly_report(doc)), HTTPStatus.OK
 
-    reports = list(mongo.db.monthly_reports.find({}).sort([("year", -1), ("month", -1)]))
+    reports = list(db.monthly_reports.find({}).sort([("year", -1), ("month", -1)]))
     return jsonify([format_monthly_report(r) for r in reports]), HTTPStatus.OK
 
 
@@ -628,7 +628,7 @@ def get_monthly_reports():
 @login_required
 @require_admin
 def delete_monthly_report(report_id):
-    result = mongo.db.monthly_reports.delete_one({"_id": report_id})
+    result = db.monthly_reports.delete_one({"_id": report_id})
     if result.deleted_count == 0:
         abort(HTTPStatus.NOT_FOUND, description=f"No report found for {report_id}")
     return jsonify({"message": f"Report {report_id} deleted"}), HTTPStatus.OK

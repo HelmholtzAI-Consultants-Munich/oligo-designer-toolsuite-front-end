@@ -9,7 +9,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 from backend.cli import register_cli_commands
 from backend.config import CeleryConfig, Config
-from backend.extensions import celery_app, limiter, mongo, oauth
+from backend.extensions import celery_app, limiter, db, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
@@ -22,33 +22,29 @@ def register_teardown_handler(app):
     @app.teardown_appcontext
     def teardown(exception=None):
 
-        # Trigger lazy initialization of flask-limiter storage backend
-        limiter_storage = limiter.limiter.storage.storage
-
-        # Close underlying connection to avoid errors in flask-limiter destructor
-        limiter_storage.close()
+        db.client.close()
 
 
 def ensure_mongo_indexes() -> None:
     """Create MongoDB indexes used by recurring cleanup and consent lookups."""
-    mongo.db.runs.create_index(
+    db.runs.create_index(
         [("session_id", 1)],
         name="runs_session_id_idx",
     )
-    mongo.db.uploads.create_index(
+    db.uploads.create_index(
         [("session_id", 1)],
         name="uploads_session_id_idx",
     )
-    mongo.db.legal_acceptances.create_index(
+    db.legal_acceptances.create_index(
         [("session_id", 1), ("timestamp", 1)],
         name="legal_acceptances_session_timestamp_idx",
     )
-    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
+    db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
         [("session_id", 1)],
         name="anonymous_sessions_session_id_idx",
         unique=True,
     )
-    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
+    db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
         [("last_activity_at", 1)],
         name="anonymous_sessions_last_activity_at_idx",
     )
@@ -121,7 +117,7 @@ def create_app():
     prepare_paths(app)
 
     # Initialize Flask extensions
-    mongo.init_app(app)
+    #mongo.init_app(app)
     with app.app_context():
         ensure_mongo_indexes()
     limiter.init_app(app)
@@ -153,9 +149,6 @@ def create_app():
 
     # Register CLI commands
     register_cli_commands(app)
-
-    # Register Teardown Handler
-    register_teardown_handler(app)
 
     return app
 

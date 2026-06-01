@@ -12,7 +12,7 @@ import bleach
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
-from backend.extensions import limiter, mongo
+from backend.extensions import limiter, db
 from backend.utilities.formatting import format_feedback
 
 feedback_bp = Blueprint("feedback", __name__)
@@ -75,7 +75,7 @@ def create_feedback():
         "user_id": user_id,
     }
 
-    result = mongo.db.feedback.insert_one(doc)
-    saved = mongo.db.feedback.find_one({"_id": result.inserted_id})
+    result = db.feedback.insert_one(doc)
+    saved = db.feedback.find_one({"_id": result.inserted_id})
 
     return jsonify(format_feedback(saved)), HTTPStatus.CREATED

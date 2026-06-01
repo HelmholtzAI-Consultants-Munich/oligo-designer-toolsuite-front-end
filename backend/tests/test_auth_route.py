@@ -4,7 +4,7 @@ import pytest
 from bson import ObjectId
 from werkzeug.security import generate_password_hash
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 
 
@@ -37,7 +37,7 @@ def dummy_user():
 
 
 def test_login_success(client, monkeypatch, dummy_user):
-    mongo.db.users.insert_one(dummy_user)
+    db.users.insert_one(dummy_user)
 
     def mock_find_one(query):
         if query.get("username") == dummy_user["username"]:
@@ -46,11 +46,11 @@ def test_login_success(client, monkeypatch, dummy_user):
             return dummy_user
         return None
 
-    monkeypatch.setattr("backend.extensions.mongo.db.users.find_one", mock_find_one)
+    monkeypatch.setattr("backend.extensions.db.users.find_one", mock_find_one)
     monkeypatch.setattr("werkzeug.security.check_password_hash", lambda hashed, plain: True)
     monkeypatch.setattr("flask_login.login_user", lambda user, remember=True: None)
 
-    with patch("os.makedirs"), patch("backend.extensions.mongo.db.runs.update_many"):
+    with patch("os.makedirs"), patch("backend.extensions.db.runs.update_many"):
         response = client.post(
             "/login",
             json={"username": dummy_user["username"], "password": "mypassword"},
@@ -60,7 +60,7 @@ def test_login_success(client, monkeypatch, dummy_user):
 
 
 def test_login_invalid_credentials(client, monkeypatch):
-    monkeypatch.setattr("backend.extensions.mongo.db.users.find_one", lambda q: None)
+    monkeypatch.setattr("backend.extensions.db.users.find_one", lambda q: None)
     response = client.post(
         "/login",
         json={"username": "nonexistent", "password": "wrongpass"},
@@ -84,7 +84,7 @@ def test_check_auth_logged_out(client):
 
 
 def test_check_auth_logged_in(client, authenticate_as_user, dummy_user):
-    mongo.db.users.insert_one(dummy_user)
+    db.users.insert_one(dummy_user)
     authenticate_as_user(str(dummy_user["_id"]))
 
     with client.session_transaction() as sess:

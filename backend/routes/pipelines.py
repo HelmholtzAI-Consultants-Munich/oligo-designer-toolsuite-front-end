@@ -19,7 +19,7 @@ from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_GENOMIC_INPUT
-from backend.extensions import celery_app, mongo
+from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
@@ -119,7 +119,7 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
+    return db.runs.update_one({"_id": run_id}, {"$set": data})
 
 
 def write_run_to_DB(
@@ -208,7 +208,7 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     if priority == CeleryConfig.task_high_priority:
         default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
-        mongo.db.runs.update_many(
+        db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
