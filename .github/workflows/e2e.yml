@@ -15,7 +15,8 @@ on:
         options:
           - smoke
           - full
-
+env:
+  TESTING: true # used to disable turnstile verification
 jobs:
   e2e:
     name: Playwright E2E
