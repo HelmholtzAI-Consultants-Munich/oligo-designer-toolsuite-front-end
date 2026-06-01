@@ -246,10 +246,8 @@ const PipelineTemplate: React.FC<Props> = ({
             >
                 <Turnstile
                     siteKey={sitekey}
-                    className="mt-5 rounded"
                     options={{
                         theme: "light",
-                        size: "flexible",
                         language: "en",
                     }}
                     onSuccess={setToken}
