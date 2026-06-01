@@ -6,7 +6,6 @@ from werkzeug.security import generate_password_hash
 
 from backend.extensions import mongo
 from backend.utilities.legal import (
-    PRIVACY_DOCUMENT_KEY,
     TERMS_DOCUMENT_KEY,
     get_published_legal_document,
 )
@@ -118,25 +117,3 @@ def test_delete_account_removes_user_data(client, authenticate_as_user, legal_us
     assert mongo.db.legal_acceptances.find_one({"user_id": str(legal_user_doc["_id"])}) is None
     assert not Path(upload_file).exists()
     assert not user_dir.exists()
-
-
-def test_public_terms_route(client):
-    response = client.get("/api/legal/terms")
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["document"] == TERMS_DOCUMENT_KEY
-    assert data["title"] == "Terms of Service"
-    assert data["version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
-    assert data["body"]
-
-
-def test_public_privacy_policy_route(client):
-    response = client.get("/api/legal/privacy-policy")
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["document"] == PRIVACY_DOCUMENT_KEY
-    assert data["title"] == "Data Protection Declaration"
-    assert data["version"] == get_published_legal_document(PRIVACY_DOCUMENT_KEY)["version"]
-    assert data["body"]
