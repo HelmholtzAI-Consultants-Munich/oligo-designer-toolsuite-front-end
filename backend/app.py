@@ -5,7 +5,6 @@ import time
 import celery
 from flask import Flask
 from flask_cors import CORS
-from flask_pymongo import BSONObjectIdConverter
 from prometheus_flask_exporter import PrometheusMetrics
 
 from backend.cli import register_cli_commands
@@ -16,6 +15,7 @@ from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
 from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
 from backend.worker.task_index import Tasks
+from backend.utilities.objectid_converter import ObjectIdConverter
 
 
 def register_teardown_handler(app):
@@ -100,7 +100,7 @@ def create_app():
     PrometheusMetrics(app)
 
     # Register custom URL converter for MongoDB ObjectId
-    app.url_map.converters["ObjectId"] = BSONObjectIdConverter
+    app.url_map.converters["ObjectId"] = ObjectIdConverter
 
     # Load default configuration, then override with FLASK_-prefixed environment variables
     app.config.from_object(Config)

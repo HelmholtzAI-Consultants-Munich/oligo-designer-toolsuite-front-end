@@ -20,7 +20,7 @@ server = [
     "flask-cors >=6, <7",
     "Flask-Login >=0.6, <0.7",
     "Flask-Limiter >=3.8, <4",
-    "Flask-PyMongo >=3, <4",
+    "PyMongo >=4, <5",
     "prometheus-flask-exporter >=0.23, <0.24",
 ]
 worker = [{ include-group = "shared" }, "biopython >=1.86, <2", "oligo-designer-toolsuite >=2.0, <2.1"]
