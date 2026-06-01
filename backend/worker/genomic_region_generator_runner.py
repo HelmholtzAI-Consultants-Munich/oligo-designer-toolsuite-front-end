@@ -113,7 +113,7 @@ class GenomicRegionGeneratorRunner:
         with annotation_file_lock, sequence_file_lock:
             # start Genomic Region Generator
             try:
-                pipeline = GenomicRegionGenerator(config_path=config_path)
+                pipeline = GenomicRegionGenerator(config_genomic["dir_output"])
 
                 # Load annotations
                 region_generator = pipeline.load_annotations(
@@ -122,7 +122,7 @@ class GenomicRegionGeneratorRunner:
                 )
 
                 # Generate regions
-                pipeline.generate_regions(
+                pipeline.generate_genomic_regions(
                     region_generator=region_generator,
                     genomic_regions=config_genomic["genomic_regions"],
                     block_size=config_genomic["exon_exon_junction_block_size"],
@@ -135,7 +135,9 @@ class GenomicRegionGeneratorRunner:
             except ValueError as e:
                 raise ODTPipelineError(f"The genomic region generator failed to execute: {e!s}")
             except Exception as error:
-                self.logger.error(f"The genomic region generator failed: {error.stderr}")
+                if hasattr(error, "stderr"):
+                    self.logger.error(f"The genomic region generator failed STDERR: {error.stderr}")
+                self.logger.error(f"The genomic region generator failed PLAIN: {error}")
                 self.cleanup_temp_files(config_path)
                 other_files_source = "Ensembl" if files_source == "NCBI" else "NCBI"
                 raise ODTPipelineError(

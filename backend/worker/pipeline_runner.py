@@ -158,9 +158,11 @@ class PipelineRunner:
             else:
                 raise ODTPipelineError(fallback_error_message)
         except Exception as error:
-            if error.stderr:
+            if hasattr(error, "stderr"):
                 self.logger.error(f"STDERR: {error.stderr}")
-            self.logger.debug(f"STDOUT: {error.stdout}")
+            if hasattr(error, "stdout"):
+                self.logger.debug(f"STDOUT: {error.stdout}")
+            self.logger.error(f"PLAIN: {error}")
             raise ODTPipelineError(fallback_error_message)
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
@@ -205,7 +207,7 @@ class PipelineRunner:
         regions_file = GenomicRegionsFile(
             regions_file, fasta_paths, probes_path, self.pipeline_name, logger=self.logger
         )
-        regions_file_path = os.path.join(output_path, "genomic_regions.yaml")
+        regions_file_path: str = os.path.join(output_path, "genomic_regions.yaml")
         regions_file.yaml_dump(regions_file_path)
 
     def cleanup_temp_files(self, form_data: dict, config_path: str) -> None:
