@@ -1,6 +1,11 @@
 import json
 from typing import Annotated, Literal
 
+from oligo_designer_toolsuite.config._general_models import BlastnHitParameters, BlastnSearchParameters
+from oligo_designer_toolsuite.config._specificity_filters import (
+    CrossHybridizationBlastnFilterDisabled,
+    CrossHybridizationBlastnFilterEnabled,
+)
 from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
     OligoSeqSpecificityBlastnFilterDisabled,
     OligoSeqSpecificityBlastnFilterEnabled,
@@ -14,7 +19,7 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeOligoGeneration,
     TargetProbeSpecificityFilter,
 )
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 ### Genomic Region Generator Models ###
 
@@ -85,16 +90,6 @@ class TargetProbeOligoGenerationWrapper(TargetProbeOligoGeneration):
     files_fasta_probe_database: GenomicInput = Field(min_length=1)
 
 
-class OligoSeqSpecificityBlastnFilterEnabledWrapper(OligoSeqSpecificityBlastnFilterEnabled):
-    files_fasta_reference_database: GenomicInput = Field(min_length=1)
-
-
-OligoSpecificityBlastnFilterConfigWrapper = Annotated[
-    OligoSeqSpecificityBlastnFilterEnabledWrapper | OligoSeqSpecificityBlastnFilterDisabled,
-    Field(discriminator="enabled"),
-]
-
-
 class OligoSeqVariantFilterEnabledWrapper(OligoSeqVariantFilterEnabled):
     # NOTE: this is a small trick. A dict gets converted to type
     # `object` when building the JSON Schema from the pydantic model.
@@ -106,7 +101,67 @@ OligoSeqVariantFilterConfigWrapper = Annotated[
 ]
 
 
+class BlastnSearchParametersOverride(BlastnSearchParameters):
+    lcase_masking: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("-lcase_masking", "lcase_masking"),
+        serialization_alias="-lcase_masking",
+        description="Use lower case filtering in query and subject sequence(s).",
+    )
+    no_greedy: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("-no_greedy", "no_greedy"),
+        serialization_alias="-no_greedy",
+        description="Use non-greedy dynamic programming extension.",
+    )
+    subject_besthit: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("-subject_besthit", "subject_besthit"),
+        serialization_alias="-subject_besthit",
+        description="Turn on best hit per subject sequence.",
+    )
+    ungapped: bool | None = Field(
+        default=None,
+        validation_alias=AliasChoices("-ungapped", "ungapped"),
+        serialization_alias="-ungapped",
+        description="Perform ungapped alignment only?",
+    )
+
+
+class CrossHybridizationBlastnFilterEnabledOverride(CrossHybridizationBlastnFilterEnabled):
+    search_parameters: Annotated[
+        BlastnSearchParametersOverride,
+        Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
+    ]
+
+
+CrossHybridizationBlastnFilterConfigOverride = Annotated[
+    CrossHybridizationBlastnFilterEnabledOverride | CrossHybridizationBlastnFilterDisabled,
+    Field(discriminator="enabled"),
+]
+
+
+class OligoSeqSpecificityBlastnFilterEnabledWrapper(OligoSeqSpecificityBlastnFilterEnabled):
+    search_parameters: BlastnSearchParametersOverride = BlastnSearchParametersOverride(
+        perc_identity=80, strand="minus", word_size=10
+    )
+    files_fasta_reference_database: GenomicInput = Field(min_length=1)
+
+
+OligoSpecificityBlastnFilterConfigWrapper = Annotated[
+    OligoSeqSpecificityBlastnFilterEnabledWrapper | OligoSeqSpecificityBlastnFilterDisabled,
+    Field(discriminator="enabled"),
+]
+
+
 class TargetProbeSpecificityFilterWrapper(TargetProbeSpecificityFilter):
+    cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfigOverride = (
+        CrossHybridizationBlastnFilterEnabledOverride(
+            enabled=True,
+            search_parameters=BlastnSearchParametersOverride(perc_identity=80, strand="minus", word_size=10),
+            hit_parameters=BlastnHitParameters(coverage=50),
+        )
+    )
     specificity_blastn_filter: OligoSpecificityBlastnFilterConfigWrapper
     variant_filter: OligoSeqVariantFilterConfigWrapper
 

@@ -22,7 +22,7 @@
       "title": "BlastnHitParameters",
       "type": "object"
     },
-    "BlastnSearchParameters": {
+    "BlastnSearchParametersOverride": {
       "additionalProperties": false,
       "properties": {
         "-query_loc": {
@@ -137,7 +137,7 @@
           "title": "-Soft Masking"
         },
         "-lcase_masking": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Use lower case filtering in query and subject sequence(s).",
           "title": "-Lcase Masking"
@@ -214,7 +214,7 @@
           "title": "-Best Hit Score Edge"
         },
         "-subject_besthit": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Turn on best hit per subject sequence.",
           "title": "-Subject Besthit"
@@ -280,7 +280,7 @@
           "title": "-Xdrop Gap Final"
         },
         "-no_greedy": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Use non-greedy dynamic programming extension.",
           "title": "-No Greedy"
@@ -292,7 +292,7 @@
           "title": "-Min Raw Gapped Score"
         },
         "-ungapped": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Perform ungapped alignment only?",
           "title": "-Ungapped"
@@ -310,7 +310,7 @@
           "title": "-Off Diagonal Range"
         }
       },
-      "title": "BlastnSearchParameters",
+      "title": "BlastnSearchParametersOverride",
       "type": "object"
     },
     "CrossHybridizationBlastnFilterDisabled": {
@@ -321,12 +321,12 @@
       "title": "CrossHybridizationBlastnFilterDisabled",
       "type": "object"
     },
-    "CrossHybridizationBlastnFilterEnabled": {
+    "CrossHybridizationBlastnFilterEnabledOverride": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
-          "$ref": "#/$defs/BlastnSearchParameters",
+          "$ref": "#/$defs/BlastnSearchParametersOverride",
           "description": "Parameters for BLASTN searches used in cross-hybridization filtering."
         },
         "hit_parameters": {
@@ -335,7 +335,7 @@
         }
       },
       "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "CrossHybridizationBlastnFilterEnabled",
+      "title": "CrossHybridizationBlastnFilterEnabledOverride",
       "type": "object"
     },
     "GCContentFilterDisabled": {
@@ -681,7 +681,7 @@
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
-          "$ref": "#/$defs/BlastnSearchParameters",
+          "$ref": "#/$defs/BlastnSearchParametersOverride",
           "default": {
             "-strand": "minus",
             "-word_size": 10,
@@ -1258,12 +1258,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+              "True": "#/$defs/CrossHybridizationBlastnFilterEnabledOverride"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabledOverride" },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"
@@ -1752,9 +1752,9 @@
       "type": "object"
     }
   },
-  "description": "This Model overrides the default ODT Model of the Oligo-Seq pipeline, so\nwe can inject our custom genomic region generator models",
+  "description": "This Model overrides the default ODT Model of the Oligo-Seq pipeline, so\nwe can inject our custom genomic region generator models. Adding to that it removes attributes like\nthe general section of the OligoDesignerConfig, so these option do not get exposed to the user.",
   "properties": { "target_probe": { "$ref": "#/$defs/TargetProbeWrapper" } },
   "required": ["target_probe"],
-  "title": "OligoSeqDesignerConfigFrontEnd",
+  "title": "OligoSeqProbeDesignerConfigFrontEnd",
   "type": "object"
 }
