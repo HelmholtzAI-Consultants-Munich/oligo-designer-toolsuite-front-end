@@ -38,3 +38,14 @@ PIPELINE_GENOMIC_INPUT: Mapping[str, list[list[str]]] = dict(
 PIPELINE_FILE_INPUT: Mapping[str, list[list[str]]] = {
     "oligoseq": [["target_probe", "specificity_filters", "variant_filter", "files_vcf_reference_database"]]
 }
+
+PIPELINE_NON_EXPOSED_FIELDS = {
+    "oligoseq": {
+        "schema_version": 2,
+        "general": {
+            "n_jobs": 1,
+            "write_intermediate_steps": True,
+            "dir_output": "output_oligo_seq_probe_designer",
+        },
+    },
+}

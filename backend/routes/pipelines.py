@@ -19,7 +19,7 @@ from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
-from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT
+from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
@@ -33,7 +33,7 @@ from backend.utilities.typed_values import (
 )
 from backend.utilities.validation import parse_run_id, validate_genomic_form_data
 from backend.utils import deserialize_form_data_path, retrieve_form_data_value, serialize_form_data_path
-from backend.worker.models import OligoSeqDesignerConfigWrapper
+from backend.worker.models import OligoSeqProbeDesignerConfigOverride
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
@@ -277,18 +277,32 @@ def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
 
     match pipeline_name:
         case "oligoseq":
-            pipeline_model = OligoSeqDesignerConfigWrapper
+            pipeline_model = OligoSeqProbeDesignerConfigOverride
         case _:
-            pipeline_model = None
-
-    if pipeline_model is None:
-        abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
+            abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
 
     try:
         pipeline_model.model_validate(form_data)
     except ValidationError as v_err:
         current_app.logger.error(v_err)
         abort(HTTPStatus.BAD_REQUEST, description=f"Invalid input: {v_err!s}")
+
+
+def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
+    """
+    Adds fields that are needed by the pipeline schema, but not exposed to users and thus not existing in our
+    front-end schemas.
+
+    Arguments:
+        form_data {dict[str, Any]} -- pipeline config
+        pipline_name {str}
+
+    Returns:
+        None
+    """
+
+    for field, value in PIPELINE_NON_EXPOSED_FIELDS[pipline_name].items():
+        form_data[field] = value
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
@@ -341,6 +355,8 @@ def start_pipeline(pipeline_name: str):
 
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
+
+    add_non_exposed_fields(form_data, pipeline_name)
 
     validate_pipeline_config(form_data, pipeline_name)
 

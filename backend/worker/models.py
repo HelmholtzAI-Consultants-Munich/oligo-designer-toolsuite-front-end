@@ -116,7 +116,7 @@ class TargetProbeWrapper(TargetProbe):
     specificity_filters: TargetProbeSpecificityFilterWrapper
 
 
-class OligoSeqDesignerConfigWrapper(OligoSeqProbeDesignerConfig):
+class OligoSeqProbeDesignerConfigOverride(OligoSeqProbeDesignerConfig):
     """
     This Model overrides the default ODT Model of the Oligo-Seq pipeline, so
     we can inject our custom genomic region generator models
@@ -125,6 +125,16 @@ class OligoSeqDesignerConfigWrapper(OligoSeqProbeDesignerConfig):
     target_probe: TargetProbeWrapper
 
 
+class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
+    """
+    This Model overrides the default ODT Model of the Oligo-Seq pipeline, so
+    we can inject our custom genomic region generator models. Adding to that it removes attributes like
+    the general section of the OligoDesignerConfig, so these option do not get exposed to the user.
+    """
+
+    target_probe: TargetProbeWrapper
+
+
 if __name__ == "__main__":
     with open("oligoseq.schema.json", "w+") as f:
-        json.dump(OligoSeqDesignerConfigWrapper.model_json_schema(), f)
+        json.dump(OligoSeqProbeDesignerConfigFrontEnd.model_json_schema(), f)
