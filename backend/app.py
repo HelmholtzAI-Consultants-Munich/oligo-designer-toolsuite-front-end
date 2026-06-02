@@ -117,7 +117,6 @@ def create_app():
     prepare_paths(app)
 
     # Initialize Flask extensions
-    db.init_app(app)
     with app.app_context():
         ensure_mongo_indexes()
     limiter.init_app(app)
