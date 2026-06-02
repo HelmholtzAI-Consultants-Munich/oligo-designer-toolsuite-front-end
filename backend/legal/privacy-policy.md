@@ -1,3 +1,5 @@
+# Data Protection Declaration
+
 ## **Information pursuant to Art. 13 of the General Data Protection Regulation (GDPR)**
 
 Below you will find information on the processing of your personal data by Helmholtz Zentrum München – German Research Center for Environment and Health (GmbH) (hereinafter "Helmholtz Munich") in connection with the use of the Oligo Designer Toolsuite Cloud, and on your rights under data protection law.
