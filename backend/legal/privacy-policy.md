@@ -54,8 +54,6 @@ You have the following rights in connection with the processing of your personal
 
 - In accordance with Art. 18 GDPR, you can request the **restriction of** the processing of your personal data if you dispute the accuracy of this data or if the processing of this data is unlawful.
 
-1
-
 - In accordance with Art. 20 GDPR, you have the right to receive the personal data concerning you in a structured, commonly used and machine-readable format and to **transmit** those data to another controller without hindrance from us;
 
 - _**In accordance with Art. 21 GDPR, you have the right to object to the processing of your personal data on grounds relating to your particular situation. Your data will then no longer be processed unless Helmholtz Munich can prove compelling reasons for the processing that outweigh the interests, rights and freedoms of the data subject, or the processing serves to assert, exercise or defend legal claims.**_
@@ -71,5 +69,3 @@ Helmholtz Zentrum München Deutsches Forschungszentrum für Gesundheit und Umwel
 If you have any questions regarding data protection, please contact our data protection officer:
 
 Helmholtz Zentrum München Deutsches Forschungszentrum für Gesundheit und Umwelt (GmbH) Data Protection Officer Ingolstädter Landstraße 1 D-85764 Neuherberg E-Mail: datenschutz@helmholtz-muenchen.de
-
-2
