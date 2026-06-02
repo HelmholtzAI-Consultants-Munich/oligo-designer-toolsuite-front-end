@@ -1,4 +1,7 @@
 import { pollUntil } from "./helpers";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const APP_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 const BACKEND_URL =
