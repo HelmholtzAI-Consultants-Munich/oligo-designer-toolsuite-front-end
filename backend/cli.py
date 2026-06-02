@@ -29,9 +29,7 @@ _USER_PROJECTION = {"username": 1, "helmholtz_sub": 1, "role": 1, "_id": 0}
 
 def _find_user(identifier: str) -> dict | None:
     """Find a user by username or helmholtz_sub."""
-    return db.users.find_one({"username": identifier}) or db.users.find_one(
-        {"helmholtz_sub": identifier}
-    )
+    return db.users.find_one({"username": identifier}) or db.users.find_one({"helmholtz_sub": identifier})
 
 
 def _display_id(user: dict, fallback: str = "Unknown") -> str:

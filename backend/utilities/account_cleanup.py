@@ -23,7 +23,7 @@ def _delete_file_if_tracked(path_value: str | None, root_path: str) -> None:
 def delete_user_account_data(user_id: str, upload_root: str, userdata_root: str) -> None:
     runs = list(db.runs.find({"user_id": user_id}, {"_id": 1}))
     for run in runs:
-        delete_pipeline_run_files_and_db(mongo, run["_id"])
+        delete_pipeline_run_files_and_db(db, run["_id"])
 
     uploads = list(db.uploads.find({"user_id": user_id}, {"path": 1}))
     for upload in uploads:

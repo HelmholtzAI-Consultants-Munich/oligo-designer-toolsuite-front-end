@@ -18,7 +18,7 @@ import pytest
 
 from backend.app import create_app
 from backend.constants import PIPELINE_GENOMIC_INPUT
-from backend.extensions import dp 
+from backend.extensions import db
 from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
 

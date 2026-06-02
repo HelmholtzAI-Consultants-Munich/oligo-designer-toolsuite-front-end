@@ -12,7 +12,7 @@ import bleach
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
-from backend.extensions import limiter, db
+from backend.extensions import db, limiter
 from backend.utilities.formatting import format_feedback
 
 feedback_bp = Blueprint("feedback", __name__)

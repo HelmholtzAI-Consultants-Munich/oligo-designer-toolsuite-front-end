@@ -1,6 +1,7 @@
-from werkzeug.routing import BaseConverter
-from werkzeug.exceptions import BadRequest
 import bson
+from werkzeug.exceptions import BadRequest
+from werkzeug.routing import BaseConverter
+
 
 class ObjectIdConverter(BaseConverter):
     def to_python(self, value):
