@@ -85,19 +85,19 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
-class TargetProbeOligoGenerationWrapper(TargetProbeOligoGeneration):
+class TargetProbeOligoGenerationOverride(TargetProbeOligoGeneration):
     file_region_ids: RegionListT = None
     files_fasta_probe_database: GenomicInput = Field(min_length=1)
 
 
-class OligoSeqVariantFilterEnabledWrapper(OligoSeqVariantFilterEnabled):
+class OligoSeqVariantFilterEnabledOverride(OligoSeqVariantFilterEnabled):
     # NOTE: this is a small trick. A dict gets converted to type
     # `object` when building the JSON Schema from the pydantic model.
     files_vcf_reference_database: list[dict | str] = Field(min_length=1)
 
 
-OligoSeqVariantFilterConfigWrapper = Annotated[
-    OligoSeqVariantFilterEnabledWrapper | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
+OligoSeqVariantFilterConfigOverride = Annotated[
+    OligoSeqVariantFilterEnabledOverride | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
 ]
 
 
@@ -141,20 +141,20 @@ CrossHybridizationBlastnFilterConfigOverride = Annotated[
 ]
 
 
-class OligoSeqSpecificityBlastnFilterEnabledWrapper(OligoSeqSpecificityBlastnFilterEnabled):
+class OligoSeqSpecificityBlastnFilterEnabledOverride(OligoSeqSpecificityBlastnFilterEnabled):
     search_parameters: BlastnSearchParametersOverride = BlastnSearchParametersOverride(
         perc_identity=80, strand="minus", word_size=10
     )
     files_fasta_reference_database: GenomicInput = Field(min_length=1)
 
 
-OligoSpecificityBlastnFilterConfigWrapper = Annotated[
-    OligoSeqSpecificityBlastnFilterEnabledWrapper | OligoSeqSpecificityBlastnFilterDisabled,
+OligoSpecificityBlastnFilterConfigOverride = Annotated[
+    OligoSeqSpecificityBlastnFilterEnabledOverride | OligoSeqSpecificityBlastnFilterDisabled,
     Field(discriminator="enabled"),
 ]
 
 
-class TargetProbeSpecificityFilterWrapper(TargetProbeSpecificityFilter):
+class TargetProbeSpecificityFilterOverride(TargetProbeSpecificityFilter):
     cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfigOverride = (
         CrossHybridizationBlastnFilterEnabledOverride(
             enabled=True,
@@ -162,13 +162,13 @@ class TargetProbeSpecificityFilterWrapper(TargetProbeSpecificityFilter):
             hit_parameters=BlastnHitParameters(coverage=50),
         )
     )
-    specificity_blastn_filter: OligoSpecificityBlastnFilterConfigWrapper
-    variant_filter: OligoSeqVariantFilterConfigWrapper
+    specificity_blastn_filter: OligoSpecificityBlastnFilterConfigOverride
+    variant_filter: OligoSeqVariantFilterConfigOverride
 
 
-class TargetProbeWrapper(TargetProbe):
-    oligo_generation: TargetProbeOligoGenerationWrapper
-    specificity_filters: TargetProbeSpecificityFilterWrapper
+class TargetProbeOverride(TargetProbe):
+    oligo_generation: TargetProbeOligoGenerationOverride
+    specificity_filters: TargetProbeSpecificityFilterOverride
 
 
 class OligoSeqProbeDesignerConfigOverride(OligoSeqProbeDesignerConfig):
@@ -177,7 +177,7 @@ class OligoSeqProbeDesignerConfigOverride(OligoSeqProbeDesignerConfig):
     we can inject our custom genomic region generator models
     """
 
-    target_probe: TargetProbeWrapper
+    target_probe: TargetProbeOverride
 
 
 class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
@@ -187,7 +187,7 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
     the general section of the OligoDesignerConfig, so these option do not get exposed to the user.
     """
 
-    target_probe: TargetProbeWrapper
+    target_probe: TargetProbeOverride
 
 
 if __name__ == "__main__":
