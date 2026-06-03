@@ -34,3 +34,9 @@ export interface GenomicRegionsForm {
     cds: boolean;
     intron: boolean;
 }
+
+export interface NcbiAndEnsFormData {
+    selectedSource: "ncbi" | "ensembl";
+    formDataNcbi: NcbiGenomicForm;
+    formDataEns: EnsGenomicForm;
+}

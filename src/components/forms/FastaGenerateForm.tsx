@@ -11,6 +11,7 @@ import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import type {
     EnsGenomicForm,
     GenomicForm,
+    NcbiAndEnsFormData,
     NcbiGenomicForm,
 } from "../fastaGenerateForm/types";
 import { BACKEND_URL } from "../../config";
@@ -42,12 +43,6 @@ type GenomicDropdownEntries = { [index: string]: string[] };
 interface RawDropDown {
     ncbi: GenomicDropdownEntries;
     ensembl: GenomicDropdownEntries;
-}
-
-interface NcbiAndEnsFormData {
-    selectedSource: "ncbi" | "ensembl";
-    formDataNcbi: NcbiGenomicForm;
-    formDataEns: EnsGenomicForm;
 }
 
 /**

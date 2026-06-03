@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config";
 import axios from "axios";
-import type { FastaFormUncommented } from "./types";
 import { GenomicDropDown } from "./GenomicDropDown";
 import { useCache } from "../../hooks/useCache";
+import type { NcbiAndEnsFormData } from "./types";
 
 interface NcbiAnnotationSelectProps {
     id: string;
     value: string;
     tooltip?: string;
-    form: FastaFormUncommented;
+    form: NcbiAndEnsFormData;
     handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
