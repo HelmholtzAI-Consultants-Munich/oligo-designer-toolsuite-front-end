@@ -5,6 +5,11 @@ import pytest
 from bson import ObjectId
 
 from backend.extensions import mongo
+from backend.utilities.legal import (
+    PRIVACY_DOCUMENT_KEY,
+    TERMS_DOCUMENT_KEY,
+    get_published_legal_document,
+)
 
 
 @pytest.fixture
@@ -102,6 +107,13 @@ def feedback_document(client):
     mongo.db.feedback.delete_one({"_id": feedback_id})
 
 
+@pytest.fixture(autouse=True)
+def cleanup_legal_documents(client):
+    mongo.db.legal_documents.delete_many({})
+    yield
+    mongo.db.legal_documents.delete_many({})
+
+
 # ==================== User Management Tests ====================
 
 
@@ -180,6 +192,14 @@ def test_update_user_no_fields(admin_client, regular_user):
 
 def test_delete_user_success(admin_client, regular_user):
     """Test deleting a user"""
+    mongo.db.feedback.insert_one(
+        {
+            "_id": ObjectId(),
+            "user_id": str(regular_user["_id"]),
+            "message": "Feedback to remove",
+        }
+    )
+
     response = admin_client.delete(f"/api/admin/users/{regular_user['_id']}")
     assert response.status_code == 200
     assert "deleted successfully" in response.get_json()["message"]
@@ -187,6 +207,7 @@ def test_delete_user_success(admin_client, regular_user):
     # Verify user is deleted
     user = mongo.db.users.find_one({"_id": regular_user["_id"]})
     assert user is None
+    assert mongo.db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
 
 
 def test_delete_user_self(admin_client, admin_user):
@@ -194,6 +215,66 @@ def test_delete_user_self(admin_client, admin_user):
     response = admin_client.delete(f"/api/admin/users/{admin_user['_id']}")
     assert response.status_code == 400
     assert "Cannot delete your own account" in response.get_json()["error"]
+
+
+# ==================== Legal Document Tests ====================
+
+
+def test_get_legal_documents_success(admin_client):
+    response = admin_client.get("/api/admin/legal-documents")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert isinstance(data, list)
+    document_keys = {item["document"] for item in data}
+    assert TERMS_DOCUMENT_KEY in document_keys
+    assert PRIVACY_DOCUMENT_KEY in document_keys
+    assert all(item["published"] is not None for item in data)
+
+
+def test_get_legal_document_detail_success(admin_client):
+    response = admin_client.get(f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["document"] == TERMS_DOCUMENT_KEY
+    assert len(data["history"]) >= 1
+    assert data["history"][0]["id"] == data["published"]["id"]
+    assert "status" not in data["published"]
+
+
+def test_publish_legal_document_success(admin_client):
+    response = admin_client.post(
+        f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}/publish",
+        json={
+            "body": "# Terms of Service\n\n## Scope\n\nUpdated legal paragraph.",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["published"]["version"] is not None
+    assert "Updated legal paragraph." in data["published"]["body"]
+    assert len(data["history"]) >= 2
+    assert data["history"][0]["id"] == data["published"]["id"]
+    assert all("status" not in item for item in data["history"])
+
+
+def test_publish_legal_document_requires_new_content(admin_client):
+    response = admin_client.post(
+        f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}/publish",
+        json={
+            "body": get_published_legal_document(TERMS_DOCUMENT_KEY)["body"],
+        },
+    )
+
+    assert response.status_code == 400
+    assert "currently published version" in response.get_json()["error"]
+
+
+def test_legal_document_admin_routes_unauthorized(regular_client):
+    response = regular_client.get("/api/admin/legal-documents")
+    assert response.status_code == 403
 
 
 # ==================== Pipeline Management Tests ====================
@@ -441,6 +522,12 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
     """Test bulk deleting users"""
     # Create additional users
     user2_id = create_test_user()
+    mongo.db.feedback.insert_many(
+        [
+            {"_id": ObjectId(), "user_id": str(regular_user["_id"]), "message": "Feedback 1"},
+            {"_id": ObjectId(), "user_id": str(user2_id), "message": "Feedback 2"},
+        ]
+    )
 
     try:
         response = admin_client.post(
@@ -449,6 +536,8 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
         assert response.status_code == 200
         data = response.get_json()
         assert data["deleted_count"] == 2
+        assert mongo.db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
+        assert mongo.db.feedback.find_one({"user_id": str(user2_id)}) is None
     finally:
         mongo.db.users.delete_one({"_id": user2_id})
 

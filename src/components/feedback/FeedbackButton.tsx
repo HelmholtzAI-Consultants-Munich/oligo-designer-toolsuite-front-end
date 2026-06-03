@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
+import { Link } from "react-router";
 import { BACKEND_URL, FEEDBACK_MAX_LENGTH } from "../../config";
 import { showToast } from "../../utils/toastUtil";
 
@@ -169,6 +170,13 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                                 {message.length}/{FEEDBACK_MAX_LENGTH}
                             </div>
                         </Form.Group>
+                        <p className="text-muted small mt-3 mb-0">
+                            By submitting feedback, you acknowledge the{" "}
+                            <Link target="_blank" to="/privacy-policy">
+                                Privacy Policy
+                            </Link>
+                            .
+                        </p>
                     </Modal.Body>
                     <Modal.Footer>
                         <Button

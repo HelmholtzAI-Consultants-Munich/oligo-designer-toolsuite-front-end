@@ -1,8 +1,4 @@
----
-title: Data Privacy Statement
-layout: default
-nav_order: 100
----
+# Data Protection Declaration
 
 ## **Information pursuant to Art. 13 of the General Data Protection Regulation (GDPR)**
 

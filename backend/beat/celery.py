@@ -23,6 +23,11 @@ def setup(sender, **kwargs):
         signature(Tasks.GENERATE_MONTHLY_REPORT),
         name="generate-monthly-report-task",
     )
+    sender.add_periodic_task(
+        MIDNIGHT_CRON,
+        signature("backend.worker.tasks.cleanup_anonymous_data"),
+        name="cleanup-anonymous-data-task",
+    )
 
 
 if __name__ == "main":
