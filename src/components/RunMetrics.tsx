@@ -40,7 +40,7 @@ export default function RunMetrics({ metrics }: Props) {
             <Card.Body>
                 <Row className="g-3">
                     <MetricItem
-                        label="Queue wait"
+                        label="Queue time"
                         value={metrics?.queue_wait_seconds}
                     />
                     <MetricItem

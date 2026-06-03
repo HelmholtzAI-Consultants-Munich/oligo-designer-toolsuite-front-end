@@ -477,8 +477,6 @@ const RunDetail = () => {
                     <RunError run={run} />
                 )}
 
-            {run && <RunMetrics metrics={run.metrics} />}
-
             {/* YAML/table logic remains unchanged below */}
             {run?.status === "success" && (
                 <>
@@ -724,6 +722,8 @@ const RunDetail = () => {
                     )}
                 </>
             )}
+
+            {run && <RunMetrics metrics={run.metrics} />}
 
             {run &&
                 files.filter((file) => file.name.toLowerCase().includes("log"))

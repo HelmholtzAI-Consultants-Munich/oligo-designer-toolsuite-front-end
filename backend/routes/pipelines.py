@@ -165,7 +165,6 @@ def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
-    output_path: Path,
     priority: int,
     context: RunContext,
     enqueued_at: datetime,
@@ -185,7 +184,7 @@ def enqueue_pipeline(
     # the chord body task gets executed once all header tasks finished
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE,
-        args=(pipeline_name, form_data, str(output_path)),
+        args=(pipeline_name, form_data, str(context.output_path)),
         priority=priority,
         headers={
             "run_id": str(run_id),
@@ -343,7 +342,6 @@ def start_pipeline(pipeline_name: str):
         pipeline_name,
         form_data,
         generated_regions,
-        context.output_path,
         priority,
         context,
         enqueued_at,
