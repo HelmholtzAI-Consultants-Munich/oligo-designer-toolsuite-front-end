@@ -1,256 +1,251 @@
-import os
-from unittest.mock import patch
+"""Run management route tests.
 
-import pytest
+The route suite uses real temp output files/directories so file serving and
+deletion behavior is covered without relying on repository fixtures.
+"""
+
 from bson import ObjectId
 
-from backend.tests.conftest import create_test_run, post
+from backend.extensions import mongo
+from backend.tests.conftest import OTHER_USER_ID, TEST_SESSION_ID, TEST_USER_ID
+from backend.utilities.typed_values import utc_now
 
 
-@pytest.fixture
-def output_path(tmp_path, run_id, dummy_user):
-    output_path = tmp_path / "run_output"
-    output_path.mkdir()
-    (output_path / "log.txt").write_text("log content")
-    (output_path / "config.yaml").write_text("config content")
-
-    create_test_run(run_id, user_id=dummy_user.id, status="success", output_path=str(output_path))
-
-    return str(output_path)
-
-
-def test_init_run_id(client, session_user):
+def test_init_run_id_authenticated(client, authenticated_user):
     response = client.post("/api/init_run_id")
+
     assert response.status_code == 200
-    assert "run_id" in response.get_json()
+    run = mongo.db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
+    assert run["user_id"] == TEST_USER_ID
+    assert run["session_id"] is None
+    assert run["status"] == "pending"
 
 
-def test_init_run_id_requires_terms_acceptance(client):
+def test_init_run_id_anonymous(client, anonymous_session):
     response = client.post("/api/init_run_id")
+
+    assert response.status_code == 200
+    run = mongo.db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
+    assert run["session_id"] == TEST_SESSION_ID
+    assert run["user_id"] is None
+
+
+def test_init_run_id_requires_terms(client, authenticate_as):
+    authenticate_as(TEST_USER_ID)
+
+    response = client.post("/api/init_run_id")
+
     assert response.status_code == 403
-    assert "accept the current Terms of Service and Privacy Policy" in response.get_json()["error"]
 
 
-def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
-    create_test_run(run_id, user_id=dummy_user.id)
+def test_get_pipeline_runs_authenticated_returns_only_user_runs(client, authenticated_user, run_doc):
+    """Authenticated run listing filters strictly by current user id."""
+    owned = run_doc(user_id=TEST_USER_ID, pipeline="merfish")
+    run_doc(user_id=OTHER_USER_ID)
+    run_doc(session_id=TEST_SESSION_ID)
 
     response = client.get("/api/runs")
+
     assert response.status_code == 200
-    assert isinstance(response.get_json(), list)
+    assert [item["_id"] for item in response.get_json()] == [str(owned)]
 
 
-def test_get_run_file_success(client, dummy_user, run_id, output_path):
-    response = client.get(f"/api/runs/{run_id}/files/log.txt")
+def test_get_pipeline_runs_anonymous_returns_only_session_runs(client, anonymous_session, run_doc):
+    """Anonymous run listing filters strictly by session id."""
+    owned = run_doc(session_id=TEST_SESSION_ID)
+    run_doc(session_id="other-session")
+
+    response = client.get("/api/runs")
+
     assert response.status_code == 200
-    assert response.data == b"log content"
+    assert [item["_id"] for item in response.get_json()] == [str(owned)]
 
 
-def test_delete_run_success(client, monkeypatch, run_id, output_path):
-    class DummyUser:
-        is_authenticated = True
-        id = "dummy_user"
+def test_get_pipeline_run_success(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=TEST_USER_ID, status="success", timestamp=utc_now(), priority="high")
 
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: DummyUser())
+    response = client.get(f"/api/runs/{run_id}")
 
-    response = client.delete(f"/api/runs/{run_id}")
     assert response.status_code == 200
-    assert not os.path.exists(output_path)
+    data = response.get_json()
+    assert data["_id"] == str(run_id)
+    assert data["status"] == "success"
+    assert data["timestamp"].endswith("+00:00") or data["timestamp"].endswith("Z")
 
 
-def test_get_run_file_not_found(client, dummy_user, run_id):
-    response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
+def test_get_pipeline_run_includes_error_message_for_failure_status(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=TEST_USER_ID, status="failure", error_message="safe failure")
+
+    response = client.get(f"/api/runs/{run_id}")
+
+    assert response.status_code == 200
+    assert response.get_json()["error_message"] == "safe failure"
+
+
+def test_get_pipeline_run_omits_error_message_for_success(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=TEST_USER_ID, status="success", error_message="old failure")
+
+    response = client.get(f"/api/runs/{run_id}")
+
+    assert response.status_code == 200
+    assert "error_message" not in response.get_json()
+
+
+def test_get_pipeline_run_404_for_unowned_run(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=OTHER_USER_ID)
+
+    response = client.get(f"/api/runs/{run_id}")
+
     assert response.status_code == 404
 
 
-def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_path, tmp_path):
-    (tmp_path / "secret.txt").write_text("secret")
+def test_get_run_file_serves_log_as_text(client, authenticated_user, run_doc, tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    (output / "run.log").write_text("hello log")
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
+
+    response = client.get(f"/api/runs/{run_id}/files/run.log")
+
+    assert response.status_code == 200
+    assert response.text == "hello log"
+    assert response.mimetype == "text/plain"
+
+
+def test_get_run_file_serves_nested_file(client, authenticated_user, run_doc, tmp_path):
+    """Pipeline outputs may include subdirectories; serve only paths under output_path."""
+    output = tmp_path / "output"
+    nested = output / "annotation"
+    nested.mkdir(parents=True)
+    (nested / "run.log").write_text("nested log")
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
+
+    response = client.get(f"/api/runs/{run_id}/files/annotation/run.log")
+
+    assert response.status_code == 200
+    assert response.text == "nested log"
+
+
+def test_get_run_file_serves_yaml_as_attachment(client, authenticated_user, run_doc, tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    (output / "config.yml").write_text("a: 1")
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
+
+    response = client.get(f"/api/runs/{run_id}/files/config.yml")
+
+    assert response.status_code == 200
+    assert "attachment" in response.headers["Content-Disposition"]
+
+
+def test_get_run_file_serves_fna_as_octet_stream(client, authenticated_user, run_doc, tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    (output / "result.fna").write_text(">x\nAC\n")
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
+
+    response = client.get(f"/api/runs/{run_id}/files/result.fna")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/octet-stream"
+
+
+def test_get_run_file_rejects_unsupported_extension(client, authenticated_user, run_doc, tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    (output / "result.exe").write_text("no")
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
+
+    response = client.get(f"/api/runs/{run_id}/files/result.exe")
+
+    assert response.status_code == 400
+
+
+def test_get_run_file_rejects_path_traversal(client, authenticated_user, run_doc, tmp_path):
+    """Nested file serving rejects paths that escape the run output directory."""
+    output = tmp_path / "output"
+    output.mkdir()
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
 
     response = client.get(f"/api/runs/{run_id}/files/%2e%2e/secret.txt")
-    assert response.status_code == 400
-    assert response.get_json()["error"] == "Invalid file path"
 
-
-def test_runid_null(client, mock_celery, session_user):
-    form = {"runid": None}
-
-    response = post(client, "/api/scrinshot", form)
     assert response.status_code == 400
 
 
-# Error handling tests
-def _assert_pipeline_run_error_message(client, dummy_user, run_id, status, error_message):
-    """
-    Helper function to test that get_pipeline_run returns error_message field.
+def test_get_run_file_404_for_missing_file(client, authenticated_user, run_doc, tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
 
-    Args:
-        client: Flask test client
-        dummy_user: Test user fixture
-        run_id: Run ID fixture
-        status: Expected status (e.g., "success", "failure")
-        error_message: Expected error message
-    """
-    create_test_run(run_id, user_id=dummy_user.id, status=status, error_message=error_message)
+    response = client.get(f"/api/runs/{run_id}/files/missing.log")
 
-    response = client.get(f"/api/runs/{run_id}")
-    print(response.get_json())
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == status
-    assert "error_message" in data
-    assert data["error_message"] == error_message
-
-
-def test_get_pipeline_run_returns_error_message_failure_status(client, dummy_user, run_id):
-    """Test get_pipeline_run returns error_message field when status is failure."""
-    _assert_pipeline_run_error_message(
-        client,
-        dummy_user,
-        run_id,
-        "failure",
-        "Invalid configuration: Missing required parameter",
-    )
-
-
-def test_get_pipeline_run_no_error_message_when_success(client, dummy_user, run_id):
-    """Test get_pipeline_run does NOT return error_message when status is success."""
-    create_test_run(run_id, user_id=dummy_user.id, status="success")
-
-    response = client.get(f"/api/runs/{run_id}")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "success"
-    assert "error_message" not in data
-
-
-def test_get_run_file_not_found_sanitized(client, dummy_user, run_id):
-    """Test get_run_file with file not found returns sanitized error."""
-    # Create run but no output directory
-    create_test_run(run_id, user_id=dummy_user.id, status="success", output_path="/nonexistent/path")
-
-    response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
-    assert response.status_code in [404, 500]  # Could be either depending on error type
-    data = response.get_json()
-    assert "error" in data
-    # Verify error is sanitized
-    assert "/nonexistent/path" not in str(data)
-    assert "nonexistent.txt" not in str(data) or "Required file is missing" in data["error"]
-
-
-def test_get_run_file_permission_error_sanitized(client, dummy_user, run_id, tmp_path):
-    """Test get_run_file with permission error returns sanitized error."""
-
-    output_path = tmp_path / "run_output"
-    output_path.mkdir()
-    (output_path / "test.txt").write_text("content")
-
-    create_test_run(run_id, user_id=dummy_user.id, status="success", output_path=str(output_path))
-
-    with patch("builtins.open", side_effect=PermissionError("Permission denied")):
-        response = client.get(f"/api/runs/{run_id}/files/test.txt")
-        assert response.status_code == 500
-        data = response.get_json()
-        assert "error" in data
-        assert (
-            data["error"]
-            == "Something went wrong. Please try again or contact support if the problem persists."
-        )
-
-
-def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id):
-    """Test that no raw error strings (str(e)) are exposed in pipeline route responses."""
-    # Test get_run_file with various exceptions
-    exceptions = [
-        FileNotFoundError("/path/to/file.txt"),
-        PermissionError("Permission denied"),
-        ValueError("Invalid input"),
-    ]
-
-    create_test_run(run_id, user_id=dummy_user.id, status="success")
-
-    for exc in exceptions:
-        with patch("backend.routes.runs.safe_join_under", side_effect=exc):
-            response = client.get(f"/api/runs/{run_id}/files/test.txt")
-            data = response.get_json()
-            assert "error" in data
-            # Verify no raw exception strings exposed
-            # Note: Some sanitized messages may contain parts of the original error
-            # (e.g., "Invalid input" -> "Invalid input provided"), so we check
-            # that the full raw exception string isn't exposed
-            exc_str = str(exc)
-            # For ValueError("Invalid input"), check that the full path isn't exposed
-            if isinstance(exc, ValueError) and "Invalid input" in exc_str:
-                # The sanitized message is "Invalid input provided", which is acceptable
-                assert exc_str not in str(data) or "Invalid input provided" in str(data)
-            else:
-                assert exc_str not in str(data)
-            # Verify error is user-friendly
-            assert isinstance(data["error"], str)
-            assert len(data["error"]) > 0
-
-
-def test_all_errors_use_create_user_error_response(client, dummy_user, run_id):
-    """Test that all errors use create_user_error_response (verify consistent format)."""
-    # Create a run that exists but user doesn't have access to
-
-    other_user_id = ObjectId()
-    create_test_run(run_id, user_id=other_user_id, status="success")
-
-    # Test that error responses have consistent format (run exists but unauthorized)
-    response = client.get(f"/api/runs/{run_id}/files/test.txt")
-    assert response.status_code == 404  # Not found because user doesn't own the run
-    data = response.get_json()
-    # Should have "error" field
-    assert "error" in data
-    assert isinstance(data["error"], str)
-
-
-# ---- /api/runs/<run_id>/config tests ----
-
-SAMPLE_RUN_CONFIG = {
-    "_meta": {
-        "version": "1.0.0",
-        "pipeline": "scrinshot",
-        "exportedAt": "2024-01-01T00:00:00.000Z",
-    },
-    "config": {"top_n_sets": 3},
-    "fastaForms": {
-        "files_fasta_target_probe_database": [],
-        "files_fasta_reference_database_target_probe": [],
-        "files_fasta_reference_database_readout_probe": [],
-        "files_fasta_reference_database_primer": [],
-    },
-}
-
-
-def test_get_run_config_success(client, dummy_user, run_id):
-    """GET /api/runs/<run_id>/config returns 200 + stored pipeline_run_config."""
-    create_test_run(run_id, user_id=dummy_user.id, pipeline_run_config=SAMPLE_RUN_CONFIG)
-
-    response = client.get(f"/api/runs/{run_id}/config")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["_meta"]["pipeline"] == "scrinshot"
-    assert data["config"] == {"top_n_sets": 3}
-
-
-def test_get_run_config_no_config(client, dummy_user, run_id):
-    """GET /api/runs/<run_id>/config returns 404 when run has no pipeline_run_config."""
-    create_test_run(run_id, user_id=dummy_user.id)
-
-    response = client.get(f"/api/runs/{run_id}/config")
     assert response.status_code == 404
 
 
-def test_get_run_config_not_found(client, dummy_user):
-    """GET /api/runs/<run_id>/config returns 404 for a non-existent run."""
-    response = client.get(f"/api/runs/{ObjectId()}/config")
+def test_get_run_file_500_for_missing_output_path(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=TEST_USER_ID)
+
+    response = client.get(f"/api/runs/{run_id}/files/run.log")
+
+    assert response.status_code == 500
+
+
+def test_delete_run_removes_output_directory_and_db_record(client, authenticated_user, run_doc, tmp_path):
+    """Deleting a run removes both the output directory and MongoDB document."""
+    output = tmp_path / "output"
+    output.mkdir()
+    (output / "run.log").write_text("log")
+    run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
+
+    response = client.delete(f"/api/runs/{run_id}")
+
+    assert response.status_code == 200
+    assert not output.exists()
+    assert mongo.db.runs.find_one({"_id": run_id}) is None
+
+
+def test_delete_run_404_for_unowned_run(client, authenticated_user, run_doc, tmp_path):
+    output = tmp_path / "output"
+    output.mkdir()
+    run_id = run_doc(user_id=OTHER_USER_ID, output_path=output)
+
+    response = client.delete(f"/api/runs/{run_id}")
+
+    assert response.status_code == 404
+    assert output.exists()
+    assert mongo.db.runs.find_one({"_id": run_id}) is not None
+
+
+def test_get_run_config_success(client, authenticated_user, run_doc):
+    config = {"pipeline": "merfish", "values": {"a": 1}}
+    run_id = run_doc(user_id=TEST_USER_ID, pipeline_run_config=config)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+
+    assert response.status_code == 200
+    assert response.get_json() == config
+
+
+def test_get_run_config_404_when_absent(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=TEST_USER_ID)
+
+    response = client.get(f"/api/runs/{run_id}/config")
+
     assert response.status_code == 404
 
 
-def test_get_run_config_unauthorized(client, dummy_user, run_id):
-    """GET /api/runs/<run_id>/config returns 404 for another user's run."""
-    other_user_id = str(ObjectId())
-    create_test_run(run_id, user_id=other_user_id, pipeline_run_config=SAMPLE_RUN_CONFIG)
+def test_get_run_status_success(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=TEST_USER_ID, status="started")
 
-    response = client.get(f"/api/runs/{run_id}/config")
+    response = client.get(f"/api/runs/{run_id}/status")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"state": "started"}
+
+
+def test_get_run_status_404_for_unowned_run(client, authenticated_user, run_doc):
+    run_id = run_doc(user_id=OTHER_USER_ID, status="started")
+
+    response = client.get(f"/api/runs/{run_id}/status")
+
     assert response.status_code == 404

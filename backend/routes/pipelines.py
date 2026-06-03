@@ -104,11 +104,14 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     """
 
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
-        field: form_data[field]["fasta_form"]
-        for field in PIPELINE_GENOMIC_INPUT[pipeline_name]
-        if len(form_data[field]["fasta_form"]) > 0
-    }
+    try:
+        region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
+            field: form_data[field]["fasta_form"]
+            for field in PIPELINE_GENOMIC_INPUT[pipeline_name]
+            if len(form_data[field]["fasta_form"]) > 0
+        }
+    except (KeyError, TypeError):
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
 
     for id, region_generation_forms in region_generation_forms_by_id.items():
         validate_file_key(id)
@@ -223,7 +226,8 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
 def save_file(
     file_name: str, files: ImmutableMultiDict[str, FileStorage], saved_files: dict[FileStorage, Path]
 ):
-    if file := files.get(file_name):
+    file = files.get(file_name)
+    if file is not None:
         # Step 1: Check if file was already saved
         if file in saved_files:
             return saved_files[file]

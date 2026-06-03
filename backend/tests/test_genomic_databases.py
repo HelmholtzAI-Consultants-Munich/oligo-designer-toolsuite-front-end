@@ -1,0 +1,419 @@
+"""Genomic database unit tests.
+
+Network-facing FTP/HTTP behavior is replaced with fakes and mocks. Checksum,
+cache, and decompression paths use real temp files so file handling is covered
+without live network access.
+"""
+
+import ftplib
+import gzip
+import hashlib
+import subprocess
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from backend.genomic_databases import (
+    BaseGenomicDataBase,
+    EnsemblGenomicDataBase,
+    GenomicEntity,
+    GenomicEntityContext,
+    NCBIGenomicDataBase,
+)
+
+
+class ConcreteDatabase(BaseGenomicDataBase):
+    """Concrete test double for exercising BaseGenomicDataBase behavior."""
+
+    def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
+        return True
+
+    def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
+        return GenomicEntityContext("ann", "ann.gtf.gz", "seq", "seq.fna.gz", "1", "asm", None)
+
+    def _checksum_filename(self) -> str:
+        return "CHECKSUMS"
+
+    def _parse_checksum_line(self, line):
+        return ("file", "checksum")
+
+
+class FakeFTP:
+    """Small FTP fake that records directory changes and returns fixed listings."""
+
+    def __init__(self, lines=None, names=None):
+        self.lines = lines or []
+        self.names = names or []
+        self.cwd_calls = []
+        self.login = MagicMock()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def retrlines(self, command, callback):
+        for line in self.lines:
+            callback(line)
+
+    def cwd(self, path):
+        self.cwd_calls.append(path)
+        return path
+
+    def nlst(self):
+        return self.names
+
+
+def test_get_dirs_parses_directories_and_symlinks():
+    ftp = FakeFTP(
+        [
+            "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 dir_b",
+            "lrwxrwxrwx 1 ftp ftp 7 Jan 01 00:00 link_a -> target",
+            "-rw-r--r-- 1 ftp ftp 1 Jan 01 00:00 file.txt",
+        ]
+    )
+
+    assert ConcreteDatabase()._get_dirs(ftp) == ["dir_b", "link_a -> target"]
+
+
+def test_get_dirs_ignores_malformed_lines():
+    ftp = FakeFTP(["broken", "drwxr-xr-x too-short"])
+
+    assert ConcreteDatabase()._get_dirs(ftp) == []
+
+
+def test_filter_allowlist_filters_when_present():
+    assert ConcreteDatabase(allowlist=["a", "c"])._filter_allowlist(["a", "b"]) == ["a"]
+
+
+def test_filter_allowlist_returns_all_without_allowlist():
+    assert ConcreteDatabase()._filter_allowlist(["a", "b"]) == ["a", "b"]
+
+
+def test_fetch_ftp_directories_logs_in_and_builds_directory_dict():
+    ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 release"])
+    with (
+        patch("backend.genomic_databases.ftplib.FTP", return_value=ftp),
+        patch.object(ConcreteDatabase, "_get_species_dirs", return_value=[["species"]]),
+    ):
+        name, directories = ConcreteDatabase(name="db", host="host", base_path="base").fetch_ftp_directories()
+
+    ftp.login.assert_called_once_with()
+    assert ftp.cwd_calls[0] == "base"
+    assert name == "db"
+    assert directories == {"release": ["species"]}
+
+
+def test_download_requires_cache_dir():
+    with pytest.raises(RuntimeError, match="No caching directory"):
+        ConcreteDatabase(name="db", host="host")._download("dir", "file.txt")
+
+
+def test_download_writes_response_chunks_to_cache(tmp_path):
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.status_code = 200
+    response.headers = {}
+    response.iter_content.return_value = [b"ab", b"cd"]
+
+    with patch("backend.genomic_databases.requests.get", return_value=response):
+        path = ConcreteDatabase(name="db", host="host", cache_dir=tmp_path)._download("dir", "file.txt")
+
+    assert path.read_bytes() == b"abcd"
+
+
+def test_download_sends_if_modified_since_for_existing_file(tmp_path):
+    db = ConcreteDatabase(name="db", host="host", cache_dir=tmp_path)
+    existing = db._download.__self__.cache_dir / "db"
+    existing.mkdir()
+    url_hash = hashlib.md5(b"https://host/dir/file.txt").hexdigest()
+    (existing / f"{url_hash}-file.txt").write_text("old")
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.status_code = 304
+    response.headers = {}
+
+    with patch("backend.genomic_databases.requests.get", return_value=response) as get:
+        db._download("dir", "file.txt")
+
+    assert "if-modified-since" in get.call_args.kwargs["headers"]
+
+
+def test_download_and_process_verifies_checksum_and_unzips(tmp_path):
+    """Downloaded gzip assets are verified, decompressed, and the archive is removed."""
+    gz_path = tmp_path / "file.fna.gz"
+    with gzip.open(gz_path, "wb") as archive:
+        archive.write(b">x\nAC\n")
+    db = ConcreteDatabase(cache_dir=tmp_path)
+
+    with (
+        patch.object(db, "_download", return_value=gz_path),
+        patch.object(db, "_verify_file", return_value=True),
+    ):
+        path = BaseGenomicDataBase._download_and_process.__wrapped__(db, "dir", "file.fna.gz", "checksum")
+
+    assert path == tmp_path / "file.fna"
+    assert path.read_bytes() == b">x\nAC\n"
+    assert not gz_path.exists()
+
+
+def test_download_and_process_rejects_bad_checksum(tmp_path):
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("bad")
+    db = ConcreteDatabase(cache_dir=tmp_path)
+
+    with (
+        patch.object(db, "_download", return_value=file_path),
+        patch.object(db, "_verify_file", return_value=False),
+    ):
+        with pytest.raises(RuntimeError, match="Checksum"):
+            BaseGenomicDataBase._download_and_process.__wrapped__(db, "dir", "file.txt", "checksum")
+
+
+def test_get_checksum_map_downloads_unique_dirs_once(tmp_path):
+    """Shared annotation/sequence dirs should not download checksum files twice."""
+    checksum_file = tmp_path / "CHECKSUMS"
+    checksum_file.write_text("123 file.txt\n")
+    db = ConcreteDatabase()
+    context = GenomicEntityContext("same", "a", "same", "b", "1", "asm", None)
+
+    with patch.object(db, "_download", return_value=checksum_file) as download:
+        result = db._get_checksum_map(context)
+
+    download.assert_called_once_with("same", "CHECKSUMS")
+    assert result == {"file": "checksum"}
+
+
+def test_get_checksum_missing_filename_raises():
+    with pytest.raises(RuntimeError, match="Required file missing"):
+        ConcreteDatabase()._get_checksum({}, "missing.fna.gz")
+
+
+def test_fetch_genomic_entity_returns_resolved_files_and_metadata():
+    db = ConcreteDatabase()
+    with (
+        patch.object(
+            db,
+            "get_entity_context",
+            return_value=GenomicEntityContext("ann", "ann.gtf.gz", "seq", "seq.fna.gz", "2", "asm", None),
+        ),
+        patch.object(db, "_get_checksum_map", return_value={"ann.gtf.gz": "a", "seq.fna.gz": "s"}),
+        patch.object(db, "_download_and_process", side_effect=[Path("/ann.gtf"), Path("/seq.fna")]),
+    ):
+        result = db.fetch_genomic_entity(GenomicEntity(None, "species", "2"))
+
+    assert result == {
+        "annotation_file": "/ann.gtf",
+        "sequence_file": "/seq.fna",
+        "annotation_release": "2",
+        "genome_assembly": "asm",
+    }
+
+
+def test_ncbi_parse_checksum_line_valid():
+    assert NCBIGenomicDataBase()._parse_checksum_line("abcd  ./file.fna.gz") == ("file.fna.gz", "abcd")
+
+
+def test_ncbi_parse_checksum_line_blank_or_malformed_returns_none():
+    db = NCBIGenomicDataBase()
+    assert db._parse_checksum_line("") is None
+    assert db._parse_checksum_line("abcd") is None
+
+
+def test_ncbi_verify_file_matches_md5(tmp_path):
+    file_path = tmp_path / "file.txt"
+    file_path.write_text("content")
+    digest = hashlib.md5(b"content").hexdigest()
+
+    assert NCBIGenomicDataBase()._verify_file(file_path, digest)
+    assert not NCBIGenomicDataBase()._verify_file(file_path, "wrong")
+
+
+def test_ncbi_get_releases_dir_prefers_annotation_releases():
+    ftp = FakeFTP()
+
+    assert (
+        NCBIGenomicDataBase(base_path="base")._get_releases_dir(ftp, "taxon", "species")
+        == "annotation_releases"
+    )
+
+
+def test_ncbi_get_releases_dir_falls_back_to_all_assembly_versions():
+    ftp = FakeFTP()
+    ftp.cwd = MagicMock(side_effect=[ftplib.error_perm("missing"), "ok"])
+
+    assert (
+        NCBIGenomicDataBase(base_path="base")._get_releases_dir(ftp, "taxon", "species")
+        == "all_assembly_versions"
+    )
+
+
+def test_ncbi_fetch_annotations_releases_filters_suppressed():
+    """NCBI all_assembly_versions listings exclude the suppressed directory."""
+    ftp = FakeFTP(
+        ["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 suppressed", "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 GCF_1"]
+    )
+    db = NCBIGenomicDataBase()
+    with (
+        patch("backend.genomic_databases.ftplib.FTP", return_value=ftp),
+        patch.object(db, "_get_releases_dir", return_value="all_assembly_versions"),
+    ):
+        result = NCBIGenomicDataBase.fetch_annotations_releases.__wrapped__(db, "taxon", "species")
+
+    assert result == ["GCF_1"]
+
+
+def test_ncbi_fetch_annotations_releases_returns_none_when_no_release_dir():
+    db = NCBIGenomicDataBase()
+    with (
+        patch("backend.genomic_databases.ftplib.FTP", return_value=FakeFTP()),
+        patch.object(db, "_get_releases_dir", return_value=None),
+    ):
+        assert NCBIGenomicDataBase.fetch_annotations_releases.__wrapped__(db, "taxon", "species") is None
+
+
+def test_ncbi_get_assembly_information_parses_report(tmp_path):
+    report = tmp_path / "assembly_report.txt"
+    report.write_text("# Assembly name: GRCh38 p14\n# RefSeq assembly accession: GCF_000001405.40\n")
+    db = NCBIGenomicDataBase()
+
+    with patch.object(db, "_download", return_value=report):
+        assert db._get_assembly_information("dir", "report.txt") == ("GRCh38_p14", "GCF_000001405.40")
+
+
+def test_ncbi_get_assembly_information_errors_when_missing_fields(tmp_path):
+    report = tmp_path / "assembly_report.txt"
+    report.write_text("# Assembly name: GRCh38\n")
+    db = NCBIGenomicDataBase()
+
+    with patch.object(db, "_download", return_value=report):
+        with pytest.raises(ValueError, match="accession"):
+            db._get_assembly_information("dir", "report.txt")
+
+
+def test_ncbi_get_entity_context_builds_expected_filenames():
+    db = NCBIGenomicDataBase()
+    with patch.object(db, "_resolve_release_and_dir", return_value=("110", "GRCh38", "GCF_1", "/remote/")):
+        context = db.get_entity_context(GenomicEntity("taxon", "species", "current"))
+
+    assert context.annotation_remote_filename == "GCF_1_GRCh38_genomic.gtf.gz"
+    assert context.sequence_remote_filename == "GCF_1_GRCh38_genomic.fna.gz"
+
+
+def test_ensembl_release_dirs_current():
+    assert EnsemblGenomicDataBase()._release_dirs("current") == ("pub/current_gtf", "pub/current_fasta")
+
+
+def test_ensembl_release_dirs_numeric():
+    assert EnsemblGenomicDataBase()._release_dirs("110") == ("pub/release-110/gtf", "pub/release-110/fasta")
+
+
+def test_ensembl_parse_checksum_line():
+    assert EnsemblGenomicDataBase()._parse_checksum_line("12345 678 file.fa.gz") == ("file.fa.gz", "12345")
+
+
+def test_ensembl_verify_file_uses_sum_command(tmp_path):
+    file_path = tmp_path / "file.fa"
+    file_path.write_text("AC")
+    completed = subprocess.CompletedProcess(["sum"], 0, stdout="123 1 file.fa\n")
+
+    with patch("backend.genomic_databases.subprocess.run", return_value=completed):
+        assert EnsemblGenomicDataBase()._verify_file(file_path, "123")
+        assert not EnsemblGenomicDataBase()._verify_file(file_path, "999")
+
+
+def test_ensembl_verify_file_returns_false_on_called_process_error(tmp_path):
+    with patch(
+        "backend.genomic_databases.subprocess.run", side_effect=subprocess.CalledProcessError(1, "sum")
+    ):
+        assert not EnsemblGenomicDataBase()._verify_file(tmp_path / "file", "123")
+
+
+def test_ensembl_get_species_dirs_rewrites_release_dirs_to_fasta():
+    ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 homo_sapiens"])
+    db = EnsemblGenomicDataBase(base_path="pub")
+
+    assert db._get_species_dirs(["release-110"], ftp) == [["homo_sapiens"]]
+    assert ftp.cwd_calls == ["/pub/release-110/fasta"]
+
+
+def test_ensembl_build_directory_dict_reverses_species_to_releases():
+    db = EnsemblGenomicDataBase()
+    db.orig_top_dirs = ["release-110", "release-111"]
+
+    assert db._build_directory_dict(["ignored"], [["human"], ["human", "mouse"]]) == {
+        "human": ["110", "111"],
+        "mouse": ["111"],
+    }
+
+
+def test_ensembl_pick_files_prefers_primary_assembly_dna_sm():
+    """Ensembl FASTA selection prefers masked primary assembly over toplevel files."""
+    ftp = FakeFTP(
+        names=[
+            "Homo_sapiens.GRCh38.110.gtf.gz",
+            "Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa.gz",
+            "Homo_sapiens.GRCh38.dna.toplevel.fa.gz",
+        ]
+    )
+    with patch("backend.genomic_databases.ftplib.FTP", return_value=ftp):
+        assert EnsemblGenomicDataBase()._pick_files("ann", "seq") == (
+            "Homo_sapiens.GRCh38.110.gtf.gz",
+            "Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa.gz",
+            "GRCh38.110.gtf",
+        )
+
+
+def test_ensembl_pick_files_errors_without_gtf():
+    with patch("backend.genomic_databases.ftplib.FTP", return_value=FakeFTP(names=["file.fa.gz"])):
+        with pytest.raises(RuntimeError, match=r"No \.gtf\.gz"):
+            EnsemblGenomicDataBase()._pick_files("ann", "seq")
+
+
+def test_ensembl_pick_files_errors_without_fasta():
+    with patch(
+        "backend.genomic_databases.ftplib.FTP", return_value=FakeFTP(names=["Homo_sapiens.GRCh38.110.gtf.gz"])
+    ):
+        with pytest.raises(RuntimeError, match="No suitable sequence"):
+            EnsemblGenomicDataBase()._pick_files("ann", "seq")
+
+
+def test_ensembl_get_entity_context_builds_dirs_and_metadata():
+    db = EnsemblGenomicDataBase()
+    with patch.object(db, "_pick_files", return_value=("ann.gtf.gz", "seq.fa.gz", "GRCh38")):
+        context = db.get_entity_context(GenomicEntity(None, "homo_sapiens", "110"))
+
+    assert context.annotation_remote_dir == "pub/release-110/gtf/homo_sapiens"
+    assert context.sequence_remote_dir == "pub/release-110/fasta/homo_sapiens/dna"
+    assert context.annotation_release == "110"
+    assert context.genome_assembly == "GRCh38"
+
+
+def test_genomic_dropdown_returns_cached_or_fetched_options(client):
+    with patch(
+        "backend.routes.genomic.fetch_dropdown_options", return_value={"ncbi": {"taxon": ["species"]}}
+    ):
+        response = client.get("/api/genomic/dropdown")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"ncbi": {"taxon": ["species"]}}
+
+
+def test_genomic_releases_returns_release_list(client):
+    with patch(
+        "backend.routes.genomic.NCBIGenomicDataBase.fetch_annotations_releases",
+        return_value=["current", "110"],
+    ):
+        response = client.get("/api/genomic/releases/taxon/species")
+
+    assert response.status_code == 200
+    assert response.get_json() == ["current", "110"]
+
+
+def test_genomic_releases_returns_404_when_none(client):
+    with patch("backend.routes.genomic.NCBIGenomicDataBase.fetch_annotations_releases", return_value=None):
+        response = client.get("/api/genomic/releases/taxon/species")
+
+    assert response.status_code == 404
