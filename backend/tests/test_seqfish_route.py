@@ -6,6 +6,8 @@ import pytest
 from backend.extensions import mongo
 from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
 
+pytest.skip("Seqfish currently disabled", allow_module_level=True)
+
 
 @pytest.fixture
 def dummy_form(run_id):

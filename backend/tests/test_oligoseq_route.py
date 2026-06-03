@@ -68,4 +68,5 @@ def test_oligoseq_session_without_directory(client, run_id, dummy_form, mock_cel
     """Test oligoseq with existing session creates directory and succeeds."""
     # With makedirs mock disabled, directories will be created and request should succeed
     response = post(client, "/api/oligoseq", dummy_form)
+    print(response.get_json())
     assert response.status_code == 200

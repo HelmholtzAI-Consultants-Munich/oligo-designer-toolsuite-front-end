@@ -17,10 +17,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from backend.app import create_app
-from backend.constants import PIPELINE_GENOMIC_INPUT
+from backend.constants import PIPELINE_FILE_INPUT
 from backend.extensions import mongo
 from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
+from backend.utils import retrieve_form_data_value
 
 # Temporarily disabled - see issue for better directory mocking solution
 # @pytest.fixture(autouse=True)
@@ -36,9 +37,10 @@ def post(client, link: str, data: dict[str, Any]):
     file_uploads = {}
     if "formdata" in data:
         form_data = data["formdata"]
-        for field in PIPELINE_GENOMIC_INPUT[pipeline]:
-            if field in form_data:
-                for file in form_data[field]["files"]:
+        for path in PIPELINE_FILE_INPUT.get(pipeline, []):
+            field = retrieve_form_data_value(path, form_data)
+            if field is not None:
+                for file in field:
                     file_uploads[file] = open(os.path.join(os.path.dirname(__file__), str(file)), "rb")
 
     return client.post(
