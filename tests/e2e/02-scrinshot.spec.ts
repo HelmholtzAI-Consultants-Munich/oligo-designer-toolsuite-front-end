@@ -8,9 +8,7 @@ import {
     submitAndVerifyRun,
 } from "./helpers";
 
-test("@full scrinshot run completes and exposes artifacts", async ({
-    page,
-}) => {
+test("scrinshot run completes and exposes artifacts", async ({ page }) => {
     await openPipeline(page, SCRINSHOT_PIPELINE);
 
     await fillTargetProbeParameters(page, {
@@ -20,8 +18,8 @@ test("@full scrinshot run completes and exposes artifacts", async ({
     });
 
     await fillDeveloperSettings(page, {
-        maxGraphSize: "2500",
-        nAttempts: "30000",
+        nAttemptsGraph: "60",
+        setSizeMin: "2",
     });
 
     await submitAndVerifyRun(page);

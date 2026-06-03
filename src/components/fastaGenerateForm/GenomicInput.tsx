@@ -24,6 +24,8 @@ const ConfigurableGenomicInput = ({
     formsAllowed,
     filesAllowed,
 }: ConfigurableGenomicInputProps) => {
+    // TODO: Currently they do not point to the buttons, but it would be good if they would do it, since
+    // it would make the page more accessible and playwright tests would be easier
     const id = $id;
 
     const handleGenomicFormNew = () => {

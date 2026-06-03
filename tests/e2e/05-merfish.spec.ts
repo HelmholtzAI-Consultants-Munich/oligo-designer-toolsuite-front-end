@@ -10,7 +10,7 @@ import {
     submitAndVerifyRun,
 } from "./helpers";
 
-test("@full merfish run completes and exposes artifacts", async ({ page }) => {
+test("merfish run completes and exposes artifacts", async ({ page }) => {
     await openPipeline(page, MERFISH_PIPELINE);
 
     await fillTargetProbeParameters(page, {
@@ -28,8 +28,7 @@ test("@full merfish run completes and exposes artifacts", async ({ page }) => {
     });
 
     await fillDeveloperSettings(page, {
-        maxGraphSize: "2500",
-        nAttempts: "30000",
+        nAttemptsGraph: "60",
         setSizeMin: "24",
         setSizeOpt: "24",
     });
