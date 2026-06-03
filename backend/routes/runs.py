@@ -39,6 +39,23 @@ from backend.utilities.typed_values import (
 runs_bp = Blueprint("runs", __name__)
 
 
+def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Return run metrics formatted for API responses."""
+    if not isinstance(metrics, dict):
+        return None
+
+    formatted: dict[str, Any] = {}
+    for field in ["queue_wait_seconds", "execution_seconds", "total_seconds"]:
+        if field in metrics:
+            formatted[field] = metrics[field]
+
+    for field in ["started_at", "finished_at"]:
+        if metrics.get(field) is not None:
+            formatted[field] = timestamp_to_iso(metrics[field])
+
+    return formatted or None
+
+
 def format_run(run: dict[Any, Any]) -> dict[str, Any]:
     """Return run payload formatted for API responses."""
     formatted = {
@@ -51,6 +68,9 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "priority": run.get("priority", "unknown"),
         "queue_position": run.get("queue_position", "unknown"),
     }
+
+    if metrics := format_run_metrics(run.get("metrics")):
+        formatted["metrics"] = metrics
 
     if run.get("status") in ["failure", "timeout", "empty_result"] and run.get("error_message"):
         formatted["error_message"] = run.get("error_message")
