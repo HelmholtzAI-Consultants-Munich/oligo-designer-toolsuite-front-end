@@ -39,12 +39,13 @@ from backend.worker.task_index import Callbacks, Tasks
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
-
+# Pipelines other than oligoseq are disabled at the moment, since they do not have
+# a pydantic integration
 EXISTING_PIPELINES = frozenset(
     {
-        "scrinshot",
-        "seqfish",
-        "merfish",
+        # "scrinshot",
+        # "seqfish",
+        # "merfish",
         "oligoseq",
     }
 )
@@ -109,7 +110,7 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
         serialize_form_data_path(path): retrieve_form_data_value(path, form_data)
-        for path in PIPELINE_GENOMIC_INPUT[pipeline_name]
+        for path in PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])
         if len(retrieve_form_data_value(path, form_data)) > 0
     }
 
@@ -264,7 +265,7 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
     # to the corresponding path to avoid reading an empty stream
     saved_files: dict[FileStorage, Path] = {}
 
-    for path in PIPELINE_FILE_INPUT[pipeline_name]:
+    for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
         file_inputs[serialize_form_data_path(path)] = [
             save_file(file_name, files, saved_files)
             for file_name in retrieve_form_data_value(path, form_data)
@@ -301,7 +302,7 @@ def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
         None
     """
 
-    for field, value in PIPELINE_NON_EXPOSED_FIELDS[pipline_name].items():
+    for field, value in PIPELINE_NON_EXPOSED_FIELDS.get(pipline_name, {}).items():
         form_data[field] = value
 
 

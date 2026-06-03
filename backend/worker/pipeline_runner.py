@@ -220,7 +220,7 @@ class PipelineRunner:
                 self.logger.debug(f"Deleted temp file_region_ids: {temp_path}")
             else:
                 self.logger.debug(f"Temp files cleanup skipped, file_region_ids path not found: {temp_path}")
-        for path in PIPELINE_FILE_INPUT[self.pipeline_name]:
+        for path in PIPELINE_FILE_INPUT.get(self.pipeline_name, []):
             files_list = retrieve_form_data_value(path, form_data)
             if files_list is None or len(files_list) < 1:
                 continue
