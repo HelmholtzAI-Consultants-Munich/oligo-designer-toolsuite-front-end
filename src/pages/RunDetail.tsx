@@ -37,6 +37,7 @@ import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
 import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
+import RunMetrics from "../components/RunMetrics";
 
 // Helper to extract all unique columns from an array of oligos
 function getAllOligoColumns(oligos: ProbeDetails[]): string[] {
@@ -663,6 +664,8 @@ const RunDetail = () => {
                     )}
                 </>
             )}
+
+            {run && <RunMetrics metrics={run.metrics} />}
         </Page>
     );
 };
