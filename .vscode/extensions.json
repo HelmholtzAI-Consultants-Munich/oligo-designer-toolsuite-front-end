@@ -10,9 +10,8 @@
     "redhat.vscode-yaml",
     "tamasfe.even-better-toml",
     "ms-python.python",
-    "charliermarsh.ruff"
-    // "detachhead.basedpyright", // uncomment if Pylance is unavailable (e.g. when using VSCodium)
+    "charliermarsh.ruff",
+    "njpwerner.autodocstring"
   ],
-  // List of extensions recommended by VS Code / VSCodium that should not be recommended for users of this workspace.
   "unwantedRecommendations": []
 }
