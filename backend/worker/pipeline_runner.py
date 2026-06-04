@@ -16,6 +16,7 @@ from pydantic import ValidationError
 from backend.constants import PIPELINE_FILE_INPUT
 from backend.exceptions import ODTEmptyResultError, ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
+from backend.worker.utils import build_fallback_error_message
 
 
 class PipelineRunner:
@@ -133,7 +134,7 @@ class PipelineRunner:
         if self.pipeline_name != "oligoseq":
             raise NotImplementedError(f"Pipeline execution not implemented for {self.pipeline_name}")
 
-        fallback_error_message = "The pipeline failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
+        fallback_error_message = build_fallback_error_message("pipeline")
 
         try:
             with open(config_path) as handle:
@@ -144,10 +145,8 @@ class PipelineRunner:
 
         except ValidationError as e:
             raise ODTPipelineError(f"Invalid configuration file: {e!s}")
-        except OligoDesignerError as e:
-            raise ODTPipelineError(f"The pipeline failed to execute: {e!s}")
-        except ValueError as e:
-            raise ODTPipelineError(f"The pipeline failed to execute: {e!s}")
+        except (OligoDesignerError, ValueError):
+            raise ODTPipelineError(fallback_error_message)
         except SystemExit as e:
             if e.code == 1:
                 raise ODTEmptyResultError(

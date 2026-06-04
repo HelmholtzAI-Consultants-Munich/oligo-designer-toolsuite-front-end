@@ -6,16 +6,15 @@ from typing import Any
 
 import yaml
 from filelock import SoftFileLock
-from oligo_designer_toolsuite._exceptions import OligoDesignerError
 from oligo_designer_toolsuite.pipelines._genomic_region_generator import (
     GenomicRegionGenerator,
 )
-from pydantic import ValidationError
 
 from backend.cache import file_cache_region
 from backend.exceptions import ODTPipelineError
 from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
 from backend.worker.converters import to_bool, to_int
+from backend.worker.utils import build_fallback_error_message
 
 
 class GenomicRegionGeneratorRunner:
@@ -128,16 +127,12 @@ class GenomicRegionGeneratorRunner:
                     block_size=config_genomic["exon_exon_junction_block_size"],
                 )
 
-            except ValidationError as e:
-                raise ODTPipelineError(f"Invalid configuration file: {e!s}")
-            except OligoDesignerError as e:
-                raise ODTPipelineError(f"The genomic region generator failed to execute: {e!s}")
-            except ValueError as e:
-                raise ODTPipelineError(f"The genomic region generator failed to execute: {e!s}")
+            except ValueError:
+                raise ODTPipelineError(build_fallback_error_message("genomic region generator"))
             except Exception as error:
                 if hasattr(error, "stderr"):
-                    self.logger.error(f"The genomic region generator failed STDERR: {error.stderr}")
-                self.logger.error(f"The genomic region generator failed PLAIN: {error}")
+                    self.logger.warning(f"The genomic region generator failed STDERR: {error.stderr}")
+                self.logger.warning(f"The genomic region generator failed PLAIN: {error}")
                 self.cleanup_temp_files(config_path)
                 other_files_source = "Ensembl" if files_source == "NCBI" else "NCBI"
                 raise ODTPipelineError(
