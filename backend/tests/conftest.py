@@ -15,13 +15,14 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+from glom import glom
+from glom.core import PathAccessError
 
 from backend.app import create_app
 from backend.constants import PIPELINE_FILE_INPUT
 from backend.extensions import mongo
 from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
-from backend.utils import retrieve_form_data_value
 
 # Temporarily disabled - see issue for better directory mocking solution
 # @pytest.fixture(autouse=True)
@@ -32,16 +33,18 @@ from backend.utils import retrieve_form_data_value
 
 
 def post(client, link: str, data: dict[str, Any]):
-    print("Modifying data")
     pipeline = link.split("/")[-1]
     file_uploads = {}
     if "formdata" in data:
         form_data = data["formdata"]
         for path in PIPELINE_FILE_INPUT.get(pipeline, []):
-            field = retrieve_form_data_value(path, form_data)
-            if field is not None:
-                for file in field:
-                    file_uploads[file] = open(os.path.join(os.path.dirname(__file__), str(file)), "rb")
+            try:
+                field = glom(form_data, path)
+                if field is not None:
+                    for file in field:
+                        file_uploads[file] = open(os.path.join(os.path.dirname(__file__), str(file)), "rb")
+            except PathAccessError:
+                pass
 
     return client.post(
         link, data={**file_uploads, "payload": json.dumps(data)}, content_type="multipart/form-data"

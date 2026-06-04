@@ -3,12 +3,12 @@ import os
 from unittest.mock import patch
 
 import pytest
+from glom import assign
 
 from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.tests.conftest import assert_error_sanitized, post
-from backend.utils import retrieve_form_data_value
 
 """
 This tests the genomic api routes and therefore also the Genomic Database classes.
@@ -71,9 +71,7 @@ def dummy_form_ncbi(dummy_form):
     with open(form_path) as f:
         form = json.load(f)
     for path in PIPELINE_GENOMIC_INPUT["oligoseq"]:
-        parent = retrieve_form_data_value(path[:-1], dummy_form["formdata"])
-        if parent is not None:
-            parent[path[-1]] = [form]
+        assign(dummy_form["formdata"], path, [form])
     return dummy_form
 
 
@@ -83,9 +81,7 @@ def dummy_form_ensembl(dummy_form):
     with open(form_path) as f:
         form = json.load(f)
     for path in PIPELINE_GENOMIC_INPUT["oligoseq"]:
-        parent = retrieve_form_data_value(path[:-1], dummy_form["formdata"])
-        if parent is not None:
-            parent[path[-1]] = [form]
+        assign(dummy_form["formdata"], path, [form])
     return dummy_form
 
 
