@@ -13,6 +13,7 @@ shared = [
     "requests >=2.32, <3",
     "oligo-designer-toolsuite >=2.1, <2.2",
     "pydantic>=2.12.5,<3",
+    "glom>=25.12, <26"
 ]
 server = [
     { include-group = "shared" },

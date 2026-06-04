@@ -13,6 +13,7 @@ from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
+from glom import assign, glom
 from pydantic import ValidationError
 from redis import Redis
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
@@ -32,7 +33,6 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import parse_run_id, validate_genomic_form_data
-from backend.utils import deserialize_form_data_path, retrieve_form_data_value, serialize_form_data_path
 from backend.worker.models import OligoSeqProbeDesignerConfigOverride
 from backend.worker.task_index import Callbacks, Tasks
 
@@ -109,9 +109,9 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
 
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
-        serialize_form_data_path(path): retrieve_form_data_value(path, form_data)
+        path: glom(form_data, path)
         for path in PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])
-        if len(retrieve_form_data_value(path, form_data)) > 0
+        if len(glom(form_data, path)) > 0
     }
 
     for id, region_generation_forms in region_generation_forms_by_id.items():
@@ -151,9 +151,7 @@ def write_run_to_DB(
 
 
 def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
-    genes_string = retrieve_form_data_value(
-        ["target_probe", "oligo_generation", "file_region_ids"], form_data
-    )
+    genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
     if genes_string is None:
         abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
     genes = genes_string.split(",")
@@ -276,11 +274,12 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
     saved_files: dict[FileStorage, Path] = {}
 
     for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
-        file_inputs[serialize_form_data_path(path)] = [
-            save_file(file_name, files, saved_files)
-            for file_name in retrieve_form_data_value(path, form_data)
-        ]
-
+        for file_name in glom(form_data, path):
+            file_path = save_file(file_name, files, saved_files)
+            if file_path is not None:
+                if file_inputs.get(path) is None:
+                    file_inputs[path] = []
+                file_inputs[path].append(file_path)
     return file_inputs
 
 
@@ -381,10 +380,8 @@ def start_pipeline(pipeline_name: str):
     except KeyError:
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
 
-    for field, file_paths in file_inputs.items():
-        file_field_path = deserialize_form_data_path(field)
-        file_field_parent = retrieve_form_data_value(file_field_path[:-1], form_data)
-        file_field_parent[file_field_path[-1]] = [str(file_path) for file_path in file_paths]
+    for field_path, file_paths in file_inputs.items():
+        assign(form_data, field_path, [str(file_path) for file_path in file_paths])
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)

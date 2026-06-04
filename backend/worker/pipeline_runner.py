@@ -5,6 +5,7 @@ from logging import Logger
 from typing import Any
 
 import yaml
+from glom import assign, glom
 from oligo_designer_toolsuite._exceptions import OligoDesignerError
 from oligo_designer_toolsuite.pipelines._oligo_seq_probe_designer import (
     OligoSeqProbeDesignerConfig,
@@ -14,7 +15,6 @@ from pydantic import ValidationError
 
 from backend.constants import PIPELINE_FILE_INPUT
 from backend.exceptions import ODTEmptyResultError, ODTPipelineError
-from backend.utils import deserialize_form_data_path, retrieve_form_data_value
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 
 
@@ -64,7 +64,7 @@ class PipelineRunner:
             self.cleanup_temp_files(form_data, config_path)
 
     def populate_temp_file(self, form_data: dict) -> None:
-        oligo_generation_form = retrieve_form_data_value(["target_probe", "oligo_generation"], form_data)
+        oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
         file_region_ids = oligo_generation_form["file_region_ids"]
         if file_region_ids is not None:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
@@ -104,9 +104,7 @@ class PipelineRunner:
 
         # Add paths of generated regions to config
         for id, paths in generated_region_paths:
-            genomic_input_field_path = deserialize_form_data_path(id)
-            genomic_input_field_parent = retrieve_form_data_value(genomic_input_field_path[:-1], config)
-            genomic_input_field_parent[genomic_input_field_path[-1]] = paths
+            assign(config, id, paths)
 
     def write_config_file(
         self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
@@ -167,21 +165,12 @@ class PipelineRunner:
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
-        regions_file = retrieve_form_data_value(
-            ["target_probe", "oligo_generation", "file_region_ids"], form_data
-        )
+        regions_file = glom(form_data, "target_probe.oligo_generation.file_region_ids")
         if not regions_file:
             self.logger.debug("No regions file provided, skipping visualization generation.")
             return
 
-        fasta_paths = retrieve_form_data_value(
-            [
-                "target_probe",
-                "oligo_generation",
-                "files_fasta_probe_database",
-            ],
-            form_data,
-        )
+        fasta_paths = glom(form_data, "target_probe.oligo_generation.files_fasta_probe_database")
         if not fasta_paths:
             self.logger.debug("No fasta files provided, skipping visualization generation.")
             return
@@ -211,7 +200,7 @@ class PipelineRunner:
         regions_file.yaml_dump(regions_file_path)
 
     def cleanup_temp_files(self, form_data: dict, config_path: str) -> None:
-        oligo_generation_form = retrieve_form_data_value(["target_probe", "oligo_generation"], form_data)
+        oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
         # Remove temp file for file_regions if it was created
         if oligo_generation_form["file_region_ids"]:
             temp_path = oligo_generation_form["file_region_ids"].strip()
@@ -221,7 +210,7 @@ class PipelineRunner:
             else:
                 self.logger.debug(f"Temp files cleanup skipped, file_region_ids path not found: {temp_path}")
         for path in PIPELINE_FILE_INPUT.get(self.pipeline_name, []):
-            files_list = retrieve_form_data_value(path, form_data)
+            files_list = glom(form_data, path)
             if files_list is None or len(files_list) < 1:
                 continue
             for fname in files_list:
