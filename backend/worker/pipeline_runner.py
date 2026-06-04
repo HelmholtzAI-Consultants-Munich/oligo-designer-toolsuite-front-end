@@ -157,10 +157,10 @@ class PipelineRunner:
                 raise ODTPipelineError(fallback_error_message)
         except Exception as error:
             if hasattr(error, "stderr"):
-                self.logger.error(f"STDERR: {error.stderr}")
+                self.logger.debug(f"STDERR: {error.stderr}")
             if hasattr(error, "stdout"):
                 self.logger.debug(f"STDOUT: {error.stdout}")
-            self.logger.error(f"PLAIN: {error}")
+            self.logger.debug(f"PLAIN: {error}")
             raise ODTPipelineError(fallback_error_message)
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
@@ -211,11 +211,11 @@ class PipelineRunner:
                 self.logger.debug(f"Temp files cleanup skipped, file_region_ids path not found: {temp_path}")
         for path in PIPELINE_FILE_INPUT.get(self.pipeline_name, []):
             files_list = glom(form_data, path)
-            if files_list is None or len(files_list) < 1:
+            if not files_list:
                 continue
             for fname in files_list:
                 # Delete user-uploaded files, but not generated regions so they can be cached
-                # TODO: make the distinction logic more robust
+
                 if os.path.exists(fname):
                     os.remove(fname)
 

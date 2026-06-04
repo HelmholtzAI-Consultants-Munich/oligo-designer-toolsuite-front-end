@@ -68,15 +68,15 @@ class GenomicRegionGeneratorBase(BaseModel):
 
 
 class GenomicRegionGeneratorNcbi(GenomicRegionGeneratorBase):
-    source: Literal["ncbi"] = Field(default="ncbi")
-    source_params: SourceParamsNcbi
-    genomic_regions: GenomicRegionsNcbi
+    source: Literal["ncbi"] = Field(default="ncbi")  # type: ignore
+    source_params: SourceParamsNcbi  # type: ignore
+    genomic_regions: GenomicRegionsNcbi  # type: ignore
     pass
 
 
 class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
-    source: Literal["ensembl"] = "ensembl"
-    source_params: SourceParamsEnsembl
+    source: Literal["ensembl"] = "ensembl"  # type: ignore
+    source_params: SourceParamsEnsembl  # type: ignore
     genomic_regions: GenomicRegionsEnsembl
     pass
 
@@ -87,13 +87,13 @@ GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 class TargetProbeOligoGenerationOverride(TargetProbeOligoGeneration):
     file_region_ids: RegionListT = None
-    files_fasta_probe_database: GenomicInput = Field(min_length=1)
+    files_fasta_probe_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 
 class OligoSeqVariantFilterEnabledOverride(OligoSeqVariantFilterEnabled):
     # NOTE: this is a small trick. A dict gets converted to type
     # `object` when building the JSON Schema from the pydantic model.
-    files_vcf_reference_database: list[dict | str] = Field(min_length=1)
+    files_vcf_reference_database: list[dict | str] = Field(min_length=1)  # type: ignore
 
 
 OligoSeqVariantFilterConfigOverride = Annotated[
@@ -102,25 +102,25 @@ OligoSeqVariantFilterConfigOverride = Annotated[
 
 
 class BlastnSearchParametersOverride(BlastnSearchParameters):
-    lcase_masking: bool | None = Field(
+    lcase_masking: bool | None = Field(  # type: ignore
         default=None,
         validation_alias=AliasChoices("-lcase_masking", "lcase_masking"),
         serialization_alias="-lcase_masking",
         description="Use lower case filtering in query and subject sequence(s).",
     )
-    no_greedy: bool | None = Field(
+    no_greedy: bool | None = Field(  # type: ignore
         default=None,
         validation_alias=AliasChoices("-no_greedy", "no_greedy"),
         serialization_alias="-no_greedy",
         description="Use non-greedy dynamic programming extension.",
     )
-    subject_besthit: bool | None = Field(
+    subject_besthit: bool | None = Field(  # type: ignore
         default=None,
         validation_alias=AliasChoices("-subject_besthit", "subject_besthit"),
         serialization_alias="-subject_besthit",
         description="Turn on best hit per subject sequence.",
     )
-    ungapped: bool | None = Field(
+    ungapped: bool | None = Field(  # type: ignore
         default=None,
         validation_alias=AliasChoices("-ungapped", "ungapped"),
         serialization_alias="-ungapped",
@@ -129,7 +129,7 @@ class BlastnSearchParametersOverride(BlastnSearchParameters):
 
 
 class CrossHybridizationBlastnFilterEnabledOverride(CrossHybridizationBlastnFilterEnabled):
-    search_parameters: Annotated[
+    search_parameters: Annotated[  # type: ignore
         BlastnSearchParametersOverride,
         Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
     ]
@@ -142,10 +142,10 @@ CrossHybridizationBlastnFilterConfigOverride = Annotated[
 
 
 class OligoSeqSpecificityBlastnFilterEnabledOverride(OligoSeqSpecificityBlastnFilterEnabled):
-    search_parameters: BlastnSearchParametersOverride = BlastnSearchParametersOverride(
+    search_parameters: BlastnSearchParametersOverride = BlastnSearchParametersOverride(  # type: ignore
         perc_identity=80, strand="minus", word_size=10
     )
-    files_fasta_reference_database: GenomicInput = Field(min_length=1)
+    files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 
 OligoSpecificityBlastnFilterConfigOverride = Annotated[
@@ -155,20 +155,20 @@ OligoSpecificityBlastnFilterConfigOverride = Annotated[
 
 
 class TargetProbeSpecificityFilterOverride(TargetProbeSpecificityFilter):
-    cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfigOverride = (
+    cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfigOverride = (  # type: ignore
         CrossHybridizationBlastnFilterEnabledOverride(
             enabled=True,
             search_parameters=BlastnSearchParametersOverride(perc_identity=80, strand="minus", word_size=10),
             hit_parameters=BlastnHitParameters(coverage=50),
         )
     )
-    specificity_blastn_filter: OligoSpecificityBlastnFilterConfigOverride
-    variant_filter: OligoSeqVariantFilterConfigOverride
+    specificity_blastn_filter: OligoSpecificityBlastnFilterConfigOverride  # type: ignore
+    variant_filter: OligoSeqVariantFilterConfigOverride  # type: ignore
 
 
 class TargetProbeOverride(TargetProbe):
-    oligo_generation: TargetProbeOligoGenerationOverride
-    specificity_filters: TargetProbeSpecificityFilterOverride
+    oligo_generation: TargetProbeOligoGenerationOverride  # type: ignore
+    specificity_filters: TargetProbeSpecificityFilterOverride  # type: ignore
 
 
 class OligoSeqProbeDesignerConfigOverride(OligoSeqProbeDesignerConfig):
@@ -177,7 +177,7 @@ class OligoSeqProbeDesignerConfigOverride(OligoSeqProbeDesignerConfig):
     we can inject our custom genomic region generator models
     """
 
-    target_probe: TargetProbeOverride
+    target_probe: TargetProbeOverride  # type: ignore
 
 
 class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):

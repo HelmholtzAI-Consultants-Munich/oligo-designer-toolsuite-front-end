@@ -294,7 +294,7 @@ def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
     try:
         pipeline_model.model_validate(form_data)
     except ValidationError as v_err:
-        current_app.logger.error(v_err)
+        current_app.logger.debug(v_err)
         abort(HTTPStatus.BAD_REQUEST, description=f"Invalid input: {v_err!s}")
 
 
@@ -306,9 +306,6 @@ def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
     Arguments:
         form_data {dict[str, Any]} -- pipeline config
         pipline_name {str}
-
-    Returns:
-        None
     """
 
     for field, value in PIPELINE_NON_EXPOSED_FIELDS.get(pipline_name, {}).items():

@@ -34,7 +34,7 @@ PIPELINE_NON_EXPOSED_FIELDS = {
     "oligoseq": {
         "general": {
             "n_jobs": 1,
-            "write_intermediate_steps": True,
+            "write_intermediate_steps": False,
             "dir_output": "output_oligo_seq_probe_designer",
         },
     },
