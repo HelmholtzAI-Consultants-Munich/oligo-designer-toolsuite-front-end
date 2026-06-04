@@ -187,6 +187,7 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
     the general section of the OligoDesignerConfig, so these option do not get exposed to the user.
     """
 
+    schema_version: Literal[2] = 2
     target_probe: TargetProbeOverride
 
 

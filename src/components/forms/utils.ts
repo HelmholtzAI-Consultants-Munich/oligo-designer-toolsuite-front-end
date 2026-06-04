@@ -9,3 +9,8 @@ export const snakeCaseToTitleCase = (str: string): string =>
 
 export const spaceBeforeCapitalLetters = (str: string): string =>
     str.replace(/([a-z])([A-Z])/g, "$1 $2");
+
+const EXCLUDED_TABS = new Set(["schema_version"]);
+
+export const excludeHiddenTabs = (tabs: string[]) =>
+    tabs.filter((tab) => !EXCLUDED_TABS.has(tab));

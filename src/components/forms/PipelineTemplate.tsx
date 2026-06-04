@@ -28,7 +28,7 @@ import { Link, useLocation } from "react-router";
 import { FileInput, GenomicInput } from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
-import { snakeCaseToTitleCase } from "./utils";
+import { excludeHiddenTabs, snakeCaseToTitleCase } from "./utils";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
 import WrappedBaseInputTemplate from "./BaseInputTemplate";
 import {
@@ -134,7 +134,9 @@ const PipelineTemplate: React.FC<Props> = ({
     };
 
     const tabs = useMemo(() => {
-        return schema.properties ? Object.keys(schema.properties) : undefined;
+        return schema.properties
+            ? excludeHiddenTabs(Object.keys(schema.properties))
+            : undefined;
     }, [schema.properties]);
 
     const importInputRef = useRef<HTMLInputElement>(null);

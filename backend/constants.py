@@ -41,7 +41,6 @@ PIPELINE_FILE_INPUT: Mapping[str, list[list[str]]] = {
 
 PIPELINE_NON_EXPOSED_FIELDS = {
     "oligoseq": {
-        "schema_version": 2,
         "general": {
             "n_jobs": 1,
             "write_intermediate_steps": True,

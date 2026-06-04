@@ -1755,7 +1755,15 @@
     }
   },
   "description": "This Model overrides the default ODT Model of the Oligo-Seq pipeline, so\nwe can inject our custom genomic region generator models. Adding to that it removes attributes like\nthe general section of the OligoDesignerConfig, so these option do not get exposed to the user.",
-  "properties": { "target_probe": { "$ref": "#/$defs/TargetProbeOverride" } },
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "target_probe": { "$ref": "#/$defs/TargetProbeOverride" }
+  },
   "required": ["target_probe"],
   "title": "OligoSeqProbeDesignerConfigFrontEnd",
   "type": "object"
