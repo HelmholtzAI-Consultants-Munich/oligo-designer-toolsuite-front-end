@@ -169,4 +169,4 @@ class CeleryConfig:
     task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
     anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
-    worker_redirect_stdouts = False
+    worker_redirect_stdouts_level = "DEBUG"
