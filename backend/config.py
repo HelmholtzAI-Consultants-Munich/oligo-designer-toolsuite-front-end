@@ -174,5 +174,13 @@ class CeleryConfig:
     task_default_priority = 6
     task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
+
+    # Static pipeline execution limits in seconds. The soft limit lets Celery
+    # interrupt the task cleanly; the hard margin is a SIGKILL backstop.
+    pipeline_timeout_anon: int = int(os.environ.get("PIPELINE_TIMEOUT_ANON", 3600))  # in seconds
+    pipeline_timeout_authenticated_multiplier: float = float(
+        os.environ.get("PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER", 2.0)
+    )
+    pipeline_timeout_hard_margin: int = int(os.environ.get("PIPELINE_TIMEOUT_HARD_MARGIN", 300))
     anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
     worker_redirect_stdouts = False

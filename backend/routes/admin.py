@@ -281,7 +281,7 @@ def update_pipeline_status(run_id: ObjectId):
 
     status = data["status"].strip().lower()
 
-    # Validate status (only these 4 statuses are allowed)
+    # Validate status
     valid_statuses = get_valid_pipeline_statuses()
     if status not in valid_statuses:
         abort(
@@ -566,7 +566,7 @@ def bulk_update_pipeline_status():
     Updates the status of multiple pipeline runs.
 
     :request json run_ids: Array of run IDs to update
-    :request json status: New status ('pending', 'started', 'success', 'failure')
+    :request json status: New pipeline run status
     :returns: JSON object with update results
     :rtype: flask.Response
     """
