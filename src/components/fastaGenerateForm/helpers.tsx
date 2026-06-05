@@ -240,29 +240,50 @@ export const handleSubmit = async (
         });
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
-            showToast({
-                title: "Pipeline Not Started",
-                content: (
-                    <>
-                        <p>{errorMessage}</p>
-                    </>
-                ),
-                type: "danger",
-            });
-        } else {
-            showToast({
-                title: "Pipeline Failed",
-                content: (
-                    <>
-                        <p>{errorMessage}</p>
-                        <Link className="mt-2" to={`/runs/${newId}`}>
-                            View the run here <ArrowRight />
-                        </Link>
-                    </>
-                ),
-                type: "danger",
-            });
+        if (axios.isAxiosError(error)) {
+            switch (error.response?.status) {
+                case 401: {
+                    showToast({
+                        title: "Pipeline Not Started",
+                        content: (
+                            <>
+                                <p>{errorMessage}</p>
+                            </>
+                        ),
+                        type: "danger",
+                    });
+                    break;
+                }
+                case 413: {
+                    showToast({
+                        title: "Pipeline Not Started",
+                        content: (
+                            <>
+                                <p>
+                                    The uploaded files exceed the maximum
+                                    allowed size.
+                                </p>
+                            </>
+                        ),
+                        type: "danger",
+                    });
+                    break;
+                }
+                default: {
+                    showToast({
+                        title: "Pipeline Failed",
+                        content: (
+                            <>
+                                <p>{errorMessage}</p>
+                                <Link className="mt-2" to={`/runs/${newId}`}>
+                                    View the run here <ArrowRight />
+                                </Link>
+                            </>
+                        ),
+                        type: "danger",
+                    });
+                }
+            }
         }
     } finally {
         updateRuns();
