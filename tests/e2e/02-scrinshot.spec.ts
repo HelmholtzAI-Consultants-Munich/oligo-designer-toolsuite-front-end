@@ -2,7 +2,7 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     SCRINSHOT_PIPELINE,
-    fillDeveloperSettings,
+    fillConfig,
     fillTargetProbeParameters,
     openPipeline,
     submitAndVerifyRun,
@@ -17,7 +17,7 @@ test("scrinshot run completes and exposes artifacts", async ({ page }) => {
         fastaReferenceFiles: [FASTA_FIXTURES.utr],
     });
 
-    await fillDeveloperSettings(page, {
+    await fillConfig(page, {
         nAttemptsGraph: "60",
         setSizeMin: "2",
     });

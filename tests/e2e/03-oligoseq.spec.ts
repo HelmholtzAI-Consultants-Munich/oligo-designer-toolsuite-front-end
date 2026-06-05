@@ -2,7 +2,7 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     OLIGOSEQ_PIPELINE,
-    fillDeveloperSettings,
+    fillConfig,
     fillTargetProbeParameters,
     openPipeline,
     submitAndVerifyRun,
@@ -26,7 +26,7 @@ test("@smoke @full oligoseq run completes and exposes artifacts", async ({
         fastaVcfFiles: [FASTA_FIXTURES.vcf],
     });
 
-    await fillDeveloperSettings(page, {
+    await fillConfig(page, {
         nAttemptsGraph: "60",
         setSizeMin: "1",
     });

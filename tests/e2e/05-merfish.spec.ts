@@ -2,7 +2,7 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     MERFISH_PIPELINE,
-    fillDeveloperSettings,
+    fillConfig,
     fillPrimerParameters,
     fillReadoutProbeParameters,
     fillTargetProbeParameters,
@@ -27,7 +27,7 @@ test("merfish run completes and exposes artifacts", async ({ page }) => {
         fastaReferenceFiles: [FASTA_FIXTURES.cds, FASTA_FIXTURES.utr],
     });
 
-    await fillDeveloperSettings(page, {
+    await fillConfig(page, {
         nAttemptsGraph: "60",
         setSizeMin: "24",
         setSizeOpt: "24",

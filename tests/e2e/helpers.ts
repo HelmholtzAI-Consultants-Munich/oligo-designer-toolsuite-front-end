@@ -406,7 +406,7 @@ export const fillPrimerParameters = async (
         .setInputFiles(options.fastaReferenceFiles);
 };
 
-export const fillDeveloperSettings = async (
+export const fillConfig = async (
     page: Page,
     options: {
         nAttemptsGraph?: string;
