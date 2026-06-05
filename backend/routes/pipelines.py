@@ -170,9 +170,9 @@ def enqueue_pipeline(
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
     priority: int,
-    is_authenticated: bool = False,
     context: RunContext,
     enqueued_at: datetime,
+    is_authenticated: bool = False,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
@@ -363,7 +363,7 @@ def start_pipeline(pipeline_name: str):
         priority,
         context,
         enqueued_at,
-        current_user.is_authenticated
+        current_user.is_authenticated,
     )
 
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)

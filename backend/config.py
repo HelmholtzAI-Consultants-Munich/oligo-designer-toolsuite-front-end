@@ -181,6 +181,6 @@ class CeleryConfig:
     pipeline_timeout_authenticated_multiplier: float = float(
         os.environ.get("PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER", 2.0)
     )
-    pipeline_timeout_hard_margin: int = _get_positive_int_env("PIPELINE_TIMEOUT_HARD_MARGIN", 300)
+    pipeline_timeout_hard_margin: int = int(os.environ.get("PIPELINE_TIMEOUT_HARD_MARGIN", 300))
     anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
     worker_redirect_stdouts = False
