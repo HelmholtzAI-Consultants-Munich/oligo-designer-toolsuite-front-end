@@ -15,7 +15,6 @@ on:
         options:
           - smoke
           - full
-
 jobs:
   e2e:
     name: Playwright E2E
@@ -46,6 +45,7 @@ jobs:
         run: |
           set -euxo pipefail
           cp .env.sample .env
+          echo "TESTING=true" >> .env
           cp .env.docker.sample .env.docker
 
       - name: Create artifact directories

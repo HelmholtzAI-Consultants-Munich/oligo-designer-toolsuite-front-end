@@ -151,6 +151,7 @@ export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
     updateRuns: () => void,
+    token: string | null,
     pipelineRunConfig?: PipelineConfigExport
 ) => {
     // copy to avoid modifying formData
@@ -209,6 +210,7 @@ export const handleSubmit = async (
             payload: JSON.stringify({
                 formdata: uploadFormData,
                 runid: newId,
+                token,
                 pipeline_run_config: pipelineRunConfig ?? null,
             }),
         };
@@ -248,6 +250,21 @@ export const handleSubmit = async (
                         content: (
                             <>
                                 <p>{errorMessage}</p>
+                            </>
+                        ),
+                        type: "danger",
+                    });
+                    break;
+                }
+                case 403: {
+                    showToast({
+                        title: "Pipeline Not Started",
+                        content: (
+                            <>
+                                <p>
+                                    We couldn't verify that you are human.
+                                    Please try again.
+                                </p>
                             </>
                         ),
                         type: "danger",

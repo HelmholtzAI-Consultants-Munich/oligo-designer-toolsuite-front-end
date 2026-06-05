@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from pathlib import Path
 
+import requests
 from bson import ObjectId
 from flask import abort, current_app, session
 from flask_login import current_user
@@ -155,3 +156,35 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     if not run:
         abort(HTTPStatus.NOT_FOUND)
     return run
+
+
+# ============================================================================
+# Turnstile Helpers
+# ============================================================================
+
+
+def validate_turnstile(token):
+
+    if current_app.config.get("TESTING"):
+        return True
+
+    url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    secret = current_app.config.get("TURNSTILE_SECRET_KEY")
+
+    data = {"secret": secret, "response": token}
+
+    try:
+        response = requests.post(url, data=data, timeout=10)
+        response.raise_for_status()
+
+        result = response.json()
+
+        if not result.get("success"):
+            current_app.logger.warning(f"Turnstile verification failed: {result.get('error-codes')}")
+            return False
+
+        return True
+
+    except requests.RequestException as e:
+        current_app.logger.warning(f"Turnstile request failed: {e}")
+        return False
