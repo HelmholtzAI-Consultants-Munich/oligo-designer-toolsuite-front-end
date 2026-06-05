@@ -7,13 +7,9 @@ from typing import Any
 import yaml
 from glom import assign, glom
 from oligo_designer_toolsuite._exceptions import OligoDesignerError
-from oligo_designer_toolsuite.pipelines._oligo_seq_probe_designer import (
-    OligoSeqProbeDesignerConfig,
-    oligo_seq_probe_designer,
-)
 from pydantic import ValidationError
 
-from backend.constants import PIPELINE_FILE_INPUT
+from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_MODELS
 from backend.exceptions import ODTEmptyResultError, ODTPipelineError
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 from backend.worker.utils import build_fallback_error_message
@@ -131,7 +127,9 @@ class PipelineRunner:
 
     def execute_pipeline(self, config_path: str) -> None:
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
-        if self.pipeline_name != "oligoseq":
+        pipeline = PIPELINE_MODELS.get(self.pipeline_name)
+
+        if pipeline is None:
             raise NotImplementedError(f"Pipeline execution not implemented for {self.pipeline_name}")
 
         fallback_error_message = build_fallback_error_message("pipeline")
@@ -140,8 +138,8 @@ class PipelineRunner:
             with open(config_path) as handle:
                 config_raw = yaml.safe_load(handle)
 
-            config_validated = OligoSeqProbeDesignerConfig.model_validate(config_raw)
-            oligo_seq_probe_designer(config_validated)
+            config_validated = pipeline.model.model_validate(config_raw)
+            pipeline.function(config_validated)
 
         except ValidationError as e:
             raise ODTPipelineError(f"Invalid configuration file: {e!s}")

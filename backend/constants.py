@@ -1,4 +1,15 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
+from typing import NamedTuple
+
+from oligo_designer_toolsuite.config import OligoSeqProbeDesignerConfig
+from oligo_designer_toolsuite.pipelines import oligo_seq_probe_designer
+from pydantic import BaseModel
+
+
+class Pipeline(NamedTuple):
+    model: type[BaseModel]
+    function: Callable
+
 
 PIPELINE_GENOMIC_INPUT: Mapping[str, list[str]] = dict(
     **{
@@ -38,4 +49,8 @@ PIPELINE_NON_EXPOSED_FIELDS = {
             "dir_output": "output_oligo_seq_probe_designer",
         },
     },
+}
+
+PIPELINE_MODELS: Mapping[str, Pipeline] = {
+    "oligoseq": Pipeline(OligoSeqProbeDesignerConfig, oligo_seq_probe_designer)
 }
