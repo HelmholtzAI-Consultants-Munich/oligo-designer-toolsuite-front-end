@@ -5,7 +5,7 @@ from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
-from flask import abort
+from flask import abort, current_app
 
 from backend.config import CeleryConfig
 from backend.utilities.typed_values import deserialize_path, path_for_display
@@ -89,6 +89,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
     result = mongo.db.runs.delete_one({"_id": run_id_obj})
 
     if result.deleted_count == 0:
+        current_app.logger.error(f"Failed to delete run {run_id_obj}")
         abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
 

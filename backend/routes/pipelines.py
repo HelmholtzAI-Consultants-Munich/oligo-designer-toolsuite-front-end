@@ -23,6 +23,7 @@ from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
+    validate_turnstile,
 )
 from backend.routes.runs import delete_run
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
@@ -168,9 +169,10 @@ def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
-    output_path: Path,
     priority: int,
     is_authenticated: bool = False,
+    context: RunContext,
+    enqueued_at: datetime,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
@@ -191,10 +193,17 @@ def enqueue_pipeline(
     # for worker processes that do not shut down after the soft timeout.
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE,
-        args=(pipeline_name, form_data, str(output_path)),
+        args=(pipeline_name, form_data, str(context.output_path)),
         priority=priority,
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
+        headers={
+            "run_id": str(run_id),
+            "pipeline": pipeline_name,
+            "user_id": context.user_id,
+            "session_id": context.session_id,
+            "enqueued_at": enqueued_at.isoformat(),
+        },
     )
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
@@ -280,6 +289,7 @@ def start_pipeline(pipeline_name: str):
     Orchestrates the workflow for running the pipeline as follows:
 
     - Verifies the pipeline name
+    - Verifies the turnstile token
     - Loads and validates user/session context.
     - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
     - Parses and validates region generation form data.
@@ -299,6 +309,7 @@ def start_pipeline(pipeline_name: str):
     in the developer documentation.
 
     """
+
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
@@ -313,6 +324,9 @@ def start_pipeline(pipeline_name: str):
 
     if form is None or len(form) == 0:
         abort(HTTPStatus.BAD_REQUEST, description="Expected JSON")
+
+    if not validate_turnstile(form.get("token", "")):
+        abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
 
     run_id_str = form.get("runid")  # Run ID from React
     run_id = parse_run_id(run_id_str)
@@ -339,15 +353,17 @@ def start_pipeline(pipeline_name: str):
     context = create_context(pipeline_name)
 
     priority = get_task_priority(form_data, run_id)
+    enqueued_at = utc_now()
 
     result_promise = enqueue_pipeline(
         run_id,
         pipeline_name,
         form_data,
         generated_regions,
-        context.output_path,
         priority,
-        current_user.is_authenticated,
+        context,
+        enqueued_at,
+        current_user.is_authenticated
     )
 
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)

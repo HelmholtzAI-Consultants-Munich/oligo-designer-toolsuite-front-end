@@ -16,10 +16,51 @@ on:
           - smoke
           - full
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      e2e: ${{ steps.filter.outputs.e2e }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        if: ${{ github.event_name == 'pull_request' }}
+        id: filter
+        uses: dorny/paths-filter@v4
+        with:
+          filters: |
+            e2e:
+              - 'backend/**'
+              - 'src/**'
+              - 'public/**'
+              - 'schemas/**'
+              - 'tests/**'
+              - 'playwright/**'
+              - 'playwright.config.ts'
+              - 'docker/**'
+              - 'docker-compose.yml'
+              - '.env.sample'
+              - '.env.docker.sample'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'vite.config.ts'
+              - 'tsconfig*.json'
+              - 'index.html'
+              - '.github/workflows/e2e.yml'
+
   e2e:
     name: Playwright E2E
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.e2e == 'true' }}
     timeout-minutes: 120
 
     steps:
@@ -46,6 +87,7 @@ jobs:
         run: |
           set -euxo pipefail
           cp .env.sample .env
+          echo "TESTING=true" >> .env
           cp .env.docker.sample .env.docker
 
       - name: Create artifact directories

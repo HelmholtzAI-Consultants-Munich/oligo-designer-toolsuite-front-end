@@ -149,7 +149,7 @@ const setupElements = (
         .attr("width", ctx.xScale(1) - ctx.xScale(0))
         .attr("height", ctx.height - AXIS_HEIGHT)
         .attr("fill", "black")
-        .attr("opacity", 0.25)
+        .attr("opacity", 0)
         .attr("visibility", "hidden")
         .attr("pointer-events", "none"); // allow mouse events to pass through
 
@@ -165,9 +165,7 @@ const setupElements = (
     // Position label background
     ctx.positionLabelGroup
         .select("rect")
-        .attr("fill", "rgb(242.25, 245.1, 246.55)")
-        .attr("opacity", 1)
-        .attr("pointer-events", "none");
+        .attr("fill", "rgb(242.25, 245.1, 246.55)");
 
     // Initially hide position label until mouse enters
     ctx.positionLabelGroup
@@ -427,7 +425,7 @@ const setupMouseEvents = (
         event.preventDefault();
     };
     ctx.svg
-        .on("wheel", preventPageScroll, { passive: false })
+        .on("wheel", preventPageScroll, { passive: false }) // some browsers default to passive wheel listeners
         .on("mouseenter", () => {
             ctx.locationIndicator.attr("visibility", "visible");
             ctx.positionLabelGroup.attr("visibility", "visible");
@@ -674,6 +672,11 @@ const GenomeAlignmentD3 = {
         setupZoom(ctx, genomicRegions, probes);
 
         GenomeAlignmentD3.update(el, probes, selectedOligo);
+        zoomed(
+            ctx,
+            genomicRegions,
+            probes
+        )({ transform: d3.zoomIdentity } as d3.D3ZoomEvent<Element, unknown>);
     },
 
     update: (

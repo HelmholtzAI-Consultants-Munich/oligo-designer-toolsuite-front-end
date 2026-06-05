@@ -1,4 +1,6 @@
 import re
+from datetime import datetime
+from typing import Any
 
 
 def to_bool(val):
@@ -14,6 +16,17 @@ def to_int(val):
 
 def to_null(val):
     return None if val == "" or str(val).lower() == "null" else val
+
+
+def parse_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+    return None
 
 
 def split_commas_and_newlines(val):

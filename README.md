@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This project is in Public Preview. As such, the README might not be fully up-to-date. Please take a look at https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues/249 to see the current state of ODT Cloud.
+
 <div align="center">
 
 # Oligo Designer Toolsuite Cloud

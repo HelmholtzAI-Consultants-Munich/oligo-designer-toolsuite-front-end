@@ -77,10 +77,16 @@ class Config:
     HELMHOLTZ_SCOPE = "openid single-logout"
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
+    # Turnstile settings
+    TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
+    TURNSTILE_SITE_KEY = os.environ.get("TURNSTILE_SITE_KEY", "")
+    TESTING = os.environ.get("TESTING", False)
+
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
     GENE_COUNT_THRESHOLD = 10
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024 * 1024))
 
     # Caching Settings
     REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")
@@ -93,17 +99,13 @@ class Config:
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
-    def get_logging_config(debug: bool = False) -> dict:
+    def get_logging_config() -> dict:
         """Get logging configuration dictionary for Flask application.
-
-        Args:
-            debug: Whether Flask is in debug mode. If True, uses DEBUG log level,
-                   otherwise uses INFO level for production.
 
         Returns:
             Dictionary compatible with logging.config.dictConfig()
         """
-        log_level = "DEBUG" if debug else "INFO"
+        log_level = os.environ.get("LOG_LEVEL", "INFO")
         return {
             "version": 1,
             "formatters": {
@@ -117,6 +119,11 @@ class Config:
                     "stream": "ext://flask.logging.wsgi_errors_stream",
                     "formatter": "default",
                 },
+            },
+            "loggers": {
+                "werkzeug": {
+                    "level": log_level,
+                }
             },
             "root": {
                 "level": log_level,
@@ -176,3 +183,4 @@ class CeleryConfig:
     )
     pipeline_timeout_hard_margin: int = _get_positive_int_env("PIPELINE_TIMEOUT_HARD_MARGIN", 300)
     anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+    worker_redirect_stdouts = False
