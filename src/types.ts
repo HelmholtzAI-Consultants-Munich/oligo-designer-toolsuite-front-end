@@ -195,6 +195,14 @@ export type RunState =
     | "timeout"
     | "empty_result";
 
+export interface RunMetrics {
+    started_at?: string;
+    finished_at?: string;
+    queue_wait_seconds?: number;
+    execution_seconds?: number;
+    total_seconds?: number;
+}
+
 export interface PipelineRun {
     _id: string;
     pipeline: string;
@@ -205,4 +213,5 @@ export interface PipelineRun {
     error_message?: string;
     priority: "high" | "default";
     queue_position: [number, number]; // [highPriorityAhead, defaultPriorityAhead]
+    metrics?: RunMetrics;
 }

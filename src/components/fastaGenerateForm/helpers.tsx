@@ -271,6 +271,21 @@ export const handleSubmit = async (
                     });
                     break;
                 }
+                case 413: {
+                    showToast({
+                        title: "Pipeline Not Started",
+                        content: (
+                            <>
+                                <p>
+                                    The uploaded files exceed the maximum
+                                    allowed size.
+                                </p>
+                            </>
+                        ),
+                        type: "danger",
+                    });
+                    break;
+                }
                 default: {
                     showToast({
                         title: "Pipeline Failed",
