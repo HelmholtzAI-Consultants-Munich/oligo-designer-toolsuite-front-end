@@ -66,6 +66,7 @@ const ConfigurableGenomicInput = ({
                     key={`${id} ${idx}`}
                     form={form}
                     onChange={formChangeHandler}
+                    schema={schema}
                 />
             ),
             centered: true,

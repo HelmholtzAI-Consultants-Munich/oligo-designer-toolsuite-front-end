@@ -5,7 +5,7 @@
  * It allows users to select the data source, species, taxon, annotation release, genomic regions, and additional options.
  * The form is controlled via props and notifies parent components of changes.
  */
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import type {
@@ -22,8 +22,6 @@ import {
     TaxonSelect,
 } from "../fastaGenerateForm/GenomicDropDown";
 import {
-    defaultEnsemblFormData,
-    defaultNcbiFormData,
     firstLetterUppercase,
     replaceUnderscore,
 } from "../fastaGenerateForm/helpers";
@@ -31,12 +29,16 @@ import { GenomicRegionSelect } from "../fastaGenerateForm/GenomicRegionSelect";
 import { NcbiAnnotationSelect } from "../fastaGenerateForm/NcbiAnnotationSelect";
 import { closeModal } from "../../utils/modalUtil";
 import type { DropDown, NestedObject } from "../componentTypes";
+import { getDefaultFormState, type RJSFSchema } from "@rjsf/utils";
+import { customizeValidator } from "@rjsf/validator-ajv8";
+import Ajv2020 from "ajv/dist/2020";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
     id: string;
     form: GenomicForm | null;
     onChange: (newForm: GenomicForm) => void;
+    schema: RJSFSchema;
 }
 
 type GenomicDropdownEntries = { [index: string]: string[] };
@@ -52,15 +54,41 @@ interface RawDropDown {
  * Handles all controlled input changes and notifies parent components of updates.
  */
 const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
-    ({ id, form, onChange }) => {
+    ({ id, form, onChange, schema }) => {
         const [isLoading, setIsLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [dropDown, setDropDown] = useState<DropDown>();
+
+        const genomicDefaults = useMemo(() => {
+            const genomicDefaults: { source: string }[] =
+                schema.items?.anyOf.map((subschema) =>
+                    getDefaultFormState(
+                        customizeValidator({
+                            AjvClass: Ajv2020,
+                        }),
+                        subschema
+                    )
+                );
+
+            const getDefaultFor = (source: "ncbi" | "ensembl") =>
+                genomicDefaults.filter(
+                    (genomicDefault) => genomicDefault.source === source
+                )[0];
+
+            return {
+                ncbi: getDefaultFor("ncbi") as unknown as NcbiGenomicForm,
+                ensembl: getDefaultFor(
+                    "ensembl"
+                ) as unknown as EnsemblGenomicForm,
+            };
+        }, [schema]);
+
         const ncbiAndEnsemblFormData: NcbiAndEnsemblFormData = {
             selectedSource: form?.source || "ncbi",
-            formDataNcbi: form?.source === "ncbi" ? form : defaultNcbiFormData,
+            formDataNcbi:
+                form?.source === "ncbi" ? form : genomicDefaults["ncbi"],
             formDataEnsembl:
-                form?.source === "ensembl" ? form : defaultEnsemblFormData,
+                form?.source === "ensembl" ? form : genomicDefaults["ensembl"],
         };
         const [formState, setFormState] = useState(ncbiAndEnsemblFormData);
 

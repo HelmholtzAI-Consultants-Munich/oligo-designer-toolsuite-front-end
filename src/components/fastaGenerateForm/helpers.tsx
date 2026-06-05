@@ -33,39 +33,6 @@ export const regionDisplayNames = {
     exon_exon_junction: "Exon-exon-junction",
 };
 
-export const defaultGenomicRegionsForm: GenomicRegionsForm = {
-    gene: false,
-    intergenic: false,
-    exon: true,
-    utr: false,
-    cds: false,
-    intron: false,
-    exon_exon_junction: false,
-};
-
-export const defaultNcbiFormData: NcbiGenomicForm = {
-    source: "ncbi",
-    source_params: {
-        species: "Homo_sapiens",
-        annotation_release: "110",
-        taxon: "vertebrate_mammalian",
-        assembly_source: "auto",
-        mode: "species",
-    },
-    genomic_regions: defaultGenomicRegionsForm,
-    exon_exon_junction_block_size: 50,
-};
-
-export const defaultEnsemblFormData: EnsemblGenomicForm = {
-    source: "ensembl",
-    source_params: {
-        species: "homo_sapiens",
-        annotation_release: "current",
-    },
-    genomic_regions: defaultGenomicRegionsForm,
-    exon_exon_junction_block_size: 50,
-};
-
 export const unwrapQueuePosition = (queue_position: [number, number]) => {
     const [highPriorityAhead, defaultPriorityAhead] = queue_position;
     const runsAhead = highPriorityAhead + defaultPriorityAhead;
