@@ -9,9 +9,9 @@ import React, { memo, useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import type {
-    EnsGenomicForm,
+    EnsemblGenomicForm,
     GenomicForm,
-    NcbiAndEnsFormData,
+    NcbiAndEnsemblFormData,
     NcbiGenomicForm,
 } from "../fastaGenerateForm/types";
 import { BACKEND_URL } from "../../config";
@@ -22,7 +22,7 @@ import {
     TaxonSelect,
 } from "../fastaGenerateForm/GenomicDropDown";
 import {
-    defaultEnsFormData,
+    defaultEnsemblFormData,
     defaultNcbiFormData,
     firstLetterUppercase,
     replaceUnderscore,
@@ -56,12 +56,13 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [isLoading, setIsLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [dropDown, setDropDown] = useState<DropDown>();
-        const ncbiAndEnsFormData: NcbiAndEnsFormData = {
+        const ncbiAndEnsemblFormData: NcbiAndEnsemblFormData = {
             selectedSource: form?.source || "ncbi",
             formDataNcbi: form?.source === "ncbi" ? form : defaultNcbiFormData,
-            formDataEns: form?.source === "ensembl" ? form : defaultEnsFormData,
+            formDataEnsembl:
+                form?.source === "ensembl" ? form : defaultEnsemblFormData,
         };
-        const [formState, setFormState] = useState(ncbiAndEnsFormData);
+        const [formState, setFormState] = useState(ncbiAndEnsemblFormData);
 
         const fetchDropDownData = useCallback(async () => {
             try {
@@ -142,7 +143,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         };
 
         // Handles changes to the source selector
-        const handleSourceChange = (newForm: NcbiAndEnsFormData) => {
+        const handleSourceChange = (newForm: NcbiAndEnsemblFormData) => {
             setFormState(newForm);
         };
 
@@ -178,14 +179,14 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const handleEnsChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-            const { newFormData } = processFormChange<EnsGenomicForm>(
+            const { newFormData } = processFormChange<EnsemblGenomicForm>(
                 e,
-                formState.formDataEns
+                formState.formDataEnsembl
             );
 
             setFormState({
                 ...formState,
-                formDataEns: {
+                formDataEnsembl: {
                     ...newFormData,
                 },
             });
@@ -195,7 +196,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             onChange(
                 formState.selectedSource === "ncbi"
                     ? formState.formDataNcbi
-                    : formState.formDataEns
+                    : formState.formDataEnsembl
             );
             closeModal();
         };
@@ -322,7 +323,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <SpeciesSelect
                                     id={`ensembl-${id}`}
                                     value={
-                                        formState.formDataEns.source_params
+                                        formState.formDataEnsembl.source_params
                                             .species
                                     }
                                     handleChange={handleEnsChange}
@@ -341,7 +342,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 <AnnotationSelect
                                     id={`ensembl-${id}`}
                                     value={
-                                        formState.formDataEns.source_params
+                                        formState.formDataEnsembl.source_params
                                             .annotation_release
                                     }
                                     handleChange={handleEnsChange}
@@ -349,8 +350,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                     <option value="">Select a release</option>
                                     {dropDown!.ensembl
                                         .get(
-                                            formState.formDataEns.source_params
-                                                .species
+                                            formState.formDataEnsembl
+                                                .source_params.species
                                         )!
                                         .map((release, idx) => (
                                             <option key={idx} value={release}>
@@ -362,11 +363,11 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                             <GenomicRegionSelect
                                 id={`ensembl-${id}`}
                                 exon_exon_junction_block_size={
-                                    formState.formDataEns
+                                    formState.formDataEnsembl
                                         .exon_exon_junction_block_size
                                 }
                                 genomic_regions={
-                                    formState.formDataEns.genomic_regions
+                                    formState.formDataEnsembl.genomic_regions
                                 }
                                 handleChange={handleEnsChange}
                             />

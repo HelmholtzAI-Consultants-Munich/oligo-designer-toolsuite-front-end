@@ -1,6 +1,6 @@
 export type GenomicFormOrFile = File | GenomicForm;
 
-export type GenomicForm = NcbiGenomicForm | EnsGenomicForm;
+export type GenomicForm = NcbiGenomicForm | EnsemblGenomicForm;
 
 export interface NcbiGenomicForm {
     source: "ncbi";
@@ -15,7 +15,7 @@ export interface NcbiGenomicForm {
     exon_exon_junction_block_size: number;
 }
 
-export interface EnsGenomicForm {
+export interface EnsemblGenomicForm {
     source: "ensembl";
     source_params: {
         species: string;
@@ -35,8 +35,8 @@ export interface GenomicRegionsForm {
     intron: boolean;
 }
 
-export interface NcbiAndEnsFormData {
+export interface NcbiAndEnsemblFormData {
     selectedSource: "ncbi" | "ensembl";
     formDataNcbi: NcbiGenomicForm;
-    formDataEns: EnsGenomicForm;
+    formDataEnsembl: EnsemblGenomicForm;
 }

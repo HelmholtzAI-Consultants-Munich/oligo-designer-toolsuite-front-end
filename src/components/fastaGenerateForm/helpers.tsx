@@ -8,7 +8,7 @@ import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
 import { Link } from "react-router";
 import type {
-    EnsGenomicForm,
+    EnsemblGenomicForm,
     GenomicForm,
     GenomicRegionsForm,
     NcbiGenomicForm,
@@ -56,7 +56,7 @@ export const defaultNcbiFormData: NcbiGenomicForm = {
     exon_exon_junction_block_size: 50,
 };
 
-export const defaultEnsFormData: EnsGenomicForm = {
+export const defaultEnsemblFormData: EnsemblGenomicForm = {
     source: "ensembl",
     source_params: {
         species: "homo_sapiens",

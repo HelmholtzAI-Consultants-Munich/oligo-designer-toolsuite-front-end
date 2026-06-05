@@ -3,13 +3,13 @@ import { BACKEND_URL } from "../../config";
 import axios from "axios";
 import { GenomicDropDown } from "./GenomicDropDown";
 import { useCache } from "../../hooks/useCache";
-import type { NcbiAndEnsFormData } from "./types";
+import type { NcbiAndEnsemblFormData } from "./types";
 
 interface NcbiAnnotationSelectProps {
     id: string;
     value: string;
     tooltip?: string;
-    form: NcbiAndEnsFormData;
+    form: NcbiAndEnsemblFormData;
     handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 

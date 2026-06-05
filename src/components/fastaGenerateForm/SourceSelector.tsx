@@ -1,10 +1,10 @@
 import { GenomicDropDown } from "./GenomicDropDown";
-import type { NcbiAndEnsFormData } from "./types";
+import type { NcbiAndEnsemblFormData } from "./types";
 
 interface SourceSelectProps {
     id: string;
-    form: NcbiAndEnsFormData;
-    onChange: (newForm: NcbiAndEnsFormData) => void;
+    form: NcbiAndEnsemblFormData;
+    onChange: (newForm: NcbiAndEnsemblFormData) => void;
 }
 
 export const SourceSelect: React.FC<SourceSelectProps> = ({
@@ -17,7 +17,8 @@ export const SourceSelect: React.FC<SourceSelectProps> = ({
         const newSource = e.target.value;
         onChange({
             ...form,
-            selectedSource: newSource as NcbiAndEnsFormData["selectedSource"],
+            selectedSource:
+                newSource as NcbiAndEnsemblFormData["selectedSource"],
         });
     };
 

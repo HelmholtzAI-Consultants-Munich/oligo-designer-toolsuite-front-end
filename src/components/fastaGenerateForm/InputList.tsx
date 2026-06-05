@@ -36,7 +36,7 @@ export const InputList = ({ id, inputs }: InputListProps) => {
             <Button
                 variant="outline-border filled"
                 onClick={input.removeHandler}
-                title="Remove Form"
+                title="Remove Region"
             >
                 <Trash />
             </Button>

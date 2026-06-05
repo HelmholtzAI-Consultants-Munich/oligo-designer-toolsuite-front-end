@@ -2,7 +2,7 @@ import type { GenericObjectType, RJSFSchema, UiSchema } from "@rjsf/utils";
 import TabsLayout from "../components/forms/TabsLayout";
 import TabLayout from "../components/forms/TabLayout";
 import SectionLayout from "../components/forms/SectionLayout";
-import { findSchemaDefinition } from "@rjsf/utils";
+import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
 
 export const merfishUiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,
@@ -146,7 +146,7 @@ const uiSchemaFromJsonSchemaRecursive = (
                 optionSchema,
                 level
             );
-            uiSchema = deepMergeObjects(uiSchema, optionUiSchema);
+            uiSchema = mergeObjects(uiSchema, optionUiSchema);
         }
     }
     if (localSchema.properties) {
@@ -187,30 +187,6 @@ const uiSchemaFromJsonSchemaRecursive = (
     }
 
     return uiSchema;
-};
-
-const deepMergeObjects = (
-    obj1: GenericObjectType,
-    obj2: GenericObjectType
-): GenericObjectType => {
-    const merged = { ...obj1 };
-
-    for (const key in obj2) {
-        if (key in merged) {
-            if (
-                typeof merged[key] === "object" &&
-                typeof obj2[key] === "object"
-            ) {
-                merged[key] = deepMergeObjects(merged[key], obj2[key]);
-            } else {
-                merged[key] = obj2[key];
-            }
-        } else {
-            merged[key] = obj2[key];
-        }
-    }
-
-    return merged;
 };
 
 export const scrinshotUiSchema: UiSchema = {
