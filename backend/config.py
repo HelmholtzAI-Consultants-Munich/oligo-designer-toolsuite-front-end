@@ -77,10 +77,16 @@ class Config:
     HELMHOLTZ_SCOPE = "openid single-logout"
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
+    # Turnstile settings
+    TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
+    TURNSTILE_SITE_KEY = os.environ.get("TURNSTILE_SITE_KEY", "")
+    TESTING = os.environ.get("TESTING", False)
+
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
     GENE_COUNT_THRESHOLD = 10
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024 * 1024))
 
     # Caching Settings
     REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")

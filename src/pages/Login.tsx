@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import { BACKEND_URL } from "../config";
+import { BACKEND_URL, TURNSTILE_SITE_KEY } from "../config";
 import { Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../utils/toastUtil";
 import { Vertical } from "../components/ui/Alignment";
 import { useRuns } from "../hooks/useRuns";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 /**
  * Login component handles user login functionality.
@@ -25,6 +26,9 @@ const Login = () => {
     const user = auth.user;
     const { loading, checkAuth } = auth;
     const { updateRuns } = useRuns();
+
+    const [token, setToken] = useState<string | null>(null);
+    const sitekey = TURNSTILE_SITE_KEY;
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get("redirect") || "/";
@@ -43,7 +47,7 @@ const Login = () => {
         try {
             const res = await axios.post(
                 BACKEND_URL + "/login",
-                { username, password, remember_me: rememberMe },
+                { username, password, remember_me: rememberMe, token },
                 { withCredentials: true }
             );
 
@@ -58,21 +62,36 @@ const Login = () => {
             updateRuns(); // Refresh runs after login
             // Navigate to the redirect URL or home
             navigate(redirectTo);
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err) && err.response?.status === 401) {
-                showToast({
-                    title: "Invalid username or password.",
-                    content: "Please check your credentials and try again.",
-                    type: "danger",
-                });
-            } else {
-                console.error(err);
-                showToast({
-                    title: "Login failed.",
-                    content:
-                        "An error occurred during login. Please try again later.",
-                    type: "danger",
-                });
+        } catch (error: unknown) {
+            if (axios.isAxiosError(error)) {
+                switch (error.response?.status) {
+                    case 401: {
+                        showToast({
+                            title: "Invalid username or password.",
+                            content:
+                                "Please check your credentials and try again.",
+                            type: "danger",
+                        });
+                        break;
+                    }
+                    case 403: {
+                        showToast({
+                            title: "Verification failed.",
+                            content:
+                                " We couldn't verify that you are human. Please try again.",
+                            type: "danger",
+                        });
+                        break;
+                    }
+                    default:
+                        console.error(error);
+                        showToast({
+                            title: "Login failed.",
+                            content:
+                                "An error occurred during login. Please try again later.",
+                            type: "danger",
+                        });
+                }
             }
         }
     };
@@ -107,6 +126,14 @@ const Login = () => {
                                 Recommended for Helmholtz users. You will be
                                 redirected to the Helmholtz AAI login page.
                             </Card.Text>
+                            <Turnstile
+                                siteKey={sitekey}
+                                options={{
+                                    theme: "light",
+                                    language: "en",
+                                }}
+                                onSuccess={setToken}
+                            />
                             <Button onClick={redirectToHelmholtz}>
                                 Continue with Helmholtz AAI
                             </Button>

@@ -28,6 +28,7 @@ from flask_login import LoginManager, UserMixin, current_user, login_required, l
 from werkzeug.security import check_password_hash
 
 from backend.extensions import mongo, oauth
+from backend.routes.route_helpers import validate_turnstile
 from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 from backend.utilities.legal_acceptance import (
@@ -165,6 +166,7 @@ def login():
 
     :returns: Redirect response (GET) or JSON message (POST).
     """
+
     if request.method == "GET":
         # Preserve redirect parameter from frontend through OAuth flow
         redirect_param = request.args.get("redirect")
@@ -181,6 +183,10 @@ def login():
     username = (data.get("username") or "").strip()
     password = data.get("password")
     remember_me = data.get("remember_me", True)  # Default to True for backward compatibility
+    token = data.get("token", "")
+
+    if not validate_turnstile(token):
+        abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
 
     if not username or not password:
         abort(HTTPStatus.BAD_REQUEST, description="Username and password required")

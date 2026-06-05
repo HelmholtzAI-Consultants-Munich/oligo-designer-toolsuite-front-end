@@ -15,7 +15,6 @@ Features:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
 """
 
-import os
 from http import HTTPStatus
 from typing import Any
 
@@ -40,6 +39,23 @@ from backend.utilities.typed_values import (
 runs_bp = Blueprint("runs", __name__)
 
 
+def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Return run metrics formatted for API responses."""
+    if not isinstance(metrics, dict):
+        return None
+
+    formatted: dict[str, Any] = {}
+    for field in ["queue_wait_seconds", "execution_seconds", "total_seconds"]:
+        if field in metrics:
+            formatted[field] = metrics[field]
+
+    for field in ["started_at", "finished_at"]:
+        if metrics.get(field) is not None:
+            formatted[field] = timestamp_to_iso(metrics[field])
+
+    return formatted or None
+
+
 def format_run(run: dict[Any, Any]) -> dict[str, Any]:
     """Return run payload formatted for API responses."""
     formatted = {
@@ -52,6 +68,9 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "priority": run.get("priority", "unknown"),
         "queue_position": run.get("queue_position", "unknown"),
     }
+
+    if metrics := format_run_metrics(run.get("metrics")):
+        formatted["metrics"] = metrics
 
     if run.get("status") in ["failure", "timeout", "empty_result"] and run.get("error_message"):
         formatted["error_message"] = run.get("error_message")
@@ -199,62 +218,6 @@ def get_run_file(run_id: ObjectId, filename: str):
         return send_file(file_path, mimetype="application/octet-stream")
     else:
         abort(HTTPStatus.BAD_REQUEST, description="Unsupported file type")
-
-
-@runs_bp.route("/api/runs/<ObjectId:run_id>/files", methods=["GET"])
-def get_run_files(run_id: ObjectId):
-    """
-    List all output files for a specific pipeline run.
-
-    Handles both main output directory and special annotation subdirectory for Genomic Region Generator pipeline.
-
-    :param run_id: The ObjectId of the run.
-    :type run_id: ObjectId
-    :returns: List of file metadata dictionaries (name, type, size).
-    :rtype: flask.Response
-
-    Workflow:
-        1. Auth/session check for run.
-        2. List files in run output directory.
-        3. If pipeline is Genomic Region Generator, include files from annotation subdir.
-    """
-    # Auth or session check
-    run = get_run_or_404(run_id, require_ownership=True)
-
-    output_dir = deserialize_path(run.get("output_path"))
-    if output_dir is None:
-        current_app.logger.error(f"Output directory is missing for run {run_id}")
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Run output directory is missing")
-
-    files = []
-
-    # Main output dir files
-    for fname in os.listdir(output_dir):
-        if fname.endswith((".yml", ".yaml", ".txt", ".log")):
-            file = output_dir / fname
-            files.append(
-                {
-                    "name": fname,
-                    "type": "log" if "log" in fname else "config",
-                    "size": file.stat().st_size,
-                }
-            )
-
-    # Special handling for Genomic Region Generator pipeline
-    if run.get("pipeline") == "generator":
-        output_gen = output_dir / "annotation"
-        if output_gen.exists():
-            for fname in os.listdir(output_gen):
-                if fname.endswith((".yml", ".yaml", ".txt", ".log", ".fna")):
-                    file = output_gen / fname
-                    files.append(
-                        {
-                            "name": f"annotation/{fname}",
-                            "type": "log" if "log" in fname else "config",
-                            "size": file.stat().st_size,
-                        }
-                    )
-    return jsonify(files), HTTPStatus.OK
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/config", methods=["GET"])

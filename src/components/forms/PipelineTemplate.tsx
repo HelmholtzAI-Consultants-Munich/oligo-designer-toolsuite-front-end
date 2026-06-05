@@ -8,6 +8,7 @@ import {
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
+import { Turnstile } from "@marsidev/react-turnstile";
 import type { RJSFFormData } from "../componentTypes";
 import { handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
@@ -33,6 +34,7 @@ import { Link, useLocation } from "react-router";
 import GenomicInput from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
+import { TURNSTILE_SITE_KEY } from "../../config";
 import { FileInput } from "../fastaGenerateForm/FileInput";
 
 type Props = {
@@ -68,6 +70,8 @@ const PipelineTemplate: React.FC<Props> = ({
         auth.legal?.current_terms_version;
 
     const location = useLocation();
+
+    const sitekey = TURNSTILE_SITE_KEY;
 
     const applyValidatedConfig = useCallback(
         (importedConfig: unknown, successTitle: string, errorTitle: string) => {
@@ -146,6 +150,8 @@ const PipelineTemplate: React.FC<Props> = ({
         reader.readAsText(file);
     };
 
+    const [token, setToken] = useState<string | null>(null);
+
     const runPipeline = async () => {
         if (requiresTermsAcceptance) {
             if (!hasAcceptedTerms) {
@@ -180,7 +186,8 @@ const PipelineTemplate: React.FC<Props> = ({
             pipeline,
             schema
         );
-        handleSubmit(formData, pipeline, updateRuns, pipelineRunConfig);
+
+        handleSubmit(formData, pipeline, updateRuns, token, pipelineRunConfig);
     };
 
     return (
@@ -237,6 +244,14 @@ const PipelineTemplate: React.FC<Props> = ({
                 onChange={(e) => setFormData(e.formData)}
                 onSubmit={() => void runPipeline()}
             >
+                <Turnstile
+                    siteKey={sitekey}
+                    options={{
+                        theme: "light",
+                        language: "en",
+                    }}
+                    onSuccess={setToken}
+                />
                 {requiresTermsAcceptance && (
                     <div
                         className="border rounded p-3 mt-5 bg-light"

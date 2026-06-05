@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json package-lock.json playwright.config.ts ./
 RUN npm ci
 ENV CI=true
+ENV TESTING=true
 
 COPY backend/data ./backend/data/
 COPY tests ./tests
