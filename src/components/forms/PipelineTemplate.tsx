@@ -259,8 +259,13 @@ const PipelineTemplate: React.FC<Props> = ({
                     >
                         <p className="mb-2">
                             Before running this pipeline, please accept the{" "}
-                            <Link to="/terms">Terms of Service</Link> and review
-                            the <Link to="/privacy-policy">Privacy Policy</Link>
+                            <Link target="_blank" to="/terms">
+                                Terms of Service
+                            </Link>{" "}
+                            and review the{" "}
+                            <Link target="_blank" to="/privacy-policy">
+                                Privacy Policy
+                            </Link>
                             .
                         </p>
                         <BootstrapForm.Check
