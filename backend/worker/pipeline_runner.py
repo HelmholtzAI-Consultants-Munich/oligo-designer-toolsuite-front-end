@@ -163,9 +163,6 @@ class PipelineRunner:
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         # find files_fasta_target_probe_database fasta file and read it
         regions_file = glom(form_data, "target_probe.oligo_generation.file_region_ids")
-        if not regions_file:
-            self.logger.debug("No regions file provided, skipping visualization generation.")
-            return
 
         fasta_paths = glom(form_data, "target_probe.oligo_generation.files_fasta_probe_database")
         if not fasta_paths:
