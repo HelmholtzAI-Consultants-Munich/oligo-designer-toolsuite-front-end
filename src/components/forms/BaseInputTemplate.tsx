@@ -12,6 +12,11 @@ const {
     templates: { BaseInputTemplate },
 } = getDefaultRegistry();
 
+/**
+ * The WrappedBaseInputTemplate wraps the default BaseInputTemplate.
+ * It adds field titles and descriptions as tooltips.
+ * It also introduces special handling for empty string values, allowing optional fields to be represented without an anyOf selector.
+ */
 const WrappedBaseInputTemplate = memo((props: BaseInputTemplateProps) => {
     const { id, label, hideLabel, uiSchema, schema, onChange, options } = props;
 

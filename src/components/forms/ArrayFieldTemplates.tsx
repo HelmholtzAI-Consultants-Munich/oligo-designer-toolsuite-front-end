@@ -33,6 +33,10 @@ const ArrayFieldDescriptionTemplate = memo(
     }
 );
 
+/**
+ * This ArrayFieldTemplate is based on the react-bootstrap theme's template.
+ * It harmonizes the layout and styling of array fields with ODT's design system.
+ */
 const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     const {
         canAdd,
@@ -92,6 +96,10 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     );
 });
 
+/**
+ * This ArrayFieldItemTemplate is based on the react-bootstrap theme's template.
+ * It harmonizes the layout and styling of array field items with ODT's design system.
+ */
 const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
     const { children, hasToolbar, buttonsProps } = props;
     return (

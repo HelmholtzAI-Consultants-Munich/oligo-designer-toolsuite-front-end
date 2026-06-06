@@ -13,6 +13,10 @@ const {
     fields: { AnyOfField, OneOfField },
 } = getDefaultRegistry();
 
+/**
+ * The WrappedAnyOfField wraps the default AnyOfField.
+ * It adds special handling for common patterns in our schema that represent optional fields.
+ */
 const WrappedAnyOfField = memo(function WrappedAnyOfField(
     props: React.ComponentProps<typeof AnyOfField>
 ) {
@@ -76,6 +80,10 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
     return <AnyOfField {...props} />;
 });
 
+/**
+ * The WrappedOneOfField wraps the default OneOfField.
+ * It allows CSS-side hiding of the discriminator selector when the discriminator property is "enabled".
+ */
 const WrappedOneOfField = memo(function WrappedOneOfField(
     props: React.ComponentProps<typeof OneOfField>
 ) {
@@ -93,15 +101,17 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
     return <OneOfField {...props} />;
 });
 
+/**
+ * This MultiSchemaFieldTemplate is based on the react-bootstrap theme's template.
+ * It harmonizes the layout and styling of multi-schema fields (anyOf/oneOf) with ODT's design system.
+ * It introduces a card layout with a title and a description tooltip (when available).
+ */
 const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     props: MultiSchemaFieldTemplateProps
 ) {
     const { selector, optionSchemaField, schema } = props;
     return (
         <>
-            {schema.description ? (
-                <ToolTip id={schema.$id!} tip={schema.description} />
-            ) : null}
             <Card
                 style={{
                     marginBottom: "1rem",
@@ -114,6 +124,9 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
                             {spaceBeforeCapitalLetters(schema.title)}
                         </span>
                     )}
+                    {schema.description ? (
+                        <ToolTip id={schema.$id!} tip={schema.description} />
+                    ) : null}
                     <div className="multi-schema-selector">{selector}</div>
                     {optionSchemaField}
                 </Card.Body>

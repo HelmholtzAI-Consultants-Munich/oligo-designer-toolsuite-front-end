@@ -3,6 +3,11 @@ import { Fragment, memo } from "react";
 import { ToolTip } from "../ui/Tooltip";
 import { spaceBeforeCapitalLetters } from "./utils";
 
+/**
+ * This ObjectFieldTemplate is based on the react-bootstrap theme's template.
+ * It harmonizes the layout and styling of object fields with ODT's design system.
+ * It also introduces a CSS grid layout to automatically arrange input fields in a responsive way.
+ */
 const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
     props: ObjectFieldTemplateProps
 ) {
