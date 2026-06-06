@@ -10,7 +10,7 @@ export type Modal = {
 };
 
 export type NestedObject = {
-    [key: string]: string | NestedObject;
+    [key: string]: string | number | boolean | NestedObject;
 };
 
 export interface DropDown {

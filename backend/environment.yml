@@ -3,3 +3,6 @@ dependencies:
   # Core runtime
   - python=3.12
   - pip>=25.1 # min version supporting dependency groups
+
+  # Oligo Designer Toolsuite AI filters dependencies
+  - pytorch # conda chooses PyTorch backend, avoids CUDA if not available

@@ -1,85 +1,72 @@
-import type { JSONSchema7 } from "json-schema";
-import type { FieldProps } from "@rjsf/utils";
-import { type FastaFormUncommented, type setterCallback } from "./types";
+import type { FieldPathList, FieldProps } from "@rjsf/utils";
+import { type GenomicForm, type GenomicFormOrFile } from "./types";
 import FastaGenerateForm from "../forms/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
-import {
-    buildFileFunctions,
-    changeHandlerAbstractFactory,
-    firstLetterUppercase,
-    getKeyObjectFromFastaFormBaseSchema,
-    regionDisplayNames,
-    replaceUnderscore,
-} from "./helpers";
-import { Button } from "react-bootstrap";
+import { Button, Form } from "react-bootstrap";
 import { Grid, Vertical } from "../ui/Alignment";
-import type { NestedObject } from "../componentTypes";
-import { FileUpload } from "./FileInput";
 import { InputList } from "./InputList";
+import { ToolTip } from "../ui/Tooltip";
+import { FileEarmarkPlus } from "react-bootstrap-icons";
+import { spaceBeforeCapitalLetters } from "../forms/utils";
 
-const GenomicInput = ({
+type ConfigurableGenomicInputProps = FieldProps & {
+    formsAllowed: boolean;
+    filesAllowed: boolean;
+};
+
+const ConfigurableGenomicInput = ({
     fieldPathId: { $id, path },
     name,
     schema,
     formData,
     onChange,
-}: FieldProps) => {
+    onBlur,
+    formsAllowed,
+    filesAllowed,
+}: ConfigurableGenomicInputProps) => {
+    // TODO: Currently they do not point to the buttons, but it would be good if they would do it, since
+    // it would make the page more accessible and playwright tests would be easier
     const id = $id;
-    console.log(name);
 
-    const fastaForms: FastaFormUncommented[] = formData.fasta_form;
-
-    const { files, setFiles, handleFileRemove, FilePreview } =
-        buildFileFunctions(formData, path, onChange);
-
-    const setFastaForms = (callback: setterCallback<FastaFormUncommented>) => {
-        changeHandlerAbstractFactory(
-            ["fasta_form"],
-            path,
-            onChange
-        )(callback(fastaForms));
+    const handleGenomicFormNew = () => {
+        handleGenomicFormEdit(null, onChange, formData.length);
     };
 
-    const handleFastaFormNew = (
-        newForm: FastaFormUncommented,
-        onChange: (updatedForm: FastaFormUncommented, idx: number) => void
-    ) => {
-        handleFastaFormEdit(newForm, onChange, fastaForms.length);
+    const handleRemove = (idx: number) => {
+        onChange(
+            formData.filter((_: GenomicFormOrFile, i: number) => i !== idx),
+            path
+        );
+        onBlur(id, formData);
     };
 
-    const handleFastaFormChange = (
-        updatedForm: FastaFormUncommented,
+    const handleGenomicFormEdit = (
+        form: GenomicForm | null,
+        onChange: (newValue: GenomicForm[], path: FieldPathList) => void,
         idx: number
     ) => {
-        setFastaForms(
-            (prevForms) =>
-                prevForms.length > idx
-                    ? prevForms.map((f, i) => (i === idx ? updatedForm : f))
-                    : [...prevForms, updatedForm] // Add new form if idx is out of bounds)
-        );
-    };
+        const formChangeHandler = (updatedForm: GenomicForm) => {
+            if (formData.length > idx) {
+                onChange(
+                    formData.map((f: GenomicForm, i: number) =>
+                        i === idx ? updatedForm : f
+                    ),
+                    path
+                );
+            } else {
+                onChange([...formData, updatedForm], path);
+            }
+            onBlur(id, formData);
+        };
 
-    const handleFastaFormRemove = (idx: number) => {
-        setFastaForms((prevForms) =>
-            prevForms.length === 0
-                ? prevForms
-                : prevForms.filter((_, i) => i !== idx)
-        );
-    };
-
-    const handleFastaFormEdit = (
-        form: FastaFormUncommented,
-        onChange: (updatedForm: FastaFormUncommented, idx: number) => void,
-        idx: number
-    ) => {
         showModal({
             rawContent: (
                 <FastaGenerateForm
                     id={`${id}-${idx}`}
                     key={`${id} ${idx}`}
                     form={form}
+                    onChange={formChangeHandler}
                     schema={schema}
-                    onChange={(updatedForm) => onChange(updatedForm, idx)}
                 />
             ),
             centered: true,
@@ -88,66 +75,148 @@ const GenomicInput = ({
         });
     };
 
-    const FastaFormPreview = (form: FastaFormUncommented) => {
-        const formData =
-            form.selectedSource === "ncbi"
-                ? form.formDataNcbi
-                : form.formDataEns;
-        const species = replaceUnderscore(
-            firstLetterUppercase(formData.source_params.species)
-        );
-        const selectedRegions = Object.entries(formData.genomic_regions)
-            .filter(([, selected]) => selected === "true")
-            .map(
-                ([key]) =>
-                    regionDisplayNames[key as keyof typeof regionDisplayNames]
-            );
-
-        return `${species} (${selectedRegions.join(", ") || "no regions selected"})`;
+    const handleFilesUpload = (newFiles: File[]) => {
+        onChange([...formData, ...newFiles], path);
+        onBlur(id, formData);
     };
 
     return (
-        <Vertical gap="md">
-            {fastaForms.length === 0 && files.length === 0 && (
+        <Vertical gap="sm" className="mb-2">
+            <span>
+                {schema.title && (
+                    <span className="super-label mb-0">
+                        {spaceBeforeCapitalLetters(schema.title)}
+                    </span>
+                )}
+                {schema.description && (
+                    <ToolTip id={id} tip={schema.description} />
+                )}
+            </span>
+
+            {formData.length === 0 && (
                 <div className="text-muted">
-                    No FASTA forms or files uploaded.
+                    No{" "}
+                    {formsAllowed && filesAllowed
+                        ? "genomic region forms or files"
+                        : formsAllowed
+                          ? "genomic region forms"
+                          : "files"}{" "}
+                    provided.
                 </div>
             )}
+
             <InputList
                 id={id}
-                handleInputRemove={handleFastaFormRemove}
-                inputtedList={fastaForms}
-                previewCallback={FastaFormPreview}
-                handleInputEdit={(form: FastaFormUncommented, idx: number) =>
-                    handleFastaFormEdit(form, handleFastaFormChange, idx)
-                }
-            />
-            <InputList
-                id={id}
-                handleInputRemove={handleFileRemove}
-                inputtedList={files}
-                previewCallback={FilePreview}
-            />
-            <Grid gap="md" className="w-100">
-                <Button
-                    name={name}
-                    onClick={() =>
-                        handleFastaFormNew(
-                            getKeyObjectFromFastaFormBaseSchema(
-                                (schema.properties!.fasta_form as JSONSchema7)
-                                    .items as NestedObject,
-                                "default",
-                                true
-                            ) as unknown as FastaFormUncommented,
-                            handleFastaFormChange
-                        )
+                inputs={(formData as GenomicFormOrFile[]).map((data) => {
+                    if (Object.hasOwn(data, "source")) {
+                        return {
+                            type: "form",
+                            data: data as GenomicForm,
+                            editHandler: () =>
+                                handleGenomicFormEdit(
+                                    data as GenomicForm,
+                                    onChange,
+                                    formData.indexOf(data)
+                                ),
+                            removeHandler: () =>
+                                handleRemove(formData.indexOf(data)),
+                        };
+                    } else {
+                        return {
+                            type: "file",
+                            data: data as File,
+                            removeHandler: () =>
+                                handleRemove(formData.indexOf(data)),
+                        };
                     }
-                >
-                    Generate FASTA+
-                </Button>
-                <FileUpload id={id} name={name} setFiles={setFiles} />
+                })}
+            />
+
+            <Grid gap="md" className="w-100">
+                {formsAllowed && (
+                    <Button
+                        variant="primary-muted"
+                        name={name}
+                        onClick={handleGenomicFormNew}
+                    >
+                        <FileEarmarkPlus size="18" className="me-2" />
+                        Genomic Regions
+                    </Button>
+                )}
+                {filesAllowed && (
+                    <FileUpload
+                        id={id}
+                        name={name}
+                        onUpload={handleFilesUpload}
+                    />
+                )}
             </Grid>
         </Vertical>
     );
 };
-export default GenomicInput;
+
+interface FileUploadProps {
+    id: string;
+    name: string;
+    onUpload: (files: File[]) => void;
+}
+
+export const FileUpload: React.FC<FileUploadProps> = ({
+    id,
+    name,
+    onUpload,
+}) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { files: selectedFiles } = e.target;
+        if (!selectedFiles) return;
+        onUpload(Array.from(selectedFiles));
+        e.target.value = ""; // Reset the input so the same file can be uploaded again if needed
+    };
+
+    return (
+        <Form.Label className="btn btn-outline-border filled text-black mb-0">
+            <FileEarmarkPlus size="18" className="me-2" />
+            Upload File(s)
+            <Form.Control
+                type="file"
+                className="visually-hidden"
+                id={id}
+                name={name}
+                onChange={(e) => {
+                    handleFileChange(e as React.ChangeEvent<HTMLInputElement>);
+                }}
+                multiple
+            />
+        </Form.Label>
+    );
+};
+
+export const GenomicAndFileInput = (props: FieldProps) => {
+    return (
+        <ConfigurableGenomicInput
+            {...props}
+            formsAllowed={true}
+            filesAllowed={true}
+        />
+    );
+};
+
+export const GenomicInput = (props: FieldProps) => {
+    return (
+        <ConfigurableGenomicInput
+            {...props}
+            formsAllowed={true}
+            filesAllowed={false}
+        />
+    );
+};
+
+export const FileInput = (props: FieldProps) => {
+    return (
+        <ConfigurableGenomicInput
+            {...props}
+            formsAllowed={false}
+            filesAllowed={true}
+        />
+    );
+};

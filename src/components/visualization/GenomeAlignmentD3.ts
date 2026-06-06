@@ -165,7 +165,9 @@ const setupElements = (
     // Position label background
     ctx.positionLabelGroup
         .select("rect")
-        .attr("fill", "rgb(242.25, 245.1, 246.55)");
+        .attr("fill", "var(--bs-primary-bg-subtle)")
+        .attr("opacity", 1)
+        .attr("pointer-events", "none");
 
     // Initially hide position label until mouse enters
     ctx.positionLabelGroup

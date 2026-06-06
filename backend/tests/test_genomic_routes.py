@@ -3,7 +3,9 @@ import os
 from unittest.mock import patch
 
 import pytest
+from glom import assign
 
+from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import mongo
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.tests.conftest import assert_error_sanitized, post
@@ -68,11 +70,8 @@ def dummy_form_ncbi(dummy_form):
     form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ncbi_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    dummy_form["formdata"]["files_fasta_target_probe_database"] = {"fasta_form": [form], "files": []}
-    dummy_form["formdata"]["files_fasta_reference_database_target_probe"] = {
-        "fasta_form": [form],
-        "files": [],
-    }
+    for path in PIPELINE_GENOMIC_INPUT["oligoseq"]:
+        assign(dummy_form["formdata"], path, [form])
     return dummy_form
 
 
@@ -81,11 +80,8 @@ def dummy_form_ensembl(dummy_form):
     form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ensembl_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    dummy_form["formdata"]["files_fasta_target_probe_database"] = {"fasta_form": [form], "files": []}
-    dummy_form["formdata"]["files_fasta_reference_database_target_probe"] = {
-        "fasta_form": [form],
-        "files": [],
-    }
+    for path in PIPELINE_GENOMIC_INPUT["oligoseq"]:
+        assign(dummy_form["formdata"], path, [form])
     return dummy_form
 
 

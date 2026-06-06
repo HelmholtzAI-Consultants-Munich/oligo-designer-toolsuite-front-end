@@ -13,6 +13,8 @@
 !/backend/extensions.py
 !/backend/genomic_databases.py
 !/backend/types.py
+!/backend/models.py
+!/backend/utils.py
 !/backend/exceptions.py
 !/backend/pyproject.toml
 !/backend/environment.yml

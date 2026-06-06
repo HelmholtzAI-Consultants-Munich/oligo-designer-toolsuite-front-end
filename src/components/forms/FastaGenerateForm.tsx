@@ -5,13 +5,14 @@
  * It allows users to select the data source, species, taxon, annotation release, genomic regions, and additional options.
  * The form is controlled via props and notifies parent components of changes.
  */
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import type {
-    EnsFastaFormDataUncommented,
-    FastaFormUncommented,
-    NcbiFastaFormDataUncommented,
+    EnsemblGenomicForm,
+    GenomicForm,
+    NcbiAndEnsemblFormData,
+    NcbiGenomicForm,
 } from "../fastaGenerateForm/types";
 import { BACKEND_URL } from "../../config";
 import { SourceSelect } from "../fastaGenerateForm/SourceSelector";
@@ -22,21 +23,21 @@ import {
 } from "../fastaGenerateForm/GenomicDropDown";
 import {
     firstLetterUppercase,
-    getKeyObjectFromFastaFormBaseSchema,
     replaceUnderscore,
 } from "../fastaGenerateForm/helpers";
 import { GenomicRegionSelect } from "../fastaGenerateForm/GenomicRegionSelect";
 import { NcbiAnnotationSelect } from "../fastaGenerateForm/NcbiAnnotationSelect";
 import { closeModal } from "../../utils/modalUtil";
-import type { RJSFSchema } from "@rjsf/utils";
 import type { DropDown, NestedObject } from "../componentTypes";
-import type { JSONSchema7 } from "json-schema";
+import { getDefaultFormState, type RJSFSchema } from "@rjsf/utils";
+import { customizeValidator } from "@rjsf/validator-ajv8";
+import Ajv2020 from "ajv/dist/2020";
 
 // Props for FastaGenerateForm, containing current form state and handlers for change/removal.
 interface FastaGenerateFormProps {
     id: string;
-    form: FastaFormUncommented;
-    onChange: (newForm: FastaFormUncommented) => void;
+    form: GenomicForm | null;
+    onChange: (newForm: GenomicForm) => void;
     schema: RJSFSchema;
 }
 
@@ -57,13 +58,41 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [isLoading, setIsLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
         const [dropDown, setDropDown] = useState<DropDown>();
-        const [formState, setFormState] = useState(form);
 
-        const descriptionOnlySchema = getKeyObjectFromFastaFormBaseSchema(
-            (schema.properties!.fasta_form as JSONSchema7)
-                .items as NestedObject,
-            "description"
-        ) as RJSFSchema;
+        const genomicDefaults = useMemo(() => {
+            const subschemas =
+                (schema.items as { anyOf: RJSFSchema[] }).anyOf || [];
+            const genomicDefaults = subschemas.map(
+                (subschema) =>
+                    getDefaultFormState(
+                        customizeValidator({
+                            AjvClass: Ajv2020,
+                        }),
+                        subschema
+                    ) as { source: string }
+            );
+
+            const getDefaultFor = (source: "ncbi" | "ensembl") =>
+                genomicDefaults.filter(
+                    (genomicDefault) => genomicDefault.source === source
+                )[0];
+
+            return {
+                ncbi: getDefaultFor("ncbi") as unknown as NcbiGenomicForm,
+                ensembl: getDefaultFor(
+                    "ensembl"
+                ) as unknown as EnsemblGenomicForm,
+            };
+        }, [schema]);
+
+        const ncbiAndEnsemblFormData: NcbiAndEnsemblFormData = {
+            selectedSource: form?.source || "ncbi",
+            formDataNcbi:
+                form?.source === "ncbi" ? form : genomicDefaults["ncbi"],
+            formDataEnsembl:
+                form?.source === "ensembl" ? form : genomicDefaults["ensembl"],
+        };
+        const [formState, setFormState] = useState(ncbiAndEnsemblFormData);
 
         const fetchDropDownData = useCallback(async () => {
             try {
@@ -127,7 +156,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             }
 
             if (keys[0] === "genomic_regions") {
-                formTarget[keys[keys.length - 1]] = checked ? "true" : "false";
+                formTarget[keys[keys.length - 1]] = checked ? true : false;
             } else {
                 formTarget[keys[keys.length - 1]] = value;
             }
@@ -144,8 +173,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         };
 
         // Handles changes to the source selector
-        const handleSourceChange = (newFastaForm: FastaFormUncommented) => {
-            setFormState(newFastaForm);
+        const handleSourceChange = (newForm: NcbiAndEnsemblFormData) => {
+            setFormState(newForm);
         };
 
         // Handles changes to NCBI-specific form fields and checkboxes
@@ -153,10 +182,7 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
             const { newFormData, keys, value } =
-                processFormChange<NcbiFastaFormDataUncommented>(
-                    e,
-                    formState.formDataNcbi
-                );
+                processFormChange<NcbiGenomicForm>(e, formState.formDataNcbi);
 
             if (keys[0] === "source_params" && keys[1] === "taxon") {
                 // Update dependent fields when source params change
@@ -183,28 +209,31 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const handleEnsChange = (
             e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-            const { newFormData } =
-                processFormChange<EnsFastaFormDataUncommented>(
-                    e,
-                    formState.formDataEns
-                );
+            const { newFormData } = processFormChange<EnsemblGenomicForm>(
+                e,
+                formState.formDataEnsembl
+            );
 
             setFormState({
                 ...formState,
-                formDataEns: {
+                formDataEnsembl: {
                     ...newFormData,
                 },
             });
         };
 
         const handleSave = () => {
-            onChange(formState);
+            onChange(
+                formState.selectedSource === "ncbi"
+                    ? formState.formDataNcbi
+                    : formState.formDataEnsembl
+            );
             closeModal();
         };
 
         const FastaGenerateFormHeader = () => (
             <Modal.Header closeButton>
-                <Modal.Title>Configure FASTA Generation</Modal.Title>
+                <Modal.Title>Configure Genomic Regions</Modal.Title>
             </Modal.Header>
         );
 
@@ -253,10 +282,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 />
                                 <TaxonSelect
                                     id={`ncbi-${id}`}
-                                    tooltip={
-                                        descriptionOnlySchema.formDataNcbi
-                                            .source_params.taxon.description
-                                    }
                                     value={
                                         formState.formDataNcbi.source_params
                                             .taxon
@@ -276,10 +301,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 {/* Species selector */}
                                 <SpeciesSelect
                                     id={`ncbi-${id}`}
-                                    tooltip={
-                                        descriptionOnlySchema.formDataNcbi
-                                            .source_params.species.description
-                                    }
                                     value={
                                         formState.formDataNcbi.source_params
                                             .species
@@ -298,11 +319,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 </SpeciesSelect>
                                 <NcbiAnnotationSelect
                                     id={`ncbi-${id}`}
-                                    tooltip={
-                                        descriptionOnlySchema.formDataNcbi
-                                            .source_params.annotation_release
-                                            .description
-                                    }
                                     value={
                                         formState.formDataNcbi.source_params
                                             .annotation_release
@@ -321,14 +337,6 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                     formState.formDataNcbi.genomic_regions
                                 }
                                 handleChange={handleNcbiChange}
-                                schema={{
-                                    genomic_regions:
-                                        descriptionOnlySchema.formDataNcbi
-                                            .genomic_regions,
-                                    exon_exon_junction_block_size:
-                                        descriptionOnlySchema.formDataNcbi
-                                            .exon_exon_junction_block_size,
-                                }}
                             />
                         </div>
                     )}
@@ -344,12 +352,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 {/* Species selector */}
                                 <SpeciesSelect
                                     id={`ensembl-${id}`}
-                                    tooltip={
-                                        descriptionOnlySchema.formDataEns
-                                            .source_params.species.description
-                                    }
                                     value={
-                                        formState.formDataEns.source_params
+                                        formState.formDataEnsembl.source_params
                                             .species
                                     }
                                     handleChange={handleEnsChange}
@@ -367,13 +371,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                 {/* Annotation release selector */}
                                 <AnnotationSelect
                                     id={`ensembl-${id}`}
-                                    tooltip={
-                                        descriptionOnlySchema.formDataEns
-                                            .source_params.annotation_release
-                                            .description
-                                    }
                                     value={
-                                        formState.formDataEns.source_params
+                                        formState.formDataEnsembl.source_params
                                             .annotation_release
                                     }
                                     handleChange={handleEnsChange}
@@ -381,8 +380,8 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                                     <option value="">Select a release</option>
                                     {dropDown!.ensembl
                                         .get(
-                                            formState.formDataEns.source_params
-                                                .species
+                                            formState.formDataEnsembl
+                                                .source_params.species
                                         )!
                                         .map((release, idx) => (
                                             <option key={idx} value={release}>
@@ -394,21 +393,13 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                             <GenomicRegionSelect
                                 id={`ensembl-${id}`}
                                 exon_exon_junction_block_size={
-                                    formState.formDataEns
+                                    formState.formDataEnsembl
                                         .exon_exon_junction_block_size
                                 }
                                 genomic_regions={
-                                    formState.formDataEns.genomic_regions
+                                    formState.formDataEnsembl.genomic_regions
                                 }
                                 handleChange={handleEnsChange}
-                                schema={{
-                                    genomic_regions:
-                                        descriptionOnlySchema.formDataEns
-                                            .genomic_regions,
-                                    exon_exon_junction_block_size:
-                                        descriptionOnlySchema.formDataEns
-                                            .exon_exon_junction_block_size,
-                                }}
                             />
                         </div>
                     )}

@@ -13,12 +13,14 @@ from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
+from glom import assign, glom
+from pydantic import ValidationError
 from redis import Redis
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
-from backend.constants import PIPELINE_GENOMIC_INPUT
+from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
@@ -31,18 +33,20 @@ from backend.utilities.typed_values import (
     serialize_path,
     utc_now,
 )
-from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
+from backend.utilities.validation import parse_run_id, validate_genomic_form_data
+from backend.worker.models import OligoSeqProbeDesignerConfigOverride
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
-
+# Pipelines other than oligoseq are disabled at the moment, since they do not have
+# a pydantic integration
 EXISTING_PIPELINES = frozenset(
     {
-        "scrinshot",
-        "seqfish",
-        "merfish",
+        # "scrinshot",
+        # "seqfish",
+        # "merfish",
         "oligoseq",
     }
 )
@@ -90,7 +94,7 @@ def create_context(pipeline_name: str) -> RunContext:
 def unpack_genomic_form_data(region_generation_forms: list[dict[str, Any]]) -> list[dict[str, Any]]:
     forms = []
     for region_generation_form_data in region_generation_forms:
-        validate_genomic_form_data(region_generation_form_data, allowed_sources=["NCBI", "Ensembl"])
+        validate_genomic_form_data(region_generation_form_data)
         region_generation_list = generate_single_region_forms(region_generation_form_data)
         if not region_generation_list:
             abort(HTTPStatus.BAD_REQUEST, description="Invalid input: no valid genomic regions specified")
@@ -106,13 +110,12 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
 
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
-        field: form_data[field]["fasta_form"]
-        for field in PIPELINE_GENOMIC_INPUT[pipeline_name]
-        if len(form_data[field]["fasta_form"]) > 0
+        path: glom(form_data, path)
+        for path in PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])
+        if len(glom(form_data, path)) > 0
     }
 
     for id, region_generation_forms in region_generation_forms_by_id.items():
-        validate_file_key(id)
         region_generation_list = unpack_genomic_form_data(region_generation_forms)
         generated_regions[id].extend(region_generation_list)
 
@@ -149,10 +152,16 @@ def write_run_to_DB(
 
 
 def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
-    gene_count = len(form_data["file_regions"].split(","))
-    if gene_count > Config.GENE_COUNT_THRESHOLD:
+    genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+    if genes_string is None:
+        abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
+    genes = genes_string.split(",")
+    if len(genes) > Config.GENE_COUNT_THRESHOLD:
         delete_run(run_id)
-        abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description=f"Please login to analyse more than {Config.GENE_COUNT_THRESHOLD} genes.",
+        )
 
 
 def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
@@ -272,12 +281,43 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
     # to the corresponding path to avoid reading an empty stream
     saved_files: dict[FileStorage, Path] = {}
 
-    for field in PIPELINE_GENOMIC_INPUT[pipeline_name]:
-        file_inputs[field] = [
-            save_file(file_name, files, saved_files) for file_name in form_data[field]["files"]
-        ]
-
+    for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
+        for file_name in glom(form_data, path):
+            file_path = save_file(file_name, files, saved_files)
+            if file_path is not None:
+                if file_inputs.get(path) is None:
+                    file_inputs[path] = []
+                file_inputs[path].append(file_path)
     return file_inputs
+
+
+def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
+
+    match pipeline_name:
+        case "oligoseq":
+            pipeline_model = OligoSeqProbeDesignerConfigOverride
+        case _:
+            abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
+
+    try:
+        pipeline_model.model_validate(form_data)
+    except ValidationError as v_err:
+        current_app.logger.debug(v_err)
+        abort(HTTPStatus.BAD_REQUEST, description=f"Invalid input: {v_err!s}")
+
+
+def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
+    """
+    Adds fields that are needed by the pipeline schema, but not exposed to users and thus not existing in our
+    front-end schemas.
+
+    Arguments:
+        form_data {dict[str, Any]} -- pipeline config
+        pipline_name {str}
+    """
+
+    for field, value in PIPELINE_NON_EXPOSED_FIELDS.get(pipline_name, {}).items():
+        form_data[field] = value
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
@@ -336,6 +376,10 @@ def start_pipeline(pipeline_name: str):
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
 
+    add_non_exposed_fields(form_data, pipeline_name)
+
+    validate_pipeline_config(form_data, pipeline_name)
+
     # genomic_region_generator
     generated_regions = parse_region_generation(form_data, pipeline_name)
 
@@ -346,8 +390,8 @@ def start_pipeline(pipeline_name: str):
     except KeyError:
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
 
-    for field, file_paths in file_inputs.items():
-        form_data[field]["files"] = [str(file_path) for file_path in file_paths]
+    for field_path, file_paths in file_inputs.items():
+        assign(form_data, field_path, [str(file_path) for file_path in file_paths])
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
