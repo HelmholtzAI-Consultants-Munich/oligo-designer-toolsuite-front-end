@@ -60,15 +60,17 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
         const [dropDown, setDropDown] = useState<DropDown>();
 
         const genomicDefaults = useMemo(() => {
-            const genomicDefaults: { source: string }[] =
-                schema.items?.anyOf.map((subschema) =>
+            const subschemas =
+                (schema.items as { anyOf: RJSFSchema[] }).anyOf || [];
+            const genomicDefaults = subschemas.map(
+                (subschema) =>
                     getDefaultFormState(
                         customizeValidator({
                             AjvClass: Ajv2020,
                         }),
                         subschema
-                    )
-                );
+                    ) as { source: string }
+            );
 
             const getDefaultFor = (source: "ncbi" | "ensembl") =>
                 genomicDefaults.filter(
