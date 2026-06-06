@@ -2,6 +2,7 @@ import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
 import { spaceBeforeCapitalLetters } from "./utils";
 
+/* Layout for a section within a tab, sections are separated by vertical lines */
 const SectionLayout = memo(function SectionLayout(
     props: ObjectFieldTemplateProps
 ) {
