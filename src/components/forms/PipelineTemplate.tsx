@@ -9,6 +9,7 @@ import {
 import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
+import { Turnstile } from "@marsidev/react-turnstile";
 import type { RJSFFormData } from "../componentTypes";
 import { handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
@@ -28,6 +29,7 @@ import { Link, useLocation } from "react-router";
 import { FileInput, GenomicInput } from "../fastaGenerateForm/GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
+import { TURNSTILE_SITE_KEY } from "../../config";
 import { excludeHiddenTabs, snakeCaseToTitleCase } from "./utils";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
 import WrappedBaseInputTemplate from "./BaseInputTemplate";
@@ -83,6 +85,8 @@ const PipelineTemplate: React.FC<Props> = ({
         auth.legal?.current_terms_version;
 
     const location = useLocation();
+
+    const sitekey = TURNSTILE_SITE_KEY;
 
     const applyValidatedConfig = useCallback(
         (importedConfig: unknown, successTitle: string, errorTitle: string) => {
@@ -168,6 +172,8 @@ const PipelineTemplate: React.FC<Props> = ({
         reader.readAsText(file);
     };
 
+    const [token, setToken] = useState<string | null>(null);
+
     const runPipeline = async () => {
         submitButtonRef.current?.click();
     };
@@ -213,6 +219,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 submittedFormData,
                 pipeline,
                 updateRuns,
+                token,
                 pipelineRunConfig
             );
             setSubmissionTried(true);
@@ -222,6 +229,7 @@ const PipelineTemplate: React.FC<Props> = ({
             pipeline,
             schema,
             updateRuns,
+            token,
             requiresTermsAcceptance,
             hasAcceptedTerms,
             acceptTerms,
@@ -305,6 +313,14 @@ const PipelineTemplate: React.FC<Props> = ({
                 onSubmit={handlePipelineSubmit}
                 onError={handlePipelineSubmitError}
             >
+                <Turnstile
+                    siteKey={sitekey}
+                    options={{
+                        theme: "light",
+                        language: "en",
+                    }}
+                    onSuccess={setToken}
+                />
                 {requiresTermsAcceptance && (
                     <div
                         className="border rounded p-3 mb-3 bg-light"
@@ -312,8 +328,13 @@ const PipelineTemplate: React.FC<Props> = ({
                     >
                         <p className="mb-2">
                             Before running this pipeline, please accept the{" "}
-                            <Link to="/terms">Terms of Service</Link> and review
-                            the <Link to="/privacy-policy">Privacy Policy</Link>
+                            <Link target="_blank" to="/terms">
+                                Terms of Service
+                            </Link>{" "}
+                            and review the{" "}
+                            <Link target="_blank" to="/privacy-policy">
+                                Privacy Policy
+                            </Link>
                             .
                         </p>
                         <BootstrapForm.Check

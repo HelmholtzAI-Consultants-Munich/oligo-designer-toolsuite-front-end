@@ -25,9 +25,10 @@ from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
+    validate_turnstile,
 )
 from backend.routes.runs import delete_run
-from backend.utilities.pipeline import generate_single_region_forms
+from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
     utc_now,
@@ -180,11 +181,14 @@ def enqueue_pipeline(
     priority: int,
     context: RunContext,
     enqueued_at: datetime,
+    is_authenticated: bool = False,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
     finish executing before the pipeline is started.
     """
+    soft_limit = resolve_timeout(is_authenticated)
+    hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
 
     # the chord header tasks get executed simultaneously as a group
     region_generation_signatures = (
@@ -194,10 +198,14 @@ def enqueue_pipeline(
     )
 
     # the chord body task gets executed once all header tasks finished
+    # The soft limit is the normal interrupt path; the hard limit is a backstop
+    # for worker processes that do not shut down after the soft timeout.
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE,
         args=(pipeline_name, form_data, str(context.output_path)),
         priority=priority,
+        soft_time_limit=soft_limit,
+        time_limit=hard_limit,
         headers={
             "run_id": str(run_id),
             "pipeline": pipeline_name,
@@ -321,6 +329,7 @@ def start_pipeline(pipeline_name: str):
     Orchestrates the workflow for running the pipeline as follows:
 
     - Verifies the pipeline name
+    - Verifies the turnstile token
     - Loads and validates user/session context.
     - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
     - Parses and validates region generation form data.
@@ -340,6 +349,7 @@ def start_pipeline(pipeline_name: str):
     in the developer documentation.
 
     """
+
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
@@ -354,6 +364,9 @@ def start_pipeline(pipeline_name: str):
 
     if form is None or len(form) == 0:
         abort(HTTPStatus.BAD_REQUEST, description="Expected JSON")
+
+    if not validate_turnstile(form.get("token", "")):
+        abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
 
     run_id_str = form.get("runid")  # Run ID from React
     run_id = parse_run_id(run_id_str)
@@ -394,6 +407,7 @@ def start_pipeline(pipeline_name: str):
         priority,
         context,
         enqueued_at,
+        current_user.is_authenticated,
     )
 
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
