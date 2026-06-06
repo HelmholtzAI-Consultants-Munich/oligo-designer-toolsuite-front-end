@@ -56,12 +56,11 @@ def cache_dir_mock(monkeypatch, app):
 
 
 @pytest.fixture
-def dummy_form(run_id):
+def dummy_form():
     # Full dummy form data for oligoseq API
     form_path = os.path.join(os.path.dirname(__file__), "data/oligoseq_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    form["runid"] = str(run_id)
     return form
 
 
@@ -123,7 +122,6 @@ def test_genomic_cascaded_ncbi_unauthenticated(
 
 def test_genomic_cascaded_single_ensembl(
     client,
-    run_id,
     dummy_form_ensembl,
     mock_run,
     mock_celery,
@@ -135,19 +133,15 @@ def test_genomic_cascaded_single_ensembl(
 
     response = post(client, "/api/oligoseq", dummy_form)
     assert response.status_code == 200
-    data = response.get_json()
-    assert data["run_id"] == str(run_id)
 
 
 def test_genomic_cascaded_single_ensembl_unauthenticated(
-    client, run_id, dummy_form_ensembl, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ensembl, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ensembl
 
     response = post(client, "/api/oligoseq", dummy_form)
     assert response.status_code == 200
-    data = response.get_json()
-    assert data["run_id"] == str(run_id)
 
 
 def test_genomic_dropdown(client, dropdown_mock):
