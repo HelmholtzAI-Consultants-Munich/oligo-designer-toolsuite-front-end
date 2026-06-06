@@ -1,7 +1,7 @@
 import { Button, InputGroup } from "react-bootstrap";
 import { Trash } from "react-bootstrap-icons";
 import type { GenomicForm } from "./types";
-import { FilePreview, GenomicFormPreview } from "./helpers";
+import { FilePreview, GenomicFormPreview } from "./InputPreviews";
 
 type IntputListItem =
     | {

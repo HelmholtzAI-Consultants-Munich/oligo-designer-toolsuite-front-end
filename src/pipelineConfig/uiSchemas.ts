@@ -1,4 +1,4 @@
-import type { GenericObjectType, RJSFSchema, UiSchema } from "@rjsf/utils";
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import TabsLayout from "../components/forms/TabsLayout";
 import TabLayout from "../components/forms/TabLayout";
 import SectionLayout from "../components/forms/SectionLayout";

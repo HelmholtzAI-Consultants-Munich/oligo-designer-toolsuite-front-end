@@ -6,7 +6,6 @@ import type { RJSFFormData } from "../componentTypes";
 import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
 import { Link } from "react-router";
-import type { GenomicForm } from "./types";
 import {
     PIPELINE_CONFIG,
     type PipelineConfig,
@@ -165,22 +164,4 @@ export const handleSubmit = async (
     } finally {
         updateRuns();
     }
-};
-
-export const FilePreview = (file: File) => {
-    return `${file.name}`;
-};
-
-export const GenomicFormPreview = (form: GenomicForm) => {
-    const species = replaceUnderscore(
-        firstLetterUppercase(form.source_params.species)
-    );
-    const selectedRegions = Object.entries(form.genomic_regions)
-        .filter(([, selected]) => selected === true)
-        .map(
-            ([key]) =>
-                regionDisplayNames[key as keyof typeof regionDisplayNames]
-        );
-
-    return `${species}: ${selectedRegions.join(", ") || "no regions selected"}`;
 };
