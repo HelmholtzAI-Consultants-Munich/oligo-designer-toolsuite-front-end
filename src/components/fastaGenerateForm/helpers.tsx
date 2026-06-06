@@ -133,12 +133,9 @@ export const handleSubmit = async (
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
         if (axios.isAxiosError(error)) {
-            let displayedErrorMessage;
+            let displayedErrorMessage = errorMessage;
+            // override error message for specific status codes
             switch (error.response?.status) {
-                case 401: {
-                    displayedErrorMessage = errorMessage;
-                    break;
-                }
                 case 403: {
                     displayedErrorMessage =
                         "We couldn't verify that you are human. Please try again.";
@@ -147,11 +144,6 @@ export const handleSubmit = async (
                 case 413: {
                     displayedErrorMessage =
                         "The uploaded files exceed the maximum allowed size.";
-                    break;
-                }
-                default: {
-                    displayedErrorMessage =
-                        "An error occurred while submitting the pipeline.";
                 }
             }
 
