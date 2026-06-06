@@ -164,10 +164,6 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
 
 
 def validate_turnstile(token):
-
-    if current_app.config.get("TESTING"):
-        return True
-
     url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
     secret = current_app.config.get("TURNSTILE_SECRET_KEY")
 

@@ -25,7 +25,6 @@ from flask_login import current_user
 from backend.extensions import mongo
 from backend.routes.route_helpers import (
     get_run_or_404,
-    require_terms_acceptance_for_current_context,
 )
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
@@ -33,7 +32,6 @@ from backend.utilities.typed_values import (
     path_for_display,
     safe_join_under,
     timestamp_to_iso,
-    utc_now,
 )
 
 runs_bp = Blueprint("runs", __name__)
@@ -101,28 +99,6 @@ def delete_run(run_id: ObjectId):
     delete_pipeline_run_files_and_db(mongo, run_id)
 
     return jsonify({"message": "Run deleted successfully"}), HTTPStatus.OK
-
-
-@runs_bp.route("/api/init_run_id", methods=["POST"])
-def init_run_id():
-    """
-    Initialize a new pipeline run in the database.
-
-    Sets initial status to "pending" and records creation timestamp.
-
-    :returns: JSON object with new run_id.
-    :rtype: flask.Response
-    """
-    user_id, session_id = require_terms_acceptance_for_current_context()
-
-    run_doc = {
-        "status": "pending",
-        "user_id": user_id,
-        "session_id": session_id,
-        "created_at": utc_now(),
-    }
-    run_result = mongo.db.runs.insert_one(run_doc)
-    return jsonify({"run_id": str(run_result.inserted_id)})
 
 
 @runs_bp.route("/api/runs", methods=["GET"])

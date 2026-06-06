@@ -78,9 +78,7 @@ class Config:
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
     # Turnstile settings
-    TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
-    TURNSTILE_SITE_KEY = os.environ.get("TURNSTILE_SITE_KEY", "")
-    TESTING = os.environ.get("TESTING", False)
+    TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA")
 
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))

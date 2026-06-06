@@ -149,7 +149,6 @@ def mock_initial():
 def app(mock_initial):
     """Create Flask app for testing (for direct function testing)."""
     app = create_app()
-    app.config["TESTING"] = True
     app.secret_key = "test-key"
     return app
 

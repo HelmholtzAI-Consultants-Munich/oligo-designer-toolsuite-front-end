@@ -33,7 +33,7 @@ from backend.utilities.typed_values import (
     serialize_path,
     utc_now,
 )
-from backend.utilities.validation import parse_run_id, validate_genomic_form_data
+from backend.utilities.validation import validate_genomic_form_data
 from backend.worker.models import OligoSeqProbeDesignerConfigOverride
 from backend.worker.task_index import Callbacks, Tasks
 
@@ -353,7 +353,7 @@ def start_pipeline(pipeline_name: str):
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
-    require_terms_acceptance_for_current_context()
+    user_id, session_id = require_terms_acceptance_for_current_context()
 
     if request.form is None or len(request.form) == 0 or "payload" not in request.form:
         abort(
@@ -368,8 +368,15 @@ def start_pipeline(pipeline_name: str):
     if not validate_turnstile(form.get("token", "")):
         abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
 
-    run_id_str = form.get("runid")  # Run ID from React
-    run_id = parse_run_id(run_id_str)
+    # create a pending run in the database
+    run_doc = {
+        "status": "pending",
+        "user_id": user_id,
+        "session_id": session_id,
+        "created_at": utc_now(),
+    }
+    run_result = mongo.db.runs.insert_one(run_doc)
+    run_id = run_result.inserted_id
 
     form_data = form.get("formdata")  # Form data from React
 
@@ -428,6 +435,4 @@ def start_pipeline(pipeline_name: str):
     if update_result.matched_count == 0:
         abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
 
-    # The task state can be polled using get_run_state(run_id_str).
-
-    return jsonify({"run_id": run_id_str, "queue_position": (high_priority_ahead, default_priority_ahead)})
+    return jsonify({"run_id": str(run_id), "queue_position": (high_priority_ahead, default_priority_ahead)})
