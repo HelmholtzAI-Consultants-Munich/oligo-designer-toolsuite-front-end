@@ -366,7 +366,11 @@ export const fillTargetProbeParameters = async (
     const genomicInput = {
         taxon: "Archaea",
         annotationRelease: "GCF_009428885.1_ASM942888v1",
-        genomicRegions: { Gene: true, Exon: false },
+        genomicRegions: {
+            Gene: true,
+            Exon: false,
+            "Exon-exon-junction": false,
+        },
     };
 
     await setGenomicInput(page, "files_fasta_probe_database", genomicInput);
