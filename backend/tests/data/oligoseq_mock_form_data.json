@@ -237,7 +237,7 @@
       }
     }
   },
-  "runid": "6a201db38201004454900702",
+  "token": "XXXX.DUMMY.TOKEN.XXXX",
   "pipeline_run_config": {
     "_meta": {
       "version": 1,

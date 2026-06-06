@@ -1,18 +1,11 @@
 import { ArrowRight } from "react-bootstrap-icons";
 import { BACKEND_URL } from "../../config";
-import { createRunId } from "../../contexts/authHelpers";
 import { showToast } from "../../utils/toastUtil";
 import { extractSubmissionError } from "../errorHandler";
 import type { RJSFFormData } from "../componentTypes";
 import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
 import { Link } from "react-router";
-import type {
-    EnsemblGenomicForm,
-    GenomicForm,
-    GenomicRegionsForm,
-    NcbiGenomicForm,
-} from "./types";
 import {
     PIPELINE_CONFIG,
     type PipelineConfig,
@@ -51,16 +44,6 @@ export const handleSubmit = async (
 ) => {
     // copy to avoid modifying formData
     const uploadFormData = structuredClone(formData);
-
-    const newId = await createRunId();
-    if (!newId) {
-        showToast({
-            title: "Pipeline Failed",
-            content: "Our servers have failed to create a new run.",
-            type: "danger",
-        });
-        return;
-    }
 
     const retrieveValueFromFormData = (
         formData: RJSFFormData,
@@ -117,7 +100,6 @@ export const handleSubmit = async (
             ...files,
             payload: JSON.stringify({
                 formdata: uploadFormData,
-                runid: newId,
                 token,
                 pipeline_run_config: pipelineRunConfig ?? null,
             }),
@@ -132,7 +114,7 @@ export const handleSubmit = async (
             }
         );
 
-        const { queue_position } = response.data;
+        const { queue_position, run_id } = response.data;
         const { ownPosition } = unwrapQueuePosition(queue_position);
 
         showToast({
@@ -141,7 +123,7 @@ export const handleSubmit = async (
                 <>
                     <p>The pipeline run was successfully added to the queue.</p>
                     <p>Queue Position: {ownPosition}</p>
-                    <Link to={`/runs/${newId}`}>
+                    <Link to={`/runs/${run_id}`}>
                         View the run here <ArrowRight />
                     </Link>
                 </>
@@ -151,84 +133,27 @@ export const handleSubmit = async (
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
         if (axios.isAxiosError(error)) {
+            let displayedErrorMessage = errorMessage;
+            // override error message for specific status codes
             switch (error.response?.status) {
-                case 401: {
-                    showToast({
-                        title: "Pipeline Not Started",
-                        content: (
-                            <>
-                                <p>{errorMessage}</p>
-                            </>
-                        ),
-                        type: "danger",
-                    });
-                    break;
-                }
                 case 403: {
-                    showToast({
-                        title: "Pipeline Not Started",
-                        content: (
-                            <>
-                                <p>
-                                    We couldn't verify that you are human.
-                                    Please try again.
-                                </p>
-                            </>
-                        ),
-                        type: "danger",
-                    });
+                    displayedErrorMessage =
+                        "We couldn't verify that you are human. Please try again.";
                     break;
                 }
                 case 413: {
-                    showToast({
-                        title: "Pipeline Not Started",
-                        content: (
-                            <>
-                                <p>
-                                    The uploaded files exceed the maximum
-                                    allowed size.
-                                </p>
-                            </>
-                        ),
-                        type: "danger",
-                    });
-                    break;
-                }
-                default: {
-                    showToast({
-                        title: "Pipeline Failed",
-                        content: (
-                            <>
-                                <p>{errorMessage}</p>
-                                <Link className="mt-2" to={`/runs/${newId}`}>
-                                    View the run here <ArrowRight />
-                                </Link>
-                            </>
-                        ),
-                        type: "danger",
-                    });
+                    displayedErrorMessage =
+                        "The uploaded files exceed the maximum allowed size.";
                 }
             }
+
+            showToast({
+                title: "Pipeline Not Started",
+                content: displayedErrorMessage,
+                type: "danger",
+            });
         }
     } finally {
         updateRuns();
     }
-};
-
-export const FilePreview = (file: File) => {
-    return `${file.name}`;
-};
-
-export const GenomicFormPreview = (form: GenomicForm) => {
-    const species = replaceUnderscore(
-        firstLetterUppercase(form.source_params.species)
-    );
-    const selectedRegions = Object.entries(form.genomic_regions)
-        .filter(([, selected]) => selected === true)
-        .map(
-            ([key]) =>
-                regionDisplayNames[key as keyof typeof regionDisplayNames]
-        );
-
-    return `${species}: ${selectedRegions.join(", ") || "no regions selected"}`;
 };

@@ -27,13 +27,12 @@ from backend.routes.route_helpers import (
     require_terms_acceptance_for_current_context,
     validate_turnstile,
 )
-from backend.routes.runs import delete_run
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
     utc_now,
 )
-from backend.utilities.validation import parse_run_id, validate_genomic_form_data
+from backend.utilities.validation import validate_genomic_form_data
 from backend.worker.models import OligoSeqProbeDesignerConfigOverride
 from backend.worker.task_index import Callbacks, Tasks
 
@@ -122,10 +121,6 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     return dict(generated_regions)
 
 
-def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
-
-
 def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
@@ -136,11 +131,13 @@ def write_run_to_DB(
     pipeline_run_config: dict | None = None,
 ):
     data: dict = {
+        "_id": run_id,
+        "status": "pending",
+        "created_at": utc_now(),
         "session_id": context.session_id,
         "user_id": context.user_id,
         "timestamp": context.timestamp,
         "output_path": serialize_path(context.output_path),
-        "status": "pending",
         "pipeline": pipeline_name,
         "task_id": task_id,
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
@@ -148,25 +145,25 @@ def write_run_to_DB(
     }
     if pipeline_run_config is not None:
         data["pipeline_run_config"] = pipeline_run_config
-    return update_run_in_DB(run_id, data)
+        # create a pending run in the database
+    return mongo.db.runs.insert_one(data)
 
 
-def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
+def check_gene_threshold(form_data: dict[str, Any]):
     genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
     if genes_string is None:
         abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
     genes = genes_string.split(",")
     if len(genes) > Config.GENE_COUNT_THRESHOLD:
-        delete_run(run_id)
         abort(
             HTTPStatus.UNAUTHORIZED,
             description=f"Please login to analyse more than {Config.GENE_COUNT_THRESHOLD} genes.",
         )
 
 
-def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
+def get_task_priority(form_data: dict[str, Any]) -> int:
     if not current_user.is_authenticated:
-        check_gene_threshold(form_data, run_id)
+        check_gene_threshold(form_data)
         priority = CeleryConfig.task_default_priority
     else:
         priority = CeleryConfig.task_high_priority
@@ -368,9 +365,6 @@ def start_pipeline(pipeline_name: str):
     if not validate_turnstile(form.get("token", "")):
         abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
 
-    run_id_str = form.get("runid")  # Run ID from React
-    run_id = parse_run_id(run_id_str)
-
     form_data = form.get("formdata")  # Form data from React
 
     if not isinstance(form_data, dict):
@@ -396,7 +390,8 @@ def start_pipeline(pipeline_name: str):
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    priority = get_task_priority(form_data, run_id)
+    run_id = ObjectId()  # Generate a new run ID
+    priority = get_task_priority(form_data)
     enqueued_at = utc_now()
 
     result_promise = enqueue_pipeline(
@@ -416,7 +411,7 @@ def start_pipeline(pipeline_name: str):
     pipeline_run_config = (
         form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
     )
-    update_result = write_run_to_DB(
+    insert_result = write_run_to_DB(
         pipeline_name,
         run_id,
         context,
@@ -425,9 +420,7 @@ def start_pipeline(pipeline_name: str):
         (high_priority_ahead, default_priority_ahead),
         pipeline_run_config,
     )
-    if update_result.matched_count == 0:
-        abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
+    if not insert_result.acknowledged:
+        abort(HTTPStatus.NOT_FOUND, description="Failed to create run in database")
 
-    # The task state can be polled using get_run_state(run_id_str).
-
-    return jsonify({"run_id": run_id_str, "queue_position": (high_priority_ahead, default_priority_ahead)})
+    return jsonify({"run_id": str(run_id), "queue_position": (high_priority_ahead, default_priority_ahead)})

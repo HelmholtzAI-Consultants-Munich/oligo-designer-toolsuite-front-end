@@ -53,7 +53,11 @@ def test_login_success(client, monkeypatch, dummy_user):
     with patch("os.makedirs"), patch("backend.extensions.mongo.db.runs.update_many"):
         response = client.post(
             "/login",
-            json={"username": dummy_user["username"], "password": "mypassword"},
+            json={
+                "username": dummy_user["username"],
+                "password": "mypassword",
+                "token": "XXXX.DUMMY.TOKEN.XXXX",
+            },
         )
         assert response.status_code == 200
         assert response.get_json()["message"] == "Logged in successfully"
@@ -63,7 +67,7 @@ def test_login_invalid_credentials(client, monkeypatch):
     monkeypatch.setattr("backend.extensions.mongo.db.users.find_one", lambda q: None)
     response = client.post(
         "/login",
-        json={"username": "nonexistent", "password": "wrongpass"},
+        json={"username": "nonexistent", "password": "wrongpass", "token": "XXXX.DUMMY.TOKEN.XXXX"},
     )
     assert response.status_code == 401
     assert "error" in response.get_json()
