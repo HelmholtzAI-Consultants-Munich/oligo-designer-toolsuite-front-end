@@ -3,12 +3,13 @@ interface PulseProps {
     size?: number;
     paused?: boolean;
     title?: string;
+    className?: string;
 }
 
-function Pulse({ color, size, paused, title }: PulseProps) {
+function Pulse({ color, size, paused, title, className }: PulseProps) {
     return (
         <div
-            className="pulse"
+            className={`pulse ${className || ""}`}
             style={
                 {
                     width: size,
