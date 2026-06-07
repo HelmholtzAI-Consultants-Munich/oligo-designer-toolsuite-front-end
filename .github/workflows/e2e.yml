@@ -46,7 +46,7 @@ jobs:
               - 'playwright/**'
               - 'playwright.config.ts'
               - 'docker/**'
-              - 'docker-compose.yml'
+              - 'compose.yml'
               - '.env.sample'
               - '.env.docker.sample'
               - 'package.json'

@@ -50,7 +50,7 @@ The project supports Linux and MacOS, both on amd64 and arm64 architectures. Dev
 
 ## Quickstart (using Docker)
 
-This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
+This project provides a single `compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
 
 All commands necessary to use Docker are defined in the `package.json`. To launch the frontend, backend and database, run:
 

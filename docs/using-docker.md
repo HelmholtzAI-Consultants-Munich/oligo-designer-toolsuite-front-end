@@ -13,7 +13,7 @@ ODT Cloud can be run and deployed using Docker containers. The provided configur
 
 ## Quickstart
 
-This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
+This project provides a single `compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
 
 All commands necessary to use Docker are defined in the `package.json`. To launch the frontend, backend and database, run:
 
@@ -73,7 +73,7 @@ This will start all standard services plus the `odt-tests` container. See [Tests
 
 The Dockerfiles used for building the frontend, backend and Playwright tests containers are located in the `docker` directory, along with their respective [`.dockerignore`](https://docs.docker.com/build/concepts/context/#dockerignore-files) files.
 
-The `docker-compose.yml` at the project root defines the containers used for ODT Cloud and their respective deployment configuration.
+The `compose.yml` at the project root defines the containers used for ODT Cloud and their respective deployment configuration.
 
 Currently, the project consists of the following containers:
 
