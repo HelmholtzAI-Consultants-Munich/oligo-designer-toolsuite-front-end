@@ -35,7 +35,6 @@ jobs:
               - 'schemas/**'
               - 'docker/**'
               - '.env.sample'
-              - '.env.docker.sample'
               - 'compose.yml'
               - '.github/workflows/pr_tests.yml'
             frontend:

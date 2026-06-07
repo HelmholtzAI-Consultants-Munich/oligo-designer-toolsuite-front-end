@@ -48,7 +48,6 @@ jobs:
               - 'docker/**'
               - 'compose.yml'
               - '.env.sample'
-              - '.env.docker.sample'
               - 'package.json'
               - 'package-lock.json'
               - 'vite.config.ts'
@@ -83,11 +82,10 @@ jobs:
         with:
           version: latest
 
-      - name: Prepare Docker env files
+      - name: Prepare env files
         run: |
           set -euxo pipefail
           cp .env.sample .env
-          cp .env.docker.sample .env.docker
 
       - name: Create artifact directories
         run: |
