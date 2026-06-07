@@ -19,26 +19,12 @@ def output_path(tmp_path, run_id, dummy_user):
     return str(output_path)
 
 
-def test_init_run_id(client):
-    response = client.post("/api/init_run_id")
-    assert response.status_code == 200
-    assert "run_id" in response.get_json()
-
-
 def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
     create_test_run(run_id, user_id=dummy_user.id)
 
     response = client.get("/api/runs")
     assert response.status_code == 200
     assert isinstance(response.get_json(), list)
-
-
-def test_get_run_files(client, dummy_user, run_id, output_path):
-    response = client.get(f"/api/runs/{run_id}/files")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert any("log.txt" in file["name"] for file in data)
-    assert any("config.yaml" in file["name"] for file in data)
 
 
 def test_get_run_file_success(client, dummy_user, run_id, output_path):
@@ -72,25 +58,11 @@ def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_
     assert response.get_json()["error"] == "Invalid file path"
 
 
-def test_runid_null(client, mock_celery):
+def test_runid_null(client, mock_celery, session_user):
     form = {"runid": None}
 
     response = post(client, "/api/scrinshot", form)
     assert response.status_code == 400
-
-
-def test_get_files_valid_runid_unused(client):
-    response = client.get(f"/api/runs/{ObjectId()}/files")
-    assert response.status_code == 404
-
-
-def test_get_files_invalid_runid(client):
-    """Test that invalid ObjectId format returns 404 (URL converter behavior)."""
-    run_id = "hallo"
-
-    response = client.get(f"/api/runs/{run_id}/files")
-    # BSONObjectIdConverter returns 404 for invalid ObjectId format
-    assert response.status_code == 404
 
 
 # Error handling tests
@@ -172,13 +144,6 @@ def test_get_run_file_permission_error_sanitized(client, dummy_user, run_id, tmp
         )
 
 
-def test_get_run_files_invalid_run_id_sanitized(client):
-    """Test get_run_files with invalid run ID returns 404 (URL converter behavior)."""
-    response = client.get("/api/runs/invalid_id/files")
-    # BSONObjectIdConverter returns 404 for invalid ObjectId format
-    assert response.status_code == 404
-
-
 def test_pipeline_routes_no_raw_error_strings_exposed(client, dummy_user, run_id):
     """Test that no raw error strings (str(e)) are exposed in pipeline route responses."""
     # Test get_run_file with various exceptions
@@ -219,7 +184,7 @@ def test_all_errors_use_create_user_error_response(client, dummy_user, run_id):
     create_test_run(run_id, user_id=other_user_id, status="success")
 
     # Test that error responses have consistent format (run exists but unauthorized)
-    response = client.get(f"/api/runs/{run_id}/files")
+    response = client.get(f"/api/runs/{run_id}/files/test.txt")
     assert response.status_code == 404  # Not found because user doesn't own the run
     data = response.get_json()
     # Should have "error" field

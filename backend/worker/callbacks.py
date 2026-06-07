@@ -2,7 +2,7 @@ from billiard.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 from celery.exceptions import ChordError
 from celery.worker.request import Request
 
-from backend.exceptions import ODTCloudError
+from backend.exceptions import ODTCloudError, ODTEmptyResultError
 from backend.types import RunStatus
 from backend.worker.celery import app, logger
 from backend.worker.database import _parse_run_id, _update_run
@@ -39,9 +39,9 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
     match exc:
         case ChordError():
             error_message = "An error occured during genomic region generation."
-        # The following lines could be added once we directly call ODT from within the same Python process.
-        # case OligoDesignerError():
-        #     error_message = "An error occured during pipeline execution."
+        case ODTEmptyResultError():
+            status = RunStatus.EMPTY_RESULT  # override run status
+            error_message = str(exc)
         case ODTCloudError():
             error_message = str(exc)
         case TimeLimitExceeded() | SoftTimeLimitExceeded():

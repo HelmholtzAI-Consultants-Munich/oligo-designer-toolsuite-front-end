@@ -15,3 +15,4 @@ class RunStatus(StrEnum):
     FAILURE = auto()
     PENDING = auto()
     TIMEOUT = auto()
+    EMPTY_RESULT = auto()

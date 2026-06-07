@@ -2,8 +2,14 @@ import React, { useState } from "react";
 import axios from "axios";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
-import { BACKEND_URL, FEEDBACK_MAX_LENGTH } from "../../config";
+import { Link } from "react-router";
+import {
+    BACKEND_URL,
+    FEEDBACK_MAX_LENGTH,
+    TURNSTILE_SITE_KEY,
+} from "../../config";
 import { showToast } from "../../utils/toastUtil";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 interface FeedbackButtonProps {
     context?: Record<string, unknown>;
@@ -23,6 +29,9 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     const [message, setMessage] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [token, setToken] = useState<string | null>(null);
+
+    const sitekey = TURNSTILE_SITE_KEY;
 
     const getRunIdFromPath = () => {
         const match = window.location.pathname.match(/^\/runs\/([^/]+)$/);
@@ -70,7 +79,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
             await axios.post(
                 BACKEND_URL + "/api/feedback",
-                { message, metadata },
+                { message, metadata, token },
                 { withCredentials: true }
             );
 
@@ -169,6 +178,21 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                                 {message.length}/{FEEDBACK_MAX_LENGTH}
                             </div>
                         </Form.Group>
+                        <Turnstile
+                            siteKey={sitekey}
+                            options={{
+                                theme: "light",
+                                language: "en",
+                            }}
+                            onSuccess={setToken}
+                        />
+                        <p className="text-muted small mt-3 mb-0">
+                            By submitting feedback, you acknowledge the{" "}
+                            <Link target="_blank" to="/privacy-policy">
+                                Privacy Policy
+                            </Link>
+                            .
+                        </p>
                     </Modal.Body>
                     <Modal.Footer>
                         <Button

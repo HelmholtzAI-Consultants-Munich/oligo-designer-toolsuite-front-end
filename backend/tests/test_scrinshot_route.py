@@ -7,6 +7,8 @@ import pytest
 from backend.extensions import mongo
 from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
 
+pytest.skip("Scrinshot currently disabled", allow_module_level=True)
+
 
 @pytest.fixture
 def dummy_form(run_id):
@@ -45,12 +47,15 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, sess
     assert updated["status"] in {"pending", "started"}
 
 
-def test_invalid_session(client, dummy_form, mock_celery, run_id):
-    # Ensure run exists with correct session_id
-    create_test_run(run_id, user_id=None, session_id="gaeuhfwuahfuagdzgawuzdgauwgdu", status="created")
+def test_scrinshot_requires_terms_acceptance(client, dummy_form, run_id, mock_celery):
+    response = client.post("/api/scrinshot", json=dummy_form)
+    assert response.status_code == 403
+    assert "accept the current Terms of Service and Privacy Policy" in response.get_json()["error"]
 
-    with client.session_transaction() as session:
-        session["session_id"] = "gaeuhfwuahfuagdzgawuzdgauwgdu"
+
+def test_invalid_session(client, dummy_form, mock_celery, run_id, session_user):
+    # Ensure run exists with correct session_id
+    create_test_run(run_id, user_id=None, session_id="anon-session-123", status="created")
 
     response = post(client, "/api/scrinshot", dummy_form)
     assert response.status_code == 200
@@ -78,12 +83,8 @@ def test_scrinshot_route_propagates_pipeline_runner_errors(client, run_id, authe
     assert_invalid_run_id_error(response)
 
 
-def test_scrinshot_session_without_directory(client, dummy_form, run_id, mock_celery):
+def test_scrinshot_session_without_directory(client, dummy_form, run_id, mock_celery, session_user):
     """Test scrinshot with existing session creates directory and succeeds."""
-    with client.session_transaction() as session:
-        # Set a session_id (simulating an existing permanent session)
-        session["session_id"] = "existing-session-123"
-
     # With makedirs mock disabled, directories will be created and request should succeed
     response = post(client, "/api/scrinshot", dummy_form)
     assert response.status_code == 200

@@ -66,6 +66,9 @@ class Config:
     HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
 
+    # GPDR settings
+    ANONYMOUS_DATA_RETENTION_DAYS = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+
     # OAuth2 client credentials (required, no defaults)
     HELMHOLTZ_CLIENT_ID = None
     HELMHOLTZ_CLIENT_SECRET = None
@@ -74,10 +77,14 @@ class Config:
     HELMHOLTZ_SCOPE = "openid single-logout"
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
+    # Turnstile settings
+    TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA")
+
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
     GENE_COUNT_THRESHOLD = 10
+    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024 * 1024))
 
     # Caching Settings
     REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")
@@ -90,17 +97,13 @@ class Config:
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
-    def get_logging_config(debug: bool = False) -> dict:
+    def get_logging_config() -> dict:
         """Get logging configuration dictionary for Flask application.
-
-        Args:
-            debug: Whether Flask is in debug mode. If True, uses DEBUG log level,
-                   otherwise uses INFO level for production.
 
         Returns:
             Dictionary compatible with logging.config.dictConfig()
         """
-        log_level = "DEBUG" if debug else "INFO"
+        log_level = os.environ.get("LOG_LEVEL", "INFO")
         return {
             "version": 1,
             "formatters": {
@@ -114,6 +117,11 @@ class Config:
                     "stream": "ext://flask.logging.wsgi_errors_stream",
                     "formatter": "default",
                 },
+            },
+            "loggers": {
+                "werkzeug": {
+                    "level": log_level,
+                }
             },
             "root": {
                 "level": log_level,
@@ -164,3 +172,13 @@ class CeleryConfig:
     task_default_priority = 6
     task_high_priority = 3  # in Redis, lower number means higher priority; valid range is 0-9
     worker_disable_prefetch = True
+
+    # Static pipeline execution limits in seconds. The soft limit lets Celery
+    # interrupt the task cleanly; the hard margin is a SIGKILL backstop.
+    pipeline_timeout_anon: int = int(os.environ.get("PIPELINE_TIMEOUT_ANON", 3600))  # in seconds
+    pipeline_timeout_authenticated_multiplier: float = float(
+        os.environ.get("PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER", 2.0)
+    )
+    pipeline_timeout_hard_margin: int = int(os.environ.get("PIPELINE_TIMEOUT_HARD_MARGIN", 300))
+    anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+    worker_redirect_stdouts_level = "DEBUG"

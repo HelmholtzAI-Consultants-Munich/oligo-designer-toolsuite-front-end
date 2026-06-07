@@ -17,16 +17,23 @@ import datetime
 from http import HTTPStatus
 
 from bson import ObjectId
-from flask import Blueprint, abort, jsonify, request
+from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
 from backend.extensions import celery_app, mongo
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
+from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.formatting import (
     format_feedback,
     format_monthly_report,
     format_pipeline_run,
     format_user,
+)
+from backend.utilities.legal import (
+    get_legal_document_admin_view,
+    is_supported_legal_document,
+    list_legal_document_admin_views,
+    publish_legal_document,
 )
 from backend.utilities.pipeline import (
     delete_pipeline_run_files_and_db,
@@ -75,6 +82,12 @@ def require_admin(f):
 
     decorated_function.__name__ = f.__name__
     return decorated_function
+
+
+def _validate_legal_document_key(document_key: str) -> str:
+    if not is_supported_legal_document(document_key):
+        abort(HTTPStatus.NOT_FOUND, description="Legal document not found")
+    return document_key
 
 
 @admin_bp.route("/api/admin/users", methods=["GET"])
@@ -180,12 +193,49 @@ def delete_user(user_id: ObjectId):
     if str(current_user.id) == str(user_id):
         abort(HTTPStatus.BAD_REQUEST, description="Cannot delete your own account")
 
-    result = mongo.db.users.delete_one({"_id": user_id})
-
-    if result.deleted_count == 0:
-        abort(HTTPStatus.NOT_FOUND, description="User not found")
+    get_user_by_id_or_404(user_id, exclude_password=True)
+    delete_user_account_data(
+        user_id=str(user_id),
+        upload_root=current_app.config["UPLOAD_PATH"],
+        userdata_root=current_app.config["USERDATA_PATH"],
+    )
 
     return jsonify({"message": "User deleted successfully"}), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/legal-documents", methods=["GET"])
+@login_required
+@require_admin
+def get_legal_documents():
+    """List legal documents with the current version and history."""
+    return jsonify(list_legal_document_admin_views()), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/legal-documents/<document_key>", methods=["GET"])
+@login_required
+@require_admin
+def get_legal_document_detail(document_key: str):
+    """Get the current admin view for a legal document."""
+    return jsonify(get_legal_document_admin_view(_validate_legal_document_key(document_key))), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/legal-documents/<document_key>/publish", methods=["POST"])
+@login_required
+@require_admin
+def publish_admin_legal_document(document_key: str):
+    """Publish a new legal document version."""
+    document_key = _validate_legal_document_key(document_key)
+    data = request.get_json() or {}
+
+    try:
+        document = publish_legal_document(
+            document_key=document_key,
+            body=data.get("body", ""),
+        )
+    except ValueError as exc:
+        abort(HTTPStatus.BAD_REQUEST, description=str(exc))
+
+    return jsonify(get_legal_document_admin_view(document_key, published_doc=document)), HTTPStatus.OK
 
 
 @admin_bp.route("/api/admin/pipelines", methods=["GET"])
@@ -231,7 +281,7 @@ def update_pipeline_status(run_id: ObjectId):
 
     status = data["status"].strip().lower()
 
-    # Validate status (only these 4 statuses are allowed)
+    # Validate status
     valid_statuses = get_valid_pipeline_statuses()
     if status not in valid_statuses:
         abort(
@@ -372,12 +422,20 @@ def bulk_delete_users():
     if not object_ids:
         abort(HTTPStatus.BAD_REQUEST, description="No valid user IDs provided")
 
-    # Delete users in batch
-    result = mongo.db.users.delete_many({"_id": {"$in": object_ids}})
+    existing_users = list(mongo.db.users.find({"_id": {"$in": object_ids}}, {"_id": 1}))
+    deleted_count = 0
+
+    for user in existing_users:
+        delete_user_account_data(
+            user_id=str(user["_id"]),
+            upload_root=current_app.config["UPLOAD_PATH"],
+            userdata_root=current_app.config["USERDATA_PATH"],
+        )
+        deleted_count += 1
 
     response = {
-        "deleted_count": result.deleted_count,
-        "message": f"Successfully deleted {result.deleted_count} user(s)",
+        "deleted_count": deleted_count,
+        "message": f"Successfully deleted {deleted_count} user(s)",
     }
 
     if skipped:
@@ -410,7 +468,7 @@ def bulk_update_user_role():
     role = data.get("role", "").strip().lower()
 
     if role not in ["user", "admin"]:
-        abort(HTTPStatus.BAD_REQUEST, description="role must be 'user' or 'admin'")
+        abort(HTTPStatus.BAD_REQUEST, description=f"Role must be 'user' or 'admin', is {role}")
 
     # Filter out current user's ID if demoting from admin (prevent self-demotion)
     current_user_id = str(current_user.id)
@@ -508,7 +566,7 @@ def bulk_update_pipeline_status():
     Updates the status of multiple pipeline runs.
 
     :request json run_ids: Array of run IDs to update
-    :request json status: New status ('pending', 'started', 'success', 'failure')
+    :request json status: New pipeline run status
     :returns: JSON object with update results
     :rtype: flask.Response
     """
@@ -518,13 +576,14 @@ def bulk_update_pipeline_status():
     status = data.get("status", "").strip().lower()
 
     if not status:
-        abort(HTTPStatus.BAD_REQUEST, description="status field is required")
+        abort(HTTPStatus.BAD_REQUEST, description="Status field is required")
 
     # Validate status
     valid_statuses = get_valid_pipeline_statuses()
     if status not in valid_statuses:
         abort(
-            HTTPStatus.BAD_REQUEST, description=f"Invalid status. Must be one of: {', '.join(valid_statuses)}"
+            HTTPStatus.BAD_REQUEST,
+            description=f"Invalid status: {status} Must be one of: {', '.join(valid_statuses)}",
         )
 
     # Convert to ObjectIds and validate

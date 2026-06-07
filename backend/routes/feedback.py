@@ -13,6 +13,7 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
 from backend.extensions import limiter, mongo
+from backend.routes.route_helpers import validate_turnstile
 from backend.utilities.formatting import format_feedback
 
 feedback_bp = Blueprint("feedback", __name__)
@@ -52,10 +53,13 @@ def create_feedback():
     Accepts a JSON payload with:
     - message: Required feedback text
     - metadata: Optional dict (e.g. path, page). Frontend often sends current path.
+    - token: Turnstile token for spam prevention
     """
     data = request.get_json(silent=True) or {}
     message = sanitize_feedback_message(str(data.get("message") or ""))
     metadata = data.get("metadata") or {}
+    if not validate_turnstile(data.get("token", "")):
+        abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
     feedback_max_length = current_app.config.get("FEEDBACK_MAX_LENGTH", 2000)
 
     if not message:

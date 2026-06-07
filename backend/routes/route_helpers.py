@@ -1,11 +1,13 @@
 from http import HTTPStatus
 from pathlib import Path
 
+import requests
 from bson import ObjectId
 from flask import abort, current_app, session
 from flask_login import current_user
 
 from backend.extensions import mongo
+from backend.utilities.legal_acceptance import require_current_terms_acceptance
 
 # ============================================================================
 # User Context Helpers
@@ -49,6 +51,12 @@ def get_user_context_with_directory() -> tuple[str | None, str | None, Path]:
         user_dir = userdata_path / "anon" / session_id
 
     return user_id, session_id, user_dir
+
+
+def require_terms_acceptance_for_current_context() -> tuple[str | None, str | None]:
+    user_id, session_id = get_user_context()
+    require_current_terms_acceptance(user_id=user_id, session_id=session_id)
+    return user_id, session_id
 
 
 # ============================================================================
@@ -148,3 +156,31 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     if not run:
         abort(HTTPStatus.NOT_FOUND)
     return run
+
+
+# ============================================================================
+# Turnstile Helpers
+# ============================================================================
+
+
+def validate_turnstile(token):
+    url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    secret = current_app.config.get("TURNSTILE_SECRET_KEY")
+
+    data = {"secret": secret, "response": token}
+
+    try:
+        response = requests.post(url, data=data, timeout=10)
+        response.raise_for_status()
+
+        result = response.json()
+
+        if not result.get("success"):
+            current_app.logger.warning(f"Turnstile verification failed: {result.get('error-codes')}")
+            return False
+
+        return True
+
+    except requests.RequestException as e:
+        current_app.logger.warning(f"Turnstile request failed: {e}")
+        return False

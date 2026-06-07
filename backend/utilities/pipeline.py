@@ -5,8 +5,9 @@ from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
-from flask import abort
+from flask import abort, current_app
 
+from backend.config import CeleryConfig
 from backend.utilities.typed_values import deserialize_path, path_for_display
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,7 @@ def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
     :param form: Original form dictionary with possibly multiple "true" genomic regions
     :return: List of form dictionaries, each with only one "true" genomic region
     """
-    true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val == "true"]
+    true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val]
 
     form_variants = []
 
@@ -40,7 +41,23 @@ def get_valid_pipeline_statuses():
     :returns: List of valid status strings
     :rtype: list[str]
     """
-    return ["pending", "started", "success", "failure"]
+    return ["pending", "started", "success", "failure", "timeout", "empty_result"]
+
+
+def get_timeout_multiplier(is_authenticated: bool) -> float:
+    """Return the configured static timeout multiplier for the current user type."""
+    if is_authenticated:
+        return CeleryConfig.pipeline_timeout_authenticated_multiplier
+    return 1.0
+
+
+def resolve_timeout(is_authenticated: bool) -> int:
+    """Return the soft time limit in seconds for a pipeline run.
+
+    The timeout is intentionally static: anonymous users receive the base limit,
+    and authenticated users receive the configured multiplier on that limit.
+    """
+    return int(CeleryConfig.pipeline_timeout_anon * get_timeout_multiplier(is_authenticated))
 
 
 def delete_pipeline_run_files_and_db(mongo, run_id_obj):
@@ -72,6 +89,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
     result = mongo.db.runs.delete_one({"_id": run_id_obj})
 
     if result.deleted_count == 0:
+        current_app.logger.error(f"Failed to delete run {run_id_obj}")
         abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
