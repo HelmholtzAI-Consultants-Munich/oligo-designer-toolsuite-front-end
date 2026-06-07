@@ -75,23 +75,58 @@ services:
     profiles: [tests] # don't run unless specified
 
   odt-mongodb-exporter:
+    image: percona/mongodb_exporter:0.47.2
+    command:
+      - "--mongodb.uri=mongodb://odt-db:27017"
+      - "--collect-all"
+    depends_on:
+      - odt-db
     restart: unless-stopped
+    profiles: [monitoring]
 
   odt-node-exporter:
+    image: prom/node-exporter:latest
+    command:
+      - "--path.rootfs=/host"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      - /:/host:ro
     restart: unless-stopped
+    profiles: [monitoring]
 
   odt-cadvisor:
+    image: ghcr.io/google/cadvisor:latest
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
     restart: unless-stopped
+    profiles: [monitoring]
 
   odt-prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
       - 9090:9090
     restart: unless-stopped
+    profiles: [monitoring]
 
   odt-grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - odt-prometheus
     ports:
       - 3001:3000
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_SECURITY_ADMIN_USER=admin
     restart: unless-stopped
+    profiles: [monitoring]
