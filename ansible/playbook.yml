@@ -14,7 +14,7 @@
   handlers:
     - name: Wait slightly
       ansible.builtin.wait_for:
-        timeout: 5
+        timeout: 30
 
 - name: Prepare Instances
   hosts: swarm
@@ -29,6 +29,13 @@
       ansible.builtin.reboot:
     - name: Reset connection
       ansible.builtin.meta: reset_connection
+    - name: Wait slightly
+      ansible.builtin.wait_for:
+        timeout: 30
+    - name: Restart Docker daemon
+      ansible.builtin.service:
+        name: docker
+        state: restarted
 
 - name: Create Docker Swarm cluster
   hosts: swarm_managers
@@ -41,3 +48,9 @@
   tasks:
     - name: Join Swarm cluster
       ansible.builtin.import_tasks: tasks/swarm_join.yml
+
+- name: Deploy ODT Cloud Stack
+  hosts: swarm_managers
+  tasks:
+    - name: Deploy Stack
+      ansible.builtin.import_tasks: tasks/deploy.yml

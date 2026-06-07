@@ -13,6 +13,62 @@
   changed_when: reboot.stat.exists
   notify: Perform reboot
 
+- name: Configure storage locations
+  notify: Restart Docker daemon
+  block:
+    - name: Ensure Docker data directory is present
+      ansible.builtin.file:
+        path: /mnt/data/docker-data
+        state: directory
+        owner: root
+        group: root
+        mode: "0710"
+
+    - name: Ensure Docker configuration directory is present
+      ansible.builtin.file:
+        path: /etc/docker
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure Docker data location
+      ansible.builtin.copy:
+        dest: /etc/docker/daemon.json
+        content: |
+          {
+            "data-root": "/mnt/data/docker-data"
+          }
+        owner: root
+        group: root
+        mode: "0710"
+
+    - name: Ensure containerd data directory is present
+      ansible.builtin.file:
+        path: /mnt/data/containerd-data
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Ensure containerd configuration directory is present
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Configure containerd data location
+      ansible.builtin.copy:
+        dest: /etc/containerd/config.toml
+        content: |
+          disabled_plugins = ["cri"]
+          root = "/mnt/data/containerd-data"
+        owner: root
+        group: root
+        mode: "0644"
+
 # Adapted from https://www.digitalocean.com/community/tutorials/how-to-use-ansible-to-install-and-set-up-docker-on-ubuntu-20-04
 - name: Install Docker
   block:
@@ -34,7 +90,7 @@
         state: present
         filename: docker
 
-    - name: Update apt and install Docker Engine
+    - name: Install Docker
       ansible.builtin.apt:
         pkg:
           - docker-ce
@@ -43,15 +99,19 @@
           - docker-buildx-plugin
           - docker-compose-plugin
           - python3-docker
+          - python3-yaml
+          - python3-jsondiff
         state: present
 
-    - name: Add user to docker group
-      ansible.builtin.user:
-        name: "{{ ansible_user }}"
-        groups:
-          - docker
-        append: true
-      notify: Reset connection
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups:
+      - docker
+    append: true
+  notify:
+    - Reset connection
+    - Wait slightly
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers

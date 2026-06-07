@@ -56,7 +56,7 @@
     - name: Create main volume
       openstack.cloud.volume:
         name: odt-main-volume
-        size: 50
+        size: 100
       register: volume_result
 
     - name: Create main VM
@@ -79,7 +79,7 @@
     - name: Create node volume
       openstack.cloud.volume:
         name: "{{ 'odt-node-%d-volume' | format(item) }}"
-        size: 200
+        size: 500
       loop: "{{ range(1) | list }}"
 
     - name: Create node VM

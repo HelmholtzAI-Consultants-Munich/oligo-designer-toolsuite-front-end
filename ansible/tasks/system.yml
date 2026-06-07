@@ -1,7 +1,14 @@
 ---
-- name: Mount external OpenStack volume
-  ansible.posix.mount:
-    path: /data
-    src: /dev/vdb
-    fstype: ext4
-    state: present
+- name: Create and mount OpenStack volume
+  block:
+    - name: Create filesystem on volume
+      community.general.filesystem:
+        dev: /dev/vdb
+        fstype: ext4
+
+    - name: Mount external volume
+      ansible.posix.mount:
+        src: /dev/vdb
+        path: /mnt/data
+        fstype: ext4
+        state: mounted
