@@ -183,3 +183,25 @@ docker compose exec odt-server micromamba run flask user register
 docker compose exec odt-worker bash
 (base) 1337c977958a:/app$ genomic_region_generator [ARGUMENTS]
 ```
+
+## Building and pushing production container images
+
+To execute `docker compose` commands using the production overrides, you have to manually specify the compose files to take into account.
+
+For example, to print the production config, run:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml config
+```
+
+To build new production images using a production env file you keep at `ansible/files/.env`, run:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml --env-file ansible/files/.env build
+```
+
+To push these images to the GitHub Container Registry, run:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml push
+```
