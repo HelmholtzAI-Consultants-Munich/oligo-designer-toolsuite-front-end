@@ -34,6 +34,6 @@ COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 
 ENV FLASK_APP=backend.app
 
-EXPOSE 5000
+EXPOSE 8000
 
-CMD [ "gunicorn", "backend.app:create_app()", "--bind", "0.0.0.0:5000" ]
+CMD [ "gunicorn", "backend.app:create_app()", "--bind", "0.0.0.0:8000" ]

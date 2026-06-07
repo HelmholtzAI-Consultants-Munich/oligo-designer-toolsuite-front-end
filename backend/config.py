@@ -38,7 +38,7 @@ class Config:
     SECRET_KEY = "change-me-in-production"
 
     # URL settings
-    BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5000")
+    BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
     # Directory settings

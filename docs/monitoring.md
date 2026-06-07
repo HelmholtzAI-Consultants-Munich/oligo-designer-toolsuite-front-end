@@ -32,7 +32,7 @@ After starting with the monitoring profile, the following monitoring services ar
 | **MongoDB Exporter** | http://localhost:9216/metrics | MongoDB database metrics                                |
 | **Node Exporter**    | http://localhost:9100/metrics | Host operating system metrics                           |
 | **cAdvisor**         | http://localhost:8080         | Container resource usage metrics                        |
-| **Flask Metrics**    | http://localhost:5000/metrics | Application metrics (when configured)                   |
+| **Flask Metrics**    | http://localhost:8000/metrics | Application metrics (when configured)                   |
 
 ---
 
@@ -136,8 +136,8 @@ Exports host operating system metrics including:
 ### 3. Flask Application Metrics
 
 **Service:** `odt-server`  
-**Port:** `5000`  
-**Metrics Endpoint:** http://localhost:5000/metrics
+**Port:** `8000`  
+**Metrics Endpoint:** http://localhost:8000/metrics
 
 Exports Flask application metrics including:
 
