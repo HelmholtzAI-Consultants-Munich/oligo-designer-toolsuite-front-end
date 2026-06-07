@@ -13,13 +13,28 @@ services:
     volumes:
       # Mount the Docker socket for Traefik's Swarm provider
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - tls_certs:/certs
     command:
-      # EntryPoint config
+      # --- EntryPoint config ---
+
       # HTTP EntryPoint
       - "--entrypoints.web.address=:80"
+      # Configure HTTP to HTTPS Redirection
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+
       # HTTPS EntryPoint
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certresolver=lets-encrypt"
+
+      # Certificate resolver config
+      - "--certificatesresolvers.lets-encrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.lets-encrypt.acme.email=jonas.hagenberg@helmholtz-munich.de"
+      - "--certificatesresolvers.lets-encrypt.acme.storage=/certs/acme.json"
+
+      # --- Providers config ---
 
       # Docker Swarm Provider
       # Enable the Docker Swarm provider (instead of Docker provider)
@@ -30,6 +45,8 @@ services:
       - "--providers.swarm.exposedbydefault=false"
       # Specify the default network for Traefik to connect to services
       - "--providers.swarm.network=traefik_proxy"
+
+      # --- General config ---
 
       # Observability
       - "--log.level=INFO" # Set the Log Level e.g INFO, DEBUG
@@ -42,6 +59,8 @@ services:
   odt-db:
     networks:
       - internal
+    volumes:
+      - odt-db:/data/db
     deploy:
       placement:
         constraints:
@@ -50,6 +69,8 @@ services:
   odt-redis:
     networks:
       - internal
+    volumes:
+      - odt-redis:/data
     deploy:
       placement:
         constraints:
@@ -68,8 +89,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.odt-server.rule=Host(`odt.helmholtz-munich.de`) && PathPrefix(`/api/v0/`)"
-        - "traefik.http.routers.odt-server.entrypoints=web" # TODO: websecure
-        - "traefik.http.routers.odt-server.tls=false" # TODO: true
+        - "traefik.http.routers.odt-server.entrypoints=websecure"
         - traefik.http.services.odt-server.loadbalancer.server.port=8000
         # Strip /api/v0 from request paths
         - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api/v0"
@@ -105,8 +125,7 @@ services:
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.odt-web.rule=Host(`odt.helmholtz-munich.de`)"
-        - "traefik.http.routers.odt-web.entrypoints=web" # TODO: websecure
-        - "traefik.http.routers.odt-web.tls=false" # TODO: true
+        - "traefik.http.routers.odt-web.entrypoints=websecure"
         - "traefik.http.services.odt-web.loadbalancer.server.port=8080"
 
 networks:
@@ -117,3 +136,8 @@ networks:
     name: traefik_proxy
     driver: overlay
     attachable: true
+
+volumes:
+  tls_certs:
+  odt-db:
+  odt-redis:
