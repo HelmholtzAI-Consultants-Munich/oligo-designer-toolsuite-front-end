@@ -314,6 +314,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 onError={handlePipelineSubmitError}
             >
                 <Turnstile
+                    className="pipeline-turnstile"
                     siteKey={sitekey}
                     options={{
                         theme: "light",

@@ -186,7 +186,7 @@ def login():
     token = data.get("token", "")
 
     if not validate_turnstile(token):
-        abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
+        abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     if not username or not password:
         abort(HTTPStatus.BAD_REQUEST, description="Username and password required")
