@@ -73,18 +73,19 @@ This will start all standard services plus the `odt-tests` container. See [Tests
 
 The Dockerfiles used for building the frontend, backend and Playwright tests containers are located in the `docker` directory, along with their respective [`.dockerignore`](https://docs.docker.com/build/concepts/context/#dockerignore-files) files.
 
-The `compose.yml` at the project root defines the containers used for ODT Cloud and their respective deployment configuration.
+The `compose.yml` at the project root defines the containers used for ODT Cloud and their respective configuration.
+The `compose.override.yml` contains the default overrides for development whereas `compose.prod.yml` contains configuration used for production deployment with Docker Swarm.
 
 Currently, the project consists of the following containers:
 
-|     Service      |    Name    | Self-Built? |    Dockerfile     |            Base Image            |
-| :--------------: | :--------: | :---------: | :---------------: | :------------------------------: |
-|     Frontend     |  odt-web   |     yes     |  web.Dockerfile   |        node:22-alpine3.22        |
-|     Backend      | odt-server |     yes     | server.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
-|      Worker      | odt-worker |     yes     | worker.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
-|     Database     |   odt-db   |     no      |         -         |             mongo:8              |
-| Celery / Caching | odt-redis  |     no      |         -         |          redis:8-alpine          |
-|    Playwright    | odt-tests  |     yes     | tests.Dockerfile  |           node:22-slim           |
+|     Service      |    Name    | Self-Built? |    Dockerfile     |                        Base Images                        |
+| :--------------: | :--------: | :---------: | :---------------: | :-------------------------------------------------------: |
+|     Frontend     |  odt-web   |     yes     |  web.Dockerfile   | node:22-alpine3.22,nginxinc/nginx-unprivileged:alpine3.23 |
+|     Backend      | odt-server |     yes     | server.Dockerfile |             mambaorg/micromamba:2-alpine3.22              |
+|      Worker      | odt-worker |     yes     | worker.Dockerfile |             mambaorg/micromamba:2-alpine3.22              |
+|     Database     |   odt-db   |     no      |         -         |                          mongo:8                          |
+| Celery / Caching | odt-redis  |     no      |         -         |                      redis:8-alpine                       |
+|    Playwright    | odt-tests  |     yes     | tests.Dockerfile  |        mcr.microsoft.com/playwright:v1.58.2-noble         |
 
 ## Build Configuration
 

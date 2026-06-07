@@ -1,151 +1,81 @@
+x-docker-env-overrides: &docker-env-overrides
+  MONGO_URI: mongodb://odt-db/oligo_db
+  REDIS_URI: redis://odt-redis
+
 services:
   odt-db:
     image: mongo:8
-    container_name: odt-db
-    # Comment out these lines to restrict database access to containers
-    ports:
-      - 27017:27017
-    restart: on-failure
 
   odt-redis:
     image: redis:8-alpine
-    container_name: odt-redis
-    ports:
-      - 6379:6379
-    restart: on-failure
 
   odt-server:
-    image: odt-server
+    image: ghcr.io/helmholtzai-consultants-munich/odt-server:testing
     build:
       dockerfile: docker/server.Dockerfile
-    container_name: odt-server
-    ports:
-      - 5000:5000
     volumes:
       - data-access:/app/backend/data-access
-    env_file:
-      - .env # Shared settings (secrets, OAuth, Flask config)
-      - .env.docker # Docker overrides (service hostnames instead of localhost)
+    env_file: .env
+    environment: *docker-env-overrides
     depends_on:
       - odt-db
       - odt-redis
-    restart: on-failure
-    develop:
-      watch:
-        - action: sync
-          path: ./backend
-          target: /app/backend
-          initial_sync: true
 
   odt-beat:
-    image: odt-server
+    image: ghcr.io/helmholtzai-consultants-munich/odt-server:testing
     build:
       dockerfile: docker/server.Dockerfile
-    container_name: odt-beat
-    env_file:
-      - .env # Shared settings (Celery config)
-      - .env.docker # Docker overrides (service hostnames instead of localhost)
+    env_file: .env
+    environment: *docker-env-overrides
     depends_on:
       - odt-db
       - odt-redis
       - odt-worker
-    restart: on-failure
     command: celery -A backend.beat beat
-    develop:
-      watch:
-        - action: sync+restart
-          path: ./backend
-          target: /app/backend
-          initial_sync: true
 
   odt-worker:
-    image: odt-worker
+    image: ghcr.io/helmholtzai-consultants-munich/odt-worker:testing
     build:
       dockerfile: docker/worker.Dockerfile
-    container_name: odt-worker
     volumes:
       - data-access:/app/backend/data-access
       - cache:/app/backend/cache
-    env_file:
-      - .env # Shared settings (secrets, Celery config)
-      - .env.docker # Docker overrides (service hostnames instead of localhost)
+    env_file: .env
+    environment: *docker-env-overrides
     depends_on:
       - odt-db
       - odt-redis
-    restart: on-failure
-    develop:
-      watch:
-        - action: sync+restart
-          path: ./backend
-          target: /app/backend
-          initial_sync: true
 
   odt-web:
-    image: odt-web
+    image: ghcr.io/helmholtzai-consultants-munich/odt-web:testing
     build:
       dockerfile: docker/web.Dockerfile
-    container_name: odt-web
-    ports:
-      - 3000:3000
-    env_file:
-      - .env # Shared frontend settings (Vite env vars)
-    restart: on-failure
-    develop:
-      watch:
-        - action: sync
-          path: .
-          target: /app
-          initial_sync: true
-
-  odt-tests:
-    image: odt-tests
-    build:
-      dockerfile: docker/tests.Dockerfile
-    container_name: odt-tests
-    network_mode: host # this should be removed once the URL is configurable
-    environment:
-      PLAYWRIGHT_HTML_OUTPUT_DIR: /app/playwright-report
-    depends_on:
-      - odt-web
-      - odt-server
-      - odt-worker
-      - odt-redis
-      - odt-db
-    volumes:
-      - ./playwright/report:/app/playwright-report
-      - ./playwright/results:/app/test-results
-    restart: no
-    profiles: [tests] # don't run unless specified
+      args:
+        # This syntax passes through vars from .env
+        VITE_BACKEND_URL:
+        VITE_FEEDBACK_MAX_LENGTH:
+        VITE_TURNSTILE_SITE_KEY:
 
   odt-mongodb-exporter:
     image: percona/mongodb_exporter:0.47.2
-    container_name: odt-mongodb-exporter
     command:
       - "--mongodb.uri=mongodb://odt-db:27017"
       - "--collect-all"
     depends_on:
       - odt-db
-    restart: unless-stopped
     profiles: [monitoring]
 
   odt-node-exporter:
     image: prom/node-exporter:latest
-    container_name: odt-node-exporter
     command:
       - "--path.rootfs=/host"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     volumes:
-      # Note: rslave mount propagation is not used here because on Docker Desktop,
-      # Docker runs in a VM and the host's root filesystem (/) is not configured for
-      # shared/slave mounts, causing "path / is mounted on / but it is not a shared or slave mount" errors.
-      # The simpler configuration without rslave works fine for node-exporter's metrics collection.
       - /:/host:ro
-    restart: unless-stopped
     profiles: [monitoring]
 
   odt-cadvisor:
     image: ghcr.io/google/cadvisor:latest
-    container_name: odt-cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -155,32 +85,20 @@ services:
     privileged: true
     devices:
       - /dev/kmsg
-    restart: unless-stopped
     profiles: [monitoring]
 
   odt-prometheus:
     image: prom/prometheus:latest
-    container_name: odt-prometheus
-    ports:
-      - 9090:9090
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    restart: unless-stopped
     profiles: [monitoring]
 
   odt-grafana:
     image: grafana/grafana:latest
-    container_name: odt-grafana
-    ports:
-      - 3001:3000
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_ADMIN_USER=admin
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - odt-prometheus
-    restart: unless-stopped
     profiles: [monitoring]
 
 volumes:

@@ -39,7 +39,7 @@
     "test:e2e:full": "playwright test --grep @full",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
-    "docker:start": "docker compose up -d",
+    "docker:start": "docker compose up -d --build",
     "docker:watch": "docker compose watch",
     "docker:start:monitoring": "docker compose --profile monitoring up -d",
     "docker:watch:monitoring": "docker compose --profile monitoring watch",
