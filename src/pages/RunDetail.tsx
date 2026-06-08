@@ -649,7 +649,7 @@ const RunDetail = () => {
                             <Horizontal gap="md">
                                 <Button
                                     variant="outline-primary"
-                                    onClick={handleDownloadCSV}
+                                    onClick={handleDownloadExcel}
                                 >
                                     <FileEarmarkSpreadsheet /> All Genes Excel
                                 </Button>
