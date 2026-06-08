@@ -7,6 +7,8 @@ import pytest
 from backend.extensions import db
 from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
 
+pytest.skip("Scrinshot currently disabled", allow_module_level=True)
+
 
 @pytest.fixture
 def dummy_form(run_id):

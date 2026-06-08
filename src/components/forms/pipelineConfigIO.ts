@@ -1,52 +1,52 @@
-import type { RJSFSchema } from "@rjsf/utils";
-import type { JSONSchema7Definition } from "json-schema";
-import { customizeValidator } from "@rjsf/validator-ajv8";
-import Ajv2020 from "ajv/dist/2020";
+import type { GenericObjectType, RJSFSchema } from "@rjsf/utils";
 
 import type { RJSFFormData } from "../componentTypes";
-import {
-    PIPELINE_CONFIG,
-    type PipelineConfig,
-} from "../../pipelineConfig/config";
 import { getPipelineDisplayName } from "../../pipelineConfig/utils";
 
 export interface PipelineConfigExport {
     _meta: {
-        version: string;
+        version: number;
         pipeline: string;
         exportedAt: string;
     };
     config: RJSFFormData;
 }
 
-// Created once at module level — no need to reinstantiate per call
-const validator = customizeValidator({ AjvClass: Ajv2020 });
-
 // ---- Version helpers ----
 
-function parseSemver(v: string): [number, number, number] | null {
-    const parts = v.split(".");
-    if (parts.length !== 3) return null;
-    const nums = parts.map(Number);
-    if (nums.some(isNaN)) return null;
-    return nums as [number, number, number];
-}
-
-export function isVersionCompatible(
-    fileVersion: string,
-    schemaVersion: string
-): boolean {
-    const file = parseSemver(fileVersion);
-    const schema = parseSemver(schemaVersion);
-    if (!file || !schema) return false;
-    return file[0] === schema[0];
-}
-
-function getSchemaVersion(schema: RJSFSchema): string {
-    return schema.description ?? "1.0.0";
+function getSchemaVersion(schema: RJSFSchema): number {
+    return (
+        (schema.properties?.schema_version as { const: number } | undefined)
+            ?.const ?? 1
+    );
 }
 
 // ---- Export ----
+
+const removeFilesfromObject = (
+    value: GenericObjectType
+): GenericObjectType | undefined => {
+    if (Array.isArray(value)) {
+        return value.map(removeFilesfromObject).filter((v) => v !== undefined);
+    }
+
+    if (value instanceof File) {
+        return undefined; // or null, or some placeholder value
+    }
+
+    if (typeof value === "object" && value !== null) {
+        const newObj: GenericObjectType = {};
+        for (const [key, val] of Object.entries(value)) {
+            const cleanedVal = removeFilesfromObject(val);
+            if (cleanedVal !== undefined) {
+                newObj[key] = cleanedVal;
+            }
+        }
+        return newObj;
+    }
+
+    return value; // primitive value, return as is
+};
 
 export function buildExportPayload(
     formData: RJSFFormData,
@@ -59,7 +59,7 @@ export function buildExportPayload(
             pipeline,
             exportedAt: new Date().toISOString(),
         },
-        config: formData,
+        config: removeFilesfromObject(formData)!,
     };
 }
 
@@ -76,21 +76,7 @@ export function triggerDownload(payload: PipelineConfigExport): void {
     URL.revokeObjectURL(link.href);
 }
 
-// ---- Import / Validation ----
-
-function validationFailure(
-    errors:
-        | Array<{ instancePath?: string; message?: string }>
-        | null
-        | undefined,
-    prefix: string
-): { ok: false; error: string } | null {
-    if (!errors?.length) return null;
-    const msg = errors
-        .map((e) => `${e.instancePath || "root"}: ${e.message}`)
-        .join("; ");
-    return { ok: false, error: `${prefix} ${msg}` };
-}
+// ---- Import ----
 
 export type ImportResult =
     | {
@@ -142,10 +128,10 @@ export function importAndValidate(
 
     // 4. Version check
     const schemaVersion = getSchemaVersion(schema);
-    if (typeof typed._meta?.version !== "string") {
+    if (typeof typed._meta?.version !== "number") {
         return { ok: false, error: "Invalid file format: missing version." };
     }
-    if (!isVersionCompatible(typed._meta.version, schemaVersion)) {
+    if (typed._meta.version !== schemaVersion) {
         return {
             ok: false,
             error: `Incompatible config version "${typed._meta.version}". Current schema uses "${schemaVersion}". Major versions must match.`,
@@ -165,31 +151,8 @@ export function importAndValidate(
         }
     }
 
-    // 6. AJV validation against a partial schema built from only the present fields.
-    //    No $id to avoid collision with the form's already-registered schema.
-    // TODO: check how to make this validation save, fails to validate fasta
-    const schemaProps = schema.properties as Record<
-        string,
-        JSONSchema7Definition
-    >;
-    const partialSchema: RJSFSchema = {
-        $schema: schema.$schema,
-        type: "object",
-        properties: Object.fromEntries(
-            Object.keys(incoming).map((k) => [k, schemaProps[k]])
-        ),
-        additionalProperties: false,
-    };
-
-    const { errors } = validator.rawValidation(partialSchema, incoming);
-    const configError = validationFailure(errors, "Config values are invalid:");
-    if (configError) return configError;
-
-    // 7. Remove File fields from imported form
-    for (const field of PIPELINE_CONFIG[pipeline as keyof PipelineConfig]
-        .genomicInputFields!) {
-        if (incoming[field]) incoming[field]["files"] = [];
-    }
+    // 6. AJV validation
+    // disabled for now as this might be more of a hindrance than a help for users (e.g. when importing incomplete configs)
 
     return {
         ok: true,

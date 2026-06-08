@@ -19,18 +19,6 @@ def output_path(tmp_path, run_id, dummy_user):
     return str(output_path)
 
 
-def test_init_run_id(client, session_user):
-    response = client.post("/api/init_run_id")
-    assert response.status_code == 200
-    assert "run_id" in response.get_json()
-
-
-def test_init_run_id_requires_terms_acceptance(client):
-    response = client.post("/api/init_run_id")
-    assert response.status_code == 403
-    assert "accept the current Terms of Service and Privacy Policy" in response.get_json()["error"]
-
-
 def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
     create_test_run(run_id, user_id=dummy_user.id)
 

@@ -3,7 +3,9 @@ import os
 from unittest.mock import patch
 
 import pytest
+from glom import assign
 
+from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import db
 from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
 from backend.tests.conftest import assert_error_sanitized, post
@@ -54,12 +56,11 @@ def cache_dir_mock(monkeypatch, app):
 
 
 @pytest.fixture
-def dummy_form(run_id):
+def dummy_form():
     # Full dummy form data for oligoseq API
     form_path = os.path.join(os.path.dirname(__file__), "data/oligoseq_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    form["runid"] = str(run_id)
     return form
 
 
@@ -68,11 +69,8 @@ def dummy_form_ncbi(dummy_form):
     form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ncbi_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    dummy_form["formdata"]["files_fasta_target_probe_database"] = {"fasta_form": [form], "files": []}
-    dummy_form["formdata"]["files_fasta_reference_database_target_probe"] = {
-        "fasta_form": [form],
-        "files": [],
-    }
+    for path in PIPELINE_GENOMIC_INPUT["oligoseq"]:
+        assign(dummy_form["formdata"], path, [form])
     return dummy_form
 
 
@@ -81,11 +79,8 @@ def dummy_form_ensembl(dummy_form):
     form_path = os.path.join(os.path.dirname(__file__), "data/genomic_ensembl_mock_form_data.json")
     with open(form_path) as f:
         form = json.load(f)
-    dummy_form["formdata"]["files_fasta_target_probe_database"] = {"fasta_form": [form], "files": []}
-    dummy_form["formdata"]["files_fasta_reference_database_target_probe"] = {
-        "fasta_form": [form],
-        "files": [],
-    }
+    for path in PIPELINE_GENOMIC_INPUT["oligoseq"]:
+        assign(dummy_form["formdata"], path, [form])
     return dummy_form
 
 
@@ -127,7 +122,6 @@ def test_genomic_cascaded_ncbi_unauthenticated(
 
 def test_genomic_cascaded_single_ensembl(
     client,
-    run_id,
     dummy_form_ensembl,
     mock_run,
     mock_celery,
@@ -139,19 +133,15 @@ def test_genomic_cascaded_single_ensembl(
 
     response = post(client, "/api/oligoseq", dummy_form)
     assert response.status_code == 200
-    data = response.get_json()
-    assert data["run_id"] == str(run_id)
 
 
 def test_genomic_cascaded_single_ensembl_unauthenticated(
-    client, run_id, dummy_form_ensembl, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ensembl, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ensembl
 
     response = post(client, "/api/oligoseq", dummy_form)
     assert response.status_code == 200
-    data = response.get_json()
-    assert data["run_id"] == str(run_id)
 
 
 def test_genomic_dropdown(client, dropdown_mock):

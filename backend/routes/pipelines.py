@@ -13,35 +13,39 @@ from celery import chord
 from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
+from glom import assign, glom
+from pydantic import ValidationError
 from redis import Redis
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
-from backend.constants import PIPELINE_GENOMIC_INPUT
+from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
+    validate_turnstile,
 )
-from backend.routes.runs import delete_run
-from backend.utilities.pipeline import generate_single_region_forms
+from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
     utc_now,
 )
-from backend.utilities.validation import parse_run_id, validate_file_key, validate_genomic_form_data
+from backend.utilities.validation import validate_genomic_form_data
+from backend.worker.models import OligoSeqProbeDesignerConfigOverride
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
-
+# Pipelines other than oligoseq are disabled at the moment, since they do not have
+# a pydantic integration
 EXISTING_PIPELINES = frozenset(
     {
-        "scrinshot",
-        "seqfish",
-        "merfish",
+        # "scrinshot",
+        # "seqfish",
+        # "merfish",
         "oligoseq",
     }
 )
@@ -89,7 +93,7 @@ def create_context(pipeline_name: str) -> RunContext:
 def unpack_genomic_form_data(region_generation_forms: list[dict[str, Any]]) -> list[dict[str, Any]]:
     forms = []
     for region_generation_form_data in region_generation_forms:
-        validate_genomic_form_data(region_generation_form_data, allowed_sources=["NCBI", "Ensembl"])
+        validate_genomic_form_data(region_generation_form_data)
         region_generation_list = generate_single_region_forms(region_generation_form_data)
         if not region_generation_list:
             abort(HTTPStatus.BAD_REQUEST, description="Invalid input: no valid genomic regions specified")
@@ -105,21 +109,16 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
 
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
-        field: form_data[field]["fasta_form"]
-        for field in PIPELINE_GENOMIC_INPUT[pipeline_name]
-        if len(form_data[field]["fasta_form"]) > 0
+        path: glom(form_data, path)
+        for path in PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])
+        if len(glom(form_data, path)) > 0
     }
 
     for id, region_generation_forms in region_generation_forms_by_id.items():
-        validate_file_key(id)
         region_generation_list = unpack_genomic_form_data(region_generation_forms)
         generated_regions[id].extend(region_generation_list)
 
     return dict(generated_regions)
-
-
-def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return db.runs.update_one({"_id": run_id}, {"$set": data})
 
 
 def write_run_to_DB(
@@ -132,11 +131,13 @@ def write_run_to_DB(
     pipeline_run_config: dict | None = None,
 ):
     data: dict = {
+        "_id": run_id,
+        "status": "pending",
+        "created_at": utc_now(),
         "session_id": context.session_id,
         "user_id": context.user_id,
         "timestamp": context.timestamp,
         "output_path": serialize_path(context.output_path),
-        "status": "pending",
         "pipeline": pipeline_name,
         "task_id": task_id,
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
@@ -144,19 +145,25 @@ def write_run_to_DB(
     }
     if pipeline_run_config is not None:
         data["pipeline_run_config"] = pipeline_run_config
-    return update_run_in_DB(run_id, data)
+        # create a pending run in the database
+    return db.runs.insert_one(data)
 
 
-def check_gene_threshold(form_data: dict[str, Any], run_id: ObjectId):
-    gene_count = len(form_data["file_regions"].split(","))
-    if gene_count > Config.GENE_COUNT_THRESHOLD:
-        delete_run(run_id)
-        abort(HTTPStatus.UNAUTHORIZED, description="Please login to analyse more than ten genes.")
+def check_gene_threshold(form_data: dict[str, Any]):
+    genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+    if genes_string is None:
+        abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
+    genes = genes_string.split(",")
+    if len(genes) > Config.GENE_COUNT_THRESHOLD:
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description=f"Please login to analyse more than {Config.GENE_COUNT_THRESHOLD} genes.",
+        )
 
 
-def get_task_priority(form_data: dict[str, Any], run_id: ObjectId) -> int:
+def get_task_priority(form_data: dict[str, Any]) -> int:
     if not current_user.is_authenticated:
-        check_gene_threshold(form_data, run_id)
+        check_gene_threshold(form_data)
         priority = CeleryConfig.task_default_priority
     else:
         priority = CeleryConfig.task_high_priority
@@ -168,13 +175,17 @@ def enqueue_pipeline(
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
-    output_path: Path,
     priority: int,
+    context: RunContext,
+    enqueued_at: datetime,
+    is_authenticated: bool = False,
 ) -> AsyncResult:
     """
     Builds and enqueues a chord such that all region generation tasks
     finish executing before the pipeline is started.
     """
+    soft_limit = resolve_timeout(is_authenticated)
+    hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
 
     # the chord header tasks get executed simultaneously as a group
     region_generation_signatures = (
@@ -184,8 +195,21 @@ def enqueue_pipeline(
     )
 
     # the chord body task gets executed once all header tasks finished
+    # The soft limit is the normal interrupt path; the hard limit is a backstop
+    # for worker processes that do not shut down after the soft timeout.
     pipeline_signature = celery_app.signature(
-        Tasks.RUN_PIPELINE, args=(pipeline_name, form_data, str(output_path)), priority=priority
+        Tasks.RUN_PIPELINE,
+        args=(pipeline_name, form_data, str(context.output_path)),
+        priority=priority,
+        soft_time_limit=soft_limit,
+        time_limit=hard_limit,
+        headers={
+            "run_id": str(run_id),
+            "pipeline": pipeline_name,
+            "user_id": context.user_id,
+            "session_id": context.session_id,
+            "enqueued_at": enqueued_at.isoformat(),
+        },
     )
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
@@ -254,12 +278,43 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
     # to the corresponding path to avoid reading an empty stream
     saved_files: dict[FileStorage, Path] = {}
 
-    for field in PIPELINE_GENOMIC_INPUT[pipeline_name]:
-        file_inputs[field] = [
-            save_file(file_name, files, saved_files) for file_name in form_data[field]["files"]
-        ]
-
+    for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
+        for file_name in glom(form_data, path):
+            file_path = save_file(file_name, files, saved_files)
+            if file_path is not None:
+                if file_inputs.get(path) is None:
+                    file_inputs[path] = []
+                file_inputs[path].append(file_path)
     return file_inputs
+
+
+def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
+
+    match pipeline_name:
+        case "oligoseq":
+            pipeline_model = OligoSeqProbeDesignerConfigOverride
+        case _:
+            abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
+
+    try:
+        pipeline_model.model_validate(form_data)
+    except ValidationError as v_err:
+        current_app.logger.debug(v_err)
+        abort(HTTPStatus.BAD_REQUEST, description=f"Invalid input: {v_err!s}")
+
+
+def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
+    """
+    Adds fields that are needed by the pipeline schema, but not exposed to users and thus not existing in our
+    front-end schemas.
+
+    Arguments:
+        form_data {dict[str, Any]} -- pipeline config
+        pipline_name {str}
+    """
+
+    for field, value in PIPELINE_NON_EXPOSED_FIELDS.get(pipline_name, {}).items():
+        form_data[field] = value
 
 
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
@@ -271,6 +326,7 @@ def start_pipeline(pipeline_name: str):
     Orchestrates the workflow for running the pipeline as follows:
 
     - Verifies the pipeline name
+    - Verifies the turnstile token
     - Loads and validates user/session context.
     - Extracts form data from the request, and ensures a valid MongoDB run ID is provided.
     - Parses and validates region generation form data.
@@ -290,6 +346,7 @@ def start_pipeline(pipeline_name: str):
     in the developer documentation.
 
     """
+
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')
 
@@ -305,13 +362,17 @@ def start_pipeline(pipeline_name: str):
     if form is None or len(form) == 0:
         abort(HTTPStatus.BAD_REQUEST, description="Expected JSON")
 
-    run_id_str = form.get("runid")  # Run ID from React
-    run_id = parse_run_id(run_id_str)
+    if not validate_turnstile(form.get("token", "")):
+        abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
 
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
+
+    add_non_exposed_fields(form_data, pipeline_name)
+
+    validate_pipeline_config(form_data, pipeline_name)
 
     # genomic_region_generator
     generated_regions = parse_region_generation(form_data, pipeline_name)
@@ -323,16 +384,25 @@ def start_pipeline(pipeline_name: str):
     except KeyError:
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
 
-    for field, file_paths in file_inputs.items():
-        form_data[field]["files"] = [str(file_path) for file_path in file_paths]
+    for field_path, file_paths in file_inputs.items():
+        assign(form_data, field_path, [str(file_path) for file_path in file_paths])
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
 
-    priority = get_task_priority(form_data, run_id)
+    run_id = ObjectId()  # Generate a new run ID
+    priority = get_task_priority(form_data)
+    enqueued_at = utc_now()
 
     result_promise = enqueue_pipeline(
-        run_id, pipeline_name, form_data, generated_regions, context.output_path, priority
+        run_id,
+        pipeline_name,
+        form_data,
+        generated_regions,
+        priority,
+        context,
+        enqueued_at,
+        current_user.is_authenticated,
     )
 
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
@@ -341,7 +411,7 @@ def start_pipeline(pipeline_name: str):
     pipeline_run_config = (
         form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
     )
-    update_result = write_run_to_DB(
+    insert_result = write_run_to_DB(
         pipeline_name,
         run_id,
         context,
@@ -350,9 +420,7 @@ def start_pipeline(pipeline_name: str):
         (high_priority_ahead, default_priority_ahead),
         pipeline_run_config,
     )
-    if update_result.matched_count == 0:
-        abort(HTTPStatus.NOT_FOUND, description="Run ID not found")
+    if not insert_result.acknowledged:
+        abort(HTTPStatus.NOT_FOUND, description="Failed to create run in database")
 
-    # The task state can be polled using get_run_state(run_id_str).
-
-    return jsonify({"run_id": run_id_str, "queue_position": (high_priority_ahead, default_priority_ahead)})
+    return jsonify({"run_id": str(run_id), "queue_position": (high_priority_ahead, default_priority_ahead)})

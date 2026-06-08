@@ -39,6 +39,8 @@ class GenomicRegionsFile:
     def _load_genes(self):
         """Load gene names from regions file."""
         genes = set()
+        if self.regions_path is None:
+            return []  # consider all genes if regions file is not provided
         with open(self.regions_path) as f:
             for line in f:
                 genes.add(line.strip())
@@ -56,7 +58,7 @@ class GenomicRegionsFile:
         with open(self.probes_path) as f:
             probe_data = yaml.safe_load(f)
             for gene, oligosets in probe_data.items():
-                if gene not in self.genes:
+                if self.genes and gene not in self.genes:
                     continue
                 for oligoset_name, oligoset_entries in oligosets.items():
                     score = oligoset_entries["Oligoset Score"]
@@ -174,7 +176,7 @@ class GenomicRegionsFile:
         region_name, additional_info, coordinates = fasta_parser.parse_fasta_header(idx)
         gene = region_name.lstrip(">")
         record = seq_record[idx]
-        if gene not in self.genes:
+        if self.genes and gene not in self.genes:
             return
 
         region_sequence = str(record.seq)  # required in FASTA

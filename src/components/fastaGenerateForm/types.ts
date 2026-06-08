@@ -1,46 +1,42 @@
-export type FastaFormUpload =
-    | NcbiFastaFormDataUncommented
-    | EnsFastaFormDataUncommented;
+export type GenomicFormOrFile = File | GenomicForm;
 
-export interface FastaFormUncommented {
-    selectedSource: string;
-    formDataNcbi: NcbiFastaFormDataUncommented;
-    formDataEns: EnsFastaFormDataUncommented;
+export type GenomicForm = NcbiGenomicForm | EnsemblGenomicForm;
+
+export interface NcbiGenomicForm {
+    source: "ncbi";
+    source_params: {
+        species: string;
+        annotation_release: string;
+        taxon: string;
+        assembly_source: string;
+        mode: string;
+    };
+    genomic_regions: GenomicRegionsForm;
+    exon_exon_junction_block_size: number;
 }
 
-export interface NcbiFastaFormDataUncommented {
-    source: string;
-    source_params: NcbiSourceParamsUncommented;
-    genomic_regions: GenomicRegionsUncommented;
-    exon_exon_junction_block_size: string;
+export interface EnsemblGenomicForm {
+    source: "ensembl";
+    source_params: {
+        species: string;
+        annotation_release: string;
+    };
+    genomic_regions: GenomicRegionsForm;
+    exon_exon_junction_block_size: number;
 }
 
-export interface NcbiSourceParamsUncommented {
-    species: string;
-    annotation_release: string;
-    taxon: string;
+export interface GenomicRegionsForm {
+    gene: boolean;
+    intergenic: boolean;
+    exon: boolean;
+    exon_exon_junction: boolean;
+    utr: boolean;
+    cds: boolean;
+    intron: boolean;
 }
 
-export interface GenomicRegionsUncommented {
-    gene: string;
-    intergenic: string;
-    exon: string;
-    exon_exon_junction: string;
-    utr: string;
-    cds: string;
-    intron: string;
+export interface NcbiAndEnsemblFormData {
+    selectedSource: "ncbi" | "ensembl";
+    formDataNcbi: NcbiGenomicForm;
+    formDataEnsembl: EnsemblGenomicForm;
 }
-
-export interface EnsFastaFormDataUncommented {
-    source: string;
-    source_params: EnsSourceParamsUncommented;
-    genomic_regions: GenomicRegionsUncommented;
-    exon_exon_junction_block_size: string;
-}
-
-export interface EnsSourceParamsUncommented {
-    species: string;
-    annotation_release: string;
-}
-
-export type setterCallback<T> = (prevFiles: T[]) => T[];

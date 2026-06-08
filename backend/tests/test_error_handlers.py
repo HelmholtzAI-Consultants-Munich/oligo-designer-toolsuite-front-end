@@ -44,7 +44,7 @@ class TestHTTPExceptionHandler:
 
     def test_abort_400_incorrect_multiform_request(self, client, authenticated_user):
         """Pipeline route with no JSON body triggers abort(415)."""
-        response = client.post("/api/merfish", content_type="text/plain", data="not json")
+        response = client.post("/api/oligoseq", content_type="text/plain", data="not json")
         assert response.status_code == 400
         data = response.get_json()
         assert data["error"] == "Expected a Multipart form data with payload JSON field"

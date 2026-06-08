@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button, Container, Form, InputGroup, Nav } from "react-bootstrap";
 import { ArrowLeft, type Icon } from "react-bootstrap-icons";
 import { Grid, Horizontal, Vertical } from "./Alignment";
@@ -7,7 +7,6 @@ import { useNavigate } from "react-router";
 interface TabConfig {
     label: string;
     tabKey: string;
-    icon?: Icon;
 }
 
 interface BackToConfig {
@@ -110,53 +109,46 @@ function Header({
     const [activeOffset, setActiveOffset] = useState([0, 0]);
     const [activeSize, setActiveSize] = useState([0, 0]);
     const [animationReady, setAnimationReady] = useState(0);
+    const hasMeasuredActiveTab = activeSize[0] !== 0;
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        // Set initial active tab offset and width on mount
-        if (activeSize[0] === 0 && tabs && tabs.length > 0) {
-            requestAnimationFrame(() => {
-                console.log("Measuring active tab for animation");
-                const activeElement = document.querySelector(
-                    `.nav-header .nav-link.active`
-                ) as HTMLElement;
-                if (activeElement) {
-                    setActiveOffset([
-                        activeElement.offsetLeft,
-                        activeElement.offsetTop,
-                    ]);
-                    setActiveSize([
-                        activeElement.offsetWidth,
-                        activeElement.offsetHeight,
-                    ]);
-                }
-                requestAnimationFrame(() => {
-                    setAnimationReady(1); // Set animation ready flag after initial measurement
-                });
-            });
-        }
-    }, [tabs, activeSize]);
-
-    const handleResize = () => {
+    const measureActiveTab = useCallback(() => {
         const activeElement = document.querySelector(
-            `.nav-header .nav-link.active`
+            ".nav-header .nav-link.active"
         ) as HTMLElement;
-        setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
-        if (activeElement) {
-            setActiveOffset([
-                activeElement.offsetLeft,
-                activeElement.offsetTop,
-            ]);
-            setActiveSize([
-                activeElement.offsetWidth,
-                activeElement.offsetHeight,
-            ]);
+
+        if (!activeElement) {
+            return;
         }
+
+        setActiveOffset([activeElement.offsetLeft, activeElement.offsetTop]);
+        setActiveSize([activeElement.offsetWidth, activeElement.offsetHeight]);
+    }, []);
+
+    useEffect(() => {
+        if (!hasMeasuredActiveTab && tabs && tabs.length > 0) {
+            const setupAnimation = async () => {
+                // Wait for fonts to be ready to ensure accurate measurements
+                await (document.fonts?.ready ?? Promise.resolve());
+                requestAnimationFrame(() => {
+                    measureActiveTab();
+                    requestAnimationFrame(() => {
+                        setAnimationReady(1); // Set animation ready flag after initial measurement
+                    });
+                });
+            };
+            setupAnimation();
+        }
+    }, [tabs, hasMeasuredActiveTab, measureActiveTab]);
+
+    const handleResize = useCallback(() => {
+        setAnimationReady(0); // Reset animation ready flag to prevent animation during resize
+        measureActiveTab();
         requestAnimationFrame(() => {
             setAnimationReady(1); // Set animation ready flag after measurement
         });
-    };
+    }, [measureActiveTab]);
 
     useEffect(() => {
         if (!tabs || tabs.length === 0) return; // No tabs, no need to set up resize listener
@@ -166,7 +158,7 @@ function Header({
         return () => {
             window.removeEventListener("resize", handleResize);
         };
-    }, [tabs]);
+    }, [tabs, handleResize]);
 
     if (hideHeader) {
         return <title>{extendedTitle}</title>;
@@ -252,13 +244,7 @@ function Header({
                                                         }
                                                         title={tab.label}
                                                     >
-                                                        {tab.icon ? (
-                                                            <tab.icon
-                                                                size={16}
-                                                            />
-                                                        ) : (
-                                                            tab.label
-                                                        )}
+                                                        {tab.label}
                                                     </Nav.Link>
                                                 </Nav.Item>
                                             ))}

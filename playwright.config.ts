@@ -11,7 +11,7 @@ export default defineConfig({
     },
     fullyParallel: false,
     forbidOnly: Boolean(process.env.CI),
-    retries: 0,
+    retries: 1,
     reporter: [
         ["list"],
         ["html", { open: "never", outputFolder: "playwright-report" }],

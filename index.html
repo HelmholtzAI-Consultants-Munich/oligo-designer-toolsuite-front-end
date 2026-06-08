@@ -14,6 +14,7 @@
             user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
         -->
         <link rel="manifest" href="/manifest.json" />
+        <link rel="preconnect" href="https://challenges.cloudflare.com" />
 
         <meta name="description" content="Oligo Designer Toolsuite Cloud" />
     </head>
@@ -21,5 +22,9 @@
         <div id="root"></div>
 
         <script type="module" src="/src/index.tsx"></script>
+        <script
+            src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+            defer
+        ></script>
     </body>
 </html>
