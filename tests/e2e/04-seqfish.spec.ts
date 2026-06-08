@@ -2,7 +2,7 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     SEQFISH_PIPELINE,
-    fillDeveloperSettings,
+    fillConfig,
     fillPrimerParameters,
     fillReadoutProbeParameters,
     fillTargetProbeParameters,
@@ -10,7 +10,7 @@ import {
     submitAndVerifyRun,
 } from "./helpers";
 
-test("@full seqfish run completes and exposes artifacts", async ({ page }) => {
+test("seqfish run completes and exposes artifacts", async ({ page }) => {
     await openPipeline(page, SEQFISH_PIPELINE);
 
     await fillTargetProbeParameters(page, {
@@ -27,9 +27,9 @@ test("@full seqfish run completes and exposes artifacts", async ({ page }) => {
         fastaReferenceFiles: [FASTA_FIXTURES.cds, FASTA_FIXTURES.utr],
     });
 
-    await fillDeveloperSettings(page, {
-        maxGraphSize: "2500",
-        nAttempts: "30000",
+    await fillConfig(page, {
+        nAttemptsGraph: "60",
+        setSizeMin: "2",
         readoutProbeInitialNumSequences: "10000",
         primerInitialNumSequences: "50000",
     });

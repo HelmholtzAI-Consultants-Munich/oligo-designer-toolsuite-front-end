@@ -234,6 +234,23 @@ def test_get_run_config_404_when_absent(client, authenticated_user, run_doc):
     assert response.status_code == 404
 
 
+def test_get_run_config_404_for_missing_run(client, authenticated_user):
+    response = client.get(f"/api/runs/{ObjectId()}/config")
+
+    assert response.status_code == 404
+
+
+def test_get_run_config_404_for_unowned_run(client, authenticated_user, run_doc):
+    run_id = run_doc(
+        user_id=OTHER_USER_ID,
+        pipeline_run_config={"pipeline": "merfish"},
+    )
+
+    response = client.get(f"/api/runs/{run_id}/config")
+
+    assert response.status_code == 404
+
+
 def test_get_run_status_success(client, authenticated_user, run_doc):
     run_id = run_doc(user_id=TEST_USER_ID, status="started")
 

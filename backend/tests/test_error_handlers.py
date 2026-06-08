@@ -8,10 +8,10 @@ from backend.tests.conftest import assert_sanitized_error
 
 
 def test_http_exception_returns_json_error(client, authenticated_user):
-    response = client.post("/api/merfish", data={}, content_type="multipart/form-data")
+    response = client.post("/api/oligoseq", content_type="text/plain", data="not json")
 
     assert response.status_code == 400
-    assert "error" in response.get_json()
+    assert response.get_json() == {"error": "Expected a Multipart form data with payload JSON field"}
 
 
 def test_404_unknown_route_returns_json_error(client):

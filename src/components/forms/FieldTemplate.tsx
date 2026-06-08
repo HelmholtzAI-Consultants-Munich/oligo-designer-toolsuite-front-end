@@ -1,24 +1,34 @@
-import { Form } from "react-bootstrap";
-import type { FieldTemplateProps } from "@rjsf/utils";
-import { Vertical } from "../ui/Alignment";
-import { isRootField } from "./utils";
-import { ToolTip } from "../ui/Tooltip";
+import { type FieldTemplateProps } from "@rjsf/utils";
+import { memo } from "react";
 
-const FieldTemplate = (props: FieldTemplateProps) => {
-    const { id, label, children, rawDescription, fieldPathId } = props;
+/**
+ * This FieldTemplate is based on the react-bootstrap theme's template.
+ * It removes the `WrapIfAdditionalTemplate` wrapper, as it wrapped all fields in an unpredictable way, making consistent styling difficult.
+ * It also removes the field description, as it would be redundant with tooltips rendered in other template overrides.
+ * Lastly, it is designed to be used in a CSS grid layout, allowing fields to span the full width of the form when necessary (e.g. for object fields or custom fields).
+ */
+const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
+    const { children, errors, help, hidden, schema, uiSchema } = props;
 
-    const isRoot = isRootField(fieldPathId);
-    if (isRoot) return <>{children}</>;
+    if (hidden) {
+        return <div className="hidden">{children}</div>;
+    }
+
+    const spanFullWidth =
+        schema.type === "object" || schema.oneOf || uiSchema?.["ui:field"];
 
     return (
-        <Form.Group as={Vertical} align="stretch" fillHeight>
-            <Vertical.Item grow>
-                <Form.Label htmlFor={id}>{label}</Form.Label>
-                <ToolTip id={id} tip={rawDescription} />
-            </Vertical.Item>
+        <div
+            style={{
+                gridColumn: spanFullWidth ? "1 / -1" : undefined,
+            }}
+            className={`rjsf-field rjsf-field-${schema.type}`}
+        >
             {children}
-        </Form.Group>
+            {errors}
+            {help}
+        </div>
     );
-};
+});
 
 export default FieldTemplate;

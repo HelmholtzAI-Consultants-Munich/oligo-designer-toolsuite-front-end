@@ -1,5 +1,4 @@
 import os
-import subprocess
 import uuid
 from logging import Logger
 from pathlib import Path
@@ -7,11 +6,15 @@ from typing import Any
 
 import yaml
 from filelock import SoftFileLock
+from oligo_designer_toolsuite.pipelines._genomic_region_generator import (
+    GenomicRegionGenerator,
+)
 
 from backend.cache import file_cache_region
 from backend.exceptions import ODTPipelineError
 from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
 from backend.worker.converters import to_bool, to_int
+from backend.worker.utils import build_fallback_error_message
 
 
 class GenomicRegionGeneratorRunner:
@@ -109,22 +112,29 @@ class GenomicRegionGeneratorRunner:
         with annotation_file_lock, sequence_file_lock:
             # start Genomic Region Generator
             try:
-                subprocess.run(
-                    ["genomic_region_generator", "-c", config_path],
-                    capture_output=True,
-                    text=True,
-                    check=True,
+                pipeline = GenomicRegionGenerator(config_genomic["dir_output"])
+
+                # Load annotations
+                region_generator = pipeline.load_annotations(
+                    source=config_genomic["source"],
+                    source_params=config_genomic["source_params"],
                 )
-            except subprocess.CalledProcessError as error:
-                self.logger.error(f"Custom pipeline failed: {error.stderr}")
+
+                # Generate regions
+                pipeline.generate_genomic_regions(
+                    region_generator=region_generator,
+                    genomic_regions=config_genomic["genomic_regions"],
+                    block_size=config_genomic["exon_exon_junction_block_size"],
+                )
+
+            except ValueError:
+                raise ODTPipelineError(build_fallback_error_message("genomic region generator"))
+            except Exception as error:
+                if hasattr(error, "stderr"):
+                    self.logger.warning(f"The genomic region generator failed STDERR: {error.stderr}")
+                self.logger.warning(f"The genomic region generator failed PLAIN: {error}")
                 self.cleanup_temp_files(config_path)
                 other_files_source = "Ensembl" if files_source == "NCBI" else "NCBI"
-                if (
-                    error.returncode == -9
-                ):  # SIGKILL, likely due to OOM (this is Unix-specific and will not work on Windows)
-                    raise ODTPipelineError(
-                        "The pipeline was terminated unexpectedly, likely due to insufficient memory. Please try again with smaller input or contact us for assistance."
-                    )
                 raise ODTPipelineError(
                     f"An error occured while fetching data from {files_source}. Please try again. If the error persists, please inform us of the issue and consider switching to {other_files_source} data for now."
                 )

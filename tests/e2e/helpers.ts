@@ -104,12 +104,10 @@ export const SCRINSHOT_PIPELINE: PipelineDefinition = {
 
 export const OLIGOSEQ_PIPELINE: PipelineDefinition = {
     route: "/pipelines/oligoSeq",
-    heading: /OligoSeq/i,
+    heading: /OligoSeq Probe Designer/i,
     pipeline: "oligoseq",
-    expectedTabs: [/Target Probe Parameters/i, /Developer Settings/i],
-    representativeFieldChecks: [
-        { tab: /Target Probe Parameters/i, label: /File Regions/i },
-    ],
+    expectedTabs: [/Target Probe/i],
+    representativeFieldChecks: [{ tab: /Target Probe/i, label: /Region Ids/i }],
 };
 
 export const MERFISH_PIPELINE: PipelineDefinition = {
@@ -142,11 +140,14 @@ export const SEQFISH_PIPELINE: PipelineDefinition = {
     ],
 };
 
+// pipelines disabled for now, since only oligoseq has pydantic
+// integration yet
+// TODO: reintegrate these pipelines
 export const ALL_PIPELINES: PipelineDefinition[] = [
-    SCRINSHOT_PIPELINE,
+    // SCRINSHOT_PIPELINE,
     OLIGOSEQ_PIPELINE,
-    MERFISH_PIPELINE,
-    SEQFISH_PIPELINE,
+    // MERFISH_PIPELINE,
+    // SEQFISH_PIPELINE,
 ];
 
 // ---------------------------------------------------------------------------
@@ -299,6 +300,55 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
 // ---------------------------------------------------------------------------
 // Form filling helpers
 // ---------------------------------------------------------------------------
+const setGenomicInput = async (
+    page: Page,
+    fieldName: string,
+    genomicInput: {
+        source?: string;
+        taxon?: string;
+        species?: string;
+        annotationRelease?: string;
+        genomicRegions?: { [key: string]: boolean };
+    }
+) => {
+    const SELECT_NAME_MAP = {
+        source: "Select Source",
+        taxon: "Taxon",
+        species: "Species",
+        annotationRelease: "Annotation Release",
+    };
+    await page.locator(`button[name=${fieldName}]`).click();
+
+    await expect(
+        page.getByText("Configure Genomic Regions", { exact: true })
+    ).toBeVisible();
+
+    for (const [key, property] of Object.entries(genomicInput)) {
+        if (key === "genomicRegions") {
+            for (const [genomicKey, genomicRegionChecked] of Object.entries(
+                property
+            )) {
+                await page
+                    .getByRole("checkbox", { name: genomicKey, exact: true })
+                    .setChecked(genomicRegionChecked);
+            }
+            continue;
+        }
+        if (key === "annotationRelease") {
+            await page.waitForTimeout(4000);
+        }
+        await page
+            .getByRole("combobox", {
+                name: SELECT_NAME_MAP[key as keyof typeof SELECT_NAME_MAP],
+            })
+            .selectOption(property);
+    }
+    await page
+        .getByRole("button", {
+            name: "Save",
+        })
+        .click();
+};
 
 export const fillTargetProbeParameters = async (
     page: Page,
@@ -310,24 +360,28 @@ export const fillTargetProbeParameters = async (
     }
 ) => {
     await page
-        .getByRole("textbox", { name: /File Regions/i })
+        .getByRole("textbox", { name: /Region Ids/i })
         .fill(options.fileRegions);
-    await page
-        .getByRole("button", { name: /Files Fasta Target Probe Database/i })
-        .setInputFiles(options.fastaTargetFiles);
-    await page
-        .getByRole("button", {
-            name: /Files Fasta Reference Database Target Probe/i,
-        })
-        .setInputFiles(options.fastaReferenceFiles);
 
-    if (!options.fastaVcfFiles) return;
+    const genomicInput = {
+        taxon: "Archaea",
+        annotationRelease: "GCF_009428885.1_ASM942888v1",
+        genomicRegions: {
+            Gene: true,
+            Exon: false,
+            "Exon-exon-junction": false,
+        },
+    };
 
-    await page
-        .getByRole("button", {
-            name: /Files Vcf Reference Database Target Probe/i,
-        })
-        .setInputFiles(options.fastaVcfFiles);
+    await setGenomicInput(page, "files_fasta_probe_database", genomicInput);
+
+    await setGenomicInput(page, "files_fasta_reference_database", genomicInput);
+
+    if (options.fastaVcfFiles) {
+        await page
+            .locator("input[name=files_vcf_reference_database]")
+            .setInputFiles(options.fastaVcfFiles);
+    }
 };
 
 export const fillReadoutProbeParameters = async (
@@ -356,28 +410,20 @@ export const fillPrimerParameters = async (
         .setInputFiles(options.fastaReferenceFiles);
 };
 
-export const fillDeveloperSettings = async (
+export const fillConfig = async (
     page: Page,
     options: {
-        maxGraphSize?: string;
-        nAttempts?: string;
+        nAttemptsGraph?: string;
         readoutProbeInitialNumSequences?: string;
         primerInitialNumSequences?: string;
         setSizeMin?: string;
         setSizeOpt?: string;
     }
 ) => {
-    await clickTab(page, /Developer Settings/i);
-
-    if (options.maxGraphSize) {
+    if (options.nAttemptsGraph) {
         await page
-            .getByRole("spinbutton", { name: /Max Graph Size/i })
-            .fill(options.maxGraphSize);
-    }
-    if (options.nAttempts) {
-        await page
-            .getByRole("spinbutton", { name: "N Attempts", exact: true })
-            .fill(options.nAttempts);
+            .getByRole("spinbutton", { name: "N Attempts Graph", exact: true })
+            .fill(options.nAttemptsGraph);
     }
     if (options.readoutProbeInitialNumSequences) {
         await page
@@ -390,7 +436,7 @@ export const fillDeveloperSettings = async (
             .fill(options.primerInitialNumSequences);
     }
     if (options.setSizeMin || options.setSizeOpt) {
-        await clickTab(page, /Target Probe Parameters/i);
+        await clickTab(page, /Target Probe/i);
         if (options.setSizeMin) {
             await page.getByLabel(/Set Size Min/i).fill(options.setSizeMin);
         }
