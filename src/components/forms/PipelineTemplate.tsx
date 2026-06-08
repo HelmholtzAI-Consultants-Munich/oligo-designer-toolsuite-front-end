@@ -10,6 +10,7 @@ import Form from "@rjsf/react-bootstrap";
 import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 import type { RJSFFormData } from "../componentTypes";
 import { handleSubmit } from "../fastaGenerateForm/helpers";
 import FieldTemplate from "./FieldTemplate";
@@ -62,6 +63,7 @@ const PipelineTemplate: React.FC<Props> = ({
 }) => {
     const [formData, setFormData] = useState<RJSFFormData>({});
     const [submissionTried, setSubmissionTried] = useState(false);
+    const turnstileRef = useRef<TurnstileInstance | null>(null);
     const submitButtonRef = useRef<HTMLButtonElement | null>(null);
     const validator = useMemo(
         () =>
@@ -172,8 +174,6 @@ const PipelineTemplate: React.FC<Props> = ({
         reader.readAsText(file);
     };
 
-    const [token, setToken] = useState<string | null>(null);
-
     const runPipeline = async () => {
         submitButtonRef.current?.click();
     };
@@ -219,9 +219,10 @@ const PipelineTemplate: React.FC<Props> = ({
                 submittedFormData,
                 pipeline,
                 updateRuns,
-                token,
+                turnstileRef.current?.getResponse() ?? "",
                 pipelineRunConfig
             );
+            turnstileRef.current?.reset();
             setSubmissionTried(true);
         },
         [
@@ -229,7 +230,6 @@ const PipelineTemplate: React.FC<Props> = ({
             pipeline,
             schema,
             updateRuns,
-            token,
             requiresTermsAcceptance,
             hasAcceptedTerms,
             acceptTerms,
@@ -314,13 +314,13 @@ const PipelineTemplate: React.FC<Props> = ({
                 onError={handlePipelineSubmitError}
             >
                 <Turnstile
+                    ref={turnstileRef}
                     className="pipeline-turnstile"
                     siteKey={sitekey}
                     options={{
                         theme: "light",
                         language: "en",
                     }}
-                    onSuccess={setToken}
                 />
                 {requiresTermsAcceptance && (
                     <div

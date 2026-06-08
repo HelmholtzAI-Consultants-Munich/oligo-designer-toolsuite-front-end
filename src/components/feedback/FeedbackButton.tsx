@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import axios from "axios";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
@@ -10,6 +10,7 @@ import {
 } from "../../config";
 import { showToast } from "../../utils/toastUtil";
 import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 interface FeedbackButtonProps {
     context?: Record<string, unknown>;
@@ -29,7 +30,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     const [message, setMessage] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [token, setToken] = useState<string | null>(null);
+    const turnstileRef = useRef<TurnstileInstance | null>(null);
 
     const sitekey = TURNSTILE_SITE_KEY;
 
@@ -79,9 +80,14 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
             await axios.post(
                 BACKEND_URL + "/api/feedback",
-                { message, metadata, token },
+                {
+                    message,
+                    metadata,
+                    token: turnstileRef.current?.getResponse() ?? "",
+                },
                 { withCredentials: true }
             );
+            turnstileRef.current?.reset();
 
             showToast({
                 title: "Thank you for your feedback!",
@@ -179,12 +185,12 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                             </div>
                         </Form.Group>
                         <Turnstile
+                            ref={turnstileRef}
                             siteKey={sitekey}
                             options={{
                                 theme: "light",
                                 language: "en",
                             }}
-                            onSuccess={setToken}
                         />
                         <p className="text-muted small mt-3 mb-0">
                             By submitting feedback, you acknowledge the{" "}
