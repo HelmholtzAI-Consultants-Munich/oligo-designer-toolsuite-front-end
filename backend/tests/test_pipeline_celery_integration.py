@@ -83,6 +83,7 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
 
     with (
         patch("backend.routes.pipelines.calculate_queue_position", return_value=(0, 0)),
+        patch("backend.routes.pipelines.validate_pipeline_config"),
         patch("backend.worker.tasks.GenomicRegionGeneratorRunner") as generator_cls,
         pipeline_runner_module(pipeline_runner_cls),
     ):
@@ -129,6 +130,7 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
 
     with (
         patch("backend.routes.pipelines.calculate_queue_position", return_value=(0, 0)),
+        patch("backend.routes.pipelines.validate_pipeline_config"),
         pipeline_runner_module(pipeline_runner_cls),
     ):
         pipeline_runner_cls.return_value.run.side_effect = record_priority
