@@ -363,7 +363,7 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.BAD_REQUEST, description="Expected JSON")
 
     if not validate_turnstile(form.get("token", "")):
-        abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
+        abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
 
