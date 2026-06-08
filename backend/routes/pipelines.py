@@ -33,7 +33,7 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import validate_genomic_form_data
-from backend.worker.models import OligoSeqProbeDesignerConfigOverride
+from backend.worker.models import OligoSeqProbeDesignerConfig
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
@@ -292,7 +292,7 @@ def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
 
     match pipeline_name:
         case "oligoseq":
-            pipeline_model = OligoSeqProbeDesignerConfigOverride
+            pipeline_model = OligoSeqProbeDesignerConfig
         case _:
             abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
 

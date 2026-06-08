@@ -22,7 +22,7 @@
       "title": "BlastnHitParameters",
       "type": "object"
     },
-    "BlastnSearchParametersOverride": {
+    "BlastnSearchParameters": {
       "additionalProperties": false,
       "properties": {
         "-query_loc": {
@@ -310,7 +310,7 @@
           "title": "-Off Diagonal Range"
         }
       },
-      "title": "BlastnSearchParametersOverride",
+      "title": "BlastnSearchParameters",
       "type": "object"
     },
     "CrossHybridizationBlastnFilterDisabled": {
@@ -321,12 +321,12 @@
       "title": "CrossHybridizationBlastnFilterDisabled",
       "type": "object"
     },
-    "CrossHybridizationBlastnFilterEnabledOverride": {
+    "CrossHybridizationBlastnFilterEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
-          "$ref": "#/$defs/BlastnSearchParametersOverride",
+          "$ref": "#/$defs/BlastnSearchParameters",
           "description": "Parameters for BLASTN searches used in cross-hybridization filtering."
         },
         "hit_parameters": {
@@ -335,7 +335,7 @@
         }
       },
       "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "CrossHybridizationBlastnFilterEnabledOverride",
+      "title": "CrossHybridizationBlastnFilterEnabled",
       "type": "object"
     },
     "GCContentFilterDisabled": {
@@ -676,12 +676,12 @@
       "title": "OligoSeqSpecificityBlastnFilterDisabled",
       "type": "object"
     },
-    "OligoSeqSpecificityBlastnFilterEnabledOverride": {
+    "OligoSeqSpecificityBlastnFilterEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
-          "$ref": "#/$defs/BlastnSearchParametersOverride",
+          "$ref": "#/$defs/BlastnSearchParameters",
           "default": {
             "-strand": "minus",
             "-word_size": 10,
@@ -705,7 +705,7 @@
         }
       },
       "required": ["enabled", "files_fasta_reference_database"],
-      "title": "OligoSeqSpecificityBlastnFilterEnabledOverride",
+      "title": "OligoSeqSpecificityBlastnFilterEnabled",
       "type": "object"
     },
     "OligoSeqVariantFilterDisabled": {
@@ -716,7 +716,7 @@
       "title": "OligoSeqVariantFilterDisabled",
       "type": "object"
     },
-    "OligoSeqVariantFilterEnabledOverride": {
+    "OligoSeqVariantFilterEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -740,7 +740,7 @@
         }
       },
       "required": ["enabled", "files_vcf_reference_database"],
-      "title": "OligoSeqVariantFilterEnabledOverride",
+      "title": "OligoSeqVariantFilterEnabled",
       "type": "object"
     },
     "ProhibitedSequencesFilterDisabled": {
@@ -979,7 +979,7 @@
       "title": "TargetProbeGlobal",
       "type": "object"
     },
-    "TargetProbeOligoGenerationOverride": {
+    "TargetProbeOligoGeneration": {
       "additionalProperties": false,
       "properties": {
         "file_region_ids": {
@@ -1022,18 +1022,18 @@
         }
       },
       "required": ["files_fasta_probe_database"],
-      "title": "TargetProbeOligoGenerationOverride",
+      "title": "TargetProbeOligoGeneration",
       "type": "object"
     },
-    "TargetProbeOverride": {
+    "TargetProbe": {
       "additionalProperties": false,
       "properties": {
         "oligo_generation": {
-          "$ref": "#/$defs/TargetProbeOligoGenerationOverride"
+          "$ref": "#/$defs/TargetProbeOligoGeneration"
         },
         "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
         "specificity_filters": {
-          "$ref": "#/$defs/TargetProbeSpecificityFilterOverride"
+          "$ref": "#/$defs/TargetProbeSpecificityFilter"
         },
         "probe_set_selection": {
           "$ref": "#/$defs/TargetProbeProbeSetSelection"
@@ -1047,7 +1047,7 @@
         "probe_set_selection",
         "global_parameters"
       ],
-      "title": "TargetProbeOverride",
+      "title": "TargetProbe",
       "type": "object"
     },
     "TargetProbeProbeSetSelection": {
@@ -1252,7 +1252,7 @@
       "title": "TargetProbePropertyFilter",
       "type": "object"
     },
-    "TargetProbeSpecificityFilterOverride": {
+    "TargetProbeSpecificityFilter": {
       "additionalProperties": false,
       "properties": {
         "read_length_bias_filter": {
@@ -1283,12 +1283,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabledOverride"
+              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabledOverride" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"
@@ -1297,13 +1297,13 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/OligoSeqSpecificityBlastnFilterDisabled",
-              "True": "#/$defs/OligoSeqSpecificityBlastnFilterEnabledOverride"
+              "True": "#/$defs/OligoSeqSpecificityBlastnFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
             {
-              "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterEnabledOverride"
+              "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterEnabled"
             },
             { "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterDisabled" }
           ],
@@ -1313,19 +1313,19 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/OligoSeqVariantFilterDisabled",
-              "True": "#/$defs/OligoSeqVariantFilterEnabledOverride"
+              "True": "#/$defs/OligoSeqVariantFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/OligoSeqVariantFilterEnabledOverride" },
+            { "$ref": "#/$defs/OligoSeqVariantFilterEnabled" },
             { "$ref": "#/$defs/OligoSeqVariantFilterDisabled" }
           ],
           "title": "Variant Filter"
         }
       },
       "required": ["specificity_blastn_filter", "variant_filter"],
-      "title": "TargetProbeSpecificityFilterOverride",
+      "title": "TargetProbeSpecificityFilter",
       "type": "object"
     },
     "TargetedExonsFilterDisabled": {
@@ -1762,7 +1762,7 @@
       "title": "Schema Version",
       "type": "integer"
     },
-    "target_probe": { "$ref": "#/$defs/TargetProbeOverride" }
+    "target_probe": { "$ref": "#/$defs/TargetProbe" }
   },
   "required": ["target_probe"],
   "title": "OligoSeqProbeDesignerConfigFrontEnd",
