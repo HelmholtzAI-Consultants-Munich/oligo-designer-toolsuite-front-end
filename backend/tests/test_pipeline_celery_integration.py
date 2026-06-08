@@ -4,15 +4,12 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from bson import ObjectId
+from glom import assign
 
 from backend.config import CeleryConfig
 from backend.extensions import mongo
-from backend.tests.conftest import (
-    CELERY_TASK_TIMEOUT,
-    TEST_SESSION_ID,
-    TEST_USER_ID,
-    pipeline_runner_module,
-)
+from backend.tests.conftest import CELERY_TASK_TIMEOUT, pipeline_runner_module
 from backend.worker import tasks as task_module
 
 
@@ -25,24 +22,25 @@ def route_celery_app(celery_app):
 
 def _clear_generated_regions(payload):
     """Remove generated-region forms so the route dispatches only the pipeline body task."""
-    for field, value in payload["formdata"].items():
-        if isinstance(value, dict) and "fasta_form" in value:
-            value["fasta_form"] = []
+    assign(payload["formdata"], "target_probe.oligo_generation.files_fasta_probe_database", [])
+    assign(
+        payload["formdata"],
+        "target_probe.specificity_filters.specificity_blastn_filter.files_fasta_reference_database",
+        [],
+    )
     return payload
 
 
 def test_start_pipeline_runs_generated_regions_then_pipeline_task(
     client,
     authenticated_user,
-    run_doc,
     pipeline_payload,
     multipart_post,
     route_celery_app,
     celery_worker,
 ):
     """Generated-region header tasks feed their results into the pipeline body task."""
-    run_id = run_doc(user_id=TEST_USER_ID)
-    payload = pipeline_payload("merfish_mock_form_data.json", run_id)
+    payload = pipeline_payload("oligoseq_mock_form_data.json")
     pipeline_runner_cls = MagicMock()
 
     with (
@@ -52,20 +50,20 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
     ):
         generator_cls.return_value.run.return_value = ["generated.fna"]
 
-        response = multipart_post("/api/merfish", payload)
+        response = multipart_post("/api/oligoseq", payload)
 
         assert response.status_code == 200
+        run_id = ObjectId(response.get_json()["run_id"])
         run = mongo.db.runs.find_one({"_id": run_id})
         route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
 
-    # Current MERFISH fixture payload contains four generated FASTA region forms.
-    expected_generated_region_count = 4
+    expected_generated_region_count = 2
     assert generator_cls.return_value.run.call_count == expected_generated_region_count
-    pipeline_runner_cls.assert_called_once_with("merfish", logger=task_module.logger)
+    pipeline_runner_cls.assert_called_once_with("oligoseq", logger=task_module.logger)
     pipeline_runner_cls.return_value.run.assert_called_once()
 
     form_data, output_path, generated_regions = pipeline_runner_cls.return_value.run.call_args.args
-    assert form_data["file_regions"] == payload["formdata"]["file_regions"]
+    assert form_data["target_probe"]["oligo_generation"]["file_region_ids"] == "GFB69_RS14600"
     assert output_path == str(Path(*mongo.db.runs.find_one({"_id": run_id})["output_path"]["parts"]))
     assert len(generated_regions) == expected_generated_region_count
     assert all(paths == ["generated.fna"] for _field, paths in generated_regions)
@@ -74,15 +72,13 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
 def test_start_pipeline_without_generated_regions_runs_pipeline_task(
     client,
     authenticated_user,
-    run_doc,
     pipeline_payload,
     multipart_post,
     route_celery_app,
     celery_worker,
 ):
     """The route still dispatches the pipeline task when no header tasks are needed."""
-    run_id = run_doc(user_id=TEST_USER_ID)
-    payload = _clear_generated_regions(pipeline_payload("merfish_mock_form_data.json", run_id))
+    payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))
     pipeline_runner_cls = MagicMock()
 
     with (
@@ -90,9 +86,10 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
         patch("backend.worker.tasks.GenomicRegionGeneratorRunner") as generator_cls,
         pipeline_runner_module(pipeline_runner_cls),
     ):
-        response = multipart_post("/api/merfish", payload)
+        response = multipart_post("/api/oligoseq", payload)
 
         assert response.status_code == 200
+        run_id = ObjectId(response.get_json()["run_id"])
         run = mongo.db.runs.find_one({"_id": run_id})
         route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
 
@@ -102,28 +99,25 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
 
 
 @pytest.mark.parametrize(
-    ("user_fixture", "owner", "expected_priority"),
+    ("user_fixture", "expected_priority"),
     [
-        ("authenticated_user", {"user_id": TEST_USER_ID}, CeleryConfig.task_high_priority),
-        ("anonymous_session", {"session_id": TEST_SESSION_ID}, CeleryConfig.task_default_priority),
+        ("authenticated_user", CeleryConfig.task_high_priority),
+        ("anonymous_session", CeleryConfig.task_default_priority),
     ],
 )
 def test_pipeline_route_dispatches_task_with_expected_priority(
     request,
     client,
-    run_doc,
     pipeline_payload,
     multipart_post,
     route_celery_app,
     celery_worker,
     user_fixture,
-    owner,
     expected_priority,
 ):
     """Authenticated and anonymous submissions preserve priority through Celery dispatch."""
     request.getfixturevalue(user_fixture)
-    run_id = run_doc(**owner)
-    payload = _clear_generated_regions(pipeline_payload("merfish_mock_form_data.json", run_id))
+    payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))
     observed_priorities = []
     pipeline_runner_cls = MagicMock()
 
@@ -139,9 +133,10 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
     ):
         pipeline_runner_cls.return_value.run.side_effect = record_priority
 
-        response = multipart_post("/api/merfish", payload)
+        response = multipart_post("/api/oligoseq", payload)
 
         assert response.status_code == 200
+        run_id = ObjectId(response.get_json()["run_id"])
         run = mongo.db.runs.find_one({"_id": run_id})
         route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
 

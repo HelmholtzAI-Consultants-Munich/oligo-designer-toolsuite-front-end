@@ -33,18 +33,16 @@ def test_404_unknown_route_returns_json_error(client):
 def test_unhandled_exception_returns_generic_500_without_sensitive_info(
     client,
     authenticated_user,
-    run_doc,
     pipeline_payload,
     multipart_post,
     exception_message,
     forbidden_fragments,
 ):
     """Unhandled exceptions return a generic 500 without leaking internal details."""
-    run_id = run_doc()
-    payload = pipeline_payload("merfish_mock_form_data.json", run_id)
+    payload = pipeline_payload("oligoseq_mock_form_data.json")
 
     with patch("backend.routes.pipelines.create_context", side_effect=RuntimeError(exception_message)):
-        response = multipart_post("/api/merfish", payload)
+        response = multipart_post("/api/oligoseq", payload)
 
     assert response.status_code == 500
     data = response.get_json()
@@ -54,18 +52,15 @@ def test_unhandled_exception_returns_generic_500_without_sensitive_info(
         assert fragment not in data["error"]
 
 
-def test_unhandled_exception_is_logged(
-    app, client, authenticated_user, run_doc, pipeline_payload, multipart_post
-):
+def test_unhandled_exception_is_logged(app, client, authenticated_user, pipeline_payload, multipart_post):
     """Full exception information is still logged server-side for diagnosis."""
-    run_id = run_doc()
-    payload = pipeline_payload("merfish_mock_form_data.json", run_id)
+    payload = pipeline_payload("oligoseq_mock_form_data.json")
 
     with (
         patch("backend.routes.pipelines.create_context", side_effect=ValueError("sensitive detail")),
         patch.object(app.logger, "error") as logger,
     ):
-        response = multipart_post("/api/merfish", payload)
+        response = multipart_post("/api/oligoseq", payload)
 
     assert response.status_code == 500
     assert logger.called

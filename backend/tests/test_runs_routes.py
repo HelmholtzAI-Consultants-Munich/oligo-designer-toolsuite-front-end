@@ -11,33 +11,6 @@ from backend.tests.conftest import OTHER_USER_ID, TEST_SESSION_ID, TEST_USER_ID
 from backend.utilities.typed_values import utc_now
 
 
-def test_init_run_id_authenticated(client, authenticated_user):
-    response = client.post("/api/init_run_id")
-
-    assert response.status_code == 200
-    run = mongo.db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
-    assert run["user_id"] == TEST_USER_ID
-    assert run["session_id"] is None
-    assert run["status"] == "pending"
-
-
-def test_init_run_id_anonymous(client, anonymous_session):
-    response = client.post("/api/init_run_id")
-
-    assert response.status_code == 200
-    run = mongo.db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
-    assert run["session_id"] == TEST_SESSION_ID
-    assert run["user_id"] is None
-
-
-def test_init_run_id_requires_terms(client, authenticate_as):
-    authenticate_as(TEST_USER_ID)
-
-    response = client.post("/api/init_run_id")
-
-    assert response.status_code == 403
-
-
 def test_get_pipeline_runs_authenticated_returns_only_user_runs(client, authenticated_user, run_doc):
     """Authenticated run listing filters strictly by current user id."""
     owned = run_doc(user_id=TEST_USER_ID, pipeline="merfish")
