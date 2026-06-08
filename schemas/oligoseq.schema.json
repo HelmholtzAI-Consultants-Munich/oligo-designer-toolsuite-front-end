@@ -910,6 +910,29 @@
       "title": "SourceParamsNcbi",
       "type": "object"
     },
+    "TargetProbe": {
+      "additionalProperties": false,
+      "properties": {
+        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
+        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
+        "specificity_filters": {
+          "$ref": "#/$defs/TargetProbeSpecificityFilter"
+        },
+        "probe_set_selection": {
+          "$ref": "#/$defs/TargetProbeProbeSetSelection"
+        },
+        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
+      },
+      "required": [
+        "oligo_generation",
+        "property_filters",
+        "specificity_filters",
+        "probe_set_selection",
+        "global_parameters"
+      ],
+      "title": "TargetProbe",
+      "type": "object"
+    },
     "TargetProbeGlobal": {
       "additionalProperties": false,
       "properties": {
@@ -1023,31 +1046,6 @@
       },
       "required": ["files_fasta_probe_database"],
       "title": "TargetProbeOligoGeneration",
-      "type": "object"
-    },
-    "TargetProbe": {
-      "additionalProperties": false,
-      "properties": {
-        "oligo_generation": {
-          "$ref": "#/$defs/TargetProbeOligoGeneration"
-        },
-        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
-        "specificity_filters": {
-          "$ref": "#/$defs/TargetProbeSpecificityFilter"
-        },
-        "probe_set_selection": {
-          "$ref": "#/$defs/TargetProbeProbeSetSelection"
-        },
-        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
-      },
-      "required": [
-        "oligo_generation",
-        "property_filters",
-        "specificity_filters",
-        "probe_set_selection",
-        "global_parameters"
-      ],
-      "title": "TargetProbe",
       "type": "object"
     },
     "TargetProbeProbeSetSelection": {
@@ -1302,9 +1300,7 @@
             "propertyName": "enabled"
           },
           "oneOf": [
-            {
-              "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterEnabled"
-            },
+            { "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterEnabled" },
             { "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
