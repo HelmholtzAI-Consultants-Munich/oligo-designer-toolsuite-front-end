@@ -1,23 +1,40 @@
 import json
 from typing import Annotated, Literal
 
-from oligo_designer_toolsuite.config._general_models import BlastnHitParameters, BlastnSearchParameters
+from oligo_designer_toolsuite.config._general_models import BlastnHitParameters
+from oligo_designer_toolsuite.config._general_models import (
+    BlastnSearchParameters as BlastnSearchParametersBase,
+)
 from oligo_designer_toolsuite.config._specificity_filters import (
     CrossHybridizationBlastnFilterDisabled,
-    CrossHybridizationBlastnFilterEnabled,
+)
+from oligo_designer_toolsuite.config._specificity_filters import (
+    CrossHybridizationBlastnFilterEnabled as CrossHybridizationBlastnFilterEnabledBase,
 )
 from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
     OligoSeqSpecificityBlastnFilterDisabled,
-    OligoSeqSpecificityBlastnFilterEnabled,
     OligoSeqVariantFilterDisabled,
-    OligoSeqVariantFilterEnabled,
+)
+from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
+    OligoSeqSpecificityBlastnFilterEnabled as OligoSeqSpecificityBlastnFilterEnabledBase,
+)
+from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
+    OligoSeqVariantFilterEnabled as OligoSeqVariantFilterEnabledBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    OligoSeqProbeDesignerConfig,
+    OligoSeqProbeDesignerConfig as OligoSeqProbeDesignerConfigBase,
+)
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     RegionListT,
-    TargetProbe,
-    TargetProbeOligoGeneration,
-    TargetProbeSpecificityFilter,
+)
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
+    TargetProbe as TargetProbeBase,
+)
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
+    TargetProbeOligoGeneration as TargetProbeOligoGenerationBase,
+)
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
+    TargetProbeSpecificityFilter as TargetProbeSpecificityFilterBase,
 )
 from pydantic import AliasChoices, BaseModel, Field
 
@@ -85,23 +102,23 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
-class TargetProbeOligoGenerationOverride(TargetProbeOligoGeneration):
+class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
     file_region_ids: RegionListT = None
     files_fasta_probe_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 
-class OligoSeqVariantFilterEnabledOverride(OligoSeqVariantFilterEnabled):
+class OligoSeqVariantFilterEnabled(OligoSeqVariantFilterEnabledBase):
     # NOTE: this is a small trick. A dict gets converted to type
     # `object` when building the JSON Schema from the pydantic model.
     files_vcf_reference_database: list[dict | str] = Field(min_length=1)  # type: ignore
 
 
-OligoSeqVariantFilterConfigOverride = Annotated[
-    OligoSeqVariantFilterEnabledOverride | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
+OligoSeqVariantFilterConfig = Annotated[
+    OligoSeqVariantFilterEnabled | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
 ]
 
 
-class BlastnSearchParametersOverride(BlastnSearchParameters):
+class BlastnSearchParameters(BlastnSearchParametersBase):
     lcase_masking: bool | None = Field(  # type: ignore
         default=None,
         validation_alias=AliasChoices("-lcase_masking", "lcase_masking"),
@@ -128,56 +145,56 @@ class BlastnSearchParametersOverride(BlastnSearchParameters):
     )
 
 
-class CrossHybridizationBlastnFilterEnabledOverride(CrossHybridizationBlastnFilterEnabled):
+class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnabledBase):
     search_parameters: Annotated[  # type: ignore
-        BlastnSearchParametersOverride,
+        BlastnSearchParameters,
         Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
     ]
 
 
-CrossHybridizationBlastnFilterConfigOverride = Annotated[
-    CrossHybridizationBlastnFilterEnabledOverride | CrossHybridizationBlastnFilterDisabled,
+CrossHybridizationBlastnFilterConfig = Annotated[
+    CrossHybridizationBlastnFilterEnabled | CrossHybridizationBlastnFilterDisabled,
     Field(discriminator="enabled"),
 ]
 
 
-class OligoSeqSpecificityBlastnFilterEnabledOverride(OligoSeqSpecificityBlastnFilterEnabled):
-    search_parameters: BlastnSearchParametersOverride = BlastnSearchParametersOverride(  # type: ignore
+class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnabledBase):
+    search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
         perc_identity=80, strand="minus", word_size=10
     )
     files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 
-OligoSpecificityBlastnFilterConfigOverride = Annotated[
-    OligoSeqSpecificityBlastnFilterEnabledOverride | OligoSeqSpecificityBlastnFilterDisabled,
+OligoSpecificityBlastnFilterConfig = Annotated[
+    OligoSeqSpecificityBlastnFilterEnabled | OligoSeqSpecificityBlastnFilterDisabled,
     Field(discriminator="enabled"),
 ]
 
 
-class TargetProbeSpecificityFilterOverride(TargetProbeSpecificityFilter):
-    cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfigOverride = (  # type: ignore
-        CrossHybridizationBlastnFilterEnabledOverride(
+class TargetProbeSpecificityFilter(TargetProbeSpecificityFilterBase):
+    cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfig = (  # type: ignore
+        CrossHybridizationBlastnFilterEnabled(
             enabled=True,
-            search_parameters=BlastnSearchParametersOverride(perc_identity=80, strand="minus", word_size=10),
+            search_parameters=BlastnSearchParameters(perc_identity=80, strand="minus", word_size=10),
             hit_parameters=BlastnHitParameters(coverage=50),
         )
     )
-    specificity_blastn_filter: OligoSpecificityBlastnFilterConfigOverride  # type: ignore
-    variant_filter: OligoSeqVariantFilterConfigOverride  # type: ignore
+    specificity_blastn_filter: OligoSpecificityBlastnFilterConfig  # type: ignore
+    variant_filter: OligoSeqVariantFilterConfig  # type: ignore
 
 
-class TargetProbeOverride(TargetProbe):
-    oligo_generation: TargetProbeOligoGenerationOverride  # type: ignore
-    specificity_filters: TargetProbeSpecificityFilterOverride  # type: ignore
+class TargetProbe(TargetProbeBase):
+    oligo_generation: TargetProbeOligoGeneration  # type: ignore
+    specificity_filters: TargetProbeSpecificityFilter  # type: ignore
 
 
-class OligoSeqProbeDesignerConfigOverride(OligoSeqProbeDesignerConfig):
+class OligoSeqProbeDesignerConfig(OligoSeqProbeDesignerConfigBase):
     """
     This Model overrides the default ODT Model of the Oligo-Seq pipeline, so
     we can inject our custom genomic region generator models
     """
 
-    target_probe: TargetProbeOverride  # type: ignore
+    target_probe: TargetProbe  # type: ignore
 
 
 class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
@@ -188,7 +205,7 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
     """
 
     schema_version: Literal[2] = 2
-    target_probe: TargetProbeOverride
+    target_probe: TargetProbe
 
 
 if __name__ == "__main__":

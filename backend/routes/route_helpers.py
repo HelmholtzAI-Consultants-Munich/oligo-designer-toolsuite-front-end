@@ -6,7 +6,7 @@ from bson import ObjectId
 from flask import abort, current_app, session
 from flask_login import current_user
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.legal_acceptance import require_current_terms_acceptance
 
 # ============================================================================
@@ -79,7 +79,7 @@ def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | 
     :rtype: dict | None
     """
     projection = {"password": False} if exclude_password else {}
-    return mongo.db.users.find_one({"_id": user_id}, projection)
+    return db.users.find_one({"_id": user_id}, projection)
 
 
 def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> dict:
@@ -152,7 +152,7 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     :raises: 403 if unauthorized, 404 if not found
     """
     query = build_run_query(run_id, require_ownership=require_ownership)
-    run = mongo.db.runs.find_one(query)
+    run = db.runs.find_one(query)
     if not run:
         abort(HTTPStatus.NOT_FOUND)
     return run

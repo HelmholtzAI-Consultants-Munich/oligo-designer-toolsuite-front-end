@@ -4,7 +4,7 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.legal import (
     PRIVACY_DOCUMENT_KEY,
     TERMS_DOCUMENT_KEY,
@@ -22,9 +22,9 @@ def admin_user(client):
         "role": "admin",
         "password": "hashed_password",
     }
-    mongo.db.users.insert_one(user)
+    db.users.insert_one(user)
     yield user
-    mongo.db.users.delete_one({"_id": user_id})
+    db.users.delete_one({"_id": user_id})
 
 
 @pytest.fixture
@@ -37,9 +37,9 @@ def regular_user(client):
         "role": "user",
         "password": "hashed_password",
     }
-    mongo.db.users.insert_one(user)
+    db.users.insert_one(user)
     yield user
-    mongo.db.users.delete_one({"_id": user_id})
+    db.users.delete_one({"_id": user_id})
 
 
 @pytest.fixture
@@ -88,9 +88,9 @@ def pipeline_run(client):
         "session_id": None,
         "transferred_from_anon": False,
     }
-    mongo.db.runs.insert_one(run)
+    db.runs.insert_one(run)
     yield run
-    mongo.db.runs.delete_one({"_id": run_id})
+    db.runs.delete_one({"_id": run_id})
 
 
 @pytest.fixture
@@ -102,16 +102,16 @@ def feedback_document(client):
         "message": "Test feedback message",
         "user_id": None,
     }
-    mongo.db.feedback.insert_one(doc)
+    db.feedback.insert_one(doc)
     yield doc
-    mongo.db.feedback.delete_one({"_id": feedback_id})
+    db.feedback.delete_one({"_id": feedback_id})
 
 
 @pytest.fixture(autouse=True)
 def cleanup_legal_documents(client):
-    mongo.db.legal_documents.delete_many({})
+    db.legal_documents.delete_many({})
     yield
-    mongo.db.legal_documents.delete_many({})
+    db.legal_documents.delete_many({})
 
 
 # ==================== User Management Tests ====================
@@ -163,7 +163,7 @@ def test_get_user_not_found(admin_client):
 def test_update_user_success(admin_client, regular_user):
     """Test updating a user (username and role; CLI users have username)"""
     # Give regular_user a username so we can update it (CLI user)
-    mongo.db.users.update_one(
+    db.users.update_one(
         {"_id": regular_user["_id"]},
         {"$set": {"username": "original_user"}},
     )
@@ -192,7 +192,7 @@ def test_update_user_no_fields(admin_client, regular_user):
 
 def test_delete_user_success(admin_client, regular_user):
     """Test deleting a user"""
-    mongo.db.feedback.insert_one(
+    db.feedback.insert_one(
         {
             "_id": ObjectId(),
             "user_id": str(regular_user["_id"]),
@@ -205,9 +205,9 @@ def test_delete_user_success(admin_client, regular_user):
     assert "deleted successfully" in response.get_json()["message"]
 
     # Verify user is deleted
-    user = mongo.db.users.find_one({"_id": regular_user["_id"]})
+    user = db.users.find_one({"_id": regular_user["_id"]})
     assert user is None
-    assert mongo.db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
+    assert db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
 
 
 def test_delete_user_self(admin_client, admin_user):
@@ -512,7 +512,7 @@ def create_test_user(client):
             "role": role,
             "password": "hashed",
         }
-        mongo.db.users.insert_one(user)
+        db.users.insert_one(user)
         return user_id
 
     return _create_user
@@ -522,7 +522,7 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
     """Test bulk deleting users"""
     # Create additional users
     user2_id = create_test_user()
-    mongo.db.feedback.insert_many(
+    db.feedback.insert_many(
         [
             {"_id": ObjectId(), "user_id": str(regular_user["_id"]), "message": "Feedback 1"},
             {"_id": ObjectId(), "user_id": str(user2_id), "message": "Feedback 2"},
@@ -536,10 +536,10 @@ def test_bulk_delete_users_success(admin_client, regular_user, create_test_user)
         assert response.status_code == 200
         data = response.get_json()
         assert data["deleted_count"] == 2
-        assert mongo.db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
-        assert mongo.db.feedback.find_one({"user_id": str(user2_id)}) is None
+        assert db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
+        assert db.feedback.find_one({"user_id": str(user2_id)}) is None
     finally:
-        mongo.db.users.delete_one({"_id": user2_id})
+        db.users.delete_one({"_id": user2_id})
 
 
 def test_bulk_delete_users_empty_array(admin_client):
@@ -567,7 +567,7 @@ def test_bulk_delete_users_self(admin_client, admin_user, create_test_user):
         assert data["deleted_count"] == 1
         assert "skipped" in data
     finally:
-        mongo.db.users.delete_one({"_id": user2_id})
+        db.users.delete_one({"_id": user2_id})
 
 
 def test_bulk_update_user_role_success(admin_client, regular_user, create_test_user):
@@ -584,10 +584,10 @@ def test_bulk_update_user_role_success(admin_client, regular_user, create_test_u
         assert data["updated_count"] == 2
 
         # Verify roles were updated
-        updated_user = mongo.db.users.find_one({"_id": regular_user["_id"]})
+        updated_user = db.users.find_one({"_id": regular_user["_id"]})
         assert updated_user["role"] == "admin"
     finally:
-        mongo.db.users.delete_one({"_id": user2_id})
+        db.users.delete_one({"_id": user2_id})
 
 
 def test_bulk_update_user_role_invalid_role(admin_client, regular_user):
@@ -655,7 +655,7 @@ def create_test_run(client):
             "status": status,
             "output_path": f"/tmp/test_output_{run_id}",
         }
-        mongo.db.runs.insert_one(run)
+        db.runs.insert_one(run)
         return run_id
 
     return _create_run
@@ -674,7 +674,7 @@ def test_bulk_delete_pipeline_runs_success(admin_client, pipeline_run, create_te
             data = response.get_json()
             assert data["deleted_count"] == 2
     finally:
-        mongo.db.runs.delete_one({"_id": run2_id})
+        db.runs.delete_one({"_id": run2_id})
 
 
 def test_bulk_delete_pipeline_runs_invalid_ids(admin_client):
@@ -718,10 +718,10 @@ def test_bulk_update_pipeline_status_success(admin_client, pipeline_run, create_
         assert data["updated_count"] == 2
 
         # Verify statuses were updated
-        updated_run = mongo.db.runs.find_one({"_id": pipeline_run["_id"]})
+        updated_run = db.runs.find_one({"_id": pipeline_run["_id"]})
         assert updated_run["status"] == "success"
     finally:
-        mongo.db.runs.delete_one({"_id": run2_id})
+        db.runs.delete_one({"_id": run2_id})
 
 
 def test_bulk_update_pipeline_status_invalid_status(admin_client, pipeline_run):

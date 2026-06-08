@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from flask import abort
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 from backend.utilities.typed_values import utc_now
 
@@ -20,7 +20,7 @@ def get_current_terms_version() -> str:
 
 
 def get_latest_terms_acceptance(user_id: str | None = None, session_id: str | None = None) -> dict | None:
-    return mongo.db.legal_acceptances.find_one(
+    return db.legal_acceptances.find_one(
         _terms_acceptance_query(user_id=user_id, session_id=session_id),
         sort=[("timestamp", -1)],
     )
@@ -44,8 +44,8 @@ def record_terms_acceptance(user_id: str | None = None, session_id: str | None =
         "terms_version": current_version,
         "timestamp": utc_now(),
     }
-    inserted_id = mongo.db.legal_acceptances.insert_one(acceptance_doc).inserted_id
-    return mongo.db.legal_acceptances.find_one({"_id": inserted_id})
+    inserted_id = db.legal_acceptances.insert_one(acceptance_doc).inserted_id
+    return db.legal_acceptances.find_one({"_id": inserted_id})
 
 
 def require_current_terms_acceptance(user_id: str | None = None, session_id: str | None = None) -> None:

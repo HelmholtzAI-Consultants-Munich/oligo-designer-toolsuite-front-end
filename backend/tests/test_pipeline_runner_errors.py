@@ -14,7 +14,7 @@ sanitized, user-friendly error messages.
 # from flask_login import current_user
 
 # sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-# from extensions import mongo
+# from extensions import db
 
 # # Import conftest helpers - use relative import to avoid pytest import issues
 # import conftest
@@ -137,7 +137,7 @@ sanitized, user-friendly error messages.
 #                         "The pipeline failed to execute. Please check your input and try again.",
 #                     )
 #                     # Verify run status updated to error
-#                     run = mongo.db.runs.find_one({"_id": run_id})
+#                     run = db.runs.find_one({"_id": run_id})
 #                     assert run["status"] == "error"
 
 #     def test_temp_file_creation_error(self, app, pipeline_runner, authenticated_user, run_id, tmp_path):

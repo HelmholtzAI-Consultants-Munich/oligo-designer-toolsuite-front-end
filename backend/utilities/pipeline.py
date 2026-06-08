@@ -70,7 +70,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
     :raises: 500 if the database deletion fails
     """
     # Fetch the run
-    run = mongo.db.runs.find_one({"_id": run_id_obj})
+    run = mongo.runs.find_one({"_id": run_id_obj})
 
     if not run:
         abort(HTTPStatus.NOT_FOUND)
@@ -86,7 +86,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
             # Continue with DB deletion even if file deletion fails
 
     # Remove from database
-    result = mongo.db.runs.delete_one({"_id": run_id_obj})
+    result = mongo.runs.delete_one({"_id": run_id_obj})
 
     if result.deleted_count == 0:
         current_app.logger.error(f"Failed to delete run {run_id_obj}")

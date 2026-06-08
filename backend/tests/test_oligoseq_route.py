@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import post
 from backend.utilities.validation import parse_run_id
 
@@ -24,7 +24,7 @@ def test_oligoseq_authenticated(client, dummy_form, mock_celery, authenticated_u
     run_id = parse_run_id(data["run_id"])
 
     # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
+    updated = db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
 
@@ -35,7 +35,7 @@ def test_oligoseq_unauthenticated(client, dummy_form, mock_celery, session_user)
     run_id = parse_run_id(data["run_id"])
 
     # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
+    updated = db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
 
