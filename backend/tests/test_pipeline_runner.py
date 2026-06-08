@@ -8,6 +8,8 @@ cleanup behavior without requiring worker-only schema or Biopython dependencies.
 import subprocess
 import sys
 import types
+from collections.abc import Iterator
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -45,11 +47,19 @@ def form_data():
     }
 
 
-def test_populate_temp_file_writes_gene_list(runner, form_data):
+@pytest.fixture
+def populated_regions_file(runner, form_data) -> Iterator[Path]:
+    """Create a generated regions file and remove it after the test."""
     runner.populate_temp_file(form_data)
+    path = Path(form_data["file_regions"])
 
-    path = form_data["file_regions"]
-    with open(path) as handle:
+    yield path
+
+    path.unlink(missing_ok=True)
+
+
+def test_populate_temp_file_writes_gene_list(populated_regions_file):
+    with populated_regions_file.open() as handle:
         assert handle.read() == "GeneA\nGeneB\n"
 
 
