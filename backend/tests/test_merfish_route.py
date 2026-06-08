@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
 
 pytest.skip("Merfish currently disabled", allow_module_level=True)
@@ -30,7 +30,7 @@ def test_merfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
     assert data["run_id"] == str(run_id)
 
     # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
+    updated = db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
 
@@ -42,7 +42,7 @@ def test_merfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     assert data["run_id"] == str(run_id)
 
     # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
+    updated = db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
 

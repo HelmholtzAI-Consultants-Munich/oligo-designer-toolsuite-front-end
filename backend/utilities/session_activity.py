@@ -1,4 +1,4 @@
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.typed_values import utc_now
 
 ANONYMOUS_SESSIONS_COLLECTION = "anonymous_sessions"
@@ -8,7 +8,7 @@ def touch_anonymous_session(session_id: str | None) -> None:
     if not session_id:
         return
 
-    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].update_one(
+    db[ANONYMOUS_SESSIONS_COLLECTION].update_one(
         {"session_id": session_id},
         {"$set": {"last_activity_at": utc_now()}},
         upsert=True,
@@ -19,4 +19,4 @@ def delete_anonymous_session(session_id: str | None) -> None:
     if not session_id:
         return
 
-    mongo.db[ANONYMOUS_SESSIONS_COLLECTION].delete_one({"session_id": session_id})
+    db[ANONYMOUS_SESSIONS_COLLECTION].delete_one({"session_id": session_id})

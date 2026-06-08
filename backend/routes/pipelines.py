@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
-from backend.extensions import celery_app, mongo
+from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
@@ -146,7 +146,7 @@ def write_run_to_DB(
     if pipeline_run_config is not None:
         data["pipeline_run_config"] = pipeline_run_config
         # create a pending run in the database
-    return mongo.db.runs.insert_one(data)
+    return db.runs.insert_one(data)
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
@@ -232,7 +232,7 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     if priority == CeleryConfig.task_high_priority:
         default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
-        mongo.db.runs.update_many(
+        db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
