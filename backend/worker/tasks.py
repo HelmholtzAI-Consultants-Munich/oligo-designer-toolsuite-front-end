@@ -12,7 +12,6 @@ from pymongo import MongoClient
 
 from backend.config import CeleryConfig, Config
 from backend.genomic_databases import fetch_dropdown_options
-from backend.utilities.typed_values import utc_now
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 from backend.worker.handlers import PipelineTask
@@ -361,7 +360,7 @@ def generate_monthly_report(target_year: int | None = None, target_month: int | 
             "_id": period_id,
             "year": target_year,
             "month": target_month,
-            "generated_at": utc_now(),
+            "generated_at": datetime.datetime.now(datetime.UTC),
             "generated_by": triggered_by,
             "users": {
                 "new_registrations": new_users,
@@ -419,7 +418,9 @@ def generate_monthly_report(target_year: int | None = None, target_month: int | 
 @app.task()
 def cleanup_anonymous_data() -> dict[str, int]:
     upload_root, userdata_root = _get_data_roots()
-    cutoff = utc_now() - datetime.timedelta(days=CeleryConfig.anonymous_data_retention_days)
+    cutoff = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
+        days=CeleryConfig.anonymous_data_retention_days
+    )
 
     with MongoClient(Config.MONGO_URI) as client:
         db = client["oligo_db"]
