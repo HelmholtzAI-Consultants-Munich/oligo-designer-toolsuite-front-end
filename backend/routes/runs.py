@@ -22,7 +22,7 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, send_file, session
 from flask_login import current_user
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.routes.route_helpers import (
     get_run_or_404,
 )
@@ -96,7 +96,7 @@ def delete_run(run_id: ObjectId):
     get_run_or_404(run_id, require_ownership=True)
 
     # Delete files and DB entry (aborts with 404/500 on failure)
-    delete_pipeline_run_files_and_db(mongo, run_id)
+    delete_pipeline_run_files_and_db(db, run_id)
 
     return jsonify({"message": "Run deleted successfully"}), HTTPStatus.OK
 
@@ -117,10 +117,10 @@ def get_pipeline_runs():
         3. Format and return run info for each run.
     """
     if current_user.is_authenticated:
-        runs = list(mongo.db.runs.find({"user_id": str(current_user.id)}))
+        runs = list(db.runs.find({"user_id": str(current_user.id)}))
     else:
         session_id = session.get("session_id")
-        runs = list(mongo.db.runs.find({"session_id": session_id})) if session_id else []
+        runs = list(db.runs.find({"session_id": session_id})) if session_id else []
 
     formatted_runs = []
     for run in runs:
@@ -219,7 +219,7 @@ def get_run_config(run_id: ObjectId):
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return mongo.db.runs.update_one({"_id": run_id}, {"$set": data})
+    return db.runs.update_one({"_id": run_id}, {"$set": data})
 
 
 def update_run_status_in_DB(run_id: ObjectId, status: str):

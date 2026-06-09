@@ -22,7 +22,7 @@ from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
-from backend.extensions import celery_app, mongo
+from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
@@ -34,7 +34,7 @@ from backend.utilities.typed_values import (
     utc_now,
 )
 from backend.utilities.validation import validate_genomic_form_data
-from backend.worker.models import OligoSeqProbeDesignerConfigOverride
+from backend.worker.models import OligoSeqProbeDesignerConfig
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
@@ -150,7 +150,7 @@ def write_run_to_DB(
     if pipeline_run_config is not None:
         data["pipeline_run_config"] = pipeline_run_config
         # create a pending run in the database
-    return mongo.db.runs.insert_one(data)
+    return db.runs.insert_one(data)
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
@@ -236,7 +236,7 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     if priority == CeleryConfig.task_high_priority:
         default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
-        mongo.db.runs.update_many(
+        db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
@@ -296,7 +296,7 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
     match pipeline_name:
         case "oligoseq":
-            pipeline_model = OligoSeqProbeDesignerConfigOverride
+            pipeline_model = OligoSeqProbeDesignerConfig
         case _:
             abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
 
@@ -367,7 +367,7 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.BAD_REQUEST, description="Expected JSON")
 
     if not validate_turnstile(form.get("token", "")):
-        abort(HTTPStatus.FORBIDDEN, description="Turnstile verification failed. Please try again.")
+        abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
 

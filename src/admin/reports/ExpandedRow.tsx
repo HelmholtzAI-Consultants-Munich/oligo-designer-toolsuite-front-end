@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge, Card, Col, ProgressBar, Row } from "react-bootstrap";
-import { STATUS_CONFIG } from "../shared/types";
+import { runStatusDisplay } from "../../components/ui/utils";
 import { REPORT_PIPELINES } from "./display";
 import { formatPercentage } from "./formatters";
 import DeltaBadge from "./DeltaBadge";
@@ -34,20 +34,17 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                         runs.total > 0
                                             ? (count / runs.total) * 100
                                             : 0;
-                                    const Icon = STATUS_CONFIG.icons[status];
+                                    const statusInfo = runStatusDisplay[status];
                                     return (
                                         <div key={status} className="mb-3">
                                             <div className="d-flex justify-content-between align-items-center mb-1">
                                                 <span className="d-flex align-items-center gap-1">
-                                                    <Icon
+                                                    <statusInfo.icon
                                                         size={14}
-                                                        className={`text-${STATUS_CONFIG.colors[status]}`}
+                                                        color={`var(--bs-${statusInfo.variant})`}
                                                     />
                                                     <span className="small">
-                                                        {
-                                                            STATUS_CONFIG
-                                                                .labels[status]
-                                                        }
+                                                        {statusInfo.title}
                                                     </span>
                                                 </span>
                                                 <span className="small">
@@ -59,9 +56,7 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                             </div>
                                             <ProgressBar
                                                 now={pct}
-                                                variant={
-                                                    STATUS_CONFIG.colors[status]
-                                                }
+                                                variant={statusInfo.variant}
                                                 style={{ height: "6px" }}
                                             />
                                         </div>

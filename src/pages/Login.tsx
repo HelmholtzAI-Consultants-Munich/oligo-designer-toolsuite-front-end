@@ -1,6 +1,6 @@
 // Login page component for user authentication
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
@@ -11,6 +11,7 @@ import { showToast } from "../utils/toastUtil";
 import { Vertical } from "../components/ui/Alignment";
 import { useRuns } from "../hooks/useRuns";
 import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 /**
  * Login component handles user login functionality.
@@ -26,8 +27,8 @@ const Login = () => {
     const user = auth.user;
     const { loading, checkAuth } = auth;
     const { updateRuns } = useRuns();
+    const turnstileRef = useRef<TurnstileInstance | null>(null);
 
-    const [token, setToken] = useState<string | null>(null);
     const sitekey = TURNSTILE_SITE_KEY;
 
     // Get redirect URL from query params
@@ -47,9 +48,15 @@ const Login = () => {
         try {
             const res = await axios.post(
                 BACKEND_URL + "/login",
-                { username, password, remember_me: rememberMe, token },
+                {
+                    username,
+                    password,
+                    remember_me: rememberMe,
+                    token: turnstileRef.current?.getResponse() ?? "",
+                },
                 { withCredentials: true }
             );
+            turnstileRef.current?.reset();
 
             console.log(res.data);
             showToast({
@@ -127,12 +134,12 @@ const Login = () => {
                                 redirected to the Helmholtz AAI login page.
                             </Card.Text>
                             <Turnstile
+                                ref={turnstileRef}
                                 siteKey={sitekey}
                                 options={{
                                     theme: "light",
                                     language: "en",
                                 }}
-                                onSuccess={setToken}
                             />
                             <Button onClick={redirectToHelmholtz}>
                                 Continue with Helmholtz AAI

@@ -133,25 +133,28 @@ export const handleSubmit = async (
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
         if (axios.isAxiosError(error)) {
-            let displayedErrorMessage = errorMessage;
-            // override error message for specific status codes
-            switch (error.response?.status) {
-                case 403: {
-                    displayedErrorMessage =
-                        "We couldn't verify that you are human. Please try again.";
-                    break;
-                }
-                case 413: {
-                    displayedErrorMessage =
-                        "The uploaded files exceed the maximum allowed size.";
-                }
-            }
+            const displayedErrorMessage =
+                error.response?.status == 413 // flask returns 413 for too large file uploads
+                    ? "The uploaded files exceed the maximum allowed size."
+                    : errorMessage;
 
             showToast({
                 title: "Pipeline Not Started",
                 content: displayedErrorMessage,
                 type: "danger",
             });
+
+            if (
+                error.response?.status == 403 &&
+                errorMessage.includes("verify that you are human")
+            ) {
+                const turnstile = document.querySelector(
+                    ".pipeline-turnstile"
+                ) as HTMLDivElement;
+                if (turnstile) {
+                    turnstile.scrollIntoView({ behavior: "smooth" });
+                }
+            }
         }
     } finally {
         updateRuns();

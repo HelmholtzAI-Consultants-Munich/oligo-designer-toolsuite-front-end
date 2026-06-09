@@ -16,7 +16,7 @@ import click
 from flask import current_app
 from werkzeug.security import generate_password_hash
 
-from backend.extensions import mongo
+from backend.extensions import db
 
 # ---- Helpers ----
 
@@ -29,9 +29,7 @@ _USER_PROJECTION = {"username": 1, "helmholtz_sub": 1, "role": 1, "_id": 0}
 
 def _find_user(identifier: str) -> dict | None:
     """Find a user by username or helmholtz_sub."""
-    return mongo.db.users.find_one({"username": identifier}) or mongo.db.users.find_one(
-        {"helmholtz_sub": identifier}
-    )
+    return db.users.find_one({"username": identifier}) or db.users.find_one({"helmholtz_sub": identifier})
 
 
 def _display_id(user: dict, fallback: str = "Unknown") -> str:
@@ -114,7 +112,7 @@ def register_cli_commands(app):
             click.echo(f'User "{display_id}" is already an admin.')
             return
 
-        result = mongo.db.users.update_one({"_id": user["_id"]}, {"$set": {"role": "admin"}})
+        result = db.users.update_one({"_id": user["_id"]}, {"$set": {"role": "admin"}})
         if result.modified_count > 0:
             click.echo(f'Successfully promoted "{display_id}" to admin.')
         else:
@@ -129,7 +127,7 @@ def register_cli_commands(app):
             flask admin list
         """
         projection = {k: v for k, v in _USER_PROJECTION.items() if k != "role"}
-        admins = list(mongo.db.users.find({"role": "admin"}, projection))
+        admins = list(db.users.find({"role": "admin"}, projection))
         _print_user_list(admins, "admin user(s)")
 
     @app.cli.group()
@@ -144,7 +142,7 @@ def register_cli_commands(app):
         Example:
             flask user list
         """
-        users = list(mongo.db.users.find({}, _USER_PROJECTION))
+        users = list(db.users.find({}, _USER_PROJECTION))
         _print_user_list(users, "user(s)")
 
     @user.command()
@@ -161,7 +159,7 @@ def register_cli_commands(app):
         if not username:
             _abort("Username cannot be empty.")
 
-        if mongo.db.users.find_one({"username": username}):
+        if db.users.find_one({"username": username}):
             _abort(f'Username "{username}" already exists.')
 
         click.echo(f"\nPassword requirements: {_PASSWORD_REQUIREMENTS}\n")
@@ -171,7 +169,7 @@ def register_cli_commands(app):
         if not is_valid:
             _abort(error_msg)
 
-        result = mongo.db.users.insert_one(
+        result = db.users.insert_one(
             {
                 "username": username,
                 "password": generate_password_hash(password),
