@@ -12,7 +12,7 @@ import pytest
 from bson import ObjectId
 
 from backend.exceptions import ODTPipelineError
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import CELERY_TASK_TIMEOUT, TEST_SESSION_ID, pipeline_runner_module
 from backend.utilities.typed_values import serialize_path, utc_now
 from backend.worker import tasks as task_module
@@ -107,8 +107,8 @@ def test_trigger_dropdown_options_fetching_calls_fetch(celery_worker):
 def _seed_march_report_source_data() -> None:
     """Seed one reporting period plus previous-period data for monthly report tests."""
     start = datetime.datetime(2026, 3, 1)
-    mongo.db.users.insert_one({"_id": ObjectId.from_datetime(start), "role": "user"})
-    mongo.db.runs.insert_many(
+    db.users.insert_one({"_id": ObjectId.from_datetime(start), "role": "user"})
+    db.runs.insert_many(
         [
             {
                 "_id": ObjectId(),
@@ -134,8 +134,8 @@ def _seed_march_report_source_data() -> None:
             },
         ]
     )
-    mongo.db.feedback.insert_one({"_id": ObjectId(), "created_at": start, "message": "good"})
-    mongo.db.monthly_reports.insert_one(
+    db.feedback.insert_one({"_id": ObjectId(), "created_at": start, "message": "good"})
+    db.monthly_reports.insert_one(
         {
             "_id": "2026-02",
             "users": {"new_registrations": 1, "active": 1},
@@ -148,10 +148,10 @@ def _seed_march_report_source_data() -> None:
 
 def _generate_march_report(celery_worker) -> dict:
     """Run the report task for March 2026 and return the persisted report."""
-    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(mongo.db)):
+    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
-    return mongo.db.monthly_reports.find_one({"_id": "2026-03"})
+    return db.monthly_reports.find_one({"_id": "2026-03"})
 
 
 def test_generate_monthly_report_for_manual_period_writes_identity_and_structure(celery_worker):
@@ -219,21 +219,21 @@ def test_generate_monthly_report_default_uses_previous_month(celery_worker):
             return cls(2026, 5, 27)
 
     with (
-        patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(mongo.db)),
+        patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)),
         patch("backend.worker.tasks.datetime.date", FixedDate),
     ):
         generate_monthly_report.delay().get(timeout=CELERY_TASK_TIMEOUT)
 
-    report = mongo.db.monthly_reports.find_one({"_id": "2026-04"})
+    report = db.monthly_reports.find_one({"_id": "2026-04"})
     assert report["generated_by"] == "scheduled"
 
 
 def test_generate_monthly_report_handles_no_runs(celery_worker):
     """Monthly report generation handles an empty reporting period without rates."""
-    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(mongo.db)):
+    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
-    report = mongo.db.monthly_reports.find_one({"_id": "2026-03"})
+    report = db.monthly_reports.find_one({"_id": "2026-03"})
     assert report["runs"]["total"] == 0
     assert report["runs"]["success_rate"] is None
     assert report["conversions"]["conversion_rate"] is None
@@ -241,13 +241,13 @@ def test_generate_monthly_report_handles_no_runs(celery_worker):
 
 def test_generate_monthly_report_replaces_existing_report(celery_worker):
     """Monthly report generation replaces an existing report for the same period."""
-    mongo.db.monthly_reports.insert_one({"_id": "2026-03", "year": 2026, "month": 3, "old": True})
+    db.monthly_reports.insert_one({"_id": "2026-03", "year": 2026, "month": 3, "old": True})
 
-    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(mongo.db)):
+    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
-    assert mongo.db.monthly_reports.count_documents({"_id": "2026-03"}) == 1
-    assert "old" not in mongo.db.monthly_reports.find_one({"_id": "2026-03"})
+    assert db.monthly_reports.count_documents({"_id": "2026-03"}) == 1
+    assert "old" not in db.monthly_reports.find_one({"_id": "2026-03"})
 
 
 def test_cleanup_anonymous_data_deletes_expired_session_data(test_data_roots):
@@ -257,45 +257,43 @@ def test_cleanup_anonymous_data_deletes_expired_session_data(test_data_roots):
     output_dir = test_data_roots.anon_dir / "output"
     output_dir.mkdir()
     cutoff = utc_now()
-    mongo.db.anonymous_sessions.insert_one(
+    db.anonymous_sessions.insert_one(
         {
             "_id": ObjectId(),
             "session_id": TEST_SESSION_ID,
             "last_activity_at": cutoff - datetime.timedelta(days=1),
         }
     )
-    mongo.db.runs.insert_one(
+    db.runs.insert_one(
         {"_id": ObjectId(), "session_id": TEST_SESSION_ID, "output_path": serialize_path(output_dir)}
     )
-    mongo.db.uploads.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID, "path": str(upload_file)})
-    mongo.db.legal_acceptances.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID})
+    db.uploads.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID, "path": str(upload_file)})
+    db.legal_acceptances.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID})
 
-    result = _cleanup_expired_anonymous_data(
-        mongo.db, test_data_roots.uploads, test_data_roots.user_data, cutoff
-    )
+    result = _cleanup_expired_anonymous_data(db, test_data_roots.uploads, test_data_roots.user_data, cutoff)
 
     assert result["deleted_runs"] == 1
     assert result["deleted_uploads"] == 1
     assert not output_dir.exists()
     assert not upload_file.exists()
-    assert mongo.db.anonymous_sessions.count_documents({}) == 0
+    assert db.anonymous_sessions.count_documents({}) == 0
 
 
 def test_cleanup_anonymous_data_keeps_unexpired_sessions(test_data_roots):
     """Anonymous cleanup leaves sessions newer than the cutoff untouched."""
-    mongo.db.anonymous_sessions.insert_one(
+    db.anonymous_sessions.insert_one(
         {"_id": ObjectId(), "session_id": TEST_SESSION_ID, "last_activity_at": utc_now()}
     )
 
     result = _cleanup_expired_anonymous_data(
-        mongo.db,
+        db,
         test_data_roots.uploads,
         test_data_roots.user_data,
         utc_now() - datetime.timedelta(days=1),
     )
 
     assert result["deleted_sessions"] == 0
-    assert mongo.db.anonymous_sessions.count_documents({}) == 1
+    assert db.anonymous_sessions.count_documents({}) == 1
 
 
 def test_cleanup_anonymous_data_retains_records_for_paths_outside_root(test_data_roots, tmp_path):
@@ -303,22 +301,20 @@ def test_cleanup_anonymous_data_retains_records_for_paths_outside_root(test_data
     outside = tmp_path / "outside.fna"
     outside.write_text("keep")
     cutoff = utc_now()
-    mongo.db.anonymous_sessions.insert_one(
+    db.anonymous_sessions.insert_one(
         {
             "_id": ObjectId(),
             "session_id": TEST_SESSION_ID,
             "last_activity_at": cutoff - datetime.timedelta(days=1),
         }
     )
-    mongo.db.uploads.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID, "path": str(outside)})
+    db.uploads.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID, "path": str(outside)})
 
-    result = _cleanup_expired_anonymous_data(
-        mongo.db, test_data_roots.uploads, test_data_roots.user_data, cutoff
-    )
+    result = _cleanup_expired_anonymous_data(db, test_data_roots.uploads, test_data_roots.user_data, cutoff)
 
     assert result["retained_uploads"] == 1
     assert outside.exists()
-    assert mongo.db.uploads.count_documents({}) == 1
+    assert db.uploads.count_documents({}) == 1
 
 
 def test_cleanup_anonymous_data_retains_records_when_path_type_unexpected(test_data_roots):
@@ -328,26 +324,24 @@ def test_cleanup_anonymous_data_retains_records_when_path_type_unexpected(test_d
     output_file = test_data_roots.anon_dir / "file-instead-of-directory"
     output_file.write_text("unexpected")
     cutoff = utc_now()
-    mongo.db.anonymous_sessions.insert_one(
+    db.anonymous_sessions.insert_one(
         {
             "_id": ObjectId(),
             "session_id": TEST_SESSION_ID,
             "last_activity_at": cutoff - datetime.timedelta(days=1),
         }
     )
-    mongo.db.uploads.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID, "path": str(upload_dir)})
-    mongo.db.runs.insert_one(
+    db.uploads.insert_one({"_id": ObjectId(), "session_id": TEST_SESSION_ID, "path": str(upload_dir)})
+    db.runs.insert_one(
         {"_id": ObjectId(), "session_id": TEST_SESSION_ID, "output_path": serialize_path(output_file)}
     )
 
-    result = _cleanup_expired_anonymous_data(
-        mongo.db, test_data_roots.uploads, test_data_roots.user_data, cutoff
-    )
+    result = _cleanup_expired_anonymous_data(db, test_data_roots.uploads, test_data_roots.user_data, cutoff)
 
     assert result["retained_uploads"] == 1
     assert result["retained_runs"] == 1
-    assert mongo.db.uploads.count_documents({}) == 1
-    assert mongo.db.runs.count_documents({}) == 1
+    assert db.uploads.count_documents({}) == 1
+    assert db.runs.count_documents({}) == 1
 
 
 def test_cleanup_anonymous_data_task_uses_configured_roots(test_data_roots, celery_worker):
@@ -357,7 +351,7 @@ def test_cleanup_anonymous_data_task_uses_configured_roots(test_data_roots, cele
             "backend.worker.tasks._get_data_roots",
             return_value=(test_data_roots.uploads, test_data_roots.user_data),
         ),
-        patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(mongo.db)),
+        patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)),
     ):
         result = cleanup_anonymous_data.delay().get(timeout=CELERY_TASK_TIMEOUT)
 

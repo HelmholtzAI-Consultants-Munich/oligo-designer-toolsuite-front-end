@@ -16,7 +16,7 @@ from glom import assign, glom
 
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import TEST_SESSION_ID, TEST_USER_ID, assert_sanitized_error
 
 # TODO: add ("merfish", "merfish_mock_form_data.json") etc. once each pipeline has
@@ -40,7 +40,7 @@ def payload_with_upload(payload: dict, field_path: str, file_key: str) -> dict:
 
 def response_run(response) -> dict:
     """Load the run created by a successful pipeline submission."""
-    return mongo.db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
+    return db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
 
 
 @pytest.fixture
@@ -107,7 +107,7 @@ def test_start_pipeline_requires_terms_acceptance(
     response = multipart_post(f"/api/{PIPELINE_NAME}", pipeline_payload(PAYLOAD_FILE))
 
     assert response.status_code == 403
-    assert mongo.db.runs.count_documents({}) == 0
+    assert db.runs.count_documents({}) == 0
     assert list(test_data_roots.user_dir.glob("output_*")) == []
 
 
@@ -140,7 +140,7 @@ def test_start_pipeline_ignores_client_run_id(
 
     assert response.status_code == 200
     assert response.get_json()["run_id"] != str(client_run_id)
-    assert mongo.db.runs.find_one({"_id": client_run_id}) is None
+    assert db.runs.find_one({"_id": client_run_id}) is None
 
 
 def test_start_pipeline_rejects_missing_anonymous_terms(client, pipeline_payload, multipart_post):
@@ -174,7 +174,7 @@ def test_start_pipeline_rejects_too_many_genes_for_anonymous_user(
     response = multipart_post(f"/api/{PIPELINE_NAME}", payload)
 
     assert response.status_code == 401
-    assert mongo.db.runs.count_documents({}) == 0
+    assert db.runs.count_documents({}) == 0
 
 
 def test_start_pipeline_allows_too_many_genes_for_authenticated_user(

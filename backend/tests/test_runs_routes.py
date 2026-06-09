@@ -6,7 +6,7 @@ deletion behavior is covered without relying on repository fixtures.
 
 from bson import ObjectId
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import OTHER_USER_ID, TEST_SESSION_ID, TEST_USER_ID
 from backend.utilities.typed_values import utc_now
 
@@ -174,7 +174,7 @@ def test_delete_run_removes_output_directory_and_db_record(client, authenticated
 
     assert response.status_code == 200
     assert not output.exists()
-    assert mongo.db.runs.find_one({"_id": run_id}) is None
+    assert db.runs.find_one({"_id": run_id}) is None
 
 
 def test_delete_run_404_for_unowned_run(client, authenticated_user, run_doc, tmp_path):
@@ -186,7 +186,7 @@ def test_delete_run_404_for_unowned_run(client, authenticated_user, run_doc, tmp
 
     assert response.status_code == 404
     assert output.exists()
-    assert mongo.db.runs.find_one({"_id": run_id}) is not None
+    assert db.runs.find_one({"_id": run_id}) is not None
 
 
 def test_get_run_config_success(client, authenticated_user, run_doc):

@@ -8,7 +8,7 @@ from bson import ObjectId
 from glom import assign
 
 from backend.config import CeleryConfig
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import CELERY_TASK_TIMEOUT, pipeline_runner_module
 from backend.worker import tasks as task_module
 
@@ -54,7 +54,7 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
 
         assert response.status_code == 200
         run_id = ObjectId(response.get_json()["run_id"])
-        run = mongo.db.runs.find_one({"_id": run_id})
+        run = db.runs.find_one({"_id": run_id})
         route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
 
     expected_generated_region_count = 2
@@ -64,7 +64,7 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
 
     form_data, output_path, generated_regions = pipeline_runner_cls.return_value.run.call_args.args
     assert form_data["target_probe"]["oligo_generation"]["file_region_ids"] == "GFB69_RS14600"
-    assert output_path == str(Path(*mongo.db.runs.find_one({"_id": run_id})["output_path"]["parts"]))
+    assert output_path == str(Path(*db.runs.find_one({"_id": run_id})["output_path"]["parts"]))
     assert len(generated_regions) == expected_generated_region_count
     assert all(paths == ["generated.fna"] for _field, paths in generated_regions)
 
@@ -91,7 +91,7 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
 
         assert response.status_code == 200
         run_id = ObjectId(response.get_json()["run_id"])
-        run = mongo.db.runs.find_one({"_id": run_id})
+        run = db.runs.find_one({"_id": run_id})
         route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
 
     generator_cls.return_value.run.assert_not_called()
@@ -139,7 +139,7 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
 
         assert response.status_code == 200
         run_id = ObjectId(response.get_json()["run_id"])
-        run = mongo.db.runs.find_one({"_id": run_id})
+        run = db.runs.find_one({"_id": run_id})
         route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
 
     assert observed_priorities == [expected_priority]

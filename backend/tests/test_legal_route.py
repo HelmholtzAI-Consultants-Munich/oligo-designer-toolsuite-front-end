@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import TEST_SESSION_ID, TEST_USER_ID
 from backend.utilities.legal import (
     PRIVACY_DOCUMENT_KEY,
@@ -37,15 +37,15 @@ def test_public_legal_document_route(client, path, document_key, title):
 def test_accept_terms_for_authenticated_user(client, authenticate_as):
     """Authenticated consent is stored by user id and reflected on the user row."""
     authenticate_as(TEST_USER_ID)
-    mongo.db.users.insert_one({"_id": ObjectId(TEST_USER_ID), "role": "user"})
+    db.users.insert_one({"_id": ObjectId(TEST_USER_ID), "role": "user"})
 
     response = client.post("/api/legal/terms/accept")
 
     assert response.status_code == 200
-    acceptance = mongo.db.legal_acceptances.find_one({"user_id": TEST_USER_ID})
+    acceptance = db.legal_acceptances.find_one({"user_id": TEST_USER_ID})
     assert acceptance["terms_version"] == get_current_terms_version()
     assert (
-        mongo.db.users.find_one({"_id": ObjectId(TEST_USER_ID)})["accepted_terms_version"]
+        db.users.find_one({"_id": ObjectId(TEST_USER_ID)})["accepted_terms_version"]
         == acceptance["terms_version"]
     )
 
@@ -57,7 +57,7 @@ def test_accept_terms_for_anonymous_session(client):
     response = client.post("/api/legal/terms/accept")
 
     assert response.status_code == 200
-    assert mongo.db.legal_acceptances.find_one({"session_id": TEST_SESSION_ID}) is not None
+    assert db.legal_acceptances.find_one({"session_id": TEST_SESSION_ID}) is not None
 
 
 def test_accept_terms_auto_creates_session_for_anonymous_client(client):
@@ -65,7 +65,7 @@ def test_accept_terms_auto_creates_session_for_anonymous_client(client):
     response = client.post("/api/legal/terms/accept")
 
     assert response.status_code == 200
-    assert mongo.db.legal_acceptances.count_documents({"session_id": {"$exists": True}}) == 1
+    assert db.legal_acceptances.count_documents({"session_id": {"$exists": True}}) == 1
 
 
 def test_delete_account_removes_user_and_related_data(client, authenticated_user, test_data_roots):
@@ -74,20 +74,20 @@ def test_delete_account_removes_user_and_related_data(client, authenticated_user
     upload_file.write_text(">x\nAC\n")
     output_dir = test_data_roots.user_dir / "output"
     output_dir.mkdir()
-    mongo.db.runs.insert_one(
+    db.runs.insert_one(
         {"_id": ObjectId(), "user_id": TEST_USER_ID, "output_path": serialize_path(output_dir)}
     )
-    mongo.db.uploads.insert_one({"_id": ObjectId(), "user_id": TEST_USER_ID, "path": str(upload_file)})
-    mongo.db.feedback.insert_one({"_id": ObjectId(), "user_id": TEST_USER_ID})
+    db.uploads.insert_one({"_id": ObjectId(), "user_id": TEST_USER_ID, "path": str(upload_file)})
+    db.feedback.insert_one({"_id": ObjectId(), "user_id": TEST_USER_ID})
 
     with patch("backend.routes.auth.logout_user"):
         response = client.delete("/api/account")
 
     assert response.status_code == 200
-    assert mongo.db.users.find_one({"_id": ObjectId(TEST_USER_ID)}) is None
-    assert mongo.db.runs.count_documents({"user_id": TEST_USER_ID}) == 0
-    assert mongo.db.uploads.count_documents({"user_id": TEST_USER_ID}) == 0
-    assert mongo.db.feedback.count_documents({"user_id": TEST_USER_ID}) == 0
+    assert db.users.find_one({"_id": ObjectId(TEST_USER_ID)}) is None
+    assert db.runs.count_documents({"user_id": TEST_USER_ID}) == 0
+    assert db.uploads.count_documents({"user_id": TEST_USER_ID}) == 0
+    assert db.feedback.count_documents({"user_id": TEST_USER_ID}) == 0
     assert not upload_file.exists()
     assert not output_dir.exists()
 

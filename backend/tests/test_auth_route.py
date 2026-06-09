@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bson import ObjectId
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import TEST_USER_ID
 
 pytestmark = pytest.mark.filterwarnings(
@@ -66,22 +66,22 @@ def test_helmholtz_callback_creates_new_user(client, test_data_roots):
         response = client.get("/auth/callback")
 
     assert response.status_code == 302
-    user = mongo.db.users.find_one({"helmholtz_sub": "sub-1"})
+    user = db.users.find_one({"helmholtz_sub": "sub-1"})
     assert user is not None
     assert user["role"] == "user"
     assert (test_data_roots.user_data / str(user["_id"])).is_dir()
 
 
 def test_helmholtz_callback_reuses_existing_user(client):
-    user_id = mongo.db.users.insert_one({"helmholtz_sub": "sub-1", "role": "user"}).inserted_id
+    user_id = db.users.insert_one({"helmholtz_sub": "sub-1", "role": "user"}).inserted_id
     token = {"access_token": "token", "userinfo": {"sub": "sub-1"}}
 
     with patch("backend.routes.auth.oauth.helmholtz.authorize_access_token", return_value=token):
         response = client.get("/auth/callback")
 
     assert response.status_code == 302
-    assert mongo.db.users.count_documents({"helmholtz_sub": "sub-1"}) == 1
-    assert mongo.db.users.find_one({"helmholtz_sub": "sub-1"})["_id"] == user_id
+    assert db.users.count_documents({"helmholtz_sub": "sub-1"}) == 1
+    assert db.users.find_one({"helmholtz_sub": "sub-1"})["_id"] == user_id
 
 
 def test_helmholtz_callback_fetches_userinfo_when_missing_from_token(client):
@@ -98,4 +98,4 @@ def test_helmholtz_callback_fetches_userinfo_when_missing_from_token(client):
         response = client.get("/auth/callback")
 
     assert response.status_code == 302
-    assert mongo.db.users.find_one({"helmholtz_sub": "sub-2"}) is not None
+    assert db.users.find_one({"helmholtz_sub": "sub-2"}) is not None

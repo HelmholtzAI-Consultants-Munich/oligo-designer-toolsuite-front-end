@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 from bson import ObjectId
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import TEST_USER_ID
 from backend.utilities.legal import TERMS_DOCUMENT_KEY
 from backend.utilities.typed_values import serialize_path, utc_now
@@ -21,7 +21,7 @@ from backend.utilities.typed_values import serialize_path, utc_now
 def admin_user(authenticate_as):
     """Create a persisted admin and authenticate the Flask test client as it."""
     user_id = ObjectId(TEST_USER_ID)
-    mongo.db.users.insert_one({"_id": user_id, "username": "admin", "role": "admin", "password": "hash"})
+    db.users.insert_one({"_id": user_id, "username": "admin", "role": "admin", "password": "hash"})
     authenticate_as(str(user_id))
     return {"_id": user_id, "id": str(user_id)}
 
@@ -30,7 +30,7 @@ def admin_user(authenticate_as):
 def regular_user():
     """Create a persisted non-admin user for authorization and mutation tests."""
     user_id = ObjectId()
-    mongo.db.users.insert_one({"_id": user_id, "username": "regular", "role": "user", "password": "hash"})
+    db.users.insert_one({"_id": user_id, "username": "regular", "role": "user", "password": "hash"})
     return {"_id": user_id, "id": str(user_id)}
 
 
@@ -111,15 +111,15 @@ def test_admin_delete_user_success(client, admin_user, regular_user, test_data_r
     upload_file.write_text("upload")
     output_dir = user_dir / "output"
     output_dir.mkdir()
-    mongo.db.uploads.insert_one({"_id": ObjectId(), "user_id": regular_user["id"], "path": str(upload_file)})
-    mongo.db.runs.insert_one(
+    db.uploads.insert_one({"_id": ObjectId(), "user_id": regular_user["id"], "path": str(upload_file)})
+    db.runs.insert_one(
         {"_id": ObjectId(), "user_id": regular_user["id"], "output_path": serialize_path(output_dir)}
     )
 
     response = client.delete(f"/api/admin/users/{regular_user['id']}")
 
     assert response.status_code == 200
-    assert mongo.db.users.find_one({"_id": regular_user["_id"]}) is None
+    assert db.users.find_one({"_id": regular_user["_id"]}) is None
     assert not upload_file.exists()
     assert not user_dir.exists()
 
@@ -163,7 +163,7 @@ def test_admin_publish_legal_document_requires_new_content(client, admin_user):
 
 
 def test_admin_get_pipeline_runs_success(client, admin_user):
-    run_id = mongo.db.runs.insert_one(
+    run_id = db.runs.insert_one(
         {"pipeline": "merfish", "status": "pending", "created_at": utc_now()}
     ).inserted_id
 
@@ -174,16 +174,16 @@ def test_admin_get_pipeline_runs_success(client, admin_user):
 
 
 def test_admin_update_pipeline_status_success(client, admin_user):
-    run_id = mongo.db.runs.insert_one({"status": "pending", "pipeline": "merfish"}).inserted_id
+    run_id = db.runs.insert_one({"status": "pending", "pipeline": "merfish"}).inserted_id
 
     response = client.put(f"/api/admin/pipelines/{run_id}", json={"status": "success"})
 
     assert response.status_code == 200
-    assert mongo.db.runs.find_one({"_id": run_id})["status"] == "success"
+    assert db.runs.find_one({"_id": run_id})["status"] == "success"
 
 
 def test_admin_update_pipeline_status_rejects_invalid_status(client, admin_user):
-    run_id = mongo.db.runs.insert_one({"status": "pending"}).inserted_id
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
 
     response = client.put(f"/api/admin/pipelines/{run_id}", json={"status": "bogus"})
 
@@ -194,19 +194,17 @@ def test_admin_delete_pipeline_run_success(client, admin_user, tmp_path):
     """Admin run deletion removes both MongoDB state and output directory."""
     output = tmp_path / "output"
     output.mkdir()
-    run_id = mongo.db.runs.insert_one(
-        {"status": "pending", "output_path": serialize_path(output)}
-    ).inserted_id
+    run_id = db.runs.insert_one({"status": "pending", "output_path": serialize_path(output)}).inserted_id
 
     response = client.delete(f"/api/admin/pipelines/{run_id}")
 
     assert response.status_code == 200
     assert not output.exists()
-    assert mongo.db.runs.find_one({"_id": run_id}) is None
+    assert db.runs.find_one({"_id": run_id}) is None
 
 
 def test_admin_dashboard_stats_success(client, admin_user, regular_user):
-    mongo.db.runs.insert_many([{"status": "pending"}, {"status": "success"}])
+    db.runs.insert_many([{"status": "pending"}, {"status": "success"}])
 
     response = client.get("/api/admin/dashboard")
 
@@ -216,7 +214,7 @@ def test_admin_dashboard_stats_success(client, admin_user, regular_user):
 
 
 def test_admin_feedback_list_success(client, admin_user):
-    mongo.db.feedback.insert_one({"_id": ObjectId(), "message": "hello", "created_at": utc_now()})
+    db.feedback.insert_one({"_id": ObjectId(), "message": "hello", "created_at": utc_now()})
 
     response = client.get("/api/admin/feedback")
 
@@ -239,7 +237,7 @@ def _monthly_report_doc(report_id: str, year: int, month: int) -> dict:
 
 
 def test_admin_monthly_reports_list_success(client, admin_user):
-    mongo.db.monthly_reports.insert_many(
+    db.monthly_reports.insert_many(
         [
             _monthly_report_doc("2026-03", 2026, 3),
             _monthly_report_doc("2026-04", 2026, 4),
@@ -253,7 +251,7 @@ def test_admin_monthly_reports_list_success(client, admin_user):
 
 
 def test_admin_monthly_report_detail_success(client, admin_user):
-    mongo.db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
+    db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
 
     response = client.get("/api/admin/reports?year=2026&month=4")
 
@@ -268,12 +266,12 @@ def test_admin_monthly_report_detail_not_found(client, admin_user):
 
 
 def test_admin_delete_monthly_report_success(client, admin_user):
-    mongo.db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
+    db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
 
     response = client.delete("/api/admin/reports/2026-04")
 
     assert response.status_code == 200
-    assert mongo.db.monthly_reports.find_one({"_id": "2026-04"}) is None
+    assert db.monthly_reports.find_one({"_id": "2026-04"}) is None
 
 
 def test_admin_delete_monthly_report_not_found(client, admin_user):
@@ -362,7 +360,7 @@ def test_admin_bulk_update_user_role_success(client, admin_user, regular_user):
     )
 
     assert response.status_code == 200
-    assert mongo.db.users.find_one({"_id": regular_user["_id"]})["role"] == "admin"
+    assert db.users.find_one({"_id": regular_user["_id"]})["role"] == "admin"
 
 
 def test_admin_bulk_update_user_role_rejects_invalid_role(client, admin_user, regular_user):
@@ -382,7 +380,7 @@ def test_admin_bulk_update_user_role_rejects_self_demotion(client, admin_user):
 
 
 def test_admin_bulk_delete_pipeline_runs_success(client, admin_user):
-    run_id = mongo.db.runs.insert_one({"status": "pending"}).inserted_id
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
 
     response = client.post("/api/admin/pipelines/bulk-delete", json={"run_ids": [str(run_id)]})
 
@@ -397,14 +395,14 @@ def test_admin_bulk_delete_pipeline_runs_rejects_invalid_ids(client, admin_user)
 
 
 def test_admin_bulk_update_pipeline_status_success(client, admin_user):
-    run_id = mongo.db.runs.insert_one({"status": "pending"}).inserted_id
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
 
     response = client.post(
         "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(run_id)], "status": "success"}
     )
 
     assert response.status_code == 200
-    assert mongo.db.runs.find_one({"_id": run_id})["status"] == "success"
+    assert db.runs.find_one({"_id": run_id})["status"] == "success"
 
 
 def test_admin_bulk_update_pipeline_status_rejects_invalid_status(client, admin_user):

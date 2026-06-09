@@ -29,7 +29,8 @@ from redis import Redis
 
 from backend.app import create_app
 from backend.config import Config
-from backend.extensions import mongo
+from backend.extensions import client as mongo_client
+from backend.extensions import db
 from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path, utc_now
 from backend.worker import callbacks as worker_callbacks
@@ -102,7 +103,7 @@ def app(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Any]:
     yield flask_app
 
     with flask_app.app_context():
-        mongo.cx.drop_database(TEST_DB_NAME)
+        mongo_client.drop_database(TEST_DB_NAME)
     shutil.rmtree(data_root, ignore_errors=True)
 
 
@@ -135,11 +136,11 @@ def test_data_roots(app: Any, tmp_path: Path) -> Iterator[DataRoots]:
 def mongo_test_db(app: Any) -> Iterator[None]:
     """Clear every Mongo collection before and after each test."""
     with app.app_context():
-        for name in mongo.db.list_collection_names():
-            mongo.db[name].delete_many({})
+        for name in db.list_collection_names():
+            db[name].delete_many({})
         yield
-        for name in mongo.db.list_collection_names():
-            mongo.db[name].delete_many({})
+        for name in db.list_collection_names():
+            db[name].delete_many({})
 
 
 @pytest.fixture
@@ -172,7 +173,7 @@ def authenticate_as() -> Iterator[Callable[[str], AuthenticatedUser]]:
 
 def _insert_terms_acceptance(**query: str) -> None:
     """Insert current terms acceptance for either a user_id or session_id."""
-    mongo.db.legal_acceptances.insert_one(
+    db.legal_acceptances.insert_one(
         {
             **query,
             "document": "terms",
@@ -189,7 +190,7 @@ def authenticated_user(
     """Create and authenticate the default test user with current terms accepted."""
     user = authenticate_as(TEST_USER_ID)
     with app.app_context():
-        mongo.db.users.insert_one({"_id": ObjectId(TEST_USER_ID), "username": "test-user", "role": "user"})
+        db.users.insert_one({"_id": ObjectId(TEST_USER_ID), "username": "test-user", "role": "user"})
         _insert_terms_acceptance(user_id=TEST_USER_ID)
     yield user
 
@@ -243,7 +244,7 @@ def run_doc(app: Any) -> Callable[..., ObjectId]:
         if output_path is not None:
             doc["output_path"] = serialize_path(Path(output_path))
         with app.app_context():
-            mongo.db.runs.insert_one(doc)
+            db.runs.insert_one(doc)
         return oid
 
     return _run_doc
