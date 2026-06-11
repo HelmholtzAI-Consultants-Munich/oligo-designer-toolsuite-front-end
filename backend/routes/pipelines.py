@@ -15,13 +15,13 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
 from pydantic import ValidationError
-from redis import Redis
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
 from backend.extensions import celery_app, db
+from backend.queue_accounting import add_pending_run, queue_accounting_lock
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
@@ -170,7 +170,7 @@ def get_task_priority(form_data: dict[str, Any]) -> int:
     return priority
 
 
-def enqueue_pipeline(
+def prepare_pipeline_chord(
     run_id: ObjectId,
     pipeline_name: str,
     form_data: dict[str, Any],
@@ -179,10 +179,9 @@ def enqueue_pipeline(
     context: RunContext,
     enqueued_at: datetime,
     is_authenticated: bool = False,
-) -> AsyncResult:
+) -> Any:
     """
-    Builds and enqueues a chord such that all region generation tasks
-    finish executing before the pipeline is started.
+    Build a chord such that all region generation tasks finish before the pipeline starts.
     """
     soft_limit = resolve_timeout(is_authenticated)
     hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
@@ -214,34 +213,12 @@ def enqueue_pipeline(
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
 
-    return chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
+    return chord(region_generation_signatures, pipeline_signature.on_error(error_handler))
 
 
-def calculate_queue_position(priority: int) -> tuple[int, int]:
-    """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
-    redis = Redis.from_url(Config.REDIS_URI)
-
-    # Initialize queue lengths if not present, then fetch and convert to int
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "high", 0)
-    default_priority_queue_length, high_priority_queue_length = map(
-        int, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
-    )
-    high_priority_ahead = high_priority_queue_length
-
-    if priority == CeleryConfig.task_high_priority:
-        default_priority_ahead = 0
-        # add one high priority run ahead for all low priority runs
-        db.runs.update_many(
-            {"status": "pending", "priority": "default"},
-            {"$inc": {"queue_position.0": 1}},
-        )
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
-    else:
-        default_priority_ahead = default_priority_queue_length
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
-
-    return high_priority_ahead, default_priority_ahead
+def enqueue_pipeline(pipeline_chord: Any) -> AsyncResult:
+    """Send a prepared pipeline chord to Celery."""
+    return pipeline_chord.apply_async()
 
 
 def save_file(
@@ -394,7 +371,10 @@ def start_pipeline(pipeline_name: str):
     priority = get_task_priority(form_data)
     enqueued_at = utc_now()
 
-    result_promise = enqueue_pipeline(
+    pipeline_run_config = (
+        form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
+    )
+    pipeline_chord = prepare_pipeline_chord(
         run_id,
         pipeline_name,
         form_data,
@@ -404,23 +384,20 @@ def start_pipeline(pipeline_name: str):
         enqueued_at,
         current_user.is_authenticated,
     )
+    with queue_accounting_lock() as redis:
+        result_promise = enqueue_pipeline(pipeline_chord)
+        high_priority_ahead, default_priority_ahead = add_pending_run(redis, db, priority)
 
-    high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
-
-    # mark run as enqueued in DB
-    pipeline_run_config = (
-        form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
-    )
-    insert_result = write_run_to_DB(
-        pipeline_name,
-        run_id,
-        context,
-        result_promise.id,
-        priority,
-        (high_priority_ahead, default_priority_ahead),
-        pipeline_run_config,
-    )
-    if not insert_result.acknowledged:
-        abort(HTTPStatus.NOT_FOUND, description="Failed to create run in database")
+        insert_result = write_run_to_DB(
+            pipeline_name,
+            run_id,
+            context,
+            result_promise.id,
+            priority,
+            (high_priority_ahead, default_priority_ahead),
+            pipeline_run_config,
+        )
+        if not insert_result.acknowledged:
+            abort(HTTPStatus.NOT_FOUND, description="Failed to create run in database")
 
     return jsonify({"run_id": str(run_id), "queue_position": (high_priority_ahead, default_priority_ahead)})

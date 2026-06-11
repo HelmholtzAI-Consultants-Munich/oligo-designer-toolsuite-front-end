@@ -11,6 +11,7 @@
 !/backend/constants.py
 !/backend/config.py
 !/backend/extensions.py
+!/backend/queue_accounting.py
 !/backend/genomic_databases.py
 !/backend/types.py
 !/backend/models.py

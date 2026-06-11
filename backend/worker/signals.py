@@ -4,41 +4,13 @@ from typing import Any
 from celery import Task
 from celery.signals import task_postrun, task_prerun
 from pymongo import MongoClient
-from redis import Redis
 
-from backend.config import CeleryConfig, Config
+from backend.config import Config
 from backend.worker.converters import parse_datetime
 
 
 def _is_pipeline_task(task: Task) -> bool:
     return task.name == "backend.worker.tasks.run_pipeline"
-
-
-def update_queue_positions(task: Task) -> None:
-    """Decrease the queue position of pending tasks when a pipeline task starts."""
-    redis = Redis.from_url(Config.REDIS_URI)
-    try:
-        with MongoClient(Config.MONGO_URI) as client:
-            db = client["oligo_db"]
-            if (
-                task.request.delivery_info.get("priority", CeleryConfig.task_default_priority)
-                == CeleryConfig.task_high_priority
-            ):
-                # remove one high priority task ahead of all pending tasks
-                db.runs.update_many(
-                    {"status": "pending", "queue_position.0": {"$gt": 0}},
-                    {"$inc": {"queue_position.0": -1}},
-                )
-                redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", -1)
-            else:
-                # remove one low priority task ahead of all pending low priority tasks
-                db.runs.update_many(
-                    {"status": "pending", "priority": "default", "queue_position.1": {"$gt": 0}},
-                    {"$inc": {"queue_position.1": -1}},
-                )
-                redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", -1)
-    finally:
-        redis.close()
 
 
 def capture_start_time(task_id: str, task: Task) -> None:
@@ -84,7 +56,6 @@ def capture_completion_metrics(task_id: str, task: Task) -> None:
 def on_task_prerun(task_id, task, *args, **kwargs):
     if not _is_pipeline_task(task):
         return
-    update_queue_positions(task)
     capture_start_time(task_id, task)
 
 

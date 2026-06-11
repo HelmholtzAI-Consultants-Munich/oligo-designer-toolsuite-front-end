@@ -95,6 +95,8 @@ class Config:
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
+    REDIS_QUEUE_ACCOUNTING_LOCK_KEY = "pipelines:queue_accounting_lock"
+    REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT = int(os.environ.get("REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT", 30))
 
     @staticmethod
     def get_logging_config() -> dict:
