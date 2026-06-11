@@ -9,7 +9,7 @@ from flask import abort, current_app
 
 from backend.config import CeleryConfig
 from backend.extensions import celery_app
-from backend.queue_accounting import queue_accounting_lock, remove_pending_run
+from backend.queue_accounting import PIPELINE_RUN_STAMP, queue_accounting_lock, remove_pending_run
 from backend.types import RunStatus
 from backend.utilities.typed_values import deserialize_path, path_for_display
 
@@ -77,19 +77,18 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
         abort(HTTPStatus.NOT_FOUND)
 
     initial_status = run.get("status")
-    task_id = run.get("task_id")
-    if task_id and initial_status in (RunStatus.PENDING, RunStatus.STARTED):
+    if initial_status in (RunStatus.PENDING, RunStatus.STARTED):
         try:
-            if initial_status == RunStatus.STARTED:
-                celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-            else:
-                celery_app.control.revoke(task_id, terminate=False)
+            # PENDING describes the callback; genomic header tasks may already be running,
+            # so terminate matching active tasks for both cancellable run states.
+            celery_app.control.revoke_by_stamped_headers(
+                {PIPELINE_RUN_STAMP: str(run_id_obj)},
+                terminate=True,
+                signal="SIGTERM",
+            )
         except Exception:
-            logger.exception("Failed to revoke pipeline task %s", task_id)
-    elif not task_id and initial_status in (RunStatus.PENDING, RunStatus.STARTED):
-        logger.warning("Pipeline run %s has no task ID to revoke", run_id_obj)
+            logger.exception("Failed to revoke pipeline chord for run %s", run_id_obj)
 
-    locked_status = None
     output_path_value = run.get("output_path")
     with queue_accounting_lock() as redis:
         run = mongo.runs.find_one({"_id": run_id_obj})
@@ -98,19 +97,14 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
 
         locked_status = run.get("status")
         output_path_value = run.get("output_path")
-        if locked_status == RunStatus.PENDING:
-            remove_pending_run(redis, mongo, run)
 
         result = mongo.runs.delete_one({"_id": run_id_obj})
         if result.deleted_count == 0:
             current_app.logger.error(f"Failed to delete run {run_id_obj}")
             abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    if initial_status == RunStatus.PENDING and locked_status == RunStatus.STARTED and task_id:
-        try:
-            celery_app.control.revoke(task_id, terminate=True, signal="SIGTERM")
-        except Exception:
-            logger.exception("Failed to terminate pipeline task %s after it started", task_id)
+        if locked_status == RunStatus.PENDING:
+            remove_pending_run(redis, mongo, run)
 
     output_path = deserialize_path(output_path_value)
     if output_path and output_path.exists():

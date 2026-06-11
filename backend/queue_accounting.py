@@ -9,6 +9,8 @@ from redis.exceptions import LockError
 from backend.config import CeleryConfig, Config
 from backend.types import RunStatus
 
+PIPELINE_RUN_STAMP = "pipeline_run_id"
+
 
 def _change_queue_length(redis: Redis, priority: str, change: int) -> int:
     current = redis.hget(Config.REDIS_QUEUE_LENGTH_KEY, priority)

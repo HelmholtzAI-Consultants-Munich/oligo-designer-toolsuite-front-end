@@ -7,6 +7,7 @@ from typing import Any
 
 from billiard.einfo import ExceptionInfo
 from celery import Task
+from celery.exceptions import Ignore
 
 from backend.queue_accounting import start_pending_run
 from backend.types import RunStatus
@@ -21,6 +22,7 @@ class PipelineTask(Task):
         super().before_start(task_id, args, kwargs)
         if not start_pending_run(task_id):
             logger.info(f"Pipeline before_start handler found no pending run ({task_id=})")
+            raise Ignore()
 
     def on_success(self, retval: Any, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
         super().on_success(retval, task_id, args, kwargs)

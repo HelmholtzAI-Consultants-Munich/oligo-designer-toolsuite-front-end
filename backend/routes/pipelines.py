@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
 from backend.extensions import celery_app, db
-from backend.queue_accounting import add_pending_run, queue_accounting_lock
+from backend.queue_accounting import PIPELINE_RUN_STAMP, add_pending_run, queue_accounting_lock
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
@@ -213,7 +213,10 @@ def prepare_pipeline_chord(
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
 
-    return chord(region_generation_signatures, pipeline_signature.on_error(error_handler))
+    pipeline_chord = chord(region_generation_signatures, pipeline_signature.on_error(error_handler))
+    # Give every header and callback task a shared workflow identifier for whole-chord revocation.
+    pipeline_chord.stamp(**{PIPELINE_RUN_STAMP: str(run_id)})
+    return pipeline_chord
 
 
 def enqueue_pipeline(pipeline_chord: Any) -> AsyncResult:
