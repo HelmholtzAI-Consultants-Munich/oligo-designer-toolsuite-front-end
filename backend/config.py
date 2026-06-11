@@ -97,6 +97,7 @@ class Config:
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
     REDIS_QUEUE_ACCOUNTING_LOCK_KEY = "pipelines:queue_accounting_lock"
     REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT = int(os.environ.get("REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT", 30))
+    CELERY_PIPELINE_RUN_STAMP = "pipeline_run_id"
 
     @staticmethod
     def get_logging_config() -> dict:

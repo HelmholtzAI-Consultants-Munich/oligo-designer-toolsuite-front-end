@@ -4,10 +4,9 @@ from typing import Any
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from pymongo import MongoClient
 from pymongo.results import UpdateResult
 
-from backend.config import Config
+from backend.database import mongo_database
 
 
 def _parse_run_id(run_id_str: str) -> ObjectId | None:
@@ -18,12 +17,10 @@ def _parse_run_id(run_id_str: str) -> ObjectId | None:
 
 
 def _update_run(run_id: ObjectId, data: dict[Any, Any]) -> UpdateResult:
-    with MongoClient(Config.MONGO_URI) as client:
-        db = client["oligo_db"]
+    with mongo_database() as db:
         return db.runs.update_one({"_id": run_id}, {"$set": data})
 
 
 def _update_run_by_task(task_id: str, data: dict[Any, Any]) -> UpdateResult:
-    with MongoClient(Config.MONGO_URI) as client:
-        db = client["oligo_db"]
+    with mongo_database() as db:
         return db.runs.update_one({"task_id": task_id}, {"$set": data})

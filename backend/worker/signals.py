@@ -3,9 +3,8 @@ from typing import Any
 
 from celery import Task
 from celery.signals import task_postrun, task_prerun
-from pymongo import MongoClient
 
-from backend.config import Config
+from backend.database import mongo_database
 from backend.worker.converters import parse_datetime
 
 
@@ -23,8 +22,7 @@ def capture_start_time(task_id: str, task: Task) -> None:
     if enqueued_at is not None:
         metrics["queue_wait_seconds"] = max((started_at - enqueued_at).total_seconds(), 0.0)
 
-    with MongoClient(Config.MONGO_URI) as client:
-        db = client["oligo_db"]
+    with mongo_database() as db:
         db.runs.update_one(
             {"task_id": task_id},
             {"$set": {f"metrics.{key}": value for key, value in metrics.items()}},
@@ -44,8 +42,7 @@ def capture_completion_metrics(task_id: str, task: Task) -> None:
     if enqueued_at is not None:
         metrics["total_seconds"] = max((finished_at - enqueued_at).total_seconds(), 0.0)
 
-    with MongoClient(Config.MONGO_URI) as client:
-        db = client["oligo_db"]
+    with mongo_database() as db:
         db.runs.update_one(
             {"task_id": task_id},
             {"$set": {f"metrics.{key}": value for key, value in metrics.items()}},

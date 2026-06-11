@@ -8,9 +8,9 @@ from typing import Any
 
 from bson import ObjectId
 from celery.utils.log import get_task_logger
-from pymongo import MongoClient
 
 from backend.config import CeleryConfig, Config
+from backend.database import mongo_database
 from backend.genomic_databases import fetch_dropdown_options
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
@@ -273,10 +273,7 @@ def trigger_dropdown_options_fetching():
 
 @app.task()
 def generate_monthly_report(target_year: int | None = None, target_month: int | None = None) -> None:
-    client = MongoClient(Config.MONGO_URI)
-    try:
-        db = client["oligo_db"]
-
+    with mongo_database() as db:
         today = datetime.date.today()
         if target_year is None or target_month is None:
             first_of_this_month = today.replace(day=1)
@@ -411,8 +408,6 @@ def generate_monthly_report(target_year: int | None = None, target_month: int | 
 
         db.monthly_reports.replace_one({"_id": period_id}, report, upsert=True)
         logger.info(f"Monthly report generated: {period_id} (triggered_by={triggered_by})")
-    finally:
-        client.close()
 
 
 @app.task()
@@ -420,8 +415,7 @@ def cleanup_anonymous_data() -> dict[str, int]:
     upload_root, userdata_root = _get_data_roots()
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(days=CeleryConfig.anonymous_data_retention_days)
 
-    with MongoClient(Config.MONGO_URI) as client:
-        db = client["oligo_db"]
+    with mongo_database() as db:
         result = _cleanup_expired_anonymous_data(
             db=db,
             upload_root=upload_root,

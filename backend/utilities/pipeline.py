@@ -7,9 +7,9 @@ from typing import Any
 from bson import ObjectId
 from flask import abort, current_app
 
-from backend.config import CeleryConfig
+from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app
-from backend.queue_accounting import PIPELINE_RUN_STAMP, queue_accounting_lock, remove_pending_run
+from backend.queue_accounting import queue_accounting_lock, remove_pending_run
 from backend.types import RunStatus
 from backend.utilities.typed_values import deserialize_path, path_for_display
 
@@ -82,7 +82,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
             # PENDING describes the callback; genomic header tasks may already be running,
             # so terminate matching active tasks for both cancellable run states.
             celery_app.control.revoke_by_stamped_headers(
-                {PIPELINE_RUN_STAMP: str(run_id_obj)},
+                {Config.CELERY_PIPELINE_RUN_STAMP: str(run_id_obj)},
                 terminate=True,
                 signal="SIGTERM",
             )

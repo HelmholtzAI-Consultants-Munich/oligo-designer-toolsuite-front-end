@@ -10,6 +10,7 @@
 !/backend/cache.py
 !/backend/constants.py
 !/backend/config.py
+!/backend/database.py
 !/backend/extensions.py
 !/backend/queue_accounting.py
 !/backend/genomic_databases.py

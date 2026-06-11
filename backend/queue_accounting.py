@@ -2,14 +2,12 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import Any
 
-from pymongo import MongoClient
 from redis import Redis
 from redis.exceptions import LockError
 
 from backend.config import CeleryConfig, Config
+from backend.database import mongo_database
 from backend.types import RunStatus
-
-PIPELINE_RUN_STAMP = "pipeline_run_id"
 
 
 def _change_queue_length(redis: Redis, priority: str, change: int) -> int:
@@ -37,14 +35,14 @@ def queue_accounting_lock() -> Iterator[Redis]:
         redis.close()
 
 
-def add_pending_run(redis: Redis, mongo: Any, priority: int) -> tuple[int, int]:
+def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
     """Account for a newly enqueued run and return its queue position."""
     default_length, high_length = (
         int(value or 0) for value in redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
     )
 
     if priority == CeleryConfig.task_high_priority:
-        mongo.runs.update_many(
+        db.runs.update_many(
             {"status": RunStatus.PENDING, "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
@@ -55,13 +53,13 @@ def add_pending_run(redis: Redis, mongo: Any, priority: int) -> tuple[int, int]:
     return high_length, default_length
 
 
-def remove_pending_run(redis: Redis, mongo: Any, run: dict[str, Any]) -> None:
+def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
     """Remove a pending run from counters and advance runs queued behind it."""
     priority = run.get("priority", "default")
     position = run.get("queue_position") or (0, 0)
 
     if priority == "high":
-        mongo.runs.update_many(
+        db.runs.update_many(
             {
                 "status": RunStatus.PENDING,
                 "queue_position.0": {"$gt": position[0]},
@@ -69,7 +67,7 @@ def remove_pending_run(redis: Redis, mongo: Any, run: dict[str, Any]) -> None:
             {"$inc": {"queue_position.0": -1}},
         )
     else:
-        mongo.runs.update_many(
+        db.runs.update_many(
             {
                 "status": RunStatus.PENDING,
                 "priority": "default",
@@ -82,20 +80,19 @@ def remove_pending_run(redis: Redis, mongo: Any, run: dict[str, Any]) -> None:
 
 
 def start_pending_run(task_id: str) -> bool:
-    """Atomically mark a pending run started and remove it from queue accounting."""
-    with MongoClient(Config.MONGO_URI) as client:
-        mongo = client["oligo_db"]
+    """Mark a pending run started and update queue accounting under the shared lock."""
+    with mongo_database() as db:
         with queue_accounting_lock() as redis:
-            run = mongo.runs.find_one({"task_id": task_id, "status": RunStatus.PENDING})
+            run = db.runs.find_one({"task_id": task_id, "status": RunStatus.PENDING})
             if run is None:
                 return False
 
-            result = mongo.runs.update_one(
+            result = db.runs.update_one(
                 {"_id": run["_id"], "status": RunStatus.PENDING},
                 {"$set": {"status": RunStatus.STARTED}},
             )
             if result.modified_count == 0:
                 return False
 
-            remove_pending_run(redis, mongo, run)
+            remove_pending_run(redis, db, run)
             return True
