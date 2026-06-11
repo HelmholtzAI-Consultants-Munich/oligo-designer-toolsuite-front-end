@@ -1,72 +1,18 @@
-import ObjectTemplate from "./ObjectTemplate";
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
+import { memo } from "react";
 import Page from "../ui/Page";
-import { Horizontal, Vertical } from "../ui/Alignment";
-import { Fragment } from "react/jsx-runtime";
-import { isRootField } from "./utils";
 
-interface TabConfig {
-    title: string;
-    fields: Array<string | string[]>;
-}
+/* Layout to wrap all tabs and display only the active tab, each tab is rendered by a TabLayout */
+const TabsLayout = memo(function TabsLayout(props: ObjectFieldTemplateProps) {
+    return (
+        <Page.Tabs>
+            {props.properties.map((element) => (
+                <Page.Tab tabKey={element.name} key={element.name}>
+                    {element.content}
+                </Page.Tab>
+            ))}
+        </Page.Tabs>
+    );
+});
 
-export const TabsLayout = (props: ObjectFieldTemplateProps) => {
-    const { uiSchema } = props;
-    const tabs = uiSchema?.["ui:tabs"] as TabConfig[] | undefined;
-
-    const isRoot = isRootField(props.fieldPathId);
-    if (isRoot && tabs && tabs.length > 0)
-        return (
-            <Page.Tabs>
-                {tabs.map((tab) => (
-                    <Page.Tab tabKey={tab.title} key={tab.title}>
-                        <Vertical gap="xl" align="stretch">
-                            {tab.fields.map((entry: string | string[]) => {
-                                if (Array.isArray(entry)) {
-                                    return (
-                                        <Horizontal
-                                            key={entry.join("-")}
-                                            gap="md"
-                                            align="stretch"
-                                        >
-                                            {entry.map((field) => {
-                                                const found =
-                                                    props.properties.find(
-                                                        (p) => p.name === field
-                                                    );
-                                                if (!found) return null;
-
-                                                return (
-                                                    <Horizontal.Item
-                                                        grow
-                                                        key={field}
-                                                    >
-                                                        {found.content}
-                                                    </Horizontal.Item>
-                                                );
-                                            })}
-                                        </Horizontal>
-                                    );
-                                } else {
-                                    const found = props.properties.find(
-                                        (p) => p.name === entry
-                                    );
-
-                                    if (!found) return null;
-
-                                    return (
-                                        <Fragment key={entry}>
-                                            {found.content}
-                                        </Fragment>
-                                    );
-                                }
-                            })}
-                        </Vertical>
-                    </Page.Tab>
-                ))}
-            </Page.Tabs>
-        );
-    else {
-        return <ObjectTemplate {...props} />;
-    }
-};
+export default TabsLayout;

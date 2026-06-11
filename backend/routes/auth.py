@@ -27,7 +27,8 @@ from flask import Blueprint, abort, current_app, jsonify, redirect, request, ses
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash
 
-from backend.extensions import mongo, oauth
+from backend.extensions import db, oauth
+from backend.routes.route_helpers import validate_turnstile
 from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 from backend.utilities.legal_acceptance import (
@@ -86,7 +87,7 @@ def init_login_manager(app):
     @login_manager.user_loader
     def load_user(user_id):
         # Load user document from MongoDB by ObjectId and return User instance
-        user_doc = mongo.db.users.find_one({"_id": ObjectId(user_id)})
+        user_doc = db.users.find_one({"_id": ObjectId(user_id)})
         if user_doc:
             return User(user_doc)
         return None
@@ -120,15 +121,15 @@ def _login(user: User, remember: bool = True):
     # Migrate anonymous runs if present
     session_id = session.get("session_id")
     if session_id:
-        mongo.db.runs.update_many(
+        db.runs.update_many(
             {"session_id": session_id},
             {"$set": {"user_id": user.id, "session_id": None, "transferred_from_anon": True}},
         )
-        mongo.db.uploads.update_many(
+        db.uploads.update_many(
             {"session_id": session_id},
             {"$set": {"user_id": user.id, "session_id": None}},
         )
-        mongo.db.legal_acceptances.delete_many({"session_id": session_id})
+        db.legal_acceptances.delete_many({"session_id": session_id})
         delete_anonymous_session(session_id)
         # Clear anonymous session_id from session
         session.pop("session_id", None)
@@ -165,6 +166,7 @@ def login():
 
     :returns: Redirect response (GET) or JSON message (POST).
     """
+
     if request.method == "GET":
         # Preserve redirect parameter from frontend through OAuth flow
         redirect_param = request.args.get("redirect")
@@ -181,11 +183,15 @@ def login():
     username = (data.get("username") or "").strip()
     password = data.get("password")
     remember_me = data.get("remember_me", True)  # Default to True for backward compatibility
+    token = data.get("token", "")
+
+    if not validate_turnstile(token):
+        abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     if not username or not password:
         abort(HTTPStatus.BAD_REQUEST, description="Username and password required")
 
-    user_doc = mongo.db.users.find_one({"username": username})
+    user_doc = db.users.find_one({"username": username})
 
     if not user_doc or "password" not in user_doc:
         abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
@@ -235,16 +241,17 @@ def auth_callback():
     helmholtz_sub = userinfo.get("sub")
 
     if not helmholtz_sub:
+        current_app.logger.warning(f"Failed to get 'sub' from userinfo: {userinfo}")
         abort(
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )
 
     # Check if user exists in database by helmholtz_sub
-    user_doc = mongo.db.users.find_one({"helmholtz_sub": helmholtz_sub})
+    user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
 
     if not user_doc:
         # Create new user with only helmholtz_sub and role
-        user_id = mongo.db.users.insert_one(
+        user_id = db.users.insert_one(
             {
                 "helmholtz_sub": helmholtz_sub,
                 "role": "user",  # Default role for Helmholtz users
@@ -252,7 +259,7 @@ def auth_callback():
                 "terms_accepted_at": None,
             }
         ).inserted_id
-        user_doc = mongo.db.users.find_one({"_id": user_id})
+        user_doc = db.users.find_one({"_id": user_id})
     # Log user in with "Remember Me" to persist login across browser sessions
     # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
     # _login() will create the user directory if it doesn't exist
@@ -288,7 +295,7 @@ def check_auth():
     """
     if current_user.is_authenticated:
         # Get user document to include role, helmholtz_sub, and username
-        user_doc = mongo.db.users.find_one({"_id": ObjectId(current_user.id)})
+        user_doc = db.users.find_one({"_id": ObjectId(current_user.id)})
         role = user_doc.get("role", "user") if user_doc else "user"
         helmholtz_sub = user_doc.get("helmholtz_sub") if user_doc else None
         username = user_doc.get("username") if user_doc else None
@@ -323,7 +330,7 @@ def accept_terms():
     acceptance = record_terms_acceptance(user_id=user_id, session_id=session_id)
 
     if user_id:
-        mongo.db.users.update_one(
+        db.users.update_one(
             {"_id": ObjectId(current_user.id)},
             {
                 "$set": {

@@ -1,6 +1,8 @@
 import os
 import time
 
+from flask import current_app
+
 # TODO: adjust to file caching from backend/cache.py
 # e.g. build set of cached file paths from Redis cache, then iterate and delete every file not in this set (i.e. expired files)
 
@@ -31,25 +33,21 @@ def delete_directory(path):
 
 
 def clean_dirs(base_dir, days_threshold):
-    print(f"Cleaning cache in {base_dir}...")
     for entry in os.listdir(base_dir):
         if entry in EXCLUDE_DIRS:
-            print(f"🔒 Skipping protected directory: {entry}")
             continue
 
         full_path = os.path.join(base_dir, entry)
         if os.path.isdir(full_path) and is_old(full_path, days_threshold):
-            print(f"🧹 Deleting: {full_path}")
             try:
                 delete_directory(full_path)
             except Exception as e:
-                print(f"❌ Failed to delete {full_path}: {e}")
+                current_app.logger.warning(f"Failed to delete {full_path}: {e}")
 
 
 def main():
     for cache_dir in CACHE_DIRS:
         clean_dirs(cache_dir, DAYS_THRESHOLD)
-    print("✅ Done cleaning.")
 
 
 if __name__ == "__main__":

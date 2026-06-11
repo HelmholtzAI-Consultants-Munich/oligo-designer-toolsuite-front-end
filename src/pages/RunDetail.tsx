@@ -14,7 +14,7 @@ import type {
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
-import { Alert, Button, Form, ListGroup, Table } from "react-bootstrap";
+import { Alert, Button, Form, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
 import {
@@ -37,12 +37,7 @@ import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
 import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
-
-interface RunFile {
-    name: string;
-    type: "log" | "config";
-    size: number;
-}
+import RunMetrics from "../components/RunMetrics";
 
 // Helper to extract all unique columns from an array of oligos
 function getAllOligoColumns(oligos: ProbeDetails[]): string[] {
@@ -61,9 +56,6 @@ const RunDetail = () => {
     const location = useLocation();
     const { runs, updateRuns } = useRuns();
     const prevStatus = useRef<RunState | null>(null);
-    const [files, setFiles] = useState<RunFile[]>([]);
-    const [fileContent, setFileContent] = useState<string | null>(null);
-    const [viewingFilename, setViewingFilename] = useState<string | null>(null);
 
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
@@ -88,19 +80,11 @@ const RunDetail = () => {
 
     const tableColumns = ComponentDefinition[
         run?.pipeline as keyof typeof ComponentDefinition
-    ].columns as string[];
+    ]?.columns as string[];
 
     // --- Polling/log state variables ---
-    const fetchAndParseRunFiles = useCallback(
+    const fetchGenomicRegionsFile = useCallback(
         (id: string) => {
-            if (prevStatus.current !== "success") {
-                axios
-                    .get(BACKEND_URL + `/api/runs/${id}/files`, {
-                        withCredentials: true,
-                    })
-                    .then((response) => setFiles(response.data));
-            }
-
             if (run?.status === "success" && prevStatus.current !== "success") {
                 axios
                     .get(
@@ -156,32 +140,9 @@ const RunDetail = () => {
 
     useEffect(() => {
         if (run) {
-            fetchAndParseRunFiles(run._id);
+            fetchGenomicRegionsFile(run._id);
         }
-    }, [runs, run, fetchAndParseRunFiles]); // runs on every poll event
-
-    const fetchFileContent = useCallback(
-        (filename: string) => {
-            axios
-                .get(BACKEND_URL + `/api/runs/${runId}/files/${filename}`, {
-                    withCredentials: true,
-                    responseType: "text",
-                })
-                .then((response) => {
-                    setFileContent(response.data);
-                })
-                .catch((error) =>
-                    console.error("Error fetching file content:", error)
-                );
-        },
-        [runId]
-    );
-
-    useEffect(() => {
-        if (viewingFilename) {
-            fetchFileContent(viewingFilename);
-        }
-    }, [runs, viewingFilename, fetchFileContent]); // runs on every poll event
+    }, [runs, run, fetchGenomicRegionsFile]); // runs on every poll event
 
     const handleDelete = useCallback(async () => {
         if (!run) return;
@@ -373,23 +334,6 @@ const RunDetail = () => {
         XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
     }, [probes, formatValueForExcel]);
 
-    const viewFileContent = (filename: string) => {
-        if (viewingFilename === filename) {
-            setViewingFilename(null);
-            setFileContent(null);
-        } else {
-            setViewingFilename(filename);
-            setFileContent("Loading...");
-        }
-    };
-
-    const downloadFile = (filename: string) => {
-        window.open(
-            BACKEND_URL + `/api/runs/${runId}/files/${filename}`,
-            "_blank"
-        );
-    };
-
     const handleUseSettings = useNavigateWithRunConfig(run, navigate);
 
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
@@ -490,7 +434,6 @@ const RunDetail = () => {
                         <>
                             <Alert variant="danger">
                                 Results file not found or could not be parsed.
-                                Please check the logs for more details.
                             </Alert>
                         </>
                     )}
@@ -706,7 +649,7 @@ const RunDetail = () => {
                             <Horizontal gap="md">
                                 <Button
                                     variant="outline-primary"
-                                    onClick={handleDownloadCSV}
+                                    onClick={handleDownloadExcel}
                                 >
                                     <FileEarmarkSpreadsheet /> All Genes Excel
                                 </Button>
@@ -722,78 +665,7 @@ const RunDetail = () => {
                 </>
             )}
 
-            {run &&
-                files.filter((file) => file.name.toLowerCase().includes("log"))
-                    .length > 0 && (
-                    <>
-                        <Divider />
-
-                        <h2>Run Logs</h2>
-
-                        <ListGroup>
-                            {files
-                                .filter((file) =>
-                                    file.name.toLowerCase().includes("log")
-                                )
-                                .map((file) => (
-                                    <ListGroup.Item key={file.name}>
-                                        <Horizontal
-                                            gap="md"
-                                            align="center"
-                                            wrap
-                                        >
-                                            {file.name}
-                                            <Horizontal.Item grow>
-                                                <span className="badge bg-secondary">
-                                                    {Math.round(
-                                                        file.size / 1024
-                                                    )}{" "}
-                                                    KB
-                                                </span>
-                                            </Horizontal.Item>
-                                            {file.name.endsWith(".txt") && (
-                                                <Button
-                                                    variant="outline-secondary"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        viewFileContent(
-                                                            file.name
-                                                        )
-                                                    }
-                                                >
-                                                    {viewingFilename ===
-                                                    file.name
-                                                        ? "Hide"
-                                                        : "View"}
-                                                </Button>
-                                            )}
-                                            <Button
-                                                variant="outline-primary"
-                                                size="sm"
-                                                onClick={() =>
-                                                    downloadFile(file.name)
-                                                }
-                                            >
-                                                Download
-                                            </Button>
-                                        </Horizontal>
-                                        {fileContent &&
-                                            viewingFilename === file.name && (
-                                                <pre
-                                                    className="bg-light p-3 rounded mt-2"
-                                                    style={{
-                                                        maxHeight: "500px",
-                                                        whiteSpace: "pre-wrap",
-                                                    }}
-                                                >
-                                                    {fileContent}
-                                                </pre>
-                                            )}
-                                    </ListGroup.Item>
-                                ))}
-                        </ListGroup>
-                    </>
-                )}
+            {run && <RunMetrics metrics={run.metrics} />}
         </Page>
     );
 };

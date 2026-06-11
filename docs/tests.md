@@ -39,10 +39,10 @@ pytest flask --cov=flask --cov-report=term-missing
 or if using Docker:
 
 ```bash
-# Start services with tests profile (optional, but recommended for consistency):
-npm run docker:start:test
+# Start services:
+npm run docker:start
 # or for development with hot reloading:
-npm run docker:watch:test
+npm run docker:watch
 
 # Then run backend tests:
 docker compose run --rm --build odt-server pytest
@@ -135,10 +135,10 @@ npm run docker:test:smoke    # smoke suite only (requires a running stack)
 npm run docker:test:full     # full suite only (requires a running stack)
 
 # for development with hot reloading (syncs code changes into running containers):
-npm run docker:watch:test
+npm run docker:test:watch
 ```
 
-`docker:test` starts the full application stack and runs Playwright inside the `odt-tests` container (built from the official Playwright Docker image). `docker:watch:test` does the same but keeps containers running and syncs file changes, so you can iterate on tests without rebuilding. To re-run a specific suite against an already-running stack, use `docker:test:smoke` or `docker:test:full`.
+`docker:test` starts the full application stack and runs Playwright inside the `odt-tests` container (built from the official Playwright Docker image). `docker:test:watch` does the same but keeps containers running and syncs file changes, so you can iterate on tests without rebuilding. To re-run a specific suite against an already-running stack, use `docker:test:smoke` or `docker:test:full`.
 
 See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for more details on Docker profiles.
 

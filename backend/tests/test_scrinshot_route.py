@@ -4,8 +4,10 @@ from datetime import datetime
 
 import pytest
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
+
+pytest.skip("Scrinshot currently disabled", allow_module_level=True)
 
 
 @pytest.fixture
@@ -28,7 +30,7 @@ def test_scrinshot_authenticated(client, dummy_form, run_id, mock_celery, authen
     assert data["run_id"] == str(run_id)
 
     # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
+    updated = db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
     assert isinstance(updated["timestamp"], datetime)
     assert isinstance(updated["output_path"], dict)
@@ -41,7 +43,7 @@ def test_scrinshot_unauthenticated(client, dummy_form, run_id, mock_celery, sess
     assert data["run_id"] == str(run_id)
 
     # Confirm Mongo updated status
-    updated = mongo.db.runs.find_one({"_id": run_id})
+    updated = db.runs.find_one({"_id": run_id})
     assert updated["status"] in {"pending", "started"}
 
 

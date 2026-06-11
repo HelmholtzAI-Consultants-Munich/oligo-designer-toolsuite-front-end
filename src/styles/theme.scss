@@ -3,6 +3,7 @@
 
 // Variable overrides
 $primary: #003956;
+$primary-muted: #004a67;
 $secondary: #037b94;
 $success: #128635;
 $warning: #ffbd11;
@@ -14,6 +15,7 @@ $font-family-sans-serif: "Fustat Variable", sans-serif;
 
 $toast-background-color: #fff;
 $border-color: #b0b0b0;
+$list-group-bg: transparent;
 $border-color-translucent: $border-color;
 $focus-ring-opacity: 0.15;
 $primary-bg-subtle: tint-color($primary, 95%);
@@ -38,7 +40,9 @@ $input-btn-padding-y-sm: 0.5rem;
 
 // Custom styles
 :root {
+    --#{$prefix}primary-muted: #{$primary-muted};
     --#{$prefix}text-muted: #{$text-muted};
+    --#{$prefix}primary-bg-subtle: #{$primary-bg-subtle};
 }
 
 .navbar-nav {
@@ -311,7 +315,7 @@ body.modal-open {
 }
 
 /* Progressive enhancement: on smaller devices the header content wraps, which would make a sticky header cover too much of the screen */
-@media (min-width: 1505px) {
+@include media-breakpoint-up(xxl) {
     .header {
         &.sticky-header {
             position: sticky;
@@ -398,6 +402,29 @@ footer,
     }
 }
 
+.btn-primary-muted {
+    @include button-variant(
+        $primary-muted,
+        $primary-muted,
+        $hover-background: shade-color(
+                $primary-muted,
+                $btn-hover-bg-shade-amount
+            ),
+        $hover-border: shade-color(
+                $primary-muted,
+                $btn-hover-border-shade-amount
+            ),
+        $active-background: shade-color(
+                $primary-muted,
+                $btn-active-bg-shade-amount
+            ),
+        $active-border: shade-color(
+                $primary-muted,
+                $btn-active-border-shade-amount
+            )
+    );
+}
+
 .btn.icon-button {
     padding: 0.8rem;
     line-height: 1;
@@ -445,8 +472,74 @@ form.rjsf {
     display: flex;
     flex-direction: column;
 
-    button[type="submit"] {
-        margin-top: 3rem;
+    .rjsf-field {
+        flex-grow: 1;
+    }
+
+    .form-label {
+        margin-bottom: 0.2rem;
+    }
+
+    .super-label {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    .multi-schema-toggle {
+        /* hide the dropdown for selecting between schemas when the discriminator is "enabled" */
+        .multi-schema-selector {
+            display: none;
+
+            + .rjsf-field
+                > div
+                > span:first-child:has(
+                    + div > .rjsf-field-boolean:first-child
+                ) {
+                display: none;
+            }
+        }
+    }
+
+    .rjsf-field-boolean > div {
+        /* render the description below the checkbox */
+        display: flex;
+        flex-direction: column-reverse;
+    }
+
+    .array-field-item > div > .form-label {
+        /* hide labels for array items */
+        display: none;
+    }
+
+    .form-section {
+        display: grid;
+        align-items: start;
+        gap: 2rem;
+        border-bottom: 1px solid $border-color;
+        padding-bottom: 3rem;
+        margin-bottom: 3rem;
+
+        .form-section-header h5 {
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+    }
+}
+
+@include media-breakpoint-up(xxl) {
+    form.rjsf .form-section {
+        grid-template-columns: 25% 1fr;
+
+        .form-section-header {
+            position: sticky;
+            top: 7rem;
+
+            h5 {
+                font-size: 1.1rem;
+            }
+        }
     }
 }
 
@@ -503,7 +596,7 @@ form.rjsf {
 /* Utility classes */
 .tight-container {
     width: 100%;
-    max-width: 60rem;
+    max-width: 50rem;
     margin-left: auto;
     margin-right: auto;
 }

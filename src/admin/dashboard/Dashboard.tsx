@@ -9,7 +9,7 @@ import {
     Folder2,
 } from "react-bootstrap-icons";
 import type { Icon } from "react-bootstrap-icons";
-import { STATUS_CONFIG } from "../shared/types";
+import { runStatusDisplay } from "../../components/ui/utils";
 import { BACKEND_URL } from "../../config";
 import Page from "../../components/ui/Page";
 import { Horizontal, Vertical } from "../../components/ui/Alignment";
@@ -24,7 +24,7 @@ const calculatePercentage = (value: number, total: number): string => {
 };
 
 interface StatCardProps {
-    icon: Icon;
+    icon: Icon | React.FC<{ size?: number; color?: string }>;
     title: string;
     value: number;
     color: string;
@@ -48,12 +48,16 @@ const StatCard: React.FC<StatCardProps> = ({
     return (
         <Card className={`h-100 ${showBorder ? `border-${color}` : ""}`}>
             <Card.Body>
-                <Horizontal align="center" gap="md" className="mb-2">
-                    <Icon size={32} className={`text-${color}`} />
+                <div className="d-flex align-items-center mb-2">
+                    <Icon
+                        size={32}
+                        className="me-3"
+                        color={`var(--bs-${color})`}
+                    />
                     <div>
                         <Card.Title className="mb-0">{title}</Card.Title>
                     </div>
-                </Horizontal>
+                </div>
                 <div className={`display-4 fw-bold text-${color}`}>{value}</div>
                 {showPercentage && total !== undefined && total > 0 && (
                     <small className="text-muted">
@@ -78,6 +82,8 @@ interface DashboardStats {
             started: number;
             success: number;
             failure: number;
+            timeout: number;
+            empty_result: number;
         };
     };
 }
@@ -205,26 +211,18 @@ const Dashboard: React.FC = () => {
                 </Col>
                 {Object.entries(stats.pipeline_runs.by_status).map(
                     ([status, count]) => {
-                        const Icon =
-                            STATUS_CONFIG.icons[
-                                status as keyof typeof STATUS_CONFIG.icons
-                            ];
-                        const color =
-                            STATUS_CONFIG.colors[
-                                status as keyof typeof STATUS_CONFIG.colors
-                            ];
-                        const label =
-                            STATUS_CONFIG.labels[
-                                status as keyof typeof STATUS_CONFIG.labels
+                        const statusInfo =
+                            runStatusDisplay[
+                                status as keyof typeof runStatusDisplay
                             ];
 
                         return (
                             <Col md={3} key={status} className="mb-3">
                                 <StatCard
-                                    icon={Icon}
-                                    title={label}
+                                    icon={statusInfo.icon}
+                                    title={statusInfo.title}
                                     value={count}
-                                    color={color}
+                                    color={statusInfo.variant}
                                     total={stats.pipeline_runs.total}
                                     showPercentage={true}
                                     showBorder={true}

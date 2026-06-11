@@ -1,5 +1,8 @@
-import type { UiSchema } from "@rjsf/utils";
-import { TabsLayout } from "../components/forms/TabsLayout";
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
+import TabsLayout from "../components/forms/TabsLayout";
+import TabLayout from "../components/forms/TabLayout";
+import SectionLayout from "../components/forms/SectionLayout";
+import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
 
 export const merfishUiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,
@@ -103,85 +106,87 @@ export const merfishUiSchema: UiSchema = {
     ],
 };
 
-export const oligoseqUiSchema: UiSchema = {
-    "ui:ObjectFieldTemplate": TabsLayout,
-    "ui:tabs": [
-        {
-            title: "Target Probe Parameters",
-            fields: [
-                "file_regions",
-                "files_fasta_target_probe_database",
-                "files_fasta_reference_database_target_probe",
-                "files_vcf_reference_database_target_probe",
-                "top_n_sets",
-                "uniform_distance_weight",
-                "target_probe_targeted_exons_weight",
-                "target_probe_read_length_bias",
-                "target_probe_prohibited_sequences",
-                "target_probe_isoform_weight",
-                "target_probe_kmer_abundance_threshold",
-                "n_attempts_graph",
-                "n_attempts_clique_enum",
-                "diversification_fraction",
-                "jaccard_opt",
-                "jaccard_step",
-                [
-                    "target_probe_length_min",
-                    "target_probe_length_max",
-                    "target_probe_split_region",
-                    "target_probe_isoform_consensus",
-                ],
-                "target_probe_targeted_exons",
-                [
-                    "target_probe_GC_content_min",
-                    "target_probe_GC_content_opt",
-                    "target_probe_GC_content_max",
-                ],
-                [
-                    "target_probe_Tm_min",
-                    "target_probe_Tm_opt",
-                    "target_probe_Tm_max",
-                ],
-                "target_probe_homopolymeric_base_n",
-                [
-                    "target_probe_secondary_structures_T",
-                    "target_probe_secondary_structures_threshold_deltaG",
-                    "target_probe_max_len_selfcomplement",
-                    "target_probe_hybridization_probability_threshold",
-                ],
-                ["target_probe_Tm_weight", "target_probe_GC_weight"],
-                [
-                    "set_size_min",
-                    "set_size_opt",
-                    "distance_between_target_probes",
-                    "n_sets",
-                ],
-            ],
-        },
-        {
-            title: "Developer Settings",
-            fields: [
-                // not sorted
-                "max_graph_size",
-                "n_attempts",
-                "heuristic",
-                "heuristic_n_attempts",
-                "target_probe_hybridization_probability_alignment_method",
-                "target_probe_hybridization_probability_blastn_search_parameters",
-                "target_probe_hybridization_probability_blastn_hit_parameters",
-                "target_probe_hybridization_probability_bowtie_search_parameters",
-                "target_probe_hybridization_probability_bowtie_hit_parameters",
-                "target_probe_cross_hybridization_alignment_method",
-                "target_probe_cross_hybridization_blastn_search_parameters",
-                "target_probe_cross_hybridization_blastn_hit_parameters",
-                "target_probe_cross_hybridization_bowtie_search_parameters",
-                "target_probe_cross_hybridization_bowtie_hit_parameters",
-                "target_probe_Tm_parameters",
-                "target_probe_Tm_chem_correction_parameters",
-                "target_probe_Tm_salt_correction_parameters",
-            ],
-        },
-    ],
+export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
+    return uiSchemaFromJsonSchemaRecursive(jsonSchema, jsonSchema, 0);
+};
+
+const uiSchemaFromJsonSchemaRecursive = (
+    baseSchema: RJSFSchema,
+    localSchema: RJSFSchema,
+    level: number
+): UiSchema => {
+    let uiSchema: UiSchema = {};
+
+    if (localSchema.$ref) {
+        try {
+            const refSchema = findSchemaDefinition(
+                localSchema.$ref,
+                baseSchema
+            );
+            return uiSchemaFromJsonSchemaRecursive(
+                baseSchema,
+                refSchema,
+                level
+            );
+        } catch (error) {
+            console.error(
+                `Error resolving reference: ${localSchema.$ref}`,
+                error
+            );
+            return uiSchema;
+        }
+    }
+
+    if (localSchema.oneOf || localSchema.anyOf) {
+        // we deeply merge the uiSchemas of all options, to ensure all possible fields are covered
+        for (const option of localSchema.oneOf || localSchema.anyOf || []) {
+            const optionSchema = option as RJSFSchema;
+            const optionUiSchema = uiSchemaFromJsonSchemaRecursive(
+                baseSchema,
+                optionSchema,
+                level
+            );
+            uiSchema = mergeObjects(uiSchema, optionUiSchema);
+        }
+    }
+    if (localSchema.properties) {
+        const fields = Object.keys(localSchema.properties);
+        if (level === 0) {
+            // root -> TabsLayout
+            uiSchema["ui:ObjectFieldTemplate"] = TabsLayout;
+        } else if (level === 1) {
+            // first level -> TabLayout
+            uiSchema["ui:ObjectFieldTemplate"] = TabLayout;
+        } else if (level === 2) {
+            // second level -> SectionLayout
+            uiSchema["ui:ObjectFieldTemplate"] = SectionLayout;
+        }
+
+        for (const field of fields) {
+            const propertySchema = localSchema.properties[field] as RJSFSchema;
+            if (field === "file_region_ids") {
+                // file_region_ids (any level) -> txtUploadInput
+                uiSchema[field] = {
+                    "ui:field": "txtUploadInput",
+                    "ui:fieldReplacesAnyOrOneOf": true,
+                };
+            } else if (field.startsWith("files_fasta_")) {
+                // files_fasta_* (any level) -> genomicInput
+                uiSchema[field] = { "ui:field": "genomicInput" };
+            } else if (field.startsWith("files_vcf_")) {
+                // files_vcf_* (any level) -> fileUpload
+                uiSchema[field] = { "ui:field": "fileUpload" };
+            } else {
+                uiSchema[field] = uiSchemaFromJsonSchemaRecursive(
+                    baseSchema,
+                    propertySchema,
+                    level + 1
+                );
+            }
+        }
+    }
+
+    return uiSchema;
 };
 
 export const scrinshotUiSchema: UiSchema = {

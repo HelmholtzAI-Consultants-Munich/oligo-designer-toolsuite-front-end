@@ -1,7 +1,7 @@
 import hashlib
 from pathlib import Path
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.typed_values import utc_now
 
 TERMS_DOCUMENT_KEY = "terms"
@@ -30,7 +30,7 @@ def _default_legal_document_path(document_key: str) -> Path:
 
 
 def _latest_legal_document(document_key: str) -> dict | None:
-    return mongo.db.legal_documents.find_one(
+    return db.legal_documents.find_one(
         {"document": document_key},
         sort=[("published_at", -1), ("_id", -1)],
     )
@@ -57,7 +57,7 @@ def _create_published_legal_document(document_key: str) -> dict:
     body = normalize_legal_body(_default_legal_document_path(document_key).read_text(encoding="utf-8"))
     version = compute_legal_version(body)
 
-    inserted_id = mongo.db.legal_documents.insert_one(
+    inserted_id = db.legal_documents.insert_one(
         {
             "document": document_key,
             "body": body,
@@ -66,7 +66,7 @@ def _create_published_legal_document(document_key: str) -> dict:
         }
     ).inserted_id
 
-    return mongo.db.legal_documents.find_one({"_id": inserted_id})
+    return db.legal_documents.find_one({"_id": inserted_id})
 
 
 def is_supported_legal_document(document_key: str) -> bool:
@@ -121,7 +121,7 @@ def get_legal_document_admin_view(document_key: str, published_doc: dict | None 
     if published_doc is None:
         published_doc = ensure_published_legal_document(document_key)
     published_document = _serialize_legal_document(published_doc)
-    history = list(mongo.db.legal_documents.find({"document": document_key}).sort("_id", -1))
+    history = list(db.legal_documents.find({"document": document_key}).sort("_id", -1))
 
     return {
         "document": document_key,
@@ -146,7 +146,7 @@ def publish_legal_document(document_key: str, body: str) -> dict:
     if version == published_document["version"]:
         raise ValueError("Document matches the currently published version")
 
-    inserted_id = mongo.db.legal_documents.insert_one(
+    inserted_id = db.legal_documents.insert_one(
         {
             "document": document_key,
             "body": normalized_body,
@@ -154,4 +154,4 @@ def publish_legal_document(document_key: str, body: str) -> dict:
             "published_at": now,
         }
     ).inserted_id
-    return mongo.db.legal_documents.find_one({"_id": inserted_id})
+    return db.legal_documents.find_one({"_id": inserted_id})

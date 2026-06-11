@@ -20,7 +20,7 @@ import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
 import { formatAdminDateTime } from "../shared/date";
-import { STATUS_CONFIG } from "../shared/types";
+import { runStatusDisplay } from "../../components/ui/utils";
 import { BACKEND_URL } from "../../config";
 import Page from "../../components/ui/Page";
 import { confirmWithModal } from "../../utils/modalUtil";
@@ -287,7 +287,7 @@ const PipelineList: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         const color =
-            STATUS_CONFIG.colors[status as keyof typeof STATUS_CONFIG.colors];
+            runStatusDisplay[status as keyof typeof runStatusDisplay]?.variant;
         return <Badge bg={color}>{status}</Badge>;
     };
 

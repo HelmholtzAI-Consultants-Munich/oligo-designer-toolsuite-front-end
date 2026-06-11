@@ -39,6 +39,8 @@ class GenomicRegionsFile:
     def _load_genes(self):
         """Load gene names from regions file."""
         genes = set()
+        if self.regions_path is None:
+            return []  # consider all genes if regions file is not provided
         with open(self.regions_path) as f:
             for line in f:
                 genes.add(line.strip())
@@ -50,13 +52,13 @@ class GenomicRegionsFile:
         scores: defaultdict[Any, dict] = defaultdict(dict)
 
         if not os.path.exists(self.probes_path):
-            print(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
+            self.logger.debug(f"Warning: Probes file {self.probes_path} not found, skipping probe loading.")
             return probes, scores
 
         with open(self.probes_path) as f:
             probe_data = yaml.safe_load(f)
             for gene, oligosets in probe_data.items():
-                if gene not in self.genes:
+                if self.genes and gene not in self.genes:
                     continue
                 for oligoset_name, oligoset_entries in oligosets.items():
                     score = oligoset_entries["Oligoset Score"]
@@ -153,7 +155,7 @@ class GenomicRegionsFile:
 
         for fname in self.fasta_paths:
             if not os.path.exists(fname):
-                self.logger.warning(f"Warning: Fasta file {fname} not found, skipping.")
+                self.logger.debug(f"Warning: Fasta file {fname} not found, skipping.")
                 continue
             seq_record = SeqIO.index(fname, "fasta")
             for idx in seq_record:
@@ -174,7 +176,7 @@ class GenomicRegionsFile:
         region_name, additional_info, coordinates = fasta_parser.parse_fasta_header(idx)
         gene = region_name.lstrip(">")
         record = seq_record[idx]
-        if gene not in self.genes:
+        if self.genes and gene not in self.genes:
             return
 
         region_sequence = str(record.seq)  # required in FASTA
@@ -209,7 +211,7 @@ class GenomicRegionsFile:
                 ]
 
             if len(exon_numbers) != len(start_ends):
-                print(
+                self.logger.debug(
                     f"Warning: Number of exon numbers does not match number of components on transcript {transcript_id} for record {idx} in gene {gene}, skipping  processing."
                 )
                 continue

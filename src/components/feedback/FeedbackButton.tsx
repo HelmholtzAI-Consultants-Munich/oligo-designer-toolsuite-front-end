@@ -1,11 +1,17 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import axios from "axios";
 import { getErrorMessage } from "../../utils/errorUtil";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
 import { Link } from "react-router";
-import { BACKEND_URL, FEEDBACK_MAX_LENGTH } from "../../config";
+import {
+    BACKEND_URL,
+    FEEDBACK_MAX_LENGTH,
+    TURNSTILE_SITE_KEY,
+} from "../../config";
 import { showToast } from "../../utils/toastUtil";
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 interface FeedbackButtonProps {
     context?: Record<string, unknown>;
@@ -25,6 +31,9 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     const [message, setMessage] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const turnstileRef = useRef<TurnstileInstance | null>(null);
+
+    const sitekey = TURNSTILE_SITE_KEY;
 
     const getRunIdFromPath = () => {
         const match = window.location.pathname.match(/^\/runs\/([^/]+)$/);
@@ -72,9 +81,14 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
 
             await axios.post(
                 BACKEND_URL + "/api/feedback",
-                { message, metadata },
+                {
+                    message,
+                    metadata,
+                    token: turnstileRef.current?.getResponse() ?? "",
+                },
                 { withCredentials: true }
             );
+            turnstileRef.current?.reset();
 
             showToast({
                 title: "Thank you for your feedback!",
@@ -163,6 +177,14 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
                                 {message.length}/{FEEDBACK_MAX_LENGTH}
                             </div>
                         </Form.Group>
+                        <Turnstile
+                            ref={turnstileRef}
+                            siteKey={sitekey}
+                            options={{
+                                theme: "light",
+                                language: "en",
+                            }}
+                        />
                         <p className="text-muted small mt-3 mb-0">
                             By submitting feedback, you acknowledge the{" "}
                             <Link target="_blank" to="/privacy-policy">

@@ -4,7 +4,7 @@ import pytest
 from bson import ObjectId
 from werkzeug.security import generate_password_hash
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.legal import (
     PRIVACY_DOCUMENT_KEY,
     TERMS_DOCUMENT_KEY,
@@ -24,7 +24,7 @@ def legal_user_doc():
 
 
 def test_accept_terms_updates_current_user(client, authenticate_as_user, legal_user_doc):
-    mongo.db.users.insert_one(legal_user_doc)
+    db.users.insert_one(legal_user_doc)
     authenticate_as_user(str(legal_user_doc["_id"]))
 
     with client.session_transaction() as sess:
@@ -39,7 +39,7 @@ def test_accept_terms_updates_current_user(client, authenticate_as_user, legal_u
     )
     assert data["legal"]["terms_accepted_at"] is not None
 
-    updated_user = mongo.db.users.find_one({"_id": legal_user_doc["_id"]})
+    updated_user = db.users.find_one({"_id": legal_user_doc["_id"]})
     assert (
         updated_user["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
     )
@@ -61,7 +61,7 @@ def test_accept_terms_updates_current_session(client):
 
 
 def test_delete_account_removes_user_data(client, authenticate_as_user, legal_user_doc, tmp_path):
-    mongo.db.users.insert_one(legal_user_doc)
+    db.users.insert_one(legal_user_doc)
     authenticate_as_user(str(legal_user_doc["_id"]))
 
     upload_root = tmp_path / "uploads"
@@ -78,7 +78,7 @@ def test_delete_account_removes_user_data(client, authenticate_as_user, legal_us
     upload_file = upload_root / "upload.txt"
     upload_file.write_text("upload")
 
-    mongo.db.runs.insert_one(
+    db.runs.insert_one(
         {
             "_id": ObjectId(),
             "user_id": str(legal_user_doc["_id"]),
@@ -88,11 +88,11 @@ def test_delete_account_removes_user_data(client, authenticate_as_user, legal_us
             "output_path": serialize_path(output_dir),
         }
     )
-    mongo.db.uploads.insert_one({"user_id": str(legal_user_doc["_id"]), "path": str(upload_file)})
-    mongo.db.feedback.insert_one(
+    db.uploads.insert_one({"user_id": str(legal_user_doc["_id"]), "path": str(upload_file)})
+    db.feedback.insert_one(
         {"user_id": str(legal_user_doc["_id"]), "message": "feedback", "created_at": utc_now()}
     )
-    mongo.db.legal_acceptances.insert_one(
+    db.legal_acceptances.insert_one(
         {
             "user_id": str(legal_user_doc["_id"]),
             "document": TERMS_DOCUMENT_KEY,
@@ -111,11 +111,11 @@ def test_delete_account_removes_user_data(client, authenticate_as_user, legal_us
 
     assert response.status_code == 200
     assert response.get_json()["message"] == "Your account and associated data have been deleted."
-    assert mongo.db.users.find_one({"_id": legal_user_doc["_id"]}) is None
-    assert mongo.db.runs.find_one({"user_id": str(legal_user_doc["_id"])}) is None
-    assert mongo.db.uploads.find_one({"user_id": str(legal_user_doc["_id"])}) is None
-    assert mongo.db.feedback.find_one({"user_id": str(legal_user_doc["_id"])}) is None
-    assert mongo.db.legal_acceptances.find_one({"user_id": str(legal_user_doc["_id"])}) is None
+    assert db.users.find_one({"_id": legal_user_doc["_id"]}) is None
+    assert db.runs.find_one({"user_id": str(legal_user_doc["_id"])}) is None
+    assert db.uploads.find_one({"user_id": str(legal_user_doc["_id"])}) is None
+    assert db.feedback.find_one({"user_id": str(legal_user_doc["_id"])}) is None
+    assert db.legal_acceptances.find_one({"user_id": str(legal_user_doc["_id"])}) is None
     assert not Path(upload_file).exists()
     assert not user_dir.exists()
 

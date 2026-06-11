@@ -1,11 +1,12 @@
 from http import HTTPStatus
 from pathlib import Path
 
+import requests
 from bson import ObjectId
 from flask import abort, current_app, session
 from flask_login import current_user
 
-from backend.extensions import mongo
+from backend.extensions import db
 from backend.utilities.legal_acceptance import require_current_terms_acceptance
 
 # ============================================================================
@@ -78,7 +79,7 @@ def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | 
     :rtype: dict | None
     """
     projection = {"password": False} if exclude_password else {}
-    return mongo.db.users.find_one({"_id": user_id}, projection)
+    return db.users.find_one({"_id": user_id}, projection)
 
 
 def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> dict:
@@ -151,7 +152,35 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     :raises: 403 if unauthorized, 404 if not found
     """
     query = build_run_query(run_id, require_ownership=require_ownership)
-    run = mongo.db.runs.find_one(query)
+    run = db.runs.find_one(query)
     if not run:
         abort(HTTPStatus.NOT_FOUND)
     return run
+
+
+# ============================================================================
+# Turnstile Helpers
+# ============================================================================
+
+
+def validate_turnstile(token):
+    url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+    secret = current_app.config.get("TURNSTILE_SECRET_KEY")
+
+    data = {"secret": secret, "response": token}
+
+    try:
+        response = requests.post(url, data=data, timeout=10)
+        response.raise_for_status()
+
+        result = response.json()
+
+        if not result.get("success"):
+            current_app.logger.warning(f"Turnstile verification failed: {result.get('error-codes')}")
+            return False
+
+        return True
+
+    except requests.RequestException as e:
+        current_app.logger.warning(f"Turnstile request failed: {e}")
+        return False

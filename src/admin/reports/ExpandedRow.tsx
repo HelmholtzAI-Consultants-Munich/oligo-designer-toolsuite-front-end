@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge, Card, Col, ProgressBar, Row } from "react-bootstrap";
-import { STATUS_CONFIG } from "../shared/types";
+import { runStatusDisplay } from "../../components/ui/utils";
 import { REPORT_PIPELINES } from "./display";
 import { formatPercentage } from "./formatters";
 import DeltaBadge from "./DeltaBadge";
@@ -35,41 +35,29 @@ const ExpandedRow: React.FC<{ report: MonthlyReport; colSpan: number }> = ({
                                         runs.total > 0
                                             ? (count / runs.total) * 100
                                             : 0;
-                                    const Icon = STATUS_CONFIG.icons[status];
+                                    const statusInfo = runStatusDisplay[status];
                                     return (
                                         <div key={status} className="mb-3">
-                                            <Horizontal
-                                                justify="space-between"
-                                                align="center"
-                                                className="mb-1"
-                                            >
-                                                <Horizontal
-                                                    align="center"
-                                                    gap="xs"
-                                                >
-                                                    <Icon
+                                            <div className="d-flex justify-content-between align-items-center mb-1">
+                                                <span className="d-flex align-items-center gap-1">
+                                                    <statusInfo.icon
                                                         size={14}
-                                                        className={`text-${STATUS_CONFIG.colors[status]}`}
+                                                        color={`var(--bs-${statusInfo.variant})`}
                                                     />
                                                     <span className="small">
-                                                        {
-                                                            STATUS_CONFIG
-                                                                .labels[status]
-                                                        }
+                                                        {statusInfo.title}
                                                     </span>
-                                                </Horizontal>
+                                                </span>
                                                 <span className="small">
                                                     <strong>{count}</strong>
                                                     <span className="text-muted ms-1">
                                                         ({pct.toFixed(0)}%)
                                                     </span>
                                                 </span>
-                                            </Horizontal>
+                                            </div>
                                             <ProgressBar
                                                 now={pct}
-                                                variant={
-                                                    STATUS_CONFIG.colors[status]
-                                                }
+                                                variant={statusInfo.variant}
                                                 style={{ height: "6px" }}
                                             />
                                         </div>

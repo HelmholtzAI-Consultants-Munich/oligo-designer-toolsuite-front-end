@@ -39,9 +39,6 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
     match exc:
         case ChordError():
             error_message = "An error occured during genomic region generation."
-        # The following lines could be added once we directly call ODT from within the same Python process.
-        # case OligoDesignerError():
-        #     error_message = "An error occured during pipeline execution."
         case ODTEmptyResultError():
             status = RunStatus.EMPTY_RESULT  # override run status
             error_message = str(exc)

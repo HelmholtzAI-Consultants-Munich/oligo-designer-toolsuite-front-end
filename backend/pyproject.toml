@@ -11,6 +11,9 @@ shared = [
     "filelock >=3.28, <4",
     "dogpile.cache[redis] >=1.5, <2",
     "requests >=2.32, <3",
+    "oligo-designer-toolsuite >=2.1, <2.2",
+    "pydantic>=2.12.5,<3",
+    "glom>=25.12, <26"
 ]
 server = [
     { include-group = "shared" },
@@ -20,10 +23,10 @@ server = [
     "flask-cors >=6, <7",
     "Flask-Login >=0.6, <0.7",
     "Flask-Limiter >=3.8, <4",
-    "Flask-PyMongo >=3, <4",
+    "PyMongo >=4, <5",
     "prometheus-flask-exporter >=0.23, <0.24",
 ]
-worker = [{ include-group = "shared" }, "biopython >=1.86, <2", "oligo-designer-toolsuite >=2.0, <2.1"]
+worker = [{ include-group = "shared" }, "biopython >=1.86, <2"]
 test = [
     { include-group = "server" },
     "coverage >=7.12, <8",

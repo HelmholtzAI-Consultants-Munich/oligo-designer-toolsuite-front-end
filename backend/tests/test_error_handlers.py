@@ -44,14 +44,14 @@ class TestHTTPExceptionHandler:
 
     def test_abort_400_incorrect_multiform_request(self, client, authenticated_user):
         """Pipeline route with no JSON body triggers abort(415)."""
-        response = client.post("/api/merfish", content_type="text/plain", data="not json")
+        response = client.post("/api/oligoseq", content_type="text/plain", data="not json")
         assert response.status_code == 400
         data = response.get_json()
         assert data["error"] == "Expected a Multipart form data with payload JSON field"
 
     def test_abort_returns_json_with_error_key(self, client):
         """All abort responses have a consistent {"error": "..."} shape."""
-        response = client.get("/api/runs/000000000000000000000000/files")
+        response = client.get("/api/runs/000000000000000000000000/files/000.txt")
         # Anonymous user without session -> triggers abort in route helpers
         data = response.get_json()
         assert "error" in data

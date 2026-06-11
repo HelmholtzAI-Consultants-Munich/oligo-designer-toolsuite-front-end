@@ -1,5 +1,5 @@
 {
-  "source": "Ensembl",
+  "source": "ensembl",
   "source_params": {
     "species": "mus_musculus",
     "annotation_release": "110"

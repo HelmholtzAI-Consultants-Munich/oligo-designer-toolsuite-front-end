@@ -1,5 +1,5 @@
 {
-  "source": "NCBI",
+  "source": "ncbi",
   "source_params": {
     "taxon": "archaea",
     "species": "Acidianus_infernus",
