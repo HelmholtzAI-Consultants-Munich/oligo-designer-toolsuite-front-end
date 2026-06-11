@@ -11,7 +11,7 @@ Make sure you have it at an appropriate location (e.g. `~/.config/openstack/clou
 
 ### SSH Key Pair
 
-After provisioning the VMs, Ansible connects to them using ssh. Since only a single VM is publicly accessible, we use it as a 'jump host' (also known as 'bastion host'). Make sure you have the private key of the `odt-ansible-key` key pair in your ssh directory (i.e. `~/.ssh/odt-ansible-key`). The public key of this jump host is currently hard-coded to `134.94.199.236`.
+After provisioning the VMs, Ansible connects to them using ssh. Since only a single VM is publicly accessible, we use it as a 'jump host' (also known as 'bastion host'). Make sure you have the private key of the `odt-ansible-key` key pair in your ssh directory (i.e. `~/.ssh/odt-ansible-key`). The public IP of this jump host is currently hard-coded to `134.94.199.236`.
 
 The local `known_hosts` file will be updated with the VM fingerprints automatically. Make sure it does not include outdated fingerprints after deleting instances.
 

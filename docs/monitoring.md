@@ -173,7 +173,7 @@ Exports container-level resource usage metrics including:
 
 To add a new metrics exporter to the monitoring stack:
 
-### Step 1: Add Exporter Service to compose.yml
+### Step 1: Add Exporter Service to compose.override.yml
 
 Add a new service definition:
 
