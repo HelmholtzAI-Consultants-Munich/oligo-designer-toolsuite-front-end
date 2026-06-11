@@ -110,10 +110,10 @@ services:
       placement:
         constraints:
           - node.role == worker
-      replicas: 2
+      replicas: 4
       resources:
         limits:
-          memory: 24G
+          memory: 16G
 
   odt-web:
     networks:
