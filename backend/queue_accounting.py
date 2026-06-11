@@ -10,10 +10,11 @@ from backend.database import mongo_database
 from backend.types import RunStatus
 
 
-def _change_queue_length(redis: Redis, priority: str, change: int) -> int:
-    current = redis.hget(Config.REDIS_QUEUE_LENGTH_KEY, priority)
-    new_length = max(int(current or 0) + change, 0)
-    redis.hset(Config.REDIS_QUEUE_LENGTH_KEY, priority, new_length)
+def _decrement_queue_length(redis: Redis, priority: str) -> int:
+    new_length = redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, priority, -1)
+    if new_length < 0:
+        redis.hset(Config.REDIS_QUEUE_LENGTH_KEY, priority, 0)
+        return 0
     return new_length
 
 
@@ -46,10 +47,10 @@ def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
             {"status": RunStatus.PENDING, "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
-        _change_queue_length(redis, "high", 1)
+        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
         return high_length, 0
 
-    _change_queue_length(redis, "default", 1)
+    redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
     return high_length, default_length
 
 
@@ -76,7 +77,7 @@ def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
             {"$inc": {"queue_position.1": -1}},
         )
 
-    _change_queue_length(redis, priority, -1)
+    _decrement_queue_length(redis, priority)
 
 
 def start_pending_run(task_id: str) -> bool:
