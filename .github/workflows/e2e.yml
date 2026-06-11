@@ -47,6 +47,7 @@ jobs:
               - 'playwright.config.ts'
               - 'docker/**'
               - 'compose.yml'
+              - 'compose.override.yml'
               - '.env.sample'
               - 'package.json'
               - 'package-lock.json'
