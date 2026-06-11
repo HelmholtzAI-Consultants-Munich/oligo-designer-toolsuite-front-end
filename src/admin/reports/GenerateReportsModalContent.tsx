@@ -24,6 +24,82 @@ interface GenerateReportsModalContentProps {
     onGenerate: (months: ReportPeriod[]) => Promise<boolean>;
 }
 
+interface ReportRangeInput {
+    fromYear: string;
+    fromMonth: string;
+    toYear: string;
+    toMonth: string;
+}
+
+const alignEndYearWithStart = (fromYear: string, toYear: string): string => {
+    // A changed start year may move past the selected end year. Advance the
+    // end year so the range cannot run backwards across years.
+    if (fromYear && toYear && Number(toYear) < Number(fromYear)) {
+        return fromYear;
+    }
+
+    return toYear;
+};
+
+const clampMonthToLatest = (
+    year: string,
+    month: string,
+    maxYear: number,
+    maxMonth: number
+): string => {
+    // When an endpoint is moved to the latest reportable year, its previously
+    // selected month may be in the future. Move it to the latest valid month.
+    if (year && month && Number(year) === maxYear && Number(month) > maxMonth) {
+        return String(maxMonth);
+    }
+
+    return month;
+};
+
+const alignEndMonthWithStart = (range: ReportRangeInput): string => {
+    // For endpoints in the same year, advance an earlier end month to the
+    // selected start month so the range remains chronological.
+    if (
+        range.fromYear &&
+        range.toYear &&
+        range.fromMonth &&
+        range.toMonth &&
+        Number(range.fromYear) === Number(range.toYear) &&
+        Number(range.toMonth) < Number(range.fromMonth)
+    ) {
+        return range.fromMonth;
+    }
+
+    return range.toMonth;
+};
+
+const normalizeReportRange = (
+    range: ReportRangeInput,
+    maxYear: number,
+    maxMonth: number
+): ReportRangeInput => {
+    const normalizedRange = {
+        ...range,
+        toYear: alignEndYearWithStart(range.fromYear, range.toYear),
+        fromMonth: clampMonthToLatest(
+            range.fromYear,
+            range.fromMonth,
+            maxYear,
+            maxMonth
+        ),
+    };
+
+    normalizedRange.toMonth = clampMonthToLatest(
+        normalizedRange.toYear,
+        normalizedRange.toMonth,
+        maxYear,
+        maxMonth
+    );
+    normalizedRange.toMonth = alignEndMonthWithStart(normalizedRange);
+
+    return normalizedRange;
+};
+
 export default function GenerateReportsModalContent({
     maxMonth,
     onGenerate,
@@ -42,63 +118,32 @@ export default function GenerateReportsModalContent({
     const toMonthNumber = Number(toMonthValue);
 
     useEffect(() => {
-        let nextFromMonthValue = fromMonthValue;
-        let nextToYearValue = toYearValue;
-        let nextToMonthValue = toMonthValue;
+        const normalizedRange = normalizeReportRange(
+            {
+                fromYear: fromYearValue,
+                fromMonth: fromMonthValue,
+                toYear: toYearValue,
+                toMonth: toMonthValue,
+            },
+            maxYear,
+            maxMonthNumber
+        );
 
-        if (fromYearValue && toYearValue && toYearNumber < fromYearNumber) {
-            nextToYearValue = fromYearValue;
+        if (normalizedRange.fromMonth !== fromMonthValue) {
+            setFromMonthValue(normalizedRange.fromMonth);
         }
-
-        if (
-            fromYearValue &&
-            fromMonthValue &&
-            fromYearNumber === maxYear &&
-            fromMonthNumber > maxMonthNumber
-        ) {
-            nextFromMonthValue = String(maxMonthNumber);
+        if (normalizedRange.toYear !== toYearValue) {
+            setToYearValue(normalizedRange.toYear);
         }
-
-        const nextToYearNumber = Number(nextToYearValue);
-        if (
-            nextToYearValue &&
-            nextToMonthValue &&
-            nextToYearNumber === maxYear &&
-            Number(nextToMonthValue) > maxMonthNumber
-        ) {
-            nextToMonthValue = String(maxMonthNumber);
-        }
-
-        if (
-            fromYearValue &&
-            nextToYearValue &&
-            nextFromMonthValue &&
-            nextToMonthValue &&
-            fromYearNumber === nextToYearNumber &&
-            Number(nextToMonthValue) < Number(nextFromMonthValue)
-        ) {
-            nextToMonthValue = nextFromMonthValue;
-        }
-
-        if (nextFromMonthValue !== fromMonthValue) {
-            setFromMonthValue(nextFromMonthValue);
-        }
-        if (nextToYearValue !== toYearValue) {
-            setToYearValue(nextToYearValue);
-        }
-        if (nextToMonthValue !== toMonthValue) {
-            setToMonthValue(nextToMonthValue);
+        if (normalizedRange.toMonth !== toMonthValue) {
+            setToMonthValue(normalizedRange.toMonth);
         }
     }, [
-        fromMonthNumber,
         fromMonthValue,
-        fromYearNumber,
         fromYearValue,
         maxMonthNumber,
         maxYear,
-        toMonthNumber,
         toMonthValue,
-        toYearNumber,
         toYearValue,
     ]);
 

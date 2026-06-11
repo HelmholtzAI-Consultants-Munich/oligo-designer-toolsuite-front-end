@@ -1,5 +1,11 @@
-import React from "react";
-import { Routes, Route, Navigate, useLocation } from "react-router";
+import React, { useEffect } from "react";
+import {
+    Routes,
+    Route,
+    Navigate,
+    useLocation,
+    useNavigate,
+} from "react-router";
 import { Spinner } from "react-bootstrap";
 import Dashboard from "./dashboard/Dashboard";
 import UserList from "./users/UserList";
@@ -14,6 +20,20 @@ import { Vertical } from "../components/ui/Alignment";
 const AdminApp: React.FC = () => {
     const { user, loading } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (loading) return;
+
+        if (!user) {
+            navigate(
+                `/login?redirect=${encodeURIComponent(location.pathname)}`,
+                { replace: true }
+            );
+        } else if (user.role !== "admin") {
+            navigate("/", { replace: true });
+        }
+    }, [loading, location.pathname, navigate, user]);
 
     if (loading) {
         return (
@@ -25,18 +45,7 @@ const AdminApp: React.FC = () => {
         );
     }
 
-    if (!user) {
-        return (
-            <Navigate
-                to={`/login?redirect=${encodeURIComponent(location.pathname)}`}
-                replace
-            />
-        );
-    }
-
-    if (user.role !== "admin") {
-        return <Navigate to="/" replace />;
-    }
+    if (!user || user.role !== "admin") return null;
 
     return (
         <Routes>

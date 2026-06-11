@@ -13,6 +13,7 @@ import { STATUS_CONFIG } from "../shared/types";
 import { BACKEND_URL } from "../../config";
 import Page from "../../components/ui/Page";
 import { Horizontal, Vertical } from "../../components/ui/Alignment";
+import { getErrorMessage } from "../../utils/errorUtil";
 
 /**
  * Calculate percentage with one decimal place
@@ -102,14 +103,9 @@ const Dashboard: React.FC = () => {
             );
             setStats(response.data);
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.error ||
-                        "Failed to load dashboard statistics"
-                );
-            } else {
-                setError("Failed to load dashboard statistics");
-            }
+            setError(
+                getErrorMessage(err, "Failed to load dashboard statistics")
+            );
             console.error("Error fetching dashboard stats:", err);
         } finally {
             setIsLoading(false);

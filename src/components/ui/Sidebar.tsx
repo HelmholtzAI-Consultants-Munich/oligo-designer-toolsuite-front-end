@@ -63,9 +63,6 @@ const Sidebar: React.FC = () => {
             expand="lg"
             variant="main"
             expanded={expanded}
-            className={
-                isAdmin && adminExpanded ? "admin-section-expanded" : undefined
-            }
         >
             <Navbar.Brand as={Link} to="/" onClick={() => setExpanded(false)}>
                 <Horizontal gap="lg" align="center">

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import {
     Alert,
     Badge,
@@ -16,6 +15,7 @@ import Page from "../../components/ui/Page";
 import { Horizontal, Vertical } from "../../components/ui/Alignment";
 import { confirmWithModal } from "../../utils/modalUtil";
 import { showToast } from "../../utils/toastUtil";
+import { getErrorMessage } from "../../utils/errorUtil";
 import { formatAdminDateTime } from "../shared/date";
 import {
     type LegalDocumentAdminView,
@@ -43,13 +43,6 @@ const LegalDocuments: React.FC = () => {
         ) ??
         detail?.published ??
         null;
-
-    const getErrorMessage = (err: unknown, fallback: string) => {
-        if (axios.isAxiosError(err)) {
-            return err.response?.data?.error || fallback;
-        }
-        return fallback;
-    };
 
     const loadOverview = async () => {
         const data = await fetchLegalDocumentsOverview();
@@ -91,43 +84,41 @@ const LegalDocuments: React.FC = () => {
             primaryAction: {
                 label: "Publish",
                 variant: "success",
-                callback: () => {
-                    void (async () => {
-                        try {
-                            setIsPublishing(true);
-                            setError(null);
-                            const data = await publishLegalDocument(
-                                activeDocument,
-                                body
-                            );
-                            setDocuments((prev) =>
-                                prev.map((d) =>
-                                    d.document === activeDocument ? data : d
-                                )
-                            );
-                            setSelectedHistoryVersionId(data.published.id);
-                            setIsViewingHistoryVersion(false);
-                            setBody(data.published.body);
-                            showToast({
-                                type: "success",
-                                title: "Document published",
-                                content: "Document published successfully.",
-                            });
-                        } catch (err: unknown) {
-                            const message = getErrorMessage(
-                                err,
-                                "Failed to publish document"
-                            );
-                            setError(message);
-                            showToast({
-                                type: "danger",
-                                title: "Publish failed",
-                                content: message,
-                            });
-                        } finally {
-                            setIsPublishing(false);
-                        }
-                    })();
+                callback: async () => {
+                    try {
+                        setIsPublishing(true);
+                        setError(null);
+                        const data = await publishLegalDocument(
+                            activeDocument,
+                            body
+                        );
+                        setDocuments((prev) =>
+                            prev.map((d) =>
+                                d.document === activeDocument ? data : d
+                            )
+                        );
+                        setSelectedHistoryVersionId(data.published.id);
+                        setIsViewingHistoryVersion(false);
+                        setBody(data.published.body);
+                        showToast({
+                            type: "success",
+                            title: "Document published",
+                            content: "Document published successfully.",
+                        });
+                    } catch (err: unknown) {
+                        const message = getErrorMessage(
+                            err,
+                            "Failed to publish document"
+                        );
+                        setError(message);
+                        showToast({
+                            type: "danger",
+                            title: "Publish failed",
+                            content: message,
+                        });
+                    } finally {
+                        setIsPublishing(false);
+                    }
                 },
             },
         });

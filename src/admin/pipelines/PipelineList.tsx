@@ -25,6 +25,7 @@ import { BACKEND_URL } from "../../config";
 import Page from "../../components/ui/Page";
 import { confirmWithModal } from "../../utils/modalUtil";
 import { showToast } from "../../utils/toastUtil";
+import { getErrorMessage } from "../../utils/errorUtil";
 import { Horizontal, Vertical } from "../../components/ui/Alignment";
 
 interface PipelineRun {
@@ -79,13 +80,7 @@ const PipelineList: React.FC = () => {
             );
             setRuns(response.data);
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.error || "Failed to load pipeline runs"
-                );
-            } else {
-                setError("Failed to load pipeline runs");
-            }
+            setError(getErrorMessage(err, "Failed to load pipeline runs"));
             console.error("Error fetching pipeline runs:", err);
         } finally {
             setIsLoading(false);
@@ -136,11 +131,7 @@ const PipelineList: React.FC = () => {
             showToast({
                 type: "danger",
                 title: "Update failed",
-                content: axios.isAxiosError(err)
-                    ? err.response?.data?.error ||
-                      err.message ||
-                      "Failed to update status"
-                    : "Failed to update status",
+                content: getErrorMessage(err, "Failed to update status"),
             });
             console.error("Error updating status:", err);
         }
@@ -153,40 +144,37 @@ const PipelineList: React.FC = () => {
             primaryAction: {
                 label: "Delete",
                 variant: "danger",
-                callback: () => {
-                    void (async () => {
-                        try {
-                            await axios.delete(
-                                BACKEND_URL + `/api/admin/pipelines/${runId}`,
-                                {
-                                    withCredentials: true,
-                                }
-                            );
-                            setRuns(runs.filter((run) => run.id !== runId));
-                            const newExpanded = new Set(expandedRows);
-                            newExpanded.delete(runId);
-                            setExpandedRows(newExpanded);
-                            if (selectedItems.has(runId)) {
-                                handleSelectItem(runId);
+                callback: async () => {
+                    try {
+                        await axios.delete(
+                            BACKEND_URL + `/api/admin/pipelines/${runId}`,
+                            {
+                                withCredentials: true,
                             }
-                            showToast({
-                                type: "success",
-                                title: "Run deleted",
-                                content: `Deleted pipeline run "${pipelineName}".`,
-                            });
-                        } catch (err: unknown) {
-                            showToast({
-                                type: "danger",
-                                title: "Delete failed",
-                                content: axios.isAxiosError(err)
-                                    ? err.response?.data?.error ||
-                                      err.message ||
-                                      "Failed to delete pipeline run"
-                                    : "Failed to delete pipeline run",
-                            });
-                            console.error("Error deleting pipeline run:", err);
+                        );
+                        setRuns(runs.filter((run) => run.id !== runId));
+                        const newExpanded = new Set(expandedRows);
+                        newExpanded.delete(runId);
+                        setExpandedRows(newExpanded);
+                        if (selectedItems.has(runId)) {
+                            handleSelectItem(runId);
                         }
-                    })();
+                        showToast({
+                            type: "success",
+                            title: "Run deleted",
+                            content: `Deleted pipeline run "${pipelineName}".`,
+                        });
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Delete failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to delete pipeline run"
+                            ),
+                        });
+                        console.error("Error deleting pipeline run:", err);
+                    }
                 },
             },
         });
@@ -202,51 +190,47 @@ const PipelineList: React.FC = () => {
             primaryAction: {
                 label: "Delete",
                 variant: "danger",
-                callback: () => {
-                    void (async () => {
-                        setIsBulkOperationLoading(true);
-                        try {
-                            const response = await axios.post(
-                                BACKEND_URL +
-                                    "/api/admin/pipelines/bulk-delete",
-                                { run_ids: selectedArray },
-                                { withCredentials: true }
-                            );
+                callback: async () => {
+                    setIsBulkOperationLoading(true);
+                    try {
+                        const response = await axios.post(
+                            BACKEND_URL + "/api/admin/pipelines/bulk-delete",
+                            { run_ids: selectedArray },
+                            { withCredentials: true }
+                        );
 
-                            const result = response.data;
-                            let message =
-                                result.message ||
-                                `Successfully deleted ${result.deleted_count} pipeline run(s)`;
+                        const result = response.data;
+                        let message =
+                            result.message ||
+                            `Successfully deleted ${result.deleted_count} pipeline run(s)`;
 
-                            if (result.failed && result.failed.length > 0) {
-                                message += `. ${result.failed.length} failed`;
-                            }
-
-                            const newExpanded = new Set(expandedRows);
-                            selectedArray.forEach((runId) =>
-                                newExpanded.delete(runId)
-                            );
-                            setExpandedRows(newExpanded);
-
-                            handleBulkOperationSuccess(
-                                message,
-                                clearSelection,
-                                fetchPipelineRuns
-                            );
-                        } catch (err: unknown) {
-                            showToast({
-                                type: "danger",
-                                title: "Delete failed",
-                                content: axios.isAxiosError(err)
-                                    ? err.response?.data?.error ||
-                                      err.message ||
-                                      "Failed to delete pipeline runs"
-                                    : "Failed to delete pipeline runs",
-                            });
-                        } finally {
-                            setIsBulkOperationLoading(false);
+                        if (result.failed && result.failed.length > 0) {
+                            message += `. ${result.failed.length} failed`;
                         }
-                    })();
+
+                        const newExpanded = new Set(expandedRows);
+                        selectedArray.forEach((runId) =>
+                            newExpanded.delete(runId)
+                        );
+                        setExpandedRows(newExpanded);
+
+                        handleBulkOperationSuccess(
+                            message,
+                            clearSelection,
+                            fetchPipelineRuns
+                        );
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Delete failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to delete pipeline runs"
+                            ),
+                        });
+                    } finally {
+                        setIsBulkOperationLoading(false);
+                    }
                 },
             },
         });
@@ -264,41 +248,38 @@ const PipelineList: React.FC = () => {
             primaryAction: {
                 label: "Update Status",
                 variant: "primary",
-                callback: () => {
-                    void (async () => {
-                        setIsBulkOperationLoading(true);
-                        try {
-                            const response = await axios.post(
-                                BACKEND_URL +
-                                    "/api/admin/pipelines/bulk-update-status",
-                                { run_ids: selectedArray, status: newStatus },
-                                { withCredentials: true }
-                            );
+                callback: async () => {
+                    setIsBulkOperationLoading(true);
+                    try {
+                        const response = await axios.post(
+                            BACKEND_URL +
+                                "/api/admin/pipelines/bulk-update-status",
+                            { run_ids: selectedArray, status: newStatus },
+                            { withCredentials: true }
+                        );
 
-                            const result = response.data;
-                            const message =
-                                result.message ||
-                                `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
+                        const result = response.data;
+                        const message =
+                            result.message ||
+                            `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
 
-                            handleBulkOperationSuccess(
-                                message,
-                                clearSelection,
-                                fetchPipelineRuns
-                            );
-                        } catch (err: unknown) {
-                            showToast({
-                                type: "danger",
-                                title: "Update failed",
-                                content: axios.isAxiosError(err)
-                                    ? err.response?.data?.error ||
-                                      err.message ||
-                                      "Failed to update status"
-                                    : "Failed to update status",
-                            });
-                        } finally {
-                            setIsBulkOperationLoading(false);
-                        }
-                    })();
+                        handleBulkOperationSuccess(
+                            message,
+                            clearSelection,
+                            fetchPipelineRuns
+                        );
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Update failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to update status"
+                            ),
+                        });
+                    } finally {
+                        setIsBulkOperationLoading(false);
+                    }
                 },
             },
         });

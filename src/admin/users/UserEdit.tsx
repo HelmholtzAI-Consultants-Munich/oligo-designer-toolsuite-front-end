@@ -12,6 +12,7 @@ import {
 import { BACKEND_URL } from "../../config";
 import Page from "../../components/ui/Page";
 import { showToast } from "../../utils/toastUtil";
+import { getErrorMessage } from "../../utils/errorUtil";
 import { Horizontal, Vertical } from "../../components/ui/Alignment";
 
 interface User {
@@ -50,11 +51,7 @@ const UserEdit: React.FC = () => {
                 role: userData.role || "user",
             });
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.error || "Failed to load user");
-            } else {
-                setError("Failed to load user");
-            }
+            setError(getErrorMessage(err, "Failed to load user"));
             console.error("Error fetching user:", err);
         } finally {
             setIsLoading(false);
@@ -96,17 +93,12 @@ const UserEdit: React.FC = () => {
                 navigate("/admin/users");
             }, 1500);
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.error || "Failed to update user");
-            } else {
-                setError("Failed to update user");
-            }
+            const message = getErrorMessage(err, "Failed to update user");
+            setError(message);
             showToast({
                 type: "danger",
                 title: "Update failed",
-                content: axios.isAxiosError(err)
-                    ? err.response?.data?.error || "Failed to update user"
-                    : "Failed to update user",
+                content: message,
             });
             console.error("Error updating user:", err);
         } finally {

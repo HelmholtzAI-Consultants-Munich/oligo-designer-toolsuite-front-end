@@ -6,6 +6,7 @@ import { BACKEND_URL } from "../../config";
 import { formatAdminDateTime } from "../shared/date";
 import Page from "../../components/ui/Page";
 import { Vertical } from "../../components/ui/Alignment";
+import { getErrorMessage } from "../../utils/errorUtil";
 interface FeedbackUser {
     id: string;
     email: string;
@@ -41,14 +42,7 @@ const FeedbackList: React.FC = () => {
             );
             setFeedbackEntries(response.data);
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.error ||
-                        "Failed to load feedback entries"
-                );
-            } else {
-                setError("Failed to load feedback entries");
-            }
+            setError(getErrorMessage(err, "Failed to load feedback entries"));
             console.error("Error fetching feedback entries:", err);
         } finally {
             setIsLoading(false);

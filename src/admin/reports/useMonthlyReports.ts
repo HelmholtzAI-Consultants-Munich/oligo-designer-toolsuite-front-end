@@ -7,9 +7,7 @@ import {
     getNextReportPeriod,
 } from "./periods";
 import type { MonthlyReport, ReportPeriod } from "./types";
-
-const axiosMsg = (err: unknown, fallback: string) =>
-    axios.isAxiosError(err) ? err.response?.data?.error || fallback : fallback;
+import { getErrorMessage } from "../../utils/errorUtil";
 
 export function useMonthlyReports() {
     const [reports, setReports] = useState<MonthlyReport[]>([]);
@@ -30,7 +28,9 @@ export function useMonthlyReports() {
                 setReports(data);
                 return data;
             } catch (err) {
-                setError(axiosMsg(err, "Failed to load monthly reports"));
+                setError(
+                    getErrorMessage(err, "Failed to load monthly reports")
+                );
                 return [];
             } finally {
                 if (showLoading) setIsLoading(false);
@@ -76,7 +76,9 @@ export function useMonthlyReports() {
 
                 return monthsToGenerate.map(formatReportId);
             } catch (err) {
-                setError(axiosMsg(err, "Failed to trigger report generation"));
+                setError(
+                    getErrorMessage(err, "Failed to trigger report generation")
+                );
                 return null;
             } finally {
                 setIsGenerating(false);

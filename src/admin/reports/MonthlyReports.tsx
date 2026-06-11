@@ -289,8 +289,8 @@ const MonthlyReports: React.FC = () => {
                                                         primaryAction: {
                                                             label: "Delete",
                                                             variant: "danger",
-                                                            callback: () => {
-                                                                void (async () => {
+                                                            callback:
+                                                                async () => {
                                                                     const deleted =
                                                                         await deleteReport(
                                                                             report.id
@@ -307,8 +307,7 @@ const MonthlyReports: React.FC = () => {
                                                                                 ? `Deleted report for ${formatReportMonth(report.month, "long")} ${report.year}.`
                                                                                 : "Failed to delete report.",
                                                                     });
-                                                                })();
-                                                            },
+                                                                },
                                                         },
                                                     })
                                                 }
