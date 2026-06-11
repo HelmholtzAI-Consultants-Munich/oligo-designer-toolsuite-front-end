@@ -11,5 +11,8 @@ from backend.config import Config
 @contextmanager
 def mongo_database() -> Iterator[Database[dict[str, Any]]]:
     """Yield the application database and close its client afterward."""
-    with MongoClient(Config.MONGO_URI) as client:
+    client = MongoClient(Config.MONGO_URI)
+    try:
         yield client["oligo_db"]
+    finally:
+        client.close()
