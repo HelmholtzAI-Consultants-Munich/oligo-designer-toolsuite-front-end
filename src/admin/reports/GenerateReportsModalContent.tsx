@@ -31,16 +31,6 @@ interface ReportRangeInput {
     toMonth: string;
 }
 
-const alignEndYearWithStart = (fromYear: string, toYear: string): string => {
-    // A changed start year may move past the selected end year. Advance the
-    // end year so the range cannot run backwards across years.
-    if (fromYear && toYear && Number(toYear) < Number(fromYear)) {
-        return fromYear;
-    }
-
-    return toYear;
-};
-
 const clampMonthToLatest = (
     year: string,
     month: string,
@@ -80,7 +70,6 @@ const normalizeReportRange = (
 ): ReportRangeInput => {
     const normalizedRange = {
         ...range,
-        toYear: alignEndYearWithStart(range.fromYear, range.toYear),
         fromMonth: clampMonthToLatest(
             range.fromYear,
             range.fromMonth,
@@ -131,9 +120,6 @@ export default function GenerateReportsModalContent({
 
         if (normalizedRange.fromMonth !== fromMonthValue) {
             setFromMonthValue(normalizedRange.fromMonth);
-        }
-        if (normalizedRange.toYear !== toYearValue) {
-            setToYearValue(normalizedRange.toYear);
         }
         if (normalizedRange.toMonth !== toMonthValue) {
             setToMonthValue(normalizedRange.toMonth);

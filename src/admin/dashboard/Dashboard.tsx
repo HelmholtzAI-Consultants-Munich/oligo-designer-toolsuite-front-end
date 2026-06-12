@@ -12,7 +12,7 @@ import type { Icon } from "react-bootstrap-icons";
 import { runStatusDisplay } from "../../components/ui/utils";
 import { BACKEND_URL } from "../../config";
 import Page from "../../components/ui/Page";
-import { Horizontal, Vertical } from "../../components/ui/Alignment";
+import { Vertical } from "../../components/ui/Alignment";
 import { getErrorMessage } from "../../utils/errorUtil";
 
 /**
