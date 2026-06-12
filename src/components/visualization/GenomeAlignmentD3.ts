@@ -118,7 +118,7 @@ const setupScalesAndAxes = (
     const extentPadding = (ext[1] - ext[0]) * 0.01; // add % padding on each side
     ctx.xScale
         .domain([ext[0] - extentPadding, ext[1] + extentPadding])
-        .range([TRANSCRIPT_MARKER_WIDTH, WIDTH - 1]);
+        .range([1, WIDTH - 1]);
     const axis = d3.axisBottom(ctx.xScale).ticks(8);
 
     // Append the x-axis inside the plot area
@@ -421,12 +421,13 @@ const setupMouseEvents = (
     el: Element,
     probes: Probe[],
     ctx: VisualizationContext,
-    setSelectedOligo: (id: string) => void
+    setSelectedOligo: (id: string | null) => void
 ) => {
     const preventPageScroll: EventListener = (event) => {
         event.preventDefault();
     };
     ctx.svg
+        .on("click", () => setSelectedOligo(null)) // deselect oligo when clicking on empty space
         .on("wheel", preventPageScroll, { passive: false }) // some browsers default to passive wheel listeners
         .on("mouseenter", () => {
             ctx.locationIndicator.attr("visibility", "visible");
@@ -444,7 +445,8 @@ const setupMouseEvents = (
     ctx.oligosGroup
         .select("g.probes")
         .selectAll<SVGRectElement, Probe>("rect")
-        .on("click", (_, data) => {
+        .on("click", (event, data) => {
+            event.stopPropagation(); // prevent click from propagating to svg and deselecting oligo
             setSelectedOligo(data.oligo_id);
             // Zoom into selected oligo (even if already selected)
             GenomeAlignmentD3.update(el, probes, data.oligo_id, true);
@@ -661,8 +663,8 @@ const GenomeAlignmentD3 = {
         el: Element,
         probes: Probe[],
         genomicRegions: GenomicRegions,
-        selectedOligo: string,
-        setSelectedOligo: (id: string) => void
+        selectedOligo: string | null,
+        setSelectedOligo: (id: string | null) => void
     ) => {
         const oligoComponents = collectOligoComponents(probes);
         const ctx = createContext(el, genomicRegions);
@@ -684,7 +686,7 @@ const GenomeAlignmentD3 = {
     update: (
         el: Element,
         probes: Probe[],
-        selectedOligo: string,
+        selectedOligo: string | null,
         zoomIntoOligo: boolean = false
     ) => {
         const ctx = contextByElement.get(el);
@@ -732,7 +734,8 @@ const GenomeAlignmentD3 = {
                     return isSelected ? "#22bd28" : "#b0b0b0";
                 }
                 return "transparent";
-            });
+            })
+            .attr("display", selectedOligo ? "block" : "none");
 
         if (zoomIntoOligo) {
             const zoomedOligo = probes.find(

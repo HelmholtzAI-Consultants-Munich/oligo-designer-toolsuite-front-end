@@ -59,7 +59,7 @@ const RunDetail = () => {
 
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
-    const [selectedOligo, setSelectedOligo] = useState<string>("");
+    const [selectedOligo, setSelectedOligo] = useState<string | null>(null);
     const [selectedVisualization, setSelectedVisualization] =
         useState<VisualizationType>("alignment");
     const [genomicRegions, setGenomicRegions] = useState<{
@@ -111,16 +111,12 @@ const RunDetail = () => {
                             Object.keys(
                                 regionsYaml.probes?.[firstGene] || {}
                             )[0] || "";
-                        const firstOligo =
-                            regionsYaml.probes?.[firstGene]?.[firstOligoset][0]
-                                ?.oligo_id || "";
 
                         setGenomicRegions(regionsYaml.regions);
                         setProbes(regionsYaml.probes);
                         setScores(regionsYaml.scores);
                         setSelectedGene(firstGene);
                         setSelectedOligoset(firstOligoset);
-                        setSelectedOligo(firstOligo);
                     })
                     .catch((error) => {
                         console.error(
@@ -457,12 +453,7 @@ const RunDetail = () => {
                                                 setSelectedOligoset(
                                                     "Oligoset 1"
                                                 );
-                                                setSelectedOligo(
-                                                    probes[
-                                                        e.target.value || ""
-                                                    ]["Oligoset 1"][0]
-                                                        .oligo_id || ""
-                                                );
+                                                setSelectedOligo(null);
                                             }}
                                         >
                                             {Object.keys(probes).map((gene) => (
@@ -481,11 +472,7 @@ const RunDetail = () => {
                                                 setSelectedOligoset(
                                                     e.target.value
                                                 );
-                                                setSelectedOligo(
-                                                    probes[selectedGene][
-                                                        e.target.value
-                                                    ]?.[0].oligo_id || ""
-                                                );
+                                                setSelectedOligo(null);
                                             }}
                                         >
                                             {Object.keys(
@@ -588,12 +575,16 @@ const RunDetail = () => {
                                                             "text-nowrap " +
                                                             (oligo.oligo_id ===
                                                             selectedOligo
-                                                                ? "table-primary"
+                                                                ? "table-active"
                                                                 : "")
                                                         }
                                                         onClick={() =>
+                                                            // select/deselect oligo on click
                                                             setSelectedOligo(
-                                                                oligo.oligo_id
+                                                                oligo.oligo_id ===
+                                                                    selectedOligo
+                                                                    ? null
+                                                                    : oligo.oligo_id
                                                             )
                                                         }
                                                     >
