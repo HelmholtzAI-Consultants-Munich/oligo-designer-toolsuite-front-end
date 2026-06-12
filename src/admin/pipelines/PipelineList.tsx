@@ -9,13 +9,24 @@ import {
     Card,
     Form,
 } from "react-bootstrap";
-import { Eye, EyeSlash, Trash, Pencil } from "react-bootstrap-icons";
+import {
+    ArrowClockwise,
+    Eye,
+    EyeSlash,
+    Trash,
+    Pencil,
+} from "react-bootstrap-icons";
 import { useBulkSelection } from "../shared/useBulkSelection";
 import BulkActionToolbar from "../shared/BulkActionToolbar";
 import { handleBulkOperationSuccess } from "../shared/bulkOperationHelpers";
 import { formatAdminDateTime } from "../shared/date";
 import { runStatusDisplay } from "../../components/ui/utils";
 import { BACKEND_URL } from "../../config";
+import Page from "../../components/ui/Page";
+import { confirmWithModal } from "../../utils/modalUtil";
+import { showToast } from "../../utils/toastUtil";
+import { getErrorMessage } from "../../utils/errorUtil";
+import { Horizontal, Vertical } from "../../components/ui/Alignment";
 
 interface PipelineRun {
     id: string;
@@ -69,13 +80,7 @@ const PipelineList: React.FC = () => {
             );
             setRuns(response.data);
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.error || "Failed to load pipeline runs"
-                );
-            } else {
-                setError("Failed to load pipeline runs");
-            }
+            setError(getErrorMessage(err, "Failed to load pipeline runs"));
             console.error("Error fetching pipeline runs:", err);
         } finally {
             setIsLoading(false);
@@ -117,102 +122,118 @@ const PipelineList: React.FC = () => {
 
             // Remove from editing state
             cancelEditingStatus(runId);
+            showToast({
+                type: "success",
+                title: "Status updated",
+                content: `Run status changed to ${newStatus}.`,
+            });
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                alert(
-                    `Failed to update status: ${err.response?.data?.error || err.message}`
-                );
-            } else {
-                alert("Failed to update status");
-            }
+            showToast({
+                type: "danger",
+                title: "Update failed",
+                content: getErrorMessage(err, "Failed to update status"),
+            });
             console.error("Error updating status:", err);
         }
     };
 
     const handleDelete = async (runId: string, pipelineName: string) => {
-        if (
-            window.confirm(
-                `Are you sure you want to delete pipeline run "${pipelineName}"? This will also delete all associated output files.`
-            )
-        ) {
-            try {
-                await axios.delete(
-                    BACKEND_URL + `/api/admin/pipelines/${runId}`,
-                    {
-                        withCredentials: true,
+        confirmWithModal({
+            title: "Delete Pipeline Run",
+            content: `Delete pipeline run "${pipelineName}"? This will also delete all associated output files.`,
+            primaryAction: {
+                label: "Delete",
+                variant: "danger",
+                callback: async () => {
+                    try {
+                        await axios.delete(
+                            BACKEND_URL + `/api/admin/pipelines/${runId}`,
+                            {
+                                withCredentials: true,
+                            }
+                        );
+                        setRuns(runs.filter((run) => run.id !== runId));
+                        const newExpanded = new Set(expandedRows);
+                        newExpanded.delete(runId);
+                        setExpandedRows(newExpanded);
+                        if (selectedItems.has(runId)) {
+                            handleSelectItem(runId);
+                        }
+                        showToast({
+                            type: "success",
+                            title: "Run deleted",
+                            content: `Deleted pipeline run "${pipelineName}".`,
+                        });
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Delete failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to delete pipeline run"
+                            ),
+                        });
+                        console.error("Error deleting pipeline run:", err);
                     }
-                );
-                // Remove from local state
-                setRuns(runs.filter((run) => run.id !== runId));
-                // Remove from expanded rows if it was expanded
-                const newExpanded = new Set(expandedRows);
-                newExpanded.delete(runId);
-                setExpandedRows(newExpanded);
-                // Remove from selection if selected
-                if (selectedItems.has(runId)) {
-                    handleSelectItem(runId);
-                }
-            } catch (err: unknown) {
-                if (axios.isAxiosError(err)) {
-                    alert(
-                        `Failed to delete pipeline run: ${err.response?.data?.error || err.message}`
-                    );
-                } else {
-                    alert("Failed to delete pipeline run");
-                }
-                console.error("Error deleting pipeline run:", err);
-            }
-        }
+                },
+            },
+        });
     };
 
     const handleBulkDelete = async () => {
         const selectedArray = Array.from(selectedItems);
         if (selectedArray.length === 0) return;
 
-        const confirmed = window.confirm(
-            `Are you sure you want to delete ${selectedArray.length} pipeline run(s)? This will also delete all associated output files.`
-        );
+        confirmWithModal({
+            title: "Delete Pipeline Runs",
+            content: `Delete ${selectedArray.length} pipeline run(s)? This will also delete all associated output files.`,
+            primaryAction: {
+                label: "Delete",
+                variant: "danger",
+                callback: async () => {
+                    setIsBulkOperationLoading(true);
+                    try {
+                        const response = await axios.post(
+                            BACKEND_URL + "/api/admin/pipelines/bulk-delete",
+                            { run_ids: selectedArray },
+                            { withCredentials: true }
+                        );
 
-        if (!confirmed) return;
+                        const result = response.data;
+                        let message =
+                            result.message ||
+                            `Successfully deleted ${result.deleted_count} pipeline run(s)`;
 
-        setIsBulkOperationLoading(true);
-        try {
-            const response = await axios.post(
-                BACKEND_URL + "/api/admin/pipelines/bulk-delete",
-                { run_ids: selectedArray },
-                { withCredentials: true }
-            );
+                        if (result.failed && result.failed.length > 0) {
+                            message += `. ${result.failed.length} failed`;
+                        }
 
-            const result = response.data;
-            let message =
-                result.message ||
-                `Successfully deleted ${result.deleted_count} pipeline run(s)`;
+                        const newExpanded = new Set(expandedRows);
+                        selectedArray.forEach((runId) =>
+                            newExpanded.delete(runId)
+                        );
+                        setExpandedRows(newExpanded);
 
-            if (result.failed && result.failed.length > 0) {
-                message += `. ${result.failed.length} failed`;
-            }
-
-            // Remove deleted runs from expanded rows
-            const newExpanded = new Set(expandedRows);
-            selectedArray.forEach((runId) => newExpanded.delete(runId));
-            setExpandedRows(newExpanded);
-
-            handleBulkOperationSuccess(
-                message,
-                clearSelection,
-                fetchPipelineRuns
-            );
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                alert(
-                    `Failed to delete pipeline runs: ${err.response?.data?.error || err.message}`
-                );
-            } else {
-                alert("Failed to delete pipeline runs");
-            }
-        } finally {
-            setIsBulkOperationLoading(false);
-        }
+                        handleBulkOperationSuccess(
+                            message,
+                            clearSelection,
+                            fetchPipelineRuns
+                        );
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Delete failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to delete pipeline runs"
+                            ),
+                        });
+                    } finally {
+                        setIsBulkOperationLoading(false);
+                    }
+                },
+            },
+        });
     };
 
     const handleBulkStatusUpdate = async (newStatus: string) => {
@@ -221,41 +242,47 @@ const PipelineList: React.FC = () => {
 
         const statusLabel =
             newStatus.charAt(0).toUpperCase() + newStatus.slice(1);
-        const confirmed = window.confirm(
-            `Are you sure you want to update status of ${selectedArray.length} run(s) to ${statusLabel}?`
-        );
+        confirmWithModal({
+            title: "Update Run Status",
+            content: `Update status of ${selectedArray.length} run(s) to ${statusLabel}?`,
+            primaryAction: {
+                label: "Update Status",
+                variant: "primary",
+                callback: async () => {
+                    setIsBulkOperationLoading(true);
+                    try {
+                        const response = await axios.post(
+                            BACKEND_URL +
+                                "/api/admin/pipelines/bulk-update-status",
+                            { run_ids: selectedArray, status: newStatus },
+                            { withCredentials: true }
+                        );
 
-        if (!confirmed) return;
+                        const result = response.data;
+                        const message =
+                            result.message ||
+                            `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
 
-        setIsBulkOperationLoading(true);
-        try {
-            const response = await axios.post(
-                BACKEND_URL + "/api/admin/pipelines/bulk-update-status",
-                { run_ids: selectedArray, status: newStatus },
-                { withCredentials: true }
-            );
-
-            const result = response.data;
-            const message =
-                result.message ||
-                `Successfully updated status of ${result.updated_count} pipeline run(s) to ${newStatus}`;
-
-            handleBulkOperationSuccess(
-                message,
-                clearSelection,
-                fetchPipelineRuns
-            );
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                alert(
-                    `Failed to update status: ${err.response?.data?.error || err.message}`
-                );
-            } else {
-                alert("Failed to update status");
-            }
-        } finally {
-            setIsBulkOperationLoading(false);
-        }
+                        handleBulkOperationSuccess(
+                            message,
+                            clearSelection,
+                            fetchPipelineRuns
+                        );
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Update failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to update status"
+                            ),
+                        });
+                    } finally {
+                        setIsBulkOperationLoading(false);
+                    }
+                },
+            },
+        });
     };
 
     const getStatusBadge = (status: string) => {
@@ -304,23 +331,27 @@ const PipelineList: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </div>
+            <Page title="Pipeline Management">
+                <Vertical align="center" className="p-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </Vertical>
+            </Page>
         );
     }
 
     if (error) {
         return (
-            <Alert variant="danger">
-                <Alert.Heading>Error loading pipeline runs</Alert.Heading>
-                <p>{error}</p>
-                <Button variant="primary" onClick={fetchPipelineRuns}>
-                    Retry
-                </Button>
-            </Alert>
+            <Page title="Pipeline Management">
+                <Alert variant="danger">
+                    <Alert.Heading>Error loading pipeline runs</Alert.Heading>
+                    <p>{error}</p>
+                    <Button variant="primary" onClick={fetchPipelineRuns}>
+                        Retry
+                    </Button>
+                </Alert>
+            </Page>
         );
     }
 
@@ -329,14 +360,18 @@ const PipelineList: React.FC = () => {
         allRunIds.length > 0 && allRunIds.every((id) => selectedItems.has(id));
 
     return (
-        <div className="container-fluid p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Pipeline Management</h2>
-                <Button variant="outline-primary" onClick={fetchPipelineRuns}>
-                    Refresh
-                </Button>
-            </div>
-
+        <Page
+            title="Pipeline Management"
+            actions={[
+                {
+                    type: "button",
+                    label: "Refresh",
+                    icon: ArrowClockwise,
+                    variant: "outline-primary",
+                    onClick: fetchPipelineRuns,
+                },
+            ]}
+        >
             {/* Bulk Action Toolbar */}
             <BulkActionToolbar
                 selectedCount={selectedCount}
@@ -439,7 +474,7 @@ const PipelineList: React.FC = () => {
                                     </td>
                                     <td onClick={(e) => e.stopPropagation()}>
                                         {editingStatus[run.id] !== undefined ? (
-                                            <div className="d-flex align-items-center gap-2">
+                                            <Horizontal align="center" gap="sm">
                                                 <Form.Select
                                                     size="sm"
                                                     value={
@@ -495,9 +530,9 @@ const PipelineList: React.FC = () => {
                                                 >
                                                     ✕
                                                 </Button>
-                                            </div>
+                                            </Horizontal>
                                         ) : (
-                                            <div className="d-flex align-items-center gap-2">
+                                            <Horizontal align="center" gap="sm">
                                                 {getStatusBadge(run.status)}
                                                 <Button
                                                     variant="link"
@@ -513,7 +548,7 @@ const PipelineList: React.FC = () => {
                                                 >
                                                     <Pencil size={14} />
                                                 </Button>
-                                            </div>
+                                            </Horizontal>
                                         )}
                                     </td>
                                     <td>{getUserDisplay(run)}</td>
@@ -636,7 +671,7 @@ const PipelineList: React.FC = () => {
                     </tbody>
                 </Table>
             )}
-        </div>
+        </Page>
     );
 };
 

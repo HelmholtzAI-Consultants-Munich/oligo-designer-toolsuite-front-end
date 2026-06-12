@@ -1,3 +1,5 @@
+import { showToast } from "../../utils/toastUtil";
+
 /**
  * Helper function to handle common success operations after bulk operations
  *
@@ -10,7 +12,11 @@ export const handleBulkOperationSuccess = (
     clearSelection: () => void,
     refreshData: () => void
 ) => {
-    alert(message);
+    showToast({
+        type: "success",
+        title: "Bulk operation complete",
+        content: message,
+    });
     clearSelection();
     refreshData();
 };
