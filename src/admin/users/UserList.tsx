@@ -73,46 +73,72 @@ const UserList: React.FC = () => {
         }
     };
 
-    const handleBan = async (user: User) => {
+    const handleBan = (user: User) => {
         if (!user.helmholtz_sub) return;
 
-        const confirmed = window.confirm(
-            `Ban Helmholtz account ${user.helmholtz_sub}? The account data will be retained, but access will be blocked.`
-        );
-        if (!confirmed) return;
-
-        try {
-            await axios.post(
-                BACKEND_URL + `/api/admin/users/${user.id}/ban`,
-                {},
-                { withCredentials: true }
-            );
-            await fetchUsers();
-        } catch (err: unknown) {
-            const message = axios.isAxiosError(err)
-                ? err.response?.data?.error || err.message
-                : "Unknown error";
-            alert(`Failed to ban user: ${message}`);
-        }
+        confirmWithModal({
+            title: "Ban User",
+            content: `Ban Helmholtz account ${user.helmholtz_sub}? The account data will be retained, but access will be blocked.`,
+            primaryAction: {
+                label: "Ban",
+                variant: "danger",
+                callback: async () => {
+                    try {
+                        await axios.post(
+                            BACKEND_URL + `/api/admin/users/${user.id}/ban`,
+                            {},
+                            { withCredentials: true }
+                        );
+                        showToast({
+                            type: "success",
+                            title: "User banned",
+                            content: `Banned Helmholtz account ${user.helmholtz_sub}.`,
+                        });
+                        fetchUsers();
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Ban failed",
+                            content: getErrorMessage(err, "Failed to ban user"),
+                        });
+                    }
+                },
+            },
+        });
     };
 
-    const handleUnban = async (banId: string, helmholtzSub: string) => {
-        if (!window.confirm(`Unban Helmholtz account ${helmholtzSub}?`)) {
-            return;
-        }
-
-        try {
-            await axios.delete(
-                BACKEND_URL + `/api/admin/banned-users/${banId}`,
-                { withCredentials: true }
-            );
-            await fetchUsers();
-        } catch (err: unknown) {
-            const message = axios.isAxiosError(err)
-                ? err.response?.data?.error || err.message
-                : "Unknown error";
-            alert(`Failed to unban user: ${message}`);
-        }
+    const handleUnban = (banId: string, helmholtzSub: string) => {
+        confirmWithModal({
+            title: "Unban User",
+            content: `Unban Helmholtz account ${helmholtzSub}?`,
+            primaryAction: {
+                label: "Unban",
+                variant: "success",
+                callback: async () => {
+                    try {
+                        await axios.delete(
+                            BACKEND_URL + `/api/admin/banned-users/${banId}`,
+                            { withCredentials: true }
+                        );
+                        showToast({
+                            type: "success",
+                            title: "User unbanned",
+                            content: `Unbanned Helmholtz account ${helmholtzSub}.`,
+                        });
+                        fetchUsers();
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Unban failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to unban user"
+                            ),
+                        });
+                    }
+                },
+            },
+        });
     };
 
     const handleDelete = async (userId: string, userIdentifier: string) => {

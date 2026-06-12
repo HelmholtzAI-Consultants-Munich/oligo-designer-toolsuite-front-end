@@ -9,13 +9,13 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 from backend.cli import register_cli_commands
 from backend.config import CeleryConfig, Config
+from backend.constants import USER_DENYLIST_COLLECTION
 from backend.extensions import celery_app, db, limiter, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
 from backend.utilities.objectid_converter import ObjectIdConverter
 from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
-from backend.utilities.user_denylist import COLLECTION_NAME as USER_DENYLIST_COLLECTION
 from backend.worker.task_index import Tasks
 
 

@@ -20,6 +20,7 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
+from backend.constants import USER_DENYLIST_COLLECTION
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
 from backend.utilities.account_cleanup import delete_user_account_data
@@ -39,9 +40,6 @@ from backend.utilities.pipeline import (
     delete_pipeline_run_files_and_db,
     execute_bulk_pipeline_run_deletion,
     get_valid_pipeline_statuses,
-)
-from backend.utilities.user_denylist import (
-    COLLECTION_NAME as USER_DENYLIST_COLLECTION,
 )
 from backend.utilities.user_denylist import (
     ban_helmholtz_sub,
@@ -228,11 +226,7 @@ def ban_user(user_id: ObjectId):
         abort(HTTPStatus.BAD_REQUEST, description="Cannot ban your own account")
 
     user = get_user_by_id_or_404(user_id, exclude_password=True)
-    helmholtz_sub = user.get("helmholtz_sub")
-    if not helmholtz_sub:
-        abort(HTTPStatus.BAD_REQUEST, description="Only Helmholtz AAI users can be banned")
-
-    ban = ban_helmholtz_sub(helmholtz_sub, str(current_user.id))
+    ban = ban_helmholtz_sub(user["helmholtz_sub"], str(current_user.id))
     return jsonify(format_ban(ban)), HTTPStatus.OK
 
 
