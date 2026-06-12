@@ -51,7 +51,7 @@ Our VMs get deployed on [JSC Cloud](https://apps.fz-juelich.de/jsc/hps/jsccloud/
 
 We currently provision two VMs:
 
-|              |      odt-main      |   odt-node-1    |
+|              |      odt-main      |   odt-node-0    |
 | :----------: | :----------------: | :-------------: |
 |    flavor    |    SCS-2L:2:20n    | SCS-16L:64:20n  |
 |    VCPUs     |         2          |       16        |
@@ -61,7 +61,7 @@ We currently provision two VMs:
 
 The reasoning for choosing the weakest node as the Docker Swarm Manager is as follows:  
 odt-main only serves our frontend as a static bundle. Thus, we expect very little stress put upon the VM.
-In contrast, odt-node-1 is tasked with the heavy lifting - providing the backend API and executing ODT pipelines among other things. It is thus more likely to suffer from unexpected outages or unscheduled maintenance. Overall, odt-main is more reliable as a management (and monitoring) node.
+In contrast, odt-node-0 is tasked with the heavy lifting - providing the backend API and executing ODT pipelines among other things. It is thus more likely to suffer from unexpected outages or unscheduled maintenance. Overall, odt-main is more reliable as a management (and monitoring) node.
 
 ## References
 
