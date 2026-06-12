@@ -21,3 +21,24 @@ export function getNextReportPeriod({
 
     return { year, month: month + 1 };
 }
+
+export function monthsBetween(
+    fromYear: number,
+    fromMonth: number,
+    toYear: number,
+    toMonth: number
+): ReportPeriod[] {
+    const out: ReportPeriod[] = [];
+    let year = fromYear;
+    let month = fromMonth;
+
+    while (year < toYear || (year === toYear && month <= toMonth)) {
+        out.push({ year, month });
+        if (++month > 12) {
+            month = 1;
+            year++;
+        }
+    }
+
+    return out;
+}

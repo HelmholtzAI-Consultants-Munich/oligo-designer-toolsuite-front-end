@@ -1,6 +1,17 @@
-import { Image, Nav, Navbar } from "react-bootstrap";
+import { Button, Collapse, Image, Nav, Navbar } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router";
-import { BoxArrowUpRight, Window } from "react-bootstrap-icons";
+import {
+    BarChartFill,
+    BoxArrowUpRight,
+    ChatDots,
+    ChevronDown,
+    ChevronUp,
+    FileText,
+    Gear,
+    People,
+    Speedometer2,
+    Window,
+} from "react-bootstrap-icons";
 import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import UserDropdown from "./UserDropdown";
@@ -8,10 +19,21 @@ import { Horizontal, Vertical } from "./Alignment";
 import { useState } from "react";
 import { type Pipeline } from "../../pipelineConfig/config";
 import { getEnabledPipelinesOnly } from "../../pipelineConfig/utils";
+import { useAuth } from "../../hooks/useAuth";
+
+const adminLinks = [
+    { path: "/admin/dashboard", label: "Dashboard", icon: Speedometer2 },
+    { path: "/admin/users", label: "User Management", icon: People },
+    { path: "/admin/pipelines", label: "Pipeline Management", icon: Gear },
+    { path: "/admin/feedback", label: "Feedback", icon: ChatDots },
+    { path: "/admin/reports", label: "Monthly Reports", icon: BarChartFill },
+    { path: "/admin/legal", label: "Legal Documents", icon: FileText },
+];
 
 const Sidebar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { user } = useAuth();
 
     const pipelines: { name: string; path: string }[] = Object.entries(
         getEnabledPipelinesOnly()
@@ -23,6 +45,8 @@ const Sidebar: React.FC = () => {
         }));
 
     const [expanded, setExpanded] = useState(false);
+    const [adminExpanded, setAdminExpanded] = useState(false);
+    const isAdmin = user?.role === "admin";
 
     const handleSelect = () => {
         setExpanded(false);
@@ -124,6 +148,66 @@ const Sidebar: React.FC = () => {
                         <h5>Recent Runs</h5>
 
                         <RecentRuns />
+
+                        {isAdmin && (
+                            <>
+                                <Divider />
+
+                                <Button
+                                    variant="outline-border"
+                                    className="w-100 text-start"
+                                    onClick={() =>
+                                        setAdminExpanded(!adminExpanded)
+                                    }
+                                    aria-controls="admin-navigation"
+                                    aria-expanded={adminExpanded}
+                                >
+                                    <Horizontal gap="lg" align="center">
+                                        <Speedometer2 size={18} />
+                                        <span>Admin</span>
+                                        <Horizontal.Item className="ms-auto">
+                                            {adminExpanded ? (
+                                                <ChevronUp size={15} />
+                                            ) : (
+                                                <ChevronDown size={15} />
+                                            )}
+                                        </Horizontal.Item>
+                                    </Horizontal>
+                                </Button>
+
+                                <Collapse in={adminExpanded}>
+                                    <div id="admin-navigation">
+                                        <Nav variant="heavy">
+                                            {adminLinks.map((link) => {
+                                                const Icon = link.icon;
+
+                                                return (
+                                                    <Nav.Link
+                                                        key={link.path}
+                                                        as={Link}
+                                                        to={link.path}
+                                                        active={location.pathname.startsWith(
+                                                            link.path
+                                                        )}
+                                                        eventKey={link.path}
+                                                    >
+                                                        <Horizontal
+                                                            gap="lg"
+                                                            align="center"
+                                                        >
+                                                            <Icon size={18} />
+                                                            <span>
+                                                                {link.label}
+                                                            </span>
+                                                        </Horizontal>
+                                                    </Nav.Link>
+                                                );
+                                            })}
+                                        </Nav>
+                                    </div>
+                                </Collapse>
+                            </>
+                        )}
                     </Vertical>
 
                     <div className="spacer" style={{ flex: 1 }} />
