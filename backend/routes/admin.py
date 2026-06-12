@@ -40,6 +40,14 @@ from backend.utilities.pipeline import (
     execute_bulk_pipeline_run_deletion,
     get_valid_pipeline_statuses,
 )
+from backend.utilities.user_denylist import (
+    COLLECTION_NAME as USER_DENYLIST_COLLECTION,
+)
+from backend.utilities.user_denylist import (
+    ban_helmholtz_sub,
+    format_ban,
+    remove_ban,
+)
 from backend.utilities.validation import validate_and_convert_ids, validate_id_array
 from backend.worker.task_index import Tasks
 
@@ -105,7 +113,16 @@ def get_users():
     users = list(db.users.find({}, {"password": 0}))  # Exclude password
 
     # Format for Refine: convert _id to id, format dates
-    formatted_users = [format_user(user) for user in users]
+    bans_by_sub = {
+        ban["helmholtz_sub"]: ban for ban in db[USER_DENYLIST_COLLECTION].find({}, {"helmholtz_sub": 1})
+    }
+    formatted_users = []
+    for user in users:
+        formatted_user = format_user(user)
+        ban = bans_by_sub.get(user.get("helmholtz_sub"))
+        formatted_user["banned"] = ban is not None
+        formatted_user["ban_id"] = str(ban["_id"]) if ban else None
+        formatted_users.append(formatted_user)
 
     return jsonify(formatted_users), HTTPStatus.OK
 
@@ -201,6 +218,39 @@ def delete_user(user_id: ObjectId):
     )
 
     return jsonify({"message": "User deleted successfully"}), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/users/<ObjectId:user_id>/ban", methods=["POST"])
+@login_required
+@require_admin
+def ban_user(user_id: ObjectId):
+    if str(current_user.id) == str(user_id):
+        abort(HTTPStatus.BAD_REQUEST, description="Cannot ban your own account")
+
+    user = get_user_by_id_or_404(user_id, exclude_password=True)
+    helmholtz_sub = user.get("helmholtz_sub")
+    if not helmholtz_sub:
+        abort(HTTPStatus.BAD_REQUEST, description="Only Helmholtz AAI users can be banned")
+
+    ban = ban_helmholtz_sub(helmholtz_sub, str(current_user.id))
+    return jsonify(format_ban(ban)), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/banned-users", methods=["GET"])
+@login_required
+@require_admin
+def get_banned_users():
+    bans = db[USER_DENYLIST_COLLECTION].find({}).sort("banned_at", -1)
+    return jsonify([format_ban(ban) for ban in bans]), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/banned-users/<ObjectId:ban_id>", methods=["DELETE"])
+@login_required
+@require_admin
+def unban_user(ban_id: ObjectId):
+    if not remove_ban(ban_id):
+        abort(HTTPStatus.NOT_FOUND, description="Ban not found")
+    return jsonify({"message": "User unbanned successfully"}), HTTPStatus.OK
 
 
 @admin_bp.route("/api/admin/legal-documents", methods=["GET"])

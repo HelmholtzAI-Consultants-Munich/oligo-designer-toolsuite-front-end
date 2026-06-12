@@ -40,6 +40,7 @@ from backend.utilities.typed_values import (
     parse_http_url,
     sanitize_relative_redirect_path,
 )
+from backend.utilities.user_denylist import is_helmholtz_sub_banned
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -88,7 +89,7 @@ def init_login_manager(app):
     def load_user(user_id):
         # Load user document from MongoDB by ObjectId and return User instance
         user_doc = db.users.find_one({"_id": ObjectId(user_id)})
-        if user_doc:
+        if user_doc and not is_helmholtz_sub_banned(user_doc.get("helmholtz_sub")):
             return User(user_doc)
         return None
 
@@ -246,6 +247,17 @@ def auth_callback():
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )
 
+    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+    frontend_url = parse_http_url(frontend_url_raw)
+    if frontend_url is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
+    frontend_base = frontend_url.geturl().rstrip("/")
+
+    if is_helmholtz_sub_banned(helmholtz_sub):
+        session.pop("oauth_redirect", None)
+        session.pop("oauth_token", None)
+        return redirect(f"{frontend_base}/login?error=banned")
+
     # Check if user exists in database by helmholtz_sub
     user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
 
@@ -270,12 +282,6 @@ def auth_callback():
     session["oauth_token"] = token.get("access_token")
 
     # Redirect to frontend - check if there's a preserved redirect URL
-    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
-    frontend_url = parse_http_url(frontend_url_raw)
-    if frontend_url is None:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
-
-    frontend_base = frontend_url.geturl().rstrip("/")
     redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
     if redirect_path:
         return redirect(f"{frontend_base}{redirect_path}")

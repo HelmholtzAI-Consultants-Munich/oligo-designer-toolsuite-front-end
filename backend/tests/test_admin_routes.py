@@ -116,6 +116,8 @@ def cleanup_legal_documents(client):
 
 # ==================== User Management Tests ====================
 
+# TODO: Add deny-list admin route tests after the pending test-suite overhaul lands.
+
 
 def test_get_users_success(admin_client, admin_user, regular_user):
     """Test getting all users as admin"""

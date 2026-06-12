@@ -5,7 +5,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { BACKEND_URL, TURNSTILE_SITE_KEY } from "../config";
-import { Button, Card, Form } from "react-bootstrap";
+import { Alert, Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../utils/toastUtil";
 import { Vertical } from "../components/ui/Alignment";
@@ -33,6 +33,7 @@ const Login = () => {
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get("redirect") || "/";
+    const isBanned = searchParams.get("error") === "banned";
 
     // Redirect if already logged in
     // This useEffect is necessary because navigate() cannot reliably be called during render.
@@ -123,6 +124,13 @@ const Login = () => {
     return (
         <Page title="Login" hideHeader>
             <Vertical gap="xl" align="center" justify="center" grow>
+                {isBanned && (
+                    <Alert variant="danger" style={{ maxWidth: "500px" }}>
+                        <Alert.Heading>Access denied</Alert.Heading>
+                        This account has been banned from accessing the service.
+                        Contact support if you believe this is an error.
+                    </Alert>
+                )}
                 <Card style={{ maxWidth: "500px" }}>
                     <Card.Body>
                         <Vertical gap="md" align="stretch">

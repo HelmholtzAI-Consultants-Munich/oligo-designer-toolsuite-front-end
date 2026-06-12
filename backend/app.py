@@ -15,6 +15,7 @@ from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
 from backend.utilities.objectid_converter import ObjectIdConverter
 from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
+from backend.utilities.user_denylist import COLLECTION_NAME as USER_DENYLIST_COLLECTION
 from backend.worker.task_index import Tasks
 
 
@@ -47,6 +48,11 @@ def ensure_mongo_indexes() -> None:
     db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
         [("last_activity_at", 1)],
         name="anonymous_sessions_last_activity_at_idx",
+    )
+    db[USER_DENYLIST_COLLECTION].create_index(
+        [("helmholtz_sub", 1)],
+        name="user_denylist_helmholtz_sub_idx",
+        unique=True,
     )
 
 
