@@ -2,7 +2,7 @@ import json
 import os
 import tempfile
 from logging import Logger
-from typing import Any, cast
+from typing import Any
 
 import yaml
 from glom import assign, glom
@@ -99,16 +99,14 @@ class PipelineRunner:
             generated_region_paths {list[tuple[str, list[str]]]} -- list of tuples of input_field_id and belonging paths of generated genomic regions
         """
 
+        # Initialize generated region paths in config with empty lists
+        ids = set(id for id, _ in generated_region_paths)
+        for id in ids:
+            assign(config, id, [])
+
         # Add paths of generated regions to config
         for id, paths in generated_region_paths:
-            previous_value: list[str] | list[dict] | None = glom(config, id)
-            if previous_value and isinstance(previous_value[0], dict):
-                previous_paths: list[str] = []
-            else:
-                previous_value = cast(list[str] | None, previous_value)
-                previous_paths: list[str] = previous_value or []
-            previous_paths.extend(paths)
-            assign(config, id, previous_paths)
+            glom(config, id).extend(paths)
 
     def write_config_file(
         self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
