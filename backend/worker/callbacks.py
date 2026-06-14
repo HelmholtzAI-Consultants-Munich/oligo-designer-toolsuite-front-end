@@ -25,7 +25,7 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
 
     run_id = _parse_run_id(request.id)
     if run_id is None:
-        logger.error(f"Pipeline chord errback received invalid run id: {run_id}")
+        logger.error(f"Pipeline chord errback received invalid run id: {request.id}")
         return
 
     # Extract original exception from ChordError if available

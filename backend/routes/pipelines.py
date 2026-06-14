@@ -10,7 +10,6 @@ from typing import Any
 
 from bson import ObjectId
 from celery import chord
-from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
@@ -177,7 +176,7 @@ def enqueue_pipeline(
     context: RunContext,
     enqueued_at: datetime,
     is_authenticated: bool = False,
-) -> AsyncResult:
+) -> None:
     """
     Builds and enqueues a chord such that all region generation tasks
     finish executing before the pipeline is started.
