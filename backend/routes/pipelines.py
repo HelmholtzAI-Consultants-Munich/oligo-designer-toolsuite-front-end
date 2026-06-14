@@ -10,7 +10,6 @@ from typing import Any
 
 from bson import ObjectId
 from celery import chord
-from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
@@ -125,7 +124,6 @@ def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
     context: RunContext,
-    task_id: str | None,
     priority: int = CeleryConfig.task_default_priority,
     queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
     pipeline_run_config: dict | None = None,
@@ -139,7 +137,6 @@ def write_run_to_DB(
         "timestamp": context.timestamp,
         "output_path": serialize_path(context.output_path),
         "pipeline": pipeline_name,
-        "task_id": task_id,
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
         "queue_position": queue_position,
     }
@@ -179,7 +176,7 @@ def enqueue_pipeline(
     context: RunContext,
     enqueued_at: datetime,
     is_authenticated: bool = False,
-) -> AsyncResult:
+) -> None:
     """
     Builds and enqueues a chord such that all region generation tasks
     finish executing before the pipeline is started.
@@ -199,12 +196,12 @@ def enqueue_pipeline(
     # for worker processes that do not shut down after the soft timeout.
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE,
+        task_id=str(run_id),
         args=(pipeline_name, form_data, str(context.output_path)),
         priority=priority,
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
         headers={
-            "run_id": str(run_id),
             "pipeline": pipeline_name,
             "user_id": context.user_id,
             "session_id": context.session_id,
@@ -212,9 +209,9 @@ def enqueue_pipeline(
         },
     )
 
-    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
+    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK)
 
-    return chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
+    chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
 
 
 def calculate_queue_position(priority: int) -> tuple[int, int]:
@@ -394,7 +391,7 @@ def start_pipeline(pipeline_name: str):
     priority = get_task_priority(form_data)
     enqueued_at = utc_now()
 
-    result_promise = enqueue_pipeline(
+    enqueue_pipeline(
         run_id,
         pipeline_name,
         form_data,
@@ -415,7 +412,6 @@ def start_pipeline(pipeline_name: str):
         pipeline_name,
         run_id,
         context,
-        result_promise.id,
         priority,
         (high_priority_ahead, default_priority_ahead),
         pipeline_run_config,
