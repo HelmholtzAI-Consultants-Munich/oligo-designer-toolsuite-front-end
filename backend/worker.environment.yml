@@ -1,8 +1,8 @@
 name: odt
 channels:
+  - nodefaults
   - conda-forge
   - bioconda
-  - defaults
 dependencies:
   # Oligo Designer Toolsuite dependencies
   - bcftools>=1.22

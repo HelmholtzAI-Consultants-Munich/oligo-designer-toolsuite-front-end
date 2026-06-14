@@ -1,15 +1,14 @@
 # using https://micromamba-docker.readthedocs.io/en/latest/index.html
 FROM mambaorg/micromamba:2-alpine3.22
 
+LABEL org.opencontainers.image.url https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end
+LABEL org.opencontainers.image.source https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end
+LABEL org.opencontainers.image.title "odt-worker"
+LABEL org.opencontainers.image.description "Celery worker for ODT Cloud"
+LABEL org.opencontainers.image.licenses MIT
+
 # --- Set up Python environment ---
 RUN --mount=source=backend/environment.yml,target=/tmp/env.yml \
-    --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
-    micromamba install -y -n base -f /tmp/env.yml
-
-# --- Add worker-specific dependencies ---
-# disable sharded repodata as workaround for https://github.com/mamba-org/mamba/issues/4277
-RUN micromamba config set use_sharded_repodata false
-RUN --mount=source=backend/worker.environment.yml,target=/tmp/env.yml \
     --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
     micromamba install -y -n base -f /tmp/env.yml
 
@@ -21,6 +20,11 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
     gcc_linux-aarch64 \
     gxx_linux-aarch64; \
     fi
+
+# --- Add worker-specific dependencies ---
+RUN --mount=source=backend/worker.environment.yml,target=/tmp/env.yml \
+    --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
+    micromamba install -y -n base -f /tmp/env.yml
 
 # --- Install Python dependencies ---
 # activate conda environment to use pip during build
@@ -36,5 +40,4 @@ WORKDIR /app
 COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 COPY --chown=$MAMBA_USER:$MAMBA_USER schemas schemas
 
-
-CMD ["celery", "-A", "backend.worker", "worker", "--concurrency", "2"]
+CMD ["celery", "-A", "backend.worker", "worker", "--concurrency", "1"]

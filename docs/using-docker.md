@@ -13,9 +13,9 @@ ODT Cloud can be run and deployed using Docker containers. The provided configur
 
 ## Quickstart
 
-This project provides a single `docker-compose.yml` file to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
+This project provides a Docker Compose setup to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
 
-All commands necessary to use Docker are defined in the `package.json`. To launch the frontend, backend and database, run:
+All commands necessary to use Docker are defined in the `package.json`. To launch all required services, run:
 
 ```bash
 npm run docker:start
@@ -73,18 +73,19 @@ This will start all standard services plus the `odt-tests` container. See [Tests
 
 The Dockerfiles used for building the frontend, backend and Playwright tests containers are located in the `docker` directory, along with their respective [`.dockerignore`](https://docs.docker.com/build/concepts/context/#dockerignore-files) files.
 
-The `docker-compose.yml` at the project root defines the containers used for ODT Cloud and their respective deployment configuration.
+The `compose.yml` at the project root defines the containers used for ODT Cloud and their respective configuration.
+The `compose.override.yml` contains the default overrides for development whereas `compose.prod.yml` contains configuration used for production deployment with Docker Swarm.
 
 Currently, the project consists of the following containers:
 
-|     Service      |    Name    | Self-Built? |    Dockerfile     |            Base Image            |
-| :--------------: | :--------: | :---------: | :---------------: | :------------------------------: |
-|     Frontend     |  odt-web   |     yes     |  web.Dockerfile   |        node:22-alpine3.22        |
-|     Backend      | odt-server |     yes     | server.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
-|      Worker      | odt-worker |     yes     | worker.Dockerfile | mambaorg/micromamba:2-alpine3.22 |
-|     Database     |   odt-db   |     no      |         -         |             mongo:8              |
-| Celery / Caching | odt-redis  |     no      |         -         |          redis:8-alpine          |
-|    Playwright    | odt-tests  |     yes     | tests.Dockerfile  |           node:22-slim           |
+|     Service      |    Name    | Self-Built? |    Dockerfile     |                        Base Images                        |
+| :--------------: | :--------: | :---------: | :---------------: | :-------------------------------------------------------: |
+|     Frontend     |  odt-web   |     yes     |  web.Dockerfile   | node:22-alpine3.22,nginxinc/nginx-unprivileged:alpine3.23 |
+|     Backend      | odt-server |     yes     | server.Dockerfile |             mambaorg/micromamba:2-alpine3.22              |
+|      Worker      | odt-worker |     yes     | worker.Dockerfile |             mambaorg/micromamba:2-alpine3.22              |
+|     Database     |   odt-db   |     no      |         -         |                          mongo:8                          |
+| Celery / Caching | odt-redis  |     no      |         -         |                      redis:8-alpine                       |
+|    Playwright    | odt-tests  |     yes     | tests.Dockerfile  |        mcr.microsoft.com/playwright:v1.58.2-noble         |
 
 ## Build Configuration
 
@@ -181,4 +182,26 @@ docker compose exec odt-server micromamba run flask user register
 # run pipeline in a shell inside of odt-worker
 docker compose exec odt-worker bash
 (base) 1337c977958a:/app$ genomic_region_generator [ARGUMENTS]
+```
+
+## Building and pushing production container images
+
+To execute `docker compose` commands using the production overrides, you have to manually specify the compose files to take into account.
+
+For example, to print the production config, run:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml config
+```
+
+To build new production images using a production env file you keep at `ansible/files/.env`, run:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml --env-file ansible/files/.env build
+```
+
+To push these images to the GitHub Container Registry, run:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml push
 ```

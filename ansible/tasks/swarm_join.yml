@@ -1,0 +1,13 @@
+---
+- name: Check whether already part of a swarm
+  community.docker.docker_swarm_info:
+  register: swarm_exists_info
+  ignore_errors: true
+
+- name: Join swarm as worker
+  community.docker.docker_swarm:
+    state: join
+    remote_addrs:
+      - "{{ hostvars['odt-main']['manager_addr'] }}"
+    join_token: "{{ hostvars['odt-main']['worker_token'] }}"
+  when: not (swarm_exists_info.docker_swarm_active | default(false))
