@@ -22,6 +22,13 @@ interface ButtonAction {
     onClick: () => void;
 }
 
+export interface FileDownloadAction {
+    type: "fileDownload";
+    label: string;
+    icon?: Icon;
+    href: string;
+}
+
 interface SearchAction {
     type: "search";
     label: string;
@@ -29,7 +36,7 @@ interface SearchAction {
     onSearch: (query: string) => void;
 }
 
-export type Action = ButtonAction | SearchAction;
+export type Action = ButtonAction | SearchAction | FileDownloadAction;
 
 export interface HeaderProps {
     title: string;
@@ -87,6 +94,32 @@ function HeaderAction({ action }: { action: Action }) {
                     <Button type="submit">{action.label}</Button>
                 </InputGroup>
             </Form>
+        );
+    } else if (action.type === "fileDownload") {
+        return (
+            <Vertical align="center" justify="end" fillHeight>
+                {action.icon && (
+                    <Form.Label
+                        className="small text-muted text-center"
+                        htmlFor={`action-${action.label.replace(/\s+/g, "-")}`}
+                    >
+                        {action.label}
+                    </Form.Label>
+                )}
+                <Vertical.Item>
+                    <Button
+                        as="a"
+                        id={`action-${action.label.replace(/\s+/g, "-")}`}
+                        variant="outline-primary"
+                        download
+                        className="icon-button"
+                        title={action.label}
+                        href={action.href}
+                    >
+                        {action.icon ? <action.icon size={20} /> : action.label}
+                    </Button>
+                </Vertical.Item>
+            </Vertical>
         );
     }
     return null;
