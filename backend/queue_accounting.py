@@ -8,6 +8,7 @@ from redis.exceptions import LockError
 from backend.config import CeleryConfig, Config
 from backend.database import mongo_database
 from backend.types import RunStatus
+from backend.worker.database import _parse_run_id
 
 
 def _decrement_queue_length(redis: Redis, priority: str) -> int:
@@ -82,9 +83,13 @@ def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
 
 def start_pending_run(task_id: str) -> bool:
     """Mark a pending run started and update queue accounting under the shared lock."""
+    run_id = _parse_run_id(task_id)
+    if run_id is None:
+        return False
+
     with mongo_database() as db:
         with queue_accounting_lock() as redis:
-            run = db.runs.find_one({"task_id": task_id, "status": RunStatus.PENDING})
+            run = db.runs.find_one({"_id": run_id, "status": RunStatus.PENDING})
             if run is None:
                 return False
 
