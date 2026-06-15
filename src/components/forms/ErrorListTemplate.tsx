@@ -27,7 +27,7 @@ const ErrorListTemplate = (props: ErrorListProps) => {
     return (
         <Card id="rjsf-error-list" border="danger" className="mt-4">
             <Card.Header className="alert-danger">
-                Please correct the following errors:
+                Please correct the following errors (click to scroll to error):
             </Card.Header>
             <Card.Body className="p-0">
                 <ListGroup>
@@ -39,10 +39,13 @@ const ErrorListTemplate = (props: ErrorListProps) => {
                                 action
                                 onClick={() => scrollToError(error)}
                                 role="button"
-                                title="Click to jump to error"
+                                title="Click to scroll to error"
                             >
                                 <span className="text-danger">
-                                    {error.stack} <ArrowUp />
+                                    <span className="text-decoration-underline">
+                                        Scroll to error:
+                                    </span>{" "}
+                                    {error.stack}
                                 </span>
                             </ListGroup.Item>
                         );
