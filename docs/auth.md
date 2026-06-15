@@ -252,8 +252,10 @@ user_data/
 - **Provider**: Helmholtz AAI (`login.helmholtz.de`)
 - **Flow**: Authorization Code flow
 - **Token Storage**: Access tokens stored in Flask session for revocation
-- **User Info**: Only the unique subject identifier (`sub`) is received from Helmholtz AAI userinfo endpoint
+- **User Info**: The unique subject identifier (`sub`) and `entitlements` are requested from Helmholtz AAI
 - **User Identification**: Users are identified solely by `helmholtz_sub` (the `sub` field from OAuth response)
+- **Access restriction**: Login requires the `urn:geant:helmholtz.de:group:Helmholtz-member` entitlement
+- **Rejected identities**: Tokens without the required entitlement are revoked with provider-side logout before access is denied
 
 ### Security
 

@@ -5,7 +5,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { BACKEND_URL, TURNSTILE_SITE_KEY } from "../config";
-import { Button, Card, Form } from "react-bootstrap";
+import { Alert, Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../utils/toastUtil";
 import { Vertical } from "../components/ui/Alignment";
@@ -22,7 +22,7 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const auth = useAuth();
     const user = auth.user;
     const { loading, checkAuth } = auth;
@@ -33,6 +33,15 @@ const Login = () => {
 
     // Get redirect URL from query params
     const redirectTo = searchParams.get("redirect") || "/";
+    const [oauthError] = useState(() => searchParams.get("oauth_error"));
+
+    useEffect(() => {
+        if (!oauthError) return;
+
+        const nextSearchParams = new URLSearchParams(searchParams);
+        nextSearchParams.delete("oauth_error");
+        setSearchParams(nextSearchParams, { replace: true });
+    }, [oauthError, searchParams, setSearchParams]);
 
     // Redirect if already logged in
     // This useEffect is necessary because navigate() cannot reliably be called during render.
@@ -126,6 +135,12 @@ const Login = () => {
                 <Card style={{ maxWidth: "500px" }}>
                     <Card.Body>
                         <Vertical gap="md" align="stretch">
+                            {oauthError === "vo_access_denied" && (
+                                <Alert variant="danger">
+                                    Access is restricted to members of the
+                                    Helmholtz-member VO.
+                                </Alert>
+                            )}
                             <Card.Title as="h2">
                                 Login with Helmholtz AAI
                             </Card.Title>

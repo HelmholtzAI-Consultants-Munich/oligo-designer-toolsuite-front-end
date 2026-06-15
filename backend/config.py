@@ -74,7 +74,8 @@ class Config:
     HELMHOLTZ_CLIENT_SECRET = None
 
     # OAuth2 settings
-    HELMHOLTZ_SCOPE = "openid single-logout"
+    HELMHOLTZ_SCOPE = "openid single-logout entitlements"
+    HELMHOLTZ_REQUIRED_ENTITLEMENT = "urn:geant:helmholtz.de:group:Helmholtz-member"
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
 
     # Turnstile settings

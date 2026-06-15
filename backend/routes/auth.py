@@ -20,6 +20,7 @@ Main features:
 import os
 import uuid
 from http import HTTPStatus
+from urllib.parse import urlencode
 
 import requests
 from bson import ObjectId
@@ -42,6 +43,44 @@ from backend.utilities.typed_values import (
 )
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _has_required_entitlement(userinfo: dict, required_entitlement: str) -> bool:
+    """Return whether userinfo contains the required Helmholtz group entitlement."""
+    entitlements = userinfo.get("entitlements", [])
+    if isinstance(entitlements, str):
+        entitlements = [entitlements]
+    if not isinstance(entitlements, list):
+        return False
+
+    return any(
+        isinstance(entitlement, str)
+        and (entitlement == required_entitlement or entitlement.startswith(f"{required_entitlement}#"))
+        for entitlement in entitlements
+    )
+
+
+def _revoke_helmholtz_token(access_token: str) -> None:
+    """Revoke a Helmholtz access token and request provider-side logout."""
+    try:
+        revocation_url = parse_http_url(current_app.config.get("HELMHOLTZ_REVOCATION_ENDPOINT"))
+        if revocation_url is None:
+            current_app.logger.warning("Token revocation skipped: invalid revocation endpoint URL")
+            return
+
+        response = requests.post(
+            revocation_url.geturl(),
+            data={
+                "token": access_token,
+                "client_id": current_app.config.get("HELMHOLTZ_CLIENT_ID"),
+                "token_type_hint": "access_token",
+                "logout": "true",
+            },
+        )
+        if response.status_code != HTTPStatus.OK:
+            current_app.logger.warning("Token revocation failed: %s", response.status_code)
+    except Exception as error:
+        current_app.logger.error("Error revoking token: %s", error)
 
 
 # ---- User Loader and User Class ----
@@ -246,6 +285,26 @@ def auth_callback():
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )
 
+    required_entitlement = current_app.config["HELMHOLTZ_REQUIRED_ENTITLEMENT"]
+    if not _has_required_entitlement(userinfo, required_entitlement):
+        current_app.logger.warning(
+            "Helmholtz AAI login denied for subject %s: required entitlement is missing",
+            helmholtz_sub,
+        )
+        if access_token := token.get("access_token"):
+            _revoke_helmholtz_token(access_token)
+        session.pop("oauth_token", None)
+
+        frontend_url = parse_http_url(current_app.config.get("FRONTEND_URL"))
+        if frontend_url is None:
+            abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
+
+        query = {"oauth_error": "vo_access_denied"}
+        redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
+        if redirect_path:
+            query["redirect"] = redirect_path
+        return redirect(f"{frontend_url.geturl().rstrip('/')}/login?{urlencode(query)}")
+
     # Check if user exists in database by helmholtz_sub
     user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
 
@@ -363,27 +422,7 @@ def logout():
     # Revoke OAuth token if present
     oauth_token = session.get("oauth_token")
     if oauth_token:
-        try:
-            # Revoke the token with Helmholtz AAI
-            revocation_url = parse_http_url(current_app.config.get("HELMHOLTZ_REVOCATION_ENDPOINT"))
-            client_id = current_app.config.get("HELMHOLTZ_CLIENT_ID")
-
-            # According to RFC 7009 and Helmholtz AAI docs, token_type_hint is mandatory
-            data = {
-                "token": oauth_token,
-                "client_id": client_id,
-                "token_type_hint": "access_token",
-                "logout": "true",
-            }
-
-            if revocation_url is None:
-                current_app.logger.warning("Token revocation skipped: invalid revocation endpoint URL")
-            else:
-                response = requests.post(revocation_url.geturl(), data=data)
-                if response.status_code != HTTPStatus.OK:
-                    current_app.logger.warning(f"Token revocation failed: {response.status_code}")
-        except Exception as e:
-            current_app.logger.error(f"Error revoking token: {e!s}")
+        _revoke_helmholtz_token(oauth_token)
 
         # Clear token from session
         session.pop("oauth_token", None)

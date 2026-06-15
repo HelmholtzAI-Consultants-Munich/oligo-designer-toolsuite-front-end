@@ -79,6 +79,9 @@ def test_login_get_rejects_external_redirect(client):
     assert response.get_json()["error"] == "Invalid redirect path"
 
 
+# TODO: Test OAuth callbacks for accepted Helmholtz-member entitlements and rejection of non-members.
+
+
 def test_check_auth_logged_out(client):
     response = client.get("/api/check_auth")
     data = response.get_json()
