@@ -357,7 +357,7 @@ const setupElements = (
                 .attr("class", "transcript-marker")
                 .attr("x", 0)
                 .attr("y", TRANSCRIPT_HEIGHT * 0.05)
-                .attr("width", 8)
+                .attr("width", TRANSCRIPT_MARKER_WIDTH)
                 .attr("height", TRANSCRIPT_HEIGHT * 0.9)
                 .attr("fill", "transparent")
                 .on("mouseover", function () {
