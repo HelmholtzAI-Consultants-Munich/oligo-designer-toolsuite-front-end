@@ -27,7 +27,7 @@ import { useRuns } from "../../hooks/useRuns";
 import { useAuth } from "../../hooks/useAuth";
 import { Button, Form as BootstrapForm } from "react-bootstrap";
 import { Link, useLocation } from "react-router";
-import { FileInput, GenomicInput } from "../fastaGenerateForm/GenomicInput";
+import { FileInput, GenomicInput } from "./GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
 import { TURNSTILE_SITE_KEY } from "../../config";

@@ -14,8 +14,10 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         return <div className="hidden">{children}</div>;
     }
 
+    const isCustomField = !!uiSchema?.["ui:field"];
+
     const spanFullWidth =
-        schema.type === "object" || schema.oneOf || uiSchema?.["ui:field"];
+        schema.type === "object" || schema.oneOf || isCustomField;
 
     return (
         <div
@@ -25,7 +27,10 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
             className={`rjsf-field rjsf-field-${schema.type}`}
         >
             {children}
-            {errors}
+            {
+                !isCustomField &&
+                    errors /* custom fields must render errors themselves */
+            }
             {help}
         </div>
     );

@@ -4,7 +4,20 @@ import { Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
 
 const TxtUploadInput = (props: FieldProps) => {
-    const { onChange, fieldPathId, formData, onBlur } = props;
+    const {
+        onChange,
+        fieldPathId,
+        formData,
+        onBlur,
+        schema,
+        uiSchema,
+        rawErrors,
+        registry,
+    } = props;
+
+    const {
+        templates: { FieldErrorTemplate },
+    } = registry;
 
     const handleTxtUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -61,6 +74,13 @@ const TxtUploadInput = (props: FieldProps) => {
                     <FiletypeTxt size={20} className="ms-2" />
                 </Form.Label>
             </InputGroup>
+            <FieldErrorTemplate
+                schema={schema}
+                uiSchema={uiSchema}
+                fieldPathId={fieldPathId}
+                errors={rawErrors}
+                registry={registry}
+            />
         </>
     );
 };
