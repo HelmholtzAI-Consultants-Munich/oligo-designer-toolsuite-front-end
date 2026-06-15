@@ -44,7 +44,8 @@ const WrappedBaseInputTemplate = memo((props: BaseInputTemplateProps) => {
             {!hideLabel && schema.description ? (
                 <ToolTip id={id} tip={schema.description} />
             ) : null}
-            <BaseInputTemplate {...props} onChange={_onChange} />
+            {/* use lang="en" by default, enforces '.' as decimal separator in number inputs */}
+            <BaseInputTemplate lang="en" {...props} onChange={_onChange} />
         </>
     );
 });
