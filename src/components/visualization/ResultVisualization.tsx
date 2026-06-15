@@ -5,8 +5,8 @@ import type { VisualizationType } from "../ui/utils";
 
 type Props = {
     probes: Probe[];
-    selectedOligo: string;
-    setSelectedOligo: (id: string) => void;
+    selectedOligo: string | null;
+    setSelectedOligo: (id: string | null) => void;
     genomicRegions: GenomicRegions | null;
     selectedVisualization: VisualizationType;
 };
@@ -29,6 +29,9 @@ const ResultVisualization: React.FC<Props> = ({
             />
         );
     } else if (selectedVisualization === "components") {
+        if (!selectedOligo) {
+            return <div>Please select an oligo to view its components.</div>;
+        }
         return (
             <OligoComponents probes={probes} selectedOligo={selectedOligo} />
         );
