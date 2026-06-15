@@ -19,8 +19,3 @@ def _parse_run_id(run_id_str: str) -> ObjectId | None:
 def _update_run(run_id: ObjectId, data: dict[Any, Any]) -> UpdateResult:
     with mongo_database() as db:
         return db.runs.update_one({"_id": run_id}, {"$set": data})
-
-
-def _update_run_by_task(task_id: str, data: dict[Any, Any]) -> UpdateResult:
-    with mongo_database() as db:
-        return db.runs.update_one({"task_id": task_id}, {"$set": data})

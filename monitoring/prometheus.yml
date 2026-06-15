@@ -17,7 +17,7 @@ scrape_configs:
   # Flask server metrics
   - job_name: "odt-server"
     static_configs:
-      - targets: ["odt-server:5000"]
+      - targets: ["odt-server:8000"]
     metrics_path: "/metrics"
 
   # Host OS metrics (node_exporter)

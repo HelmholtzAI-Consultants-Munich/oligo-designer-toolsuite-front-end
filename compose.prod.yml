@@ -1,0 +1,143 @@
+services:
+  traefik:
+    image: traefik:3
+    networks:
+      - traefik_proxy
+    ports:
+      - published: 80
+        target: 80
+        mode: host
+      - published: 443
+        target: 443
+        mode: host
+    volumes:
+      # Mount the Docker socket for Traefik's Swarm provider
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - tls_certs:/certs
+    command:
+      # --- EntryPoint config ---
+
+      # HTTP EntryPoint
+      - "--entrypoints.web.address=:80"
+      # Configure HTTP to HTTPS Redirection
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+
+      # HTTPS EntryPoint
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certresolver=lets-encrypt"
+
+      # Certificate resolver config
+      - "--certificatesresolvers.lets-encrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.lets-encrypt.acme.email=jonas.hagenberg@helmholtz-munich.de"
+      - "--certificatesresolvers.lets-encrypt.acme.storage=/certs/acme.json"
+
+      # --- Providers config ---
+
+      # Docker Swarm Provider
+      # Enable the Docker Swarm provider (instead of Docker provider)
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      # Watch for Swarm service changes (requires socket access)
+      - "--providers.swarm.watch=true"
+      # Don't expose services by default; require explicit labels
+      - "--providers.swarm.exposedbydefault=false"
+      # Specify the default network for Traefik to connect to services
+      - "--providers.swarm.network=traefik_proxy"
+
+      # --- General config ---
+
+      # Observability
+      - "--log.level=INFO" # Set the Log Level e.g INFO, DEBUG
+      - "--accesslog=true" # Enable Access Logs
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  odt-db:
+    networks:
+      - internal
+    volumes:
+      - odt-db:/data/db
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+
+  odt-redis:
+    networks:
+      - internal
+    volumes:
+      - odt-redis:/data
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+
+  odt-server:
+    volumes:
+      - data-access:/app/backend/data-access
+    networks:
+      - internal
+      - traefik_proxy
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.odt-server.rule=Host(`odt.helmholtz-munich.de`) && PathPrefix(`/api/v0/`)"
+        - "traefik.http.routers.odt-server.entrypoints=websecure"
+        - traefik.http.services.odt-server.loadbalancer.server.port=8000
+        # Strip /api/v0 from request paths
+        - "traefik.http.middlewares.strip-api-prefix.stripprefix.prefixes=/api/v0"
+        - "traefik.http.routers.odt-server.middlewares=strip-api-prefix"
+
+  odt-beat:
+    networks:
+      - internal
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+
+  odt-worker:
+    networks:
+      - internal
+    deploy:
+      placement:
+        constraints:
+          - node.role == worker
+      replicas: 4
+      resources:
+        limits:
+          memory: 16G
+
+  odt-web:
+    networks:
+      - traefik_proxy
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.odt-web.rule=Host(`odt.helmholtz-munich.de`)"
+        - "traefik.http.routers.odt-web.entrypoints=websecure"
+        - "traefik.http.services.odt-web.loadbalancer.server.port=8080"
+
+networks:
+  internal:
+    driver: overlay
+    attachable: true
+  traefik_proxy:
+    name: traefik_proxy
+    driver: overlay
+    attachable: true
+
+volumes:
+  tls_certs:
+  odt-db:
+  odt-redis:

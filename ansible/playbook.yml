@@ -1,0 +1,56 @@
+---
+- name: Provision Servers
+  hosts: localhost
+  module_defaults:
+    group/openstack.cloud.openstack:
+      cloud: openstack
+  tasks:
+    - name: Provision OpenStack servers
+      ansible.builtin.import_tasks: tasks/provisioning.yml
+    - name: Add jump host ssh key to known_hosts
+      ansible.builtin.import_tasks: tasks/ssh_checking.yml
+    - name: Reload inventory
+      ansible.builtin.meta: refresh_inventory
+  handlers:
+    - name: Wait slightly
+      ansible.builtin.wait_for:
+        timeout: 30
+
+- name: Prepare Instances
+  hosts: swarm
+  become: true
+  tasks:
+    - name: Configure system components
+      ansible.builtin.import_tasks: tasks/system.yml
+    - name: Update and install system packages
+      ansible.builtin.import_tasks: tasks/packages.yml
+  handlers:
+    - name: Perform reboot
+      ansible.builtin.reboot:
+    - name: Reset connection
+      ansible.builtin.meta: reset_connection
+    - name: Wait slightly
+      ansible.builtin.wait_for:
+        timeout: 30
+    - name: Restart Docker daemon
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+
+- name: Create Docker Swarm cluster
+  hosts: swarm_managers
+  tasks:
+    - name: Initialize Swarm cluster
+      ansible.builtin.import_tasks: tasks/swarm_init.yml
+
+- name: Join workers to Docker Swarm cluster
+  hosts: swarm_workers
+  tasks:
+    - name: Join Swarm cluster
+      ansible.builtin.import_tasks: tasks/swarm_join.yml
+
+- name: Deploy ODT Cloud Stack
+  hosts: swarm_managers
+  tasks:
+    - name: Deploy Stack
+      ansible.builtin.import_tasks: tasks/deploy.yml

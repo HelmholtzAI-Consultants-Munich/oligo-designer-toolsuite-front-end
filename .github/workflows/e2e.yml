@@ -46,9 +46,9 @@ jobs:
               - 'playwright/**'
               - 'playwright.config.ts'
               - 'docker/**'
-              - 'docker-compose.yml'
+              - 'compose.yml'
+              - 'compose.override.yml'
               - '.env.sample'
-              - '.env.docker.sample'
               - 'package.json'
               - 'package-lock.json'
               - 'vite.config.ts'
@@ -83,11 +83,10 @@ jobs:
         with:
           version: latest
 
-      - name: Prepare Docker env files
+      - name: Prepare env files
         run: |
           set -euxo pipefail
           cp .env.sample .env
-          cp .env.docker.sample .env.docker
 
       - name: Create artifact directories
         run: |
@@ -107,7 +106,7 @@ jobs:
       - name: Wait for application readiness
         run: |
           set -euxo pipefail
-          for url in "http://localhost:3000/runs" "http://localhost:5000/api/runs"; do
+          for url in "http://localhost:3000/runs" "http://localhost:8000/api/runs"; do
             for attempt in {1..40}; do
               if curl --fail --silent --show-error "$url" > /dev/null; then
                 break

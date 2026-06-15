@@ -125,7 +125,6 @@ def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
     context: RunContext,
-    task_id: str | None,
     priority: int = CeleryConfig.task_default_priority,
     queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
     pipeline_run_config: dict | None = None,
@@ -139,7 +138,6 @@ def write_run_to_DB(
         "timestamp": context.timestamp,
         "output_path": serialize_path(context.output_path),
         "pipeline": pipeline_name,
-        "task_id": task_id,
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
         "queue_position": queue_position,
     }
@@ -198,12 +196,12 @@ def prepare_pipeline_chord(
     # for worker processes that do not shut down after the soft timeout.
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE,
+        task_id=str(run_id),
         args=(pipeline_name, form_data, str(context.output_path)),
         priority=priority,
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
         headers={
-            "run_id": str(run_id),
             "pipeline": pipeline_name,
             "user_id": context.user_id,
             "session_id": context.session_id,
@@ -211,7 +209,7 @@ def prepare_pipeline_chord(
         },
     )
 
-    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
+    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK)
 
     pipeline_chord = chord(region_generation_signatures, pipeline_signature.on_error(error_handler))
     # Give every header and callback task a shared workflow identifier for whole-chord revocation.
@@ -388,14 +386,13 @@ def start_pipeline(pipeline_name: str):
         current_user.is_authenticated,
     )
     with queue_accounting_lock() as redis:
-        result_promise = enqueue_pipeline(pipeline_chord)
+        enqueue_pipeline(pipeline_chord)
         high_priority_ahead, default_priority_ahead = add_pending_run(redis, db, priority)
 
         insert_result = write_run_to_DB(
             pipeline_name,
             run_id,
             context,
-            result_promise.id,
             priority,
             (high_priority_ahead, default_priority_ahead),
             pipeline_run_config,

@@ -1,0 +1,102 @@
+---
+- name: Create internal network
+  openstack.cloud.network:
+    name: internal-net
+    external: false
+
+- name: Create internal subnet
+  openstack.cloud.subnet:
+    name: internal-subnet
+    network: internal-net
+    cidr: 10.20.0.0/24
+    dns_nameservers:
+      - 134.94.32.3
+      - 134.94.32.4
+
+- name: Create router (dmz<->internal)
+  openstack.cloud.router:
+    name: dmz-router
+    external_gateway_info:
+      network: dmz-jsc-cloud
+    interfaces:
+      - internal-subnet
+
+- name: Configure http(s) access rules
+  openstack.cloud.security_group:
+    name: allow-http-ingress
+    security_group_rules:
+      - description: Allow http access
+        protocol: tcp
+        direction: ingress
+        port_range_min: 80
+        port_range_max: 80
+      - description: Allow https access
+        protocol: tcp
+        direction: ingress
+        port_range_min: 443
+        port_range_max: 443
+
+- name: Configure ssh access rules
+  openstack.cloud.security_group:
+    name: allow-ssh-ingress
+    security_group_rules:
+      - description: Allow ssh access
+        protocol: tcp
+        direction: ingress
+        port_range_min: 22
+        port_range_max: 22
+
+- name: Upload public key
+  openstack.cloud.keypair:
+    name: odt-ansible-key
+    public_key_file: files/odt-ansible-key.pub
+
+- name: Prepare main VM on OpenStack cloud
+  block:
+    - name: Create main volume
+      openstack.cloud.volume:
+        name: odt-main-volume
+        size: 100
+      register: volume_result
+
+    - name: Create main VM
+      openstack.cloud.server:
+        name: odt-main
+        image: Ubuntu Noble 24.04 LTS
+        flavor: SCS-2L:2:20n
+        volumes:
+          - "{{ volume_result.volume.name }}"
+        network: internal-net
+        key_name: odt-ansible-key
+        security_groups:
+          - default
+          - allow-http-ingress
+          - allow-ssh-ingress
+        metadata:
+          swarm_role: managers
+
+- name: Prepare node VMs on OpenStack cloud
+  block:
+    - name: Create node volume
+      openstack.cloud.volume:
+        name: "{{ 'odt-node-%d-volume' | format(item) }}"
+        size: 500
+      loop: "{{ range(1) | list }}"
+
+    - name: Create node VM
+      openstack.cloud.server:
+        name: "{{ 'odt-node-%d' | format(item) }}"
+        image: Ubuntu Noble 24.04 LTS
+        flavor: SCS-16L:64:20n
+        volumes:
+          - "{{ 'odt-node-%d-volume' | format(item) }}"
+        network: internal-net
+        key_name: odt-ansible-key
+        security_groups:
+          - default
+          - allow-http-ingress
+          - allow-ssh-ingress
+        metadata:
+          swarm_role: workers
+        auto_ip: false
+      loop: "{{ range(1) | list }}"
