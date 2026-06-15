@@ -6,7 +6,7 @@ import path from "node:path";
 // ---------------------------------------------------------------------------
 
 const BACKEND_URL =
-    process.env.PLAYWRIGHT_BACKEND_URL || "http://localhost:5000";
+    process.env.PLAYWRIGHT_BACKEND_URL || "http://localhost:8000";
 const POLL_INTERVAL_MS = 2_000;
 const RUN_TIMEOUT_MS = 15 * 60 * 1000;
 
