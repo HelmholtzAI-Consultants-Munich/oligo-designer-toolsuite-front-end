@@ -46,20 +46,7 @@ from backend.utilities.typed_values import (
 auth_bp = Blueprint("auth", __name__)
 
 
-def _claim_values(value: object) -> list[str]:
-    if isinstance(value, str):
-        return [value]
-    if isinstance(value, list):
-        return [item for item in value if isinstance(item, str)]
-    return []
-
-
-def _get_entitlement_claims(userinfo: dict) -> list[str]:
-    """Return Helmholtz group entitlement claims."""
-    return _claim_values(userinfo.get("entitlements"))
-
-
-def _config_values(value: object) -> list[str]:
+def _string_values(value: object) -> list[str]:
     if isinstance(value, str):
         return [item.strip() for item in value.split(",") if item.strip()]
     if isinstance(value, list):
@@ -67,29 +54,38 @@ def _config_values(value: object) -> list[str]:
     return []
 
 
+def _userinfo_entitlements(userinfo: dict[str, Any]) -> list[str]:
+    """Return Helmholtz group entitlement claims."""
+    return _string_values(userinfo.get("entitlements"))
+
+
 def _get_required_entitlements() -> list[str]:
     """Return configured Helmholtz entitlement groups required to access the app."""
-    return _config_values(current_app.config.get("HELMHOLTZ_REQUIRED_ENTITLEMENT"))
+    return _string_values(current_app.config.get("HELMHOLTZ_REQUIRED_ENTITLEMENT"))
 
 
 def _entitlement_matches_required_group(entitlement: str, required_entitlement: str) -> bool:
     return entitlement == required_entitlement or entitlement.startswith(f"{required_entitlement}#")
 
 
-def _has_required_entitlement(userinfo: dict, required_entitlements: list[str]) -> bool:
-    """Return whether userinfo contains any configured Helmholtz group entitlement."""
+def _is_entitlement_restriction_enabled() -> bool:
+    return bool(current_app.config.get("HELMHOLTZ_RESTRICT_BY_ENTITLEMENT", True))
+
+
+def _is_helmholtz_access_allowed(userinfo: dict[str, Any]) -> bool:
+    """Return whether Helmholtz userinfo satisfies the configured access policy."""
+    if not _is_entitlement_restriction_enabled():
+        return True
+
+    required_entitlements = _get_required_entitlements()
     if not required_entitlements:
         return False
 
     return any(
         _entitlement_matches_required_group(entitlement, required_entitlement)
-        for entitlement in _get_entitlement_claims(userinfo)
+        for entitlement in _userinfo_entitlements(userinfo)
         for required_entitlement in required_entitlements
     )
-
-
-def _is_entitlement_restriction_enabled() -> bool:
-    return bool(current_app.config.get("HELMHOLTZ_RESTRICT_BY_ENTITLEMENT", True))
 
 
 def _fetch_helmholtz_userinfo(access_token: str) -> dict[str, Any]:
@@ -147,6 +143,26 @@ def _redirect_to_login_with_oauth_error(error: str):
     return redirect(f"{frontend_url.geturl().rstrip('/')}/login?{urlencode(query)}")
 
 
+def _deny_oauth_login(token: dict[str, Any], error: str):
+    if access_token := token.get("access_token"):
+        _revoke_helmholtz_token(access_token)
+    session.pop("oauth_token", None)
+    return _redirect_to_login_with_oauth_error(error)
+
+
+def _redirect_after_oauth_login():
+    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+    frontend_url = parse_http_url(frontend_url_raw)
+    if frontend_url is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
+
+    frontend_base = frontend_url.geturl().rstrip("/")
+    redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
+    if redirect_path:
+        return redirect(f"{frontend_base}{redirect_path}")
+    return redirect(f"{frontend_base}/")
+
+
 def _get_or_create_helmholtz_user(helmholtz_sub: str) -> dict:
     user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
     if user_doc:
@@ -182,6 +198,7 @@ def _revoke_helmholtz_token(access_token: str) -> None:
                 "token_type_hint": "access_token",
                 "logout": "true",
             },
+            timeout=current_app.config["HELMHOLTZ_USERINFO_TIMEOUT_SECONDS"],
         )
         if response.status_code != HTTPStatus.OK:
             current_app.logger.warning("Token revocation failed: %s", response.status_code)
@@ -384,18 +401,12 @@ def auth_callback():
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )
 
-    if _is_entitlement_restriction_enabled() and not _has_required_entitlement(
-        userinfo,
-        _get_required_entitlements(),
-    ):
+    if not _is_helmholtz_access_allowed(userinfo):
         current_app.logger.warning(
             "Helmholtz AAI login denied for subject %s: no allowed entitlement is present",
             helmholtz_sub,
         )
-        if access_token := token.get("access_token"):
-            _revoke_helmholtz_token(access_token)
-        session.pop("oauth_token", None)
-        return _redirect_to_login_with_oauth_error("vo_access_denied")
+        return _deny_oauth_login(token, "vo_access_denied")
 
     user_doc = _get_or_create_helmholtz_user(helmholtz_sub)
     # Log user in with "Remember Me" to persist login across browser sessions
@@ -407,17 +418,7 @@ def auth_callback():
     # Store access token in session for logout/revocation
     session["oauth_token"] = token.get("access_token")
 
-    # Redirect to frontend - check if there's a preserved redirect URL
-    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
-    frontend_url = parse_http_url(frontend_url_raw)
-    if frontend_url is None:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
-
-    frontend_base = frontend_url.geturl().rstrip("/")
-    redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
-    if redirect_path:
-        return redirect(f"{frontend_base}{redirect_path}")
-    return redirect(f"{frontend_base}/")  # Default to homepage
+    return _redirect_after_oauth_login()
 
 
 # ---- Check Authentication Status Route ----
