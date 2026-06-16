@@ -46,7 +46,7 @@ const Login = () => {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         try {
-            const res = await axios.post(
+            await axios.post(
                 BACKEND_URL + "/login",
                 {
                     username,
@@ -58,7 +58,6 @@ const Login = () => {
             );
             turnstileRef.current?.reset();
 
-            console.log(res.data);
             showToast({
                 title: "Login successful!",
                 content: "You have been logged in successfully.",
