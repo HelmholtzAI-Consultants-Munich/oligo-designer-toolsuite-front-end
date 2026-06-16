@@ -1,13 +1,16 @@
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any
+from urllib.parse import urlencode
 
 import requests
 from bson import ObjectId
-from flask import abort, current_app, session
+from flask import abort, current_app, redirect, session
 from flask_login import current_user
 
 from backend.extensions import db
 from backend.utilities.legal_acceptance import require_current_terms_acceptance
+from backend.utilities.typed_values import parse_http_url, sanitize_relative_redirect_path
 
 # ============================================================================
 # User Context Helpers
@@ -184,3 +187,168 @@ def validate_turnstile(token):
     except requests.RequestException as e:
         current_app.logger.warning(f"Turnstile request failed: {e}")
         return False
+
+
+# ============================================================================
+# Helmholtz AAI Helpers
+# ============================================================================
+
+
+def _string_values(value: object) -> list[str]:
+    if isinstance(value, str):
+        return [item.strip() for item in value.split(",") if item.strip()]
+    if isinstance(value, list):
+        return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+    return []
+
+
+def _userinfo_entitlements(userinfo: dict[str, Any]) -> list[str]:
+    """Return Helmholtz group entitlement claims."""
+    return _string_values(userinfo.get("entitlements"))
+
+
+def _get_required_entitlements() -> list[str]:
+    """Return configured Helmholtz entitlement groups required to access the app."""
+    return _string_values(current_app.config.get("HELMHOLTZ_REQUIRED_ENTITLEMENT"))
+
+
+def _entitlement_matches_required_group(entitlement: str, required_entitlement: str) -> bool:
+    return entitlement == required_entitlement or entitlement.startswith(f"{required_entitlement}#")
+
+
+def _is_entitlement_restriction_enabled() -> bool:
+    return bool(current_app.config.get("HELMHOLTZ_RESTRICT_BY_ENTITLEMENT", True))
+
+
+def is_helmholtz_access_allowed(userinfo: dict[str, Any]) -> bool:
+    """Return whether Helmholtz userinfo satisfies the configured access policy."""
+    if not _is_entitlement_restriction_enabled():
+        return True
+
+    required_entitlements = _get_required_entitlements()
+    if not required_entitlements:
+        return False
+
+    return any(
+        _entitlement_matches_required_group(entitlement, required_entitlement)
+        for entitlement in _userinfo_entitlements(userinfo)
+        for required_entitlement in required_entitlements
+    )
+
+
+def fetch_helmholtz_userinfo(access_token: str) -> dict[str, Any]:
+    """Fetch OIDC userinfo claims using the absolute configured Helmholtz endpoint."""
+    userinfo_url = parse_http_url(current_app.config.get("HELMHOLTZ_USERINFO_ENDPOINT"))
+    if userinfo_url is None:
+        raise ValueError("HELMHOLTZ_USERINFO_ENDPOINT configuration is invalid")
+
+    response = requests.get(
+        userinfo_url.geturl(),
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=current_app.config["HELMHOLTZ_USERINFO_TIMEOUT_SECONDS"],
+    )
+    response.raise_for_status()
+    userinfo = response.json()
+    if not isinstance(userinfo, dict):
+        raise ValueError("Helmholtz userinfo endpoint returned a non-object response")
+    return userinfo
+
+
+def _merge_userinfo_claims(token_userinfo: object, endpoint_userinfo: object) -> dict[str, Any]:
+    """Prefer endpoint userinfo claims over decoded ID-token claims."""
+    return {
+        **(token_userinfo if isinstance(token_userinfo, dict) else {}),
+        **(endpoint_userinfo if isinstance(endpoint_userinfo, dict) else {}),
+    }
+
+
+def load_helmholtz_userinfo(token: dict[str, Any]) -> dict[str, Any]:
+    """Load complete userinfo claims for authorization and account lookup."""
+    token_userinfo = token.get("userinfo")
+    endpoint_userinfo: dict[str, Any] = {}
+    access_token = token.get("access_token")
+
+    if not access_token:
+        current_app.logger.warning("OAuth token response did not include an access_token")
+    else:
+        try:
+            endpoint_userinfo = fetch_helmholtz_userinfo(access_token)
+        except Exception as error:
+            current_app.logger.warning("Failed to fetch Helmholtz userinfo endpoint: %s", error)
+
+    return _merge_userinfo_claims(token_userinfo, endpoint_userinfo)
+
+
+def redirect_to_login_with_oauth_error(error: str):
+    frontend_url = parse_http_url(current_app.config.get("FRONTEND_URL"))
+    if frontend_url is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
+
+    query = {"oauth_error": error}
+    redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
+    if redirect_path:
+        query["redirect"] = redirect_path
+    return redirect(f"{frontend_url.geturl().rstrip('/')}/login?{urlencode(query)}")
+
+
+def revoke_helmholtz_token(access_token: str) -> None:
+    """Revoke a Helmholtz access token and request provider-side logout."""
+    try:
+        revocation_url = parse_http_url(current_app.config.get("HELMHOLTZ_REVOCATION_ENDPOINT"))
+        if revocation_url is None:
+            current_app.logger.warning("Token revocation skipped: invalid revocation endpoint URL")
+            return
+
+        response = requests.post(
+            revocation_url.geturl(),
+            data={
+                "token": access_token,
+                "client_id": current_app.config.get("HELMHOLTZ_CLIENT_ID"),
+                "token_type_hint": "access_token",
+                "logout": "true",
+            },
+            timeout=current_app.config["HELMHOLTZ_USERINFO_TIMEOUT_SECONDS"],
+        )
+        if response.status_code != HTTPStatus.OK:
+            current_app.logger.warning("Token revocation failed: %s", response.status_code)
+    except Exception as error:
+        current_app.logger.error("Error revoking token: %s", error)
+
+
+def deny_oauth_login(token: dict[str, Any], error: str):
+    if access_token := token.get("access_token"):
+        revoke_helmholtz_token(access_token)
+    session.pop("oauth_token", None)
+    return redirect_to_login_with_oauth_error(error)
+
+
+def redirect_after_oauth_login():
+    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+    frontend_url = parse_http_url(frontend_url_raw)
+    if frontend_url is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
+
+    frontend_base = frontend_url.geturl().rstrip("/")
+    redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
+    if redirect_path:
+        return redirect(f"{frontend_base}{redirect_path}")
+    return redirect(f"{frontend_base}/")
+
+
+def get_or_create_helmholtz_user(helmholtz_sub: str) -> dict:
+    user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
+    if user_doc:
+        return user_doc
+
+    user_id = db.users.insert_one(
+        {
+            "helmholtz_sub": helmholtz_sub,
+            "role": "user",
+            "accepted_terms_version": None,
+            "terms_accepted_at": None,
+        }
+    ).inserted_id
+    user_doc = db.users.find_one({"_id": user_id})
+    if not user_doc:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to create Helmholtz user")
+    return user_doc
