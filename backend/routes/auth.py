@@ -59,19 +59,37 @@ def _get_entitlement_claims(userinfo: dict) -> list[str]:
     return _claim_values(userinfo.get("entitlements"))
 
 
+def _config_values(value: object) -> list[str]:
+    if isinstance(value, str):
+        return [item.strip() for item in value.split(",") if item.strip()]
+    if isinstance(value, list):
+        return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+    return []
+
+
+def _get_required_entitlements() -> list[str]:
+    """Return configured Helmholtz entitlement groups required to access the app."""
+    return _config_values(current_app.config.get("HELMHOLTZ_REQUIRED_ENTITLEMENT"))
+
+
 def _entitlement_matches_required_group(entitlement: str, required_entitlement: str) -> bool:
     return entitlement == required_entitlement or entitlement.startswith(f"{required_entitlement}#")
 
 
-def _has_required_entitlement(userinfo: dict, required_entitlement: str) -> bool:
-    """Return whether userinfo contains the required Helmholtz group entitlement."""
-    if not required_entitlement:
+def _has_required_entitlement(userinfo: dict, required_entitlements: list[str]) -> bool:
+    """Return whether userinfo contains any configured Helmholtz group entitlement."""
+    if not required_entitlements:
         return False
 
     return any(
         _entitlement_matches_required_group(entitlement, required_entitlement)
         for entitlement in _get_entitlement_claims(userinfo)
+        for required_entitlement in required_entitlements
     )
+
+
+def _is_entitlement_restriction_enabled() -> bool:
+    return bool(current_app.config.get("HELMHOLTZ_RESTRICT_BY_ENTITLEMENT", True))
 
 
 def _fetch_helmholtz_userinfo(access_token: str) -> dict[str, Any]:
@@ -366,10 +384,12 @@ def auth_callback():
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )
 
-    required_entitlement = current_app.config["HELMHOLTZ_REQUIRED_ENTITLEMENT"]
-    if not _has_required_entitlement(userinfo, required_entitlement):
+    if _is_entitlement_restriction_enabled() and not _has_required_entitlement(
+        userinfo,
+        _get_required_entitlements(),
+    ):
         current_app.logger.warning(
-            "Helmholtz AAI login denied for subject %s: required entitlement is missing",
+            "Helmholtz AAI login denied for subject %s: no allowed entitlement is present",
             helmholtz_sub,
         )
         if access_token := token.get("access_token"):

@@ -76,6 +76,7 @@ class Config:
     # OAuth2 settings
     HELMHOLTZ_SCOPE = "openid single-logout entitlements"
     HELMHOLTZ_REQUIRED_ENTITLEMENT = "urn:geant:helmholtz.de:group:Helmholtz-member"
+    HELMHOLTZ_RESTRICT_BY_ENTITLEMENT = True
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
     HELMHOLTZ_USERINFO_TIMEOUT_SECONDS = 10
 
