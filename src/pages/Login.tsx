@@ -137,8 +137,7 @@ const Login = () => {
                         <Vertical gap="md" align="stretch">
                             {oauthError === "vo_access_denied" && (
                                 <Alert variant="danger">
-                                    Access is restricted to members of the
-                                    Helmholtz-member VO.
+                                    Access is restricted to Helmholtz employees
                                 </Alert>
                             )}
                             <Card.Title as="h2">
