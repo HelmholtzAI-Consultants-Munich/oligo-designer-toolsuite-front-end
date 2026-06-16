@@ -77,6 +77,7 @@ class Config:
     HELMHOLTZ_SCOPE = "openid single-logout entitlements"
     HELMHOLTZ_REQUIRED_ENTITLEMENT = "urn:geant:helmholtz.de:group:Helmholtz-member"
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
+    HELMHOLTZ_USERINFO_TIMEOUT_SECONDS = 10
 
     # Turnstile settings
     TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA")
