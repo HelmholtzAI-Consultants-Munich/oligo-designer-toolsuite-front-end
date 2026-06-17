@@ -24,6 +24,7 @@ import {
 import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
 import {
+    BoxArrowUp,
     CardList,
     FileEarmarkSpreadsheet,
     GearFill,
@@ -36,7 +37,10 @@ import type { Action } from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
-import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
+import {
+    useNavigateWithRunConfig,
+    downloadConfig,
+} from "../utils/runConfigHelper";
 import RunMetrics from "../components/RunMetrics";
 
 // Helper to extract all unique columns from an array of oligos
@@ -336,6 +340,10 @@ const RunDetail = () => {
 
     const handleUseSettings = useNavigateWithRunConfig(run, navigate);
 
+    const handleExport = useCallback(async () => {
+        await downloadConfig(run);
+    }, [run]);
+
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
 
     const actions = useMemo(() => {
@@ -373,21 +381,31 @@ const RunDetail = () => {
             onClick: handleUseSettings,
         };
 
+        const exportSettingsAction = {
+            type: "button",
+            label: "Export Settings",
+            icon: BoxArrowUp,
+            variant: "outline-border",
+            onClick: handleExport,
+        };
+
         if (probes) {
             return [
                 useSettingsAction,
+                exportSettingsAction,
                 downloadExcelAction,
                 downloadCSVAction,
                 deleteAction,
             ];
         } else {
-            return [useSettingsAction, deleteAction];
+            return [exportSettingsAction, useSettingsAction, deleteAction];
         }
     }, [
         run,
         probes,
         handleDelete,
         handleUseSettings,
+        handleExport,
         handleDownloadCSV,
         handleDownloadExcel,
     ]);
