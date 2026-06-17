@@ -78,7 +78,7 @@ export async function downloadConfig(run: PipelineRun | undefined) {
         );
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", filename);
+        link.download = filename;
         document.body.appendChild(link);
         link.click();
         link.remove();
