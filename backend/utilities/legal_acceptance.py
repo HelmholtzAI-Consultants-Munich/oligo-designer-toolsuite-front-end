@@ -3,7 +3,7 @@ from http import HTTPStatus
 from flask import abort
 
 from backend.extensions import db
-from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
+from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document, insert_with_check
 from backend.utilities.typed_values import utc_now
 
 
@@ -38,14 +38,15 @@ def record_terms_acceptance(user_id: str | None = None, session_id: str | None =
     if existing_acceptance and existing_acceptance.get("terms_version") == current_version:
         return existing_acceptance
 
-    acceptance_doc = {
-        **_terms_acceptance_query(user_id=user_id, session_id=session_id),
-        "document": TERMS_DOCUMENT_KEY,
-        "terms_version": current_version,
-        "timestamp": utc_now(),
-    }
-    inserted_id = db.legal_acceptances.insert_one(acceptance_doc).inserted_id
-    return db.legal_acceptances.find_one({"_id": inserted_id})
+    return insert_with_check(
+        {
+            **_terms_acceptance_query(user_id=user_id, session_id=session_id),
+            "document": TERMS_DOCUMENT_KEY,
+            "terms_version": current_version,
+            "timestamp": utc_now(),
+        },
+        db.legal_acceptances,
+    )
 
 
 def require_current_terms_acceptance(user_id: str | None = None, session_id: str | None = None) -> None:

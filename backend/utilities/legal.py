@@ -1,5 +1,10 @@
 import hashlib
+from http import HTTPStatus
 from pathlib import Path
+from typing import Any
+
+from flask import abort
+from pymongo.synchronous.collection import Collection
 
 from backend.extensions import db
 from backend.utilities.typed_values import utc_now
@@ -36,10 +41,17 @@ def _latest_legal_document(document_key: str) -> dict | None:
     )
 
 
-def _serialize_legal_document(document: dict | None) -> dict | None:
-    if document is None:
-        return None
+def insert_with_check(document: dict[str, Any], collection: Collection) -> dict[str, Any]:
+    inserted_id = collection.insert_one(document).inserted_id
 
+    inserted_document = collection.find_one({"_id": inserted_id})
+    if inserted_document is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="error: could not save legal document")
+
+    return inserted_document
+
+
+def _serialize_legal_document(document: dict) -> dict:
     body = normalize_legal_body(document["body"])
 
     return {
@@ -57,16 +69,15 @@ def _create_published_legal_document(document_key: str) -> dict:
     body = normalize_legal_body(_default_legal_document_path(document_key).read_text(encoding="utf-8"))
     version = compute_legal_version(body)
 
-    inserted_id = db.legal_documents.insert_one(
+    return insert_with_check(
         {
             "document": document_key,
             "body": body,
             "version": version,
             "published_at": now,
-        }
-    ).inserted_id
-
-    return db.legal_documents.find_one({"_id": inserted_id})
+        },
+        db.legal_documents,
+    )
 
 
 def is_supported_legal_document(document_key: str) -> bool:
@@ -146,12 +157,12 @@ def publish_legal_document(document_key: str, body: str) -> dict:
     if version == published_document["version"]:
         raise ValueError("Document matches the currently published version")
 
-    inserted_id = db.legal_documents.insert_one(
+    return insert_with_check(
         {
             "document": document_key,
             "body": normalized_body,
             "version": version,
             "published_at": now,
-        }
-    ).inserted_id
-    return db.legal_documents.find_one({"_id": inserted_id})
+        },
+        db.legal_documents,
+    )

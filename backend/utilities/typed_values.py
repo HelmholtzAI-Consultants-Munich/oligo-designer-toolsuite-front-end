@@ -50,7 +50,7 @@ def timestamp_for_display(value: datetime | None, separator: str = " ") -> str:
     return value.strftime(f"%Y-%m-%d{separator}%H-%M-%S")
 
 
-def timestamp_to_iso(value: datetime) -> str:
+def timestamp_to_iso(value: datetime | None) -> str:
     """Convert supported timestamp values to ISO format for API output."""
     timestamp = value
     if timestamp is not None:

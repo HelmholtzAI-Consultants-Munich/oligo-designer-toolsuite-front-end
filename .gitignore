@@ -123,3 +123,6 @@ backend/data-access/user_data/**
 
 # Ruff stuff:
 .ruff_cache/
+
+# Pyrefly Example
+pyrefly.toml

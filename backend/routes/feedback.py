@@ -4,7 +4,7 @@ General feedback API. Not tied to pipelines; available from any page.
 
 import re
 import unicodedata
-from datetime import datetime
+from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
@@ -74,7 +74,7 @@ def create_feedback():
 
     doc: dict[str, Any] = {
         "message": message,
-        "created_at": datetime.utcnow(),
+        "created_at": datetime.now(UTC),
         "metadata": metadata,
         "user_id": user_id,
     }

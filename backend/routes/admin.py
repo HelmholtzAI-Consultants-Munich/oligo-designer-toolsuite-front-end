@@ -15,6 +15,7 @@ Endpoints:
 
 import datetime
 from http import HTTPStatus
+from typing import NotRequired, TypedDict
 
 from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
@@ -44,6 +45,20 @@ from backend.utilities.validation import validate_and_convert_ids, validate_id_a
 from backend.worker.task_index import Tasks
 
 admin_bp = Blueprint("admin", __name__)
+
+
+class BulkOperationResponse(TypedDict):
+    message: str
+    skipped: NotRequired[list[str]]
+    invalid_ids: NotRequired[list[str]]
+
+
+class BulkDeleteResponse(BulkOperationResponse):
+    deleted_count: int
+
+
+class BulkUpdateResponse(BulkOperationResponse):
+    updated_count: int
 
 
 def is_admin(user):
@@ -404,7 +419,7 @@ def bulk_delete_users():
     :rtype: flask.Response
     """
     data = request.get_json() or {}
-    user_ids = validate_id_array(data, "user_ids")
+    user_ids: list[str] = validate_id_array(data, "user_ids")
 
     # Filter out current user's ID (prevent self-deletion)
     current_user_id = str(current_user.id)
@@ -433,7 +448,7 @@ def bulk_delete_users():
         )
         deleted_count += 1
 
-    response = {
+    response: BulkDeleteResponse = {
         "deleted_count": deleted_count,
         "message": f"Successfully deleted {deleted_count} user(s)",
     }
@@ -496,7 +511,7 @@ def bulk_update_user_role():
     # Update users in batch
     result = db.users.update_many({"_id": {"$in": object_ids}}, {"$set": {"role": role}})
 
-    response = {
+    response: BulkUpdateResponse = {
         "updated_count": result.modified_count,
         "message": f"Successfully updated role of {result.modified_count} user(s) to {role}",
     }
@@ -595,7 +610,7 @@ def bulk_update_pipeline_status():
     # Update runs in batch
     result = db.runs.update_many({"_id": {"$in": object_ids}}, {"$set": {"status": status}})
 
-    response = {
+    response: BulkUpdateResponse = {
         "updated_count": result.modified_count,
         "message": f"Successfully updated status of {result.modified_count} pipeline run(s) to {status}",
     }

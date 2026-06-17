@@ -186,6 +186,7 @@ def get_run_file(run_id: ObjectId, filename: str):
         abort(HTTPStatus.NOT_FOUND, description="File not found")
 
     # Return correct mimetype
+    file_path = str(file_path)
     if filename.endswith((".yml", ".yaml")):
         return send_file(file_path, as_attachment=True)
     elif filename.endswith((".txt", ".log")):

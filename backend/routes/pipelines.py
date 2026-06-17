@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from bson import ObjectId
 from celery import chord
@@ -218,27 +218,19 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
     redis = Redis.from_url(Config.REDIS_URI)
 
-    # Initialize queue lengths if not present, then fetch and convert to int
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "high", 0)
-    default_priority_queue_length, high_priority_queue_length = map(
-        int, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
-    )
-    high_priority_ahead = high_priority_queue_length
+    high_priority_ahead, default_priority_ahead = (0, 0)
 
     if priority == CeleryConfig.task_high_priority:
-        default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
         db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
+        high_priority_ahead = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1))
     else:
-        default_priority_ahead = default_priority_queue_length
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+        default_priority_ahead = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1))
 
-    return high_priority_ahead, default_priority_ahead
+    return max(high_priority_ahead - 1, 0), max(default_priority_ahead - 1, 0)
 
 
 def save_file(
@@ -250,7 +242,7 @@ def save_file(
             return saved_files[file]
 
         # Step 2: Check if the user actually selected a file (filename should not be empty)
-        if file.filename == "":
+        if file.filename is None or file.filename == "":
             abort(HTTPStatus.BAD_REQUEST, description="No selected file")
 
         # Step 3: Sanitize the filename to prevent path traversal attacks

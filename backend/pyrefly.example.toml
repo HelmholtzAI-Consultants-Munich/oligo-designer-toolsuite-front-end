@@ -1,0 +1,11 @@
+project-excludes = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "**/typings",
+]
+infer-with-first-use = false
+# conda-environment = "YOUR_ENVRIONMENT_PATH"
+# site-package-path = ["YOUR_SITEPACKAGE_PATH"]
+preset = "default"
+min-severity = "warn"

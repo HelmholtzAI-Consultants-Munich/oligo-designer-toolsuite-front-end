@@ -21,7 +21,7 @@ def update_queue_positions(task: Task) -> None:
         with MongoClient(Config.MONGO_URI) as client:
             db = client["oligo_db"]
             if (
-                task.request.delivery_info.get("priority", CeleryConfig.task_default_priority)
+                task.request.delivery_info.get("priority", CeleryConfig.task_default_priority)  # pyrefly:ignore
                 == CeleryConfig.task_high_priority
             ):
                 # remove one high priority task ahead of all pending tasks
@@ -44,7 +44,7 @@ def update_queue_positions(task: Task) -> None:
 def capture_start_time(task_id: str, task: Task) -> None:
     """Store the task start timestamp and queue wait duration on the run."""
     started_at = datetime.now(UTC)
-    task.request.started_at = started_at
+    task.request.started_at = started_at  # pyrefly:ignore
 
     metrics: dict[str, Any] = {"started_at": started_at}
     enqueued_at = parse_datetime((task.request.headers or {}).get("enqueued_at"))
