@@ -314,6 +314,32 @@ def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
         form_data[field] = value
 
 
+def enforce_concurrent_runs_limit(context: RunContext, is_authenticated: bool):
+    """
+    Abort the request with 429 if the number of currently running pipeline
+    runs for the given user/session exceeds the configured maximum.
+    """
+    if is_authenticated:
+        max_runs = Config.PIPELINE_MAX_CONCURRENT_AUTHENTICATED
+        if context.user_id is None:
+            return
+        running_count = db.runs.count_documents({"status": "started", "user_id": context.user_id})
+    else:
+        max_runs = Config.PIPELINE_MAX_CONCURRENT_ANONYMOUS
+        if context.session_id is None:
+            return
+        running_count = db.runs.count_documents({"status": "started", "session_id": context.session_id})
+
+    if running_count >= max_runs:
+        abort(
+            HTTPStatus.TOO_MANY_REQUESTS,
+            description=(
+                f"Too many concurrent pipeline runs ({running_count}) in progress. "
+                "Please wait for existing runs to finish before starting a new one."
+            ),
+        )
+
+
 @pipelines_bp.route("/api/<pipeline_name>", methods=["POST"])
 def start_pipeline(pipeline_name: str):
     """
@@ -386,6 +412,9 @@ def start_pipeline(pipeline_name: str):
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
+
+    # Enforce concurrent running-run limits (only runs with status == "started" count)
+    enforce_concurrent_runs_limit(context, current_user.is_authenticated)
 
     run_id = ObjectId()  # Generate a new run ID
     priority = get_task_priority(form_data)

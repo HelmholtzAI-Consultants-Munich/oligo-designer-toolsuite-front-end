@@ -83,6 +83,9 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+    # Maximum number of concurrently running pipeline runs (status == "started").
+    PIPELINE_MAX_CONCURRENT_ANONYMOUS = int(os.environ.get("PIPELINE_MAX_CONCURRENT_ANONYMOUS", 1))
+    PIPELINE_MAX_CONCURRENT_AUTHENTICATED = int(os.environ.get("PIPELINE_MAX_CONCURRENT_AUTHENTICATED", 5))
     GENE_COUNT_THRESHOLD = 10
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024 * 1024
 
