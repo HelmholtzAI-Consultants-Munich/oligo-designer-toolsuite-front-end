@@ -1,0 +1,34 @@
+---
+- name: Copy compose files to host
+  block:
+    - name: Copy base compose file to host
+      ansible.builtin.copy:
+        src: ../../compose.yml
+        dest: /home/ubuntu/compose.yml
+        mode: "0640"
+
+    - name: Copy production compose file to host
+      ansible.builtin.copy:
+        src: ../../compose.prod.yml
+        dest: /home/ubuntu/compose.prod.yml
+        mode: "0640"
+
+- name: Copy .env file to host
+  ansible.builtin.copy:
+    src: files/.env
+    dest: /home/ubuntu/.env
+    mode: "0600"
+
+# TODO: Set up monitoring in production
+# - name: Copy monitoring config to host
+#   ansible.builtin.copy:
+#     src: ../../monitoring
+#     dest: /home/ubuntu/monitoring
+#     mode: "0644"
+
+- name: Deploy stack from compose file
+  community.docker.docker_stack:
+    name: odt-cloud
+    compose:
+      - /home/ubuntu/compose.yml
+      - /home/ubuntu/compose.prod.yml

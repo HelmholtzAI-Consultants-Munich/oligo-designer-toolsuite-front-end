@@ -54,7 +54,7 @@ def capture_start_time(task_id: str, task: Task) -> None:
     with MongoClient(Config.MONGO_URI) as client:
         db = client["oligo_db"]
         db.runs.update_one(
-            {"task_id": task_id},
+            {"_id": task_id},
             {"$set": {f"metrics.{key}": value for key, value in metrics.items()}},
         )
 
@@ -75,7 +75,7 @@ def capture_completion_metrics(task_id: str, task: Task) -> None:
     with MongoClient(Config.MONGO_URI) as client:
         db = client["oligo_db"]
         db.runs.update_one(
-            {"task_id": task_id},
+            {"_id": task_id},
             {"$set": {f"metrics.{key}": value for key, value in metrics.items()}},
         )
 

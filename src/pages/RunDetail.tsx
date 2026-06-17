@@ -24,6 +24,7 @@ import {
 import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
 import {
+    BoxArrowUp,
     CardList,
     FileEarmarkSpreadsheet,
     GearFill,
@@ -36,7 +37,10 @@ import type { Action } from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
-import { useNavigateWithRunConfig } from "../utils/runConfigHelper";
+import {
+    useNavigateWithRunConfig,
+    downloadConfig,
+} from "../utils/runConfigHelper";
 import RunMetrics from "../components/RunMetrics";
 
 // Helper to extract all unique columns from an array of oligos
@@ -59,7 +63,7 @@ const RunDetail = () => {
 
     const [selectedGene, setSelectedGene] = useState<string>("");
     const [selectedOligoset, setSelectedOligoset] = useState<string>("");
-    const [selectedOligo, setSelectedOligo] = useState<string>("");
+    const [selectedOligo, setSelectedOligo] = useState<string | null>(null);
     const [selectedVisualization, setSelectedVisualization] =
         useState<VisualizationType>("alignment");
     const [genomicRegions, setGenomicRegions] = useState<{
@@ -111,16 +115,12 @@ const RunDetail = () => {
                             Object.keys(
                                 regionsYaml.probes?.[firstGene] || {}
                             )[0] || "";
-                        const firstOligo =
-                            regionsYaml.probes?.[firstGene]?.[firstOligoset][0]
-                                ?.oligo_id || "";
 
                         setGenomicRegions(regionsYaml.regions);
                         setProbes(regionsYaml.probes);
                         setScores(regionsYaml.scores);
                         setSelectedGene(firstGene);
                         setSelectedOligoset(firstOligoset);
-                        setSelectedOligo(firstOligo);
                     })
                     .catch((error) => {
                         console.error(
@@ -336,6 +336,10 @@ const RunDetail = () => {
 
     const handleUseSettings = useNavigateWithRunConfig(run, navigate);
 
+    const handleExport = useCallback(async () => {
+        await downloadConfig(run);
+    }, [run]);
+
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
 
     const actions = useMemo(() => {
@@ -373,21 +377,31 @@ const RunDetail = () => {
             onClick: handleUseSettings,
         };
 
+        const exportSettingsAction = {
+            type: "button",
+            label: "Export Settings",
+            icon: BoxArrowUp,
+            variant: "outline-border",
+            onClick: handleExport,
+        };
+
         if (probes) {
             return [
                 useSettingsAction,
+                exportSettingsAction,
                 downloadExcelAction,
                 downloadCSVAction,
                 deleteAction,
             ];
         } else {
-            return [useSettingsAction, deleteAction];
+            return [exportSettingsAction, useSettingsAction, deleteAction];
         }
     }, [
         run,
         probes,
         handleDelete,
         handleUseSettings,
+        handleExport,
         handleDownloadCSV,
         handleDownloadExcel,
     ]);
@@ -457,12 +471,7 @@ const RunDetail = () => {
                                                 setSelectedOligoset(
                                                     "Oligoset 1"
                                                 );
-                                                setSelectedOligo(
-                                                    probes[
-                                                        e.target.value || ""
-                                                    ]["Oligoset 1"][0]
-                                                        .oligo_id || ""
-                                                );
+                                                setSelectedOligo(null);
                                             }}
                                         >
                                             {Object.keys(probes).map((gene) => (
@@ -481,11 +490,7 @@ const RunDetail = () => {
                                                 setSelectedOligoset(
                                                     e.target.value
                                                 );
-                                                setSelectedOligo(
-                                                    probes[selectedGene][
-                                                        e.target.value
-                                                    ]?.[0].oligo_id || ""
-                                                );
+                                                setSelectedOligo(null);
                                             }}
                                         >
                                             {Object.keys(
@@ -588,12 +593,16 @@ const RunDetail = () => {
                                                             "text-nowrap " +
                                                             (oligo.oligo_id ===
                                                             selectedOligo
-                                                                ? "table-primary"
+                                                                ? "table-active"
                                                                 : "")
                                                         }
                                                         onClick={() =>
+                                                            // select/deselect oligo on click
                                                             setSelectedOligo(
-                                                                oligo.oligo_id
+                                                                oligo.oligo_id ===
+                                                                    selectedOligo
+                                                                    ? null
+                                                                    : oligo.oligo_id
                                                             )
                                                         }
                                                     >

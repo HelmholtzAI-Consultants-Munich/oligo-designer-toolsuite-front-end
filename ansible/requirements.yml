@@ -1,0 +1,6 @@
+---
+collections:
+  - community.docker
+  - community.general
+  - openstack.cloud
+  - ansible.posix

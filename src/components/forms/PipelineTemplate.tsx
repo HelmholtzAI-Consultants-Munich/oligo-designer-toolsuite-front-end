@@ -17,12 +17,8 @@ import FieldTemplate from "./FieldTemplate";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
 import { formatDateTime } from "../ui/utils";
-import { BoxArrowInDown, BoxArrowUp, Send } from "react-bootstrap-icons";
-import {
-    buildExportPayload,
-    triggerDownload,
-    importAndValidate,
-} from "./pipelineConfigIO";
+import { BoxArrowInDown, Send } from "react-bootstrap-icons";
+import { buildExportPayload, importAndValidate } from "./pipelineConfigIO";
 import { useRuns } from "../../hooks/useRuns";
 import { useAuth } from "../../hooks/useAuth";
 import { Button, Form as BootstrapForm } from "react-bootstrap";
@@ -147,9 +143,6 @@ const PipelineTemplate: React.FC<Props> = ({
 
     const importInputRef = useRef<HTMLInputElement>(null);
 
-    const handleExport = () =>
-        triggerDownload(buildExportPayload(formData, pipeline, schema));
-
     const handleImport = () => importInputRef.current?.click();
 
     const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -261,13 +254,6 @@ const PipelineTemplate: React.FC<Props> = ({
                     icon: BoxArrowInDown,
                     variant: "outline-border",
                     onClick: handleImport,
-                },
-                {
-                    type: "button",
-                    label: "Export Settings",
-                    icon: BoxArrowUp,
-                    variant: "outline-border",
-                    onClick: handleExport,
                 },
                 {
                     type: "button",

@@ -1,0 +1,13 @@
+---
+- name: Scan for SSH host keys
+  ansible.builtin.command:
+    cmd: ssh-keyscan -q 134.94.199.236
+  changed_when: false
+  register: ssh_scan
+
+- name: Update known_hosts
+  ansible.builtin.known_hosts:
+    name: 134.94.199.236
+    key: "{{ item }}"
+  loop: "{{ ssh_scan.stdout_lines | flatten(levels=1) }}"
+  notify: Wait slightly

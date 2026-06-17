@@ -1,0 +1,63 @@
+x-docker-env-overrides: &docker-env-overrides
+  MONGO_URI: mongodb://odt-db/oligo_db
+  REDIS_URI: redis://odt-redis
+
+services:
+  odt-db:
+    image: mongo:8
+
+  odt-redis:
+    image: redis:8-alpine
+    command:
+      - "--loglevel warning"
+
+  odt-server:
+    image: ghcr.io/helmholtzai-consultants-munich/odt-server:0.2.0-alpha.3
+    build:
+      dockerfile: docker/server.Dockerfile
+    volumes:
+      - data-access:/app/backend/data-access
+    env_file: .env
+    environment: *docker-env-overrides
+    depends_on:
+      - odt-db
+      - odt-redis
+
+  odt-beat:
+    image: ghcr.io/helmholtzai-consultants-munich/odt-server:0.2.0-alpha.3
+    build:
+      dockerfile: docker/server.Dockerfile
+    env_file: .env
+    environment: *docker-env-overrides
+    depends_on:
+      - odt-db
+      - odt-redis
+      - odt-worker
+    command: celery -A backend.beat beat
+
+  odt-worker:
+    image: ghcr.io/helmholtzai-consultants-munich/odt-worker:0.2.0-alpha.3
+    build:
+      dockerfile: docker/worker.Dockerfile
+    volumes:
+      - data-access:/app/backend/data-access
+      - cache:/app/backend/cache
+    env_file: .env
+    environment: *docker-env-overrides
+    depends_on:
+      - odt-db
+      - odt-redis
+
+  odt-web:
+    image: ghcr.io/helmholtzai-consultants-munich/odt-web:0.2.0-alpha.3
+    build:
+      dockerfile: docker/web.Dockerfile
+      args:
+        # This syntax passes through vars from .env
+        VITE_BACKEND_URL:
+        VITE_FEEDBACK_MAX_LENGTH:
+        VITE_TURNSTILE_SITE_KEY:
+
+volumes:
+  data-access:
+  cache:

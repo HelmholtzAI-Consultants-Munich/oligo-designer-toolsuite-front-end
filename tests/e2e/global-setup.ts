@@ -5,7 +5,7 @@ dotenv.config();
 
 const APP_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 const BACKEND_URL =
-    process.env.PLAYWRIGHT_BACKEND_URL || "http://localhost:5000";
+    process.env.PLAYWRIGHT_BACKEND_URL || "http://localhost:8000";
 const TIMEOUT_MS = 120_000;
 const POLL_MS = 3_000;
 
