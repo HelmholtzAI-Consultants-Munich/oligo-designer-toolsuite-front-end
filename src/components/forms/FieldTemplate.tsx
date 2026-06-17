@@ -1,4 +1,4 @@
-import { type FieldTemplateProps } from "@rjsf/utils";
+import { type FieldTemplateProps, ANY_OF_KEY, ONE_OF_KEY } from "@rjsf/utils";
 import { memo } from "react";
 import { filterUninformativeErrors } from "./utils";
 
@@ -12,6 +12,7 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     const {
         children,
         rawErrors,
+        hideError,
         help,
         hidden,
         schema,
@@ -22,6 +23,7 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
 
     const {
         templates: { FieldErrorTemplate },
+        schemaUtils,
     } = registry;
 
     if (hidden) {
@@ -29,6 +31,7 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     }
 
     const isCustomField = !!uiSchema?.["ui:field"];
+    const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
 
     const spanFullWidth =
         schema.type === "object" || schema.oneOf || isCustomField;
@@ -45,12 +48,15 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
             className={`rjsf-field rjsf-field-${schema.type}`}
         >
             {children}
-            {!isCustomField && (
+            {isCustomField ||
+            /* conditions copied from rjsf core's SchemaField.tsx */
+            hideError ||
+            (isXxxOfField && !schemaUtils.isSelect(schema)) ? undefined : (
                 <FieldErrorTemplate
+                    errors={filteredErrors}
+                    fieldPathId={fieldPathId}
                     schema={schema}
                     uiSchema={uiSchema}
-                    fieldPathId={fieldPathId}
-                    errors={filteredErrors || []}
                     registry={registry}
                 />
             )}

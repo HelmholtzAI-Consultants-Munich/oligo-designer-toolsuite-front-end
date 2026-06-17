@@ -20,5 +20,6 @@ export const excludeHiddenTabs = (tabs: string[]) =>
 export const filterUninformativeErrors = (error: string) =>
     ![
         "must match exactly one schema in oneOf",
+        "must match a schema in anyOf",
         "must be equal to constant",
     ].includes(error);
