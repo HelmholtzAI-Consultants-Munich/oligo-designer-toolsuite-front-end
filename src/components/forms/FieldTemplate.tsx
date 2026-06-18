@@ -1,5 +1,6 @@
-import { type FieldTemplateProps } from "@rjsf/utils";
+import { type FieldTemplateProps, ANY_OF_KEY, ONE_OF_KEY } from "@rjsf/utils";
 import { memo } from "react";
+import { filterUninformativeErrors } from "./utils";
 
 /**
  * This FieldTemplate is based on the react-bootstrap theme's template.
@@ -8,14 +9,36 @@ import { memo } from "react";
  * Lastly, it is designed to be used in a CSS grid layout, allowing fields to span the full width of the form when necessary (e.g. for object fields or custom fields).
  */
 const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
-    const { children, errors, help, hidden, schema, uiSchema } = props;
+    const {
+        children,
+        rawErrors,
+        hideError,
+        help,
+        hidden,
+        schema,
+        uiSchema,
+        registry,
+        fieldPathId,
+    } = props;
+
+    const {
+        templates: { FieldErrorTemplate },
+        schemaUtils,
+    } = registry;
 
     if (hidden) {
         return <div className="hidden">{children}</div>;
     }
 
+    const isCustomField = !!uiSchema?.["ui:field"];
+    const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
+
     const spanFullWidth =
-        schema.type === "object" || schema.oneOf || uiSchema?.["ui:field"];
+        schema.type === "object" || schema.oneOf || isCustomField;
+
+    const filteredErrors = rawErrors?.filter((error) =>
+        filterUninformativeErrors(error)
+    );
 
     return (
         <div
@@ -25,7 +48,18 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
             className={`rjsf-field rjsf-field-${schema.type}`}
         >
             {children}
-            {errors}
+            {isCustomField ||
+            /* conditions copied from rjsf core's SchemaField.tsx */
+            hideError ||
+            (isXxxOfField && !schemaUtils.isSelect(schema)) ? undefined : (
+                <FieldErrorTemplate
+                    errors={filteredErrors}
+                    fieldPathId={fieldPathId}
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    registry={registry}
+                />
+            )}
             {help}
         </div>
     );
