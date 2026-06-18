@@ -218,7 +218,8 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
     redis = Redis.from_url(Config.REDIS_URI)
 
-    high_priority_ahead, default_priority_ahead = (0, 0)
+    high_priority_ahead = int(cast(str | None, redis.hget(Config.REDIS_QUEUE_LENGTH_KEY, "high")) or 0)
+    default_priority_ahead = 0
 
     if priority == CeleryConfig.task_high_priority:
         # add one high priority run ahead for all low priority runs

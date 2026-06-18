@@ -4,7 +4,6 @@ General feedback API. Not tied to pipelines; available from any page.
 
 import re
 import unicodedata
-from datetime import UTC, datetime
 from http import HTTPStatus
 from typing import Any
 
@@ -15,6 +14,7 @@ from flask_login import current_user, login_required
 from backend.extensions import db, limiter
 from backend.routes.route_helpers import validate_turnstile
 from backend.utilities.formatting import format_feedback
+from backend.utilities.typed_values import utc_now
 
 feedback_bp = Blueprint("feedback", __name__)
 FEEDBACK_RATE_LIMIT = "10 per hour"
@@ -74,7 +74,7 @@ def create_feedback():
 
     doc: dict[str, Any] = {
         "message": message,
-        "created_at": datetime.now(UTC),
+        "created_at": utc_now(),
         "metadata": metadata,
         "user_id": user_id,
     }
