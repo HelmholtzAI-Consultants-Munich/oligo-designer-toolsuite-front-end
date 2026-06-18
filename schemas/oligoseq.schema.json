@@ -1007,8 +1007,7 @@
       "properties": {
         "file_region_ids": {
           "anyOf": [{ "type": "string" }, { "type": "null" }],
-          "default": null,
-          "description": "File with a list the genes used to generate the probe sequences, leave empty if all the genes are used. For examples, see 'data/genes'.",
+          "description": "Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead.",
           "title": "File Region Ids"
         },
         "files_fasta_probe_database": {
@@ -1044,7 +1043,7 @@
           "type": "integer"
         }
       },
-      "required": ["files_fasta_probe_database"],
+      "required": ["file_region_ids", "files_fasta_probe_database"],
       "title": "TargetProbeOligoGeneration",
       "type": "object"
     },

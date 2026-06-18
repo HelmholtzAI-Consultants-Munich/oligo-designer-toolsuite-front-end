@@ -37,6 +37,7 @@
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep @smoke",
     "test:e2e:full": "playwright test --grep @full",
+    "test:all": "npm run test && npm run docker:test:build && npm run docker:start && pytest backend && npm run docker:test:smoke",
     "format": "prettier . --check",
     "format:fix": "prettier . --write",
     "docker:start": "docker compose up -d --build",
