@@ -34,3 +34,17 @@ While it's possible to run pre-commit manually using `pre-commit run -a`, we hig
 ```bash
 pre-commit install
 ```
+
+## Running the typechecker
+
+Since we cannot integrate the pre-commit hook for running [pyrefly](https://pyrefly.org/), you should install the recommended extension for this project to see the type-errors. As an alternative you can install the python-dev-setup locally, preferably in your conda environment:
+
+```bash
+pip install --group=backend/pyproject.toml:dev
+```
+
+Afterwards you can run the typechecker using:
+
+```bash
+pyrefly check -c backend/pyproject.toml
+```
