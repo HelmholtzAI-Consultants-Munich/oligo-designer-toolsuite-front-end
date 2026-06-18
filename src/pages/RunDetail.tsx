@@ -25,6 +25,7 @@ import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
 import {
     BoxArrowUp,
+    Download,
     FileEarmark,
     FileEarmarkSpreadsheet,
     GearFill,
@@ -33,7 +34,11 @@ import {
 import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
-import type { Action, FileDownloadAction } from "../components/ui/Header";
+import type {
+    Action,
+    FileDownloadAction,
+    FileDownloadEntry,
+} from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
@@ -43,9 +48,10 @@ import {
 } from "../utils/runConfigHelper";
 import RunMetrics from "../components/RunMetrics";
 import { PIPELINE_CONFIG, type PipelineConfig } from "../pipelineConfig/config";
+import { downloadFileFactory } from "../utils/fileDownloadUtil";
 
 interface RunDetailFileActionsProps {
-    actions: FileDownloadAction[];
+    actions: FileDownloadEntry[];
 }
 
 const RunDetailFileAction: React.FC<RunDetailFileActionsProps> = ({
@@ -55,10 +61,13 @@ const RunDetailFileAction: React.FC<RunDetailFileActionsProps> = ({
         <Horizontal gap="md">
             {actions.map((action) => (
                 <Button
-                    as="a"
                     variant="outline-primary"
-                    href={action.href}
                     title={action.label}
+                    onClick={downloadFileFactory(
+                        action.label,
+                        action.url,
+                        action.fileName
+                    )}
                 >
                     {action.icon && <action.icon size={20} />} {action.label}
                 </Button>
@@ -254,32 +263,37 @@ const RunDetail = () => {
 
         if (!fileDownloads) return;
 
-        return [
-            {
-                type: "fileDownload",
-                label: "Oligo Table Excel",
-                icon: FileEarmarkSpreadsheet,
-                href: baseFileUrl + fileDownloads.excelFile,
-            },
-            {
-                type: "fileDownload",
-                label: "Oligo Table Tsv",
-                icon: FileEarmarkSpreadsheet,
-                href: baseFileUrl + fileDownloads.probesTable,
-            },
-            {
-                type: "fileDownload",
-                label: "Oligo Probes Order",
-                icon: FileEarmark,
-                href: baseFileUrl + fileDownloads.probesOrder,
-            },
-            {
-                type: "fileDownload",
-                label: "Oligo Probes",
-                icon: FileEarmark,
-                href: baseFileUrl + fileDownloads.probes,
-            },
-        ] as FileDownloadAction[];
+        return {
+            type: "fileDownload",
+            label: "Download Files",
+            icon: Download,
+            fileDownloads: [
+                {
+                    label: "Oligo Table Excel",
+                    icon: FileEarmarkSpreadsheet,
+                    fileName: fileDownloads.excelFile,
+                    url: baseFileUrl + fileDownloads.excelFile,
+                },
+                {
+                    label: "Oligo Table Tsv",
+                    icon: FileEarmarkSpreadsheet,
+                    fileName: fileDownloads.probesTable,
+                    url: baseFileUrl + fileDownloads.probesTable,
+                },
+                {
+                    label: "Oligo Probes Order",
+                    icon: FileEarmark,
+                    fileName: fileDownloads.probesOrder,
+                    url: baseFileUrl + fileDownloads.probesOrder,
+                },
+                {
+                    label: "Oligo Probes",
+                    icon: FileEarmark,
+                    fileName: fileDownloads.probes,
+                    url: baseFileUrl + fileDownloads.probes,
+                },
+            ],
+        } as FileDownloadAction;
     }, [run]);
 
     const actions = useMemo(() => {
@@ -320,8 +334,8 @@ const RunDetail = () => {
 
             return [
                 useSettingsAction,
-                ...fileActions,
                 exportSettingsAction,
+                fileActions,
                 deleteAction,
             ];
         } else {
@@ -585,7 +599,9 @@ const RunDetail = () => {
 
                             <h2>File Downloads</h2>
                             {fileActions && (
-                                <RunDetailFileAction actions={fileActions} />
+                                <RunDetailFileAction
+                                    actions={fileActions.fileDownloads}
+                                />
                             )}
                         </>
                     )}
