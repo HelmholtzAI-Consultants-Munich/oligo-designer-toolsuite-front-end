@@ -66,13 +66,13 @@ select = [
     "I",   # isort
 ]
 
-[tool.pyright]
-exclude = ["**/node_modules", "**/__pycache__", "**/.*", "**/typings"]
-pythonVersion = "3.12"
-pythonPlatform = "Linux"
-
-allowedUntypedLibraries = ["authlib", "flask_login"]
-
-# Pyright rules
-typeCheckingMode = "standard" # todo: set to strict
-reportAny = false
+[tool.pyrefly]
+project-excludes = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "**/typings",
+]
+infer-with-first-use = false
+preset = "default"
+min-severity = "warn"
