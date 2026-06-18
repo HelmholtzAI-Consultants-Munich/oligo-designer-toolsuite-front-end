@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
-import * as XLSX from "xlsx";
 import type {
     GenomicRegions,
     ProbeDetails,
