@@ -2,7 +2,8 @@ import React from "react";
 import type { GenomicRegions, Probe } from "../../types";
 import GenomeAlignmentD3 from "./GenomeAlignmentD3";
 import { Horizontal, Vertical } from "../ui/Alignment";
-import { Regions } from "./visualizationHelpers";
+import { Regions } from "./genomeAlignmentHelpers";
+import { LegendItem } from "./LegendItem";
 
 type Props = {
     probes: Probe[];
@@ -11,32 +12,23 @@ type Props = {
     genomicRegions: GenomicRegions | null;
 };
 
-const LegendItem: React.FC<{ color: string; label: string }> = ({
-    color,
-    label,
-}) => {
-    return (
-        <Horizontal gap="sm" align="baseline">
-            <span
-                style={{
-                    display: "inline-block",
-                    width: "12px",
-                    height: "12px",
-                    backgroundColor: color,
-                    marginRight: "5px",
-                }}
-            ></span>
-            {label}
-        </Horizontal>
-    );
-};
-
-// This component mainly serves as a wrapper for the D3 visualization.
-// It forwards the React lifecycle methods to the D3 module.
+/**
+ * Displays a genome alignment visualization using D3. It shows the genomic regions of the transcripts and the positions of the oligos.
+ *
+ * @remarks
+ * This component wraps the D3 visualization and synchronizes it with the React lifecycle and state.
+ *
+ * @param probes - The list of probes to visualize.
+ * @param selectedOligo - The ID of the currently selected oligo, or null if no oligo is selected.
+ * @param setSelectedOligo - A callback to update the selected oligo.
+ * @param genomicRegions - The genomic regions data to visualize, or null if not available.
+ * @returns A React component that renders the genome alignment visualization and its legend.
+ */
 class GenomeAlignment extends React.Component<Props> {
     private el: SVGSVGElement | null = null;
 
     componentDidMount() {
+        // Initialize the D3 visualization when the component mounts
         GenomeAlignmentD3.create(
             this.el!,
             this.props.probes,
@@ -76,6 +68,7 @@ class GenomeAlignment extends React.Component<Props> {
     }
 
     componentWillUnmount() {
+        // Clean up the D3 visualization when the component unmounts
         GenomeAlignmentD3.destroy(this.el!);
     }
 
