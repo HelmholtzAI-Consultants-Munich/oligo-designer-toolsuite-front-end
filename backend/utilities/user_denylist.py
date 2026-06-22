@@ -1,6 +1,6 @@
 from bson import ObjectId
 
-from backend.constants import USER_DENYLIST_COLLECTION
+from backend.constants import USER_DENYLIST_COLLECTION_KEY
 from backend.extensions import db
 from backend.utilities.typed_values import utc_now
 
@@ -8,7 +8,7 @@ from backend.utilities.typed_values import utc_now
 def find_ban_by_helmholtz_sub(helmholtz_sub: str | None):
     if not helmholtz_sub:
         return None
-    return db[USER_DENYLIST_COLLECTION].find_one({"helmholtz_sub": helmholtz_sub})
+    return db[USER_DENYLIST_COLLECTION_KEY].find_one({"helmholtz_sub": helmholtz_sub})
 
 
 def is_helmholtz_sub_banned(helmholtz_sub: str | None) -> bool:
@@ -16,7 +16,7 @@ def is_helmholtz_sub_banned(helmholtz_sub: str | None) -> bool:
 
 
 def ban_helmholtz_sub(helmholtz_sub: str, banned_by: str):
-    db[USER_DENYLIST_COLLECTION].update_one(
+    db[USER_DENYLIST_COLLECTION_KEY].update_one(
         {"helmholtz_sub": helmholtz_sub},
         {
             "$setOnInsert": {
@@ -41,4 +41,4 @@ def format_ban(ban: dict) -> dict:
 
 
 def remove_ban(ban_id: ObjectId) -> bool:
-    return db[USER_DENYLIST_COLLECTION].delete_one({"_id": ban_id}).deleted_count > 0
+    return db[USER_DENYLIST_COLLECTION_KEY].delete_one({"_id": ban_id}).deleted_count > 0

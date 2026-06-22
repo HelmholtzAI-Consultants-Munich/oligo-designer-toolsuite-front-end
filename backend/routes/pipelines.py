@@ -20,7 +20,12 @@ from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
-from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
+from backend.constants import (
+    PIPELINE_FILE_INPUT,
+    PIPELINE_GENOMIC_INPUT,
+    PIPELINE_NON_EXPOSED_FIELDS,
+    REDIS_QUEUE_LENGTH_KEY,
+)
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
@@ -222,10 +227,10 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     redis = Redis.from_url(Config.REDIS_URI)
 
     # Initialize queue lengths if not present, then fetch and convert to int
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "high", 0)
+    redis.hsetnx(REDIS_QUEUE_LENGTH_KEY, "default", 0)
+    redis.hsetnx(REDIS_QUEUE_LENGTH_KEY, "high", 0)
     default_priority_queue_length, high_priority_queue_length = map(
-        int, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
+        int, redis.hmget(REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
     )
     high_priority_ahead = high_priority_queue_length
 
@@ -236,10 +241,10 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
+        redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "high", 1)
     else:
         default_priority_ahead = default_priority_queue_length
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+        redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "default", 1)
 
     return high_priority_ahead, default_priority_ahead
 

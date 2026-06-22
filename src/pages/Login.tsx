@@ -5,7 +5,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { BACKEND_URL, TURNSTILE_SITE_KEY } from "../config";
-import { Alert, Button, Card, Form } from "react-bootstrap";
+import { Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../utils/toastUtil";
 import { Vertical } from "../components/ui/Alignment";
@@ -31,9 +31,9 @@ const Login = () => {
 
     const sitekey = TURNSTILE_SITE_KEY;
 
-    // Get redirect URL from query params
+    // Get redirect URL and error message from query params
     const redirectTo = searchParams.get("redirect") || "/";
-    const isBanned = searchParams.get("error") === "banned";
+    const errorFromQuery = searchParams.get("error");
 
     // Redirect if already logged in
     // This useEffect is necessary because navigate() cannot reliably be called during render.
@@ -43,6 +43,16 @@ const Login = () => {
             navigate(redirectTo);
         }
     }, [user, loading, navigate, redirectTo]);
+
+    useEffect(() => {
+        if (errorFromQuery) {
+            showToast({
+                title: "Login failed.",
+                content: errorFromQuery,
+                type: "danger",
+            });
+        }
+    }, [errorFromQuery]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -72,34 +82,15 @@ const Login = () => {
             navigate(redirectTo);
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
-                switch (error.response?.status) {
-                    case 401: {
-                        showToast({
-                            title: "Invalid username or password.",
-                            content:
-                                "Please check your credentials and try again.",
-                            type: "danger",
-                        });
-                        break;
-                    }
-                    case 403: {
-                        showToast({
-                            title: "Verification failed.",
-                            content:
-                                " We couldn't verify that you are human. Please try again.",
-                            type: "danger",
-                        });
-                        break;
-                    }
-                    default:
-                        console.error(error);
-                        showToast({
-                            title: "Login failed.",
-                            content:
-                                "An error occurred during login. Please try again later.",
-                            type: "danger",
-                        });
-                }
+                const description: string | undefined =
+                    error.response?.data?.error;
+                showToast({
+                    title: "Login failed.",
+                    content:
+                        description ??
+                        "An error occurred during login. Please try again later.",
+                    type: "danger",
+                });
             }
         }
     };
@@ -124,13 +115,6 @@ const Login = () => {
     return (
         <Page title="Login" hideHeader>
             <Vertical gap="xl" align="center" justify="center" grow>
-                {isBanned && (
-                    <Alert variant="danger" style={{ maxWidth: "500px" }}>
-                        <Alert.Heading>Access denied</Alert.Heading>
-                        This account has been banned from accessing the service.
-                        Contact support if you believe this is an error.
-                    </Alert>
-                )}
                 <Card style={{ maxWidth: "500px" }}>
                     <Card.Body>
                         <Vertical gap="md" align="stretch">

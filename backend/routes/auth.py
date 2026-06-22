@@ -20,6 +20,7 @@ Main features:
 import os
 import uuid
 from http import HTTPStatus
+from urllib.parse import urlencode
 
 import requests
 from bson import ObjectId
@@ -195,10 +196,16 @@ def login():
     user_doc = db.users.find_one({"username": username})
 
     if not user_doc or "password" not in user_doc:
-        abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description="Invalid username or password. Please check your credentials and try again.",
+        )
 
     if not check_password_hash(user_doc["password"], password):
-        abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description="Invalid username or password. Please check your credentials and try again.",
+        )
 
     user = User(user_doc)
     _login(user, remember=remember_me)
@@ -256,7 +263,8 @@ def auth_callback():
     if is_helmholtz_sub_banned(helmholtz_sub):
         session.pop("oauth_redirect", None)
         session.pop("oauth_token", None)
-        return redirect(f"{frontend_base}/login?error=banned")
+        ban_msg = "This account has been banned from accessing the service. Contact support if you believe this is an error."
+        return redirect(f"{frontend_base}/login?{urlencode({'error': ban_msg})}")
 
     # Check if user exists in database by helmholtz_sub
     user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})

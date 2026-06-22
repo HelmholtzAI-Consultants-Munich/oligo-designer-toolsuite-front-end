@@ -20,7 +20,7 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
-from backend.constants import USER_DENYLIST_COLLECTION
+from backend.constants import USER_DENYLIST_COLLECTION_KEY
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
 from backend.utilities.account_cleanup import delete_user_account_data
@@ -112,7 +112,7 @@ def get_users():
 
     # Format for Refine: convert _id to id, format dates
     bans_by_sub = {
-        ban["helmholtz_sub"]: ban for ban in db[USER_DENYLIST_COLLECTION].find({}, {"helmholtz_sub": 1})
+        ban["helmholtz_sub"]: ban for ban in db[USER_DENYLIST_COLLECTION_KEY].find({}, {"helmholtz_sub": 1})
     }
     formatted_users = []
     for user in users:
@@ -234,7 +234,7 @@ def ban_user(user_id: ObjectId):
 @login_required
 @require_admin
 def get_banned_users():
-    bans = db[USER_DENYLIST_COLLECTION].find({}).sort("banned_at", -1)
+    bans = db[USER_DENYLIST_COLLECTION_KEY].find({}).sort("banned_at", -1)
     return jsonify([format_ban(ban) for ban in bans]), HTTPStatus.OK
 
 

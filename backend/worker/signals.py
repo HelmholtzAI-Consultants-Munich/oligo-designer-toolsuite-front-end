@@ -7,6 +7,7 @@ from pymongo import MongoClient
 from redis import Redis
 
 from backend.config import CeleryConfig, Config
+from backend.constants import REDIS_QUEUE_LENGTH_KEY
 from backend.worker.converters import parse_datetime
 
 
@@ -29,14 +30,14 @@ def update_queue_positions(task: Task) -> None:
                     {"status": "pending", "queue_position.0": {"$gt": 0}},
                     {"$inc": {"queue_position.0": -1}},
                 )
-                redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", -1)
+                redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "high", -1)
             else:
                 # remove one low priority task ahead of all pending low priority tasks
                 db.runs.update_many(
                     {"status": "pending", "priority": "default", "queue_position.1": {"$gt": 0}},
                     {"$inc": {"queue_position.1": -1}},
                 )
-                redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", -1)
+                redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "default", -1)
     finally:
         redis.close()
 
