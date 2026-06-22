@@ -110,5 +110,5 @@ def start_pending_run(task_id: str) -> bool:
             if result.modified_count == 0:
                 return False
 
-            remove_pending_run(redis, db, run)
+            _remove_pending_run(redis, db, run)
             return True
