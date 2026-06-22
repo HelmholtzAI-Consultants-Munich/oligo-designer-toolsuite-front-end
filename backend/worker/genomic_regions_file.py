@@ -14,6 +14,15 @@ class GenomicRegionsFile:
     def __init__(
         self, regions_path: str, fasta_paths: list[str], probes_path: str, pipeline_name: str, logger=None
     ):
+        """Initializes the GenomicRegionsFile and loads probes, scores and regions from the provided files.
+
+        Args:
+            regions_path (str): Path to regions file containing names of genes to consider (one gene name per line). If not provided (None), all genes from fasta files will be considered.
+            fasta_paths (list[str]): List of paths to fasta files containing genomic regions with headers encoding region information.
+            probes_path (str): Path to probes yaml file containing probe information and scores.
+            pipeline_name (str): Name of the pipeline the probes were designed with.
+            logger (logging.Logger, optional): Logger instance. Defaults to None.
+        """
         self.regions_path = regions_path
         self.fasta_paths = fasta_paths
         self.probes_path = probes_path
@@ -24,8 +33,12 @@ class GenomicRegionsFile:
         self.probes, self.scores = self._load_probes_and_scores()
         self.regions = self._load_regions()
 
-    # write regions to a yaml file
     def yaml_dump(self, yaml_path: str):
+        """Writes regions, probes and scores to a yaml file.
+
+        Args:
+            yaml_path (str): Path to the yaml file to write.
+        """
         with open(yaml_path, "w") as yaml_file:
             yaml.dump(
                 {
@@ -37,7 +50,11 @@ class GenomicRegionsFile:
             )
 
     def _load_genes(self):
-        """Load gene names from regions file."""
+        """Loads gene names from regions file.
+
+        Returns:
+            list[str]: List of gene names.
+        """
         genes = set()
         if self.regions_path is None:
             return []  # consider all genes if regions file is not provided
@@ -47,7 +64,11 @@ class GenomicRegionsFile:
         return list(genes)
 
     def _load_probes_and_scores(self):
-        """Load probes and scores from probes yaml file, match probes to regions, and fill gaps for exon-exon junction probes."""
+        """Loads probes and scores from probes yaml file, matches probes to regions, and fills gaps for exon-exon junction probes.
+
+        Returns:
+            tuple[dict[str, dict[str, list[dict]]], dict[str, dict]]: Two dictionaries, one containing probes grouped by gene and oligoset, and another containing scores for each oligoset.
+        """
         probes: defaultdict[Any, dict] = defaultdict(lambda: defaultdict(list))
         scores: defaultdict[Any, dict] = defaultdict(dict)
 
@@ -80,7 +101,14 @@ class GenomicRegionsFile:
         return dict(probes), dict(scores)
 
     def _generate_probes_from_probe_info(self, probe_info):
-        """Generate probe entries from probe info, handling multiple locations for the same probe sequence and filling gaps for exon-exon junction probes."""
+        """Generates probe entries from probe info, handling multiple locations for the same probe sequence and filling gaps for exon-exon junction probes.
+
+        Args:
+            probe_info (dict): Dictionary containing probe information.
+
+        Returns:
+            list[dict]: List of generated probe entries.
+        """
         # cast entries to lists of lists if they are not already
         for field in probe_info:
             if not isinstance(probe_info[field], list):
@@ -145,10 +173,13 @@ class GenomicRegionsFile:
         return probes
 
     def _load_regions(self):
-        """Load and process regions from fasta files.
+        """Loads and processes regions from fasta files.
 
-        Collect regions from fasta files, parse fasta headers to extract region information, and group regions by gene and transcript.
-        Then process regions to fill gaps between exons and merge overlapping or contiguous regions of the same type.
+        Collects regions from fasta files, parses fasta headers to extract region information, and groups regions by gene and transcript.
+        Then processes regions to fill gaps between exons and merge overlapping or contiguous regions of the same type.
+
+        Returns:
+            dict[str, dict[str, list[dict]]]: Dictionary containing (processed) regions grouped by gene and transcript.
         """
         regions = defaultdict(lambda: defaultdict(list))
         fasta_parser = FastaParser()
@@ -157,9 +188,9 @@ class GenomicRegionsFile:
             if not os.path.exists(fname):
                 self.logger.debug(f"Warning: Fasta file {fname} not found, skipping.")
                 continue
-            seq_record = SeqIO.index(fname, "fasta")
-            for idx in seq_record:
-                self._populate_regions_with_region(idx, fasta_parser, seq_record, regions)
+            record_dict = SeqIO.index(fname, "fasta")
+            for idx in record_dict:
+                self._populate_regions_with_region(idx, fasta_parser, record_dict, regions)
 
         # empty copy of regions
         processed_regions = {
@@ -171,11 +202,18 @@ class GenomicRegionsFile:
                 self._merge_regions_for_transcript(processed_regions, gene, transcript_id, transcript_regions)
         return processed_regions
 
-    def _populate_regions_with_region(self, idx, fasta_parser, seq_record, regions):
-        """Parse fasta header to extract region information and add region to regions dict grouped by gene and transcript."""
+    def _populate_regions_with_region(self, idx, fasta_parser, record_dict, regions):
+        """Parses fasta header to extract region information and adds region to regions dict grouped by gene and transcript.
+
+        Args:
+            idx (str): Index of the record in the record_dict to process.
+            fasta_parser (FastaParser): An instance of the ODT FastaParser to parse the fasta header.
+            record_dict (dict): Dictionary like object containing the sequence records for the given index.
+            regions (dict): Dictionary to populate with region information, grouped by gene and transcript.
+        """
         region_name, additional_info, coordinates = fasta_parser.parse_fasta_header(idx)
         gene = region_name.lstrip(">")
-        record = seq_record[idx]
+        record = record_dict[idx]
         if self.genes and gene not in self.genes:
             return
 
@@ -253,7 +291,14 @@ class GenomicRegionsFile:
                     )
 
     def _merge_regions_for_transcript(self, processed_regions, gene, transcript_id, regions):
-        """Merge overlapping or contiguous regions of the same type and fill gaps between exons for a given transcript."""
+        """Merges overlapping or contiguous regions of the same type and fills gaps between exons for a given transcript.
+
+        Args:
+            processed_regions (dict): Dictionary containing processed regions.
+            gene (str): Name of the gene the transcript belongs to.
+            transcript_id (str): Name of the transcript to process.
+            regions (dict): Dictionary containing regions to process and possibly merge.
+        """
         # regions can not be empty, otherwise the transcript would not exist
         strand = regions[0]["strand"]
         # sort regions by start position (reverse by end position for negative strand)
@@ -338,7 +383,15 @@ class GenomicRegionsFile:
         processed_regions[gene][transcript_id] = merged_regions
 
     def _mergable_regions(self, region1, region2):
-        """Determine if two regions are mergable based on their exon number and region type."""
+        """Determines if two regions are mergable based on their exon number and region type.
+
+        Args:
+            region1 (dict): First region to compare.
+            region2 (dict): Second region to compare.
+
+        Returns:
+            bool: True if the regions are mergable, False otherwise.
+        """
         if region1["exon_number"] != region2["exon_number"]:
             return False
 
