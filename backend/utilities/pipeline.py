@@ -5,7 +5,7 @@ from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
-from flask import abort, current_app
+from flask import abort
 
 from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app
@@ -89,23 +89,16 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
         except Exception:
             logger.exception("Failed to revoke pipeline chord for run %s", run_id_obj)
 
-    output_path_value = run.get("output_path")
     with queue_accounting_lock() as redis:
-        run = mongo.runs.find_one({"_id": run_id_obj})
-        if run is None:
-            abort(HTTPStatus.NOT_FOUND)
-
-        locked_status = run.get("status")
-        output_path_value = run.get("output_path")
-
         result = mongo.runs.delete_one({"_id": run_id_obj})
         if result.deleted_count == 0:
-            current_app.logger.error(f"Failed to delete run {run_id_obj}")
-            abort(HTTPStatus.INTERNAL_SERVER_ERROR)
+            abort(HTTPStatus.NOT_FOUND)
 
-        if locked_status == RunStatus.PENDING:
+        if initial_status == RunStatus.PENDING:
             remove_pending_run(redis, mongo, run)
 
+    # Delete output files/folders
+    output_path_value = run.get("output_path")
     output_path = deserialize_path(output_path_value)
     if output_path and output_path.exists():
         try:

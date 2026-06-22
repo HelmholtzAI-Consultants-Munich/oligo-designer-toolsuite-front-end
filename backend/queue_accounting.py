@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
@@ -20,7 +20,7 @@ def _decrement_queue_length(redis: Redis, priority: str) -> int:
 
 
 @contextmanager
-def queue_accounting_lock() -> Iterator[Redis]:
+def queue_accounting_lock() -> Generator[Redis, None, None]:
     """Hold the global queue-accounting lock and yield its Redis client."""
     redis = Redis.from_url(Config.REDIS_URI)
     lock = redis.lock(
@@ -55,12 +55,16 @@ def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
     return high_length, default_length
 
 
-def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
-    """Remove a pending run from counters and advance runs queued behind it."""
+def _remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
+    """Decrement queue counters and shift positions for runs queued behind the removed run.
+
+    Must be called while holding queue_accounting_lock.
+    """
     priority = run.get("priority", "default")
     position = run.get("queue_position") or (0, 0)
 
     if priority == "high":
+        # Shift all pending runs with a higher high-priority position one step forward.
         db.runs.update_many(
             {
                 "status": RunStatus.PENDING,
@@ -69,6 +73,7 @@ def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
             {"$inc": {"queue_position.0": -1}},
         )
     else:
+        # Shift all pending default-priority runs with a higher default-priority position one step forward.
         db.runs.update_many(
             {
                 "status": RunStatus.PENDING,
@@ -79,6 +84,11 @@ def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
         )
 
     _decrement_queue_length(redis, priority)
+
+
+def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
+    """Remove a pending run from counters and advance runs queued behind it."""
+    _remove_pending_run(redis, db, run)
 
 
 def start_pending_run(task_id: str) -> bool:
