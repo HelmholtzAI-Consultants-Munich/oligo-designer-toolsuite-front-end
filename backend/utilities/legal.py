@@ -7,7 +7,7 @@ from flask import abort
 from pymongo.synchronous.collection import Collection
 
 from backend.extensions import db
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 
 TERMS_DOCUMENT_KEY = "terms"
 PRIVACY_DOCUMENT_KEY = "privacy-policy"

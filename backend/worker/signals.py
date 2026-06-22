@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from redis import Redis
 
 from backend.config import CeleryConfig, Config
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 from backend.worker.converters import parse_datetime
 
 

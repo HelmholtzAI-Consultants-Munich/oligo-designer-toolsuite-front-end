@@ -29,9 +29,9 @@ from backend.routes.route_helpers import (
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
-    utc_now,
 )
 from backend.utilities.validation import validate_genomic_form_data
+from backend.utils import utc_now
 from backend.worker.models import OligoSeqProbeDesignerConfig
 from backend.worker.task_index import Callbacks, Tasks
 

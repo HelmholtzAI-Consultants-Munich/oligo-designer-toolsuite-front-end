@@ -4,7 +4,7 @@ from flask import abort
 
 from backend.extensions import db
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document, insert_with_check
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 
 
 def _terms_acceptance_query(user_id: str | None = None, session_id: str | None = None) -> dict[str, str]:

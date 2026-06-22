@@ -11,7 +11,8 @@ from backend.utilities.legal import (
     TERMS_DOCUMENT_KEY,
     get_published_legal_document,
 )
-from backend.utilities.typed_values import serialize_path, utc_now
+from backend.utilities.typed_values import serialize_path
+from backend.utils import utc_now
 
 
 @pytest.fixture

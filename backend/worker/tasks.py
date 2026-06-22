@@ -12,7 +12,7 @@ from pymongo import MongoClient
 
 from backend.config import CeleryConfig, Config
 from backend.genomic_databases import fetch_dropdown_options
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 from backend.worker.handlers import PipelineTask

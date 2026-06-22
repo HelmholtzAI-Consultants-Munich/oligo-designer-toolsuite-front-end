@@ -10,11 +10,6 @@ from werkzeug.utils import safe_join
 PATH_STORAGE_KIND = "pathlib.Path/v1"
 
 
-def utc_now() -> datetime:
-    """Return a timezone-aware UTC timestamp."""
-    return datetime.now(UTC)
-
-
 def serialize_path(path: Path) -> dict[str, Any]:
     """Serialize a pathlib.Path to a structured Mongo-safe representation."""
     return {
