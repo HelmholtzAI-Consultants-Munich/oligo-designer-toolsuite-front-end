@@ -3,6 +3,7 @@ import os
 import time
 
 import celery
+import celery.exceptions
 from flask import Flask
 from flask_cors import CORS
 from prometheus_flask_exporter import PrometheusMetrics

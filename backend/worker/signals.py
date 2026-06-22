@@ -1,4 +1,3 @@
-from datetime import UTC, datetime
 from typing import Any
 
 from celery import Task
@@ -7,6 +6,7 @@ from pymongo import MongoClient
 from redis import Redis
 
 from backend.config import CeleryConfig, Config
+from backend.utils import utc_now
 from backend.worker.converters import parse_datetime
 
 
@@ -21,7 +21,7 @@ def update_queue_positions(task: Task) -> None:
         with MongoClient(Config.MONGO_URI) as client:
             db = client["oligo_db"]
             if (
-                task.request.delivery_info.get("priority", CeleryConfig.task_default_priority)
+                task.request.delivery_info.get("priority", CeleryConfig.task_default_priority)  # pyrefly:ignore
                 == CeleryConfig.task_high_priority
             ):
                 # remove one high priority task ahead of all pending tasks
@@ -43,8 +43,8 @@ def update_queue_positions(task: Task) -> None:
 
 def capture_start_time(task_id: str, task: Task) -> None:
     """Store the task start timestamp and queue wait duration on the run."""
-    started_at = datetime.now(UTC)
-    task.request.started_at = started_at
+    started_at = utc_now()
+    task.request.started_at = started_at  # pyrefly:ignore
 
     metrics: dict[str, Any] = {"started_at": started_at}
     enqueued_at = parse_datetime((task.request.headers or {}).get("enqueued_at"))
@@ -61,7 +61,7 @@ def capture_start_time(task_id: str, task: Task) -> None:
 
 def capture_completion_metrics(task_id: str, task: Task) -> None:
     """Store task finish timestamp and elapsed durations on the run."""
-    finished_at = datetime.now(UTC)
+    finished_at = utc_now()
     metrics: dict[str, Any] = {"finished_at": finished_at}
 
     started_at = getattr(task.request, "started_at", None)

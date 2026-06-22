@@ -12,6 +12,5 @@
   },
   "python.testing.pytestEnabled": true,
   "python.terminal.activateEnvInCurrentTerminal": true,
-  "basedpyright.analysis.diagnosticMode": "workspace",
-  "basedpyright.analysis.configFilePath": "${workspaceFolder}/backend"
+  "python.pyrefly.configPath": "${workspaceFolder}/backend/pyproject.toml"
 }

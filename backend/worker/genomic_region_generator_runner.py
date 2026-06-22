@@ -92,7 +92,7 @@ class GenomicRegionGeneratorRunner:
                 "file_sequence": sequence_file,  # required: FASTA
                 "files_source": files_source,  # optional: original source
                 "species": species,  # optional
-                "annotation_release": to_int(resolved_rel) if str(resolved_rel).isdigit() else resolved_rel,
+                "annotation_release": to_int(resolved_rel) if resolved_rel.isdigit() else resolved_rel,
                 "genome_assembly": genome_assembly,  # optional
             },
             "genomic_regions": {key: to_bool(val) for key, val in region_form["genomic_regions"].items()},

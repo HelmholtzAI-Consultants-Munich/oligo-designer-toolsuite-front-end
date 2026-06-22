@@ -1,5 +1,5 @@
 from backend.extensions import db
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 
 ANONYMOUS_SESSIONS_COLLECTION = "anonymous_sessions"
 
