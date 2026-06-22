@@ -12,9 +12,6 @@ from backend.worker.database import _parse_run_id, _update_run
 def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | None) -> None:
     """Error handling callback (errback) for pipeline chords.
 
-    Notes:
-        The `run_id_str` _must_ be provided explicitly when building the signature linked to the chord.
-
     Arguments:
         request {Request} -- The execution request received by the worker with task metadata.
         exc {Exception} -- The exception raised during task execution (wrapped in ChordError if raised in chord header).
