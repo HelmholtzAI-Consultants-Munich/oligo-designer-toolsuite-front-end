@@ -29,7 +29,6 @@ from backend.routes.route_helpers import (
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
-    path_for_display,
     safe_join_under,
     timestamp_to_iso,
 )
@@ -61,7 +60,6 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "pipeline": run.get("pipeline", "unknown"),
         "status": run.get("status", "unknown"),
         "timestamp": timestamp_to_iso(run.get("timestamp")),
-        "output_path": path_for_display(run.get("output_path")),
         "user_id": run.get("user_id", "unknown"),
         "priority": run.get("priority", "unknown"),
         "queue_position": run.get("queue_position", "unknown"),
