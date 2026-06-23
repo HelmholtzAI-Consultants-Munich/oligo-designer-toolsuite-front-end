@@ -122,19 +122,20 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     return dict(generated_regions)
 
 
-def init_run(run_id: ObjectId) -> None:
+def init_run() -> ObjectId:
     """Initializes a pending run in the database.
 
     Notes:
-        This needs to be called before `enqueue_pipeline()` since the pipeline task excepts the run to already
-        exist in the database.
+        This needs to be called before `enqueue_pipeline()` since the pipeline task
+        expects the run to already exist in the database.
 
-    Arguments:
-        run_id {ObjectId} -- The pipeline run's id
+    Returns:
+        ObjectId -- The pipeline run's id
     """
-    insert_result = db.runs.insert_one({"_id": run_id, "status": RunStatus.PENDING})
+    insert_result = db.runs.insert_one({"status": RunStatus.PENDING})
     if not insert_result.acknowledged:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to create run in database")
+    return insert_result.inserted_id
 
 
 def update_run_with_context(
@@ -390,12 +391,10 @@ def start_pipeline(pipeline_name: str):
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
-
-    run_id = ObjectId()  # Generate a new run ID
     priority = get_task_priority(form_data)
 
     # Insert pending run into database
-    init_run(run_id)
+    run_id = init_run()
 
     enqueue_pipeline(
         run_id,
