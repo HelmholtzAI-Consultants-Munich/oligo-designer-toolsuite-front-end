@@ -14,11 +14,10 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
 
     Arguments:
         request {Request} -- The execution request received by the worker with task metadata.
-        exc {Exception} -- The exception raised during task execution (wrapped in ChordError if raised in chord header).
-        traceback {str | None} -- The exception traceback as a str if present.
-        run_id_str {str} -- The run id provided when linking the errback.
+        exc {BaseException} -- The exception raised during task execution (wrapped in ChordError if raised in chord header).
+        trace {str | None} -- The exception traceback as a str if present.
     """
-    logger.info("An error occured during pipeline execution.")
+    logger.info("A pipeline task did not finish successfully.")
 
     run_id = _parse_run_id(request.id)
     if run_id is None:

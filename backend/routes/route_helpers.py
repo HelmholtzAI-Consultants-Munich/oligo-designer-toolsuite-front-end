@@ -163,6 +163,11 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
 def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
     """Update a run in the database. The run must already exist in the database.
 
+    Notes:
+        This is very similar to `backend.worker.database._update_run`,
+        with the main difference being the error handling. This aborts
+        the request if the run could not be updated.
+
     Arguments:
         run_id {ObjectId} -- The pipeline run's id.
         data {dict[str, Any]} -- The data to be set in the database.
