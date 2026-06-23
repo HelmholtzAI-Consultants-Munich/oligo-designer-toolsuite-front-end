@@ -88,7 +88,8 @@ def init_login_manager(app):
 
     @login_manager.user_loader
     def load_user(user_id):
-        # Load user document from MongoDB by ObjectId and return User instance
+        # Called by Flask-Login on every request to reload the user from the session.
+        # Returning None for banned users immediately revokes their access.
         user_doc = db.users.find_one({"_id": ObjectId(user_id)})
         if user_doc and not is_helmholtz_sub_banned(user_doc.get("helmholtz_sub")):
             return User(user_doc)
