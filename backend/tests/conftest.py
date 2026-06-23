@@ -17,12 +17,14 @@ from unittest.mock import MagicMock, patch
 import pytest
 from glom import glom
 from glom.core import PathAccessError
+from pymongo.synchronous.collection import Collection
 
 from backend.app import create_app
 from backend.constants import PIPELINE_FILE_INPUT
 from backend.extensions import db
 from backend.utilities.legal_acceptance import get_current_terms_version
-from backend.utilities.typed_values import serialize_path, utc_now
+from backend.utilities.typed_values import serialize_path
+from backend.utils import utc_now
 
 # Temporarily disabled - see issue for better directory mocking solution
 # @pytest.fixture(autouse=True)
@@ -49,6 +51,12 @@ def post(client, link: str, data: dict[str, Any]):
     return client.post(
         link, data={**file_uploads, "payload": json.dumps(data)}, content_type="multipart/form-data"
     )
+
+
+def get_with_check(query: dict[str, Any], collection: Collection) -> dict[str, Any]:
+    result = collection.find_one(query)
+    assert result
+    return result
 
 
 @pytest.fixture(autouse=True)

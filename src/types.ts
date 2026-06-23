@@ -208,7 +208,6 @@ export interface PipelineRun {
     pipeline: string;
     status: RunState;
     timestamp: string;
-    output_path: string;
     user_id: string;
     error_message?: string;
     priority: "high" | "default";

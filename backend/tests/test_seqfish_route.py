@@ -4,7 +4,7 @@ import os
 import pytest
 
 from backend.extensions import db
-from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, post
+from backend.tests.conftest import assert_invalid_run_id_error, create_test_run, get_with_check, post
 
 pytest.skip("Seqfish currently disabled", allow_module_level=True)
 
@@ -29,7 +29,7 @@ def test_seqfish_authenticated(client, run_id, dummy_form, mock_celery, authenti
     assert data["run_id"] == str(run_id)
 
     # Confirm Mongo updated status
-    updated = db.runs.find_one({"_id": run_id})
+    updated = get_with_check({"_id": run_id}, db.runs)
     assert updated["status"] in {"pending", "started"}
 
 
@@ -40,7 +40,7 @@ def test_seqfish_unauthenticated(client, run_id, dummy_form, mock_celery, sessio
     assert data["run_id"] == str(run_id)
 
     # Confirm Mongo updated status
-    updated = db.runs.find_one({"_id": run_id})
+    updated = get_with_check({"_id": run_id}, db.runs)
     assert updated["status"] in {"pending", "started"}
 
 

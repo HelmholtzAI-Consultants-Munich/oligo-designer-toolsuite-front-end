@@ -34,3 +34,17 @@ While it's possible to run pre-commit manually using `pre-commit run -a`, we hig
 ```bash
 pre-commit install
 ```
+
+## Running the Python type checker
+
+We use [Pyrefly](https://pyrefly.org/) for type checking Python code. Proper typing is not checked via a pre-commit hook, but it _is_ enforced by our CI. To run typing checking locally, you need to setup a local Python development environment. In VS Code, you can also install the Pyrefly extension to see typing errors live in the code.
+
+```bash
+pip install --group=backend/pyproject.toml:dev
+```
+
+Afterwards you can run the type checker using:
+
+```bash
+pyrefly check -c backend/pyproject.toml
+```

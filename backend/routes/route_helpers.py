@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from pathlib import Path
+from typing import Any, cast
 
 import requests
 from bson import ObjectId
@@ -14,7 +15,7 @@ from backend.utilities.legal_acceptance import require_current_terms_acceptance
 # ============================================================================
 
 
-def get_user_context() -> tuple[str | None, str | None]:
+def get_user_context() -> tuple[None, str] | tuple[str, None]:
     """Get user context (user_id and session_id) based on authentication status.
 
     For authenticated users, user_id is set and session_id is None.
@@ -48,6 +49,7 @@ def get_user_context_with_directory() -> tuple[str | None, str | None, Path]:
     if user_id:
         user_dir = userdata_path / user_id
     else:
+        session_id = cast(str, session_id)
         user_dir = userdata_path / "anon" / session_id
 
     return user_id, session_id, user_dir
@@ -123,7 +125,7 @@ def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
     :rtype: dict
     :raises: 403 if unauthorized
     """
-    query = {"_id": run_id}
+    query: dict[str, Any] = {"_id": run_id}
     if require_ownership:
         if current_user.is_authenticated:
             query["user_id"] = str(current_user.id)

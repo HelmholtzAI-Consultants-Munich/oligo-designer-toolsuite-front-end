@@ -9,7 +9,7 @@ from backend.worker.database import _parse_run_id, _update_run
 
 
 @app.task()
-def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | None, run_id_str: str) -> None:
+def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | None) -> None:
     """Error handling callback (errback) for pipeline chords.
 
     Notes:
@@ -23,9 +23,9 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
     """
     logger.info("An error occured during pipeline execution.")
 
-    run_id = _parse_run_id(run_id_str)
+    run_id = _parse_run_id(request.id)
     if run_id is None:
-        logger.error(f"Pipeline chord errback received invalid run id: {run_id_str}")
+        logger.error(f"Pipeline chord errback received invalid run id: {request.id}")
         return
 
     # Extract original exception from ChordError if available

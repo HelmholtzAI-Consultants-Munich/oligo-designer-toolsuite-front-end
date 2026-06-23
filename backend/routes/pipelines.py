@@ -6,11 +6,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from bson import ObjectId
 from celery import chord
-from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
@@ -24,7 +23,6 @@ from backend.constants import (
     PIPELINE_FILE_INPUT,
     PIPELINE_GENOMIC_INPUT,
     PIPELINE_NON_EXPOSED_FIELDS,
-    REDIS_QUEUE_LENGTH_KEY,
 )
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
@@ -35,9 +33,9 @@ from backend.routes.route_helpers import (
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
-    utc_now,
 )
 from backend.utilities.validation import validate_genomic_form_data
+from backend.utils import utc_now
 from backend.worker.models import OligoSeqProbeDesignerConfig
 from backend.worker.task_index import Callbacks, Tasks
 
@@ -130,7 +128,6 @@ def write_run_to_DB(
     pipeline_name: str,
     run_id: ObjectId,
     context: RunContext,
-    task_id: str | None,
     priority: int = CeleryConfig.task_default_priority,
     queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
     pipeline_run_config: dict | None = None,
@@ -144,7 +141,6 @@ def write_run_to_DB(
         "timestamp": context.timestamp,
         "output_path": serialize_path(context.output_path),
         "pipeline": pipeline_name,
-        "task_id": task_id,
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
         "queue_position": queue_position,
     }
@@ -184,7 +180,7 @@ def enqueue_pipeline(
     context: RunContext,
     enqueued_at: datetime,
     is_authenticated: bool = False,
-) -> AsyncResult:
+) -> None:
     """
     Builds and enqueues a chord such that all region generation tasks
     finish executing before the pipeline is started.
@@ -204,12 +200,12 @@ def enqueue_pipeline(
     # for worker processes that do not shut down after the soft timeout.
     pipeline_signature = celery_app.signature(
         Tasks.RUN_PIPELINE,
+        task_id=str(run_id),
         args=(pipeline_name, form_data, str(context.output_path)),
         priority=priority,
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
         headers={
-            "run_id": str(run_id),
             "pipeline": pipeline_name,
             "user_id": context.user_id,
             "session_id": context.session_id,
@@ -217,36 +213,29 @@ def enqueue_pipeline(
         },
     )
 
-    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK, kwargs={"run_id_str": str(run_id)})
+    error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK)
 
-    return chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
+    chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
 
 
 def calculate_queue_position(priority: int) -> tuple[int, int]:
     """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
     redis = Redis.from_url(Config.REDIS_URI)
 
-    # Initialize queue lengths if not present, then fetch and convert to int
-    redis.hsetnx(REDIS_QUEUE_LENGTH_KEY, "default", 0)
-    redis.hsetnx(REDIS_QUEUE_LENGTH_KEY, "high", 0)
-    default_priority_queue_length, high_priority_queue_length = map(
-        int, redis.hmget(REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
-    )
-    high_priority_ahead = high_priority_queue_length
+    high_priority_ahead = int(cast(str | None, redis.hget(Config.REDIS_QUEUE_LENGTH_KEY, "high")) or 0)
+    default_priority_ahead = 0
 
     if priority == CeleryConfig.task_high_priority:
-        default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
         db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
-        redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "high", 1)
+        high_priority_ahead = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1))
     else:
-        default_priority_ahead = default_priority_queue_length
-        redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "default", 1)
+        default_priority_ahead = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1))
 
-    return high_priority_ahead, default_priority_ahead
+    return max(high_priority_ahead - 1, 0), max(default_priority_ahead - 1, 0)
 
 
 def save_file(
@@ -258,7 +247,7 @@ def save_file(
             return saved_files[file]
 
         # Step 2: Check if the user actually selected a file (filename should not be empty)
-        if file.filename == "":
+        if file.filename is None or file.filename == "":
             abort(HTTPStatus.BAD_REQUEST, description="No selected file")
 
         # Step 3: Sanitize the filename to prevent path traversal attacks
@@ -399,7 +388,7 @@ def start_pipeline(pipeline_name: str):
     priority = get_task_priority(form_data)
     enqueued_at = utc_now()
 
-    result_promise = enqueue_pipeline(
+    enqueue_pipeline(
         run_id,
         pipeline_name,
         form_data,
@@ -420,7 +409,6 @@ def start_pipeline(pipeline_name: str):
         pipeline_name,
         run_id,
         context,
-        result_promise.id,
         priority,
         (high_priority_ahead, default_priority_ahead),
         pipeline_run_config,

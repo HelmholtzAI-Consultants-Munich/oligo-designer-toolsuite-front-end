@@ -5,6 +5,7 @@ import pytest
 from bson import ObjectId
 
 from backend.extensions import db
+from backend.tests.conftest import get_with_check
 from backend.utilities.legal import (
     PRIVACY_DOCUMENT_KEY,
     TERMS_DOCUMENT_KEY,
@@ -586,7 +587,7 @@ def test_bulk_update_user_role_success(admin_client, regular_user, create_test_u
         assert data["updated_count"] == 2
 
         # Verify roles were updated
-        updated_user = db.users.find_one({"_id": regular_user["_id"]})
+        updated_user = get_with_check({"_id": regular_user["_id"]}, db.users)
         assert updated_user["role"] == "admin"
     finally:
         db.users.delete_one({"_id": user2_id})
@@ -720,7 +721,7 @@ def test_bulk_update_pipeline_status_success(admin_client, pipeline_run, create_
         assert data["updated_count"] == 2
 
         # Verify statuses were updated
-        updated_run = db.runs.find_one({"_id": pipeline_run["_id"]})
+        updated_run = get_with_check({"_id": pipeline_run["_id"]}, db.runs)
         assert updated_run["status"] == "success"
     finally:
         db.runs.delete_one({"_id": run2_id})
