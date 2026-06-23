@@ -2,7 +2,7 @@ from bson import ObjectId
 
 from backend.constants import USER_DENYLIST_COLLECTION_KEY
 from backend.extensions import db
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 
 
 def find_ban_by_helmholtz_sub(helmholtz_sub: str | None):
@@ -27,7 +27,9 @@ def ban_helmholtz_sub(helmholtz_sub: str, banned_by: str):
         },
         upsert=True,
     )
-    return find_ban_by_helmholtz_sub(helmholtz_sub)
+    ban = find_ban_by_helmholtz_sub(helmholtz_sub)
+    assert ban is not None
+    return ban
 
 
 def format_ban(ban: dict) -> dict:

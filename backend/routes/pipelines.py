@@ -23,6 +23,7 @@ from backend.constants import (
     PIPELINE_FILE_INPUT,
     PIPELINE_GENOMIC_INPUT,
     PIPELINE_NON_EXPOSED_FIELDS,
+    REDIS_QUEUE_LENGTH_KEY,
 )
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
@@ -222,7 +223,7 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
     redis = Redis.from_url(Config.REDIS_URI)
 
-    high_priority_ahead = int(cast(str | None, redis.hget(Config.REDIS_QUEUE_LENGTH_KEY, "high")) or 0)
+    high_priority_ahead = int(cast(str | None, redis.hget(REDIS_QUEUE_LENGTH_KEY, "high")) or 0)
     default_priority_ahead = 0
 
     if priority == CeleryConfig.task_high_priority:
@@ -231,9 +232,9 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
-        high_priority_ahead = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1))
+        high_priority_ahead = cast(int, redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "high", 1))
     else:
-        default_priority_ahead = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1))
+        default_priority_ahead = cast(int, redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "default", 1))
 
     return max(high_priority_ahead - 1, 0), max(default_priority_ahead - 1, 0)
 
