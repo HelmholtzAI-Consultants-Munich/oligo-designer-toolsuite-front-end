@@ -19,7 +19,11 @@ from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
-from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
+from backend.constants import (
+    PIPELINE_FILE_INPUT,
+    PIPELINE_GENOMIC_INPUT,
+    PIPELINE_NON_EXPOSED_FIELDS,
+)
 from backend.extensions import celery_app, db
 from backend.queue_accounting import add_pending_run, queue_accounting_lock
 from backend.routes.route_helpers import (
@@ -30,9 +34,9 @@ from backend.routes.route_helpers import (
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
-    utc_now,
 )
 from backend.utilities.validation import validate_genomic_form_data
+from backend.utils import utc_now
 from backend.worker.models import OligoSeqProbeDesignerConfig
 from backend.worker.task_index import Callbacks, Tasks
 
@@ -231,7 +235,7 @@ def save_file(
             return saved_files[file]
 
         # Step 2: Check if the user actually selected a file (filename should not be empty)
-        if file.filename == "":
+        if file.filename is None or file.filename == "":
             abort(HTTPStatus.BAD_REQUEST, description="No selected file")
 
         # Step 3: Sanitize the filename to prevent path traversal attacks

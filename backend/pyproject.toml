@@ -35,12 +35,14 @@ test = [
     "pytest-cov >=7, <8",
     "pytest-mock >=3.15, <4",
 ]
-lint = ["pre-commit >=4.5, <5", "ruff >=0.14"]
+lint = ["pre-commit==4.6", "ruff==0.15.11", "pyrefly==1.1.0"]
+types = ["types-Flask-Cors", "types-PyYAML", "types-Authlib", "types-requests", "types-bleach"]
 dev = [
     { include-group = "server" },
     { include-group = "worker" },
     { include-group = "test" },
     { include-group = "lint" },
+    { include-group = "types" },
 ]
 
 [tool.pytest]
@@ -64,13 +66,13 @@ select = [
     "I",   # isort
 ]
 
-[tool.pyright]
-exclude = ["**/node_modules", "**/__pycache__", "**/.*", "**/typings"]
-pythonVersion = "3.12"
-pythonPlatform = "Linux"
-
-allowedUntypedLibraries = ["authlib", "flask_login"]
-
-# Pyright rules
-typeCheckingMode = "standard" # todo: set to strict
-reportAny = false
+[tool.pyrefly]
+project-excludes = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "**/typings",
+]
+infer-with-first-use = false
+preset = "default"
+min-severity = "warn"

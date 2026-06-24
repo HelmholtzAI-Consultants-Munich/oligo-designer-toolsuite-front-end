@@ -1,10 +1,10 @@
-from datetime import UTC, datetime
 from typing import Any
 
 from celery import Task
 from celery.signals import task_postrun, task_prerun
 
 from backend.database import mongo_database
+from backend.utils import utc_now
 from backend.worker.converters import parse_datetime
 
 
@@ -14,8 +14,8 @@ def _is_pipeline_task(task: Task) -> bool:
 
 def capture_start_time(task_id: str, task: Task) -> None:
     """Store the task start timestamp and queue wait duration on the run."""
-    started_at = datetime.now(UTC)
-    task.request.started_at = started_at
+    started_at = utc_now()
+    task.request.started_at = started_at  # pyrefly:ignore
 
     metrics: dict[str, Any] = {"started_at": started_at}
     enqueued_at = parse_datetime((task.request.headers or {}).get("enqueued_at"))
@@ -31,7 +31,7 @@ def capture_start_time(task_id: str, task: Task) -> None:
 
 def capture_completion_metrics(task_id: str, task: Task) -> None:
     """Store task finish timestamp and elapsed durations on the run."""
-    finished_at = datetime.now(UTC)
+    finished_at = utc_now()
     metrics: dict[str, Any] = {"finished_at": finished_at}
 
     started_at = getattr(task.request, "started_at", None)

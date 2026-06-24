@@ -6,9 +6,29 @@ import { Regions } from "./visualizationHelpers";
 
 type Props = {
     probes: Probe[];
-    selectedOligo: string;
-    setSelectedOligo: (id: string) => void;
+    selectedOligo: string | null;
+    setSelectedOligo: (id: string | null) => void;
     genomicRegions: GenomicRegions | null;
+};
+
+const LegendItem: React.FC<{ color: string; label: string }> = ({
+    color,
+    label,
+}) => {
+    return (
+        <Horizontal gap="sm" align="baseline">
+            <span
+                style={{
+                    display: "inline-block",
+                    width: "12px",
+                    height: "12px",
+                    backgroundColor: color,
+                    marginRight: "5px",
+                }}
+            ></span>
+            {label}
+        </Horizontal>
+    );
 };
 
 // This component mainly serves as a wrapper for the D3 visualization.
@@ -105,6 +125,19 @@ class GenomeAlignment extends React.Component<Props> {
                 {/* Legend and strand information */}
                 <Vertical>
                     <Horizontal wrap gap="md">
+                        <strong>Oligos:</strong>
+                        <LegendItem color="steelblue" label="Oligo" />
+                        {this.props.selectedOligo && (
+                            <LegendItem color="orange" label="Selected oligo" />
+                        )}
+                        {!isGene && this.props.selectedOligo && (
+                            <LegendItem
+                                color="#22bd28"
+                                label="Selected oligo matches transcript"
+                            />
+                        )}
+                    </Horizontal>
+                    <Horizontal wrap gap="md">
                         <strong>Regions:</strong>
                         {Object.keys(Regions)
                             .filter((type) => {
@@ -118,45 +151,16 @@ class GenomeAlignment extends React.Component<Props> {
                             })
                             .map((type, index) => {
                                 return (
-                                    <Horizontal
+                                    <LegendItem
                                         key={index}
-                                        gap="sm"
-                                        align="baseline"
-                                    >
-                                        <span
-                                            key={index}
-                                            style={{
-                                                display: "inline-block",
-                                                width: "12px",
-                                                height: "12px",
-                                                backgroundColor:
-                                                    Regions[type].color ||
-                                                    "lightgray",
-                                                marginRight: "5px",
-                                            }}
-                                        ></span>
-                                        {Regions[type].label}
-                                    </Horizontal>
+                                        color={
+                                            Regions[type].color || "lightgray"
+                                        }
+                                        label={Regions[type].label}
+                                    />
                                 );
                             })}
                     </Horizontal>
-                    {!isGene && (
-                        <Horizontal wrap gap="md">
-                            <strong>Transcripts:</strong>
-                            <Horizontal gap="sm" align="baseline">
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        width: "12px",
-                                        height: "12px",
-                                        backgroundColor: "#22bd28",
-                                        marginRight: "5px",
-                                    }}
-                                ></span>
-                                Selected oligo matches transcript
-                            </Horizontal>
-                        </Horizontal>
-                    )}
                     <Horizontal wrap gap="md">
                         <strong>Strand:</strong>
                         {Object.values(this.props.genomicRegions)[0][0][
