@@ -120,9 +120,7 @@ def get_pipeline_runs():
         session_id = session.get("session_id")
         runs = list(db.runs.find({"session_id": session_id})) if session_id else []
 
-    formatted_runs = []
-    for run in runs:
-        formatted_runs.append(format_run(run))
+    formatted_runs = list(map(format_run, runs))
     return jsonify(formatted_runs), HTTPStatus.OK
 
 
@@ -215,14 +213,6 @@ def get_run_config(run_id: ObjectId):
         abort(HTTPStatus.NOT_FOUND, description="No saved config for this run.")
 
     return jsonify(pipeline_run_config), HTTPStatus.OK
-
-
-def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return db.runs.update_one({"_id": run_id}, {"$set": data})
-
-
-def update_run_status_in_DB(run_id: ObjectId, status: str):
-    return update_run_in_DB(run_id, {"status": status})
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/status", methods=["GET"])
