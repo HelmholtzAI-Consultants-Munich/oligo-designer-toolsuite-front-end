@@ -20,6 +20,7 @@ Main features:
 import os
 import uuid
 from http import HTTPStatus
+from urllib.parse import urlencode
 
 import requests
 from bson import ObjectId
@@ -40,6 +41,7 @@ from backend.utilities.typed_values import (
     parse_http_url,
     sanitize_relative_redirect_path,
 )
+from backend.utilities.user_denylist import is_helmholtz_sub_banned
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -86,9 +88,10 @@ def init_login_manager(app):
 
     @login_manager.user_loader
     def load_user(user_id):
-        # Load user document from MongoDB by ObjectId and return User instance
+        # Called by Flask-Login on every request to reload the user from the session.
+        # Returning None for banned users immediately revokes their access.
         user_doc = db.users.find_one({"_id": ObjectId(user_id)})
-        if user_doc:
+        if user_doc and not is_helmholtz_sub_banned(user_doc.get("helmholtz_sub")):
             return User(user_doc)
         return None
 
@@ -194,10 +197,16 @@ def login():
     user_doc = db.users.find_one({"username": username})
 
     if not user_doc or "password" not in user_doc:
-        abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description="Invalid username or password. Please check your credentials and try again.",
+        )
 
     if not check_password_hash(user_doc["password"], password):
-        abort(HTTPStatus.UNAUTHORIZED, description="Invalid credentials")
+        abort(
+            HTTPStatus.UNAUTHORIZED,
+            description="Invalid username or password. Please check your credentials and try again.",
+        )
 
     user = User(user_doc)
     _login(user, remember=remember_me)
@@ -246,6 +255,18 @@ def auth_callback():
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )
 
+    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
+    frontend_url = parse_http_url(frontend_url_raw)
+    if frontend_url is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
+    frontend_base = frontend_url.geturl().rstrip("/")
+
+    if is_helmholtz_sub_banned(helmholtz_sub):
+        session.pop("oauth_redirect", None)
+        session.pop("oauth_token", None)
+        ban_msg = "This account has been banned from accessing the service. Contact support if you believe this is an error."
+        return redirect(f"{frontend_base}/login?{urlencode({'error': ban_msg})}")
+
     # Check if user exists in database by helmholtz_sub
     user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
 
@@ -270,12 +291,6 @@ def auth_callback():
     session["oauth_token"] = token.get("access_token")
 
     # Redirect to frontend - check if there's a preserved redirect URL
-    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
-    frontend_url = parse_http_url(frontend_url_raw)
-    if frontend_url is None:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
-
-    frontend_base = frontend_url.geturl().rstrip("/")
     redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
     if redirect_path:
         return redirect(f"{frontend_base}{redirect_path}")

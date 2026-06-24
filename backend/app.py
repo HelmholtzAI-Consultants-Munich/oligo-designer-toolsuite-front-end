@@ -10,6 +10,7 @@ from prometheus_flask_exporter import PrometheusMetrics
 
 from backend.cli import register_cli_commands
 from backend.config import CeleryConfig, Config
+from backend.constants import USER_DENYLIST_COLLECTION_KEY
 from backend.extensions import celery_app, db, limiter, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
@@ -48,6 +49,11 @@ def ensure_mongo_indexes() -> None:
     db[ANONYMOUS_SESSIONS_COLLECTION].create_index(
         [("last_activity_at", 1)],
         name="anonymous_sessions_last_activity_at_idx",
+    )
+    db[USER_DENYLIST_COLLECTION_KEY].create_index(
+        [("helmholtz_sub", 1)],
+        name="user_denylist_helmholtz_sub_idx",
+        unique=True,
     )
 
 
