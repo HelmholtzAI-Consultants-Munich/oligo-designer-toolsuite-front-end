@@ -143,11 +143,11 @@ class BaseGenomicDataBase:
         pass
 
     @file_cache_region.cache_on_arguments()
-    def _download_and_process(self, dir: str, remote_filename: str, expected_checksum: str | None) -> Path:
+    def _download_and_process(self, dir: str, remote_filename: str, expected_checksum: str) -> Path:
         """Downloads the file and processes it as needed.
 
         Handles:
-            - Optional verification of checksum.
+            - Verification of checksum.
             - Uncompression of .gz files.
 
         Notes:
@@ -158,13 +158,16 @@ class BaseGenomicDataBase:
         Returns:
             pathlib.Path -- The local file path of the downloaded resource.
         """
-        # Download file
         file_path = self._download(dir, remote_filename)
 
-        # Verify checksum if provided
-        if expected_checksum is not None and not self._verify_file(file_path, expected_checksum):
-            # TODO: we could also retry the download a set amount of times at this point
-            raise RuntimeError(f"Checksum for {file_path} does not match.")
+        # TODO: we could also retry the download a set amount of times at this point
+        if not self._verify_file(
+            file_path, expected_checksum
+        ):  # On mismatch, delete the cached file and re-download
+            file_path.unlink(missing_ok=True)
+            file_path = self._download(dir, remote_filename)
+            if not self._verify_file(file_path, expected_checksum):
+                raise RuntimeError(f"Checksum for {file_path} does not match.")
 
         # Uncompress file if extension is .gz
         if file_path.suffix == ".gz":
