@@ -15,7 +15,7 @@ def test_pipeline_task_handlers_update_run_status():
     task = PipelineTask()
     update_result = SimpleNamespace(matched_count=1)
 
-    with patch("backend.worker.handlers._update_run_by_task", return_value=update_result) as update:
+    with patch("backend.worker.handlers._update_run_by_task_id", return_value=update_result) as update:
         task.before_start("task-1", (), {})
         task.on_success(None, "task-1", (), {})
 

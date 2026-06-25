@@ -95,7 +95,6 @@ def test_start_pipeline_authenticated_success(
     assert run["user_id"] == TEST_USER_ID
     assert run["session_id"] is None
     assert run["pipeline"] == PIPELINE_NAME
-    assert run["task_id"] == "task-123"
     assert run["priority"] == "high"
     assert Path(*run["output_path"]["parts"]).is_dir()
 

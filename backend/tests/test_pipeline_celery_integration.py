@@ -87,8 +87,7 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
 
         assert response.status_code == 200
         run_id = ObjectId(response.get_json()["run_id"])
-        run = db.runs.find_one({"_id": run_id})
-        route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
+        route_celery_app.AsyncResult(str(run_id)).get(timeout=CELERY_TASK_TIMEOUT)
 
     # The test payload contains exactly 2 genomic region sources, so 2 header
     # tasks are expected. This count is load-bearing — the pipeline body task
@@ -136,8 +135,7 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
 
         assert response.status_code == 200
         run_id = ObjectId(response.get_json()["run_id"])
-        run = db.runs.find_one({"_id": run_id})
-        route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
+        route_celery_app.AsyncResult(str(run_id)).get(timeout=CELERY_TASK_TIMEOUT)
 
     generator_cls.return_value.run.assert_not_called()
     pipeline_runner_cls.return_value.run.assert_called_once()
@@ -196,7 +194,6 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
 
         assert response.status_code == 200
         run_id = ObjectId(response.get_json()["run_id"])
-        run = db.runs.find_one({"_id": run_id})
-        route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
+        route_celery_app.AsyncResult(str(run_id)).get(timeout=CELERY_TASK_TIMEOUT)
 
     assert observed_priorities == [expected_priority]
