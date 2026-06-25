@@ -127,6 +127,9 @@ def test_admin_get_user_not_found(client, admin_user):
     assert response.status_code == 404
 
 
+# TODO: Add deny-list admin route tests after the pending test-suite overhaul lands.
+
+
 def test_admin_update_user_role_success(client, admin_user, regular_user):
     """Role updates must persist to MongoDB so the change takes effect on the user's next request.
 

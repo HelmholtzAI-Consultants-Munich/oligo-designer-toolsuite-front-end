@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../config";
 import axios from "axios";
+import { getErrorMessage } from "../../utils/errorUtil";
 import { GenomicDropDown } from "./GenomicDropDown";
 import { useCache } from "../../hooks/useCache";
 import type { NcbiAndEnsemblFormData } from "./types";
@@ -55,14 +56,9 @@ export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
                 );
                 return data;
             } catch (err: unknown) {
-                if (axios.isAxiosError(err)) {
-                    setError(
-                        err.response?.data?.error ||
-                            "Failed to load Annotation Releases"
-                    );
-                } else {
-                    setError("Failed to load Annotation Releases");
-                }
+                setError(
+                    getErrorMessage(err, "Failed to load Annotation Releases")
+                );
                 console.error("Error fetching Annotation Releases:", err);
             } finally {
                 setIsLoading(false);

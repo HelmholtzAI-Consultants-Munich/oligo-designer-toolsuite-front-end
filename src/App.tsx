@@ -46,6 +46,7 @@ function RootLayout() {
 const defaultLayoutRoutes = [
     { path: "/login", element: <Login /> },
     { path: "/runs", element: <Runs /> },
+    { path: "/admin/*", element: <AdminApp /> },
     { path: "/", element: <Pipelines /> },
     { path: "/faq", element: <FAQ /> },
     { path: "/contact", element: <Contact /> },
@@ -63,7 +64,6 @@ const router = createBrowserRouter([
     {
         element: <RootLayout />,
         children: [
-            { path: "/admin/*", element: <AdminApp /> },
             {
                 element: <DefaultLayout />,
                 children: defaultLayoutRoutes,

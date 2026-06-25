@@ -1,13 +1,16 @@
 import type { FieldPathList, FieldProps } from "@rjsf/utils";
-import { type GenomicForm, type GenomicFormOrFile } from "./types";
-import FastaGenerateForm from "../forms/FastaGenerateForm";
+import {
+    type GenomicForm,
+    type GenomicFormOrFile,
+} from "../fastaGenerateForm/types";
+import FastaGenerateForm from "../fastaGenerateForm/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
 import { Button, Form } from "react-bootstrap";
 import { Grid, Vertical } from "../ui/Alignment";
-import { InputList } from "./InputList";
+import { InputList } from "../fastaGenerateForm/InputList";
 import { ToolTip } from "../ui/Tooltip";
 import { FileEarmarkPlus } from "react-bootstrap-icons";
-import { spaceBeforeCapitalLetters } from "../forms/utils";
+import { spaceBeforeCapitalLetters } from "./utils";
 
 type ConfigurableGenomicInputProps = FieldProps & {
     formsAllowed: boolean;
@@ -15,18 +18,24 @@ type ConfigurableGenomicInputProps = FieldProps & {
 };
 
 const ConfigurableGenomicInput = ({
-    fieldPathId: { $id, path },
+    fieldPathId,
     name,
     schema,
+    uiSchema,
     formData,
     onChange,
     onBlur,
     formsAllowed,
     filesAllowed,
+    rawErrors,
+    registry,
 }: ConfigurableGenomicInputProps) => {
     // TODO: Currently they do not point to the buttons, but it would be good if they would do it, since
     // it would make the page more accessible and playwright tests would be easier
-    const id = $id;
+    const { $id: id, path } = fieldPathId;
+    const {
+        templates: { FieldErrorTemplate },
+    } = registry;
 
     const handleGenomicFormNew = () => {
         handleGenomicFormEdit(null, onChange, formData.length);
@@ -130,6 +139,14 @@ const ConfigurableGenomicInput = ({
                         };
                     }
                 })}
+            />
+
+            <FieldErrorTemplate
+                schema={schema}
+                uiSchema={uiSchema}
+                fieldPathId={fieldPathId}
+                errors={rawErrors}
+                registry={registry}
             />
 
             <Grid gap="md" className="w-100">

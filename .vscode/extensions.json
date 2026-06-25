@@ -11,8 +11,8 @@
     "tamasfe.even-better-toml",
     "ms-python.python",
     "charliermarsh.ruff",
-    "njpwerner.autodocstring"
-    // "detachhead.basedpyright", // uncomment if Pylance is unavailable (e.g. when using VSCodium)
+    "njpwerner.autodocstring",
+    "meta.pyrefly"
   ],
   // List of extensions recommended by VS Code / VSCodium that should not be recommended for users of this workspace.
   "unwantedRecommendations": []

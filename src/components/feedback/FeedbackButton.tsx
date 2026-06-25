@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import axios from "axios";
+import { getErrorMessage } from "../../utils/errorUtil";
 import { Button, Modal, Form, Alert } from "react-bootstrap";
 import { ChatDotsFill } from "react-bootstrap-icons";
 import { Link } from "react-router";
@@ -97,15 +98,7 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
             setMessage("");
             close();
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(
-                    err.response?.data?.error ||
-                        err.message ||
-                        "Failed to submit feedback"
-                );
-            } else {
-                setError("Failed to submit feedback");
-            }
+            setError(getErrorMessage(err, "Failed to submit feedback"));
         } finally {
             setSubmitting(false);
         }

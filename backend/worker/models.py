@@ -25,9 +25,6 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     OligoSeqProbeDesignerConfig as OligoSeqProbeDesignerConfigBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    RegionListT,
-)
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbe as TargetProbeBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
@@ -103,7 +100,12 @@ GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
 class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
-    file_region_ids: RegionListT = None
+    file_region_ids: Annotated[
+        str | None,
+        Field(
+            description="Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead.",
+        ),
+    ]  # undefined by default, has to be set by user
     files_fasta_probe_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Button } from "react-bootstrap";
 import { X } from "react-bootstrap-icons";
+import { Horizontal } from "../../components/ui/Alignment";
 
 interface BulkActionToolbarProps {
     selectedCount: number;
@@ -36,22 +37,26 @@ const BulkActionToolbar: React.FC<BulkActionToolbarProps> = ({
 
     return (
         <Card className="mb-3" style={toolbarStyles}>
-            <Card.Body className="d-flex align-items-center justify-content-between py-2">
-                <div className="d-flex align-items-center">
-                    <span className="fw-bold me-2">
-                        {selectedCount} {itemName} selected
-                    </span>
-                    <Button
-                        variant="link"
-                        size="sm"
-                        className="p-0 text-muted"
-                        onClick={onClearSelection}
-                        title="Clear selection"
-                    >
-                        <X size={16} />
-                    </Button>
-                </div>
-                <div className="d-flex align-items-center gap-2">{actions}</div>
+            <Card.Body className="py-2">
+                <Horizontal align="center" justify="space-between">
+                    <Horizontal align="center" gap="sm">
+                        <span className="fw-bold">
+                            {selectedCount} {itemName} selected
+                        </span>
+                        <Button
+                            variant="link"
+                            size="sm"
+                            className="p-0 text-muted"
+                            onClick={onClearSelection}
+                            title="Clear selection"
+                        >
+                            <X size={16} />
+                        </Button>
+                    </Horizontal>
+                    <Horizontal align="center" gap="sm">
+                        {actions}
+                    </Horizontal>
+                </Horizontal>
             </Card.Body>
         </Card>
     );

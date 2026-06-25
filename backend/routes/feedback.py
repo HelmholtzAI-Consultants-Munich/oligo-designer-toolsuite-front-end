@@ -14,7 +14,7 @@ from flask_login import current_user, login_required
 from backend.extensions import db, limiter
 from backend.routes.route_helpers import validate_turnstile
 from backend.utilities.formatting import format_feedback
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 
 feedback_bp = Blueprint("feedback", __name__)
 FEEDBACK_RATE_LIMIT = "10 per hour"

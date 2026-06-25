@@ -38,7 +38,7 @@ class Config:
     SECRET_KEY = "change-me-in-production"
 
     # URL settings
-    BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5000")
+    BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
     FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
     # Directory settings
@@ -84,7 +84,7 @@ class Config:
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
     GENE_COUNT_THRESHOLD = 10
-    MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 10 * 1024 * 1024 * 1024))
+    MAX_CONTENT_LENGTH = 10 * 1024 * 1024 * 1024
 
     # Caching Settings
     REDIS_URI = os.environ.get("REDIS_URI", "redis://localhost")
@@ -94,7 +94,6 @@ class Config:
     REDIS_FILE_EXPIRATION_TIME = int(
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
-    REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
 
     @staticmethod
     def get_logging_config() -> dict:

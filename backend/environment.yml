@@ -1,4 +1,7 @@
 name: odt
+channels:
+  - nodefaults
+  - conda-forge
 dependencies:
   # Core runtime
   - python=3.12

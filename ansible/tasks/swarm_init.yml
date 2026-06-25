@@ -1,0 +1,21 @@
+---
+- name: Check whether already part of a swarm
+  community.docker.docker_swarm_info:
+  register: swarm_exists_info
+  ignore_errors: true
+
+- name: Create Docker Swarm cluster
+  community.docker.docker_swarm:
+    state: present
+  register: swarm_result
+  when: not (swarm_exists_info.docker_swarm_active | default(false))
+
+- name: Get manager join token
+  community.docker.docker_swarm_info:
+  register: swarm_info
+
+- name: Store join tokens as facts
+  ansible.builtin.set_fact:
+    manager_token: "{{ swarm_info.swarm_facts.JoinTokens.Manager }}"
+    worker_token: "{{ swarm_info.swarm_facts.JoinTokens.Worker }}"
+    manager_addr: "{{ ansible_host }}"

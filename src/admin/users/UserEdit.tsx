@@ -10,6 +10,10 @@ import {
     FormSelect,
 } from "react-bootstrap";
 import { BACKEND_URL } from "../../config";
+import Page from "../../components/ui/Page";
+import { showToast } from "../../utils/toastUtil";
+import { getErrorMessage } from "../../utils/errorUtil";
+import { Horizontal, Vertical } from "../../components/ui/Alignment";
 
 interface User {
     id: string;
@@ -26,7 +30,6 @@ const UserEdit: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
 
     const [formData, setFormData] = useState({
         username: "",
@@ -48,11 +51,7 @@ const UserEdit: React.FC = () => {
                 role: userData.role || "user",
             });
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.error || "Failed to load user");
-            } else {
-                setError("Failed to load user");
-            }
+            setError(getErrorMessage(err, "Failed to load user"));
             console.error("Error fetching user:", err);
         } finally {
             setIsLoading(false);
@@ -66,10 +65,14 @@ const UserEdit: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-        setSuccess(false);
 
         if (!id) {
             setError("Invalid user ID");
+            showToast({
+                type: "danger",
+                title: "Invalid user",
+                content: "Invalid user ID",
+            });
             return;
         }
 
@@ -81,16 +84,22 @@ const UserEdit: React.FC = () => {
                     "Content-Type": "application/json",
                 },
             });
-            setSuccess(true);
+            showToast({
+                type: "success",
+                title: "User updated",
+                content: "User updated successfully.",
+            });
             setTimeout(() => {
                 navigate("/admin/users");
             }, 1500);
         } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.error || "Failed to update user");
-            } else {
-                setError("Failed to update user");
-            }
+            const message = getErrorMessage(err, "Failed to update user");
+            setError(message);
+            showToast({
+                type: "danger",
+                title: "Update failed",
+                content: message,
+            });
             console.error("Error updating user:", err);
         } finally {
             setIsSaving(false);
@@ -111,17 +120,25 @@ const UserEdit: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="d-flex justify-content-center p-5">
-                <Spinner animation="border" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </Spinner>
-            </div>
+            <Page
+                title="Edit User"
+                backTo={{ label: "Users", href: "/admin/users" }}
+            >
+                <Vertical align="center" className="p-5">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Loading...</span>
+                    </Spinner>
+                </Vertical>
+            </Page>
         );
     }
 
     if (!id || (error && !user)) {
         return (
-            <div className="container-fluid p-4">
+            <Page
+                title="Edit User"
+                backTo={{ label: "Users", href: "/admin/users" }}
+            >
                 <Alert variant="danger">
                     <Alert.Heading>Error loading user</Alert.Heading>
                     <p>{error}</p>
@@ -132,22 +149,15 @@ const UserEdit: React.FC = () => {
                         Back to Users
                     </Button>
                 </Alert>
-            </div>
+            </Page>
         );
     }
 
     return (
-        <div className="container-fluid p-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2>Edit User</h2>
-                <Button
-                    variant="secondary"
-                    onClick={() => navigate("/admin/users")}
-                >
-                    Back to Users
-                </Button>
-            </div>
-
+        <Page
+            title="Edit User"
+            backTo={{ label: "Users", href: "/admin/users" }}
+        >
             <Card>
                 <Card.Body>
                     {error && (
@@ -157,12 +167,6 @@ const UserEdit: React.FC = () => {
                             onClose={() => setError(null)}
                         >
                             {error}
-                        </Alert>
-                    )}
-
-                    {success && (
-                        <Alert variant="success">
-                            User updated successfully! Redirecting...
                         </Alert>
                     )}
 
@@ -208,7 +212,7 @@ const UserEdit: React.FC = () => {
                             </FormSelect>
                         </Form.Group>
 
-                        <div className="d-flex gap-2">
+                        <Horizontal gap="sm">
                             <Button
                                 variant="primary"
                                 type="submit"
@@ -223,11 +227,11 @@ const UserEdit: React.FC = () => {
                             >
                                 Cancel
                             </Button>
-                        </div>
+                        </Horizontal>
                     </Form>
                 </Card.Body>
             </Card>
-        </div>
+        </Page>
     );
 };
 

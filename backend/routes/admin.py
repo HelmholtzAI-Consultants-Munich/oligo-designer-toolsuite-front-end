@@ -15,11 +15,13 @@ Endpoints:
 
 import datetime
 from http import HTTPStatus
+from typing import NotRequired, TypedDict
 
 from bson import ObjectId
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
+from backend.constants import USER_DENYLIST_COLLECTION_KEY
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import find_user_by_id, get_run_or_404, get_user_by_id_or_404
 from backend.utilities.account_cleanup import delete_user_account_data
@@ -40,10 +42,29 @@ from backend.utilities.pipeline import (
     execute_bulk_pipeline_run_deletion,
     get_valid_pipeline_statuses,
 )
+from backend.utilities.user_denylist import (
+    ban_helmholtz_sub,
+    format_ban,
+    remove_ban,
+)
 from backend.utilities.validation import validate_and_convert_ids, validate_id_array
 from backend.worker.task_index import Tasks
 
 admin_bp = Blueprint("admin", __name__)
+
+
+class BulkOperationResponse(TypedDict):
+    message: str
+    skipped: NotRequired[list[str]]
+    invalid_ids: NotRequired[list[str]]
+
+
+class BulkDeleteResponse(BulkOperationResponse):
+    deleted_count: int
+
+
+class BulkUpdateResponse(BulkOperationResponse):
+    updated_count: int
 
 
 def is_admin(user):
@@ -105,7 +126,16 @@ def get_users():
     users = list(db.users.find({}, {"password": 0}))  # Exclude password
 
     # Format for Refine: convert _id to id, format dates
-    formatted_users = [format_user(user) for user in users]
+    bans_by_sub = {
+        ban["helmholtz_sub"]: ban for ban in db[USER_DENYLIST_COLLECTION_KEY].find({}, {"helmholtz_sub": 1})
+    }
+    formatted_users = []
+    for user in users:
+        formatted_user = format_user(user)
+        ban = bans_by_sub.get(user.get("helmholtz_sub"))
+        formatted_user["banned"] = ban is not None
+        formatted_user["ban_id"] = str(ban["_id"]) if ban else None
+        formatted_users.append(formatted_user)
 
     return jsonify(formatted_users), HTTPStatus.OK
 
@@ -201,6 +231,35 @@ def delete_user(user_id: ObjectId):
     )
 
     return jsonify({"message": "User deleted successfully"}), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/users/<ObjectId:user_id>/ban", methods=["POST"])
+@login_required
+@require_admin
+def ban_user(user_id: ObjectId):
+    if str(current_user.id) == str(user_id):
+        abort(HTTPStatus.BAD_REQUEST, description="Cannot ban your own account")
+
+    user = get_user_by_id_or_404(user_id, exclude_password=True)
+    ban = ban_helmholtz_sub(user["helmholtz_sub"], str(current_user.id))
+    return jsonify(format_ban(ban)), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/banned-users", methods=["GET"])
+@login_required
+@require_admin
+def get_banned_users():
+    bans = db[USER_DENYLIST_COLLECTION_KEY].find({}).sort("banned_at", -1)
+    return jsonify([format_ban(ban) for ban in bans]), HTTPStatus.OK
+
+
+@admin_bp.route("/api/admin/banned-users/<ObjectId:ban_id>", methods=["DELETE"])
+@login_required
+@require_admin
+def unban_user(ban_id: ObjectId):
+    if not remove_ban(ban_id):
+        abort(HTTPStatus.NOT_FOUND, description="Ban not found")
+    return jsonify({"message": "User unbanned successfully"}), HTTPStatus.OK
 
 
 @admin_bp.route("/api/admin/legal-documents", methods=["GET"])
@@ -404,7 +463,7 @@ def bulk_delete_users():
     :rtype: flask.Response
     """
     data = request.get_json() or {}
-    user_ids = validate_id_array(data, "user_ids")
+    user_ids: list[str] = validate_id_array(data, "user_ids")
 
     # Filter out current user's ID (prevent self-deletion)
     current_user_id = str(current_user.id)
@@ -433,7 +492,7 @@ def bulk_delete_users():
         )
         deleted_count += 1
 
-    response = {
+    response: BulkDeleteResponse = {
         "deleted_count": deleted_count,
         "message": f"Successfully deleted {deleted_count} user(s)",
     }
@@ -496,7 +555,7 @@ def bulk_update_user_role():
     # Update users in batch
     result = db.users.update_many({"_id": {"$in": object_ids}}, {"$set": {"role": role}})
 
-    response = {
+    response: BulkUpdateResponse = {
         "updated_count": result.modified_count,
         "message": f"Successfully updated role of {result.modified_count} user(s) to {role}",
     }
@@ -595,7 +654,7 @@ def bulk_update_pipeline_status():
     # Update runs in batch
     result = db.runs.update_many({"_id": {"$in": object_ids}}, {"$set": {"status": status}})
 
-    response = {
+    response: BulkUpdateResponse = {
         "updated_count": result.modified_count,
         "message": f"Successfully updated status of {result.modified_count} pipeline run(s) to {status}",
     }

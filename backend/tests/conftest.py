@@ -38,7 +38,8 @@ from backend.config import Config
 from backend.extensions import client as mongo_client
 from backend.extensions import db
 from backend.utilities.legal_acceptance import get_current_terms_version
-from backend.utilities.typed_values import serialize_path, utc_now
+from backend.utilities.typed_values import serialize_path
+from backend.utils import utc_now
 from backend.worker import callbacks as worker_callbacks
 from backend.worker import tasks as worker_tasks
 from backend.worker.celery import app as worker_app

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { area, line, max, scaleLinear, scalePoint } from "d3";
 import { Card, Form } from "react-bootstrap";
+import { Horizontal } from "../../components/ui/Alignment";
 import { formatReportMonth } from "./display";
 import type { MonthlyReport } from "./types";
 
@@ -117,22 +118,24 @@ const TrendChart: React.FC<{ reports: MonthlyReport[] }> = ({ reports }) => {
 
     return (
         <Card className="mb-4">
-            <Card.Header className="d-flex justify-content-between align-items-center">
-                <strong>Trends</strong>
-                <Form.Select
-                    size="sm"
-                    value={String(metricIndex)}
-                    onChange={(event) =>
-                        setMetricIndex(Number(event.target.value))
-                    }
-                    style={{ width: "auto" }}
-                >
-                    {METRICS.map(({ label }, index) => (
-                        <option key={label} value={index}>
-                            {label}
-                        </option>
-                    ))}
-                </Form.Select>
+            <Card.Header>
+                <Horizontal justify="space-between" align="center">
+                    <strong>Trends</strong>
+                    <Form.Select
+                        size="sm"
+                        value={String(metricIndex)}
+                        onChange={(event) =>
+                            setMetricIndex(Number(event.target.value))
+                        }
+                        style={{ width: "auto" }}
+                    >
+                        {METRICS.map(({ label }, index) => (
+                            <option key={label} value={index}>
+                                {label}
+                            </option>
+                        ))}
+                    </Form.Select>
+                </Horizontal>
             </Card.Header>
             <Card.Body className="p-3">
                 <svg

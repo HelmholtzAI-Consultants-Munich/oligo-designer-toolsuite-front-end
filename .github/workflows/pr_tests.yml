@@ -35,8 +35,8 @@ jobs:
               - 'schemas/**'
               - 'docker/**'
               - '.env.sample'
-              - '.env.docker.sample'
-              - 'docker-compose.yml'
+              - 'compose.yml'
+              - 'compose.override.yml'
               - '.github/workflows/pr_tests.yml'
             frontend:
               - 'src/**'

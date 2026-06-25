@@ -7,6 +7,7 @@
  */
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { getErrorMessage } from "../../utils/errorUtil";
 import { Alert, Button, Modal, Spinner } from "react-bootstrap";
 import type {
     EnsemblGenomicForm,
@@ -104,14 +105,9 @@ const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
                 });
                 setDropDown(parseDropDown(response.data));
             } catch (err: unknown) {
-                if (axios.isAxiosError(err)) {
-                    setError(
-                        err.response?.data?.error ||
-                            "Failed to load Dropdown Options"
-                    );
-                } else {
-                    setError("Failed to load Dropdown Options");
-                }
+                setError(
+                    getErrorMessage(err, "Failed to load Dropdown Options")
+                );
             } finally {
                 setIsLoading(false);
             }
