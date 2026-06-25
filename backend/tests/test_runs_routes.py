@@ -11,7 +11,7 @@ from bson import ObjectId
 
 from backend.extensions import db
 from backend.tests.conftest import OTHER_USER_ID, TEST_SESSION_ID, TEST_USER_ID
-from backend.utilities.typed_values import utc_now
+from backend.utils import utc_now
 
 
 def test_get_pipeline_runs_authenticated_returns_only_user_runs(client, authenticated_user, run_doc):

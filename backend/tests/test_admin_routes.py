@@ -14,7 +14,8 @@ from bson import ObjectId
 from backend.extensions import db
 from backend.tests.conftest import TEST_USER_ID
 from backend.utilities.legal import TERMS_DOCUMENT_KEY
-from backend.utilities.typed_values import serialize_path, utc_now
+from backend.utilities.typed_values import serialize_path
+from backend.utils import utc_now
 
 
 @pytest.fixture

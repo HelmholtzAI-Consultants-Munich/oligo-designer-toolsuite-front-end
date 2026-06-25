@@ -17,7 +17,8 @@ from bson import ObjectId
 from backend.exceptions import ODTPipelineError
 from backend.extensions import db
 from backend.tests.conftest import CELERY_TASK_TIMEOUT, TEST_SESSION_ID, pipeline_runner_module
-from backend.utilities.typed_values import serialize_path, utc_now
+from backend.utilities.typed_values import serialize_path
+from backend.utils import utc_now
 from backend.worker import tasks as task_module
 from backend.worker.tasks import (
     _cleanup_expired_anonymous_data,
