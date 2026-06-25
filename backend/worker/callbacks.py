@@ -1,5 +1,5 @@
 from billiard.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
-from celery.exceptions import ChordError
+from celery.exceptions import ChordError, TaskRevokedError
 from celery.worker.request import Request
 
 from backend.exceptions import ODTCloudError, ODTEmptyResultError
@@ -37,6 +37,10 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
     error_message: str
 
     match exc:
+        case TaskRevokedError():
+            # Run was intentionally cancelled and already deleted from the DB — nothing to update.
+            logger.info("Pipeline run was revoked, skipping status update.")
+            return
         case ChordError():
             error_message = "An error occured during genomic region generation."
         case ODTEmptyResultError():

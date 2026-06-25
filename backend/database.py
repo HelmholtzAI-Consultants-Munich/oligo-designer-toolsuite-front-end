@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
@@ -9,7 +9,7 @@ from backend.config import Config
 
 
 @contextmanager
-def mongo_database() -> Iterator[Database[dict[str, Any]]]:
+def mongo_database() -> Generator[Database[dict[str, Any]], None, None]:
     """Yield the application database and close its client afterward."""
     client = MongoClient(Config.MONGO_URI)
     try:

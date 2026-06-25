@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, cast
 
 from redis import Redis
 from redis.exceptions import LockError
@@ -8,11 +8,11 @@ from redis.exceptions import LockError
 from backend.config import CeleryConfig, Config
 from backend.database import mongo_database
 from backend.types import RunStatus
-from backend.worker.database import _parse_run_id
+from backend.worker.database import _parse_run_id, _update_run
 
 
 def _decrement_queue_length(redis: Redis, priority: str) -> int:
-    new_length = redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, priority, -1)
+    new_length = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, priority, -1))
     if new_length < 0:
         redis.hset(Config.REDIS_QUEUE_LENGTH_KEY, priority, 0)
         return 0
@@ -40,7 +40,8 @@ def queue_accounting_lock() -> Generator[Redis, None, None]:
 def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
     """Account for a newly enqueued run and return its queue position."""
     default_length, high_length = (
-        int(value or 0) for value in redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
+        int(cast(str | None, value) or 0)
+        for value in redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
     )
 
     if priority == CeleryConfig.task_high_priority:
@@ -86,11 +87,6 @@ def _remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
     _decrement_queue_length(redis, priority)
 
 
-def remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
-    """Remove a pending run from counters and advance runs queued behind it."""
-    _remove_pending_run(redis, db, run)
-
-
 def start_pending_run(task_id: str) -> bool:
     """Mark a pending run started and update queue accounting under the shared lock."""
     run_id = _parse_run_id(task_id)
@@ -103,10 +99,7 @@ def start_pending_run(task_id: str) -> bool:
             if run is None:
                 return False
 
-            result = db.runs.update_one(
-                {"_id": run["_id"], "status": RunStatus.PENDING},
-                {"$set": {"status": RunStatus.STARTED}},
-            )
+            result = _update_run(run_id, {"status": RunStatus.STARTED})
             if result.modified_count == 0:
                 return False
 

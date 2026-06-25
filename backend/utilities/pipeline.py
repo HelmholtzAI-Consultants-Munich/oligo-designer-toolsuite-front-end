@@ -9,7 +9,7 @@ from flask import abort
 
 from backend.config import CeleryConfig, Config
 from backend.extensions import celery_app
-from backend.queue_accounting import queue_accounting_lock, remove_pending_run
+from backend.queue_accounting import _remove_pending_run, queue_accounting_lock
 from backend.types import RunStatus
 from backend.utilities.typed_values import deserialize_path, path_for_display
 
@@ -95,7 +95,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
             abort(HTTPStatus.NOT_FOUND)
 
         if initial_status == RunStatus.PENDING:
-            remove_pending_run(redis, mongo, run)
+            _remove_pending_run(redis, mongo, run)
 
     # Delete output files/folders
     output_path_value = run.get("output_path")
