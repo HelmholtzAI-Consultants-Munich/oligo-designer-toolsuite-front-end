@@ -1,4 +1,8 @@
-"""Central Flask error-handler tests."""
+"""Tests that Flask error handlers return sanitized JSON responses.
+
+Ensures internal details (tracebacks, filesystem paths, MongoDB ObjectId reprs)
+are never exposed to API clients, while still being logged server-side.
+"""
 
 from unittest.mock import patch
 
@@ -8,6 +12,12 @@ from backend.tests.conftest import assert_sanitized_error
 
 
 def test_http_exception_returns_json_error(client, authenticated_user):
+    """HTTP exceptions must return JSON so API clients can parse errors programmatically instead of receiving Flask's default HTML.
+
+    Args:
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session required by the route
+    """
     response = client.post("/api/oligoseq", content_type="text/plain", data="not json")
 
     assert response.status_code == 400
@@ -15,6 +25,11 @@ def test_http_exception_returns_json_error(client, authenticated_user):
 
 
 def test_404_unknown_route_returns_json_error(client):
+    """Unknown routes must return JSON errors so API clients are not surprised by Flask's default HTML 404 page.
+
+    Args:
+        client (Any): anonymous Flask test client
+    """
     response = client.get("/api/does/not/exist")
 
     assert response.status_code == 404
@@ -27,6 +42,8 @@ def test_404_unknown_route_returns_json_error(client):
         ("secret internal details /user_data/abc123", ["secret", "/user_data/"]),
         ("Error in /user_data/123/config.yaml", ["/user_data/", "config.yaml"]),
         ("Traceback (most recent call last):", ["Traceback"]),
+        # InvalidId is special: PyMongo raises it for malformed ObjectIds and its
+        # repr includes the raw bad input, which could expose user-supplied data.
         ("InvalidId('bad object id') /uploads/file", ["InvalidId", "/uploads/"]),
     ],
 )
@@ -38,7 +55,16 @@ def test_unhandled_exception_returns_generic_500_without_sensitive_info(
     exception_message,
     forbidden_fragments,
 ):
-    """Unhandled exceptions return a generic 500 without leaking internal details."""
+    """Unhandled exceptions must return a generic message so internal details never reach the client even if the exception message contains them.
+
+    Args:
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session required by the route
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        exception_message (str): one of the parametrized sensitive exception messages
+        forbidden_fragments (list): substrings that must not appear in the error response
+    """
     payload = pipeline_payload("oligoseq_mock_form_data.json")
 
     with patch("backend.routes.pipelines.create_context", side_effect=RuntimeError(exception_message)):
@@ -53,7 +79,15 @@ def test_unhandled_exception_returns_generic_500_without_sensitive_info(
 
 
 def test_unhandled_exception_is_logged(app, client, authenticated_user, pipeline_payload, multipart_post):
-    """Full exception information is still logged server-side for diagnosis."""
+    """Internal details must still reach the server logs even though they are stripped from the response, so ops can diagnose issues.
+
+    Args:
+        app (Flask): Flask application instance for patching the logger
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session required by the route
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+    """
     payload = pipeline_payload("oligoseq_mock_form_data.json")
 
     with (

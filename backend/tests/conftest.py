@@ -1,3 +1,9 @@
+"""Shared pytest fixtures for all backend tests.
+
+Provides test database isolation, per-test filesystem roots, and authentication
+helpers so individual test modules stay focused on route/task behavior.
+"""
+
 import json
 import os
 import shutil
@@ -43,7 +49,6 @@ TEST_MONGO_URI = f"mongodb://{TEST_MONGO_HOST}/{TEST_DB_NAME}?serverSelectionTim
 os.environ["MONGO_URI"] = TEST_MONGO_URI
 os.environ["FLASK_MONGO_URI"] = TEST_MONGO_URI
 Config.MONGO_URI = TEST_MONGO_URI
-
 TEST_USER_ID = "507f1f77bcf86cd799439011"
 OTHER_USER_ID = "507f1f77bcf86cd799439012"
 TEST_SESSION_ID = "anon-session-123"
@@ -81,7 +86,14 @@ class DataRoots:
 
 @pytest.fixture(scope="session")
 def app(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Any]:
-    """Create one Flask app configured for isolated test Mongo and temp paths."""
+    """Create one Flask app per test session pointed at the isolated Mongo and temp filesystem so startup cost is paid once while per-test fixtures handle data isolation.
+
+    Args:
+        tmp_path_factory (pytest.TempPathFactory): pytest factory for session-scoped temp directories
+
+    Yields:
+        Iterator[Any]: Flask application instance configured for testing
+    """
     data_root = tmp_path_factory.mktemp("data-access")
 
     os.environ["FLASK_RELATIVE_DATA_ACCESS_PATH"] = str(data_root)
@@ -107,11 +119,17 @@ def app(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Any]:
     shutil.rmtree(data_root, ignore_errors=True)
 
 
-# autouse=True gives every test isolated temp data roots without each test
-# needing to request the fixture explicitly.
 @pytest.fixture(autouse=True)
 def test_data_roots(app: Any, tmp_path: Path) -> Iterator[DataRoots]:
-    """Create per-test upload/user-data roots and point Flask config at them."""
+    """Create per-test upload and user-data directories so path-existence assertions in one test are never affected by files left by another.
+
+    Args:
+        app (Any): Flask application instance whose config is updated to point at the fresh roots
+        tmp_path (Path): pytest-provided per-test temp directory
+
+    Yields:
+        Iterator[DataRoots]: per-test temp filesystem roots with Flask config pointing at them
+    """
     root = tmp_path / "data-access"
     uploads = root / "uploads"
     user_data = root / "user_data"
@@ -130,11 +148,16 @@ def test_data_roots(app: Any, tmp_path: Path) -> Iterator[DataRoots]:
     shutil.rmtree(root, ignore_errors=True)
 
 
-# autouse=True keeps Mongo collections clean before and after every test,
-# including tests that do not interact with the database directly.
 @pytest.fixture(autouse=True)
 def mongo_test_db(app: Any) -> Iterator[None]:
-    """Clear every Mongo collection before and after each test."""
+    """Clear every MongoDB collection before and after each test to prevent contamination from a previously failed test run that skipped teardown.
+
+    Args:
+        app (Any): Flask application instance providing the app context
+
+    Yields:
+        Iterator[None]: yields inside the app context with a clean database
+    """
     with app.app_context():
         for name in db.list_collection_names():
             db[name].delete_many({})
@@ -145,7 +168,17 @@ def mongo_test_db(app: Any) -> Iterator[None]:
 
 @pytest.fixture
 def client(app: Any) -> Iterator[Any]:
-    """Return a Flask test client whose default current user is anonymous."""
+    """Provide a Flask test client with an anonymous current_user so tests can assert on routes that behave differently for unauthenticated callers.
+
+    We patch the internal `flask_login.utils._get_user` because Flask-Login
+    has no public testing hook for overriding `current_user`.
+
+    Args:
+        app (Any): Flask application instance
+
+    Yields:
+        Iterator[Any]: Flask test client with anonymous current_user
+    """
     with patch("flask_login.utils._get_user", return_value=AnonymousUser()):
         with app.test_client() as test_client:
             with app.app_context():
@@ -154,7 +187,11 @@ def client(app: Any) -> Iterator[Any]:
 
 @pytest.fixture
 def authenticate_as() -> Iterator[Callable[[str], AuthenticatedUser]]:
-    """Factory fixture that patches Flask-Login to return a chosen user id."""
+    """Provide a factory that patches Flask-Login to return a chosen user so tests can authenticate without inserting a user document or accepted terms.
+
+    Yields:
+        Iterator[Callable[[str], AuthenticatedUser]]: callable that accepts a user_id and patches current_user for the remainder of the test
+    """
     active_patches = []
 
     def _authenticate(user_id: str = TEST_USER_ID) -> AuthenticatedUser:
@@ -187,8 +224,17 @@ def _insert_terms_acceptance(**query: str) -> None:
 def authenticated_user(
     app: Any, client: Any, authenticate_as: Callable[[str], AuthenticatedUser]
 ) -> Iterator[AuthenticatedUser]:
-    """Create and authenticate the default test user with current terms accepted."""
-    user = authenticate_as(TEST_USER_ID)
+    """Insert a real user document and current terms acceptance so routes that query MongoDB for role and consent status work correctly without extra per-test setup.
+
+    Args:
+        app (Any): Flask application instance providing the app context
+        client (Any): Flask test client (unused directly but ensures the client fixture is active)
+        authenticate_as (Callable[[str], AuthenticatedUser]): factory that patches Flask-Login to return the test user
+
+    Yields:
+        Iterator[AuthenticatedUser]: the patched current_user for the default test user
+    """
+    user: AuthenticatedUser = authenticate_as(TEST_USER_ID)
     with app.app_context():
         db.users.insert_one({"_id": ObjectId(TEST_USER_ID), "username": "test-user", "role": "user"})
         _insert_terms_acceptance(user_id=TEST_USER_ID)
@@ -197,7 +243,15 @@ def authenticated_user(
 
 @pytest.fixture
 def anonymous_session(app: Any, client: Any) -> Iterator[str]:
-    """Attach a known anonymous session id and current terms acceptance to client."""
+    """Attach a known session_id and current terms acceptance to the client so anonymous routes can be exercised and assertions can reference the fixed TEST_SESSION_ID.
+
+    Args:
+        app (Any): Flask application instance providing the app context
+        client (Any): Flask test client whose session receives the known session_id
+
+    Yields:
+        Iterator[str]: the fixed anonymous session id
+    """
     with client.session_transaction() as sess:
         sess["session_id"] = TEST_SESSION_ID
     with app.app_context():
@@ -207,10 +261,17 @@ def anonymous_session(app: Any, client: Any) -> Iterator[str]:
 
 @pytest.fixture
 def run_doc(app: Any) -> Callable[..., ObjectId]:
-    """Factory fixture for seeding one pipeline run in MongoDB.
+    """Factory fixture — pytest injects the returned callable, not a document.
 
-    Tests use this to create the minimal run document needed by route helpers,
-    then override ownership, status, output path, or route-specific fields per case.
+    Calling run_doc(...) inside a test inserts one run document and returns its
+    ObjectId. Tests can call it multiple times with different arguments to seed
+    several documents in the same test (e.g. one owned run and one unowned run).
+
+    Args:
+        app (Any): Flask application instance providing the app context
+
+    Returns:
+        Callable[..., ObjectId]: callable that inserts a run document and returns its ObjectId
     """
 
     def _run_doc(
@@ -225,8 +286,16 @@ def run_doc(app: Any) -> Callable[..., ObjectId]:
     ) -> ObjectId:
         """Insert a run document and return its ObjectId.
 
-        `extra` is intentionally kept as a narrow escape hatch for fields that only
-        a few tests need, such as `pipeline_run_config` or `error_message`.
+        Args:
+            run_id (ObjectId | None): pass a known id only when the test asserts on a specific document lookup; generates a fresh one otherwise
+            user_id (str | None): omit for anonymous-owned runs
+            session_id (str | None): omit for user-owned runs
+            status (str): initial run status; most tests use the default
+            output_path (Path | str | None): omit for tests that don't exercise file serving or deletion
+            pipeline (str): pipeline name stored on the document
+
+        Returns:
+            ObjectId: id of the inserted run document
         """
         oid = run_id or ObjectId()
         doc = {
@@ -252,16 +321,22 @@ def run_doc(app: Any) -> Callable[..., ObjectId]:
 
 @pytest.fixture
 def pipeline_payload() -> Callable[[str, ObjectId | None], dict[str, Any]]:
-    """Return a loader for pipeline request payload JSON files.
+    """Return a loader for pipeline request payload JSON files so each call produces a fresh copy that tests can mutate without affecting sibling tests.
 
-    The route tests need real payload shapes, but most tests also need to tweak
-    one field before posting, such as an invalid run id, missing formdata, or
-    uploaded-file metadata. This fixture only loads a fresh payload copy and
-    assigns the run id; the individual test remains responsible for any
-    scenario-specific mutation.
+    Returns:
+        Callable[[str, ObjectId | None], dict[str, Any]]: loader that accepts a filename and optional run_id
     """
 
     def _load(payload_file: str, run_id: ObjectId | None = None) -> dict[str, Any]:
+        """Return a fresh payload copy so mutations in one test don't bleed into another.
+
+        Args:
+            payload_file (str): which pipeline's payload shape to load from tests/data/
+            run_id (ObjectId | None): pass a known id only when the test needs to assert the server ignored it; omit otherwise
+
+        Returns:
+            dict[str, Any]: payload dict with runid set, ready to post
+        """
         with open(Path(__file__).parent / "data" / payload_file) as handle:
             payload = json.load(handle)
         payload["runid"] = str(run_id or ObjectId())
@@ -274,18 +349,28 @@ def pipeline_payload() -> Callable[[str, ObjectId | None], dict[str, Any]]:
 def multipart_post(
     client: Any,
 ) -> Callable[[str, dict[str, Any] | None, dict[str, tuple[bytes, str]] | None], Any]:
-    """Return a helper for posting pipeline-style multipart requests.
+    """Return a helper that encodes and posts pipeline-style multipart requests so tests state only what they want to send, not how to serialize it.
 
-    Pipeline routes receive a JSON string in the `payload` form field and may
-    also receive uploaded files in the same multipart request. The helper keeps
-    that request encoding in one place while still requiring tests to build the
-    payload and choose the route explicitly.
+    Args:
+        client (Any): Flask test client that will send the requests
+
+    Returns:
+        Callable[[str, dict[str, Any] | None, dict[str, tuple[bytes, str]] | None], Any]: post helper that handles JSON serialization and BytesIO wrapping
     """
 
     def _post(
         path: str, payload: dict[str, Any] | None = None, files: dict[str, tuple[bytes, str]] | None = None
     ):
-        """Post to one route with an optional JSON payload and in-memory files."""
+        """Encode and post so tests don't have to manually serialize JSON or construct BytesIO wrappers.
+
+        Args:
+            path (str): route to post to
+            payload (dict[str, Any] | None): pipeline submission data; serialized into the `payload` form field as the route expects
+            files (dict[str, tuple[bytes, str]] | None): uploaded files keyed by form field name; each value is (raw bytes, filename)
+
+        Returns:
+            Any: Flask test client response
+        """
         data: dict[str, Any] = {}
         if payload is not None:
             data["payload"] = json.dumps(payload)
@@ -298,7 +383,14 @@ def multipart_post(
 
 @pytest.fixture
 def celery_config() -> dict[str, Any]:
-    """Configure celery.contrib.pytest with an isolated Redis DB for chord support."""
+    """Configure the test Celery worker to use an isolated Redis database so test tasks do not share state with the dev or production broker.
+
+    Redis DB #15 is used so test runs don't share state with the dev or
+    production Redis databases (typically DB 0).
+
+    Returns:
+        dict[str, Any]: Celery configuration overrides for the test worker
+    """
     test_redis_uri = f"{Config.REDIS_URI.rstrip('/')}/15"
     return {
         "broker_url": test_redis_uri,
@@ -313,13 +405,24 @@ def celery_config() -> dict[str, Any]:
 
 @pytest.fixture
 def celery_worker_parameters() -> dict[str, Any]:
-    """Keep celery.contrib.pytest workers lightweight for app-local tasks."""
+    """Keep celery.contrib.pytest workers lightweight by disabling the ping check and capping shutdown so slow tasks don't hang the test suite.
+
+    Returns:
+        dict[str, Any]: celery.contrib.pytest worker parameter overrides
+    """
     return {"perform_ping_check": False, "shutdown_timeout": 10}
 
 
 @pytest.fixture
 def celery_app(celery_config: dict[str, Any]):
-    """Use the real worker Celery app with in-memory test transport settings."""
+    """Use the real worker Celery app so task routing and chords behave identically to production.
+
+    Args:
+        celery_config (dict[str, Any]): Celery configuration overrides from the celery_config fixture
+
+    Returns:
+        Celery: the production worker app reconfigured to use the test broker and flushed before each test
+    """
     for task_module in CELERY_TASK_MODULES:
         worker_app.loader.import_task_module(task_module.__name__)
     worker_app.conf.update(celery_config)
@@ -328,7 +431,14 @@ def celery_app(celery_config: dict[str, Any]):
 
 
 def assert_sanitized_error(response: Any) -> None:
-    """Assert an error response does not expose tracebacks, ObjectId internals, or paths."""
+    """Assert an error response does not expose tracebacks, ObjectId internals, or filesystem paths.
+
+    Each forbidden fragment is checked individually so a partial leak of one
+    pattern cannot be masked by the absence of another.
+
+    Args:
+        response (Any): Flask test client response whose JSON body must not contain internal details
+    """
     data = response.get_json() or {}
     rendered = str(data)
     assert "Traceback" not in rendered
@@ -338,7 +448,20 @@ def assert_sanitized_error(response: Any) -> None:
 
 
 def pipeline_runner_module(runner_cls: Any):
-    """Temporarily provide a lightweight PipelineRunner module for Celery task tests."""
+    """Swap the real pipeline_runner module so its visualization imports never run.
+
+    pipeline_runner.py imports genomic_regions_file.py, which pulls in Biopython
+    and oligo_designer_toolsuite visualization packages not installed in CI. Those
+    imports run at module load time so the file crashes before any mock can help.
+    This function solves that by injecting a fake module into sys.modules so Python
+    never touches the real file.
+
+    Args:
+        runner_cls (Any): mock or stub class to expose as PipelineRunner in the fake module
+
+    Returns:
+        patch.dict: context manager that installs the fake module for the test duration
+    """
     module = types.ModuleType("backend.worker.pipeline_runner")
     module.PipelineRunner = runner_cls
     return patch.dict(sys.modules, {"backend.worker.pipeline_runner": module})

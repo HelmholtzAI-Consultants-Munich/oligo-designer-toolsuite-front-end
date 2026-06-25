@@ -18,12 +18,23 @@ pytestmark = pytest.mark.filterwarnings(
 
 
 def test_login_rejects_external_redirect(client):
+    """External redirects must be blocked because allowing them turns the login endpoint into an open redirector usable for phishing.
+
+    Args:
+        client (Any): anonymous Flask test client
+    """
     response = client.get("/login?redirect=https://evil.example/path")
 
     assert response.status_code == 400
 
 
 def test_logout_calls_logout_user(client, authenticated_user):
+    """Logout must delegate to Flask-Login's logout_user so the session is properly invalidated server-side.
+
+    Args:
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session to log out
+    """
     with patch("backend.routes.auth.logout_user") as logout_user:
         response = client.post("/logout")
 
@@ -32,6 +43,11 @@ def test_logout_calls_logout_user(client, authenticated_user):
 
 
 def test_check_auth_logged_out(client):
+    """The check_auth endpoint must report unauthenticated so the frontend can show the anonymous UI state.
+
+    Args:
+        client (Any): anonymous Flask test client with no active session
+    """
     response = client.get("/api/check_auth")
 
     assert response.status_code == 200
@@ -39,6 +55,12 @@ def test_check_auth_logged_out(client):
 
 
 def test_check_auth_logged_in(client, authenticated_user):
+    """The check_auth endpoint must return the user id so the frontend can associate UI state with the correct account.
+
+    Args:
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session
+    """
     response = client.get("/api/check_auth")
 
     assert response.status_code == 200
@@ -48,7 +70,12 @@ def test_check_auth_logged_in(client, authenticated_user):
 
 
 def test_current_user_missing_db_record_returns_logged_in_payload(client, authenticate_as):
-    """Current implementation treats a missing DB row as logged in with defaults."""
+    """A missing DB row is treated as logged in with defaults rather than forcing a logout, which would be unexpected mid-session.
+
+    Args:
+        client (Any): Flask test client
+        authenticate_as (Callable): factory that patches current_user to the given id
+    """
     missing_user_id = str(ObjectId())
     authenticate_as(missing_user_id)
 
@@ -60,7 +87,12 @@ def test_current_user_missing_db_record_returns_logged_in_payload(client, authen
 
 
 def test_helmholtz_callback_creates_new_user(client, test_data_roots):
-    """OAuth callback creates a new Helmholtz user and user-data directory."""
+    """Helmholtz AAI has no separate registration step — the first login is registration, so the user document and data dir must be created here.
+
+    Args:
+        client (Any): anonymous Flask test client
+        test_data_roots (DataRoots): per-test temp filesystem roots for asserting user dir creation
+    """
     token = {"access_token": "token", "userinfo": {"sub": "sub-1"}}
     with patch("backend.routes.auth.oauth.helmholtz.authorize_access_token", return_value=token):
         response = client.get("/auth/callback")
@@ -73,6 +105,11 @@ def test_helmholtz_callback_creates_new_user(client, test_data_roots):
 
 
 def test_helmholtz_callback_reuses_existing_user(client):
+    """Repeated logins must not create duplicate accounts — helmholtz_sub is the unique identifier that links logins to the same user.
+
+    Args:
+        client (Any): anonymous Flask test client
+    """
     user_id = db.users.insert_one({"helmholtz_sub": "sub-1", "role": "user"}).inserted_id
     token = {"access_token": "token", "userinfo": {"sub": "sub-1"}}
 
@@ -85,6 +122,11 @@ def test_helmholtz_callback_reuses_existing_user(client):
 
 
 def test_helmholtz_callback_fetches_userinfo_when_missing_from_token(client):
+    """Some OAuth providers don't embed userinfo in the token itself — the callback must fall back to the userinfo endpoint to get the subject.
+
+    Args:
+        client (Any): anonymous Flask test client
+    """
     response_mock = MagicMock()
     response_mock.json.return_value = {"sub": "sub-2"}
 

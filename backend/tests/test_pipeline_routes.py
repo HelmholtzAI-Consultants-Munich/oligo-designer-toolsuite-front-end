@@ -32,20 +32,40 @@ PIPELINE_NAME, PAYLOAD_FILE = PIPELINE_CASES[0]
 
 
 def payload_with_upload(payload: dict, field_path: str, file_key: str) -> dict:
-    """Return a payload whose file field refers to one multipart upload key."""
+    """Assign an upload key to a nested form field so tests can simulate file uploads without copying the full payload structure manually.
+
+    Args:
+        payload (dict): pipeline submission payload to mutate
+        field_path (str): glom-style dot path to the file list field inside formdata
+        file_key (str): multipart form key that the route will look up in the uploaded files
+
+    Returns:
+        dict: deep copy of the payload with the field set to the upload key
+    """
     updated = copy.deepcopy(payload)
     assign(updated["formdata"], field_path, [file_key])
     return updated
 
 
 def response_run(response) -> dict:
-    """Load the run created by a successful pipeline submission."""
+    """Fetch the run document created by a successful submission so tests can assert on persisted state without repeating ObjectId parsing.
+
+    Args:
+        response (Any): Flask test client response from a successful pipeline POST
+
+    Returns:
+        dict: MongoDB run document created by the submission
+    """
     return db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
 
 
 @pytest.fixture
 def queued_task():
-    """Patch queue side effects while preserving route parsing and DB writes."""
+    """Patch Celery enqueue and queue position so submissions exercise route parsing and DB writes without touching the broker.
+
+    Yields:
+        tuple -- (enqueue mock, queue_position mock) for asserting dispatch arguments
+    """
     with (
         patch(
             "backend.routes.pipelines.enqueue_pipeline", return_value=SimpleNamespace(id="task-123")
@@ -58,7 +78,14 @@ def queued_task():
 def test_start_pipeline_authenticated_success(
     authenticated_user, pipeline_payload, multipart_post, queued_task
 ):
-    """Authenticated submissions create high-priority user-owned runs."""
+    """Authenticated submissions must create high-priority user-owned runs so registered users get faster execution than anonymous ones.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session with current terms accepted
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+    """
     response = multipart_post(f"/api/{PIPELINE_NAME}", pipeline_payload(PAYLOAD_FILE))
 
     assert response.status_code == 200
@@ -78,7 +105,14 @@ def test_start_pipeline_authenticated_success(
 
 
 def test_start_pipeline_anonymous_success(anonymous_session, pipeline_payload, multipart_post, queued_task):
-    """Anonymous submissions create default-priority session-owned runs."""
+    """Anonymous submissions must create default-priority session-owned runs routed to the anonymous data directory.
+
+    Args:
+        anonymous_session (str): session id attached to the test client with current terms accepted
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+    """
     response = multipart_post(f"/api/{PIPELINE_NAME}", pipeline_payload(PAYLOAD_FILE))
 
     assert response.status_code == 200
@@ -93,6 +127,13 @@ def test_start_pipeline_anonymous_success(anonymous_session, pipeline_payload, m
 
 @pytest.mark.parametrize("pipeline_name", ["merfish", "seqfish", "scrinshot"])
 def test_start_pipeline_rejects_disabled_pipeline(client, multipart_post, pipeline_name):
+    """Disabled pipelines must be rejected at the route level so half-implemented pipelines never reach task dispatch.
+
+    Args:
+        client (Any): Flask test client
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        pipeline_name (str): one of the parametrized disabled pipeline names
+    """
     response = multipart_post(f"/api/{pipeline_name}", {})
 
     assert response.status_code == 400
@@ -102,6 +143,15 @@ def test_start_pipeline_rejects_disabled_pipeline(client, multipart_post, pipeli
 def test_start_pipeline_requires_terms_acceptance(
     authenticate_as, pipeline_payload, multipart_post, queued_task, test_data_roots
 ):
+    """Terms must be accepted before any run document or output directory is created so no orphaned state exists for non-consenting users.
+
+    Args:
+        authenticate_as (Callable): factory that patches current_user without inserting a terms acceptance
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+        test_data_roots (DataRoots): per-test temp filesystem roots for asserting no output was created
+    """
     authenticate_as(TEST_USER_ID)
 
     response = multipart_post(f"/api/{PIPELINE_NAME}", pipeline_payload(PAYLOAD_FILE))
@@ -112,6 +162,12 @@ def test_start_pipeline_requires_terms_acceptance(
 
 
 def test_start_pipeline_rejects_unknown_pipeline(client, multipart_post):
+    """Unknown pipeline names must be rejected with a clear error rather than crashing the route handler.
+
+    Args:
+        client (Any): Flask test client
+        multipart_post (Callable): helper that posts multipart pipeline requests
+    """
     response = multipart_post("/api/not-a-pipeline", {})
 
     assert response.status_code == 400
@@ -119,12 +175,24 @@ def test_start_pipeline_rejects_unknown_pipeline(client, multipart_post):
 
 
 def test_start_pipeline_rejects_missing_payload(client, authenticated_user):
+    """A missing payload field must fail immediately before any DB writes or filesystem side effects.
+
+    Args:
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session
+    """
     response = client.post(f"/api/{PIPELINE_NAME}", data={}, content_type="multipart/form-data")
 
     assert response.status_code == 400
 
 
 def test_start_pipeline_rejects_empty_payload(authenticated_user, multipart_post):
+    """An empty payload has no formdata so it must be rejected before any pipeline configuration is parsed.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        multipart_post (Callable): helper that posts multipart pipeline requests
+    """
     response = multipart_post(f"/api/{PIPELINE_NAME}", {})
 
     assert response.status_code == 400
@@ -133,6 +201,14 @@ def test_start_pipeline_rejects_empty_payload(authenticated_user, multipart_post
 def test_start_pipeline_ignores_client_run_id(
     authenticated_user, pipeline_payload, multipart_post, queued_task
 ):
+    """The server must generate run IDs to prevent clients from spoofing IDs or causing collisions with other users' runs.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+    """
     client_run_id = ObjectId()
     payload = pipeline_payload(PAYLOAD_FILE, client_run_id)
 
@@ -144,6 +220,13 @@ def test_start_pipeline_ignores_client_run_id(
 
 
 def test_start_pipeline_rejects_missing_anonymous_terms(client, pipeline_payload, multipart_post):
+    """Anonymous users without terms acceptance must be blocked at the same checkpoint as authenticated users to keep consent enforcement consistent.
+
+    Args:
+        client (Any): anonymous Flask test client with no terms acceptance
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+    """
     response = multipart_post(f"/api/{PIPELINE_NAME}", pipeline_payload(PAYLOAD_FILE))
 
     assert response.status_code == 403
@@ -153,6 +236,15 @@ def test_start_pipeline_rejects_missing_anonymous_terms(client, pipeline_payload
 def test_start_pipeline_fails_when_user_directory_missing(
     authenticated_user, pipeline_payload, multipart_post, queued_task, test_data_roots
 ):
+    """A missing user directory must return 500 and sanitized error so internal filesystem paths are not exposed to the client.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+        test_data_roots (DataRoots): per-test temp filesystem roots; user dir is removed to trigger the failure
+    """
     test_data_roots.user_dir.rmdir()
 
     response = multipart_post(f"/api/{PIPELINE_NAME}", pipeline_payload(PAYLOAD_FILE))
@@ -164,6 +256,14 @@ def test_start_pipeline_fails_when_user_directory_missing(
 def test_start_pipeline_rejects_too_many_genes_for_anonymous_user(
     anonymous_session, pipeline_payload, multipart_post, queued_task
 ):
+    """Anonymous users are capped at GENE_COUNT_THRESHOLD to prevent resource abuse from unauthenticated callers without requiring an account.
+
+    Args:
+        anonymous_session (str): session id attached to the test client with current terms accepted
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+    """
     payload = pipeline_payload(PAYLOAD_FILE)
     assign(
         payload["formdata"],
@@ -180,6 +280,14 @@ def test_start_pipeline_rejects_too_many_genes_for_anonymous_user(
 def test_start_pipeline_allows_too_many_genes_for_authenticated_user(
     authenticated_user, pipeline_payload, multipart_post, queued_task
 ):
+    """Authenticated users must not be subject to the anonymous gene cap so legitimate large analyses are not blocked.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+    """
     payload = pipeline_payload(PAYLOAD_FILE)
     assign(
         payload["formdata"],
@@ -195,7 +303,15 @@ def test_start_pipeline_allows_too_many_genes_for_authenticated_user(
 def test_start_pipeline_saves_uploaded_files(
     authenticated_user, pipeline_payload, multipart_post, queued_task, test_data_roots
 ):
-    """Uploaded file keys are replaced with saved server-side paths before enqueue."""
+    """Uploaded file keys must be replaced with server-side paths before enqueue so the task never needs to access multipart form data directly.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+        test_data_roots (DataRoots): per-test temp filesystem roots for asserting the saved file location
+    """
     field = PIPELINE_FILE_INPUT[PIPELINE_NAME][0]
     payload = payload_with_upload(pipeline_payload(PAYLOAD_FILE), field, "variants")
 
@@ -211,10 +327,19 @@ def test_start_pipeline_saves_uploaded_files(
     assert glom(enqueued_form_data, field) == [str(saved_files[0])]
 
 
+# "???" is the placeholder filename some browsers send for an empty file input.
 @pytest.mark.parametrize("filename", ["", "???"])
 def test_start_pipeline_rejects_invalid_uploaded_filename(
     authenticated_user, pipeline_payload, multipart_post, filename
 ):
+    """Empty and browser-placeholder filenames must be rejected because they would result in unnamed or colliding server-side files.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        filename (str): one of the parametrized invalid filenames
+    """
     field = PIPELINE_FILE_INPUT[PIPELINE_NAME][0]
     payload = payload_with_upload(pipeline_payload(PAYLOAD_FILE), field, "upload")
 
@@ -226,6 +351,14 @@ def test_start_pipeline_rejects_invalid_uploaded_filename(
 def test_start_pipeline_persists_pipeline_run_config_when_present(
     authenticated_user, pipeline_payload, multipart_post, queued_task
 ):
+    """pipeline_run_config must be stored verbatim on the run document so the frontend can replay the exact configuration later.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+    """
     payload = pipeline_payload(PAYLOAD_FILE)
     payload["pipeline_run_config"] = {"version": 1, "name": "saved"}
 
@@ -238,6 +371,14 @@ def test_start_pipeline_persists_pipeline_run_config_when_present(
 def test_start_pipeline_ignores_invalid_pipeline_run_config(
     authenticated_user, pipeline_payload, multipart_post, queued_task
 ):
+    """pipeline_run_config is best-effort metadata so an invalid value must be silently dropped rather than blocking pipeline submission.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        queued_task (tuple): patched enqueue and queue_position mocks
+    """
     payload = pipeline_payload(PAYLOAD_FILE)
     payload["pipeline_run_config"] = ["invalid"]
 
@@ -248,6 +389,13 @@ def test_start_pipeline_ignores_invalid_pipeline_run_config(
 
 
 def test_pipeline_routes_do_not_expose_raw_errors(authenticated_user, pipeline_payload, multipart_post):
+    """Internal errors must be sanitized before reaching the client to avoid exposing paths, tracebacks, or internal state.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+    """
     payload = pipeline_payload(PAYLOAD_FILE)
 
     with patch("backend.routes.pipelines.create_context", side_effect=RuntimeError("/tmp/secret traceback")):
@@ -258,6 +406,12 @@ def test_pipeline_routes_do_not_expose_raw_errors(authenticated_user, pipeline_p
 
 
 def test_start_pipeline_rejects_missing_payload_formdata(authenticated_user, multipart_post):
+    """A payload without the formdata field must fail immediately since formdata contains the entire pipeline configuration.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        multipart_post (Callable): helper that posts multipart pipeline requests
+    """
     response = multipart_post(f"/api/{PIPELINE_NAME}", {"token": "XXXX.DUMMY.TOKEN.XXXX"})
 
     assert response.status_code == 400
@@ -266,6 +420,13 @@ def test_start_pipeline_rejects_missing_payload_formdata(authenticated_user, mul
 def test_start_pipeline_rejects_misformatted_genomic_inputs(
     authenticated_user, pipeline_payload, multipart_post
 ):
+    """Malformed genomic input structure must be caught before dispatch so the task never receives a config it cannot parse.
+
+    Args:
+        authenticated_user (AuthenticatedUser): active authenticated session
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+    """
     payload = copy.deepcopy(pipeline_payload(PAYLOAD_FILE))
     del payload["formdata"]["target_probe"]["oligo_generation"]["files_fasta_probe_database"]
 
@@ -275,7 +436,11 @@ def test_start_pipeline_rejects_misformatted_genomic_inputs(
 
 
 def test_genomic_input_paths_match_current_oligoseq_shape(pipeline_payload):
-    """Guard shared path constants against drifting away from the frontend payload."""
+    """PIPELINE_GENOMIC_INPUT path constants must match the actual payload shape or genomic region tasks will silently skip their inputs.
+
+    Args:
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+    """
     form_data = pipeline_payload(PAYLOAD_FILE)["formdata"]
 
     assert all(isinstance(glom(form_data, path), list) for path in PIPELINE_GENOMIC_INPUT[PIPELINE_NAME])

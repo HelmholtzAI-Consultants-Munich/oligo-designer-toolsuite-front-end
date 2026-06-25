@@ -1,4 +1,9 @@
-"""Pipeline route-to-Celery integration tests using celery.contrib.pytest."""
+"""Integration tests that verify the full route-to-Celery task chain executes correctly.
+
+These tests exist because unit tests mock at the task boundary and cannot catch
+wiring bugs where the route dispatches the wrong task, passes arguments in the
+wrong order, or sets the wrong broker priority.
+"""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -15,13 +20,32 @@ from backend.worker import tasks as task_module
 
 @pytest.fixture
 def route_celery_app(celery_app):
-    """Make the Flask route dispatch to the Celery app managed by celery_worker."""
+    """Redirect Flask route dispatching to the test worker so integration tests observe real task execution.
+
+    Arguments:
+        celery_app {Celery} -- test-configured Celery app from the celery_app fixture
+
+    Notes:
+        Routes import the production Celery app at module load time. Swapping it
+        per-test here lets the integration test observe real task execution through
+        the test worker without touching the production broker.
+
+    Returns:
+        Celery -- the same celery_app, yielded while the route patch is active
+    """
     with patch("backend.routes.pipelines.celery_app", celery_app):
         yield celery_app
 
 
 def _clear_generated_regions(payload):
-    """Remove generated-region forms so the route dispatches only the pipeline body task."""
+    """Strip genomic region inputs so tests can isolate the pipeline body task without header tasks running first.
+
+    Arguments:
+        payload {dict} -- pipeline submission payload loaded from a JSON fixture file
+
+    Returns:
+        dict -- the same payload with all generated-region database fields set to empty lists
+    """
     assign(payload["formdata"], "target_probe.oligo_generation.files_fasta_probe_database", [])
     assign(
         payload["formdata"],
@@ -39,7 +63,16 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
     route_celery_app,
     celery_worker,
 ):
-    """Generated-region header tasks feed their results into the pipeline body task."""
+    """Header tasks must complete and pass their generated file paths to the pipeline body task before it runs.
+
+    Args:
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session required by the route
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        route_celery_app (Celery): test Celery app patched into the route
+        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    """
     payload = pipeline_payload("oligoseq_mock_form_data.json")
     pipeline_runner_cls = MagicMock()
 
@@ -57,6 +90,9 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
         run = db.runs.find_one({"_id": run_id})
         route_celery_app.AsyncResult(run["task_id"]).get(timeout=CELERY_TASK_TIMEOUT)
 
+    # The test payload contains exactly 2 genomic region sources, so 2 header
+    # tasks are expected. This count is load-bearing — the pipeline body task
+    # only runs after all header tasks complete via Celery chord.
     expected_generated_region_count = 2
     assert generator_cls.return_value.run.call_count == expected_generated_region_count
     pipeline_runner_cls.assert_called_once_with("oligoseq", logger=task_module.logger)
@@ -77,7 +113,16 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
     route_celery_app,
     celery_worker,
 ):
-    """The route still dispatches the pipeline task when no header tasks are needed."""
+    """When no genomic region inputs are present the route must dispatch the pipeline task directly without any header tasks.
+
+    Args:
+        client (Any): Flask test client
+        authenticated_user (AuthenticatedUser): active authenticated session required by the route
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        route_celery_app (Celery): test Celery app patched into the route
+        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    """
     payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))
     pipeline_runner_cls = MagicMock()
 
@@ -116,14 +161,26 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
     user_fixture,
     expected_priority,
 ):
-    """Authenticated and anonymous submissions preserve priority through Celery dispatch."""
+    """Authenticated users must receive higher broker priority than anonymous users so registered work is not starved by anonymous submissions.
+
+    Args:
+        request (Any): pytest request fixture for dynamic fixture resolution
+        client (Any): Flask test client
+        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
+        multipart_post (Callable): helper that posts multipart pipeline requests
+        route_celery_app (Celery): test Celery app patched into the route
+        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+        user_fixture (str): one of the parametrized fixture names that sets up the session
+        expected_priority (int): broker-level priority the route must assign for this user type
+    """
     request.getfixturevalue(user_fixture)
     payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))
     observed_priorities = []
     pipeline_runner_cls = MagicMock()
 
     def record_priority(*_args, **_kwargs):
-        """Capture the Celery delivery priority visible inside the running task."""
+        # delivery_info is read from inside the running task because Celery does
+        # not surface broker-level priority through the standard AsyncResult API.
         observed_priorities.append(
             task_module.run_pipeline.request.delivery_info.get("priority", CeleryConfig.task_default_priority)
         )

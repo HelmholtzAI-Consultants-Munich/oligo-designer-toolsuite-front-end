@@ -1,4 +1,8 @@
-"""Celery worker task handler tests."""
+"""Celery worker task handler tests.
+
+Lifecycle hooks must persist status transitions to MongoDB so the frontend can
+poll run status and users see accurate progress without querying Celery directly.
+"""
 
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -7,7 +11,7 @@ from backend.worker.handlers import PipelineTask
 
 
 def test_pipeline_task_handlers_update_run_status():
-    """PipelineTask lifecycle hooks update the run row by Celery task id."""
+    """Status transitions must be written to the run document by task id so the frontend can reflect the current state without needing to query Celery directly."""
     task = PipelineTask()
     update_result = SimpleNamespace(matched_count=1)
 
