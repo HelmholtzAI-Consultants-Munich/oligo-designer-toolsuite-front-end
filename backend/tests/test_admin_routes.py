@@ -128,7 +128,104 @@ def test_admin_get_user_not_found(client, admin_user):
     assert response.status_code == 404
 
 
-# TODO: Add deny-list admin route tests after the pending test-suite overhaul lands.
+def test_admin_ban_user_success(client, admin_user):
+    """Banning a user must create a denylist entry so subsequent logins are rejected at the OAuth callback.
+
+    Args:
+        client (Any): Flask test client
+        admin_user (dict): persisted admin user and authenticated session
+    """
+    user_id = ObjectId()
+    db.users.insert_one({"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-to-ban"})
+
+    response = client.post(f"/api/admin/users/{user_id}/ban")
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["helmholtz_sub"] == "sub-to-ban"
+    assert data["banned_at"] is not None
+
+
+def test_admin_ban_user_rejects_self_ban(client, admin_user):
+    """Admins cannot ban themselves because it would lock their own account out on the next OAuth login.
+
+    Args:
+        client (Any): Flask test client
+        admin_user (dict): persisted admin user and authenticated session
+    """
+    response = client.post(f"/api/admin/users/{admin_user['id']}/ban")
+
+    assert response.status_code == 400
+
+
+def test_admin_get_banned_users_success(client, admin_user):
+    """Banned user listing must return all active bans so the admin can see who is currently blocked and unban them.
+
+    Args:
+        client (Any): Flask test client
+        admin_user (dict): persisted admin user and authenticated session
+    """
+    user_id = ObjectId()
+    db.users.insert_one({"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-listed"})
+    client.post(f"/api/admin/users/{user_id}/ban")
+
+    response = client.get("/api/admin/banned-users")
+
+    assert response.status_code == 200
+    assert any(ban["helmholtz_sub"] == "sub-listed" for ban in response.get_json())
+
+
+def test_admin_unban_user_success(client, admin_user):
+    """Removing a ban must delete the denylist entry so the user can log in again on their next attempt.
+
+    Args:
+        client (Any): Flask test client
+        admin_user (dict): persisted admin user and authenticated session
+    """
+    user_id = ObjectId()
+    db.users.insert_one(
+        {"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-to-unban"}
+    )
+    ban_id = client.post(f"/api/admin/users/{user_id}/ban").get_json()["id"]
+
+    response = client.delete(f"/api/admin/banned-users/{ban_id}")
+
+    assert response.status_code == 200
+    assert client.get("/api/admin/banned-users").get_json() == []
+
+
+def test_admin_unban_user_not_found(client, admin_user):
+    """A missing ban id must return 404 so callers know the unban had no effect.
+
+    Args:
+        client (Any): Flask test client
+        admin_user (dict): persisted admin user and authenticated session
+    """
+    response = client.delete(f"/api/admin/banned-users/{ObjectId()}")
+
+    assert response.status_code == 404
+
+
+def test_admin_get_users_includes_ban_status(client, admin_user):
+    """User listing must expose banned and ban_id fields so the panel can display ban status inline without a second request.
+
+    Args:
+        client (Any): Flask test client
+        admin_user (dict): persisted admin user and authenticated session
+    """
+    user_id = ObjectId()
+    db.users.insert_one(
+        {"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-ban-check"}
+    )
+    client.post(f"/api/admin/users/{user_id}/ban")
+
+    response = client.get("/api/admin/users")
+    users = {u["id"]: u for u in response.get_json()}
+
+    assert users[str(user_id)]["banned"] is True
+    assert users[str(user_id)]["ban_id"] is not None
+    assert users[admin_user["id"]]["banned"] is False
+    assert users[admin_user["id"]]["ban_id"] is None
 
 
 def test_admin_update_user_role_success(client, admin_user, regular_user):
