@@ -105,7 +105,7 @@ def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> d
 
 
 # ============================================================================
-# Run Retrieval Helpers
+# Run Helpers
 # ============================================================================
 
 
@@ -158,6 +158,23 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     if not run:
         abort(HTTPStatus.NOT_FOUND)
     return run
+
+
+def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
+    """Update a run in the database. The run must already exist in the database.
+
+    Notes:
+        This is very similar to `backend.worker.database._update_run`,
+        with the main difference being the error handling. This aborts
+        the request if the run could not be updated.
+
+    Arguments:
+        run_id {ObjectId} -- The pipeline run's id.
+        data {dict[str, Any]} -- The data to be set in the database.
+    """
+    update_result = db.runs.update_one({"_id": run_id}, {"$set": data})
+    if not update_result.acknowledged:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to update the run in the database.")
 
 
 # ============================================================================

@@ -29,8 +29,10 @@ from backend.queue_accounting import add_pending_run, queue_accounting_lock
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
+    update_run_in_DB,
     validate_turnstile,
 )
+from backend.types import RunStatus
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
@@ -125,30 +127,44 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     return dict(generated_regions)
 
 
-def write_run_to_DB(
-    pipeline_name: str,
+def init_run() -> ObjectId:
+    """Initializes a pending run in the database.
+
+    Notes:
+        This needs to be called before `enqueue_pipeline()` since the pipeline task
+        expects the run to already exist in the database.
+
+    Returns:
+        ObjectId -- The pipeline run's id
+    """
+    insert_result = db.runs.insert_one({"status": RunStatus.PENDING})
+    if not insert_result.acknowledged:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to create run in database")
+    return insert_result.inserted_id
+
+
+def update_run_with_context(
     run_id: ObjectId,
+    pipeline_name: str,
     context: RunContext,
     priority: int = CeleryConfig.task_default_priority,
     queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
     pipeline_run_config: dict | None = None,
-):
+) -> None:
     data: dict = {
-        "_id": run_id,
-        "status": "pending",
-        "created_at": utc_now(),
+        "pipeline": pipeline_name,
         "session_id": context.session_id,
         "user_id": context.user_id,
-        "timestamp": context.timestamp,
         "output_path": serialize_path(context.output_path),
-        "pipeline": pipeline_name,
+        "created_at": context.timestamp,
+        "timestamp": context.timestamp,  # TODO: redundant with "created_at"
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
         "queue_position": queue_position,
     }
     if pipeline_run_config is not None:
         data["pipeline_run_config"] = pipeline_run_config
-        # create a pending run in the database
-    return db.runs.insert_one(data)
+
+    update_run_in_DB(run_id, data)
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
@@ -179,7 +195,6 @@ def prepare_pipeline_chord(
     generated_regions: dict[str, list[dict[str, Any]]],
     priority: int,
     context: RunContext,
-    enqueued_at: datetime,
     is_authenticated: bool = False,
 ) -> Any:
     """
@@ -206,10 +221,7 @@ def prepare_pipeline_chord(
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
         headers={
-            "pipeline": pipeline_name,
-            "user_id": context.user_id,
-            "session_id": context.session_id,
-            "enqueued_at": enqueued_at.isoformat(),
+            "enqueued_at": context.timestamp.isoformat(),
         },
     )
 
@@ -371,10 +383,10 @@ def start_pipeline(pipeline_name: str):
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
-
-    run_id = ObjectId()  # Generate a new run ID
     priority = get_task_priority(form_data)
-    enqueued_at = utc_now()
+
+    # Insert pending run into database
+    run_id = init_run()
 
     pipeline_run_config = (
         form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
@@ -386,22 +398,19 @@ def start_pipeline(pipeline_name: str):
         generated_regions,
         priority,
         context,
-        enqueued_at,
         current_user.is_authenticated,
     )
     with queue_accounting_lock() as redis:
         enqueue_pipeline(pipeline_chord)
         high_priority_ahead, default_priority_ahead = add_pending_run(redis, db, priority)
 
-        insert_result = write_run_to_DB(
-            pipeline_name,
-            run_id,
-            context,
-            priority,
-            (high_priority_ahead, default_priority_ahead),
-            pipeline_run_config,
-        )
-        if not insert_result.acknowledged:
-            abort(HTTPStatus.NOT_FOUND, description="Failed to create run in database")
+    update_run_with_context(
+        run_id,
+        pipeline_name,
+        context,
+        priority,
+        (high_priority_ahead, default_priority_ahead),
+        pipeline_run_config,
+    )
 
     return jsonify({"run_id": str(run_id), "queue_position": (high_priority_ahead, default_priority_ahead)})
