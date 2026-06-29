@@ -5,12 +5,14 @@ from bson import ObjectId
 from werkzeug.security import generate_password_hash
 
 from backend.extensions import db
+from backend.tests.conftest import get_with_check
 from backend.utilities.legal import (
     PRIVACY_DOCUMENT_KEY,
     TERMS_DOCUMENT_KEY,
     get_published_legal_document,
 )
-from backend.utilities.typed_values import serialize_path, utc_now
+from backend.utilities.typed_values import serialize_path
+from backend.utils import utc_now
 
 
 @pytest.fixture
@@ -39,7 +41,7 @@ def test_accept_terms_updates_current_user(client, authenticate_as_user, legal_u
     )
     assert data["legal"]["terms_accepted_at"] is not None
 
-    updated_user = db.users.find_one({"_id": legal_user_doc["_id"]})
+    updated_user = get_with_check({"_id": legal_user_doc["_id"]}, db.users)
     assert (
         updated_user["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
     )

@@ -5,7 +5,20 @@ import { FiletypeTxt } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
 
 const TxtUploadInput = (props: FieldProps) => {
-    const { onChange, fieldPathId, formData, onBlur, schema } = props;
+    const {
+        onChange,
+        fieldPathId,
+        formData,
+        onBlur,
+        schema,
+        uiSchema,
+        rawErrors,
+        registry,
+    } = props;
+
+    const {
+        templates: { FieldErrorTemplate },
+    } = registry;
 
     const allGenesChecked = formData === null;
 
@@ -87,6 +100,13 @@ const TxtUploadInput = (props: FieldProps) => {
                     <FiletypeTxt size={20} className="ms-2" />
                 </Form.Label>
             </InputGroup>
+            <FieldErrorTemplate
+                schema={schema}
+                uiSchema={uiSchema}
+                fieldPathId={fieldPathId}
+                errors={rawErrors}
+                registry={registry}
+            />
         </>
     );
 };

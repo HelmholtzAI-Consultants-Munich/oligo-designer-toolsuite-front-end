@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from bson import ObjectId
 from celery import chord
@@ -19,19 +19,26 @@ from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
 from backend.config import CeleryConfig, Config
-from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT, PIPELINE_NON_EXPOSED_FIELDS
+from backend.constants import (
+    PIPELINE_FILE_INPUT,
+    PIPELINE_GENOMIC_INPUT,
+    PIPELINE_NON_EXPOSED_FIELDS,
+    REDIS_QUEUE_LENGTH_KEY,
+)
 from backend.extensions import celery_app, db
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
+    update_run_in_DB,
     validate_turnstile,
 )
+from backend.types import RunStatus
 from backend.utilities.pipeline import generate_single_region_forms, resolve_timeout
 from backend.utilities.typed_values import (
     serialize_path,
-    utc_now,
 )
 from backend.utilities.validation import validate_genomic_form_data
+from backend.utils import utc_now
 from backend.worker.models import OligoSeqProbeDesignerConfig
 from backend.worker.task_index import Callbacks, Tasks
 
@@ -120,30 +127,44 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     return dict(generated_regions)
 
 
-def write_run_to_DB(
-    pipeline_name: str,
+def init_run() -> ObjectId:
+    """Initializes a pending run in the database.
+
+    Notes:
+        This needs to be called before `enqueue_pipeline()` since the pipeline task
+        expects the run to already exist in the database.
+
+    Returns:
+        ObjectId -- The pipeline run's id
+    """
+    insert_result = db.runs.insert_one({"status": RunStatus.PENDING})
+    if not insert_result.acknowledged:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to create run in database")
+    return insert_result.inserted_id
+
+
+def update_run_with_context(
     run_id: ObjectId,
+    pipeline_name: str,
     context: RunContext,
     priority: int = CeleryConfig.task_default_priority,
     queue_position: tuple[int, int] = (0, 0),  # (high priority runs ahead, low priority runs ahead)
     pipeline_run_config: dict | None = None,
-):
+) -> None:
     data: dict = {
-        "_id": run_id,
-        "status": "pending",
-        "created_at": utc_now(),
+        "pipeline": pipeline_name,
         "session_id": context.session_id,
         "user_id": context.user_id,
-        "timestamp": context.timestamp,
         "output_path": serialize_path(context.output_path),
-        "pipeline": pipeline_name,
+        "created_at": context.timestamp,
+        "timestamp": context.timestamp,  # TODO: redundant with "created_at"
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
         "queue_position": queue_position,
     }
     if pipeline_run_config is not None:
         data["pipeline_run_config"] = pipeline_run_config
-        # create a pending run in the database
-    return db.runs.insert_one(data)
+
+    update_run_in_DB(run_id, data)
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
@@ -174,7 +195,6 @@ def enqueue_pipeline(
     generated_regions: dict[str, list[dict[str, Any]]],
     priority: int,
     context: RunContext,
-    enqueued_at: datetime,
     is_authenticated: bool = False,
 ) -> None:
     """
@@ -202,10 +222,7 @@ def enqueue_pipeline(
         soft_time_limit=soft_limit,
         time_limit=hard_limit,
         headers={
-            "pipeline": pipeline_name,
-            "user_id": context.user_id,
-            "session_id": context.session_id,
-            "enqueued_at": enqueued_at.isoformat(),
+            "enqueued_at": context.timestamp.isoformat(),
         },
     )
 
@@ -218,27 +235,20 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
     redis = Redis.from_url(Config.REDIS_URI)
 
-    # Initialize queue lengths if not present, then fetch and convert to int
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
-    redis.hsetnx(Config.REDIS_QUEUE_LENGTH_KEY, "high", 0)
-    default_priority_queue_length, high_priority_queue_length = map(
-        int, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
-    )
-    high_priority_ahead = high_priority_queue_length
+    high_priority_ahead = int(cast(str | None, redis.hget(REDIS_QUEUE_LENGTH_KEY, "high")) or 0)
+    default_priority_ahead = 0
 
     if priority == CeleryConfig.task_high_priority:
-        default_priority_ahead = 0
         # add one high priority run ahead for all low priority runs
         db.runs.update_many(
             {"status": "pending", "priority": "default"},
             {"$inc": {"queue_position.0": 1}},
         )
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
+        high_priority_ahead = cast(int, redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "high", 1))
     else:
-        default_priority_ahead = default_priority_queue_length
-        redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+        default_priority_ahead = cast(int, redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "default", 1))
 
-    return high_priority_ahead, default_priority_ahead
+    return max(high_priority_ahead - 1, 0), max(default_priority_ahead - 1, 0)
 
 
 def save_file(
@@ -250,7 +260,7 @@ def save_file(
             return saved_files[file]
 
         # Step 2: Check if the user actually selected a file (filename should not be empty)
-        if file.filename == "":
+        if file.filename is None or file.filename == "":
             abort(HTTPStatus.BAD_REQUEST, description="No selected file")
 
         # Step 3: Sanitize the filename to prevent path traversal attacks
@@ -386,10 +396,10 @@ def start_pipeline(pipeline_name: str):
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)
-
-    run_id = ObjectId()  # Generate a new run ID
     priority = get_task_priority(form_data)
-    enqueued_at = utc_now()
+
+    # Insert pending run into database
+    run_id = init_run()
 
     enqueue_pipeline(
         run_id,
@@ -398,25 +408,23 @@ def start_pipeline(pipeline_name: str):
         generated_regions,
         priority,
         context,
-        enqueued_at,
         current_user.is_authenticated,
     )
 
     high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
 
-    # mark run as enqueued in DB
     pipeline_run_config = (
         form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
     )
-    insert_result = write_run_to_DB(
-        pipeline_name,
+
+    # Add context to run since enqueuing was successful
+    update_run_with_context(
         run_id,
+        pipeline_name,
         context,
         priority,
         (high_priority_ahead, default_priority_ahead),
         pipeline_run_config,
     )
-    if not insert_result.acknowledged:
-        abort(HTTPStatus.NOT_FOUND, description="Failed to create run in database")
 
     return jsonify({"run_id": str(run_id), "queue_position": (high_priority_ahead, default_priority_ahead)})

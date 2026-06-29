@@ -14,3 +14,12 @@ const EXCLUDED_TABS = new Set(["schema_version"]);
 
 export const excludeHiddenTabs = (tabs: string[]) =>
     tabs.filter((tab) => !EXCLUDED_TABS.has(tab));
+
+// These errors are caused by unsupported JSON schema discriminator usage and are not helpful to users.
+// Remove this filter once discriminators in the forms no longer produce these errors alongside the informative ones.
+export const filterUninformativeErrors = (error: string) =>
+    ![
+        "must match exactly one schema in oneOf",
+        "must match a schema in anyOf",
+        "must be equal to constant",
+    ].includes(error);
