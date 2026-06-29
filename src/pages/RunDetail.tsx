@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router";
 import axios from "axios";
 import YAML from "js-yaml";
-import * as XLSX from "xlsx";
 import type {
     GenomicRegions,
     ProbeDetails,
@@ -25,7 +24,8 @@ import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
 import {
     BoxArrowUp,
-    CardList,
+    Download,
+    FileEarmark,
     FileEarmarkSpreadsheet,
     GearFill,
     Trash,
@@ -33,7 +33,11 @@ import {
 import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
-import type { Action } from "../components/ui/Header";
+import type {
+    Action,
+    FileDownloadAction,
+    FileDownloadEntry,
+} from "../components/ui/Header";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
@@ -42,13 +46,34 @@ import {
     downloadConfig,
 } from "../utils/runConfigHelper";
 import RunMetrics from "../components/RunMetrics";
+import { PIPELINE_CONFIG, type PipelineConfig } from "../pipelineConfig/config";
+import { downloadFileFactory } from "../utils/fileDownloadUtil";
 
-// Helper to extract all unique columns from an array of oligos
-function getAllOligoColumns(oligos: ProbeDetails[]): string[] {
-    const columns = new Set<string>();
-    oligos.forEach((o) => Object.keys(o).forEach((k) => columns.add(k)));
-    return Array.from(columns);
+interface RunDetailFileActionsProps {
+    actions: FileDownloadEntry[];
 }
+
+const RunDetailFileAction: React.FC<RunDetailFileActionsProps> = ({
+    actions,
+}) => {
+    return (
+        <Horizontal gap="md">
+            {actions.map((action) => (
+                <Button
+                    variant="outline-primary"
+                    title={action.label}
+                    onClick={downloadFileFactory(
+                        action.label,
+                        action.url,
+                        action.fileName
+                    )}
+                >
+                    {action.icon && <action.icon size={20} />} {action.label}
+                </Button>
+            ))}
+        </Horizontal>
+    );
+};
 
 interface LocationState {
     fromAdmin?: boolean;
@@ -219,121 +244,6 @@ const RunDetail = () => {
         [formatValueForExcel]
     );
 
-    // Download CSV for current oligoset only
-    const handleDownloadCSV = useCallback(() => {
-        // TODO: include all output fields in details
-        const oligos =
-            probes?.[selectedGene]?.[selectedOligoset]?.map((p) => p.details) ||
-            [];
-        if (oligos.length === 0) return;
-
-        const allColumns = getAllOligoColumns(oligos);
-        // Updated headers with Gene and Oligoset
-        const headers = ["Gene", "Oligoset", ...allColumns]
-            .map((col) => `"${col.replace(/_/g, " ")}"`)
-            .join(",");
-
-        // Add Gene and Oligoset to each row
-        const rows = oligos
-            .map((oligo) => {
-                const rowData = [
-                    selectedGene,
-                    selectedOligoset,
-                    ...allColumns.map((col) =>
-                        formatValue(oligo[col as keyof ProbeDetails])
-                    ),
-                ];
-
-                return rowData
-                    .map((value) => {
-                        if (
-                            typeof value === "string" &&
-                            (value.includes(",") || value.includes('"'))
-                        ) {
-                            return `"${value.replace(/"/g, '""')}"`;
-                        }
-                        return value;
-                    })
-                    .join(",");
-            })
-            .join("\n");
-
-        // Create CSV content
-        const csvContent = `${headers}\n${rows}`;
-
-        // Trigger download
-        const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${selectedGene}_${selectedOligoset}_oligos.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }, [probes, selectedGene, selectedOligoset, formatValue]);
-
-    // Download Excel file with each gene as a separate sheet
-    const handleDownloadExcel = useCallback(() => {
-        if (!probes) return;
-
-        const workbook = XLSX.utils.book_new();
-
-        // Iterate through all genes and create a sheet for each
-        Object.keys(probes).forEach((gene) => {
-            // Gather all oligos for this gene
-            const geneOligos: { oligoset: string; oligo: ProbeDetails }[] = [];
-            const oligosets = Object.keys(probes[gene] || {});
-
-            oligosets.forEach((oligoset) => {
-                const oligos =
-                    probes[gene][oligoset].map((p) => p.details) || [];
-                oligos.forEach((oligo) => {
-                    geneOligos.push({ oligoset, oligo });
-                });
-            });
-
-            const allColumns = getAllOligoColumns(
-                geneOligos.map((item) => item.oligo)
-            );
-            const headers = [
-                "Oligoset",
-                ...allColumns.map((col) => col.replace(/_/g, " ")),
-            ];
-
-            const geneData: (string | number)[][] = [];
-            geneData.push(headers);
-            geneOligos.forEach((item) => {
-                const row = [
-                    item.oligoset,
-                    ...allColumns.map((col) =>
-                        formatValueForExcel(
-                            item.oligo[col as keyof ProbeDetails]
-                        )
-                    ),
-                ];
-                geneData.push(row);
-            });
-
-            // Create worksheet for this gene
-            const worksheet = XLSX.utils.aoa_to_sheet(geneData);
-
-            // Sanitize sheet name (Excel has restrictions on sheet names)
-            const sanitizedGeneName = gene
-                .replace(/[\]\\/?*[\]]/g, "_")
-                .substring(0, 31);
-
-            XLSX.utils.book_append_sheet(
-                workbook,
-                worksheet,
-                sanitizedGeneName
-            );
-        });
-
-        // Write file
-        XLSX.writeFile(workbook, "all_genes_oligos.xlsx");
-    }, [probes, formatValueForExcel]);
-
     const handleUseSettings = useNavigateWithRunConfig(run, navigate);
 
     const handleExport = useCallback(async () => {
@@ -341,6 +251,49 @@ const RunDetail = () => {
     }, [run]);
 
     const fromAdmin = (location.state as LocationState)?.fromAdmin;
+
+    const fileActions = useMemo(() => {
+        if (!run) return;
+
+        const baseFileUrl = BACKEND_URL + `/api/runs/${run._id}/files/`;
+
+        const fileDownloads =
+            PIPELINE_CONFIG[run.pipeline as keyof PipelineConfig].fileDownloads;
+
+        if (!fileDownloads) return;
+
+        return {
+            type: "fileDownload",
+            label: "Download Files",
+            icon: Download,
+            fileDownloads: [
+                {
+                    label: "Oligo Table Excel",
+                    icon: FileEarmarkSpreadsheet,
+                    fileName: fileDownloads.excelFile,
+                    url: baseFileUrl + fileDownloads.excelFile,
+                },
+                {
+                    label: "Oligo Table Tsv",
+                    icon: FileEarmarkSpreadsheet,
+                    fileName: fileDownloads.probesTable,
+                    url: baseFileUrl + fileDownloads.probesTable,
+                },
+                {
+                    label: "Oligo Probes Order",
+                    icon: FileEarmark,
+                    fileName: fileDownloads.probesOrder,
+                    url: baseFileUrl + fileDownloads.probesOrder,
+                },
+                {
+                    label: "Oligo Probes",
+                    icon: FileEarmark,
+                    fileName: fileDownloads.probes,
+                    url: baseFileUrl + fileDownloads.probes,
+                },
+            ],
+        } as FileDownloadAction;
+    }, [run]);
 
     const actions = useMemo(() => {
         if (!run) return undefined;
@@ -351,22 +304,6 @@ const RunDetail = () => {
             variant: "outline-danger",
             icon: Trash,
             onClick: handleDelete,
-        };
-
-        const downloadExcelAction = {
-            type: "button",
-            label: "All Genes Excel",
-            variant: "outline-primary",
-            icon: FileEarmarkSpreadsheet,
-            onClick: handleDownloadExcel,
-        };
-
-        const downloadCSVAction = {
-            type: "button",
-            label: "Oligoset CSV",
-            variant: "outline-primary",
-            icon: CardList,
-            onClick: handleDownloadCSV,
         };
 
         const useSettingsAction = {
@@ -385,25 +322,31 @@ const RunDetail = () => {
             onClick: handleExport,
         };
 
+        const basicActions = [
+            useSettingsAction,
+            exportSettingsAction,
+            deleteAction,
+        ];
+
         if (probes) {
+            if (!fileActions) return basicActions;
+
             return [
                 useSettingsAction,
                 exportSettingsAction,
-                downloadExcelAction,
-                downloadCSVAction,
+                fileActions,
                 deleteAction,
             ];
         } else {
-            return [exportSettingsAction, useSettingsAction, deleteAction];
+            return basicActions;
         }
     }, [
         run,
         probes,
         handleDelete,
         handleUseSettings,
+        fileActions,
         handleExport,
-        handleDownloadCSV,
-        handleDownloadExcel,
     ]);
 
     return (
@@ -654,21 +597,11 @@ const RunDetail = () => {
                             <Divider />
 
                             <h2>File Downloads</h2>
-
-                            <Horizontal gap="md">
-                                <Button
-                                    variant="outline-primary"
-                                    onClick={handleDownloadExcel}
-                                >
-                                    <FileEarmarkSpreadsheet /> All Genes Excel
-                                </Button>
-                                <Button
-                                    variant="outline-primary"
-                                    onClick={handleDownloadCSV}
-                                >
-                                    <CardList /> Oligoset CSV
-                                </Button>
-                            </Horizontal>
+                            {fileActions && (
+                                <RunDetailFileAction
+                                    actions={fileActions.fileDownloads}
+                                />
+                            )}
                         </>
                     )}
                 </>
