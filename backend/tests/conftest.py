@@ -110,6 +110,14 @@ def mock_user_dir_exists(monkeypatch):
     monkeypatch.setattr("builtins.open", mock_open)
 
 
+@pytest.fixture(autouse=True)
+def bypass_concurrent_runs_limit(monkeypatch):
+    """Disable concurrent-run-limit enforcement during tests by default."""
+    monkeypatch.setattr(
+        "backend.routes.pipelines.enforce_concurrent_runs_limit", lambda *args, **kwargs: None
+    )
+
+
 @pytest.fixture
 def run_id(app):
     # Insert dummy run - needs app context for mongo to be initialized
