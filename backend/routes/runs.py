@@ -29,7 +29,6 @@ from backend.routes.route_helpers import (
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 from backend.utilities.typed_values import (
     deserialize_path,
-    path_for_display,
     safe_join_under,
     timestamp_to_iso,
 )
@@ -61,7 +60,6 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "pipeline": run.get("pipeline", "unknown"),
         "status": run.get("status", "unknown"),
         "timestamp": timestamp_to_iso(run.get("timestamp")),
-        "output_path": path_for_display(run.get("output_path")),
         "user_id": run.get("user_id", "unknown"),
         "priority": run.get("priority", "unknown"),
         "queue_position": run.get("queue_position", "unknown"),
@@ -122,9 +120,7 @@ def get_pipeline_runs():
         session_id = session.get("session_id")
         runs = list(db.runs.find({"session_id": session_id})) if session_id else []
 
-    formatted_runs = []
-    for run in runs:
-        formatted_runs.append(format_run(run))
+    formatted_runs = list(map(format_run, runs))
     return jsonify(formatted_runs), HTTPStatus.OK
 
 
@@ -170,6 +166,8 @@ def get_run_file(run_id: ObjectId, filename: str):
         2. Resolve the requested file path (with subdir support).
         3. Serve file with correct mimetype, or return error.
     """
+    ALLOWED_FILE_ENDINGS = (".yml", ".yaml", ".tsv", ".xlsx")
+
     # Auth or session check
     run = get_run_or_404(run_id, require_ownership=True)
 
@@ -186,12 +184,8 @@ def get_run_file(run_id: ObjectId, filename: str):
         abort(HTTPStatus.NOT_FOUND, description="File not found")
 
     # Return correct mimetype
-    if filename.endswith((".yml", ".yaml")):
-        return send_file(file_path, as_attachment=True)
-    elif filename.endswith((".txt", ".log")):
-        return send_file(file_path, mimetype="text/plain")
-    elif filename.endswith(".fna"):
-        return send_file(file_path, mimetype="application/octet-stream")
+    if filename.endswith(ALLOWED_FILE_ENDINGS):
+        return send_file(str(file_path), as_attachment=True)
     else:
         abort(HTTPStatus.BAD_REQUEST, description="Unsupported file type")
 
@@ -216,14 +210,6 @@ def get_run_config(run_id: ObjectId):
         abort(HTTPStatus.NOT_FOUND, description="No saved config for this run.")
 
     return jsonify(pipeline_run_config), HTTPStatus.OK
-
-
-def update_run_in_DB(run_id: ObjectId, data: dict[Any, Any]):
-    return db.runs.update_one({"_id": run_id}, {"$set": data})
-
-
-def update_run_status_in_DB(run_id: ObjectId, status: str):
-    return update_run_in_DB(run_id, {"status": status})
 
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/status", methods=["GET"])

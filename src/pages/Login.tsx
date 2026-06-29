@@ -31,8 +31,9 @@ const Login = () => {
 
     const sitekey = TURNSTILE_SITE_KEY;
 
-    // Get redirect URL from query params
+    // Get redirect URL and error message from query params
     const redirectTo = searchParams.get("redirect") || "/";
+    const errorFromQuery = searchParams.get("error");
 
     // Redirect if already logged in
     // This useEffect is necessary because navigate() cannot reliably be called during render.
@@ -43,10 +44,20 @@ const Login = () => {
         }
     }, [user, loading, navigate, redirectTo]);
 
+    useEffect(() => {
+        if (errorFromQuery) {
+            showToast({
+                title: "Login failed.",
+                content: errorFromQuery,
+                type: "danger",
+            });
+        }
+    }, [errorFromQuery]);
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         try {
-            const res = await axios.post(
+            await axios.post(
                 BACKEND_URL + "/login",
                 {
                     username,
@@ -58,7 +69,6 @@ const Login = () => {
             );
             turnstileRef.current?.reset();
 
-            console.log(res.data);
             showToast({
                 title: "Login successful!",
                 content: "You have been logged in successfully.",
@@ -71,34 +81,15 @@ const Login = () => {
             navigate(redirectTo);
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
-                switch (error.response?.status) {
-                    case 401: {
-                        showToast({
-                            title: "Invalid username or password.",
-                            content:
-                                "Please check your credentials and try again.",
-                            type: "danger",
-                        });
-                        break;
-                    }
-                    case 403: {
-                        showToast({
-                            title: "Verification failed.",
-                            content:
-                                " We couldn't verify that you are human. Please try again.",
-                            type: "danger",
-                        });
-                        break;
-                    }
-                    default:
-                        console.error(error);
-                        showToast({
-                            title: "Login failed.",
-                            content:
-                                "An error occurred during login. Please try again later.",
-                            type: "danger",
-                        });
-                }
+                const description: string | undefined =
+                    error.response?.data?.error;
+                showToast({
+                    title: "Login failed.",
+                    content:
+                        description ??
+                        "An error occurred during login. Please try again later.",
+                    type: "danger",
+                });
             }
         }
     };
