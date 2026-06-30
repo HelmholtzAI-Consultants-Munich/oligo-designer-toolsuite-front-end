@@ -29,7 +29,7 @@ export type OligoComponentDefinition =
  *
  * @param oligo The probe for which to collect the oligo components.
  * @param componentDefinitions The definitions of the oligo components, specifying how to extract each component from the probe.
- * @returns An array of OligoComponent object representing the collected oligo components.
+ * @returns An array of OligoComponent objects representing the collected oligo components.
  */
 export const collectComponents = (
     oligo: Probe,

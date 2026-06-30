@@ -1,3 +1,6 @@
+"""The GenomicRegionsFile is used to write information about genomic regions (input fasta files) and probes (result yaml file) to a single yaml file.
+The file is then used in the frontend to generate the visualization and to display probe information."""
+
 import logging
 import os
 from collections import defaultdict
@@ -208,8 +211,8 @@ class GenomicRegionsFile:
         Args:
             idx (str): Index of the record in the record_dict to process.
             fasta_parser (FastaParser): An instance of the ODT FastaParser to parse the fasta header.
-            record_dict (dict): Dictionary like object containing the sequence records for the given index.
-            regions (dict): Dictionary to populate with region information, grouped by gene and transcript.
+            record_dict (dict[str, SeqRecord]): Dictionary like object containing the sequence records for the given index.
+            regions (dict[str, dict[str, list[dict]]]): Dictionary to populate with region information, grouped by gene and transcript.
         """
         region_name, additional_info, coordinates = fasta_parser.parse_fasta_header(idx)
         gene = region_name.lstrip(">")
@@ -294,10 +297,10 @@ class GenomicRegionsFile:
         """Merges overlapping or contiguous regions of the same type and fills gaps between exons for a given transcript.
 
         Args:
-            processed_regions (dict): Dictionary containing processed regions.
+            processed_regions (dict[str, dict[str, list[dict]]]): Dictionary containing processed regions grouped by gene and transcript.
             gene (str): Name of the gene the transcript belongs to.
             transcript_id (str): Name of the transcript to process.
-            regions (dict): Dictionary containing regions to process and possibly merge.
+            regions (list[dict]): List of region dictionaries to process and possibly merge, which will then be written to the processed_regions dictionary.
         """
         # regions can not be empty, otherwise the transcript would not exist
         strand = regions[0]["strand"]
