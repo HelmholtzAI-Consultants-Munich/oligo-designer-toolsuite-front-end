@@ -1,3 +1,6 @@
+// Shared Playwright helpers: pipeline definitions, form-filling, and
+// run-submission utilities used by all e2e specs.
+
 import { expect, type Page } from "@playwright/test";
 import path from "node:path";
 
@@ -88,6 +91,7 @@ export type PipelineDefinition = {
 // Pipeline definitions (used by the smoke test)
 // ---------------------------------------------------------------------------
 
+/** Not included in {@link ALL_PIPELINES}; its full-run spec is untagged, so CI never runs it automatically. */
 export const SCRINSHOT_PIPELINE: PipelineDefinition = {
     route: "/pipelines/scrinshot",
     heading: /Scrinshot/i,
@@ -102,6 +106,7 @@ export const SCRINSHOT_PIPELINE: PipelineDefinition = {
     ],
 };
 
+/** The only pipeline currently included in {@link ALL_PIPELINES}. */
 export const OLIGOSEQ_PIPELINE: PipelineDefinition = {
     route: "/pipelines/oligoSeq",
     heading: /OligoSeq Probe Designer/i,
@@ -110,6 +115,7 @@ export const OLIGOSEQ_PIPELINE: PipelineDefinition = {
     representativeFieldChecks: [{ tab: /Target Probe/i, label: /Region Ids/i }],
 };
 
+/** Not included in {@link ALL_PIPELINES}; its full-run spec is untagged, so CI never runs it automatically. */
 export const MERFISH_PIPELINE: PipelineDefinition = {
     route: "/pipelines/merfish",
     heading: /MERFISH/i,
@@ -125,6 +131,7 @@ export const MERFISH_PIPELINE: PipelineDefinition = {
     ],
 };
 
+/** Not included in {@link ALL_PIPELINES}; its full-run spec is untagged, so CI never runs it automatically. */
 export const SEQFISH_PIPELINE: PipelineDefinition = {
     route: "/pipelines/seqfish",
     heading: /seqFISH/i,
@@ -140,6 +147,14 @@ export const SEQFISH_PIPELINE: PipelineDefinition = {
     ],
 };
 
+/**
+ * Pipelines checked by the `@smoke` test's page-render sweep.
+ *
+ * Note: Scrinshot, MERFISH, and seqFISH are commented out below, since only
+ * OligoSeq has pydantic integration yet. Their own full-run specs (02/04/05)
+ * still exist, but carry no `@smoke`/`@full` tag, so CI's tag-filtered runs
+ * never run them — they only run via a manual, untagged `playwright test`.
+ */
 // pipelines disabled for now, since only oligoseq has pydantic
 // integration yet
 // TODO: reintegrate these pipelines
@@ -168,6 +183,10 @@ export const openPipeline = async (
     ).toBeVisible();
 };
 
+/**
+ * Asserts a pipeline's expected tabs are present, then spot-checks one
+ * representative field per tab to catch form-schema regressions.
+ */
 export const expectPipelineFields = async (
     page: Page,
     pipeline: PipelineDefinition
@@ -186,6 +205,16 @@ export const expectPipelineFields = async (
 // Submission & consent
 // ---------------------------------------------------------------------------
 
+/**
+ * Submits the currently-open pipeline form and navigates to its run page.
+ *
+ * Handles the one-time Terms of Service consent checkbox if present, and
+ * retries the submit click once if the "Pipeline Enqueued" toast doesn't
+ * appear in time (the first click can be swallowed by the consent dialog
+ * mounting).
+ *
+ * @returns the created run's ID, extracted from the resulting URL
+ */
 export const submitPipelineAndOpenRun = async (page: Page) => {
     const submitButton = page
         .getByRole("button", { name: /Run Pipeline/i })
@@ -227,6 +256,10 @@ export const submitPipelineAndOpenRun = async (page: Page) => {
 const backendGet = (page: Page, apiPath: string) =>
     page.request.get(`${BACKEND_URL}${apiPath}`);
 
+/**
+ * Asserts here (not just in each caller) so a non-2xx response fails with
+ * the status/path instead of an opaque JSON-parse error further down.
+ */
 const backendGetOk = async (page: Page, apiPath: string) => {
     const res = await backendGet(page, apiPath);
     expect(
@@ -236,6 +269,10 @@ const backendGetOk = async (page: Page, apiPath: string) => {
     return res;
 };
 
+/**
+ * Fails fast on "failure" instead of letting the poll run out the clock,
+ * since a failed run will never reach "success".
+ */
 const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     return pollUntil({
         condition: async () => {
@@ -253,6 +290,10 @@ const pollRunState = async (page: Page, runId: string, timeoutMs: number) => {
     });
 };
 
+/**
+ * Run status flips to "success" before its output artifacts are
+ * necessarily written to disk, so this is polled separately.
+ */
 const pollGenomicRegionsFile = async (
     page: Page,
     runId: string,
@@ -272,6 +313,7 @@ const pollGenomicRegionsFile = async (
     });
 };
 
+/** Also waits for the genomic regions artifact to be downloadable — a `success` state alone doesn't guarantee it's ready. */
 export const waitForSuccessfulRun = async (
     page: Page,
     runId: string,
@@ -300,6 +342,14 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
 // ---------------------------------------------------------------------------
 // Form filling helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Opens the "Configure Genomic Regions" dialog for the given file field and
+ * fills it in. `SELECT_NAME_MAP` translates the caller's option keys to the
+ * dialog's actual combobox labels, since they differ (e.g. `taxon` -> "Taxon").
+ *
+ * @param fieldName - name attribute of the button that opens the dialog
+ */
 const setGenomicInput = async (
     page: Page,
     fieldName: string,
@@ -335,6 +385,8 @@ const setGenomicInput = async (
             continue;
         }
         if (key === "annotationRelease") {
+            // Annotation release options load asynchronously once taxon/species
+            // are selected; no loading indicator to wait on instead.
             await page.waitForTimeout(4000);
         }
         await page
@@ -350,6 +402,7 @@ const setGenomicInput = async (
         .click();
 };
 
+/** Opens the probe-database and reference-database genomic-region dialogs, in addition to the visible fields. */
 export const fillTargetProbeParameters = async (
     page: Page,
     options: {
@@ -436,6 +489,8 @@ export const fillConfig = async (
             .fill(options.primerInitialNumSequences);
     }
     if (options.setSizeMin || options.setSizeOpt) {
+        // Unlike the other config fields, set size lives under the Target
+        // Probe tab rather than Developer Settings.
         await clickTab(page, /Target Probe/i);
         if (options.setSizeMin) {
             await page.getByLabel(/Set Size Min/i).fill(options.setSizeMin);

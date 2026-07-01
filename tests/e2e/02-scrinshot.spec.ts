@@ -1,3 +1,7 @@
+// Scrinshot isn't in ALL_PIPELINES yet (pydantic integration pending). This
+// spec has no @smoke/@full tag, so CI's tag-filtered runs skip it too —
+// it only runs via a manual, untagged `playwright test`.
+
 import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,

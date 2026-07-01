@@ -1,3 +1,6 @@
+// @smoke @full: OligoSeq is the only pipeline with pydantic integration so
+// far, making this the one full pipeline run wired into @smoke.
+
 import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
