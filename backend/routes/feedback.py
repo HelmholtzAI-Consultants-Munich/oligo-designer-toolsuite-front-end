@@ -21,11 +21,27 @@ FEEDBACK_RATE_LIMIT = "10 per hour"
 
 
 def _feedback_rate_limit_key() -> str:
-    """Rate-limit feedback submissions per authenticated user."""
+    """Keys the rate limit by user rather than IP, since this endpoint
+    requires login anyway and per-IP limiting would unfairly throttle
+    multiple users behind the same NAT/proxy.
+
+    Returns:
+        str: rate-limit bucket key for the current user.
+    """
     return f"user:{current_user.get_id()}"
 
 
 def sanitize_feedback_message(raw_message: str) -> str:
+    """Strips HTML/control characters and normalizes Unicode before storage,
+    since feedback text is later rendered in the admin panel and must not be
+    able to inject markup or invisible/spoofing characters.
+
+    Args:
+        raw_message (str): the raw message submitted by the client.
+
+    Returns:
+        str: sanitized, storage-safe message.
+    """
     normalized = unicodedata.normalize("NFKC", raw_message)
     sanitized = bleach.clean(
         normalized,
@@ -47,13 +63,10 @@ def sanitize_feedback_message(raw_message: str) -> str:
     error_message="You have reached the feedback limit. Please wait before submitting again.",
 )
 def create_feedback():
-    """
-    Create a general feedback entry for logged-in users.
+    """Create a feedback entry for the current logged-in user.
 
-    Accepts a JSON payload with:
-    - message: Required feedback text
-    - metadata: Optional dict (e.g. path, page). Frontend often sends current path.
-    - token: Turnstile token for spam prevention
+    Returns:
+        flask.Response: the saved feedback entry.
     """
     data = request.get_json(silent=True) or {}
     message = sanitize_feedback_message(str(data.get("message") or ""))

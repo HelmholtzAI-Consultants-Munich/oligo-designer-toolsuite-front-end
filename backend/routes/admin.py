@@ -68,13 +68,15 @@ class BulkUpdateResponse(BulkOperationResponse):
 
 
 def is_admin(user):
-    """
-    Check if the current user has admin role.
+    """Re-checks the role against the database rather than trusting anything
+    cached on the Flask-Login user object, since role changes should take
+    effect immediately without waiting for re-login.
 
-    :param user: The current user object from Flask-Login
-    :type user: User
-    :returns: True if user has admin role, False otherwise
-    :rtype: bool
+    Args:
+        user: the current Flask-Login user (may be unauthenticated).
+
+    Returns:
+        bool: True only for an authenticated user whose stored role is "admin".
     """
     if not user or not user.is_authenticated:
         return False
@@ -87,13 +89,15 @@ def is_admin(user):
 
 
 def require_admin(f):
-    """
-    Decorator to require admin role for an endpoint.
+    """Kept separate from @login_required so routes can require authentication
+    without admin, or stack both when only admins should access an endpoint.
 
-    :param f: The route function to protect
-    :type f: function
-    :returns: Decorated function that checks admin role
-    :rtype: function
+    Args:
+        f: the view function to protect.
+
+    Returns:
+        the wrapped view, which aborts 403 before running f if the caller
+        isn't an admin.
     """
 
     def decorated_function(*args, **kwargs):
@@ -115,13 +119,12 @@ def _validate_legal_document_key(document_key: str) -> str:
 @login_required
 @require_admin
 def get_users():
-    """
-    Get all users (admin only).
+    """Joins in ban status per user so the admin panel can show/act on bans
+    without a separate round-trip per row.
 
-    Returns list of users in format compatible with Refine data provider.
-
-    :returns: JSON list of users
-    :rtype: flask.Response
+    Returns:
+        flask.Response: JSON list of users, formatted for the Refine data
+        provider, each annotated with banned/ban_id.
     """
     users = list(db.users.find({}, {"password": 0}))  # Exclude password
 
@@ -144,13 +147,13 @@ def get_users():
 @login_required
 @require_admin
 def get_user(user_id: ObjectId):
-    """
-    Get a single user by ID (admin only).
+    """Get a single user by ID (admin only).
 
-    :param user_id: The MongoDB ObjectId of the user
-    :type user_id: ObjectId
-    :returns: JSON user object
-    :rtype: flask.Response
+    Args:
+        user_id (ObjectId): the user to fetch.
+
+    Returns:
+        flask.Response: the user, formatted for the Refine data provider.
     """
     user = get_user_by_id_or_404(user_id, exclude_password=True)
     return jsonify(format_user(user)), HTTPStatus.OK
@@ -160,17 +163,15 @@ def get_user(user_id: ObjectId):
 @login_required
 @require_admin
 def update_user(user_id: ObjectId):
-    """
-    Update a user (admin only).
+    """Username updates are restricted to CLI-registered users (identified by
+    already having a username) since Helmholtz-AAI users' identity comes from
+    their helmholtz_sub, not a locally-editable username.
 
-    Allows updating username (for CLI users) and role fields.
+    Args:
+        user_id (ObjectId): the user to update.
 
-    :param user_id: The MongoDB ObjectId of the user
-    :type user_id: ObjectId
-    :request json username: Optional username (for CLI users only)
-    :request json role: Optional role ('user' or 'admin')
-    :returns: JSON updated user object
-    :rtype: flask.Response
+    Returns:
+        flask.Response: the updated user, formatted for the Refine data provider.
     """
     data = request.get_json() or {}
 
@@ -211,13 +212,13 @@ def update_user(user_id: ObjectId):
 @login_required
 @require_admin
 def delete_user(user_id: ObjectId):
-    """
-    Delete a user (admin only).
+    """Delete a user and their associated data (admin only).
 
-    :param user_id: The MongoDB ObjectId of the user
-    :type user_id: ObjectId
-    :returns: JSON confirmation message
-    :rtype: flask.Response
+    Args:
+        user_id (ObjectId): the user to delete.
+
+    Returns:
+        flask.Response: confirmation message.
     """
     # Prevent deleting yourself
     if str(current_user.id) == str(user_id):
@@ -237,6 +238,15 @@ def delete_user(user_id: ObjectId):
 @login_required
 @require_admin
 def ban_user(user_id: ObjectId):
+    """Bans by helmholtz_sub rather than user_id, so a banned person can't
+    just log in again and get a fresh account with full access.
+
+    Args:
+        user_id (ObjectId): the user to ban.
+
+    Returns:
+        flask.Response: the created ban record.
+    """
     if str(current_user.id) == str(user_id):
         abort(HTTPStatus.BAD_REQUEST, description="Cannot ban your own account")
 
@@ -249,6 +259,11 @@ def ban_user(user_id: ObjectId):
 @login_required
 @require_admin
 def get_banned_users():
+    """List banned users (admin only), most recently banned first.
+
+    Returns:
+        flask.Response: JSON list of ban records.
+    """
     bans = db[USER_DENYLIST_COLLECTION_KEY].find({}).sort("banned_at", -1)
     return jsonify([format_ban(ban) for ban in bans]), HTTPStatus.OK
 
@@ -257,6 +272,15 @@ def get_banned_users():
 @login_required
 @require_admin
 def unban_user(ban_id: ObjectId):
+    """Remove a ban (admin only).
+
+    Args:
+        ban_id (ObjectId): the ban record to remove — not a user_id, since a
+        ban is keyed on helmholtz_sub, not the (possibly recreated) account.
+
+    Returns:
+        flask.Response: confirmation message.
+    """
     if not remove_ban(ban_id):
         abort(HTTPStatus.NOT_FOUND, description="Ban not found")
     return jsonify({"message": "User unbanned successfully"}), HTTPStatus.OK
@@ -266,7 +290,11 @@ def unban_user(ban_id: ObjectId):
 @login_required
 @require_admin
 def get_legal_documents():
-    """List legal documents with the current version and history."""
+    """List legal documents with the current version and history.
+
+    Returns:
+        flask.Response: JSON list of legal document admin views.
+    """
     return jsonify(list_legal_document_admin_views()), HTTPStatus.OK
 
 
@@ -274,7 +302,15 @@ def get_legal_documents():
 @login_required
 @require_admin
 def get_legal_document_detail(document_key: str):
-    """Get the current admin view for a legal document."""
+    """Get the current admin view for a legal document.
+
+    Args:
+        document_key (str): which document (e.g. terms, privacy) — validated
+        against the supported set before lookup.
+
+    Returns:
+        flask.Response: the document's admin view.
+    """
     return jsonify(get_legal_document_admin_view(_validate_legal_document_key(document_key))), HTTPStatus.OK
 
 
@@ -282,7 +318,16 @@ def get_legal_document_detail(document_key: str):
 @login_required
 @require_admin
 def publish_admin_legal_document(document_key: str):
-    """Publish a new legal document version."""
+    """Publish a new legal document version. Publishing (rather than editing
+    in place) preserves the history so users can be told which version they
+    accepted.
+
+    Args:
+        document_key (str): which document to publish a new version of.
+
+    Returns:
+        flask.Response: the document's admin view after publishing.
+    """
     document_key = _validate_legal_document_key(document_key)
     data = request.get_json() or {}
 
@@ -301,13 +346,11 @@ def publish_admin_legal_document(document_key: str):
 @login_required
 @require_admin
 def get_pipeline_runs():
-    """
-    Get all pipeline runs (admin only).
+    """List all pipeline runs across all users (admin only) — unlike the
+    user-facing runs endpoint, this isn't scoped to the caller.
 
-    Returns list of all pipeline runs with user information.
-
-    :returns: JSON list of pipeline runs
-    :rtype: flask.Response
+    Returns:
+        flask.Response: JSON list of pipeline runs, newest first.
     """
     # Get all runs, sorted by created_at descending (newest first)
     runs = list(db.runs.find({}).sort("created_at", -1))
@@ -322,16 +365,15 @@ def get_pipeline_runs():
 @login_required
 @require_admin
 def update_pipeline_status(run_id: ObjectId):
-    """
-    Update a pipeline run status (admin only).
+    """Lets an admin manually correct a run's status (e.g. force-fail a stuck
+    run) without needing direct database access.
 
-    Allows updating the status field of a pipeline run.
+    Args:
+        run_id (ObjectId): the run to update — checked with
+        require_ownership=False since admins can touch any user's run.
 
-    :param run_id: The MongoDB ObjectId of the pipeline run
-    :type run_id: ObjectId
-    :request json status: The new status value
-    :returns: JSON updated pipeline run object
-    :rtype: flask.Response
+    Returns:
+        flask.Response: the updated run.
     """
     data = request.get_json() or {}
 
@@ -367,15 +409,14 @@ def update_pipeline_status(run_id: ObjectId):
 @login_required
 @require_admin
 def delete_pipeline_run(run_id: ObjectId):
-    """
-    Delete a pipeline run and its associated output files (admin only).
+    """Delete any user's pipeline run and its output files (admin only) —
+    skips the ownership check that the user-facing delete endpoint enforces.
 
-    Removes output files/folders from disk and deletes the corresponding database entry.
+    Args:
+        run_id (ObjectId): the run to delete.
 
-    :param run_id: The MongoDB ObjectId of the pipeline run
-    :type run_id: ObjectId
-    :returns: JSON confirmation message
-    :rtype: flask.Response
+    Returns:
+        flask.Response: confirmation message.
     """
     # Admin can delete any run - use shared deletion helper
     delete_pipeline_run_files_and_db(db, run_id)
@@ -387,16 +428,12 @@ def delete_pipeline_run(run_id: ObjectId):
 @login_required
 @require_admin
 def get_dashboard_stats():
-    """
-    Get dashboard statistics (admin only).
+    """Pre-aggregates counts server-side so the admin dashboard doesn't have
+    to pull full user/run collections just to show totals.
 
-    Returns aggregated statistics for the admin dashboard including:
-    - Total users count
-    - Admin vs regular user breakdown
-    - Pipeline runs by status
-
-    :returns: JSON object with dashboard statistics
-    :rtype: flask.Response
+    Returns:
+        flask.Response: JSON with user counts (total/admin/regular) and
+        pipeline run counts (total/by_status).
     """
     # User statistics
     total_users = db.users.count_documents({})
@@ -433,13 +470,10 @@ def get_dashboard_stats():
 @login_required
 @require_admin
 def get_feedback():
-    """
-    Get all feedback entries (admin only).
+    """List all user feedback (admin only), newest first.
 
-    Returns list of feedback documents with optional user information.
-
-    :returns: JSON list of feedback entries
-    :rtype: flask.Response
+    Returns:
+        flask.Response: JSON list of feedback entries.
     """
     feedback_cursor = db.feedback.find({}).sort("created_at", -1)
     feedback_entries = list(feedback_cursor)
@@ -453,14 +487,12 @@ def get_feedback():
 @login_required
 @require_admin
 def bulk_delete_users():
-    """
-    Bulk delete users (admin only).
+    """Silently skips (rather than failing) the caller's own ID and any
+    invalid IDs, so one bad ID in a batch doesn't block deleting the rest.
 
-    Deletes multiple users in a single operation. Prevents self-deletion.
-
-    :request json user_ids: Array of user IDs to delete
-    :returns: JSON object with deletion results
-    :rtype: flask.Response
+    Returns:
+        flask.Response: deletion results, including which IDs were skipped
+        or invalid.
     """
     data = request.get_json() or {}
     user_ids: list[str] = validate_id_array(data, "user_ids")
@@ -511,15 +543,13 @@ def bulk_delete_users():
 @login_required
 @require_admin
 def bulk_update_user_role():
-    """
-    Bulk update user roles (admin only).
+    """Silently skips the caller's own ID when demoting to "user", since an
+    admin locking themselves out of the admin panel would need another admin
+    to fix — better to just exclude them from the batch.
 
-    Updates the role of multiple users. Prevents self-demotion from admin.
-
-    :request json user_ids: Array of user IDs to update
-    :request json role: New role ('user' or 'admin')
-    :returns: JSON object with update results
-    :rtype: flask.Response
+    Returns:
+        flask.Response: update results, including which IDs were skipped
+        or invalid.
     """
     data = request.get_json() or {}
     user_ids = validate_id_array(data, "user_ids")
@@ -574,15 +604,12 @@ def bulk_update_user_role():
 @login_required
 @require_admin
 def bulk_delete_pipeline_runs():
-    """
-    Bulk delete pipeline runs (admin only).
+    """Reports partial failures per-run instead of aborting the whole batch,
+    since one run's files being unreachable on disk shouldn't block deleting
+    the rest.
 
-    Deletes multiple pipeline runs and their associated output files.
-    Handles partial failures gracefully.
-
-    :request json run_ids: Array of run IDs to delete
-    :returns: JSON object with deletion results
-    :rtype: flask.Response
+    Returns:
+        flask.Response: deletion results, including any per-run failures.
     """
     data = request.get_json() or {}
     run_ids = validate_id_array(data, "run_ids")
@@ -619,15 +646,11 @@ def bulk_delete_pipeline_runs():
 @login_required
 @require_admin
 def bulk_update_pipeline_status():
-    """
-    Bulk update pipeline run status (admin only).
+    """Bulk equivalent of update_pipeline_status, for correcting many stuck
+    runs at once instead of one at a time.
 
-    Updates the status of multiple pipeline runs.
-
-    :request json run_ids: Array of run IDs to update
-    :request json status: New pipeline run status
-    :returns: JSON object with update results
-    :rtype: flask.Response
+    Returns:
+        flask.Response: update results, including any invalid IDs.
     """
     data = request.get_json() or {}
     run_ids = validate_id_array(data, "run_ids")
@@ -669,6 +692,12 @@ def bulk_update_pipeline_status():
 @login_required
 @require_admin
 def get_monthly_reports():
+    """A single report if year/month are given, otherwise the full history —
+    the admin panel uses both: a list view and a detail view for one month.
+
+    Returns:
+        flask.Response: one report, or a list of all reports (newest first).
+    """
     year = request.args.get("year", type=int)
     month = request.args.get("month", type=int)
 
@@ -697,6 +726,15 @@ def delete_monthly_report(report_id):
 @login_required
 @require_admin
 def trigger_monthly_report():
+    """Dispatches report generation to Celery rather than running it inline,
+    since aggregating a month of data shouldn't block the request. Omitting
+    year/month regenerates the most recent report (the common case);
+    specifying both lets an admin backfill or redo a specific month, but
+    never the current/future month since it isn't finished yet.
+
+    Returns:
+        flask.Response: confirmation that generation was queued.
+    """
     data = request.get_json(silent=True) or {}
     year = data.get("year")
     month = data.get("month")

@@ -13,29 +13,41 @@ from werkzeug.exceptions import HTTPException
 
 
 def register_error_handlers(app: Flask):
-    """
-    Register error handlers on the Flask application.
-
-    This function registers handlers for:
-    - HTTPException (from Flask's abort() function) -- returns the description
-      as a user-facing message, with special formatting for genomic endpoints.
-    - Catch-all Exception -- logs full details server-side and returns a
-      generic 500 message.
+    """Centralizes error responses so every abort()/unhandled exception
+    always returns consistent JSON, instead of each route having to format
+    its own error response or risk leaking a stack trace to the client.
 
     Args:
-        app: The Flask application instance
+        app (Flask): the Flask application instance.
     """
 
     @app.errorhandler(HTTPException)
     def handle_http_exception(error: HTTPException):
-        """Handle Flask HTTPException (from abort())."""
+        """Handle Flask HTTPException (from abort()).
+
+        Args:
+            error (HTTPException): carries the description passed to abort(),
+            which is safe to show the user (unlike a raw exception message).
+
+        Returns:
+            flask.Response: JSON error with the original status code.
+        """
         message = error.description or "Something went wrong."
         status_code = error.code or HTTPStatus.INTERNAL_SERVER_ERROR
         return jsonify({"error": message}), status_code
 
     @app.errorhandler(Exception)
     def handle_generic_exception(error: Exception):
-        """Catch-all handler for any unhandled exceptions."""
+        """Catch-all for anything not raised via abort(). Logs the real
+        exception server-side but returns a generic message to the client,
+        since an unhandled exception's message could expose internals.
+
+        Args:
+            error (Exception): the unhandled exception.
+
+        Returns:
+            flask.Response: generic JSON 500 error.
+        """
         current_app.logger.error(
             f"Unhandled exception: {type(error).__name__}: {error!s}",
             exc_info=True,

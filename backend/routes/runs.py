@@ -37,7 +37,17 @@ runs_bp = Blueprint("runs", __name__)
 
 
 def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Return run metrics formatted for API responses."""
+    """Only exposes fields relevant to the frontend and converts timestamps
+    to ISO strings, so raw internal metric storage doesn't leak into the API.
+
+    Args:
+        metrics (dict[str, Any] | None): raw metrics dict from the run
+        document, or None for runs that don't have metrics yet.
+
+    Returns:
+        dict[str, Any] | None: formatted metrics, or None if there's nothing
+        to show (so callers can omit the key entirely).
+    """
     if not isinstance(metrics, dict):
         return None
 
@@ -54,7 +64,16 @@ def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
 
 
 def format_run(run: dict[Any, Any]) -> dict[str, Any]:
-    """Return run payload formatted for API responses."""
+    """Only includes error_message for terminal failure states, so a
+    successful/in-progress run's response doesn't carry a stale leftover
+    error from an earlier attempt.
+
+    Args:
+        run (dict[Any, Any]): the raw run document from MongoDB.
+
+    Returns:
+        dict[str, Any]: run payload formatted for the frontend.
+    """
     formatted = {
         "_id": str(run["_id"]),
         "pipeline": run.get("pipeline", "unknown"),
@@ -75,20 +94,14 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>", methods=["DELETE"])
 def delete_run(run_id: ObjectId):
-    """
-    Delete a pipeline run and its associated output files.
+    """Delete a pipeline run's output files and database entry.
 
-    Only allows deletion if the run belongs to the current authenticated user.
-    Removes output files/folders from disk and deletes the corresponding database entry.
+    Args:
+        run_id (ObjectId): the run to delete — ownership is enforced so users
+        can only delete their own runs.
 
-    :param run_id: The ObjectId of the run to delete.
-    :type run_id: ObjectId
-    :returns: JSON message with success or error.
-    :rtype: flask.Response
-
-    Workflow:
-        1. Verify ownership (user_id or session_id).
-        2. Use shared helper to delete files and database entry.
+    Returns:
+        flask.Response: confirmation message.
     """
     # Check ownership first (users can only delete their own runs)
     get_run_or_404(run_id, require_ownership=True)
@@ -101,18 +114,13 @@ def delete_run(run_id: ObjectId):
 
 @runs_bp.route("/api/runs", methods=["GET"])
 def get_pipeline_runs():
-    """
-    List all pipeline runs for the current user or anonymous session.
+    """List runs for the current identity — user_id if authenticated,
+    otherwise the anonymous session_id — so each visitor only ever sees
+    their own runs.
 
-    Authenticated users see their runs; anonymous users see runs for their session_id.
-
-    :returns: List of run documents, formatted for the frontend.
-    :rtype: flask.Response
-
-    Workflow:
-        1. Check if user is authenticated.
-        2. Query DB for runs by user_id or session_id.
-        3. Format and return run info for each run.
+    Returns:
+        flask.Response: JSON list of the caller's runs, formatted for the
+        frontend.
     """
     if current_user.is_authenticated:
         runs = list(db.runs.find({"user_id": str(current_user.id)}))
@@ -126,19 +134,14 @@ def get_pipeline_runs():
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>", methods=["GET"])
 def get_pipeline_run(run_id: ObjectId):
-    """
-    Retrieve details of a specific pipeline run.
+    """Get details of a specific pipeline run.
 
-    Checks user/session authorization for the run.
+    Args:
+        run_id (ObjectId): the run to fetch — ownership is enforced so users
+        can only view their own runs.
 
-    :param run_id: The ObjectId of the run.
-    :type run_id: ObjectId
-    :returns: Run document or JSON error.
-    :rtype: flask.Response
-
-    Workflow:
-        1. Fetch run for user/session.
-        2. Return run details or error if not found.
+    Returns:
+        flask.Response: the run, formatted for the frontend.
     """
     # Auth or session check
     run = get_run_or_404(run_id, require_ownership=True)
@@ -148,23 +151,19 @@ def get_pipeline_run(run_id: ObjectId):
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/files/<path:filename>", methods=["GET"])
 def get_run_file(run_id: ObjectId, filename: str):
-    """
-    Download a file for a specific pipeline run.
+    """Download an output file for a run. Only allows a fixed extension
+    allowlist, and resolves the path with safe_join_under, since filename
+    comes straight from the URL and must not be able to escape the run's
+    output directory (path traversal).
 
-    Checks user/session authorization for the run. Supports nested files (e.g., annotation/ subdirectory).
-    Detects mimetype for common bioinformatics file types.
+    Args:
+        run_id (ObjectId): the run whose output directory to serve from —
+        ownership is enforced.
+        filename (str): possibly-nested path relative to the run's output
+        directory (e.g. "annotation/example.fna").
 
-    :param run_id: The ObjectId of the run.
-    :type run_id: ObjectId
-    :param filename: The (possibly nested) file path relative to the run's output directory.
-    :type filename: str
-    :returns: File stream or JSON error.
-    :rtype: flask.Response
-
-    Workflow:
-        1. Fetch run for user/session.
-        2. Resolve the requested file path (with subdir support).
-        3. Serve file with correct mimetype, or return error.
+    Returns:
+        flask.Response: the file as an attachment.
     """
     ALLOWED_FILE_ENDINGS = (".yml", ".yaml", ".tsv", ".xlsx")
 
@@ -192,16 +191,16 @@ def get_run_file(run_id: ObjectId, filename: str):
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/config", methods=["GET"])
 def get_run_config(run_id: ObjectId):
-    """
-    Return the stored UI config for a specific pipeline run.
+    """Lets the frontend re-populate a form from a past run (e.g. "rerun with
+    same settings"). 404s for older runs that predate this feature, since
+    there's no config to return for them.
 
-    The config is a PipelineConfigExport JSON object saved when the run was started.
-    Older runs that pre-date this feature will return 404.
+    Args:
+        run_id (ObjectId): the run whose saved config to fetch — ownership
+        is enforced.
 
-    :param run_id: The ObjectId of the run.
-    :type run_id: ObjectId
-    :returns: PipelineConfigExport JSON or 404.
-    :rtype: flask.Response
+    Returns:
+        flask.Response: the saved PipelineConfigExport JSON.
     """
     run = get_run_or_404(run_id, require_ownership=True)
 
@@ -214,16 +213,14 @@ def get_run_config(run_id: ObjectId):
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/status", methods=["GET"])
 def get_run_status(run_id: ObjectId):
-    """
-    Return status of a specific pipeline run.
+    """Lightweight endpoint for the frontend to poll while a run is in
+    progress, without pulling the full run document each time.
 
-    Queries the Celery result backend for the current state of the run.
-    Unpacks results and updates the database if the state changed.
+    Args:
+        run_id (ObjectId): the run to check — ownership is enforced.
 
-    :param run_id: The ObjectId of the run.
-    :type run_id: ObjectId
-    :returns: Run status or JSON error.
-    :rtype: flask.Response
+    Returns:
+        flask.Response: the run's current status.
     """
     run = get_run_or_404(run_id)
 
