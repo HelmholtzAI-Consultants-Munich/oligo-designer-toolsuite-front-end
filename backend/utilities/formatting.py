@@ -1,3 +1,10 @@
+"""
+Converts raw MongoDB documents into the JSON shapes the frontend/Refine
+data provider expects (renaming _id to id, formatting timestamps,
+enriching with looked-up user info) so route handlers don't each
+reimplement this shaping themselves.
+"""
+
 from bson import ObjectId
 
 from backend.routes.route_helpers import find_user_by_id
@@ -5,15 +12,15 @@ from backend.utilities.typed_values import path_for_display, timestamp_for_displ
 
 
 def format_user(user):
-    """
-    Format a user document for API response.
+    """Derives created_at from the ObjectId's embedded generation time rather
+    than a stored field, since user documents don't otherwise track when
+    they were created.
 
-    Converts MongoDB user document to JSON-serializable format.
+    Arguments:
+        user {dict} -- the raw MongoDB user document.
 
-    :param user: The user document from MongoDB
-    :type user: dict
-    :returns: Formatted user dictionary
-    :rtype: dict
+    Returns:
+        dict -- user formatted for API responses.
     """
     return {
         "id": str(user["_id"]),
@@ -29,15 +36,15 @@ def format_user(user):
 
 
 def format_pipeline_run(run):
-    """
-    Format a pipeline run document for API response.
+    """Looks up the owning user to show a human-readable identifier (admin
+    panel shouldn't just show a raw user_id); swallows lookup failures so a
+    run still displays even if its user was since deleted.
 
-    Converts MongoDB document to JSON-serializable format and includes user information.
+    Arguments:
+        run {dict} -- the raw pipeline run document from MongoDB.
 
-    :param run: The pipeline run document from MongoDB
-    :type run: dict
-    :returns: Formatted pipeline run dictionary
-    :rtype: dict
+    Returns:
+        dict -- run formatted for API responses.
     """
     user_id = run.get("user_id")
     user_info = None
@@ -68,16 +75,14 @@ def format_pipeline_run(run):
 
 
 def format_feedback(feedback):
-    """
-    Format a feedback document for API response.
+    """Looks up the submitting user for the admin panel; swallows lookup
+    failures so feedback still displays even if its user was since deleted.
 
-    Converts MongoDB feedback document to JSON-serializable format and
-    optionally includes basic user information.
+    Arguments:
+        feedback {dict} -- the raw feedback document from MongoDB.
 
-    :param feedback: The feedback document from MongoDB
-    :type feedback: dict
-    :returns: Formatted feedback dictionary
-    :rtype: dict
+    Returns:
+        dict -- feedback formatted for API responses.
     """
     user_id = feedback.get("user_id")
     user_info = None
@@ -108,6 +113,16 @@ def format_feedback(feedback):
 
 
 def format_monthly_report(report):
+    """Renames _id to id since the frontend/Refine data provider expects id,
+    and pre-formats the timestamp so the frontend doesn't need to parse
+    MongoDB's native datetime.
+
+    Arguments:
+        report {dict} -- the raw monthly report document from MongoDB.
+
+    Returns:
+        dict -- report formatted for the frontend.
+    """
     return {
         "id": report["_id"],
         "year": report["year"],

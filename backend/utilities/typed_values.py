@@ -1,3 +1,10 @@
+"""
+Safe conversions between Python/pathlib values and the plain strings/dicts
+that MongoDB and JSON APIs can actually store or transmit — centralized so
+every route/worker serializes paths, timestamps, and user-supplied
+paths/URLs the same, safe way instead of reimplementing the edge cases.
+"""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,7 +18,16 @@ PATH_STORAGE_KIND = "pathlib.Path/v1"
 
 
 def serialize_path(path: Path) -> dict[str, Any]:
-    """Serialize a pathlib.Path to a structured Mongo-safe representation."""
+    """MongoDB can't store a Path object directly. Stored as a list of parts
+    (not a plain string) plus a "kind" tag, so deserialize_path can validate
+    the shape and reconstruct it safely rather than trusting an arbitrary string.
+
+    Arguments:
+        path {Path} -- the path to store.
+
+    Returns:
+        dict[str, Any] -- Mongo-safe representation of the path.
+    """
     return {
         "kind": PATH_STORAGE_KIND,
         "parts": list(path.parts),
@@ -19,7 +35,18 @@ def serialize_path(path: Path) -> dict[str, Any]:
 
 
 def deserialize_path(path_value: dict[str, Any] | None) -> Path | None:
-    """Deserialize a structured path representation."""
+    """Validates the shape/kind before rebuilding a Path, since path_value
+    comes from the database and could be missing, malformed, or from an
+    older/different storage format — returns None instead of raising so
+    callers can treat "no usable path" as a normal case.
+
+    Arguments:
+        path_value {dict[str, Any] | None} -- stored path representation to
+        deserialize, as produced by serialize_path.
+
+    Returns:
+        Path | None -- the reconstructed path, or None if it isn't valid.
+    """
     if not isinstance(path_value, dict):
         return None
     if path_value.get("kind") != PATH_STORAGE_KIND:
@@ -33,20 +60,52 @@ def deserialize_path(path_value: dict[str, Any] | None) -> Path | None:
 
 
 def path_for_display(path_value: dict[str, Any] | None) -> str:
-    """Convert a structured path representation to string for API output."""
+    """Returns an empty string rather than None for invalid/missing paths,
+    since API responses should have a consistent string type for the
+    frontend to render, not sometimes null.
+
+    Arguments:
+        path_value {dict[str, Any] | None} -- stored path representation.
+
+    Returns:
+        str -- the path as a string, or "" if there's nothing valid to show.
+    """
     path = deserialize_path(path_value)
     return str(path) if path else ""
 
 
 def timestamp_for_display(value: datetime | None, separator: str = " ") -> str:
-    """Format a datetime for display."""
+    """Deliberately avoids colons (unlike ISO format), since callers use
+    this both for human-readable display and for filename-safe strings, and
+    colons aren't valid in filenames on some platforms.
+
+    Arguments:
+        value {datetime | None} -- the timestamp to format.
+
+    Keyword Arguments:
+        separator {str} -- what to put between date and time; callers pass
+        "_" when the result needs to be filename-safe. (default: {" "})
+
+    Returns:
+        str -- formatted timestamp, or "" if value is None.
+    """
     if value is None:
         return ""
     return value.strftime(f"%Y-%m-%d{separator}%H-%M-%S")
 
 
 def timestamp_to_iso(value: datetime | None) -> str:
-    """Convert supported timestamp values to ISO format for API output."""
+    """Assumes UTC for naive datetimes, since older records were stored
+    before the app consistently attached timezone info — without this,
+    those timestamps would serialize without a UTC offset and could be
+    misread as local time by the frontend.
+
+    Arguments:
+        value {datetime | None} -- the timestamp to format.
+
+    Returns:
+        str -- ISO 8601 timestamp, or "" if value is None.
+    """
     timestamp = value
     if timestamp is not None:
         if timestamp.tzinfo is None:
@@ -57,7 +116,18 @@ def timestamp_to_iso(value: datetime | None) -> str:
 
 
 def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
-    """Safely join user-provided file names under a base directory."""
+    """Re-checks the resolved path is still under base_dir even after
+    safe_join, since requested_path comes straight from the URL and must
+    not be able to escape the run's output directory via traversal
+    sequences or symlinks (e.g. "../../etc/passwd").
+
+    Arguments:
+        base_dir {Path} -- the directory the result must stay under.
+        requested_path {str} -- user-supplied, possibly-nested file path.
+
+    Returns:
+        Path | None -- the resolved path, or None if it's invalid or escapes base_dir.
+    """
     joined = safe_join(str(base_dir), requested_path)
     if joined is None:
         return None
@@ -72,7 +142,17 @@ def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
 
 
 def sanitize_relative_redirect_path(raw_url: str | None) -> str | None:
-    """Allow only relative frontend redirect paths and normalize them."""
+    """Rejects anything with a scheme/host or ".." segments, so the OAuth
+    redirect parameter can't be used for an open redirect to an external
+    site or to escape the frontend's own path space.
+
+    Arguments:
+        raw_url {str | None} -- the redirect target as submitted by the client.
+
+    Returns:
+        str | None -- a normalized, same-origin relative path, or None if
+        raw_url isn't a safe relative path.
+    """
     if raw_url is None:
         return None
 
@@ -93,7 +173,18 @@ def sanitize_relative_redirect_path(raw_url: str | None) -> str | None:
 
 
 def parse_http_url(url_value: str | None) -> SplitResult | None:
-    """Parse and validate HTTP(S) URL values."""
+    """Used to validate configured URLs (e.g. frontend URL, OAuth revocation
+    endpoint) at the point they're read, so a misconfigured setting fails
+    with a clear error immediately instead of surfacing as a confusing
+    failure later when actually making the request.
+
+    Arguments:
+        url_value {str | None} -- the URL to validate.
+
+    Returns:
+        SplitResult | None -- the parsed URL, or None if it isn't a valid
+        http(s) URL with a host.
+    """
     if not url_value:
         return None
 

@@ -1,3 +1,8 @@
+"""This file contains functions for checking and recording whether a user or
+anonymous session has accepted the current terms version, and for gating
+pipeline submission on that acceptance.
+"""
+
 from http import HTTPStatus
 
 from flask import abort
@@ -8,6 +13,21 @@ from backend.utils import utc_now
 
 
 def _terms_acceptance_query(user_id: str | None = None, session_id: str | None = None) -> dict[str, str]:
+    """Shared by every acceptance lookup/write so authenticated and anonymous
+    identities are always scoped the same way, and callers can't
+    accidentally query/insert an acceptance record tied to neither.
+
+    Keyword Arguments:
+        user_id {str | None} -- set for authenticated callers. (default: {None})
+        session_id {str | None} -- set for anonymous callers. (default: {None})
+
+    Raises:
+        ValueError: if neither id is given, since an acceptance record must
+        always be attributable to someone.
+
+    Returns:
+        dict[str, str] -- query/filter scoped to whichever id was provided.
+    """
     if user_id:
         return {"user_id": user_id}
     if session_id:
@@ -16,10 +36,28 @@ def _terms_acceptance_query(user_id: str | None = None, session_id: str | None =
 
 
 def get_current_terms_version() -> str:
+    """Reads the version from the published document rather than a cached
+    constant, so a newly published terms update takes effect immediately.
+
+    Returns:
+        str -- the version identifier of the currently published terms.
+    """
     return get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
 
 
 def get_latest_terms_acceptance(user_id: str | None = None, session_id: str | None = None) -> dict | None:
+    """Sorted by timestamp descending, since a user may have accepted
+    multiple terms versions over time and only the most recent one
+    determines whether they're currently compliant.
+
+    Keyword Arguments:
+        user_id {str | None} -- set for authenticated callers. (default: {None})
+        session_id {str | None} -- set for anonymous callers. (default: {None})
+
+    Returns:
+        dict | None -- the most recent acceptance record, or None if this
+        identity has never accepted any terms version.
+    """
     return db.legal_acceptances.find_one(
         _terms_acceptance_query(user_id=user_id, session_id=session_id),
         sort=[("timestamp", -1)],
@@ -27,11 +65,33 @@ def get_latest_terms_acceptance(user_id: str | None = None, session_id: str | No
 
 
 def has_current_terms_acceptance(user_id: str | None = None, session_id: str | None = None) -> bool:
+    """Compares against the *current* published version, not just "has ever
+    accepted something", since accepting an older version doesn't satisfy a
+    later terms update.
+
+    Keyword Arguments:
+        user_id {str | None} -- set for authenticated callers. (default: {None})
+        session_id {str | None} -- set for anonymous callers. (default: {None})
+
+    Returns:
+        bool -- True only if the latest acceptance matches the current terms version.
+    """
     acceptance = get_latest_terms_acceptance(user_id=user_id, session_id=session_id)
     return bool(acceptance and acceptance.get("terms_version") == get_current_terms_version())
 
 
 def record_terms_acceptance(user_id: str | None = None, session_id: str | None = None) -> dict:
+    """Returns the existing record instead of inserting a duplicate if the
+    caller already accepted the current version, since re-accepting
+    shouldn't create redundant acceptance rows every time this is called.
+
+    Keyword Arguments:
+        user_id {str | None} -- set for authenticated callers. (default: {None})
+        session_id {str | None} -- set for anonymous callers. (default: {None})
+
+    Returns:
+        dict -- the existing or newly created acceptance record.
+    """
     existing_acceptance = get_latest_terms_acceptance(user_id=user_id, session_id=session_id)
     current_version = get_current_terms_version()
 
@@ -50,6 +110,14 @@ def record_terms_acceptance(user_id: str | None = None, session_id: str | None =
 
 
 def require_current_terms_acceptance(user_id: str | None = None, session_id: str | None = None) -> None:
+    """Gate for pipeline submission: aborts instead of returning a bool, so
+    every call site enforces acceptance the same way rather than each
+    caller having to remember to check and abort itself.
+
+    Keyword Arguments:
+        user_id {str | None} -- set for authenticated callers. (default: {None})
+        session_id {str | None} -- set for anonymous callers. (default: {None})
+    """
     if has_current_terms_acceptance(user_id=user_id, session_id=session_id):
         return
 

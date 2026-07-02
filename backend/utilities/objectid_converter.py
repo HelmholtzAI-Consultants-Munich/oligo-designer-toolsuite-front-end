@@ -1,3 +1,9 @@
+"""
+Flask URL converter for ObjectId route params (e.g. <ObjectId:run_id>), so
+malformed ids 400 automatically at routing time instead of every handler
+having to catch bson's InvalidId itself.
+"""
+
 import bson
 from werkzeug.exceptions import BadRequest
 from werkzeug.routing import BaseConverter

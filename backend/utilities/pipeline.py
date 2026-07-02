@@ -1,3 +1,10 @@
+"""
+Pipeline-run mechanics shared across routes and workers: splitting a
+multi-region form into single-region forms, computing timeouts, and
+deleting a run's files/database entry — centralized here so single and
+bulk deletion (and single vs. batched region generation) stay consistent.
+"""
+
 import copy
 import logging
 import shutil
@@ -14,12 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
-    """
-    Generate separate forms where each form has only one genomic region set to "true",
-    and all others set to "false".
+    """Splits a form into one variant per selected region, since the region
+    generator task only knows how to process one region at a time — deep
+    copies so mutating one variant's regions can't affect another's.
 
-    :param form: Original form dictionary with possibly multiple "true" genomic regions
-    :return: List of form dictionaries, each with only one "true" genomic region
+    Arguments:
+        form {dict[str, Any]} -- form with possibly multiple regions set to "true".
+
+    Returns:
+        list[dict[str, Any]] -- one form per originally-selected region, each
+        with only that region set to "true".
     """
     true_regions = [key for key, val in form.get("genomic_regions", {}).items() if val]
 
@@ -35,39 +46,54 @@ def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_valid_pipeline_statuses():
-    """
-    Get the list of valid pipeline run statuses.
+    """Single source of truth for valid statuses, so admin status-update
+    validation and any other status check can't drift out of sync with
+    what the worker actually sets on a run.
 
-    :returns: List of valid status strings
-    :rtype: list[str]
+    Returns:
+        list[str] -- all valid pipeline run status values.
     """
     return ["pending", "started", "success", "failure", "timeout", "empty_result"]
 
 
 def get_timeout_multiplier(is_authenticated: bool) -> float:
-    """Return the configured static timeout multiplier for the current user type."""
+    """Authenticated users get a longer timeout budget than anonymous ones,
+    as an incentive to log in for larger/slower runs.
+
+    Arguments:
+        is_authenticated {bool} -- whether the current caller is logged in.
+
+    Returns:
+        float -- multiplier to apply to the anonymous base timeout.
+    """
     if is_authenticated:
         return CeleryConfig.pipeline_timeout_authenticated_multiplier
     return 1.0
 
 
 def resolve_timeout(is_authenticated: bool) -> int:
-    """Return the soft time limit in seconds for a pipeline run.
+    """Deliberately static rather than based on input size/complexity, since
+    estimating actual runtime up front isn't reliable — a fixed budget per
+    user type is simpler to reason about and enforce consistently.
 
-    The timeout is intentionally static: anonymous users receive the base limit,
-    and authenticated users receive the configured multiplier on that limit.
+    Arguments:
+        is_authenticated {bool} -- whether the current caller is logged in.
+
+    Returns:
+        int -- soft time limit in seconds for the Celery pipeline task.
     """
     return int(CeleryConfig.pipeline_timeout_anon * get_timeout_multiplier(is_authenticated))
 
 
 def delete_pipeline_run_files_and_db(mongo, run_id_obj):
-    """
-    Delete a pipeline run's output files and database entry.
+    """Shared by both single-run and bulk deletion, so both paths clean up
+    the same way. File deletion failures are only logged, not fatal — a
+    user should still be able to remove a stray run record even if its
+    output directory is already gone or unreachable on disk.
 
-    :param mongo: MongoDB instance
-    :param run_id_obj: ObjectId of the run to delete
-    :raises: 404 if the run does not exist
-    :raises: 500 if the database deletion fails
+    Arguments:
+        mongo -- MongoDB database instance.
+        run_id_obj -- ObjectId of the run to delete.
     """
     # Fetch the run
     run = mongo.runs.find_one({"_id": run_id_obj})
@@ -94,15 +120,16 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
 
 
 def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: list[ObjectId]) -> dict:
-    """
-    Bulk delete multiple pipeline runs using the shared deletion helper.
-    Handles partial failures gracefully.
+    """Deletes each run independently and catches per-run failures, so one
+    bad/already-missing run in a batch doesn't abort deletion of the rest —
+    callers get back which ones failed instead of an all-or-nothing error.
 
-    :param mongo: MongoDB instance
-    :param run_id_objects: List of run ID ObjectIds to delete (already validated)
-    :type run_id_objects: list[ObjectId]
-    :returns: Dictionary with deletion results (deleted_count, failed, errors)
-    :rtype: dict
+    Arguments:
+        mongo -- MongoDB database instance.
+        run_id_objects {list[ObjectId]} -- run IDs to delete (already validated).
+
+    Returns:
+        dict -- deleted_count, plus failed run IDs and their error messages.
     """
     # Delete each run using the shared helper
     deleted_count = 0
