@@ -9,6 +9,11 @@ export interface CacheContextType {
     ) => (...args: TArgs) => Promise<TResult>;
 }
 
+/**
+ * A React context provider for managing a cache.
+ * @param children - The child components that will have access to the cache context.
+ * @returns A React functional component that provides caching functionality to its children.
+ */
 export default function CacheProvider({
     children,
 }: {
