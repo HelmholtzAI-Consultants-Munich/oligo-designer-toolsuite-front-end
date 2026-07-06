@@ -1,3 +1,5 @@
+"""Celery beat is a scheduler for running scheduled tasks. The configuration for different tasks we want to run time based is done here."""
+
 from celery import Celery, signature
 from celery.schedules import crontab
 
@@ -12,7 +14,12 @@ FIRST_OF_MONTH_CRON = crontab(minute=0, hour=1, day_of_month=1)
 
 
 @app.on_after_finalize.connect  # type: ignore
-def setup(sender, **kwargs):
+def setup(sender: Celery, **kwargs):
+    """Setup tasks we want Celery beat to run regularly.
+
+    Arguments:
+        sender {Celery} -- The celery app which should run our tasks.
+    """
     sender.add_periodic_task(
         MIDNIGHT_CRON,
         signature(Tasks.TRIGGER_DROPDOWN_OPTIONS_FETCHING),

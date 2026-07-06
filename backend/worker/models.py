@@ -1,3 +1,5 @@
+"""Overwrites of the pydantic models from ODT are done here."""
+
 import json
 from typing import Annotated, Literal
 
@@ -39,6 +41,10 @@ from pydantic import AliasChoices, BaseModel, Field
 
 
 class GenomicRegionsBase(BaseModel):
+    """This Model defines the Base Model for genomic regions and is overwritten by the Models that
+    adapt the defaults to their specific version.
+    """
+
     gene: bool = False
     intergenic: bool = False
     exon: bool = True
@@ -52,15 +58,23 @@ GenomicRegionsEnsembl = GenomicRegionsBase
 
 
 class GenomicRegionsNcbi(GenomicRegionsBase):
+    """This Model overwrites the defaults for the Genomic Regions for
+    the Genomic Region Generator with source NCBI."""
+
     exon_exon_junction: bool = True
 
 
 class SourceParamsBase(BaseModel):
+    """This Model defines the shared source parameters that are used independent of the
+    Genomic Region Generator source."""
+
     species: str
     annotation_release: str
 
 
 class SourceParamsNcbi(SourceParamsBase):
+    """This Model defines for an Genomic Region Generator Form with source NCBI."""
+
     species: str = ""
     mode: Literal["species"] = "species"
     taxon: str = "vertebrate_mammalian"
@@ -70,11 +84,17 @@ class SourceParamsNcbi(SourceParamsBase):
 
 
 class SourceParamsEnsembl(SourceParamsBase):
+    """This Model defines for an Genomic Region Generator Form with source Ensembl."""
+
     species: str = "homo_sapiens"
     annotation_release: str = "current"
 
 
 class GenomicRegionGeneratorBase(BaseModel):
+    """This Model defines the Base Model for the Genomic Region Generator.
+    It gets overwritten by the specific Genomic Region Generator Models with the according source set.
+    """
+
     source: str
     source_params: SourceParamsBase
     genomic_regions: GenomicRegionsBase
@@ -82,6 +102,8 @@ class GenomicRegionGeneratorBase(BaseModel):
 
 
 class GenomicRegionGeneratorNcbi(GenomicRegionGeneratorBase):
+    """This Model defines the Model for the Genomic Region Generator with source NCBI."""
+
     source: Literal["ncbi"] = Field(default="ncbi")  # type: ignore
     source_params: SourceParamsNcbi  # type: ignore
     genomic_regions: GenomicRegionsNcbi  # type: ignore
@@ -89,6 +111,8 @@ class GenomicRegionGeneratorNcbi(GenomicRegionGeneratorBase):
 
 
 class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
+    """This Model defines the Model for the Genomic Region Generator with source Ensembl."""
+
     source: Literal["ensembl"] = "ensembl"  # type: ignore
     source_params: SourceParamsEnsembl  # type: ignore
     genomic_regions: GenomicRegionsEnsembl
@@ -96,10 +120,15 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 
 
 # TODO: remove override when Model exists from ODT side
+# This Model allows a list of Genomic Region Generator Forms with either Ncbi or Ensembl
+# as the source.
 GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
 class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
+    """Overwrites the default TargetProbeOligoGenerationBase to inject our custom field for
+    `file_region_ids`, because we expect a gene list and not a file path."""
+
     file_region_ids: Annotated[
         str | None,
         Field(
@@ -110,17 +139,26 @@ class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
 
 
 class OligoSeqVariantFilterEnabled(OligoSeqVariantFilterEnabledBase):
+    """Overwrite the default OligoSeqVariantFilterEnabledBase Model to change the expected type of
+    `files_vcf_reference_database` to accept a dict instead of a file path."""
+
     # NOTE: this is a small trick. A dict gets converted to type
     # `object` when building the JSON Schema from the pydantic model.
     files_vcf_reference_database: list[dict | str] = Field(min_length=1)  # type: ignore
 
 
+# This Model overwrites OligoSeqVariantFilterConfig to use our version of OligoSeqVariantFilterEnabled
+# instead of the default one
 OligoSeqVariantFilterConfig = Annotated[
     OligoSeqVariantFilterEnabled | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
 ]
 
 
 class BlastnSearchParameters(BlastnSearchParametersBase):
+    """Overwrites the default `BlastnSearchParametersBase` to set the type of the overwritten
+    parameters to bool | None to ensure they are displayed nicely.
+    """
+
     lcase_masking: bool | None = Field(  # type: ignore
         default=None,
         validation_alias=AliasChoices("-lcase_masking", "lcase_masking"),
@@ -148,12 +186,15 @@ class BlastnSearchParameters(BlastnSearchParametersBase):
 
 
 class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnabledBase):
+    """Overwrites `CrossHybridizationBlastnFilterEnabledBase` to insert our `BlastnSearchParameters`."""
+
     search_parameters: Annotated[  # type: ignore
         BlastnSearchParameters,
         Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
     ]
 
 
+# Overwrites CrossHybridizationBlastnFilterConfig to insert our own CrossHybridizationBlastnFilterEnabled
 CrossHybridizationBlastnFilterConfig = Annotated[
     CrossHybridizationBlastnFilterEnabled | CrossHybridizationBlastnFilterDisabled,
     Field(discriminator="enabled"),
@@ -161,12 +202,20 @@ CrossHybridizationBlastnFilterConfig = Annotated[
 
 
 class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnabledBase):
+    """Overwrites `OligoSeqSpecificityBlastnFilterEnabledBase` to use our own `BlastnSearchParameters` and
+    our `GenomicInput` instead of the default file path type.
+
+    Arguments:
+        OligoSeqSpecificityBlastnFilterEnabledBase {_type_} -- _description_
+    """
+
     search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
         perc_identity=80, strand="minus", word_size=10
     )
     files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 
+# Overwrites OligoSpecificityBlastnFilterConfig to insert our own OligoSeqSpecificityBlastnFilterEnabled
 OligoSpecificityBlastnFilterConfig = Annotated[
     OligoSeqSpecificityBlastnFilterEnabled | OligoSeqSpecificityBlastnFilterDisabled,
     Field(discriminator="enabled"),
@@ -174,6 +223,8 @@ OligoSpecificityBlastnFilterConfig = Annotated[
 
 
 class TargetProbeSpecificityFilter(TargetProbeSpecificityFilterBase):
+    """Overwrites `TargetProbeSpecificityFilterBase` to insert our own Models for all parameters."""
+
     cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfig = (  # type: ignore
         CrossHybridizationBlastnFilterEnabled(
             enabled=True,
@@ -186,6 +237,8 @@ class TargetProbeSpecificityFilter(TargetProbeSpecificityFilterBase):
 
 
 class TargetProbe(TargetProbeBase):
+    """Overwrites `TargetProbeBase` to insert our own Models for all parameters."""
+
     oligo_generation: TargetProbeOligoGeneration  # type: ignore
     specificity_filters: TargetProbeSpecificityFilter  # type: ignore
 
