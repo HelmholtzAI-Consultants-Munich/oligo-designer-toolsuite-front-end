@@ -2,7 +2,15 @@ import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
 import { spaceBeforeCapitalLetters } from "./utils";
 
-/* Layout for a section within a tab, sections are separated by vertical lines */
+/**
+ * Layout for a section within a tab, sections are separated by vertical lines
+ *
+ * @remarks
+ * This component is used in the function `uiSchemaFromJsonSchemaRecursive`, which generates the uiSchema based on the JSON Schema
+ *
+ * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
+ * @returns A React Component that is used to overwrite the default ObjectFieldTemplate to layout a section within a tab
+ */
 const SectionLayout = memo(function SectionLayout(
     props: ObjectFieldTemplateProps
 ) {

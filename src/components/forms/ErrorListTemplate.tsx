@@ -23,6 +23,9 @@ const scrollToError = (error: RJSFValidationError) => {
 /**
  * This ErrorListTemplate is based on the react-bootstrap theme's template.
  * It adds a scroll-to-error functionality when clicking on an error message.
+ *
+ * @param props - ErrorListProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#errorlisttemplate})
+ * @returns A React Component that is used to overwrite the default ErrorListTemplate
  */
 const ErrorListTemplate = (props: ErrorListProps) => {
     const { errors } = props;

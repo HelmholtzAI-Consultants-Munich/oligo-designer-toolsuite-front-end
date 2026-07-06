@@ -7,6 +7,9 @@ import { filterUninformativeErrors } from "./utils";
  * It removes the `WrapIfAdditionalTemplate` wrapper, as it wrapped all fields in an unpredictable way, making consistent styling difficult.
  * It also removes the field description, as it would be redundant with tooltips rendered in other template overrides.
  * Lastly, it is designed to be used in a CSS grid layout, allowing fields to span the full width of the form when necessary (e.g. for object fields or custom fields).
+ *
+ * @param props - FieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#fieldtemplate})
+ * @returns A React Component that is used to overwrite the default FieldTemplate
  */
 const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     const {

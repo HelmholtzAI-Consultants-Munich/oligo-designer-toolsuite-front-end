@@ -109,7 +109,17 @@ export const merfishUiSchema: UiSchema = {
 export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
     return uiSchemaFromJsonSchemaRecursive(jsonSchema, jsonSchema, 0);
 };
-
+/**
+ * Generates an RJSF UiSchema based on a JSON Schema. Therefore it recursively iterates each level of the JSON Schema
+ * and applies the appropriate components and ui options
+ *
+ * @param baseSchema - the full JSON Schema of the pipeline
+ * @param localSchema - the schema of the current level the function is inside of the pipeline schema
+ * @param level - the current depth of recursion
+ * @returns A RJSF UiSchema which is filled with the necessary fields to match our UI style
+ *
+ * {@label JSON_TO_UI_FUNCTION}
+ */
 const uiSchemaFromJsonSchemaRecursive = (
     baseSchema: RJSFSchema,
     localSchema: RJSFSchema,

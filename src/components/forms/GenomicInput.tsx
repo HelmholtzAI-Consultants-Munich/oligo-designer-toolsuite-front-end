@@ -16,7 +16,15 @@ type ConfigurableGenomicInputProps = FieldProps & {
     formsAllowed: boolean;
     filesAllowed: boolean;
 };
-
+/**
+ * Renders a Component for inputting genomic data, either via uploading a file and/or via configuring a Genomic Region
+ * Generator Form. Which variant is allowed is configured via the `formsAllowed` and `filesAllowed` props.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props})
+ * @param formsAllowed - whether the Genomic Input allows that Genomic Region Generators Form can be used as input
+ * @param filesAllowed - whether the Genomic Input allows that file uploads can be used as input
+ * @returns A React Component that can be configured to accept different types of Genomic Input
+ */
 const ConfigurableGenomicInput = ({
     fieldPathId,
     name,
@@ -208,6 +216,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     );
 };
 
+/**
+ * Renders a Component for inputting genomic data via uploading a file and via configuring a Genomic Region
+ * Generator Form.
+ *
+ * It wraps the `ConfigurableGenomicInput` component.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props}). These are passed to the underlying `ConfigurableGenomicInput` component.
+ * @returns A React Component which accepts genomic data via uploading a file and via configuring the Genomic Region Generator
+ */
 export const GenomicAndFileInput = (props: FieldProps) => {
     return (
         <ConfigurableGenomicInput
@@ -218,6 +235,15 @@ export const GenomicAndFileInput = (props: FieldProps) => {
     );
 };
 
+/**
+ * Renders a Component for inputting genomic data via configuring a Genomic Region
+ * Generator Form.
+ *
+ * It wraps the `ConfigurableGenomicInput` component.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props}). These are passed to the underlying `ConfigurableGenomicInput` component.
+ * @returns A React Component which accepts genomic data via configuring the Genomic Region Generator
+ */
 export const GenomicInput = (props: FieldProps) => {
     return (
         <ConfigurableGenomicInput
@@ -228,6 +254,14 @@ export const GenomicInput = (props: FieldProps) => {
     );
 };
 
+/**
+ * Renders a Component for inputting genomic data, via uploading a file.
+ *
+ * It wraps the `ConfigurableGenomicInput` component.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props}). These are passed to the underlying `ConfigurableGenomicInput` component.
+ * @returns A React Component which accepts genomic data via uploading a file
+ */
 export const FileInput = (props: FieldProps) => {
     return (
         <ConfigurableGenomicInput
