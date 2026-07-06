@@ -1,7 +1,10 @@
+"""Tasks that can be run via celery and their helpers are defined here."""
+
 import calendar
 import datetime
 import os
 import shutil
+from collections.abc import Callable
 from logging import Logger
 from pathlib import Path
 from typing import Any
@@ -24,6 +27,11 @@ ANONYMOUS_SESSIONS_COLLECTION = "anonymous_sessions"
 
 
 def _get_data_roots() -> tuple[Path, Path]:
+    """Get the root directory of the upload and user data folder.
+
+    Returns:
+        tuple[Path, Path] -- (upload root path, user data root path).
+    """
     backend_root = Path(__file__).resolve().parent.parent
     data_access_root = backend_root / os.environ.get(
         "FLASK_RELATIVE_DATA_ACCESS_PATH",
@@ -41,6 +49,14 @@ def _get_data_roots() -> tuple[Path, Path]:
 
 
 def _deserialize_path(path_value: Any) -> Path | None:
+    """Create a path object from a Path, string or dict.
+
+    Arguments:
+        path_value {Any} -- value the path will be created from.
+
+    Returns:
+        Path | None -- Returns a path if the conversion is successful and None otherwise.
+    """
     if isinstance(path_value, Path):
         return path_value
 
@@ -57,6 +73,15 @@ def _deserialize_path(path_value: Any) -> Path | None:
 
 
 def _resolve_path_under_root(path_value: Any, root: Path) -> Path | None:
+    """Resolves a path and ensures it is inside of a root directory.
+
+    Arguments:
+        path_value {Any} -- The value that will be tried to convert to a path and then be resolved and checked against the root.
+        root {Path} -- The root directory path, that the `path_value` will be checked against.
+
+    Returns:
+        Path | None -- Path if `path_value` is a valid path inside of `root`, else None.
+    """
     path = _deserialize_path(path_value)
     if path is None:
         return None
@@ -68,61 +93,57 @@ def _resolve_path_under_root(path_value: Any, root: Path) -> Path | None:
     return path
 
 
-def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
-    """
-    Returns (can_delete_record, did_delete_file).
-
-    can_delete_record is True when the DB record is safe to remove: either the path
+def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir: bool) -> tuple[bool, bool]:
+    """Tries to delete a file inside of a root directory.
+    `can_delete_record` is True when the DB record is safe to remove: either the path
     is already gone or was never valid. False when the path points to something that
     isn't a file (e.g. a directory), so the record must be kept to avoid data loss.
+
+    Arguments:
+        path_value {Any} -- potential filepath that should be deleted.
+        root {Path} -- The root directory path, which should be a top directory of `path_value`.
+
+    Returns:
+        tuple[bool, bool] -- (Record can be deleted, File or Directory was deleted).
     """
-    file_path = _resolve_path_under_root(path_value, root)
-    if file_path is None:
+    file_or_directory_path = _resolve_path_under_root(path_value, root)
+    if file_or_directory_path is None:
         return False, False  # path outside root or invalid — don't touch the DB record
 
-    if not file_path.exists():
+    if not file_or_directory_path.exists():
         return True, False  # file already gone — safe to delete the DB record, nothing deleted on disk
-    if not file_path.is_file():
+    if not file_or_directory_path.is_file():
         return False, False  # unexpected type (e.g. directory) — retain the DB record to avoid data loss
 
-    file_path.unlink()
+    if is_dir:
+        shutil.rmtree(file_or_directory_path)
+    else:
+        file_or_directory_path.unlink()
+
     return True, True  # file deleted from disk and DB record is safe to remove
-
-
-def _delete_directory_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
-    """
-    Returns (can_delete_record, did_delete_directory).
-
-    Same semantics as _delete_file_if_under_root: can_delete_record is False only
-    when the path exists but is not a directory, meaning something unexpected occupies
-    that path and the record should be retained.
-    """
-    directory = _resolve_path_under_root(path_value, root)
-    if directory is None:
-        return False, False  # path outside root or invalid — don't touch the DB record
-
-    if not directory.exists():
-        return True, False  # directory already gone — safe to delete the DB record, nothing deleted on disk
-    if not directory.is_dir():
-        return False, False  # unexpected type (e.g. a file) — retain the DB record to avoid data loss
-
-    shutil.rmtree(directory)
-    return True, True  # directory deleted from disk and DB record is safe to remove
 
 
 def _partition_records_for_deletion(
     records: list[dict[str, Any]],
     path_key: str,
     root: Path,
-    delete_path,
+    delete_path: Callable[[Any, Path], tuple[bool, bool]],
 ) -> tuple[list[Any], int, int]:
-    """
-    Returns (deletable_ids, deleted_paths, retained_records).
-
-    Iterates records, deletes each associated path via delete_path, and separates
+    """Iterates records, deletes each associated path via delete_path, and separates
     records into those safe to remove from the DB (deletable_ids) and those that
     must be kept because their path couldn't be safely deleted (retained_records).
     deleted_paths counts how many files/directories were actually removed from disk.
+
+
+    Arguments:
+        records {list[dict[str, Any]]} -- The list of records (e.g. run entries) that should be partitioned
+        for deletion
+        path_key {str} -- The key of the record field where the path is written
+        root {Path} -- The path to the root directory of the path written at `record[path_key]`
+        delete_path {Callable[[Any, Path], tuple[bool, bool]]} -- function to delete the path
+
+    Returns:
+        tuple[list[Any], int, int] -- (deletable_ids, deleted_paths, retained_records)
     """
     deletable_ids: list[Any] = []
     deleted_paths = 0
@@ -141,6 +162,15 @@ def _partition_records_for_deletion(
 
 
 def _has_remaining_session_data(db, session_id: str) -> bool:
+    """Checks if a session has data stored somewhere in the database.
+
+    Arguments:
+        db {_type_} -- The database to check for data.
+        session_id {str} -- The session id that should be checked.
+
+    Returns:
+        bool -- True if the is remaining session_data, False otherwise.
+    """
     return (
         db.runs.count_documents({"session_id": session_id}) > 0
         or db.uploads.count_documents({"session_id": session_id}) > 0
@@ -149,6 +179,17 @@ def _has_remaining_session_data(db, session_id: str) -> bool:
 
 
 def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, cutoff: datetime.datetime):
+    """
+
+    Arguments:
+        db {_type_} -- The database the data is stored.
+        upload_root {Path} -- The root of the upload directory for user files.
+        userdata_root {Path} -- The root of the user data directory.
+        cutoff {datetime.datetime} -- The cutoff timestamp until which anonymous data will be cleaned.
+
+    Returns:
+        dict -- A dict showing how many of different types of records were deleted.
+    """
     anon_root = userdata_root / "anon"
     expired_sessions = list(
         db[ANONYMOUS_SESSIONS_COLLECTION].find(
@@ -184,7 +225,11 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
                 session_runs,
                 path_key="output_path",
                 root=userdata_root,
-                delete_path=_delete_directory_if_under_root,
+                delete_path=(
+                    lambda path_value, root: _delete_file_or_directory_if_under_root(
+                        path_value, root, is_dir=True
+                    )
+                ),
             )
         )
         if run_ids_to_delete:
@@ -201,7 +246,11 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
                 session_uploads,
                 path_key="path",
                 root=upload_root,
-                delete_path=_delete_file_if_under_root,
+                delete_path=(
+                    lambda path_value, root: _delete_file_or_directory_if_under_root(
+                        path_value, root, is_dir=False
+                    )
+                ),
             )
         )
         if upload_ids_to_delete:
@@ -254,6 +303,15 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
 def run_pipeline(
     generated_region_paths: list[tuple[str, list[str]]], pipeline_name: str, form_data: Any, output_path: str
 ) -> None:
+    """Runs the pipeline via the `PipelineRunner` class.
+
+    Arguments:
+        generated_region_paths {list[tuple[str, list[str]]]} -- The list of paths where results of potential preceding
+            Genomic Region Generator runs are stored.
+        pipeline_name {str} -- The name of the pipeline.
+        form_data {Any} -- The pipeline configuration.
+        output_path {str} -- The path where all output of the pipeline should be written.
+    """
     from backend.worker.pipeline_runner import PipelineRunner  # lazy: avoids Bio at import time
 
     runner = PipelineRunner(pipeline_name, logger=logger)
@@ -262,18 +320,38 @@ def run_pipeline(
 
 @app.task()
 def run_genomic_region_generator(form_data: Any, id: str) -> tuple[str, list[str]]:
+    """Runs the Genomic Region Generator via the `GenomicRegionGeneratorRunner`
+
+    Arguments:
+        form_data {Any} -- The Genomic Region Generator configuration.
+        id {str} -- The ID of the Genomic Input for which the Genomic Region Generator generates an input.
+
+    Returns:
+        tuple[str, list[str]] -- (The ID as it was passed, A list of paths to the resulting files
+        of the Genomic Region Generator run).
+    """
     runner = GenomicRegionGeneratorRunner(logger=logger)
     return id, runner.run(form_data)
 
 
 @app.task()
 def trigger_dropdown_options_fetching():
+    """Fetches the dropdown options for the Genomic Region Generator input Forms"""
     logger.debug("Updating genomic dropdown options cache")
     _ = fetch_dropdown_options()
 
 
 @app.task()
 def generate_monthly_report(target_year: int | None = None, target_month: int | None = None) -> None:
+    """Generate a usage report for the project on a monthly basis.
+
+    Keyword Arguments:
+        target_year {int | None} -- The year for which the report should be generated.
+        target_month {int | None} -- The month of the `target_year` the report should be generated.
+
+    Returns:
+        dict -- A report consisting of different usage metrics.
+    """
     client = MongoClient(Config.MONGO_URI)
     try:
         db = client["oligo_db"]
@@ -418,6 +496,11 @@ def generate_monthly_report(target_year: int | None = None, target_month: int | 
 
 @app.task()
 def cleanup_anonymous_data() -> dict[str, int]:
+    """Clean up anonymous data.
+
+    Returns:
+        dict[str, int] -- A dict showing how many of different types of records were deleted.
+    """
     upload_root, userdata_root = _get_data_roots()
     cutoff = utc_now() - datetime.timedelta(days=CeleryConfig.anonymous_data_retention_days)
 
