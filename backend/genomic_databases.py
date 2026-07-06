@@ -454,6 +454,10 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
     @generic_cache_region.cache_on_arguments()
     def fetch_annotations_releases(self, taxon: str, species: str) -> list[str] | None:
+        """
+        Notes:
+            This function is decorated with our generic cache to reduce refetching.
+        """
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
             dir = self._get_releases_dir(ftp, taxon, species)
@@ -581,6 +585,10 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
 @generic_cache_region.cache_on_arguments()
 def fetch_dropdown_options() -> dict[str, dict[str, list[str]]]:
+    """
+    Notes:
+        This function is decorated with our generic cache to reduce refetching.
+    """
     # TODO: check allowlists to apply same behaviour like before
 
     return dict(
