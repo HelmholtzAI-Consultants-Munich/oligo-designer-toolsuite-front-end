@@ -4,6 +4,99 @@ import TabLayout from "../components/forms/TabLayout";
 import SectionLayout from "../components/forms/SectionLayout";
 import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
 
+export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
+    return uiSchemaFromJsonSchemaRecursive(jsonSchema, jsonSchema, 0);
+};
+
+/**
+ * Generates an RJSF UiSchema based on a JSON Schema. Therefore it recursively iterates each level of the JSON Schema
+ * and applies the appropriate components and ui options
+ *
+ * @param baseSchema - the full JSON Schema of the pipeline
+ * @param localSchema - the schema of the current level the function is inside of the pipeline schema
+ * @param level - the current depth of recursion
+ * @returns A RJSF UiSchema which is filled with the necessary fields to match our UI style
+ *
+ */
+const uiSchemaFromJsonSchemaRecursive = (
+    baseSchema: RJSFSchema,
+    localSchema: RJSFSchema,
+    level: number
+): UiSchema => {
+    let uiSchema: UiSchema = {};
+
+    if (localSchema.$ref) {
+        try {
+            const refSchema = findSchemaDefinition(
+                localSchema.$ref,
+                baseSchema
+            );
+            return uiSchemaFromJsonSchemaRecursive(
+                baseSchema,
+                refSchema,
+                level
+            );
+        } catch (error) {
+            console.error(
+                `Error resolving reference: ${localSchema.$ref}`,
+                error
+            );
+            return uiSchema;
+        }
+    }
+
+    if (localSchema.oneOf || localSchema.anyOf) {
+        // we deeply merge the uiSchemas of all options, to ensure all possible fields are covered
+        for (const option of localSchema.oneOf || localSchema.anyOf || []) {
+            const optionSchema = option as RJSFSchema;
+            const optionUiSchema = uiSchemaFromJsonSchemaRecursive(
+                baseSchema,
+                optionSchema,
+                level
+            );
+            uiSchema = mergeObjects(uiSchema, optionUiSchema);
+        }
+    }
+    if (localSchema.properties) {
+        const fields = Object.keys(localSchema.properties);
+        if (level === 0) {
+            // root -> TabsLayout
+            uiSchema["ui:ObjectFieldTemplate"] = TabsLayout;
+        } else if (level === 1) {
+            // first level -> TabLayout
+            uiSchema["ui:ObjectFieldTemplate"] = TabLayout;
+        } else if (level === 2) {
+            // second level -> SectionLayout
+            uiSchema["ui:ObjectFieldTemplate"] = SectionLayout;
+        }
+
+        for (const field of fields) {
+            const propertySchema = localSchema.properties[field] as RJSFSchema;
+            if (field === "file_region_ids") {
+                // file_region_ids (any level) -> txtUploadInput
+                uiSchema[field] = {
+                    "ui:field": "txtUploadInput",
+                    "ui:fieldReplacesAnyOrOneOf": true,
+                };
+            } else if (field.startsWith("files_fasta_")) {
+                // files_fasta_* (any level) -> genomicInput
+                uiSchema[field] = { "ui:field": "genomicInput" };
+            } else if (field.startsWith("files_vcf_")) {
+                // files_vcf_* (any level) -> fileUpload
+                uiSchema[field] = { "ui:field": "fileUpload" };
+            } else {
+                uiSchema[field] = uiSchemaFromJsonSchemaRecursive(
+                    baseSchema,
+                    propertySchema,
+                    level + 1
+                );
+            }
+        }
+    }
+
+    return uiSchema;
+};
+
 export const merfishUiSchema: UiSchema = {
     "ui:ObjectFieldTemplate": TabsLayout,
     "ui:tabs": [
@@ -104,99 +197,6 @@ export const merfishUiSchema: UiSchema = {
             ],
         },
     ],
-};
-
-export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
-    return uiSchemaFromJsonSchemaRecursive(jsonSchema, jsonSchema, 0);
-};
-/**
- * Generates an RJSF UiSchema based on a JSON Schema. Therefore it recursively iterates each level of the JSON Schema
- * and applies the appropriate components and ui options
- *
- * @param baseSchema - the full JSON Schema of the pipeline
- * @param localSchema - the schema of the current level the function is inside of the pipeline schema
- * @param level - the current depth of recursion
- * @returns A RJSF UiSchema which is filled with the necessary fields to match our UI style
- *
- * {@label JSON_TO_UI_FUNCTION}
- */
-const uiSchemaFromJsonSchemaRecursive = (
-    baseSchema: RJSFSchema,
-    localSchema: RJSFSchema,
-    level: number
-): UiSchema => {
-    let uiSchema: UiSchema = {};
-
-    if (localSchema.$ref) {
-        try {
-            const refSchema = findSchemaDefinition(
-                localSchema.$ref,
-                baseSchema
-            );
-            return uiSchemaFromJsonSchemaRecursive(
-                baseSchema,
-                refSchema,
-                level
-            );
-        } catch (error) {
-            console.error(
-                `Error resolving reference: ${localSchema.$ref}`,
-                error
-            );
-            return uiSchema;
-        }
-    }
-
-    if (localSchema.oneOf || localSchema.anyOf) {
-        // we deeply merge the uiSchemas of all options, to ensure all possible fields are covered
-        for (const option of localSchema.oneOf || localSchema.anyOf || []) {
-            const optionSchema = option as RJSFSchema;
-            const optionUiSchema = uiSchemaFromJsonSchemaRecursive(
-                baseSchema,
-                optionSchema,
-                level
-            );
-            uiSchema = mergeObjects(uiSchema, optionUiSchema);
-        }
-    }
-    if (localSchema.properties) {
-        const fields = Object.keys(localSchema.properties);
-        if (level === 0) {
-            // root -> TabsLayout
-            uiSchema["ui:ObjectFieldTemplate"] = TabsLayout;
-        } else if (level === 1) {
-            // first level -> TabLayout
-            uiSchema["ui:ObjectFieldTemplate"] = TabLayout;
-        } else if (level === 2) {
-            // second level -> SectionLayout
-            uiSchema["ui:ObjectFieldTemplate"] = SectionLayout;
-        }
-
-        for (const field of fields) {
-            const propertySchema = localSchema.properties[field] as RJSFSchema;
-            if (field === "file_region_ids") {
-                // file_region_ids (any level) -> txtUploadInput
-                uiSchema[field] = {
-                    "ui:field": "txtUploadInput",
-                    "ui:fieldReplacesAnyOrOneOf": true,
-                };
-            } else if (field.startsWith("files_fasta_")) {
-                // files_fasta_* (any level) -> genomicInput
-                uiSchema[field] = { "ui:field": "genomicInput" };
-            } else if (field.startsWith("files_vcf_")) {
-                // files_vcf_* (any level) -> fileUpload
-                uiSchema[field] = { "ui:field": "fileUpload" };
-            } else {
-                uiSchema[field] = uiSchemaFromJsonSchemaRecursive(
-                    baseSchema,
-                    propertySchema,
-                    level + 1
-                );
-            }
-        }
-    }
-
-    return uiSchema;
 };
 
 export const scrinshotUiSchema: UiSchema = {
