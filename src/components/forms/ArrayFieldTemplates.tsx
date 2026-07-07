@@ -116,6 +116,9 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
 /**
  * This ArrayFieldItemTemplate is based on the react-bootstrap theme's template.
  * It harmonizes the layout and styling of array field items with ODT's design system.
+ *
+ * @param props - Array Field Item Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfielditemtemplate})
+ * @returns A React Component that is used to overwrite the default ArrayFieldItemTemplate
  */
 const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
     const { children, hasToolbar, buttonsProps } = props;

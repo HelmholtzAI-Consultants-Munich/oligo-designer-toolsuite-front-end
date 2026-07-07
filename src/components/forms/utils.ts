@@ -18,10 +18,11 @@ export const excludeHiddenTabs = (tabs: string[]) =>
 /**
  * Helper function that checks if an error message should be removed from the output
  * These errors are caused by unsupported JSON schema discriminator usage and are not helpful to users.
- * Remove this filter once discriminators in the forms no longer produce these errors alongside the informative ones.
+ *
+ * TODO: Remove this filter once discriminators in the forms no longer produce these errors alongside the informative ones.
  *
  * @param error - error message that gets checked
- * @returns
+ * @returns A boolean that is True if the error is informative
  */
 export const filterUninformativeErrors = (error: string) =>
     ![

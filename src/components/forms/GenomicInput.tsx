@@ -186,6 +186,16 @@ interface FileUploadProps {
     onUpload: (files: File[]) => void;
 }
 
+/**
+ * Renders a component that allows uploading a File, which is used as the Input
+ * for the Genomic Region Generator.
+ *
+ * @param id - unique ID of the component
+ * @param name - name of the component
+ * @param onUpload - callback which is called, when the input
+ * is changed (e.g a File is uploaded)
+ * @returns A React Component that allows uploading a file.
+ */
 export const FileUpload: React.FC<FileUploadProps> = ({
     id,
     name,

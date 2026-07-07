@@ -25,10 +25,14 @@ interface InputListProps {
 }
 
 /**
- * Component for
+ * Renders a list of Buttons which serve as short previews for the
+ * selected Genomic Input (e.g. files, Genomic Region Generator Forms)
+ * and as the way to open the corresponding edit menus.
+ *
  * @param id - unique ID of the `InputList` Component
  * @param inputs - the current inputs of the Genomic Input Field
- * @returns
+ * @returns A React Component rendering a List of Buttons to view
+ * and edit Genomic Input
  */
 export const InputList = ({ id, inputs }: InputListProps) => {
     return inputs.map((input, idx) => (

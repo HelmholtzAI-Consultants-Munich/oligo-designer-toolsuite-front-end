@@ -57,7 +57,7 @@ type Props = {
  * @param title - the beautified human accessible name of the pipeline
  * @param schema - JSON Schema of the pipeline
  * @param uiSchema - RJSF UISchema of the pipeline
- * @returns A React Component a pipeline page
+ * @returns A React Component that renders a pipeline page
  */
 const PipelineTemplate: React.FC<Props> = ({
     pipeline,

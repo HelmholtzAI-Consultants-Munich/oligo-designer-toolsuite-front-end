@@ -19,10 +19,13 @@ interface GenomicDropDownProps extends GenomicSelectProps {
  *
  * @param label - Label of the dropdown menu
  * @param value - currently selected value of the dropdown menu
- * @param nameAndId - name and Id of the dropdown menu, to allow matching label to the select component
+ * @param nameAndId - name and Id of the dropdown menu, to allow matching the label to the select component.
+ * It is used to differentiate the different the Genomic Dropdowns based on a combination of nameAndId + id, because the id is the
+ * same for every Genomic Dropdown in one Genomic Region Generator Form
  * @param handleChange - callback invoked to update the RJSF Form state, when the selected dropdown value is changed
  * @param tooltip - explanation comment displayed, when hovering over the small info icon of the dropdown menu
  * @param children - selectable options of the dropdown menu
+ * @param id - unique ID of the component
  * @returns A React Component that is overwritten by the specific Genomic Dropdown Menus
  */
 export const GenomicDropDown: React.FC<
@@ -55,6 +58,7 @@ export const GenomicDropDown: React.FC<
  * @param handleChange - callback invoked to update the RJSF Form state, when the selected species is changed
  * @param tooltip - explanation comment displayed, when hovering over the small info icon of the species select menu
  * @param children - selectable options of the dropdown menu
+ * @param id - unique ID of the underlying GenomicDropDown
  * @returns A React Component that serves as a species dropdown
  */
 export const SpeciesSelect: React.FC<PropsWithChildren<GenomicSelectProps>> = ({
@@ -86,6 +90,7 @@ export const SpeciesSelect: React.FC<PropsWithChildren<GenomicSelectProps>> = ({
  * @param handleChange - callback invoked to update the RJSF Form state, when the selected species is changed
  * @param tooltip - explanation comment displayed, when hovering over the small info icon of the taxon select menu
  * @param children - selectable options of the dropdown menu
+ * @param id - unique ID of the underlying GenomicDropDown
  * @returns A React Component that serves as a taxon dropdown
  */
 export const TaxonSelect: React.FC<PropsWithChildren<GenomicSelectProps>> = ({
@@ -117,6 +122,7 @@ export const TaxonSelect: React.FC<PropsWithChildren<GenomicSelectProps>> = ({
  * @param handleChange - callback invoked, when the selected annotation is changed, to update the RJSF Form State
  * @param tooltip - explanation comment displayed, when hovering over the small info icon of the annotation release select menu
  * @param children - selectable options of the dropdown menu
+ * @param id - unique ID of the underlying GenomicDropDown
  * @returns A React Component that serves as a annotation release dropdown
  */
 export const AnnotationSelect: React.FC<
