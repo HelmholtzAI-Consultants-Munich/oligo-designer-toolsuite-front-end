@@ -101,7 +101,7 @@ export type ImportResult =
  * 3. check that the pipeline name of the imported config matches the pipeline name of the Form, where we want
  * to apply the config
  * 4. check that the schema versions match
- * TODO: ask Simon why step 5 is needed
+ * 5. ensure that only those fields are present, which are expected by us
  *
  * @param raw - the pipeline config we want to import or an invalid one
  * @param schema - the schema of the pipeline form, where we want to apply the config
@@ -156,7 +156,7 @@ export function importAndValidate(
     if (typed._meta.version !== schemaVersion) {
         return {
             ok: false,
-            error: `Incompatible config version "${typed._meta.version}". Current schema uses "${schemaVersion}". Major versions must match.`,
+            error: `Incompatible config version "${typed._meta.version}". Current schema uses "${schemaVersion}". Versions must match.`,
         };
     }
 
