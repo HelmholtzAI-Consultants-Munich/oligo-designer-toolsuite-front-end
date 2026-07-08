@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import type { RJSFSchema } from "@rjsf/utils";
 import {
     buildExportPayload,
-    triggerDownload,
     importAndValidate,
 } from "../components/forms/pipelineConfigIO";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
@@ -40,63 +39,6 @@ describe("buildExportPayload", () => {
         const payload = buildExportPayload({}, "scrinshot", testSchema);
         expect(() => new Date(payload._meta.exportedAt)).not.toThrow();
         expect(payload._meta.exportedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
-    });
-});
-
-// ---- triggerDownload ----
-
-describe("triggerDownload", () => {
-    beforeEach(() => {
-        // Mock URL and DOM APIs used by triggerDownload
-        vi.stubGlobal("URL", {
-            createObjectURL: vi.fn(() => "blob:mock-url"),
-            revokeObjectURL: vi.fn(),
-        });
-        const mockLink = {
-            href: "",
-            download: "",
-            click: vi.fn(),
-        };
-        vi.spyOn(document, "createElement").mockReturnValue(
-            mockLink as unknown as HTMLElement
-        );
-        vi.spyOn(document.body, "appendChild").mockImplementation(
-            () => mockLink as unknown as Node
-        );
-        vi.spyOn(document.body, "removeChild").mockImplementation(
-            () => mockLink as unknown as Node
-        );
-    });
-
-    it("triggers a download with the correct filename", () => {
-        const payload = {
-            _meta: {
-                version: 1,
-                pipeline: "scrinshot",
-                exportedAt: "2026-04-10T12:00:00.000Z",
-            },
-            config: { n_jobs: 4 },
-        };
-        triggerDownload(payload);
-        const mockLink = document.createElement("a") as unknown as {
-            download: string;
-            click: ReturnType<typeof vi.fn>;
-        };
-        expect(mockLink.download).toBe("scrinshot_config_2026-04-10.json");
-        expect(mockLink.click).toHaveBeenCalled();
-    });
-
-    it("revokes the object URL after download", () => {
-        const payload = {
-            _meta: {
-                version: 1,
-                pipeline: "scrinshot",
-                exportedAt: "2026-04-10T12:00:00.000Z",
-            },
-            config: {},
-        };
-        triggerDownload(payload);
-        expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
     });
 });
 

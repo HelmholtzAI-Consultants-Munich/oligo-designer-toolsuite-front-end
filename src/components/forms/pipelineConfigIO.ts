@@ -23,6 +23,13 @@ function getSchemaVersion(schema: RJSFSchema): number {
 
 // ---- Export ----
 
+/**
+ * Removes file objects, that are potentially included in the formdata, because we can not set them again,
+ * when the form pipeline config is reused.
+ *
+ * @param value - `formData` on first call and when the function is called recursively it is some nested object inside of `formData`
+ * @returns `formData` with all file objects removed
+ */
 const removeFilesfromObject = (
     value: GenericObjectType
 ): GenericObjectType | undefined => {
@@ -48,6 +55,19 @@ const removeFilesfromObject = (
     return value; // primitive value, return as is
 };
 
+/**
+ * Builds the payload for the pipeline config export. It includes a `_meta` object, which consists of
+ * - version: the schema version (read from the schema)
+ * - pipeline: the pipeline name
+ * - exportedAt: timestamp of the export
+ *
+ * Further the pipeline config, where not JSON serializable fields are stripped, is attached
+ *
+ * @param formData - the pipeline config
+ * @param pipeline - the pipeline name
+ * @param schema - the JSON Schema for the pipeline
+ * @returns A `PipelineConfigExport` object consisting of the values described above
+ */
 export function buildExportPayload(
     formData: RJSFFormData,
     pipeline: string,
@@ -63,19 +83,6 @@ export function buildExportPayload(
     };
 }
 
-export function triggerDownload(payload: PipelineConfigExport): void {
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json",
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${payload._meta.pipeline}_config_${payload._meta.exportedAt.slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-}
-
 // ---- Import ----
 
 export type ImportResult =
@@ -86,6 +93,21 @@ export type ImportResult =
       }
     | { ok: false; error: string };
 
+/**
+ * Imports and validates a `PipelineConfigExport`. Because we can not be sure that the downloaded object is necessarily
+ * a valid `PipelineConfigExport` object, we perform the following checks on the `raw` input:
+ * 1. check the shape of `raw` and ensure all fields we expect are included
+ * 2. validate that the config is a plain object
+ * 3. check that the pipeline name of the imported config matches the pipeline name of the Form, where we want
+ * to apply the config
+ * 4. check that the schema versions match
+ * 5. ensure that only those fields are present, which are expected by us
+ *
+ * @param raw - the pipeline config we want to import or an invalid one
+ * @param schema - the schema of the pipeline form, where we want to apply the config
+ * @param pipeline - the name of the pipeline form, where we want to apply the config
+ * @returns An import result, which includes either a valid config with potentially skipped field or an error message
+ */
 export function importAndValidate(
     raw: unknown,
     schema: RJSFSchema,
@@ -134,7 +156,7 @@ export function importAndValidate(
     if (typed._meta.version !== schemaVersion) {
         return {
             ok: false,
-            error: `Incompatible config version "${typed._meta.version}". Current schema uses "${schemaVersion}". Major versions must match.`,
+            error: `Incompatible config version "${typed._meta.version}". Current schema uses "${schemaVersion}". Versions must match.`,
         };
     }
 

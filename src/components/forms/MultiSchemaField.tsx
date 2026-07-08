@@ -16,6 +16,9 @@ const {
 /**
  * The WrappedAnyOfField wraps the default AnyOfField.
  * It adds special handling for common patterns in our schema that represent optional fields.
+ *
+ * @param props - default Field props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props})
+ * @returns A React Component that is used to overwrite the default RJSF `AnyOfField`
  */
 const WrappedAnyOfField = memo(function WrappedAnyOfField(
     props: React.ComponentProps<typeof AnyOfField>
@@ -83,6 +86,9 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
 /**
  * The WrappedOneOfField wraps the default OneOfField.
  * It allows CSS-side hiding of the discriminator selector when the discriminator property is "enabled".
+ *
+ * @param props - default Field props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props})
+ * @returns A React Component that is used to overwrite the default RJSF `OneOfField`
  */
 const WrappedOneOfField = memo(function WrappedOneOfField(
     props: React.ComponentProps<typeof OneOfField>
@@ -105,6 +111,9 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
  * This MultiSchemaFieldTemplate is based on the react-bootstrap theme's template.
  * It harmonizes the layout and styling of multi-schema fields (anyOf/oneOf) with ODT's design system.
  * It introduces a card layout with a title and a description tooltip (when available).
+ *
+ * @param props - MultiSchemaFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#multischemafieldtemplate})
+ * @returns A React Component that is used to overwrite the default MultiSchemaFieldTemplate
  */
 const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     props: MultiSchemaFieldTemplateProps

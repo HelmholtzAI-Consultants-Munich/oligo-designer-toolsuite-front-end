@@ -50,7 +50,15 @@ type Props = {
     schema: RJSFSchema;
     uiSchema: UiSchema;
 };
-
+/**
+ * Renders a pipeline page which includes the RJSF Form, the submit button, Turnstile and the terms acceptance banner.
+ *
+ * @param pipeline - name of the pipeline
+ * @param title - the beautified human accessible name of the pipeline
+ * @param schema - JSON Schema of the pipeline
+ * @param uiSchema - RJSF UISchema of the pipeline
+ * @returns A React Component that renders a pipeline page
+ */
 const PipelineTemplate: React.FC<Props> = ({
     pipeline,
     title,
