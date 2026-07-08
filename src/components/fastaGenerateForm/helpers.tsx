@@ -1,11 +1,10 @@
-import { ArrowRight } from "react-bootstrap-icons";
 import { BACKEND_URL } from "../../config";
 import { showToast } from "../../utils/toastUtil";
 import { extractSubmissionError } from "../errorHandler";
 import type { RJSFFormData } from "../componentTypes";
 import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import {
     PIPELINE_CONFIG,
     type PipelineConfig,
@@ -40,6 +39,7 @@ export const handleSubmit = async (
     pipeline: string,
     updateRuns: () => void,
     token: string | null,
+    navigate: ReturnType<typeof useNavigate>,
     pipelineRunConfig?: PipelineConfigExport
 ) => {
     // copy to avoid modifying formData
@@ -114,22 +114,8 @@ export const handleSubmit = async (
             }
         );
 
-        const { queue_position, run_id } = response.data;
-        const { ownPosition } = unwrapQueuePosition(queue_position);
-
-        showToast({
-            title: "Pipeline Enqueued",
-            content: (
-                <>
-                    <p>The pipeline run was successfully added to the queue.</p>
-                    <p>Queue Position: {ownPosition}</p>
-                    <Link to={`/runs/${run_id}`}>
-                        View the run here <ArrowRight />
-                    </Link>
-                </>
-            ),
-            type: "success",
-        });
+        const { run_id } = response.data;
+        navigate(`/runs/${run_id}`);
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
         if (axios.isAxiosError(error)) {
