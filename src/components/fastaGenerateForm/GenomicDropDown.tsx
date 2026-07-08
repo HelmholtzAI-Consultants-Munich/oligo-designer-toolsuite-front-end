@@ -20,7 +20,7 @@ interface GenomicDropDownProps extends GenomicSelectProps {
  * @param label - Label of the dropdown menu
  * @param value - currently selected value of the dropdown menu
  * @param nameAndId - name and Id of the dropdown menu, to allow matching the label to the select component.
- * It is used to differentiate the different the Genomic Dropdowns based on a combination of nameAndId + id, because the id is the
+ * It is used to differentiate the different wrapped version of the Genomic Dropdown component based on a combination of nameAndId + id, because the id is the
  * same for every Genomic Dropdown in one Genomic Region Generator Form
  * @param handleChange - callback invoked to update the RJSF Form state, when the selected dropdown value is changed
  * @param tooltip - explanation comment displayed, when hovering over the small info icon of the dropdown menu
