@@ -6,11 +6,13 @@ import os
 import re
 import shutil
 import subprocess
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from email.utils import formatdate, parsedate_to_datetime
 from pathlib import Path
+from typing import ClassVar
 
 import requests
 
@@ -36,81 +38,168 @@ class GenomicEntityContext:
     accession: str | None  # Ensembl doesn't use GCF/GCA accessions in filenames
 
 
-class BaseGenomicDataBase:
+class BaseGenomicDataBase(ABC):
+    """The base class of genomic databases, our interfaces with public services like Ensembl and NCBI.
+
+    Notes:
+        This is a base class and should not be used directly.
+        For details on the caching procedure see 'Caching FASTA Files' in the developer documentation.
+
+    Class Variables:
+        name {str} -- Name of the genomic database.
+        host {str} -- Hostname of the genomic database service.
+        base_path {str} -- Path to the subdirectory containing genomic files.
+        checksums_filename {str} -- Filename of checksum files for this database.
     """
-    For details on the caching procedure see 'Caching FASTA Files' in the developer documentation.
-    """
+
+    name: ClassVar[str]
+    host: ClassVar[str]
+    base_path: ClassVar[str]
+    checksums_filename: ClassVar[str]
 
     def __init__(
         self,
-        name: str = "",
-        host: str = "",
-        base_path: str = "",
         cache_dir: Path | None = None,
-        allowlist: list[str] | None = None,
+        allowlist: set[str] | None = None,
     ) -> None:
-        self.name: str = name
-        self.host: str = host
-        self.base_path: str = base_path
+        """Initializes the BaseGenomicDatabase.
+
+        Notes:
+            This is a base class and should only be initialized by subclasses.
+
+        Keyword Arguments:
+            cache_dir {Path | None} -- Path to the local directory to use as a download cache. (default: {None})
+            allowlist {set[str] | None} -- Set of subdirectories. If provided, queries will be limited to these. (default: {None})
+        """
         self.cache_dir = cache_dir
-        self.allowlist: set[str] | None = set(allowlist) if allowlist is not None else None
+        self.allowlist = allowlist
 
     # ---- Directory Discovery ----
     def _get_dirs(self, ftp: ftplib.FTP) -> list[str]:
-        lines: list[str] = []
-        _ = ftp.retrlines("LIST", lines.append)
+        """Retrieves a list of subdirectories at the current FTP cursor.
 
-        entries: list[str] = []
-        for line in lines:
-            parts = line.split(maxsplit=8)
-            if len(parts) < 9:
-                continue
-            if parts[0][0] == "d" or parts[0][0] == "l":
-                entries.append(parts[8])
-        return sorted(entries)  # sort for determinism
+        Notes:
+            This does not use ftplib.FTP.mlsd as Ensembl's FTP server does not support that option.
+
+        Arguments:
+            ftp {ftplib.FTP} -- Active FTP handler.
+
+        Returns:
+            list[str] -- list of subdirectories at the current FTP cursor.
+        """
+        file_lines: list[str] = []
+        ftp.dir(file_lines.append)
+
+        def parse_file_line(line: str) -> tuple[str, str]:
+            """Parses filename and file permissions from a line returned by ftplib.FTP.dir.
+
+            Arguments:
+                line {str} -- Line returned from ftplib.FTP.dir.
+
+            Returns:
+                tuple[str, str] -- Tuple of filename and file permissions.
+            """
+            perms, *_, filename = line.split(maxsplit=8)
+            # Normalize file permissions
+            perms = perms.lower()
+            # The filename might be a symbolic link (e.g. "current_fasta -> release-116/fasta")
+            # Split this to just get the link's name (e.g. "current_fasta")
+            filename = filename.split(maxsplit=1)[0]
+            return filename, perms
+
+        def is_likely_directory(filename: str, perms: str) -> bool:
+            """Checks whether a file is likely a directory.
+
+            Notes:
+                Returns True for symbolic links if is does not have specific file extensions.
+                As this is a very inaccurate heuristic, the function may misclassify symbolic links.
+
+            Arguments:
+                filename {str} -- Filename to check.
+                perms {str} -- Permissions of the file.
+
+            Returns:
+                bool -- Whether the file is likely a directory.
+            """
+            non_dir_extensions = {"txt", "pdf", "gz"}
+            _, _, file_suffix = filename.rpartition(".")
+
+            return perms[0] == "d" or (perms[0] == "l" and file_suffix not in non_dir_extensions)
+
+        dirs = [
+            filename
+            for filename, perms in map(parse_file_line, file_lines)
+            if is_likely_directory(filename, perms)
+        ]
+
+        return sorted(dirs)  # sort for determinism
 
     def _filter_allowlist(self, dirs: list[str]) -> list[str]:
+        """Filters the directories according to the allowlist.
+
+        Arguments:
+            dirs {list[str]} -- list of directories.
+
+        Returns:
+            list[str] -- list of all directories that are also in the allowlist.
+        """
         if self.allowlist is not None:
-            return list(set(dirs).intersection(self.allowlist))
+            return sorted(list(set(dirs).intersection(self.allowlist)))
         return dirs
 
-    def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> list[list[str]]:
-        dirs.sort()  # sort for determinism
+    def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> dict[str, list[str]]:
+        """Retrieves all subdirectories of all directories in dirs.
 
-        all_species_dirs: list[list[str]] = []
+        Arguments:
+            dirs {list[str]} -- list of directories.
+            ftp {ftplib.FTP} -- Active FTP handler.
+
+        Returns:
+            dict[str, list[str]] -- dict mapping directories from dirs to their respective subdirectories.
+        """
+        all_species_dirs: dict[str, list[str]] = {}
         for dir in dirs:
             _ = ftp.cwd(f"/{self.base_path}/{dir}")
-            all_species_dirs.extend([self._get_dirs(ftp)])
+            all_species_dirs[dir] = self._get_dirs(ftp)
         return all_species_dirs
 
-    def _build_directory_dict(
-        self, top_dirs: list[str], species_dirs: list[list[str]]
-    ) -> dict[str, list[str]]:
-        return dict(zip(top_dirs, species_dirs))
+    def fetch_ftp_directories(self) -> dict[str, list[str]]:
+        """Fetches all available species directories for this genomic database.
 
-    def fetch_ftp_directories(self) -> tuple[str, dict[str, list[str]]]:
+        Returns:
+            dict[str, list[str]] -- dict mapping top-level directories to their respective subdirectories.
+        """
         with ftplib.FTP(self.host) as ftp:
             ftp.login()
             ftp.cwd(self.base_path)
             top_dirs = self._get_dirs(ftp)
             top_dirs = self._filter_allowlist(top_dirs)
             species_dirs = self._get_species_dirs(top_dirs, ftp)
-        return self.name, self._build_directory_dict(top_dirs, species_dirs)
+        return species_dirs
 
     # ---- Genomic Asset Fetching ----
     def _download(self, dir: str, remote_filename: str) -> Path:
-        """Downloads the file if it changed.
+        """Downloads a remote file if it changed.
+
+        Arguments:
+            dir {str} -- Remote directory where the to-be-dowloaded file is located.
+            remote_filename {str} -- Name of the remote file to download.
 
         Notes:
             This function avoids redownloads if the file is already present and up-to-date.
-            Since compressed files are deleted after decompression, this does not suffice as
+            Since compressed files are deleted after extraction, this does not suffice as
             a caching solution for genomic downloads - see _download_and_process for that.
 
+        Raises:
+            RuntimeError: No caching directory set for genomic downloads.
+
         Returns:
-            pathlib.Path -- The local file path of the downloaded resource.
+            pathlib.Path -- Local file path of the downloaded resource.
         """
         url = f"https://{self.host}/{dir}/{remote_filename}"
         url_hash = hashlib.md5(url.encode()).hexdigest()
+
+        # Build local file path to save file at
         if self.cache_dir is None:
             raise RuntimeError("No caching directory set for genomic downloads.")
         file_path = (self.cache_dir / self.name / f"{url_hash}-{remote_filename}").resolve()
@@ -118,6 +207,7 @@ class BaseGenomicDataBase:
 
         headers: dict[str, str] = {}
 
+        # Check whether the file was downloaded before
         if file_path.exists():
             mtime = file_path.stat().st_mtime
             headers["if-modified-since"] = formatdate(mtime, usegmt=True)
@@ -125,83 +215,127 @@ class BaseGenomicDataBase:
         with requests.get(url, headers=headers, stream=True) as response:
             response.raise_for_status()
 
-            if response.status_code == requests.codes.not_modified:  # type: ignore
+            if response.status_code == requests.codes.not_modified:
+                # Local file is already up-to-date
                 return file_path
 
-            if response.status_code == requests.codes.ok:  # type: ignore
+            if response.status_code == requests.codes.ok:
+                # Download the remote file
                 with open(file_path, "wb") as f:
                     for chunk in response.iter_content(chunk_size=Config.DOWNLOAD_CHUNK_SIZE):
                         f.write(chunk)
 
+                # Set local modification time to remote's 'last-modified' to use for future requests
                 if last_modified := response.headers.get("last-modified"):
                     new_mtime = parsedate_to_datetime(last_modified).timestamp()
                     os.utime(file_path, times=(datetime.datetime.now().timestamp(), new_mtime))
         return file_path
 
     @abstractmethod
-    def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
+    def _matches_checksum(self, file_path: Path, expected_checksum: str) -> bool:
+        """Checks whether a file maches the expected checksum.
+
+        Arguments:
+            file_path {pathlib.Path} -- Path to a local file.
+            expected_checksum {str} -- Expected checksum of the file.
+
+        Notes:
+            This is an abstract method and must be implemented by subclasses.
+
+        Returns:
+            bool -- Whether the file matches the expected checksum.
+        """
         pass
 
     @file_cache_region.cache_on_arguments()
     def _download_and_process(self, dir: str, remote_filename: str, expected_checksum: str | None) -> Path:
-        """Downloads the file and processes it as needed.
+        """Downloads a remote file and processes it as needed.
 
-        Handles:
-            - Optional verification of checksum.
-            - Uncompression of .gz files.
+        Arguments:
+            dir {str} -- Remote directory where the to-be-dowloaded file is located.
+            remote_filename {str} -- Name of the remote file to download.
+            expected_checksum {str | None} -- Expected checksum of the file.
 
         Notes:
+            Processing includes optional verification of a checksum and extraction of .gz files.
+
             This function is decorated with our file cache to serve as the level 2 cache.
             Since expected_checksum is part of the caching key and the download of checksums
             is not being cached, a redownload will occur if the checksum changes.
 
+        Raises:
+            RuntimeError: Checksum for provided file does not match.
+
         Returns:
-            pathlib.Path -- The local file path of the downloaded resource.
+            Path -- Local file path of the downloaded resource.
         """
         # Download file
         file_path = self._download(dir, remote_filename)
 
         # Verify checksum if provided
-        if expected_checksum is not None and not self._verify_file(file_path, expected_checksum):
+        if expected_checksum is not None and not self._matches_checksum(file_path, expected_checksum):
             # TODO: we could also retry the download a set amount of times at this point
-            raise RuntimeError(f"Checksum for {file_path} does not match.")
+            raise RuntimeError(f"Checksum for {remote_filename} does not match.")
 
-        # Uncompress file if extension is .gz
+        # Extract file if extension is .gz
         if file_path.suffix == ".gz":
-            uncompressed_file_path = file_path.with_suffix("")  # remove .gz extension
+            extracted_file_path = file_path.with_suffix("")  # remove .gz extension
             with gzip.open(file_path, "rb") as archive:
-                with open(uncompressed_file_path, "wb") as extract:
+                with open(extracted_file_path, "wb") as extract:
                     shutil.copyfileobj(archive, extract)
 
             # Delete compressed file
             file_path.unlink()
-            file_path = uncompressed_file_path
+            file_path = extracted_file_path
 
         return file_path
 
     @abstractmethod
     def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
+        """Retrieve context for a genomic entity.
+
+        Arguments:
+            entity {GenomicEntity} -- Genomic entity to get context for.
+
+        Notes:
+            This is an abstract method and must be implemented by subclasses.
+
+        Returns:
+            GenomicEntityContext -- Context for the requested entity.
+        """
         pass
 
     @abstractmethod
-    def _checksum_filename(self) -> str:
-        pass
+    def _parse_checksum_line(self, line: str) -> tuple[str, str] | None:
+        """Parse a line of a checksums file.
 
-    @abstractmethod
-    def _parse_checksum_line(self, line) -> tuple[str, str] | None:
+        Arguments:
+            line {str} -- Line of a checksums file.
+
+        Notes:
+            This is an abstract method and must be implemented by subclasses.
+
+        Returns:
+            tuple[str, str] | None -- tuple of filename and checksum or None if parsing was unsuccessful.
+        """
         pass
 
     def _get_checksum_map(self, context: GenomicEntityContext) -> dict[str, str]:
-        """Returns map of filenames to their respective checksum"""
+        """Returns map of filenames to their respective checksum
 
+        Arguments:
+            context {GenomicEntityContext} -- Context for the requested entity.
+
+        Returns:
+            dict[str, str] -- dict mapping filenames to their respective checksum.
+        """
         # Combined checksum map for annotation (GTF) and sequence (FASTA) files
         filename_to_checksum_map: dict[str, str] = {}
-        checksums_filename = self._checksum_filename()
 
         # set -> if the dirs are equal, the checksums are only downloaded once
         for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
-            # always download without caching in case checksums changed
-            checksums_path = self._download(dir, checksums_filename)
+            # Always download without caching in case checksums changed
+            checksums_path = self._download(dir, self.checksums_filename)
             with open(checksums_path) as checksums_file:
                 for line in checksums_file:
                     if (parsed_line := self._parse_checksum_line(line)) is not None:
@@ -211,22 +345,41 @@ class BaseGenomicDataBase:
         return filename_to_checksum_map
 
     def _get_checksum(self, checksum_map: dict[str, str], filename: str) -> str:
+        """Gets a checksum from a checksum map and handles key errors.
+
+        Arguments:
+            checksum_map {dict[str, str]} -- dict mapping filenames to their respective checksum.
+            filename {str} -- Name of the file to look up in the checksum map.
+
+        Notes:
+            This method's purpose is to map the usual KeyError to a custom RuntimeError
+            for easier downstream error catching and handling.
+
+        Raises:
+            RuntimeError: File not found in checksum map.
+
+        Returns:
+            str -- Checksum of the specified file.
+        """
         try:
             return checksum_map[filename]
         except KeyError as e:
             raise RuntimeError(
-                f"Required file missing in {self.name}'s {self._checksum_filename()}: {e}"
+                f"Required file missing in {self.name}'s {self.checksums_filename}: {e}"
             ) from e
 
     def fetch_genomic_entity(self, entity: GenomicEntity) -> dict[str, str]:
         """Fetch genomic entity from cache or download it if not cached yet.
+
+        Arguments:
+            entity {GenomicEntity} -- Genomic entity to fetch.
 
         Workflow:
             - Obtain GenomicEntityContext (file names, location, etc.) using subclass-specific implementation.
             - Obtain map of filename-to-checksum from subclass-specific location.
             - For the annotation and sequence files:
                 - Verify checksum is known.
-                - Download from source, verify checksum of compressed file and uncompress if possible.
+                - Download from source, verify checksum of compressed file and extract if possible.
 
         Raises:
             RuntimeError: No cache_dir was set.
@@ -235,7 +388,7 @@ class BaseGenomicDataBase:
             RuntimeError: A checksum cannot be verified.
 
         Returns:
-            dict[str, str] -- A dict containing the file paths and the resolved release and assembly.
+            dict[str, str] -- dict containing the file paths and the resolved release and assembly.
         """
 
         context = self.get_entity_context(entity)
@@ -262,45 +415,55 @@ class BaseGenomicDataBase:
 
 
 class EnsemblGenomicDataBase(BaseGenomicDataBase):
+    name: ClassVar[str] = "ensembl"
+    host: ClassVar[str] = "ftp.ensembl.org"
+    base_path: ClassVar[str] = "/pub/"
+    checksums_filename: ClassVar[str] = "CHECKSUMS"
+
     # release 116 changes structure => could be a problem once they set this to current
     def __init__(
         self,
-        name: str = "ensembl",
-        host: str = "ftp.ensembl.org",
-        base_path: str = "/pub/",
         cache_dir: Path | None = None,
-        allowlist: list[str] | None = None,
+        allowlist: set[str] | None = None,
     ) -> None:
-        super().__init__(name, host, base_path, cache_dir, allowlist)
-        self.orig_top_dirs = [""]
+        super().__init__(cache_dir, allowlist)
 
     # ---- Directory Discovery ----
-    def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> list[list[str]]:
-        self.orig_top_dirs = dirs
-        dirs = [f"{dir}/fasta" if dir.startswith("release") else dir for dir in dirs]
-        return super()._get_species_dirs(dirs, ftp)
+    def _get_species_dirs(self, dirs: list[str], ftp: ftplib.FTP) -> dict[str, list[str]]:
 
-    def _reverse_dict(self, directories: dict) -> dict:
-        reversed_directories = defaultdict(list)
-        for release, species_dirs in directories.items():
-            for species_dir in species_dirs:
-                reversed_directories[species_dir].append(release)
-        return dict(reversed_directories)
+        def format_release_dirname(dirname: str) -> str:
+            return dirname.removeprefix("release-").removesuffix("/fasta").removesuffix("_fasta")
 
-    def _build_directory_dict(
-        self, top_dirs: list[str], species_dirs: list[list[str]]
-    ) -> dict[str, list[str]]:
-        # only use number to list release so e.g. "release-115" -> "115"
-        self.orig_top_dirs = [dir[-3:] for dir in self.orig_top_dirs]
-        return self._reverse_dict(super()._build_directory_dict(self.orig_top_dirs, species_dirs))
+        def reverse_list_dict(
+            species_by_release: dict[str, list[str]], key_formatter: Callable[[str], str]
+        ) -> dict[str, list[str]]:
+            reversed_dict = defaultdict(list)
+            for key, value_list in species_by_release.items():
+                for value in value_list:
+                    reversed_dict[value].append(key_formatter(key))
+            return dict(reversed_dict)
+
+        lookup_dirs = [f"{dir}/fasta" if dir.startswith("release") else dir for dir in dirs]
+
+        species_by_release = super()._get_species_dirs(lookup_dirs, ftp)
+        release_by_species = reverse_list_dict(species_by_release, format_release_dirname)
+
+        return release_by_species
 
     # ---- Genomic Asset Fetching ----
-    def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
-        """Verifies checksums parsed from CHECKSUMS file using 'sum' command.
+    def _matches_checksum(self, file_path: Path, expected_checksum: str) -> bool:
+        """Checks whether a file maches the expected checksum from the CHECKSUMS file using the 'sum' command.
+
+        Arguments:
+            file_path {pathlib.Path} -- Path to a local file.
+            expected_checksum {str} -- Expected checksum of the file.
 
         Notes:
             The checksum type used is a 16-bit BSD checksum.
             There does not seem to be a neater Python implementation for this than simply calling the `sum` command.
+
+        Returns:
+            bool -- Whether the file matches the expected checksum.
         """
         try:
             result = subprocess.run(["sum", file_path], capture_output=True, check=True, text=True)
@@ -309,14 +472,10 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
         except subprocess.CalledProcessError:
             return False
 
-    def _checksum_filename(self) -> str:
-        return "CHECKSUMS"
-
     def _parse_checksum_line(self, line: str) -> tuple[str, str] | None:
         # returns tuple of file name and its checksum
-        line = line.strip()
-        split_line = line.split()
-        return split_line[-1], split_line[0]
+        checksum, *_, filename = line.strip().split()
+        return filename, checksum
 
     def _release_dirs(self, release: str) -> tuple[str, str]:
         """Resolves 'current' vs numeric release to the right directories.
@@ -426,15 +585,17 @@ class EnsemblGenomicDataBase(BaseGenomicDataBase):
 
 
 class NCBIGenomicDataBase(BaseGenomicDataBase):
+    name: ClassVar[str] = "ncbi"
+    host: ClassVar[str] = "ftp.ncbi.nlm.nih.gov"
+    base_path: ClassVar[str] = "genomes/refseq/"
+    checksums_filename: ClassVar[str] = "md5checksums.txt"
+
     def __init__(
         self,
-        name: str = "ncbi",
-        host: str = "ftp.ncbi.nlm.nih.gov",
-        base_path: str = "genomes/refseq/",
         cache_dir: Path | None = None,
-        allowlist: list[str] | None = None,
+        allowlist: set[str] | None = None,
     ) -> None:
-        super().__init__(name, host, base_path, cache_dir, allowlist)
+        super().__init__(cache_dir, allowlist)
 
     # ---- Directory Discovery ----
     def _try_change_directory(self, ftp: ftplib.FTP, taxon: str, species: str, dir: str) -> str | None:
@@ -465,8 +626,6 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
                 return None
             dirs = self._get_dirs(ftp)
 
-        # split to avoid including locations that symbolic links point to in the list so "current -> test/4711" -> "current"
-        dirs = [dir.split(maxsplit=1)[0] for dir in dirs]
         if dir == "all_assembly_versions":
             dirs = [dir for dir in dirs if dir != "suppressed"]
         return dirs
@@ -499,14 +658,23 @@ class NCBIGenomicDataBase(BaseGenomicDataBase):
 
         return assembly_name, accession
 
-    def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
+    def _matches_checksum(self, file_path: Path, expected_checksum: str) -> bool:
+        """Checks whether a file maches the expected checksum from the md5checksums.txt file using an md5 hash.
+
+        Arguments:
+            file_path {pathlib.Path} -- Path to a local file.
+            expected_checksum {str} -- Expected checksum of the file.
+
+        Notes:
+            The checksum type used is an md5 hash.
+
+        Returns:
+            bool -- Whether the file matches the expected checksum.
+        """
         with open(file_path, "rb") as f:
             digest = hashlib.file_digest(f, "md5")
 
         return digest.hexdigest() == expected_checksum
-
-    def _checksum_filename(self) -> str:
-        return "md5checksums.txt"
 
     def _parse_checksum_line(self, line: str) -> tuple[str, str] | None:
         # Lines like: "<md5>  ./GCF_..._genomic.gtf.gz"
@@ -591,13 +759,13 @@ def fetch_dropdown_options() -> dict[str, dict[str, list[str]]]:
     """
     # TODO: check allowlists to apply same behaviour like before
 
-    return dict(
-        [
-            NCBIGenomicDataBase(
-                allowlist=["vertebrate_mammalian", "archaea", "invertebrate", "plant"],
-            ).fetch_ftp_directories(),
-            EnsemblGenomicDataBase(
-                allowlist=["current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]],
-            ).fetch_ftp_directories(),
-        ]
-    )
+    databases = [
+        NCBIGenomicDataBase(
+            allowlist={"vertebrate_mammalian", "archaea", "invertebrate", "plant"},
+        ),
+        EnsemblGenomicDataBase(
+            allowlist={"current_gtf", "current_fasta", *[f"release-{i}" for i in range(110, 116)]},
+        ),
+    ]
+
+    return {database.name: database.fetch_ftp_directories() for database in databases}
