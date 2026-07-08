@@ -38,8 +38,8 @@ export default function RecentRuns() {
                     >
                         <Horizontal gap="lg" align="center">
                             <RunStatus status={run.status} />
-                            <span>{getPipelineDisplayName(run.pipeline)}</span>
-                            <span className="small text-muted">
+                            <span>{run.run_name}</span>
+                            <span className="ms-auto small text-muted">
                                 {timeAgo(run.timestamp)}
                             </span>
                         </Horizontal>

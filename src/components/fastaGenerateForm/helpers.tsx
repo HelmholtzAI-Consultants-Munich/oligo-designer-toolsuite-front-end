@@ -37,6 +37,7 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
 export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
+    run_name: string,
     updateRuns: () => void,
     token: string | null,
     navigate: ReturnType<typeof useNavigate>,
@@ -101,6 +102,7 @@ export const handleSubmit = async (
             payload: JSON.stringify({
                 formdata: uploadFormData,
                 token,
+                run_name,
                 pipeline_run_config: pipelineRunConfig ?? null,
             }),
         };

@@ -1,7 +1,10 @@
+import re
+import unicodedata
 from http import HTTPStatus
 from pathlib import Path
 from typing import Any, cast
 
+import bleach
 import requests
 from bson import ObjectId
 from flask import abort, current_app, session
@@ -203,3 +206,22 @@ def validate_turnstile(token):
     except requests.RequestException as e:
         current_app.logger.warning(f"Turnstile request failed: {e}")
         return False
+
+
+# ============================================================================
+# Sanitization Helpers
+# ============================================================================
+
+
+def sanitize_input(raw_message: str) -> str:
+    normalized = unicodedata.normalize("NFKC", raw_message)
+    sanitized = bleach.clean(
+        normalized,
+        tags=[],
+        attributes={},
+        protocols=[],
+        strip=True,
+        strip_comments=True,
+    )
+    sanitized = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", sanitized)
+    return sanitized.replace("\r\n", "\n").replace("\r", "\n").strip()

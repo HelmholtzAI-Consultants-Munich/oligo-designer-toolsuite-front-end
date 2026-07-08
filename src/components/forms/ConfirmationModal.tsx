@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { Send } from "react-bootstrap-icons";
 import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
-import { Button, Form as BootstrapForm } from "react-bootstrap";
+import { Alert, Button, Form } from "react-bootstrap";
 import { TURNSTILE_SITE_KEY } from "../../config";
 import { useRuns } from "../../hooks/useRuns";
 import { showToast } from "../../utils/toastUtil";
@@ -31,6 +31,9 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [isAcceptingTerms, setIsAcceptingTerms] = useState(false);
 
+    const [run_name, setRunName] = useState("");
+    const [error, setError] = useState<string | null>(null);
+
     const turnstileRef = useRef<TurnstileInstance | null>(null);
     const sitekey = TURNSTILE_SITE_KEY;
 
@@ -44,8 +47,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         auth.legal?.accepted_terms_version !==
         auth.legal?.current_terms_version;
 
-    const handlePipelineSubmit = async () => {
-        const submittedFormData = formData as RJSFFormData;
+    const handleTermsAcceptance = async () => {
         if (requiresTermsAcceptance) {
             if (!hasAcceptedTerms) {
                 showToast({
@@ -73,6 +75,28 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             }
             setHasAcceptedTerms(false);
         }
+    };
+
+    const handleRunName = () => {
+        const trimmedMessage = run_name.trim();
+
+        if (!trimmedMessage) {
+            setError("Please enter a name for your run.");
+            return;
+        }
+        if (trimmedMessage.length > 20) {
+            setError(`Run name is too long, (max ${20} characters).`);
+            return;
+        }
+
+        setError(null);
+    };
+
+    const handlePipelineSubmit = async () => {
+        const submittedFormData = formData as RJSFFormData;
+
+        await handleTermsAcceptance();
+        handleRunName();
 
         const pipelineRunConfig = buildExportPayload(
             submittedFormData,
@@ -82,6 +106,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         handleSubmit(
             submittedFormData,
             pipeline,
+            run_name,
             updateRuns,
             turnstileRef.current?.getResponse() ?? "",
             navigate,
@@ -98,7 +123,23 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <Modal.Title>Confirm Run Submission</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                {" "}
+                <Form.Group controlId="runName">
+                    <Form.Label>Please enter a name for your run:</Form.Label>
+                    <Form.Control
+                        value={run_name}
+                        onChange={(e) => setRunName(e.target.value)}
+                        placeholder=" "
+                        maxLength={20}
+                    />
+                    <div className="text-muted small mt-1 text-end">
+                        {run_name.length}/{20}
+                    </div>
+                    {error && (
+                        <Alert variant="danger" className="py-2">
+                            {error}
+                        </Alert>
+                    )}
+                </Form.Group>{" "}
                 {requiresTermsAcceptance && (
                     <div
                         className="border rounded p-3 mb-3 bg-light"
@@ -115,7 +156,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             </Link>
                             .
                         </p>
-                        <BootstrapForm.Check
+                        <Form.Check
                             id={`${pipeline}-terms-acceptance`}
                             type="checkbox"
                             className="mb-3"

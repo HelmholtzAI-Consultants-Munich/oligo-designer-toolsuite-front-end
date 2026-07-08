@@ -56,6 +56,7 @@ const Runs = () => {
                 <thead>
                     <tr>
                         <th></th>
+                        <th>Name</th>
                         <th>Pipeline</th>
                         <th>Started</th>
                         <th>Actions</th>
@@ -75,6 +76,7 @@ const Runs = () => {
                             <td>
                                 <RunStatus status={run.status} />
                             </td>
+                            <td>{run.run_name}</td>
                             <td>{getPipelineDisplayName(run.pipeline)}</td>
                             <td>{formatDateTime(run.timestamp)}</td>
                             <td>

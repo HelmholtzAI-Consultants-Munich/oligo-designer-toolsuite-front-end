@@ -55,6 +55,7 @@ def format_pipeline_run(run):
 
     return {
         "id": str(run["_id"]),
+        "run_name": run.get("run_name"),
         "pipeline": run.get("pipeline", "unknown"),
         "status": run.get("status", "unknown"),
         "timestamp": timestamp_for_display(run.get("timestamp"), separator="_"),
