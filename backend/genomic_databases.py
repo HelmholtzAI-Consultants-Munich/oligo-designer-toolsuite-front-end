@@ -71,7 +71,7 @@ class BaseGenomicDatabase(ABC):
         """Initializes the genomic database.
 
         Keyword Arguments:
-            cache_dir {Path | None} -- Path to the local directory to use as a download cache. (default: {None})
+            cache_dir {pathlib.Path | None} -- Path to the local directory to use as a download cache. (default: {None})
             allowlist {set[str] | None} -- Set of subdirectories. If provided, queries will be limited to these. (default: {None})
         """
         self.cache_dir = cache_dir
@@ -290,7 +290,7 @@ class BaseGenomicDatabase(ABC):
             RuntimeError: Checksum for provided file does not match.
 
         Returns:
-            Path -- Local file path of the downloaded resource.
+            pathlib.Path -- Local file path of the downloaded resource.
         """
         # Download file
         file_path = self._download(dir, remote_filename)
