@@ -4,9 +4,7 @@ import { useRuns } from "../../hooks/useRuns";
 import { Horizontal } from "./Alignment";
 import RunStatus from "./RunStatus";
 import { ArrowRight } from "react-bootstrap-icons";
-import { getPipelineDisplayName } from "../../pipelineConfig/utils";
 
-// TODO: update the timeAgo regularly (e.g. every minute) to keep it accurate without needing a page refresh
 const timeAgo = (timestamp: string) => {
     const now = new Date();
     const past = new Date(timestamp); // ensure it's treated as UTC

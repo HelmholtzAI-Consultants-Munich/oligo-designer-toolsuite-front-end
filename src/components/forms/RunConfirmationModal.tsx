@@ -15,14 +15,14 @@ import { buildExportPayload } from "./pipelineConfigIO";
 import type { RJSFFormData } from "../componentTypes";
 import { handleSubmit } from "../fastaGenerateForm/helpers";
 
-type ConfirmationModalProps = {
+type RunConfirmationModalProps = {
     pipeline: string;
     schema: RJSFSchema;
     formData: RJSFFormData;
     setSubmissionTried: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+const RunConfirmationModal: React.FC<RunConfirmationModalProps> = ({
     pipeline,
     schema,
     formData,
@@ -80,23 +80,30 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     const handleRunName = () => {
         const trimmedMessage = run_name.trim();
 
-        if (!trimmedMessage) {
+        if (trimmedMessage.length === 0) {
             setError("Please enter a name for your run.");
-            return;
+            return false;
         }
         if (trimmedMessage.length > 20) {
             setError(`Run name is too long, (max ${20} characters).`);
-            return;
+            return false;
         }
 
         setError(null);
+        return true;
     };
 
     const handlePipelineSubmit = async () => {
+        if (error) {
+            return;
+        }
+
         const submittedFormData = formData as RJSFFormData;
 
         await handleTermsAcceptance();
-        handleRunName();
+        if (!handleRunName()) {
+            return;
+        }
 
         const pipelineRunConfig = buildExportPayload(
             submittedFormData,
@@ -127,8 +134,13 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     <Form.Label>Please enter a name for your run:</Form.Label>
                     <Form.Control
                         value={run_name}
-                        onChange={(e) => setRunName(e.target.value)}
-                        placeholder=" "
+                        onChange={(e) => {
+                            setRunName(e.target.value);
+                            if (error) {
+                                setError(null);
+                            }
+                        }}
+                        placeholder=""
                         maxLength={20}
                     />
                     <div className="text-muted small mt-1 text-end">
@@ -187,7 +199,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <Button
                     type="submit"
                     variant="primary"
-                    disabled={isAcceptingTerms}
+                    disabled={isAcceptingTerms || Boolean(error)}
                     onClick={handlePipelineSubmit}
                 >
                     {isAcceptingTerms ? (
@@ -203,4 +215,4 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     );
 };
 
-export default ConfirmationModal;
+export default RunConfirmationModal;

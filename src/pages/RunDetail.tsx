@@ -38,7 +38,6 @@ import type {
     FileDownloadAction,
     FileDownloadEntry,
 } from "../components/ui/Header";
-import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
 import {

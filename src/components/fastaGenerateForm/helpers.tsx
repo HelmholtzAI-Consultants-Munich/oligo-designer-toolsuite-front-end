@@ -4,7 +4,7 @@ import { extractSubmissionError } from "../errorHandler";
 import type { RJSFFormData } from "../componentTypes";
 import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
-import { useNavigate } from "react-router";
+import { type NavigateFunction } from "react-router";
 import {
     PIPELINE_CONFIG,
     type PipelineConfig,
@@ -40,7 +40,7 @@ export const handleSubmit = async (
     run_name: string,
     updateRuns: () => void,
     token: string | null,
-    navigate: ReturnType<typeof useNavigate>,
+    navigate: NavigateFunction,
     pipelineRunConfig?: PipelineConfigExport
 ) => {
     // copy to avoid modifying formData

@@ -39,7 +39,7 @@ import {
 } from "./ArrayFieldTemplates";
 import ErrorListTemplate from "./ErrorListTemplate";
 import TxtUploadInput from "./TxtUploadInput";
-import ConfirmationModal from "./ConfirmationModal";
+import RunConfirmationModal from "./RunConfirmationModal";
 
 type Props = {
     pipeline: Pipeline["name"];
@@ -183,10 +183,10 @@ const PipelineTemplate: React.FC<Props> = ({
         setSubmissionTried(true);
     };
 
-    const showConfirmationModal = () => {
+    const showRunConfirmationModal = () => {
         showModal({
             rawContent: (
-                <ConfirmationModal
+                <RunConfirmationModal
                     formData={formData}
                     pipeline={pipeline}
                     schema={schema}
@@ -256,7 +256,7 @@ const PipelineTemplate: React.FC<Props> = ({
                     validator={validator}
                     liveValidate={submissionTried ? "onChange" : false}
                     onChange={(e) => setFormData(e.formData)}
-                    onSubmit={showConfirmationModal}
+                    onSubmit={showRunConfirmationModal}
                     onError={handlePipelineSubmitError}
                 >
                     <Button

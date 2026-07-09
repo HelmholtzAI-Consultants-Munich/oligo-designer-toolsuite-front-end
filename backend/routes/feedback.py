@@ -9,7 +9,7 @@ from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
 from backend.extensions import db, limiter
-from backend.routes.route_helpers import sanitize_input_message, validate_turnstile
+from backend.routes.route_helpers import sanitize_input, validate_turnstile
 from backend.utilities.formatting import format_feedback
 from backend.utils import utc_now
 
@@ -39,7 +39,7 @@ def create_feedback():
     - token: Turnstile token for spam prevention
     """
     data = request.get_json(silent=True) or {}
-    message = sanitize_input_message(str(data.get("message") or ""))
+    message = sanitize_input(str(data.get("message") or ""))
     metadata = data.get("metadata") or {}
     if not validate_turnstile(data.get("token", "")):
         abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
