@@ -7,7 +7,7 @@ from glom import assign
 
 from backend.constants import PIPELINE_GENOMIC_INPUT
 from backend.extensions import db
-from backend.genomic_databases import EnsemblGenomicDataBase, NCBIGenomicDataBase
+from backend.genomic_databases import EnsemblGenomicDatabase, NCBIGenomicDatabase
 from backend.tests.conftest import assert_error_sanitized, post
 
 """
@@ -28,8 +28,8 @@ def verify_file_mock(monkeypatch):
     def mock_return(a, b, c):
         return True
 
-    monkeypatch.setattr(NCBIGenomicDataBase, "_verify_file", mock_return)
-    monkeypatch.setattr(EnsemblGenomicDataBase, "_verify_file", mock_return)
+    monkeypatch.setattr(NCBIGenomicDatabase, "_verify_file", mock_return)
+    monkeypatch.setattr(EnsemblGenomicDatabase, "_verify_file", mock_return)
 
 
 @pytest.fixture
