@@ -17,54 +17,51 @@ For more information on how to maintain the project refer to the [Admin Guide](A
 
 ## Components and locations
 
-- **Frontend (UI)**: `src/`
-  - Entrypoints: `src/index.tsx`, `src/App.tsx`
-  - Tests & e2e: `tests/`, `playwright/`
+- **Frontend (UI)**: [`src/`](src/)
+  - Entrypoints: [`src/index.tsx`](src/index.tsx), [`src/App.tsx`](src/App.tsx)
+  - Tests & e2e: [`tests/`](src/tests/), [`playwright/`](src/playwright/)
   - Purpose: User-facing SPA built with React + TypeScript and bundled with Vite. Handles client routing, forms, validation and UX for pipeline configuration.
 
-- **Backend (API & Core logic)**: `backend/`
-  - Entrypoints: `backend/app.py`, `backend/cli.py`
-  - Key modules: `backend/config.py`, `backend/extensions.py`, `backend/cache.py`, `backend/utils.py`
-  - Data/schema helpers: `backend/genomic_databases.py`, `backend/annotation_cache/`
+- **Backend (API & Core logic)**: [`backend/`](backend/)
+  - Entrypoints: [`backend/app.py`](backend/app.py), [`backend/cli.py`](backend/cli.py)
+  - Key modules: [`backend/config.py`](backend/config.py), [`backend/extensions.py`](backend/extensions.py), [`backend/cache.py`](backend/cache.py), [`backend/utils.py`](backend/utils.py)
+  - Data/schema helpers: [`backend/genomic_databases.py`](backend/genomic_databases.py), [`backend/annotation_cache/`](backend/annotation_cache/)
   - Purpose: Hosts HTTP API, performs validation, orchestrates tasks and persistence, exposes administrative CLI helpers.
 
-- **Workers & Scheduling**: `backend/beat/`, `worker/`
-  - Celery: `backend/beat/celery.py` and worker Dockerfile `worker.Dockerfile`
+- **Workers & Scheduling**: [`backend/beat/`](backend/beat/) and [`worker/`](backend/worker/)
+  - Celery: [`backend/beat/celery.py`](backend/beat/celery.py)
   - Purpose: Run asynchronous jobs and scheduled tasks (e.g., background generation, annotation refreshes).
 
-- **Data, caches and generated artifacts**: `backend/data/`, `backend/cache/`
+- **Data, caches and generated artifacts**: [`backend/data/`](backend/data/), [`backend/cache/`](backend/cache/)
   - Contains: generated oligoseq results, annotation caches, genomic regions and other runtime artifacts.
 
-- **Schemas & Validation**: `schemas/`
-  - JSON schemas used to validate pipeline inputs and forms (e.g., `oligoseq.schema.json`, `fastaForm.schema.json`).
-
-- **Documentation**: `docs/`
-  - Contains user and developer docs, design notes and operational runbooks.
+- **Schemas & Validation**: [`schemas/`](schemas/)
+  - JSON schemas used to validate pipeline inputs and forms (e.g., [`oligoseq.schema.json`](schemas/oligoseq.schema.json)).
 
 - **Deployment & DevOps**: top-level files and folders
-  - Dockerfiles: `docker/`, `web.Dockerfile`, `server.Dockerfile`, `worker.Dockerfile` (also found at project root under `docker/`)
-  - Compose: `compose.yml` and environment-specific overrides like `compose.prod.yml` and `compose.override.yml`.
-  - Reverse proxy: `nginx.conf` for production proxying and static-serving.
-  - Provisioning: `ansible/` contains playbooks and inventory for cloud provisioning and deployment automation.
+  - Dockerfiles: [`docker/`](docker/)
+  - Compose: [`compose.yml`](compose.yml) and environment-specific overrides like [`compose.prod.yml`](compose.prod.yml) and [`compose.override.yml`](compose.override.yml).
+  - Reverse proxy: [`nginx.conf`](nginx.conf) for production proxying and static-serving.
+  - Provisioning: [`ansible/`](ansible/) contains playbooks and inventory for cloud provisioning and deployment automation.
 
 - **Observability**:
-  - `monitoring/` contains Prometheus and Grafana configs for metrics and dashboards.
-  - Logging: backend logs to stdout (collected by container runtime); consult `backend/config.py` for log level configuration.
+  - [`monitoring/`](monitoring/) contains Prometheus and Grafana configs for metrics and dashboards.
+  - Logging: backend logs to stdout (collected by container runtime); consult [`backend/config.py`](backend/config.py) for log level configuration.
 
 - **Testing and Verification**:
-  - Unit & integration tests: `backend/tests/`, `src/tests/`
-  - End-to-end: `playwright/`, `tests/e2e/` folder for browser scenarios.
+  - Unit ([`backend/tests/`](backend/tests/)) & integration ([`src/tests/`](src/tests/)) tests.
+  - End-to-end: [`tests/e2e/`](tests/e2e/) folder for browser scenarios.
 
 ## Data flow (high level)
 
 1. User interacts with the frontend SPA and submits a request.
 2. Frontend sends an HTTP request to the backend API.
-3. Backend validates input (schemas in `schemas/`) and either:
+3. Backend validates input (schemas in [`schemas/`](schemas/)) and either:
    - Responds synchronously with small results, or
    - Enqueues a background job (via Celery) and returns a job id/status endpoint.
-4. Workers pick up tasks, write artifacts to `backend/data/` or caches in `backend/cache/`, and update job status.
+4. Workers pick up tasks, write artifacts to [`backend/data/`](backend/data/) or caches in [`backend/cache/`](backend/cache/), and update job status.
 5. Frontend polls or receives updates to surface job progress and fetch generated artifacts.
 
 ## Where to go next
 
-- Read the ([`docs/`](docs/)) for deeper guides and runbooks.
+- Read the [`docs/`](docs/) for user and developer docs, design notes and operational runbooks.
