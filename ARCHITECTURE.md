@@ -1,17 +1,18 @@
 # Architecture
 
-This document summarizes the high-level architecture of the ODT-Cloud project, its main components, where they live in the repository, and how they interact. It is intended as a quick orientation for contributors and maintainers.
+This document summarizes the high-level architecture of ODT-Cloud: the main components, their repository locations, and how they interact. It's a quick orientation for contributors and maintainers.
 If you want to contribute to the project please also read the [Contributing Guide](CONTRIBUTING.md).
 For more information on how to maintain the project refer to the [Admin Guide](ADMIN_GUIDE.md).
 
-> Separation of concerns: the system splits responsibilities into a fast HTTP API (backend) and asynchronous workers (Celery) for long-running computation. This keeps the API responsive and allows workers to scale independently.
+> Separation of concerns: a fast HTTP API (Flask backend) handles request/response flows while Celery workers run long-running tasks asynchronously. This keeps the API responsive and lets workers scale independently.
 
 ## High-level summary
 
 - Frontend: A React + Vite single-page application that implements the UI and communicates with the backend via HTTP APIs.
-- Backend: A Python web service (Flask-like layout) that exposes REST endpoints and coordinates background work.
-- Workers: Celery-based background workers for long-running tasks (generation, annotation, pipeline steps).
+- Backend: A Python web service (Flask application) that exposes REST endpoints and coordinates background work. Uses MongoDB for metadata/persistence and Redis for Celery broker/cache.
+- Workers: Celery-based background workers for long-running tasks (generation, annotation, pipeline steps). Workers use Redis as the broker/result backend and for transient caches.
 - Data & cache: Local data directories for generated artifacts, genomic databases, and caches.
+- Database & broker: MongoDB for metadata/persistence; Redis for Celery broker and transient caches.
 - Deployment: Containerised with Docker; orchestrated via `docker-compose` and optionally provisioned with Ansible; `nginx` is used as a reverse proxy in production.
   ![architecture overview](docs/assets/images/architecture.png)
 
@@ -19,7 +20,7 @@ For more information on how to maintain the project refer to the [Admin Guide](A
 
 - **Frontend (UI)**: [`src/`](src/)
   - Entrypoints: [`src/index.tsx`](src/index.tsx), [`src/App.tsx`](src/App.tsx)
-  - Tests & e2e: [`tests/`](src/tests/), [`playwright/`](src/playwright/)
+  - Tests & e2e: [`src/tests/`](src/tests/), [`playwright/`](playwright/).
   - Purpose: User-facing SPA built with React + TypeScript and bundled with Vite. Handles client routing, forms, validation and UX for pipeline configuration.
 
 - **Backend (API & Core logic)**: [`backend/`](backend/)
@@ -32,6 +33,10 @@ For more information on how to maintain the project refer to the [Admin Guide](A
   - Celery: [`backend/beat/celery.py`](backend/beat/celery.py)
   - Purpose: Run asynchronous jobs and scheduled tasks (e.g., background generation, annotation refreshes).
 
+- **Infrastructure services**:
+  - **MongoDB**: Primary document database used for metadata and persistence. Default URI: `mongodb://localhost/oligo_db` (see [`backend/config.py`](backend/config.py)). In [`compose.yml`](compose.yml) this is provided by the `odt-db` service.
+  - **Redis**: Used as the Celery broker/result backend and for transient caches. Default URI: `redis://localhost` (see [`backend/config.py`](backend/config.py)). In [`compose.yml`](compose.yml) this is provided by the `odt-redis` service.
+
 - **Data, caches and generated artifacts**: [`backend/data/`](backend/data/), [`backend/cache/`](backend/cache/)
   - Contains: generated oligoseq results, annotation caches, genomic regions and other runtime artifacts.
 
@@ -40,7 +45,7 @@ For more information on how to maintain the project refer to the [Admin Guide](A
 
 - **Deployment & DevOps**: top-level files and folders
   - Dockerfiles: [`docker/`](docker/)
-  - Compose: [`compose.yml`](compose.yml) and environment-specific overrides like [`compose.prod.yml`](compose.prod.yml) and [`compose.override.yml`](compose.override.yml).
+  - Compose: [`compose.yml`](compose.yml) and environment-specific overrides like [`compose.prod.yml`](compose.prod.yml) and [`compose.override.yml`](compose.override.yml). The compose configuration defines named volumes `data-access` and `cache` for persistent artifacts and cache storage.
   - Reverse proxy: [`nginx.conf`](nginx.conf) for production proxying and static-serving.
   - Provisioning: [`ansible/`](ansible/) contains playbooks and inventory for cloud provisioning and deployment automation.
 
@@ -56,9 +61,11 @@ For more information on how to maintain the project refer to the [Admin Guide](A
 
 1. User interacts with the frontend SPA and submits a request.
 2. Frontend sends an HTTP request to the backend API.
-3. Backend validates input (schemas in [`schemas/`](schemas/)) and either:
-   - Responds synchronously with small results, or
-   - Enqueues a background job (via Celery) and returns a job id/status endpoint.
+3. Backend validates input using JSON schemas in [`schemas/`](schemas/) and either:
+
+- Responds synchronously with small results, or
+- Enqueues a background job (via Celery) and returns a job id/status endpoint.
+
 4. Workers pick up tasks, write artifacts to [`backend/data/`](backend/data/) or caches in [`backend/cache/`](backend/cache/), and update job status.
 5. Frontend polls or receives updates to surface job progress and fetch generated artifacts.
 
