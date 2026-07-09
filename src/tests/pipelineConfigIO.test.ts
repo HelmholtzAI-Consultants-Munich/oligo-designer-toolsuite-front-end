@@ -1,3 +1,10 @@
+/**
+ * Test schema fixture for the OligoSeq pipeline.
+ *
+ * This schema is intentionally minimal and mirrors the shape used by the
+ * real pipeline configuration logic so import/validation behavior is tested
+ * against the same expected structure.
+ */
 import { describe, it, expect } from "vitest";
 import type { RJSFSchema } from "@rjsf/utils";
 import {
@@ -6,7 +13,6 @@ import {
 } from "../components/forms/pipelineConfigIO";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
-// Minimal schema that mirrors the real pipeline schemas
 const testSchema = PIPELINE_CONFIG["oligoseq"].schema;
 
 // ---- buildExportPayload ----
@@ -45,6 +51,12 @@ describe("buildExportPayload", () => {
 // ---- importAndValidate ----
 
 describe("importAndValidate", () => {
+    /**
+     * Helper for negative import validation tests.
+     *
+     * It asserts that the payload is rejected and that the error message
+     * contains the expected fragments.
+     */
     const negativeTestImportAndValidate = (
         payload: unknown,
         ...matchers: (string | RegExp)[]
@@ -56,6 +68,12 @@ describe("importAndValidate", () => {
         }
     };
 
+    /**
+     * A canonical valid export payload used for positive validation coverage.
+     *
+     * Most tests reuse this fixture to verify that valid data is accepted and
+     * that the resulting config tree remains intact.
+     */
     const validPayload = {
         _meta: {
             version: 2,
