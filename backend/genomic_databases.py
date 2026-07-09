@@ -1,3 +1,5 @@
+"""Shared file for retrieving genomic resources using genomic databases."""
+
 import datetime
 import ftplib
 import gzip
