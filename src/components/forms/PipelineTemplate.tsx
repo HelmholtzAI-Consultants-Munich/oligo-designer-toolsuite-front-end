@@ -47,16 +47,15 @@ type Props = {
     schema: RJSFSchema;
     uiSchema: UiSchema;
 };
-
 /**
- * Renders a form for a specific pipeline, allowing users to input data and run the pipeline.
- * @param pipeline - The name of the pipeline for which the form is being rendered.
- * @param title - The title to be displayed on the page.
- * @param schema - The JSON schema defining the structure and validation rules for the form data.
- * @param uiSchema - The UI schema defining how the form fields should be rendered.
- * @returns A React component that renders the pipeline form and handles user interactions, including form submission, validation, and displaying modals for confirmation.
+ * Renders a pipeline page which includes the RJSF Form, the submit button, Turnstile and the terms acceptance banner.
+ *
+ * @param pipeline - name of the pipeline
+ * @param title - the beautified human accessible name of the pipeline
+ * @param schema - JSON Schema of the pipeline
+ * @param uiSchema - RJSF UISchema of the pipeline
+ * @returns A React Component that renders a pipeline page
  */
-
 const PipelineTemplate: React.FC<Props> = ({
     pipeline,
     title,

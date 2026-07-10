@@ -14,6 +14,19 @@ interface NcbiAnnotationSelectProps {
     handleChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
+/**
+ * Dropdown Menu for selecting the annotation release for an Genomic Region Generator Form using NCBI as source
+ *
+ * Unlike the other Dropdown Menus, this one not only wraps the `GenomicDropDown` component, but also communicates with the server to
+ * fetch the current annotation releases of a species on the fly.
+ *
+ * @param tooltip - explanation comment displayed, when hovering over the small info icon of the annotation release select menu
+ * @param value - currently selected annotation release
+ * @param handleChange - callback invoked to update the RJSF Form state, when the selected annotation release is changed
+ * @param id - id of the `NcbiAnnotationSelect`
+ * @param form - current state of the form data
+ * @returns A React Component for selecting the annotation release, if `NCBI` is selected as source
+ */
 export const NcbiAnnotationSelect: React.FC<NcbiAnnotationSelectProps> = ({
     tooltip,
     value,

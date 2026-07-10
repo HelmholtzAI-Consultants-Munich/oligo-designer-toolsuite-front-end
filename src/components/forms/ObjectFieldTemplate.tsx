@@ -7,6 +7,9 @@ import { spaceBeforeCapitalLetters } from "./utils";
  * This ObjectFieldTemplate is based on the react-bootstrap theme's template.
  * It harmonizes the layout and styling of object fields with ODT's design system.
  * It also introduces a CSS grid layout to automatically arrange input fields in a responsive way.
+ *
+ * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
+ * @returns A React Component that is used to overwrite the default ObjectFieldTemplate
  */
 const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
     props: ObjectFieldTemplateProps

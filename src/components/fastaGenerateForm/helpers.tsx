@@ -15,6 +15,9 @@ export const replaceUnderscore = (s: string) => s.replaceAll("_", " ");
 export const firstLetterUppercase = (s: string) =>
     s.charAt(0).toUpperCase() + s.slice(1);
 
+/**
+ * Map to convert genomic region names to ones that are nicely displayed
+ */
 export const regionDisplayNames = {
     gene: "Gene",
     intergenic: "Intergenic",
@@ -25,6 +28,12 @@ export const regionDisplayNames = {
     exon_exon_junction: "Exon-exon-junction",
 };
 
+/**
+ * Build an object from the queue position tuple to simplify working with it.
+ *
+ * @param queue_position - tuple that describes the number of high priority runs ahead in the first part and the number of low priority runs ahead in the second part
+ * @returns object that describes the number of total runs ahead and the queue position
+ */
 export const unwrapQueuePosition = (queue_position: [number, number]) => {
     const [highPriorityAhead, defaultPriorityAhead] = queue_position;
     const runsAhead = highPriorityAhead + defaultPriorityAhead;
@@ -46,6 +55,16 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
  * @returns A Promise that resolves when the submission process is complete.
  */
 
+/**
+ * Custom submit handler for our form that overrides the default submit handler of RJSF.
+ * It allow us to inject custom logic for handling file uploads that are not well integrated in RJSF.
+ *
+ * @param formData - state of the whole Form
+ * @param pipeline - name of the pipeline this form is for
+ * @param updateRuns - callback to re-fetch the current state of runs from the server after submitting the new one
+ * @param token - token for turnstile verification
+ * @param pipelineRunConfig - copy of the formData with metadata attached and non savable fields removed, used for useSettings feature
+ */
 export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
