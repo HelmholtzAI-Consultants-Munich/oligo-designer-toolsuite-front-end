@@ -33,6 +33,18 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
         ownPosition: runsAhead + 1,
     };
 };
+/**
+ * Handles the submission of a pipeline form, including file uploads and API requests, navigates to the run page.
+ * @param formData - The data from the form to be submitted.
+ * @param pipeline - The name of the pipeline being run.
+ * @param run_name - The name of the run.
+ * @param updateRuns - A function to refresh the list of runs after submission.
+ * @param token - A token for turnstile verification.
+ * @param navigate - A function to navigate to a different route after submission.
+ * @param pipelineRunConfig - Optional configuration for the pipeline run.
+ *
+ * @returns A Promise that resolves when the submission process is complete.
+ */
 
 export const handleSubmit = async (
     formData: RJSFFormData,

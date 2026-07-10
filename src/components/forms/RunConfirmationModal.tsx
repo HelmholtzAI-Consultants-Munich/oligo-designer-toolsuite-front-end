@@ -22,6 +22,15 @@ type RunConfirmationModalProps = {
     setSubmissionTried: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+/**
+ * Renders a modal for confirming the submission of a pipeline run.
+ * @param pipeline - The name of the pipeline being run.
+ * @param schema - The JSON schema defining the structure and validation rules for the form data.
+ * @param formData - The data from the form to be submitted.
+ * @param setSubmissionTried - A function to update the state indicating whether a submission has been attempted.
+ * @returns
+ */
+
 const RunConfirmationModal: React.FC<RunConfirmationModalProps> = ({
     pipeline,
     schema,
@@ -47,6 +56,10 @@ const RunConfirmationModal: React.FC<RunConfirmationModalProps> = ({
         auth.legal?.accepted_terms_version !==
         auth.legal?.current_terms_version;
 
+    /**
+     * Handles the acceptance of terms and conditions.
+     * @returns A promise resolving to a boolean indicating whether the terms were accepted.
+     */
     const handleTermsAcceptance = async () => {
         if (requiresTermsAcceptance) {
             if (!hasAcceptedTerms) {
@@ -76,7 +89,10 @@ const RunConfirmationModal: React.FC<RunConfirmationModalProps> = ({
             setHasAcceptedTerms(false);
         }
     };
-
+    /**
+     * Handles the validation of the run name.
+     * @returns A boolean indicating whether the run name is valid.
+     */
     const handleRunName = () => {
         const trimmedMessage = run_name.trim();
 
@@ -92,7 +108,10 @@ const RunConfirmationModal: React.FC<RunConfirmationModalProps> = ({
         setError(null);
         return true;
     };
-
+    /**
+     * Handles the submission of the pipeline run.
+     * @returns A promise resolving to a boolean indicating whether the submission was successful.
+     */
     const handlePipelineSubmit = async () => {
         if (error) {
             return;
