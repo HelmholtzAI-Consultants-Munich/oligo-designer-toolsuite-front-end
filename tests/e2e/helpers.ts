@@ -212,6 +212,10 @@ export const submitPipelineAndOpenRun = async (page: Page) => {
         await expect(termsCheckbox).toBeChecked();
     }
 
+    await expect(
+        page.locator('input[name="cf-turnstile-response"]')
+    ).not.toHaveValue("");
+
     const confirmationButton = confirmationModal.getByRole("button", {
         name: /Run Pipeline/i,
     });
