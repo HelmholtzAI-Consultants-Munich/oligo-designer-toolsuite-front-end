@@ -4,8 +4,6 @@ This document summarizes the high-level architecture of ODT-Cloud: the main comp
 If you want to contribute to the project please also read the [Contributing Guide](CONTRIBUTING.md).
 For more information on how to maintain the project refer to the [Admin Guide](ADMIN_GUIDE.md).
 
-> Separation of concerns: a fast HTTP API (Flask backend) handles request/response flows while Celery workers run long-running tasks asynchronously. This keeps the API responsive and lets workers scale independently.
-
 ## High-level summary
 
 - Frontend: A React + Vite single-page application that implements the UI and communicates with the backend via HTTP APIs.
@@ -20,22 +18,23 @@ For more information on how to maintain the project refer to the [Admin Guide](A
 
 - **Frontend (UI)**: [`src/`](src/)
   - Entrypoints: [`src/index.tsx`](src/index.tsx), [`src/App.tsx`](src/App.tsx)
-  - Tests & e2e: [`src/tests/`](src/tests/), [`playwright/`](playwright/).
-  - Purpose: User-facing SPA built with React + TypeScript and bundled with Vite. Handles client routing, forms, validation and UX for pipeline configuration.
+  - Tests & e2e: [`src/tests/`](src/tests/), [playwright tests](tests/e2e/).
+  - Purpose: User-facing SPA built with React + TypeScript and bundled with Vite. Handles client routing, forms, validation and UX for pipeline configuration. Also adds the admin interface for monitoring and user management.
 
 - **Backend (API & Core logic)**: [`backend/`](backend/)
   - Entrypoints: [`backend/app.py`](backend/app.py), [`backend/cli.py`](backend/cli.py)
   - Key modules: [`backend/config.py`](backend/config.py), [`backend/extensions.py`](backend/extensions.py), [`backend/cache.py`](backend/cache.py), [`backend/utils.py`](backend/utils.py)
   - Data/schema helpers: [`backend/genomic_databases.py`](backend/genomic_databases.py), [`backend/annotation_cache/`](backend/annotation_cache/)
+    -Tests: [`backend/tests/`](backend/tests/)
   - Purpose: Hosts HTTP API, performs validation, orchestrates tasks and persistence, exposes administrative CLI helpers.
 
 - **Workers & Scheduling**: [`backend/beat/`](backend/beat/) and [`worker/`](backend/worker/)
   - Celery: [`backend/beat/celery.py`](backend/beat/celery.py)
-  - Purpose: Run asynchronous jobs and scheduled tasks (e.g., background generation, annotation refreshes).
+  - Purpose: Runs asynchronous jobs and scheduled tasks (e.g., background generation, annotation refreshes).
 
 - **Infrastructure services**:
-  - **MongoDB**: Primary document database used for metadata and persistence. Default URI: `mongodb://localhost/oligo_db` (see [`backend/config.py`](backend/config.py)). In [`compose.yml`](compose.yml) this is provided by the `odt-db` service.
-  - **Redis**: Used as the Celery broker/result backend and for transient caches. Default URI: `redis://localhost` (see [`backend/config.py`](backend/config.py)). In [`compose.yml`](compose.yml) this is provided by the `odt-redis` service.
+  - **MongoDB**: Primary document database used for metadata and persistence (see [`backend/config.py`](backend/config.py)). In [`compose.yml`](compose.yml) this is provided by the `odt-db` service.
+  - **Redis**: Used as the Celery broker/result backend and for transient caches (see [`backend/config.py`](backend/config.py)). In [`compose.yml`](compose.yml) this is provided by the `odt-redis` service.
 
 - **Data, caches and generated artifacts**: [`backend/data/`](backend/data/), [`backend/cache/`](backend/cache/)
   - Contains: generated oligoseq results, annotation caches, genomic regions and other runtime artifacts.
