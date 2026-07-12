@@ -24,12 +24,12 @@ Behavior that is tested:
 
 
 @pytest.fixture
-def verify_file_mock(monkeypatch):
+def matches_checksum_mock(monkeypatch):
     def mock_return(a, b, c):
         return True
 
-    monkeypatch.setattr(NCBIGenomicDatabase, "_verify_file", mock_return)
-    monkeypatch.setattr(EnsemblGenomicDatabase, "_verify_file", mock_return)
+    monkeypatch.setattr(NCBIGenomicDatabase, "_matches_checksum", mock_return)
+    monkeypatch.setattr(EnsemblGenomicDatabase, "_matches_checksum", mock_return)
 
 
 @pytest.fixture
@@ -94,7 +94,7 @@ def release_queries():
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_ncbi(
-    client, dummy_form_ncbi, mock_run, mock_celery, authenticated_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ncbi, mock_run, mock_celery, authenticated_user, matches_checksum_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
@@ -108,7 +108,7 @@ def test_genomic_cascaded_ncbi(
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_ncbi_unauthenticated(
-    client, dummy_form_ncbi, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ncbi, mock_run, mock_celery, session_user, matches_checksum_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ncbi
 
@@ -126,7 +126,7 @@ def test_genomic_cascaded_single_ensembl(
     mock_run,
     mock_celery,
     authenticated_user,
-    verify_file_mock,
+    matches_checksum_mock,
     cache_dir_mock,
 ):
     dummy_form = dummy_form_ensembl
@@ -136,7 +136,7 @@ def test_genomic_cascaded_single_ensembl(
 
 
 def test_genomic_cascaded_single_ensembl_unauthenticated(
-    client, dummy_form_ensembl, mock_run, mock_celery, session_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ensembl, mock_run, mock_celery, session_user, matches_checksum_mock, cache_dir_mock
 ):
     dummy_form = dummy_form_ensembl
 
@@ -225,7 +225,7 @@ def test_genomic_cascaded_ncbi_invalid_input(client, authenticated_user, dummy_f
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_ncbi_subprocess_failure(
-    client, dummy_form_ncbi, authenticated_user, verify_file_mock, cache_dir_mock
+    client, dummy_form_ncbi, authenticated_user, matches_checksum_mock, cache_dir_mock
 ):
     """Test genomic_cascaded_ncbi with subprocess failure returns sanitized error."""
     with patch("subprocess.run", side_effect=RuntimeError("Subprocess failed")):
@@ -255,7 +255,7 @@ def test_genomic_cascaded_ensembl_invalid_input(client, authenticated_user, dumm
 
 @pytest.mark.xfail(reason="flaky, NCBI sometimes returns 403")
 def test_genomic_cascaded_ncbi_session_without_directory(
-    client, dummy_form_ncbi, mock_run, mock_celery, verify_file_mock, cache_dir_mock, session_user
+    client, dummy_form_ncbi, mock_run, mock_celery, matches_checksum_mock, cache_dir_mock, session_user
 ):
     """Test genomic_cascaded_ncbi with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ncbi
@@ -264,7 +264,7 @@ def test_genomic_cascaded_ncbi_session_without_directory(
 
 
 def test_genomic_single_ensembl_session_without_directory(
-    client, dummy_form_ensembl, mock_run, mock_celery, verify_file_mock, cache_dir_mock, session_user
+    client, dummy_form_ensembl, mock_run, mock_celery, matches_checksum_mock, cache_dir_mock, session_user
 ):
     """Test genomic_cascaded_ensembl with existing session creates directory and succeeds."""
     dummy_form = dummy_form_ensembl
