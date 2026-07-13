@@ -13,7 +13,7 @@ import type {
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
-import { Alert, Button, Form, Table } from "react-bootstrap";
+import { Alert, Form, Table } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { useRuns } from "../hooks/useRuns";
 import {
@@ -33,11 +33,7 @@ import {
 import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
-import type {
-    Action,
-    FileDownloadAction,
-    FileDownloadEntry,
-} from "../components/ui/Header";
+import type { Action, FileDownloadAction } from "../components/ui/Header";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
 import {
@@ -45,39 +41,16 @@ import {
     downloadConfig,
 } from "../utils/runConfigHelper";
 import RunMetrics from "../components/RunMetrics";
+import RunDetailFileAction from "./RunDetailFileAction";
 import { PIPELINE_CONFIG, type PipelineConfig } from "../pipelineConfig/config";
-import { downloadFileFactory } from "../utils/fileDownloadUtil";
-
-interface RunDetailFileActionsProps {
-    actions: FileDownloadEntry[];
-}
-
-const RunDetailFileAction: React.FC<RunDetailFileActionsProps> = ({
-    actions,
-}) => {
-    return (
-        <Horizontal gap="md">
-            {actions.map((action) => (
-                <Button
-                    variant="outline-primary"
-                    title={action.label}
-                    onClick={downloadFileFactory(
-                        action.label,
-                        action.url,
-                        action.fileName
-                    )}
-                >
-                    {action.icon && <action.icon size={20} />} {action.label}
-                </Button>
-            ))}
-        </Horizontal>
-    );
-};
 
 interface LocationState {
     fromAdmin?: boolean;
 }
-
+/**
+ *
+ * @returns A React functional component that renders the details of a specific run, including its status, results, and available actions.
+ */
 const RunDetail = () => {
     const { runId } = useParams();
     const navigate = useNavigate();
@@ -110,7 +83,9 @@ const RunDetail = () => {
         run?.pipeline as keyof typeof ComponentDefinition
     ]?.columns as string[];
 
-    // --- Polling/log state variables ---
+    /**
+     * Fetches the genomic regions file for a given run ID and updates the state with the parsed data.
+     */
     const fetchGenomicRegionsFile = useCallback(
         (id: string) => {
             if (run?.status === "success" && prevStatus.current !== "success") {
@@ -205,6 +180,11 @@ const RunDetail = () => {
         });
     }, [run, navigate, location.state, updateRuns]);
 
+    /**
+     * Formats a given value for Excel export, handling deeply nested arrays and objects.
+     * @param value The value to format, which can be a string, number, array, or object.
+     * @returns A string or number suitable for Excel export.
+     */
     const formatValueForExcel = useCallback(
         (value: ProbeDetailsValue): string | number => {
             // Handle deeply nested arrays
