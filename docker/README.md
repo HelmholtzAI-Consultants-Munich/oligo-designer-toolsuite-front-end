@@ -1,13 +1,8 @@
----
-title: Using Docker
-layout: default
-nav_order: 2
-parent: Development
----
+# ODT Cloud Docker Images
 
-# Using Docker
+This directory contains the Dockerfiles (and their respective `.dockerignore` files) for building the ODT Cloud's container images. Prebuilt images are hosted on GitHub's container registry and can be found [here](https://github.com/orgs/HelmholtzAI-Consultants-Munich/packages?repo_name=oligo-designer-toolsuite-front-end).
 
-ODT Cloud can be run and deployed using Docker containers. The provided configuration should only be used for development. For production deployment, please get in touch with us.
+For the Docker Compose setup, see `compose.yml` in the root directory.
 
 ---
 
