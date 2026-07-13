@@ -30,7 +30,7 @@ This document explains the test strategy for this software. There are **three** 
 ### Running locally
 
 ```bash
-# note: start database first
+# note: you have to start the database and Redis first
 pytest flask
 # with coverage:
 pytest flask --cov=flask --cov-report=term-missing
@@ -130,17 +130,14 @@ npx playwright test --grep @smoke
 or if using Docker:
 
 ```bash
-npm run docker:test          # builds the stack, runs full suite, then exits
-npm run docker:test:smoke    # smoke suite only (requires a running stack)
-npm run docker:test:full     # full suite only (requires a running stack)
+npm run docker:test:smoke    # smoke suite only
+npm run docker:test:full     # full suite only
 
-# for development with hot reloading (syncs code changes into running containers):
+# for development with hot code reloading (syncs code changes into running containers):
 npm run docker:test:watch
 ```
 
-`docker:test` starts the full application stack and runs Playwright inside the `odt-tests` container (built from the official Playwright Docker image). `docker:test:watch` does the same but keeps containers running and syncs file changes, so you can iterate on tests without rebuilding. To re-run a specific suite against an already-running stack, use `docker:test:smoke` or `docker:test:full`.
-
-See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for more details on Docker profiles.
+`docker:test:watch` starts the full application stack and runs Playwright inside the `odt-tests` container (built from the official Playwright Docker image), but also keeps containers running and syncs file changes, so you can iterate on tests without rebuilding. To run a specific suite, use `docker:test:smoke` or `docker:test:full`.
 
 ---
 
