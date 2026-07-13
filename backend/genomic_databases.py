@@ -45,7 +45,7 @@ class GenomicEntityContext:
 
 
 class BaseGenomicDatabase(ABC):
-    """The base class of genomic databases, our interfaces with public services like Ensembl and NCBI.
+    """The base class of genomic databases, which serve as our interfaces with public services like Ensembl and NCBI.
 
     Notes:
         This is a base class and should not be used directly.
@@ -363,7 +363,7 @@ class BaseGenomicDatabase(ABC):
         # Combined checksum map for annotation (GTF) and sequence (FASTA) files
         filename_to_checksum_map: dict[str, str] = {}
 
-        # set -> if the dirs are equal, the checksums are only downloaded once
+        # Use a set for both directories -> if they are equal, the checksums are only downloaded once
         for dir in {context.annotation_remote_dir, context.sequence_remote_dir}:
             # Always download without caching in case checksums changed
             checksums_path = self._download(dir, self.checksums_filename)
@@ -402,7 +402,7 @@ class BaseGenomicDatabase(ABC):
             ) from e
 
     def fetch_genomic_entity(self, entity: GenomicEntity) -> dict[str, str]:
-        """Fetches genomic entity from cache or download it if not cached yet.
+        """Fetches genomic entity from cache or downloads it if not cached yet.
 
         Arguments:
             entity {GenomicEntity} -- Genomic entity to fetch.
@@ -824,7 +824,8 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
             entity {GenomicEntity} -- Genomic entity to look up.
 
         Notes:
-            Also resolves "current" releases to a concrete release.
+            Also resolves non-concrete releases (e.g. "current", "110", etc.) to
+            a concrete release (e.g. "GCF_000001405.40-RS_2025_08").
 
         Raises:
             ValueError: NCBI requires specifying a taxon but none was provided.
@@ -835,7 +836,6 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
         Returns:
             tuple[str, str, str, str] -- (release name, assembly name, RefSeq assembly accession, release directory)
         """
-        # Resolve "current" to a concrete release; also
         if entity.taxon is None:
             raise ValueError("NCBI requires specifying a taxon but none was provided.")
 
@@ -852,14 +852,15 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
             release_dir = f"{all_releases_dir}/{release}"
             ftp.cwd(release_dir)
 
-            # Non-GCF releases have an additional level of nesting
+            # Non-concrete releases (e.g. "current", "110", etc.) have an additional level of nesting
             if "GCF" not in release:
                 listing = self._get_subdirs(ftp)
                 if not listing:
-                    # TODO: investigate why this assumes current even though the release could also be e.g. "110"
-                    raise RuntimeError("Empty 'current' directory at NCBI.")
+                    raise RuntimeError("Empty release directory at NCBI.")
 
-                release = listing[0]  # we always take the first subdir even if there are multiple options
+                # Always take the first subdir even if there are multiple options
+                # TODO: investigate whether we should have a preference here
+                release = listing[0]
                 release_dir = f"{release_dir}/{release}"
                 ftp.cwd(release_dir)
 
