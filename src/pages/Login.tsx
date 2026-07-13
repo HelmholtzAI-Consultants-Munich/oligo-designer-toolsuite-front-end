@@ -1,5 +1,3 @@
-// Login page component for user authentication
-
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
@@ -14,8 +12,8 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 /**
- * Login component handles user login functionality.
- * Provides legacy username/password login and Helmholtz AAI OAuth login.
+ *
+ * @returns A React functional component that renders a login page with options for Helmholtz AAI and admin login.
  */
 const Login = () => {
     const [username, setUsername] = useState("");
@@ -94,6 +92,7 @@ const Login = () => {
         }
     };
 
+    // Redirect to Helmholtz AAI login page
     const redirectToHelmholtz = () => {
         // Include redirect parameter in OAuth flow
         const redirectParam =
@@ -103,7 +102,6 @@ const Login = () => {
         window.location.href = BACKEND_URL + `/login${redirectParam}`;
     };
 
-    // Show loading spinner while checking auth status
     if (loading) return <div>Loading...</div>;
 
     // Don't render login form if user is already authenticated (will redirect)

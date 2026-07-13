@@ -17,10 +17,17 @@ interface FeedbackButtonProps {
     context?: Record<string, unknown>;
     size?: "sm" | "md";
     variant?: "outline-primary" | "primary" | "light";
-    /** When true, renders as a fixed floating action button (bottom-right) */
     floating?: boolean;
 }
-
+/**
+ * Displays a feedback button that opens a modal for users to submit feedback.
+ *
+ * @param context - Optional context object to include in the feedback submission. This can contain any additional information you want to send along with the feedback.
+ * @param size - Optional size of the button. Default is "sm".
+ * @param variant - Optional variant of the button. Default is "outline-primary".
+ * @param floating - Optional boolean to determine if the button should be rendered as a fixed floating action button in the bottom-right corner. Default is false.
+ * @returns A React functional component that renders a feedback button.
+ */
 const FeedbackButton: React.FC<FeedbackButtonProps> = ({
     context,
     size = "sm",
@@ -50,7 +57,12 @@ const FeedbackButton: React.FC<FeedbackButtonProps> = ({
         setMessage("");
         setError(null);
     };
-
+    /**
+     * Handles the submission of feedback. It validates the input, sends the feedback to the backend, and manages the UI state accordingly.
+     *
+     * @param e - The form submission event.
+     * @returns A promise that resolves when the feedback submission process is complete.
+     */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const trimmedMessage = message.trim();
