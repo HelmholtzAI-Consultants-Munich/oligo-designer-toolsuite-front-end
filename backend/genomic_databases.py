@@ -555,7 +555,7 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
         """
 
         def select_annotation_file(filenames: list[str]) -> str:
-            """Select annotation (GTF) file from candidates based on filenames.
+            """Selects annotation (GTF) file from candidates based on filenames.
 
             Arguments:
                 filenames {list[str]} -- list of filenames to select annotation file from.
@@ -574,7 +574,7 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
             raise RuntimeError(f"No suitable annotation (GTF) file found in {annotation_remote_dir}.")
 
         def select_sequence_file(filenames: list[str]) -> str:
-            """Select sequence (FASTA) file from candidates based on filenames.
+            """Selects sequence (FASTA) file from candidates based on filenames.
 
             Arguments:
                 filenames {list[str]} -- list of filenames to select sequence file from.
