@@ -538,70 +538,105 @@ class EnsemblGenomicDatabase(BaseGenomicDatabase):
     def _pick_files(self, annotation_remote_dir: str, sequence_remote_dir: str) -> tuple[str, str, str]:
         """Chooses annotation (GTF) and sequence (FASTA) files from specified remote directories.
 
+        Arguments:
+            annotation_remote_dir {str} -- Remote directory containing annotation files.
+            sequence_remote_dir {str} -- Remote directory containing sequence files.
+
         Notes:
             Chooses one .gtf.gz file and one .fa.gz file out of potentially multiple
-            matching files in the respective directories.
-            Prefers primary_assembly for annotation (FASTA) with toplevel as fallback.
+            matching files in the respective directories using heuristics.
+
+        Raises:
+            RuntimeError: No suitable annotation (GTF) file found in remote annotation directory.
+            RuntimeError: No suitable sequence (FASTA) file found in remote sequence directory.
 
         Returns:
             tuple[str, str, str] -- (annotation_filename, sequence_filename, genome_assembly)
         """
-        # TODO: refactor, split up into two functions, one for GTF and FASTA each
-        with ftplib.FTP(self.host) as ftp:
-            ftp.login()
 
-            # Annotation (GTF) directory (already includes species)
-            ftp.cwd(annotation_remote_dir)
-            annotation_dir_listing = ftp.nlst()
-            annotation_filename = None
-            for name in sorted(annotation_dir_listing):  # sort for determinism
-                # ends with NUMBER.gtf.gz
-                if re.search(r"^.+\.\d+\.gtf.gz$", name):
-                    annotation_filename = name
-                    break
-            if not annotation_filename:
-                raise RuntimeError(f"No .gtf.gz found in {annotation_remote_dir}")
+        def select_annotation_file(filenames: list[str]) -> str:
+            """Select annotation (GTF) file from candidates based on filenames.
 
-            # Try to parse assembly from annotation filename: e.g. Homo_sapiens.GRCh38.110.gtf.gz
-            assembly_from_annotation_match = re.match(r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.", annotation_filename)
-            assembly_from_annotation = (
-                assembly_from_annotation_match.group(1) if assembly_from_annotation_match else None
-            )
+            Arguments:
+                filenames {list[str]} -- list of filenames to select annotation file from.
 
-            # Sequence (FASTA) directory (already includes species + dna)
-            ftp.cwd(f"/{sequence_remote_dir}")
-            sequence_dir_listing = sorted(ftp.nlst())  # sort for determinism
+            Raises:
+                RuntimeError: No suitable annotation (GTF) file found in remote annotation directory.
 
-            sequence_filename = None
+            Returns:
+                str -- Chosen filename.
+            """
+            filenames.sort()  # sort for determinism
+            for name in filenames:
+                # Take first filename that ends with NUMBER.gtf.gz
+                if re.search(r"\d+\.gtf.gz$", name):
+                    return name
+            raise RuntimeError(f"No suitable annotation (GTF) file found in {annotation_remote_dir}.")
+
+        def select_sequence_file(filenames: list[str]) -> str:
+            """Select sequence (FASTA) file from candidates based on filenames.
+
+            Arguments:
+                filenames {list[str]} -- list of filenames to select sequence file from.
+
+            Notes:
+                Prefers filenames containing "primary_assembly", choosing filenames containing
+                "toplevel" as a fallback. Also prefers soft-masked sequences over unmasked sequences.
+
+                For more information on the differences between these builds, see
+                https://bioinformatics.stackexchange.com/questions/540/what-ensembl-genome-version-should-i-use-for-alignments-e-g-toplevel-fa-vs-p
+
+            Raises:
+                RuntimeError: No suitable sequence (FASTA) file found in remote sequence directory.
+
+            Returns:
+                str -- Chosen filename.
+            """
             suffix_precedence = [
                 ".dna_sm.primary_assembly.fa.gz",
                 ".dna.primary_assembly.fa.gz",
                 ".dna_sm.toplevel.fa.gz",
                 ".dna.toplevel.fa.gz",
             ]
+            filenames.sort()  # sort for determinism
             for suffix in suffix_precedence:
-                for name in sequence_dir_listing:
+                for name in sorted(filenames):
                     if name.endswith(suffix):
-                        sequence_filename = name
-                        break
-                if sequence_filename:
-                    break
+                        return name
+            raise RuntimeError(
+                f"No suitable sequence (FASTA) file found in {sequence_remote_dir} (tried primary_assembly and toplevel, with dna_sm and dna)."
+            )
 
-            if not sequence_filename:
-                raise RuntimeError(
-                    f"No suitable sequence (FASTA) file found in {sequence_remote_dir} (tried primary_assembly and toplevel, with dna_sm and dna)."
-                )
+        with ftplib.FTP(self.host) as ftp:
+            ftp.login()
+
+            # Select annotation (GTF) file
+            ftp.cwd(annotation_remote_dir)
+            annotation_dir_listing = ftp.nlst()
+            annotation_filename = select_annotation_file(annotation_dir_listing)
+
+            # Try to parse assembly from annotation filename
+            # e.g. Homo_sapiens.GRCh38.116.gtf.gz -> GRCh38
+            # e.g. Acanthochromis_polyacanthus.ASM210954v1.116.gtf.gz -> ASM210954v1
+            assembly_from_annotation_match = re.match(r"^[A-Za-z_]+\.(.+)\.\d+", annotation_filename)
+            assembly_from_annotation = (
+                assembly_from_annotation_match.group(1) if assembly_from_annotation_match else None
+            )
+
+            # Select sequence (FASTA) file
+            ftp.cwd(sequence_remote_dir)
+            sequence_dir_listing = sorted(ftp.nlst())  # sort for determinism
+            sequence_filename = select_sequence_file(sequence_dir_listing)
 
             # Try to parse assembly from sequence filename
             # e.g. Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz -> GRCh38
-            assembly_from_sequence_match = re.match(
-                r"^[A-Za-z_]+\.([A-Za-z0-9\.]+)\.dna\.", sequence_filename
-            )
+            # e.g. Acanthochromis_polyacanthus.ASM210954v1.dna.toplevel.fa.gz -> ASM210954v1
+            assembly_from_sequence_match = re.match(r"^[A-Za-z_]+\.(.+)\.dna\.", sequence_filename)
             assembly_from_sequence = (
                 assembly_from_sequence_match.group(1) if assembly_from_sequence_match else None
             )
 
-        # Prefer assembly parsed from sequence; annotation-based as fallback
+        # Prefer assembly parsed from sequence; assembly parsed from annotation as fallback
         genome_assembly = assembly_from_sequence or assembly_from_annotation or "unknown"
 
         return annotation_filename, sequence_filename, genome_assembly
