@@ -1,64 +1,9 @@
 # ODT Cloud Docker Images
 
-This directory contains the Dockerfiles (and their respective `.dockerignore` files) for building the ODT Cloud's container images. Prebuilt images are hosted on GitHub's container registry and can be found [here](https://github.com/orgs/HelmholtzAI-Consultants-Munich/packages?repo_name=oligo-designer-toolsuite-front-end).
-
+This directory contains the Dockerfiles (and their respective `.dockerignore` files) for building ODT Cloud's container images. Prebuilt images are hosted on GitHub's container registry and can be found [here](https://github.com/orgs/HelmholtzAI-Consultants-Munich/packages?repo_name=oligo-designer-toolsuite-front-end).
 For the Docker Compose setup, see `compose.yml` in the root directory.
 
-## Quickstart
-
-This project provides a Docker Compose setup to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
-
-All commands necessary to use Docker are defined in the `package.json`. To launch all required services, run:
-
-```bash
-npm run docker:start
-# or for development:
-npm run docker:watch
-```
-
-and when you're finished:
-
-```bash
-npm run docker:stop
-```
-
-To view the logs, use:
-
-```bash
-npm run docker:logs
-# or to only show the logs of a specific container:
-npm run docker:logs odt-web
-# you can select multiple containers at once:
-npm run docker:logs odt-web odt-server
-```
-
-## Running with Profiles
-
-ODT Cloud supports Docker Compose profiles for optional services. Currently, two profiles are available:
-
-### Monitoring Profile
-
-To start the application with monitoring services (Prometheus, Grafana, and exporters), use:
-
-```bash
-npm run docker:start:monitoring
-# or for development with hot reloading:
-npm run docker:watch:monitoring
-```
-
-This will start all standard services plus the monitoring stack. See [Monitoring]({{ site.baseurl }}{% link monitoring.md %}) for more details.
-
-### Tests Profile
-
-To start the application with the test container available, use:
-
-```bash
-npm run docker:start:test
-# or for development with hot reloading:
-npm run docker:watch:test
-```
-
-This will start all standard services plus the `odt-tests` container. See [Tests]({{ site.baseurl }}{% link tests.md %}) for more details on running tests.
+This README also contains general instructions and advice on using Docker with ODT Cloud.
 
 ## Docker Project Structure
 
@@ -78,43 +23,138 @@ Currently, the project consists of the following containers:
 | Celery / Caching | odt-redis  |     no      |         -         |                      redis:8-alpine                       |
 |    Playwright    | odt-tests  |     yes     | tests.Dockerfile  |        mcr.microsoft.com/playwright:v1.58.2-noble         |
 
-## Build Configuration
+## Building Container Images
+
+### Build Context
 
 For all self-built containers, the build context is the project root. The `.dockerignore` files define files and directories not to be included in the build context for each container. These are also specified relative to the project root.
 
-## Building and Updating Container Images
+### Building and Updating Images
 
-Starting the Docker Compose stack with either `npm run docker:start` or `npm run docker:watch` will _always_ attempt to rebuild the container images. To only build the containers, use `npm run docker:build`.
+To build the container images without starting any containers, run:
+
+```bash
+docker compose build
+```
+
+Note that since the `odt-tests` container is rarely used, it is not build by default using the above command. To force rebuilding the container, use `docker compose build odt-tests`.
 
 Container builds do not pull the latest version of their base images by default. To update all containers to the latest available version, use `npm run docker:update`. This will pull the latest container images and rebuild the frontend and backend containers using these updated base images.
 
-Naturally, regular Docker commands not specified in the `package.json` can be used for managing containers too.
+### Building and Pushing Production Images
 
-## Local Development with Docker
+> [!WARNING]
+> You should prefer to build production images using GitHub Actions as described in the admin guide or documented [here](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/pull/288).
 
-While ODT Cloud can be run with Docker alone, you might prefer to develop locally and only use Docker for supporting services like the database and message queue. Because of this, the supporting containers (currently `odt-db` and `odt-redis`) are accessible on localhost by default.
+To execute Docker Compose commands using the production overrides, you have to manually specify the compose files to take into account. We provide a shorthand command for this.
 
-To start just the supporting services, run:
-
-```bash
-docker compose up odt-db odt-redis -d
-```
-
-## Building and Running the Playwright Tests
-
-The `odt-tests` container contains the Playwright testing environment, including all necessary browsers. Because of the large size and rare usage of this image, **it is not built or started** using the commands specified in the `package.json`.
-
-To force rebuilding the container, use:
+For example, to print the production config, run:
 
 ```bash
-docker compose build odt-tests
-# or if you want to run all tests too:
-docker compose run --build odt-tests
+docker compose -f compose.yml -f compose.prod.yml config
+# or using our shorthand:
+npm run docker:prod -- config
 ```
 
-See [Tests]({{ site.baseurl }}{% link tests.md %}) for details on executing Playwright tests using Docker.
+To build new production images using a production env file you keep at `ansible/files/.env`, run:
 
-## Hot Code Reloading
+```bash
+docker compose -f compose.yml -f compose.prod.yml --env-file ansible/files/.env build
+# or using our shorthand:
+npm run docker:prod -- --env-file ansible/files/.env build
+```
+
+To push these images to the GitHub Container Registry, make sure you have the necessary permissions and are logged into the container registry. Then run:
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml push
+# or using our shorthand:
+npm run docker:prod -- push
+```
+
+## Using Docker for Development
+
+This project provides a Docker Compose setup to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
+
+### Basic Commands
+
+Many helpful commands to use Docker are defined in the `package.json`. Naturally, regular Docker commands not specified in the `package.json` can be used for managing containers too.
+
+To launch all required services, run:
+
+```bash
+npm run docker:start
+# or with hot code reloading:
+npm run docker:watch
+```
+
+and when you're finished:
+
+```bash
+npm run docker:stop
+```
+
+Note that starting the Docker Compose stack with either `npm run docker:start` or `npm run docker:watch` will _always_ attempt to rebuild the container images (except for `odt-tests`).
+
+To view the logs, use:
+
+```bash
+npm run docker:logs
+# or to only show the logs of a specific container:
+npm run docker:logs odt-web
+# you can select multiple containers at once:
+npm run docker:logs odt-web odt-server
+```
+
+### Execute Commands Inside Docker Containers
+
+To enter the shell inside a Docker container, use:
+
+```bash
+docker compose exec <container-name> <command>
+# e.g. to enter the shell of the server container:
+docker compose exec odt-server bash
+```
+
+Our Python environments are managed via conda/micromamba, so if you want to use commands provided via Python packages inside of our Docker containers, you have to prefix them with `micromamba run`. You also have to do this if you are in a `sh` shell inside a container. If you are using the bash shell, you can omit this prefix.
+
+```bash
+# register a new user using flask cli command
+docker compose exec odt-server micromamba run flask user register
+# run pipeline in a shell inside of odt-worker
+docker compose exec odt-worker bash
+(base) 1337c977958a:/app$ genomic_region_generator <arguments>
+```
+
+### Running with Profiles
+
+ODT Cloud uses Docker Compose profiles for some optional services. This allows us to avoid starting some services we rarely need for development.
+
+#### Monitoring Profile
+
+This profile is used for all monitoring services (i.e. Prometheus, Grafana and metrics exporters).
+
+To start ODT Cloud and the monitoring services, run:
+
+```bash
+npm run docker:start:monitoring
+# or with hot code reloading:
+npm run docker:watch:monitoring
+```
+
+#### Tests Profile
+
+This profile is used for the Playwright container.
+
+To start ODT Cloud and execute the Playwright tests, run:
+
+```bash
+npm run docker:test:full
+# or just the smoke tests:
+npm run docker:test:smoke
+```
+
+### Hot Code Reloading
 
 With hot code reloading, code changes are automatically propagated into the respective containers. The Docker setup supports this both for the frontend and the backend using Docker Compose's built-in [Watch](https://docs.docker.com/compose/how-tos/file-watch/) feature.
 
@@ -151,48 +191,16 @@ odt-server:
 
 The code contained in the `odt-server` image might be out of date compared to the local filesystem, which is why `initial_sync: true` ensures the `backend` directory is synced into the container on startup. As long as `watch` is active, any changes made to files in the `backend` directory are synced into the `/app/backend` directory inside of the container. The Flask server also watches for file changes and will reload.
 
-## Additional Tips for using Docker
+### Local Development with Docker
+
+While ODT Cloud can be run with Docker alone, you might prefer to develop using a local development environment and only use Docker for supporting services like the database and message queue. Because of this, the supporting containers (currently `odt-db` and `odt-redis`) are accessible on localhost by default.
+
+To start just the supporting services, run:
+
+```bash
+docker compose up odt-db odt-redis -d
+```
+
+## Additional Tips for Using Docker
 
 You can check Docker's disk usage using `docker system df`. To reclaim disk space used by Docker (e.g. images, volumes, build cache), run `npm run docker:prune`. Be aware that this might cause significantly increased container building times because of deleted build cache.
-
-## Execute commands inside docker container
-
-To enter the shell inside the docker containers you can use the basic docker compose exec command like this
-
-```bash
-docker compose exec <container-name> <command>
-# for example to enter the shell of the server container use
-docker compose exec odt-server bash
-```
-
-Our python environments are managed via conda/micromamba, so if you want to use commands provided via python packages inside of our docker containers you have to prefix them with `micromamba run`. You also have to do this if you are in a `sh` shell inside a container, but if you are using the bash shell you can omit this prefix.
-
-```bash
-# register a new user using flask cli command
-docker compose exec odt-server micromamba run flask user register
-# run pipeline in a shell inside of odt-worker
-docker compose exec odt-worker bash
-(base) 1337c977958a:/app$ genomic_region_generator [ARGUMENTS]
-```
-
-## Building and pushing production container images
-
-To execute `docker compose` commands using the production overrides, you have to manually specify the compose files to take into account.
-
-For example, to print the production config, run:
-
-```bash
-docker compose -f compose.yml -f compose.prod.yml config
-```
-
-To build new production images using a production env file you keep at `ansible/files/.env`, run:
-
-```bash
-docker compose -f compose.yml -f compose.prod.yml --env-file ansible/files/.env build
-```
-
-To push these images to the GitHub Container Registry, run:
-
-```bash
-docker compose -f compose.yml -f compose.prod.yml push
-```
