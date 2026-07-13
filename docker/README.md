@@ -4,8 +4,6 @@ This directory contains the Dockerfiles (and their respective `.dockerignore` fi
 
 For the Docker Compose setup, see `compose.yml` in the root directory.
 
----
-
 ## Quickstart
 
 This project provides a Docker Compose setup to deploy containers locally. Make sure that both Docker and the Docker Compose plugin are available before executing these commands. **Note that user data is not preserved across restarts with the provided configuration.**
@@ -62,8 +60,6 @@ npm run docker:watch:test
 
 This will start all standard services plus the `odt-tests` container. See [Tests]({{ site.baseurl }}{% link tests.md %}) for more details on running tests.
 
----
-
 ## Docker Project Structure
 
 The Dockerfiles used for building the frontend, backend and Playwright tests containers are located in the `docker` directory, along with their respective [`.dockerignore`](https://docs.docker.com/build/concepts/context/#dockerignore-files) files.
@@ -86,9 +82,9 @@ Currently, the project consists of the following containers:
 
 For all self-built containers, the build context is the project root. The `.dockerignore` files define files and directories not to be included in the build context for each container. These are also specified relative to the project root.
 
-## Building and Updating Containers
+## Building and Updating Container Images
 
-Starting the Docker Compose stack with the provided commands will automatically build the required containers if they haven't been already. Note that you should prefer `npm run docker:watch` for development since it _always_ attempts to rebuild to apply the latest changes.
+Starting the Docker Compose stack with either `npm run docker:start` or `npm run docker:watch` will _always_ attempt to rebuild the container images. To only build the containers, use `npm run docker:build`.
 
 Container builds do not pull the latest version of their base images by default. To update all containers to the latest available version, use `npm run docker:update`. This will pull the latest container images and rebuild the frontend and backend containers using these updated base images.
 
