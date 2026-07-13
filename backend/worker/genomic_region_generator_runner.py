@@ -12,7 +12,7 @@ from oligo_designer_toolsuite.pipelines._genomic_region_generator import (
 
 from backend.cache import file_cache_region
 from backend.exceptions import ODTPipelineError
-from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
+from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
 from backend.worker.converters import to_bool, to_int
 from backend.worker.utils import build_fallback_error_message
 
@@ -26,6 +26,7 @@ class GenomicRegionGeneratorRunner:
     def __init__(self, logger: Logger):
         self.logger = logger
 
+        # TODO: read this path from config
         self.cache_dir = (Path(os.path.dirname(__file__)) / "../cache").resolve()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -58,7 +59,7 @@ class GenomicRegionGeneratorRunner:
         # Determine which upstream (NCBI or Ensembl) we are caching from, then always run in custom mode
         # ---------------------------------------------
         source_params = region_form.get("source_params", {})
-        taxon = source_params.get("taxon", "H_sapiens")  # ignored by EnsemblGenomicDataBase
+        taxon = source_params.get("taxon")
         species = source_params.get("species")
         ann_rel = str(source_params.get("annotation_release"))
         if species is None or ann_rel is None:
@@ -70,11 +71,11 @@ class GenomicRegionGeneratorRunner:
         source_val = region_form.get("source", "").lower()
         if source_val == "ensembl":
             # Ensembl second-line cache
-            cache_info = EnsemblGenomicDataBase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
+            cache_info = EnsemblGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
             files_source = "Ensembl"
         else:
             # Default to NCBI second-line cache
-            cache_info = NCBIGenomicDataBase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
+            cache_info = NCBIGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
             files_source = "NCBI"
 
         genome_assembly = cache_info["genome_assembly"]
@@ -98,7 +99,7 @@ class GenomicRegionGeneratorRunner:
             "genomic_regions": {key: to_bool(val) for key, val in region_form["genomic_regions"].items()},
             "exon_exon_junction_block_size": to_int(
                 region_form["exon_exon_junction_block_size"]
-            ),  # TODO: confirm whether users should be able to set this
+            ),  # TODO: users shouldn't be able to set this
         }
 
         with open(config_path, "w") as yaml_file:
