@@ -1,8 +1,9 @@
 """Pipeline submission route tests.
 
-These tests use real MongoDB documents and temporary filesystem paths. Celery
-dispatch and Redis queue inspection are patched because they are external
-boundaries for route-level behavior.
+Notes:
+    These tests use real MongoDB documents and temporary filesystem paths. Celery
+    dispatch and Redis queue inspection are patched because they are external
+    boundaries for route-level behavior.
 """
 
 import copy

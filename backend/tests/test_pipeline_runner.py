@@ -1,10 +1,11 @@
 """Unit tests for PipelineRunner that must be isolated from the scheduler and task infrastructure.
 
-The module-level sys.modules injection below replaces genomic_regions_file so tests can
-import pipeline_runner without pulling in Biopython and visualization dependencies that are
-not installed in CI. Currently only oligoseq is tested since it is the only pipeline with
-Pydantic integration. The runner fixture is already parametrized — to add a new pipeline,
-add its name to PIPELINE_NAMES and extend PIPELINE_FORM_DATA with its minimal form shape.
+Notes:
+    The module-level sys.modules injection below replaces genomic_regions_file so tests can
+    import pipeline_runner without pulling in Biopython and visualization dependencies that are
+    not installed in CI. Currently only oligoseq is tested since it is the only pipeline with
+    Pydantic integration. The runner fixture is already parametrized — to add a new pipeline,
+    add its name to PIPELINE_NAMES and extend PIPELINE_FORM_DATA with its minimal form shape.
 """
 
 import copy

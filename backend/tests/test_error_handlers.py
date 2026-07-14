@@ -1,7 +1,8 @@
 """Tests that Flask error handlers return sanitized JSON responses.
 
-Ensures internal details (tracebacks, filesystem paths, MongoDB ObjectId reprs)
-are never exposed to API clients, while still being logged server-side.
+Notes:
+    Ensures internal details (tracebacks, filesystem paths, MongoDB ObjectId reprs)
+    are never exposed to API clients, while still being logged server-side.
 """
 
 from unittest.mock import patch

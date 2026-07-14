@@ -1,8 +1,9 @@
 """Genomic database unit tests.
 
-Network-facing FTP/HTTP behavior is replaced with fakes and mocks. Checksum,
-cache, and decompression paths use real temp files so file handling is covered
-without live network access.
+Notes:
+    Network-facing FTP/HTTP behavior is replaced with fakes and mocks. Checksum,
+    cache, and decompression paths use real temp files so file handling is covered
+    without live network access.
 """
 
 import ftplib
@@ -72,9 +73,10 @@ class ConcreteDatabase(BaseGenomicDataBase):
 class FakeFTP:
     """Small FTP fake that records directory changes and returns fixed listings.
 
-    A custom class rather than MagicMock is needed to record the order of
-    `cwd()` calls, which is how we verify the right FTP path is navigated
-    before listing directory entries.
+    Notes:
+        A custom class rather than MagicMock is needed to record the order of
+        `cwd()` calls, which is how we verify the right FTP path is navigated
+        before listing directory entries.
     """
 
     def __init__(self, lines=None, names=None):

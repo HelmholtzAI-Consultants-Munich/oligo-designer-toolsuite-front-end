@@ -1,8 +1,9 @@
 """Admin route tests.
 
-The fixtures in this module are intentionally role-specific: admin endpoints
-read the persisted user role from MongoDB, so tests need real admin and regular
-user documents rather than only a patched Flask-Login user.
+Notes:
+    The fixtures in this module are intentionally role-specific: admin endpoints
+    read the persisted user role from MongoDB, so tests need real admin and regular
+    user documents rather than only a patched Flask-Login user.
 """
 
 import datetime

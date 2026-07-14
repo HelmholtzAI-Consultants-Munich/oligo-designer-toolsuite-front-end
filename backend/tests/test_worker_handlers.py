@@ -1,7 +1,8 @@
 """Celery worker task handler tests.
 
-Lifecycle hooks must persist status transitions to MongoDB so the frontend can
-poll run status and users see accurate progress without querying Celery directly.
+Notes:
+    Lifecycle hooks must persist status transitions to MongoDB so the frontend can
+    poll run status and users see accurate progress without querying Celery directly.
 """
 
 from types import SimpleNamespace

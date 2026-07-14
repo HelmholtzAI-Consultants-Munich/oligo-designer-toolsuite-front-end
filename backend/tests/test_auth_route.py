@@ -1,7 +1,8 @@
 """Authentication route tests.
 
-OAuth boundaries are patched here. Filesystem assertions still use real temp
-user-data directories.
+Notes:
+    OAuth boundaries are patched here. Filesystem assertions still use real temp
+    user-data directories.
 """
 
 from unittest.mock import MagicMock, patch

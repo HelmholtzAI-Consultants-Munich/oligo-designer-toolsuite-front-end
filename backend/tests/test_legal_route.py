@@ -1,8 +1,9 @@
 """Legal routes must be publicly accessible and consent must be persisted correctly
 so users can read terms before agreeing and the system can enforce compliance.
 
-Account deletion cascades across all related collections in a single test because
-partial cleanup would leave orphaned data and violate user privacy expectations.
+Notes:
+    Account deletion cascades across all related collections in a single test because
+    partial cleanup would leave orphaned data and violate user privacy expectations.
 """
 
 from unittest.mock import patch

@@ -1,11 +1,12 @@
 """Celery task body tests.
 
-These tests cover task bodies in isolation from the scheduler. External boundaries
-(PipelineRunner, genomic region generators, and MongoDB) are mocked so tests can assert
-on dispatch arguments and error propagation without running real pipelines or touching the
-production database. Cleanup helpers use real temp filesystem paths because path-safety
-checks (managed root enforcement, unexpected filesystem types) require actual directory
-structures to exercise properly.
+Notes:
+    These tests cover task bodies in isolation from the scheduler. External boundaries
+    (PipelineRunner, genomic region generators, and MongoDB) are mocked so tests can assert
+    on dispatch arguments and error propagation without running real pipelines or touching the
+    production database. Cleanup helpers use real temp filesystem paths because path-safety
+    checks (managed root enforcement, unexpected filesystem types) require actual directory
+    structures to exercise properly.
 """
 
 import datetime
@@ -33,9 +34,10 @@ from backend.worker.tasks import (
 class MongoClientForTestDb:
     """Context-manager test double that points worker tasks at the isolated test DB.
 
-    Tasks create their own MongoClient connections, so intercepting at the
-    constructor level is the only way to redirect them to the test database
-    without modifying production code.
+    Notes:
+        Tasks create their own MongoClient connections, so intercepting at the
+        constructor level is the only way to redirect them to the test database
+        without modifying production code.
     """
 
     def __init__(self, db):

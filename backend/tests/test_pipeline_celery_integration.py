@@ -1,8 +1,9 @@
 """Integration tests that verify the full route-to-Celery task chain executes correctly.
 
-These tests exist because unit tests mock at the task boundary and cannot catch
-wiring bugs where the route dispatches the wrong task, passes arguments in the
-wrong order, or sets the wrong broker priority.
+Notes:
+    These tests exist because unit tests mock at the task boundary and cannot catch
+    wiring bugs where the route dispatches the wrong task, passes arguments in the
+    wrong order, or sets the wrong broker priority.
 """
 
 from pathlib import Path

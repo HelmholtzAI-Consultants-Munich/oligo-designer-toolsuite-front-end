@@ -1,7 +1,8 @@
 """Shared pytest fixtures for all backend tests.
 
-Provides test database isolation, per-test filesystem roots, and authentication
-helpers so individual test modules stay focused on route/task behavior.
+Notes:
+    Provides test database isolation, per-test filesystem roots, and authentication
+    helpers so individual test modules stay focused on route/task behavior.
 """
 
 import json
@@ -171,11 +172,12 @@ def mongo_test_db(app: Any) -> Iterator[None]:
 def client(app: Any) -> Iterator[Any]:
     """Provide a Flask test client with an anonymous current_user so tests can assert on routes that behave differently for unauthenticated callers.
 
-    We patch the internal `flask_login.utils._get_user` because Flask-Login
-    has no public testing hook for overriding `current_user`.
-
     Arguments:
         app {Any} -- Flask application instance
+
+    Notes:
+        We patch the internal `flask_login.utils._get_user` because Flask-Login
+        has no public testing hook for overriding `current_user`.
 
     Yields:
         Iterator[Any] -- Flask test client with anonymous current_user
@@ -264,12 +266,13 @@ def anonymous_session(app: Any, client: Any) -> Iterator[str]:
 def run_doc(app: Any) -> Callable[..., ObjectId]:
     """Factory fixture — pytest injects the returned callable, not a document.
 
-    Calling run_doc(...) inside a test inserts one run document and returns its
-    ObjectId. Tests can call it multiple times with different arguments to seed
-    several documents in the same test (e.g. one owned run and one unowned run).
-
     Arguments:
         app {Any} -- Flask application instance providing the app context
+
+    Notes:
+        Calling run_doc(...) inside a test inserts one run document and returns its
+        ObjectId. Tests can call it multiple times with different arguments to seed
+        several documents in the same test (e.g. one owned run and one unowned run).
 
     Returns:
         Callable[..., ObjectId] -- callable that inserts a run document and returns its ObjectId
@@ -390,8 +393,9 @@ def multipart_post(
 def celery_config() -> dict[str, Any]:
     """Configure the test Celery worker to use an isolated Redis database so test tasks do not share state with the dev or production broker.
 
-    Redis DB #15 is used so test runs don't share state with the dev or
-    production Redis databases (typically DB 0).
+    Notes:
+        Redis DB #15 is used so test runs don't share state with the dev or
+        production Redis databases (typically DB 0).
 
     Returns:
         dict[str, Any] -- Celery configuration overrides for the test worker
@@ -438,11 +442,12 @@ def celery_app(celery_config: dict[str, Any]):
 def assert_sanitized_error(response: Any) -> None:
     """Assert an error response does not expose tracebacks, ObjectId internals, or filesystem paths.
 
-    Each forbidden fragment is checked individually so a partial leak of one
-    pattern cannot be masked by the absence of another.
-
     Arguments:
         response {Any} -- Flask test client response whose JSON body must not contain internal details
+
+    Notes:
+        Each forbidden fragment is checked individually so a partial leak of one
+        pattern cannot be masked by the absence of another.
     """
     data = response.get_json() or {}
     rendered = str(data)
@@ -455,14 +460,15 @@ def assert_sanitized_error(response: Any) -> None:
 def pipeline_runner_module(runner_cls: Any):
     """Swap the real pipeline_runner module so its visualization imports never run.
 
-    pipeline_runner.py imports genomic_regions_file.py, which pulls in Biopython
-    and oligo_designer_toolsuite visualization packages not installed in CI. Those
-    imports run at module load time so the file crashes before any mock can help.
-    This function solves that by injecting a fake module into sys.modules so Python
-    never touches the real file.
-
     Arguments:
         runner_cls {Any} -- mock or stub class to expose as PipelineRunner in the fake module
+
+    Notes:
+        pipeline_runner.py imports genomic_regions_file.py, which pulls in Biopython
+        and oligo_designer_toolsuite visualization packages not installed in CI. Those
+        imports run at module load time so the file crashes before any mock can help.
+        This function solves that by injecting a fake module into sys.modules so Python
+        never touches the real file.
 
     Returns:
         patch.dict -- context manager that installs the fake module for the test duration

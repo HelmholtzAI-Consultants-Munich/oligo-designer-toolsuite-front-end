@@ -1,10 +1,11 @@
 """Run management route tests.
 
-These tests use real temp output files and directories because file serving
-security (path traversal, extension allowlist) and deletion correctness (both
-DB and filesystem) require actual filesystem paths to exercise properly.
-Mocking the filesystem would hide the path-resolution bugs these tests are
-designed to catch.
+Notes:
+    These tests use real temp output files and directories because file serving
+    security (path traversal, extension allowlist) and deletion correctness (both
+    DB and filesystem) require actual filesystem paths to exercise properly.
+    Mocking the filesystem would hide the path-resolution bugs these tests are
+    designed to catch.
 """
 
 from bson import ObjectId
