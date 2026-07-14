@@ -8,17 +8,17 @@ It is recommended to update one dependency ecosystem at a time (e.g. npm, Python
 
 ### Dependency locations
 
-| Dependency type                  | Dependency declaration in                                 | How to update dependencies                                                                                                           |
-| -------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Frontend (npm)                   | `package.json`, `package-lock.json`                       | see [npm audit](https://docs.npmjs.com/cli/v12/commands/npm-audit), [npm update](https://docs.npmjs.com/cli/v12/commands/npm-update) |
-| Backend (Python)                 | `backend/pyproject.toml`                                  | change version tags and reinstall                                                                                                    |
-| Backend (conda)                  | `backend/environment.yml`                                 | change version tags and reinstall                                                                                                    |
-| Backend (conda, worker-specific) | `backend/worker.environment.yml`                          | change version tags and reinstall                                                                                                    |
-| External Docker images           | `compose.yml`, `compose.prod.yml`, `compose.override.yml` | change version tags and restart                                                                                                      |
-| Docker base images               | `docker/*.Dockerfile`                                     | change version tags and rebuild                                                                                                      |
-| Ansible (Python)                 | `ansible/requirements.in`                                 | change version tags and reinstall                                                                                                    |
-| Ansible (Ansible Galaxy)         | `ansible/requirements.yml`                                | change version tags and reinstall                                                                                                    |
-| GitHub Actions                   | `.github/workflows/*.yml`                                 | change version tags                                                                                                                  |
+| Dependency type                  | Dependency declaration in                                                                                               | How to update dependencies                                                                                                           |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Frontend (npm)                   | [`package.json`](/package.json), [`package-lock.json`](/package-lock.json)                                              | see [npm audit](https://docs.npmjs.com/cli/v12/commands/npm-audit), [npm update](https://docs.npmjs.com/cli/v12/commands/npm-update) |
+| Backend (Python)                 | [`backend/pyproject.toml`](/backend/pyproject.toml)                                                                     | change version tags and reinstall                                                                                                    |
+| Backend (conda)                  | [`backend/environment.yml`](/backend/environment.yml)                                                                   | change version tags and reinstall                                                                                                    |
+| Backend (conda, worker-specific) | [`backend/worker.environment.yml`](/backend/worker.environment.yml)                                                     | change version tags and reinstall                                                                                                    |
+| External Docker images           | [`compose.yml`](/compose.yml), [`compose.prod.yml`](/compose.prod.yml), [`compose.override.yml`](/compose.override.yml) | change version tags and restart                                                                                                      |
+| Docker base images               | [`docker/*.Dockerfile`](/docker/)                                                                                       | change version tags and rebuild                                                                                                      |
+| Ansible (Python)                 | [`ansible/requirements.in`](/ansible/requirements.in)                                                                   | change version tags and reinstall                                                                                                    |
+| Ansible (Ansible Galaxy)         | [`ansible/requirements.yml`](/ansible/requirements.yml)                                                                 | change version tags and reinstall                                                                                                    |
+| GitHub Actions                   | [`.github/workflows/*.yml`](/.github/workflows/)                                                                        | change version tags                                                                                                                  |
 
 ### Bumping dependencies
 
@@ -33,10 +33,10 @@ However, releasing a new version is not as simple as pushing a new tag. This sec
 
 ### Publishing a Release
 
-To release a new version, first bump the version in [`package.json`](package.json) using [npm version](https://docs.npmjs.com/cli/v12/commands/npm-version).
+To release a new version, first bump the version in [`package.json`](/package.json) using [npm version](https://docs.npmjs.com/cli/v12/commands/npm-version).
 Then publish a new ODT Cloud Docker image:
 
-1. Ensure that all required build variables used in [`.github/workflows/publish_images.yml`](.github/workflows/publish_images.yml) are properly configured in GitHub's repository [variables](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/variables/actions) and [secrets](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/secrets/actions).
+1. Ensure that all required build variables used in [`.github/workflows/publish_images.yml`](/.github/workflows/publish_images.yml) are properly configured in GitHub's repository [variables](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/variables/actions) and [secrets](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/secrets/actions).
 2. Create and push a git tag on the `main` branch via the GitHub UI using the format:
 
 ```
@@ -57,12 +57,12 @@ Deployments are performed using the project's GitHub Actions workflow.
 Before starting a deployment:
 
 1. Verify that the Docker image for the desired version has already been published.
-2. Ensure all required environment variables are set in [`.github/workflows/deploy_stack.yml`](.github/workflows/deploy_stack.yml).
+2. Ensure all required environment variables are set in [`.github/workflows/deploy_stack.yml`](/.github/workflows/deploy_stack.yml).
 3. Ensure all referenced GitHub repository [variables](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/variables/actions) and [secrets](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/secrets/actions) exist and are up to date.
 4. Set the GitHub repository variable `ODT_CLOUD_VERSION` to the Docker image tag that should be deployed (for example, `0.2.0-alpha.4`). This tag **must** have been published as a Docker image before.
 5. Manually trigger the **Deploy latest ODT Cloud stack** workflow from the GitHub Actions page.
 
-If you need to deploy a new version manually, see [`ansible/README.md`](ansible/README.md).
+If you need to deploy a new version manually, see [`ansible/README.md`](/ansible/README.md).
 
 ## Admin Panel
 
@@ -74,7 +74,7 @@ It consists of the following sections.
 
 The Dashboard provides key statistics on the total amount of users and pipeline runs.
 
-![Admin Dashboard](dev-docs/assets/images/admin_dashboard.png)
+![Admin Dashboard](/dev-docs/assets/images/admin_dashboard.png)
 
 ### User Management
 
@@ -91,7 +91,7 @@ Deleting a user permanently removes all stored information associated with that 
 
 To permanently prevent account creation using a specific Helmholtz OAuth account, ban the user instead of deleting them.
 
-![Admin User Management](dev-docs/assets/images/admin_user_management.png)
+![Admin User Management](/dev-docs/assets/images/admin_user_management.png)
 
 ### Pipeline Management
 
@@ -105,7 +105,7 @@ Administrators can:
 
 Deleting a pipeline run that is currently **Scheduled** or **Running** will cancel its execution.
 
-![Admin Pipeline Management](dev-docs/assets/images/admin_pipeline_management.png)
+![Admin Pipeline Management](/dev-docs/assets/images/admin_pipeline_management.png)
 
 ### Feedback
 
@@ -124,7 +124,7 @@ Monthly Reports provides downloadable CSV reports containing usage statistics. R
 
 An interactive chart at the top of the page visualizes usage trends over time using the reported data.
 
-![Admin Monthly Reports](dev-docs/assets/images/admin_monthly_reports.png)
+![Admin Monthly Reports](/dev-docs/assets/images/admin_monthly_reports.png)
 
 ### Legal Documents
 
@@ -137,7 +137,7 @@ Documents are edited using Markdown.
 
 Whenever a document is modified, previous versions are retained by ODT Cloud. This allows administrators to review historical versions or create new revisions based on earlier content when required.
 
-![Admin Legal Documents](dev-docs/assets/images/admin_legal_documents.png)
+![Admin Legal Documents](/dev-docs/assets/images/admin_legal_documents.png)
 
 ## User Management from the Command Line
 
