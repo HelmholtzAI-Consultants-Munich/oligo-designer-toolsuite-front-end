@@ -46,7 +46,6 @@ dev = [
 ]
 
 [tool.pytest]
-addopts = ["-q"]
 testpaths = ["tests"]
 
 [tool.ruff]
@@ -56,11 +55,7 @@ target-version = "py312"
 [tool.ruff.lint]
 # Rules that Ruff will apply
 # see https://docs.astral.sh/ruff/rules
-select = [
-    "E4",
-    "E7",
-    "E9",
-    "F",   # Pyflakes
+extend-select = [
     "RUF", # ruff-specific rules
     "UP",  # pyupgrade
     "I",   # isort
