@@ -31,8 +31,12 @@ LEGAL_DOCUMENT_LABELS = {
 
 
 def _legal_documents_dir() -> Path:
-    """Resolved relative to this file rather than the working directory, so
-    the seed documents are found regardless of where the app is launched from.
+    """Resolves the legal documents directory relative to this file.
+
+    Notes:
+        This is resolved relative to this file rather than the working
+        directory so the seed documents are found regardless of where the
+        app is launched from.
 
     Returns:
         Path -- directory containing the bundled seed legal documents.
@@ -41,11 +45,15 @@ def _legal_documents_dir() -> Path:
 
 
 def _default_legal_document_path(document_key: str) -> Path:
-    """Used to bootstrap the very first published version of a document from
-    a bundled markdown file, before anything exists in the database yet.
+    """Locates the bundled seed markdown file for a legal document.
 
     Arguments:
         document_key {str} -- which document (e.g. terms, privacy) to locate.
+
+    Notes:
+        This is used to bootstrap the very first published version of a
+        document from a bundled markdown file, before anything exists in the
+        database yet.
 
     Raises:
         ValueError: if document_key isn't one of the known documents.
@@ -60,11 +68,15 @@ def _default_legal_document_path(document_key: str) -> Path:
 
 
 def _latest_legal_document(document_key: str) -> dict | None:
-    """Sorts by published_at then _id, since two versions can theoretically
-    share a published_at timestamp and _id is the tiebreaker for "most recent".
+    """Looks up the most recently published version of a document.
 
     Arguments:
         document_key {str} -- which document to look up.
+
+    Notes:
+        Results are sorted by published_at then _id, since two versions can
+        theoretically share a published_at timestamp and _id is the
+        tiebreaker for "most recent".
 
     Returns:
         dict | None -- the most recently published version, or None if this
@@ -77,13 +89,16 @@ def _latest_legal_document(document_key: str) -> dict | None:
 
 
 def insert_with_check(document: dict[str, Any], collection: Collection) -> dict[str, Any]:
-    """Re-fetches after inserting and aborts if it's missing, so callers get
-    back the document as MongoDB actually stored it (with its real _id)
-    rather than trusting the input dict was written unchanged.
+    """Inserts a document into a collection and re-fetches it to confirm the write.
 
     Arguments:
         document {dict[str, Any]} -- the document to insert.
         collection {Collection} -- which collection to insert into.
+
+    Notes:
+        Re-fetching after inserting ensures callers get back the document as
+        MongoDB actually stored it (with its real _id) rather than trusting
+        the input dict was written unchanged.
 
     Returns:
         dict[str, Any] -- the inserted document, as read back from the database.
@@ -98,12 +113,15 @@ def insert_with_check(document: dict[str, Any], collection: Collection) -> dict[
 
 
 def _serialize_legal_document(document: dict) -> dict:
-    """Re-normalizes the body and re-derives the title on every read instead
-    of trusting what's stored, so older documents saved before a
-    normalization/title-derivation change still render consistently.
+    """Formats a raw legal document for API responses.
 
     Arguments:
         document {dict} -- the raw legal document from MongoDB.
+
+    Notes:
+        The body is re-normalized and the title re-derived on every read
+        instead of trusting what's stored, so older documents saved before a
+        normalization/title-derivation change still render consistently.
 
     Returns:
         dict -- document formatted for API responses.
@@ -121,12 +139,14 @@ def _serialize_legal_document(document: dict) -> dict:
 
 
 def _create_published_legal_document(document_key: str) -> dict:
-    """Bootstraps the first published version straight from the bundled
-    markdown file, so a fresh deployment always has a version to serve
-    without requiring a manual admin publish step first.
+    """Bootstraps the first published version of a document from the bundled markdown file.
 
     Arguments:
         document_key {str} -- which document to bootstrap.
+
+    Notes:
+        This ensures a fresh deployment always has a version to serve
+        without requiring a manual admin publish step first.
 
     Returns:
         dict -- the newly created, published document.
@@ -147,11 +167,15 @@ def _create_published_legal_document(document_key: str) -> dict:
 
 
 def is_supported_legal_document(document_key: str) -> bool:
-    """Validates document_key against the known set before it's used to
-    query/build a file path, since it can come straight from a URL parameter.
+    """Checks whether document_key is a recognized legal document.
 
     Arguments:
         document_key {str} -- the key to check.
+
+    Notes:
+        This validates document_key against the known set before it's used
+        to query or build a file path, since it can come straight from a URL
+        parameter.
 
     Returns:
         bool -- True if this is a recognized legal document.
@@ -160,12 +184,15 @@ def is_supported_legal_document(document_key: str) -> bool:
 
 
 def normalize_legal_body(body: str) -> str:
-    """Normalizes line endings and trims whitespace before hashing/storing,
-    so the same content always produces the same version hash regardless of
-    the OS/editor that authored it (e.g. CRLF vs LF).
+    """Normalizes line endings and trims whitespace from a document body.
 
     Arguments:
         body {str} -- the raw document body to normalize.
+
+    Notes:
+        Normalizing before hashing/storing ensures the same content always
+        produces the same version hash regardless of the OS/editor that
+        authored it (e.g. CRLF vs LF).
 
     Raises:
         ValueError: if body isn't a string, or is empty after normalizing.
@@ -183,13 +210,16 @@ def normalize_legal_body(body: str) -> str:
 
 
 def derive_legal_title(document_key: str, body: str) -> str:
-    """Pulls the title from the body's first markdown heading rather than
-    storing it as a separate field, so admins editing the document text
-    can't accidentally leave the title out of sync with the content.
+    """Derives a document's title from its first markdown heading.
 
     Arguments:
         document_key {str} -- used for the fallback label if no heading is found.
         body {str} -- the document body to look for a heading in.
+
+    Notes:
+        Deriving the title from the body rather than storing it as a
+        separate field means admins editing the document text can't
+        accidentally leave the title out of sync with the content.
 
     Returns:
         str -- the derived title, or the document's default label if the
@@ -206,13 +236,17 @@ def derive_legal_title(document_key: str, body: str) -> str:
 
 
 def compute_legal_version(body: str) -> str:
-    """Content-addressed version instead of a manually incremented number,
-    so identical text always yields the identical version — this is what
-    lets publish_legal_document detect "nothing actually changed" and lets
-    has_current_terms_acceptance compare versions without a central counter.
+    """Computes a content-addressed version identifier for a document body.
 
     Arguments:
         body {str} -- the document body to hash.
+
+    Notes:
+        Using a content-addressed version instead of a manually incremented
+        number means identical text always yields the identical version.
+        This is what lets publish_legal_document detect that nothing
+        actually changed, and lets has_current_terms_acceptance compare
+        versions without a central counter.
 
     Returns:
         str -- a short, stable version identifier derived from the body's content.
@@ -222,12 +256,15 @@ def compute_legal_version(body: str) -> str:
 
 
 def ensure_published_legal_document(document_key: str) -> dict:
-    """Lazily bootstraps from the bundled seed file on first access instead
-    of requiring a deploy-time migration step, so every environment always
-    has a published version to serve.
+    """Gets the currently published document, bootstrapping it if none exists.
 
     Arguments:
         document_key {str} -- which document to fetch or bootstrap.
+
+    Notes:
+        This lazily bootstraps from the bundled seed file on first access
+        instead of requiring a deploy-time migration step, so every
+        environment always has a published version to serve.
 
     Raises:
         ValueError: if document_key isn't a known document.
@@ -246,12 +283,15 @@ def ensure_published_legal_document(document_key: str) -> dict:
 
 
 def get_published_legal_document(document_key: str) -> dict:
-    """The public-facing accessor used by both the terms/privacy routes and
-    the auth flow's terms-version checks, so both always see the same
-    currently-published version.
+    """Gets the currently published document, formatted for API responses.
 
     Arguments:
         document_key {str} -- which document to fetch.
+
+    Notes:
+        This is the public-facing accessor used by both the terms/privacy
+        routes and the auth flow's terms-version checks, so both always see
+        the same currently-published version.
 
     Returns:
         dict -- the currently published document, formatted for API responses.
@@ -260,10 +300,7 @@ def get_published_legal_document(document_key: str) -> dict:
 
 
 def get_legal_document_admin_view(document_key: str, published_doc: dict | None = None) -> dict:
-    """Includes full version history (unlike the public-facing accessor),
-    since admins need to see what changed and when. Accepts an
-    already-fetched published_doc to avoid a redundant lookup right after
-    publish_admin_legal_document() just created it.
+    """Builds the admin view for a document, including its full version history.
 
     Arguments:
         document_key {str} -- which document to build the admin view for.
@@ -271,6 +308,12 @@ def get_legal_document_admin_view(document_key: str, published_doc: dict | None 
     Keyword Arguments:
         published_doc {dict | None} -- pass the just-published document to
         skip re-fetching it. (default: {None})
+
+    Notes:
+        Full version history is included here, unlike the public-facing
+        accessor, since admins need to see what changed and when. Callers
+        can pass an already-fetched published_doc to avoid a redundant
+        lookup right after publish_admin_legal_document() just created it.
 
     Raises:
         ValueError: if document_key isn't a known document.
@@ -295,8 +338,11 @@ def get_legal_document_admin_view(document_key: str, published_doc: dict | None 
 
 
 def list_legal_document_admin_views() -> list[dict]:
-    """Powers the admin legal-documents list page, which shows every
-    document at once rather than one at a time.
+    """Builds the admin view for every known legal document.
+
+    Notes:
+        This powers the admin legal-documents list page, which shows every
+        document at once rather than one at a time.
 
     Returns:
         list[dict] -- admin view for every known legal document.
@@ -305,13 +351,17 @@ def list_legal_document_admin_views() -> list[dict]:
 
 
 def publish_legal_document(document_key: str, body: str) -> dict:
-    """Rejects publishing if the content hashes the same as the current
-    version, so re-saving an admin edit that changed nothing doesn't create
-    a pointless new version that would force every user to re-accept.
+    """Publishes a new version of a document.
 
     Arguments:
         document_key {str} -- which document to publish.
         body {str} -- the new document body.
+
+    Notes:
+        Publishing is rejected if the content hashes the same as the
+        current version, so re-saving an admin edit that changed nothing
+        doesn't create a pointless new version that would force every user
+        to re-accept.
 
     Raises:
         ValueError: if document_key isn't a known document, or if the body

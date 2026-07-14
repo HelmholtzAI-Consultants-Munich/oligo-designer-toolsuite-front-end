@@ -17,8 +17,11 @@ genomic_bp = Blueprint("genomic", __name__)
 
 @genomic_bp.route("/api/genomic/dropdown", methods=["GET"])
 def genomic_dropdown_dict():
-    """Serves the taxon/species options from the backend rather than hardcoding
-    them in the frontend, since the supported list changes as NCBI data updates.
+    """Serve the taxon/species dropdown options from the backend.
+
+    Notes:
+        Options are served from the backend rather than hardcoded in the
+        frontend, since the supported list changes as NCBI data updates.
 
     Returns:
         dict[str, dict[str, list[str]]] -- dropdown options for populating the
@@ -30,13 +33,17 @@ def genomic_dropdown_dict():
 
 @genomic_bp.route("/api/genomic/releases/<taxon>/<species>", methods=["GET"])
 def genomic_get_releases(taxon: str, species: str):
-    """Queried separately from the dropdown endpoint since the list of
-    available annotation releases depends on which taxon/species the user
-    already picked, and fetching every combination up front would be wasteful.
+    """Get available annotation releases for a given taxon/species.
 
     Arguments:
         taxon {str} -- the taxon selected by the user.
         species {str} -- the species selected by the user.
+
+    Notes:
+        This is queried separately from the dropdown endpoint since the list
+        of available annotation releases depends on which taxon/species the
+        user already picked, and fetching every combination up front would
+        be wasteful.
 
     Raises:
         HTTPException: 404 if NCBI has no releases for this taxon/species pair.

@@ -13,12 +13,15 @@ from werkzeug.exceptions import HTTPException
 
 
 def register_error_handlers(app: Flask):
-    """Centralizes error responses so every abort()/unhandled exception
-    always returns consistent JSON, instead of each route having to format
-    its own error response or risk leaking a stack trace to the client.
+    """Register centralized error handlers on the Flask app.
 
     Arguments:
         app {Flask} -- the Flask application instance.
+
+    Notes:
+        This centralizes error responses so every abort()/unhandled exception
+        always returns consistent JSON, instead of each route having to format
+        its own error response or risk leaking a stack trace to the client.
     """
 
     @app.errorhandler(HTTPException)
@@ -40,11 +43,14 @@ def register_error_handlers(app: Flask):
     @app.errorhandler(Exception)
     def handle_generic_exception(error: Exception):
         """Catch-all for anything not raised via abort(). Logs the real
-        exception server-side but returns a generic message to the client,
-        since an unhandled exception's message could expose internals.
+        exception server-side but returns a generic message to the client.
 
         Arguments:
             error {Exception} -- the unhandled exception.
+
+        Notes:
+            An unhandled exception's message could expose internals, so the
+            client only ever sees the generic message.
 
         Returns:
             flask.Response -- generic JSON 500 error.

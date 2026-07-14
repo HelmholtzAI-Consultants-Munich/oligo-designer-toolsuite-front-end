@@ -21,9 +21,11 @@ FEEDBACK_RATE_LIMIT = "10 per hour"
 
 
 def _feedback_rate_limit_key() -> str:
-    """Keys the rate limit by user rather than IP, since this endpoint
-    requires login anyway and per-IP limiting would unfairly throttle
-    multiple users behind the same NAT/proxy.
+    """Key the rate limit by user rather than IP.
+
+    Notes:
+        This endpoint requires login anyway, and per-IP limiting would
+        unfairly throttle multiple users behind the same NAT/proxy.
 
     Returns:
         str -- rate-limit bucket key for the current user.
@@ -32,12 +34,14 @@ def _feedback_rate_limit_key() -> str:
 
 
 def sanitize_feedback_message(raw_message: str) -> str:
-    """Strips HTML/control characters and normalizes Unicode before storage,
-    since feedback text is later rendered in the admin panel and must not be
-    able to inject markup or invisible/spoofing characters.
+    """Strip HTML/control characters and normalize Unicode before storage.
 
     Arguments:
         raw_message {str} -- the raw message submitted by the client.
+
+    Notes:
+        Feedback text is later rendered in the admin panel and must not be
+        able to inject markup or invisible/spoofing characters.
 
     Returns:
         str -- sanitized, storage-safe message.

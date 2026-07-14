@@ -69,13 +69,14 @@ class BulkUpdateResponse(BulkOperationResponse):
 
 
 def is_admin(user):
-    """Re-checks the role against the database rather than trusting anything
-    cached on the Flask-Login user object, since role changes should take
-    effect immediately without waiting for re-login.
+    """Re-checks the role against the database rather than trusting anything cached on the Flask-Login user object.
 
     Arguments:
         user {flask_login.UserMixin} -- the current Flask-Login user (may be
         unauthenticated).
+
+    Notes:
+        Role changes should take effect immediately without waiting for re-login.
 
     Returns:
         bool -- True only for an authenticated user whose stored role is "admin".
@@ -91,11 +92,14 @@ def is_admin(user):
 
 
 def require_admin(f):
-    """Kept separate from @login_required so routes can require authentication
-    without admin, or stack both when only admins should access an endpoint.
+    """Decorator that requires the current user to be an admin.
 
     Arguments:
         f {Callable} -- the view function to protect.
+
+    Notes:
+        This is kept separate from @login_required so routes can require authentication
+        without admin, or stack both when only admins should access an endpoint.
 
     Returns:
         Callable -- the wrapped view, which aborts 403 before running f if
@@ -121,8 +125,10 @@ def _validate_legal_document_key(document_key: str) -> str:
 @login_required
 @require_admin
 def get_users():
-    """Joins in ban status per user so the admin panel can show/act on bans
-    without a separate round-trip per row.
+    """List all users (admin only), joining in ban status per user.
+
+    Notes:
+        This lets the admin panel show and act on bans without a separate round-trip per row.
 
     Returns:
         flask.Response -- JSON list of users, formatted for the Refine data
@@ -165,12 +171,15 @@ def get_user(user_id: ObjectId):
 @login_required
 @require_admin
 def update_user(user_id: ObjectId):
-    """Username updates are restricted to CLI-registered users (identified by
-    already having a username) since Helmholtz-AAI users' identity comes from
-    their helmholtz_sub, not a locally-editable username.
+    """Update a user's role and/or username (admin only).
 
     Arguments:
         user_id {ObjectId} -- the user to update.
+
+    Notes:
+        Username updates are restricted to CLI-registered users (identified by
+        already having a username), since Helmholtz-AAI users' identity comes from
+        their helmholtz_sub, not a locally-editable username.
 
     Returns:
         flask.Response -- the updated user, formatted for the Refine data provider.
@@ -240,11 +249,14 @@ def delete_user(user_id: ObjectId):
 @login_required
 @require_admin
 def ban_user(user_id: ObjectId):
-    """Bans by helmholtz_sub rather than user_id, so a banned person can't
-    just log in again and get a fresh account with full access.
+    """Ban a user (admin only).
 
     Arguments:
         user_id {ObjectId} -- the user to ban.
+
+    Notes:
+        Bans are keyed by helmholtz_sub rather than user_id, so a banned person
+        can't just log in again and get a fresh account with full access.
 
     Returns:
         flask.Response -- the created ban record.
@@ -320,12 +332,14 @@ def get_legal_document_detail(document_key: str):
 @login_required
 @require_admin
 def publish_admin_legal_document(document_key: str):
-    """Publish a new legal document version. Publishing (rather than editing
-    in place) preserves the history so users can be told which version they
-    accepted.
+    """Publish a new legal document version.
 
     Arguments:
         document_key {str} -- which document to publish a new version of.
+
+    Notes:
+        Publishing (rather than editing in place) preserves the history so users
+        can be told which version they accepted.
 
     Returns:
         flask.Response -- the document's admin view after publishing.
@@ -348,8 +362,10 @@ def publish_admin_legal_document(document_key: str):
 @login_required
 @require_admin
 def get_pipeline_runs():
-    """List all pipeline runs across all users (admin only) — unlike the
-    user-facing runs endpoint, this isn't scoped to the caller.
+    """List all pipeline runs across all users (admin only).
+
+    Notes:
+        Unlike the user-facing runs endpoint, this isn't scoped to the caller.
 
     Returns:
         flask.Response -- JSON list of pipeline runs, newest first.
@@ -367,12 +383,15 @@ def get_pipeline_runs():
 @login_required
 @require_admin
 def update_pipeline_status(run_id: ObjectId):
-    """Lets an admin manually correct a run's status (e.g. force-fail a stuck
-    run) without needing direct database access.
+    """Update a pipeline run's status (admin only).
 
     Arguments:
         run_id {ObjectId} -- the run to update — checked with
         require_ownership=False since admins can touch any user's run.
+
+    Notes:
+        This lets an admin manually correct a run's status (e.g. force-fail a
+        stuck run) without needing direct database access.
 
     Returns:
         flask.Response -- the updated run.
@@ -411,11 +430,13 @@ def update_pipeline_status(run_id: ObjectId):
 @login_required
 @require_admin
 def delete_pipeline_run(run_id: ObjectId):
-    """Delete any user's pipeline run and its output files (admin only) —
-    skips the ownership check that the user-facing delete endpoint enforces.
+    """Delete any user's pipeline run and its output files (admin only).
 
     Arguments:
         run_id {ObjectId} -- the run to delete.
+
+    Notes:
+        This skips the ownership check that the user-facing delete endpoint enforces.
 
     Returns:
         flask.Response -- confirmation message.
@@ -430,8 +451,11 @@ def delete_pipeline_run(run_id: ObjectId):
 @login_required
 @require_admin
 def get_dashboard_stats():
-    """Pre-aggregates counts server-side so the admin dashboard doesn't have
-    to pull full user/run collections just to show totals.
+    """Get aggregate user and pipeline run statistics for the admin dashboard.
+
+    Notes:
+        Counts are pre-aggregated server-side so the admin dashboard doesn't
+        have to pull full user/run collections just to show totals.
 
     Returns:
         flask.Response -- JSON with user counts (total/admin/regular) and
@@ -489,8 +513,11 @@ def get_feedback():
 @login_required
 @require_admin
 def bulk_delete_users():
-    """Silently skips (rather than failing) the caller's own ID and any
-    invalid IDs, so one bad ID in a batch doesn't block deleting the rest.
+    """Bulk delete users by ID (admin only).
+
+    Notes:
+        This silently skips (rather than failing) the caller's own ID and any
+        invalid IDs, so one bad ID in a batch doesn't block deleting the rest.
 
     Returns:
         flask.Response -- deletion results, including which IDs were skipped
@@ -545,9 +572,12 @@ def bulk_delete_users():
 @login_required
 @require_admin
 def bulk_update_user_role():
-    """Silently skips the caller's own ID when demoting to "user", since an
-    admin locking themselves out of the admin panel would need another admin
-    to fix — better to just exclude them from the batch.
+    """Bulk update the role of multiple users (admin only).
+
+    Notes:
+        This silently skips the caller's own ID when demoting to "user", since
+        an admin locking themselves out of the admin panel would need another
+        admin to fix; it's better to just exclude them from the batch.
 
     Returns:
         flask.Response -- update results, including which IDs were skipped
@@ -606,9 +636,12 @@ def bulk_update_user_role():
 @login_required
 @require_admin
 def bulk_delete_pipeline_runs():
-    """Reports partial failures per-run instead of aborting the whole batch,
-    since one run's files being unreachable on disk shouldn't block deleting
-    the rest.
+    """Bulk delete pipeline runs by ID (admin only).
+
+    Notes:
+        This reports partial failures per-run instead of aborting the whole
+        batch, since one run's files being unreachable on disk shouldn't
+        block deleting the rest.
 
     Returns:
         flask.Response -- deletion results, including any per-run failures.
@@ -648,8 +681,10 @@ def bulk_delete_pipeline_runs():
 @login_required
 @require_admin
 def bulk_update_pipeline_status():
-    """Bulk equivalent of update_pipeline_status, for correcting many stuck
-    runs at once instead of one at a time.
+    """Bulk equivalent of update_pipeline_status.
+
+    Notes:
+        This is for correcting many stuck runs at once instead of one at a time.
 
     Returns:
         flask.Response -- update results, including any invalid IDs.
@@ -694,8 +729,10 @@ def bulk_update_pipeline_status():
 @login_required
 @require_admin
 def get_monthly_reports():
-    """A single report if year/month are given, otherwise the full history —
-    the admin panel uses both: a list view and a detail view for one month.
+    """Get a single monthly report if year/month are given, otherwise the full report history.
+
+    Notes:
+        The admin panel uses both: a list view and a detail view for one month.
 
     Returns:
         flask.Response -- one report, or a list of all reports (newest first).
@@ -728,11 +765,15 @@ def delete_monthly_report(report_id):
 @login_required
 @require_admin
 def trigger_monthly_report():
-    """Dispatches report generation to Celery rather than running it inline,
-    since aggregating a month of data shouldn't block the request. Omitting
-    year/month regenerates the most recent report (the common case);
+    """Dispatch monthly report generation to Celery (admin only).
+
+    Omitting year/month regenerates the most recent report (the common case);
     specifying both lets an admin backfill or redo a specific month, but
     never the current/future month since it isn't finished yet.
+
+    Notes:
+        Report generation is dispatched to Celery rather than run inline,
+        since aggregating a month of data shouldn't block the request.
 
     Returns:
         flask.Response -- confirmation that generation was queued.

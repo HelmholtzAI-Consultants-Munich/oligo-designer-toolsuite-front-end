@@ -12,14 +12,16 @@ from backend.utilities.pipeline import delete_pipeline_run_files_and_db
 
 
 def _delete_file_if_tracked(path_value: str | None, root_path: str) -> None:
-    """Confirms the path resolves under root_path before deleting anything,
-    since path_value comes from a database record and must not be trusted
-    to delete arbitrary files outside the upload directory.
+    """Confirms the path resolves under root_path before deleting anything.
 
     Arguments:
         path_value {str | None} -- the stored file path to delete, or None
         if this upload has no tracked file.
         root_path {str} -- the upload root the path must resolve under.
+
+    Notes:
+        path_value comes from a database record and must not be trusted to delete arbitrary
+        files outside the upload directory.
     """
     if not path_value:
         return
@@ -34,10 +36,8 @@ def _delete_file_if_tracked(path_value: str | None, root_path: str) -> None:
 
 
 def delete_user_account_data(user_id: str, upload_root: str, userdata_root: str) -> None:
-    """Shared by self-service account deletion and admin user deletion, so
-    both paths erase the same data (runs, uploads, feedback, legal
-    acceptances, user directory, and the account itself) — deleting the
-    user document without this would leave orphaned files and records behind.
+    """Fully deletes a user account and all of its associated data (runs, uploads, feedback,
+    legal acceptances, user directory, and the account itself).
 
     Arguments:
         user_id {str} -- the account to fully delete.
@@ -45,6 +45,11 @@ def delete_user_account_data(user_id: str, upload_root: str, userdata_root: str)
         and delete this user's tracked upload files.
         userdata_root {str} -- userdata directory root, used to remove this
         user's data directory.
+
+    Notes:
+        This is shared by self-service account deletion and admin user deletion, so both paths
+        erase the same data — deleting the user document without this would leave orphaned
+        files and records behind.
     """
     runs = list(db.runs.find({"user_id": user_id}, {"_id": 1}))
     for run in runs:

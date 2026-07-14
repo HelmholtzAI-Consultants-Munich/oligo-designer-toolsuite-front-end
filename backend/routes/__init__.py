@@ -10,12 +10,15 @@ from backend.routes.runs import runs_bp
 
 
 def register_blueprints(app):
-    """Registers feedback_bp before pipelines_bp — order matters here since
-    Flask matches routes in registration order and /api/feedback would
-    otherwise be shadowed by the catch-all /api/<pipeline_name> route.
+    """Register every route blueprint on the Flask app.
 
     Arguments:
         app {flask.Flask} -- the Flask application instance.
+
+    Notes:
+        feedback_bp is registered before pipelines_bp — order matters here
+        since Flask matches routes in registration order and /api/feedback
+        would otherwise be shadowed by the catch-all /api/<pipeline_name> route.
     """
     app.register_blueprint(auth_bp)
     app.register_blueprint(runs_bp)

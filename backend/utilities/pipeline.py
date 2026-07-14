@@ -21,12 +21,15 @@ logger = logging.getLogger(__name__)
 
 
 def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
-    """Splits a form into one variant per selected region, since the region
-    generator task only knows how to process one region at a time — deep
-    copies so mutating one variant's regions can't affect another's.
+    """Splits a form into one variant per selected region.
 
     Arguments:
         form {dict[str, Any]} -- form with possibly multiple regions set to "true".
+
+    Notes:
+        The region generator task only knows how to process one region at a
+        time. Each variant is deep-copied so mutating one variant's regions
+        can't affect another's.
 
     Returns:
         list[dict[str, Any]] -- one form per originally-selected region, each
@@ -46,9 +49,12 @@ def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def get_valid_pipeline_statuses():
-    """Single source of truth for valid statuses, so admin status-update
-    validation and any other status check can't drift out of sync with
-    what the worker actually sets on a run.
+    """Returns all valid pipeline run status values.
+
+    Notes:
+        This is the single source of truth for valid statuses, so admin
+        status-update validation and any other status check can't drift out
+        of sync with what the worker actually sets on a run.
 
     Returns:
         list[str] -- all valid pipeline run status values.
@@ -57,11 +63,14 @@ def get_valid_pipeline_statuses():
 
 
 def get_timeout_multiplier(is_authenticated: bool) -> float:
-    """Authenticated users get a longer timeout budget than anonymous ones,
-    as an incentive to log in for larger/slower runs.
+    """Returns the timeout multiplier for the given authentication state.
 
     Arguments:
         is_authenticated {bool} -- whether the current caller is logged in.
+
+    Notes:
+        Authenticated users get a longer timeout budget than anonymous ones,
+        as an incentive to log in for larger/slower runs.
 
     Returns:
         float -- multiplier to apply to the anonymous base timeout.
@@ -72,12 +81,16 @@ def get_timeout_multiplier(is_authenticated: bool) -> float:
 
 
 def resolve_timeout(is_authenticated: bool) -> int:
-    """Deliberately static rather than based on input size/complexity, since
-    estimating actual runtime up front isn't reliable — a fixed budget per
-    user type is simpler to reason about and enforce consistently.
+    """Resolves the soft time limit for the Celery pipeline task.
 
     Arguments:
         is_authenticated {bool} -- whether the current caller is logged in.
+
+    Notes:
+        The timeout is deliberately static rather than based on input
+        size/complexity, since estimating actual runtime up front isn't
+        reliable; a fixed budget per user type is simpler to reason about
+        and enforce consistently.
 
     Returns:
         int -- soft time limit in seconds for the Celery pipeline task.
@@ -86,14 +99,18 @@ def resolve_timeout(is_authenticated: bool) -> int:
 
 
 def delete_pipeline_run_files_and_db(mongo, run_id_obj):
-    """Shared by both single-run and bulk deletion, so both paths clean up
-    the same way. File deletion failures are only logged, not fatal — a
-    user should still be able to remove a stray run record even if its
-    output directory is already gone or unreachable on disk.
+    """Deletes a pipeline run's output files and database record.
 
     Arguments:
         mongo {pymongo.database.Database} -- MongoDB database instance.
         run_id_obj {ObjectId} -- ObjectId of the run to delete.
+
+    Notes:
+        This is shared by both single-run and bulk deletion, so both paths
+        clean up the same way. File deletion failures are only logged, not
+        fatal, since a user should still be able to remove a stray run
+        record even if its output directory is already gone or unreachable
+        on disk.
     """
     # Fetch the run
     run = mongo.runs.find_one({"_id": run_id_obj})
@@ -120,13 +137,17 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
 
 
 def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: list[ObjectId]) -> dict:
-    """Deletes each run independently and catches per-run failures, so one
-    bad/already-missing run in a batch doesn't abort deletion of the rest —
-    callers get back which ones failed instead of an all-or-nothing error.
+    """Deletes multiple pipeline runs, tracking per-run failures independently.
 
     Arguments:
         mongo {pymongo.database.Database} -- MongoDB database instance.
         run_id_objects {list[ObjectId]} -- run IDs to delete (already validated).
+
+    Notes:
+        Each run is deleted independently and per-run failures are caught,
+        so one bad/already-missing run in a batch doesn't abort deletion of
+        the rest; callers get back which ones failed instead of an
+        all-or-nothing error.
 
     Returns:
         dict -- deleted_count, plus failed run IDs and their error messages.

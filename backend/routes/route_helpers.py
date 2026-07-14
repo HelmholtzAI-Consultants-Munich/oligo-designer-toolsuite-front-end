@@ -21,8 +21,12 @@ from backend.utilities.legal_acceptance import require_current_terms_acceptance
 
 
 def get_user_context() -> tuple[None, str] | tuple[str, None]:
-    """Single source of truth for "who is making this request" so every route
-    handles anonymous and authenticated users the same way.
+    """Resolves the identity of the current caller as either a user id or session id.
+
+    Notes:
+        This is the single source of truth for who is making this request,
+        so every route handles anonymous and authenticated users the same
+        way.
 
     Raises:
         HTTPException: 401 if an anonymous user's session has expired/lost its
@@ -44,9 +48,12 @@ def get_user_context() -> tuple[None, str] | tuple[str, None]:
 
 
 def get_user_context_with_directory() -> tuple[str | None, str | None, Path]:
-    """Resolves the on-disk directory alongside the user context, since anonymous
-    and authenticated users store their data under different path layouts
-    (`anon/<session_id>` vs `<user_id>`) and most callers need both together.
+    """Resolves the on-disk user directory alongside the user context.
+
+    Notes:
+        Anonymous and authenticated users store their data under different
+        path layouts (`anon/<session_id>` vs `<user_id>`), and most callers
+        need both together.
 
     Raises:
         HTTPException: 401 if an anonymous user's session has expired/lost its
@@ -68,8 +75,12 @@ def get_user_context_with_directory() -> tuple[str | None, str | None, Path]:
 
 
 def require_terms_acceptance_for_current_context() -> tuple[str | None, str | None]:
-    """Gate pipeline submission behind terms acceptance without callers having
-    to separately fetch the user context and then check acceptance themselves.
+    """Resolves the current user context and enforces terms acceptance for it.
+
+    Notes:
+        This gates pipeline submission behind terms acceptance without
+        callers having to separately fetch the user context and then check
+        acceptance themselves.
 
     Returns:
         tuple[str | None, str | None] -- (user_id, session_id) for the caller
@@ -86,9 +97,7 @@ def require_terms_acceptance_for_current_context() -> tuple[str | None, str | No
 
 
 def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | None:
-    """Use this when a missing user is a valid outcome (e.g. admin existence
-    checks). For API endpoints where a missing user should 404, use
-    get_user_by_id_or_404() instead.
+    """Looks up a user document by id, returning None if not found.
 
     Arguments:
         user_id {ObjectId} -- the user to look up.
@@ -96,6 +105,11 @@ def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | 
     Keyword Arguments:
         exclude_password {bool} -- set False only when the caller needs to
         verify a password hash (e.g. legacy login). (default: {True})
+
+    Notes:
+        Use this when a missing user is a valid outcome (e.g. admin
+        existence checks). For API endpoints where a missing user should
+        404, use get_user_by_id_or_404() instead.
 
     Returns:
         dict | None -- the user document, or None if not found.
@@ -105,9 +119,7 @@ def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | 
 
 
 def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> dict:
-    """Use this in API endpoints where a missing user should end the request
-    with a 404 instead of the caller having to check for None itself. For
-    checks where a missing user is expected/valid, use find_user_by_id() instead.
+    """Looks up a user document by id, aborting with 404 if not found.
 
     Arguments:
         user_id {ObjectId} -- the user to look up.
@@ -115,6 +127,12 @@ def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> d
     Keyword Arguments:
         exclude_password {bool} -- set False only when the caller needs the
         password hash. (default: {True})
+
+    Notes:
+        Use this in API endpoints where a missing user should end the
+        request with a 404 instead of the caller having to check for None
+        itself. For checks where a missing user is expected/valid, use
+        find_user_by_id() instead.
 
     Raises:
         HTTPException: 404 if no user with this id exists.
@@ -134,9 +152,7 @@ def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> d
 
 
 def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
-    """Split out from get_run_or_404 so admin operations can reuse the same
-    ownership logic while opting out of it (require_ownership=False), rather
-    than duplicating the user/session branching.
+    """Builds the MongoDB query dict used to fetch a run.
 
     Arguments:
         run_id {ObjectId} -- the run to query for.
@@ -145,6 +161,12 @@ def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
         require_ownership {bool} -- False skips the ownership filter entirely
         — only use this for admin operations that may act on any run.
         (default: {True})
+
+    Notes:
+        This is split out from get_run_or_404 so admin operations can reuse
+        the same ownership logic while opting out of it
+        (require_ownership=False), rather than duplicating the
+        user/session branching.
 
     Raises:
         HTTPException: 403 if an anonymous caller has no session_id to scope
@@ -167,9 +189,7 @@ def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
 
 
 def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
-    """The standard way routes fetch a run, so ownership enforcement can't be
-    forgotten in a handler — pass require_ownership=False only for admin
-    endpoints that are allowed to touch any user's run.
+    """Fetches a run document by id, aborting with 404 if it doesn't exist.
 
     Arguments:
         run_id {ObjectId} -- the run to fetch.
@@ -177,6 +197,12 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     Keyword Arguments:
         require_ownership {bool} -- False skips the ownership check.
         (default: {True})
+
+    Notes:
+        This is the standard way routes fetch a run, so ownership
+        enforcement can't be forgotten in a handler — pass
+        require_ownership=False only for admin endpoints that are allowed
+        to touch any user's run.
 
     Raises:
         HTTPException: 403 if unauthorized, 404 if the run doesn't exist.
@@ -192,14 +218,18 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
 
 
 def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
-    """The run must already exist. Similar to
-    `backend.worker.database._update_run`, but this variant aborts the
-    request on failure instead of the worker's own error handling — routes
-    need the request to fail loudly, a background task doesn't.
+    """Updates fields on an existing run document.
 
     Arguments:
         run_id {ObjectId} -- the run to update.
         data {dict[str, Any]} -- fields to $set on the run document.
+
+    Notes:
+        The run must already exist. This is similar to
+        `backend.worker.database._update_run`, but this variant aborts the
+        request on failure instead of the worker's own error handling,
+        since routes need the request to fail loudly while a background
+        task doesn't.
     """
     update_result = db.runs.update_one({"_id": run_id}, {"$set": data})
     if not update_result.acknowledged:
@@ -212,12 +242,15 @@ def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
 
 
 def validate_turnstile(token):
-    """Verifies the Cloudflare Turnstile challenge server-side so a client
-    can't just skip it; fails open to "not verified" on network errors rather
-    than raising, since a Cloudflare outage shouldn't crash the request.
+    """Verifies a Cloudflare Turnstile challenge token server-side.
 
     Arguments:
         token {str} -- the Turnstile response token submitted by the client.
+
+    Notes:
+        This ensures a client can't just skip the challenge. It fails open
+        to "not verified" on network errors rather than raising, since a
+        Cloudflare outage shouldn't crash the request.
 
     Returns:
         bool -- True only if Cloudflare confirms the token is valid.

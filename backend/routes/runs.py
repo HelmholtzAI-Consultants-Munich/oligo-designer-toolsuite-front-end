@@ -39,12 +39,15 @@ runs_bp = Blueprint("runs", __name__)
 
 
 def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
-    """Only exposes fields relevant to the frontend and converts timestamps
-    to ISO strings, so raw internal metric storage doesn't leak into the API.
+    """Formats a run's metrics for the frontend, converting timestamps to ISO strings.
 
     Arguments:
         metrics {dict[str, Any] | None} -- raw metrics dict from the run
         document, or None for runs that don't have metrics yet.
+
+    Notes:
+        Only fields relevant to the frontend are exposed, so raw internal
+        metric storage doesn't leak into the API.
 
     Returns:
         dict[str, Any] | None -- formatted metrics, or None if there's
@@ -66,12 +69,15 @@ def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
 
 
 def format_run(run: dict[Any, Any]) -> dict[str, Any]:
-    """Only includes error_message for terminal failure states, so a
-    successful/in-progress run's response doesn't carry a stale leftover
-    error from an earlier attempt.
+    """Formats a run document for the frontend.
 
     Arguments:
         run {dict[Any, Any]} -- the raw run document from MongoDB.
+
+    Notes:
+        error_message is only included for terminal failure states, so a
+        successful/in-progress run's response doesn't carry a stale
+        leftover error from an earlier attempt.
 
     Returns:
         dict[str, Any] -- run payload formatted for the frontend.
@@ -116,9 +122,12 @@ def delete_run(run_id: ObjectId):
 
 @runs_bp.route("/api/runs", methods=["GET"])
 def get_pipeline_runs():
-    """List runs for the current identity — user_id if authenticated,
-    otherwise the anonymous session_id — so each visitor only ever sees
-    their own runs.
+    """Lists runs for the current identity (authenticated user or anonymous session).
+
+    Notes:
+        Runs are scoped to user_id if authenticated, otherwise the
+        anonymous session_id, so each visitor only ever sees their own
+        runs.
 
     Returns:
         flask.Response -- JSON list of the caller's runs, formatted for the
@@ -153,16 +162,19 @@ def get_pipeline_run(run_id: ObjectId):
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/files/<path:filename>", methods=["GET"])
 def get_run_file(run_id: ObjectId, filename: str):
-    """Download an output file for a run. Only allows a fixed extension
-    allowlist, and resolves the path with safe_join_under, since filename
-    comes straight from the URL and must not be able to escape the run's
-    output directory (path traversal).
+    """Download an output file for a run.
 
     Arguments:
         run_id {ObjectId} -- the run whose output directory to serve from —
         ownership is enforced.
         filename {str} -- possibly-nested path relative to the run's output
         directory (e.g. "annotation/example.fna").
+
+    Notes:
+        Only a fixed extension allowlist is permitted, and the path is
+        resolved with safe_join_under, since filename comes straight from
+        the URL and must not be able to escape the run's output directory
+        (path traversal).
 
     Returns:
         flask.Response -- the file as an attachment.
@@ -193,13 +205,16 @@ def get_run_file(run_id: ObjectId, filename: str):
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/config", methods=["GET"])
 def get_run_config(run_id: ObjectId):
-    """Lets the frontend re-populate a form from a past run (e.g. "rerun with
-    same settings"). 404s for older runs that predate this feature, since
-    there's no config to return for them.
+    """Get the saved pipeline configuration for a past run.
 
     Arguments:
         run_id {ObjectId} -- the run whose saved config to fetch — ownership
         is enforced.
+
+    Notes:
+        This lets the frontend re-populate a form from a past run (e.g.
+        "rerun with same settings"). It 404s for older runs that predate
+        this feature, since there's no config to return for them.
 
     Returns:
         flask.Response -- the saved PipelineConfigExport JSON.
@@ -215,11 +230,14 @@ def get_run_config(run_id: ObjectId):
 
 @runs_bp.route("/api/runs/<ObjectId:run_id>/status", methods=["GET"])
 def get_run_status(run_id: ObjectId):
-    """Lightweight endpoint for the frontend to poll while a run is in
-    progress, without pulling the full run document each time.
+    """Get the current status of a pipeline run.
 
     Arguments:
         run_id {ObjectId} -- the run to check — ownership is enforced.
+
+    Notes:
+        This is a lightweight endpoint for the frontend to poll while a run
+        is in progress, without pulling the full run document each time.
 
     Returns:
         flask.Response -- the run's current status.
