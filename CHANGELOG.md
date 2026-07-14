@@ -26,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions for TypeScript checking and automated PR testing
 - GDPR-compliant terms and privacy policies via admin panel with markdown, versioning, and hashing
 - Detailed architecture and frontend documentation for visualization, JSON Schema forms, region generator, tests, directory structure, and genomic caching
+- FASTA generation integration in forms and modal workflows
+- Import/export of run configurations and dedicated settings export support
+- Celery-based genomic region generation and improved genomic data handling
+- Runtime information endpoint and monthly operational reporting support
+- Cloudflare integration and request size limiting for incoming traffic
+- Queue-backed feedback processing and redesigned admin panel UI
+- User banning controls in the admin interface
+- Public preview and contributing documentation
 
 ### Changed
 
@@ -40,12 +48,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reorganize and tidy frontend components
 - Switch from react-router-dom to react-router
 - Use ODT-generated output files instead of regenerating output files in the frontend workflow
+- Updated ODT library versions, including Pydantic-related compatibility updates
+- Migrated Celery backend to Redis and improved Celery task error handling
+- Switched run tracking to Celery task IDs and refactored run ID/token handling
+- Improved UI/UX for sidebar navigation, status feedback, region input handling, and decimal/legend display behavior
+- Hardened CI workflows with TypeScript checks, path filtering, file limits, deployment actions, and provisioning updates
 
 ### Fixed
 
 - Platform-dependent Conda environment.yml
 - CI fixes for MongoDB readiness checks and unused workflow cleanup
 - Prevent form submission on Enter key press in schema-driven forms
+- Feedback submission button issues and admin status icon rendering
+- Genomic region return type and NCBI release retrieval regressions
+- RabbitMQ deprecation issues in Celery setup
+- Run metric reporting issues and assorted type/runtime warning fixes
 
 ### Security
 
@@ -57,34 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Unnecessary Conda and Python dependencies
-
-## [0.2.0-alpha.5] - 2026-06-24
-
-### Added
-
-- FASTA generation integration in forms and modal workflows
-- Import/export of run configurations and dedicated settings export support
-- Celery-based genomic region generation and improved genomic data handling
-- Runtime information endpoint and monthly operational reporting support
-- Cloudflare integration and request size limiting for incoming traffic
-- Queue-backed feedback processing and redesigned admin panel UI
-- User banning controls in the admin interface
-- Public preview and contributing documentation
-
-### Changed
-
-- Updated ODT library versions, including Pydantic-related compatibility updates
-- Migrated Celery backend to Redis and improved Celery task error handling
-- Switched run tracking to Celery task IDs and refactored run ID/token handling
-- Improved UI/UX for sidebar navigation, status feedback, region input handling, and decimal/legend display behavior
-- Hardened CI workflows with TypeScript checks, path filtering, file limits, deployment actions, and provisioning updates
-
-### Fixed
-
-- Feedback submission button issues and admin status icon rendering
-- Genomic region return type and NCBI release retrieval regressions
-- RabbitMQ deprecation issues in Celery setup
-- Run metric reporting issues and assorted type/runtime warning fixes
 
 ## [0.1.0] - 2025-10-9
 
