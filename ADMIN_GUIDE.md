@@ -2,64 +2,42 @@
 
 ## Updating ODT Cloud Dependencies
 
-ODT Cloud intentionally does **not** update its dependencies automatically. Dependency updates should be performed manually, reviewed carefully, and validated before being merged. This reduces the risk of introducing unexpected or breaking changes.
+ODT Cloud intentionally does **not** update its dependencies automatically. Dependency version bumps should be performed manually, reviewed carefully, and validated before being merged. This reduces the risk of introducing unexpected or breaking changes.
 
-It is recommended to update one dependency ecosystem at a time (for example, npm, Python, Docker, or Ansible) to simplify testing and troubleshooting.
+It is recommended to update one dependency ecosystem at a time (e.g. npm, Python, Docker, etc.) to simplify testing and troubleshooting.
 
-#### Dependency locations
+### Dependency locations
 
-| Dependency type            | Files                                                       |
-| -------------------------- | ----------------------------------------------------------- |
-| Frontend (npm)             | `package.json`                                              |
-| Backend (Python)           | `backend/pyproject.toml`                                    |
-| Backend Conda environments | `backend/environment.yml`, `backend/worker.environment.yml` |
-| External Docker images     | `compose.yml`, `compose.prod.yml`, `compose.override.yml`   |
-| Docker base images         | `docker/*.Dockerfile`                                       |
-| Ansible                    | `ansible/requirements.in`, `ansible/requirements.yml`       |
+| Dependency type                  | Dependency declaration in                                 | How to update dependencies                                                                                                           |
+| -------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Frontend (npm)                   | `package.json`, `package-lock.json`                       | see [npm audit](https://docs.npmjs.com/cli/v12/commands/npm-audit), [npm update](https://docs.npmjs.com/cli/v12/commands/npm-update) |
+| Backend (Python)                 | `backend/pyproject.toml`                                  | change version tags and reinstall                                                                                                    |
+| Backend (conda)                  | `backend/environment.yml`                                 | change version tags and reinstall                                                                                                    |
+| Backend (conda, worker-specific) | `backend/worker.environment.yml`                          | change version tags and reinstall                                                                                                    |
+| External Docker images           | `compose.yml`, `compose.prod.yml`, `compose.override.yml` | change version tags and restart                                                                                                      |
+| Docker base images               | `docker/*.Dockerfile`                                     | change version tags and rebuild                                                                                                      |
+| Ansible (Python)                 | `ansible/requirements.in`                                 | change version tags and reinstall                                                                                                    |
+| Ansible (Ansible Galaxy)         | `ansible/requirements.yml`                                | change version tags and reinstall                                                                                                    |
+| GitHub Actions                   | `.github/workflows/*.yml`                                 | change version tags                                                                                                                  |
 
-#### Updating npm dependencies
+### Bumping dependencies
 
-Update frontend dependencies using:
+Refer to the respective documentation for each dependency type on how to bump dependency versions.
 
-```
-npm update
-```
+For npm dependencies, it is recommended to regularly run `npm audit fix`.
 
-This updates packages within the version ranges specified in `package.json`.
+## Release Management and Deployment
 
-#### Updating Python dependencies
+Each release corresponds to a git tag (see [all tags](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/tags)).
+However, releasing a new version is not as simple as pushing a new tag. This section explains the steps necessary to release a new version of ODT Cloud and deploy it in production.
 
-Update the Python environment using:
+### Publishing a Release
 
-```
-conda update --all
-```
+To release a new version, first bump the version in [`package.json`](package.json) using [npm version](https://docs.npmjs.com/cli/v12/commands/npm-version).
+Then publish a new ODT Cloud Docker image:
 
-Review any resulting dependency changes and ensure that the repository's dependency declaration files remain up to date.
-
-#### Updating Docker images
-
-Update external Docker images by modifying the image tags in the `compose.yml`, `compose.prod.yml`, and `compose.override.yml` files.
-
-To update Docker base images, modify the `FROM` statements in the `docker/*.Dockerfile` files.
-
-#### Updating Ansible dependencies
-
-Review and update the dependencies declared in:
-
-- `ansible/requirements.in`
-- `ansible/requirements.yml`
-
-using the appropriate Ansible tooling for your environment.
-
----
-
-## Publishing a Release
-
-To publish a new ODT Cloud Docker image:
-
-1. Ensure that all required build variables are configured in `.github/workflows/publish_images.yml`.
-2. Create and push a Git tag on the `main` branch via the GitHub UI using the format:
+1. Ensure that all required build variables used in [`.github/workflows/publish_images.yml`](.github/workflows/publish_images.yml) are properly configured in GitHub's repository [variables](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/variables/actions) and [secrets](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/secrets/actions).
+2. Create and push a git tag on the `main` branch via the GitHub UI using the format:
 
 ```
 v<VERSION>
@@ -72,21 +50,19 @@ where `<VERSION>` is the semantic version being released, for example:
 
 The GitHub Actions workflow will automatically build and publish the Docker image for the new tag.
 
----
-
-## Deploying ODT Cloud
+### Deploying ODT Cloud
 
 Deployments are performed using the project's GitHub Actions workflow.
 
 Before starting a deployment:
 
 1. Verify that the Docker image for the desired version has already been published.
-2. Ensure all required environment variables are configured in `.github/workflows/deploy_stack.yml`.
-3. Ensure all referenced GitHub repository variables and secrets exist and are up to date.
+2. Ensure all required environment variables are set in [`.github/workflows/deploy_stack.yml`](.github/workflows/deploy_stack.yml).
+3. Ensure all referenced GitHub repository [variables](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/variables/actions) and [secrets](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/settings/secrets/actions) exist and are up to date.
 4. Set the GitHub repository variable `ODT_CLOUD_VERSION` to the Docker image tag that should be deployed (for example, `0.2.0-alpha.4`). This tag **must** have been published as a Docker image before.
 5. Manually trigger the **Deploy latest ODT Cloud stack** workflow from the GitHub Actions page.
 
----
+If you need to deploy a new version manually, see [`ansible/README.md`](ansible/README.md).
 
 ## Admin Panel
 
@@ -142,8 +118,6 @@ For each submission, ODT Cloud records metadata including:
 
 This information can help reproduce and investigate reported issues.
 
-![Admin Feedback](dev-docs/assets/images/admin_feedback.png)
-
 ### Monthly Reports
 
 Monthly Reports provides downloadable CSV reports containing usage statistics. Reports are generated automatically on the first day of each month. Administrators can also manually trigger generation of past reports using the **Generate Reports** action.
@@ -165,9 +139,38 @@ Whenever a document is modified, previous versions are retained by ODT Cloud. Th
 
 ![Admin Legal Documents](dev-docs/assets/images/admin_legal_documents.png)
 
----
-
 ## User Management from the Command Line
+
+### Accessing the Flask CLI
+
+When running ODT Cloud in containers, the Flask CLI can only be accessed within the odt-server container.
+
+If you are running the Flask server outside a Docker container, simply run:
+
+```bash
+flask --help
+```
+
+For local development with containers, run:
+
+```bash
+docker compose exec odt-server bash
+flask --help
+# or in a single command:
+docker compose exec odt-server micromamba run flask --help
+```
+
+For production use, our use of Docker Swarm across multiple VMs complicates the access slightly.
+First ssh into the VM hosting odt-server, then identify the container and enter its shell:
+
+```bash
+# connect to VM hosting odt-server (double-check your ssh key location)
+ssh -i ~/.ssh/odt-ansible-key -J ubuntu@134.94.199.236 ubuntu@odt-node-0
+# identify odt-server container and enter its shell
+ID=$(docker ps | grep odt-cloud_odt-server | head -n1 | cut -d ' ' -f1) && docker exec -it $ID bash
+# run Flask CLI
+flask --help
+```
 
 ### Creating Users
 
@@ -175,8 +178,8 @@ When a user signs in using Helmholtz OAuth for the first time, ODT Cloud automat
 
 ODT Cloud also includes a legacy username/password authentication system. While this mechanism is expected to be deprecated after the OAuth migration is complete, new users can currently still be created using this command:
 
-```
-docker compose exec odt-server micromamba run flask user register
+```bash
+flask user register
 ```
 
 Follow the interactive prompts to create the account.
@@ -187,8 +190,8 @@ Existing users can be promoted to administrator through the **User Management** 
 
 Alternatively, administrator privileges can be granted from the command line:
 
-```
-docker compose exec odt-server micromamba run flask admin promote "<username-or-helmholtz_sub>"
+```bash
+flask admin promote "<username-or-helmholtz_sub>"
 ```
 
 The placeholder `<username-or-helmholtz_sub>` refers either to:
