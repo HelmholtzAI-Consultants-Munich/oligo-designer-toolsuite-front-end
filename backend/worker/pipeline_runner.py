@@ -142,8 +142,7 @@ class PipelineRunner:
         Arguments:
             form_data {dict} -- The pipeline configuration.
             output_path {str} -- The path where all output of the pipeline should be written.
-            generated_region_paths {list[tuple[str, list[str]]]} -- The list of paths where results of potential preceding
-            Genomic Region Generator runs are stored.
+            generated_region_paths {list[tuple[str, list[str]]]} -- The list of paths where results of potential preceding Genomic Region Generator runs are stored.
 
         Returns:
             str -- The configuration filepath.

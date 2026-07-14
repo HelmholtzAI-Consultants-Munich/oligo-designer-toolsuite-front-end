@@ -30,7 +30,7 @@ def _get_data_roots() -> tuple[Path, Path]:
     """Get the root directory of the upload and user data folder.
 
     Returns:
-        tuple[Path, Path] -- (upload root path, user data root path).
+        tuple[pathlib.Path, pathlib.Path] -- (upload root path, user data root path).
     """
     backend_root = Path(__file__).resolve().parent.parent
     data_access_root = backend_root / os.environ.get(
@@ -55,7 +55,7 @@ def _deserialize_path(path_value: Any) -> Path | None:
         path_value {Any} -- value the path will be created from.
 
     Returns:
-        Path | None -- Returns a path if the conversion is successful and None otherwise.
+        pathlib.Path | None -- Returns a path if the conversion is successful and None otherwise.
     """
     if isinstance(path_value, Path):
         return path_value
@@ -77,10 +77,10 @@ def _resolve_path_under_root(path_value: Any, root: Path) -> Path | None:
 
     Arguments:
         path_value {Any} -- The value that will be tried to convert to a path and then be resolved and checked against the root.
-        root {Path} -- The root directory path, that the `path_value` will be checked against.
+        root {pathlib.Path} -- The root directory path, that the `path_value` will be checked against.
 
     Returns:
-        Path | None -- Path if `path_value` is a valid path inside of `root`, else None.
+        pathlib.Path | None -- Path if `path_value` is a valid path inside of `root`, else None.
     """
     path = _deserialize_path(path_value)
     if path is None:
@@ -102,7 +102,7 @@ def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir:
 
     Arguments:
         path_value {Any} -- potential filepath that should be deleted.
-        root {Path} -- The root directory path, which should be a top directory of `path_value`.
+        root {pathlib.Path} -- The root directory path, which should be a top directory of `path_value`.
 
     Returns:
         tuple[bool, bool] -- (Record can be deleted, File or Directory was deleted).
@@ -139,8 +139,8 @@ def _partition_records_for_deletion(
     Arguments:
         records {list[dict[str, Any]]} -- The list of records (e.g. run entries) that should be partitioned for deletion.
         path_key {str} -- The key of the record field where the path is written.
-        root {Path} -- The path to the root directory of the path written at `record[path_key]`.
-        delete_path {Callable[[Any, Path], tuple[bool, bool]]} -- function to delete the path.
+        root {pathlib.Path} -- The path to the root directory of the path written at `record[path_key]`.
+        delete_path {Callable[[Any, pathlib.Path], tuple[bool, bool]]} -- function to delete the path.
 
     Returns:
         tuple[list[Any], int, int] -- (deletable_ids, deleted_paths, retained_records)
@@ -183,8 +183,8 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
 
     Arguments:
         db {_type_} -- The database the data is stored.
-        upload_root {Path} -- The root of the upload directory for user files.
-        userdata_root {Path} -- The root of the user data directory.
+        upload_root {pathlib.Path} -- The root of the upload directory for user files.
+        userdata_root {pathlib.Path} -- The root of the user data directory.
         cutoff {datetime.datetime} -- The cutoff timestamp until which anonymous data will be cleaned.
 
     Returns:

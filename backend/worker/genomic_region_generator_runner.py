@@ -75,7 +75,7 @@ class GenomicRegionGeneratorRunner:
             ValueError: The genomic region generator failed.
 
         Returns:
-            Path -- The output directory containing the results.
+            pathlib.Path -- The output directory containing the results.
         """
         output_path = self.cache_dir / "generated" / f"cached_genomic_{uuid.uuid4().hex}"
         output_path.mkdir(parents=True, exist_ok=True)
@@ -173,7 +173,7 @@ class GenomicRegionGeneratorRunner:
         """Collects the FASTA files paths that are created by the Genomic Region Generator.
 
         Arguments:
-            output_path {Path} -- The output directory of the genomic region generator.
+            output_path {pathlib.Path} -- The output directory of the genomic region generator.
 
         Returns:
             list[str] -- A list of FASTA file paths.
@@ -191,7 +191,7 @@ class GenomicRegionGeneratorRunner:
         """Removes the config file, that is required for the Genomic Region Generator to run.
 
         Arguments:
-            config_path {Path} -- The config filepath.
+            config_path {pathlib.Path} -- The config filepath.
         """
         if config_path.exists():
             config_path.unlink()
