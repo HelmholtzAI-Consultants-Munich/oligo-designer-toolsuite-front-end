@@ -325,6 +325,7 @@ def create_test_run(run_id, user_id="dummy_user", **kwargs):
     run_doc = {
         "_id": run_id,
         "pipeline": kwargs.get("pipeline", "TestPipeline"),
+        "run_name": "Test Run",
         "status": kwargs.get("status", "success"),
         "timestamp": kwargs.get("timestamp", utc_now()),
         "output_path": serialize_path(output_path),
