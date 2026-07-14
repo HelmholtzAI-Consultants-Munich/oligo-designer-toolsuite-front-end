@@ -1,16 +1,28 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+/**
+ * Tests pipeline configuration import/export behavior for the OligoSeq pipeline.
+ *
+ * This file verifies that export payloads include expected metadata fields,
+ * that imported payloads are validated against the pipeline schema, and that
+ * invalid or unsupported payloads are rejected or filtered correctly.
+ *
+ * The schema fixture mirrors the shape used by the real pipeline
+ * configuration logic so import/validation behavior is tested against the
+ * same expected structure.
+ */
+import { describe, it, expect } from "vitest";
 import type { RJSFSchema } from "@rjsf/utils";
 import {
     buildExportPayload,
-    triggerDownload,
     importAndValidate,
 } from "../components/forms/pipelineConfigIO";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 
-// Minimal schema that mirrors the real pipeline schemas
 const testSchema = PIPELINE_CONFIG["oligoseq"].schema;
 
 // ---- buildExportPayload ----
+//
+// These tests validate export payload metadata generation, including the
+// pipeline name, version extraction, and export timestamp format.
 
 describe("buildExportPayload", () => {
     it("sets _meta.pipeline to the given pipeline name", () => {
@@ -43,66 +55,15 @@ describe("buildExportPayload", () => {
     });
 });
 
-// ---- triggerDownload ----
-
-describe("triggerDownload", () => {
-    beforeEach(() => {
-        // Mock URL and DOM APIs used by triggerDownload
-        vi.stubGlobal("URL", {
-            createObjectURL: vi.fn(() => "blob:mock-url"),
-            revokeObjectURL: vi.fn(),
-        });
-        const mockLink = {
-            href: "",
-            download: "",
-            click: vi.fn(),
-        };
-        vi.spyOn(document, "createElement").mockReturnValue(
-            mockLink as unknown as HTMLElement
-        );
-        vi.spyOn(document.body, "appendChild").mockImplementation(
-            () => mockLink as unknown as Node
-        );
-        vi.spyOn(document.body, "removeChild").mockImplementation(
-            () => mockLink as unknown as Node
-        );
-    });
-
-    it("triggers a download with the correct filename", () => {
-        const payload = {
-            _meta: {
-                version: 1,
-                pipeline: "scrinshot",
-                exportedAt: "2026-04-10T12:00:00.000Z",
-            },
-            config: { n_jobs: 4 },
-        };
-        triggerDownload(payload);
-        const mockLink = document.createElement("a") as unknown as {
-            download: string;
-            click: ReturnType<typeof vi.fn>;
-        };
-        expect(mockLink.download).toBe("scrinshot_config_2026-04-10.json");
-        expect(mockLink.click).toHaveBeenCalled();
-    });
-
-    it("revokes the object URL after download", () => {
-        const payload = {
-            _meta: {
-                version: 1,
-                pipeline: "scrinshot",
-                exportedAt: "2026-04-10T12:00:00.000Z",
-            },
-            config: {},
-        };
-        triggerDownload(payload);
-        expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
-    });
-});
-
 // ---- importAndValidate ----
 
 describe("importAndValidate", () => {
+    /**
+     * Helper for negative import validation tests.
+     *
+     * It asserts that the payload is rejected and that the error message
+     * contains the expected fragments.
+     */
     const negativeTestImportAndValidate = (
         payload: unknown,
         ...matchers: (string | RegExp)[]
@@ -114,6 +75,13 @@ describe("importAndValidate", () => {
         }
     };
 
+    /**
+     * A canonical valid export payload used for positive validation coverage.
+     *
+     * This fixture is intentionally complete and representative of a real
+     * pipeline configuration, so valid import paths are covered and nested
+     * config preservation can be asserted.
+     */
     const validPayload = {
         _meta: {
             version: 2,

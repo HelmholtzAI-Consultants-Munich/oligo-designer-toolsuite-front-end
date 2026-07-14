@@ -6,12 +6,13 @@ import { showToast } from "./toastUtil";
 import type { PipelineRun } from "../types";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
+import { downloadFile } from "./fileDownloadUtil";
 
 /**
- * Fetches the saved config for a run from the API and navigates to the
- * corresponding pipeline form with the config pre-loaded in router state.
- *
- * Shared by Runs and RunDetail pages.
+ * Navigates to a pipeline form with a run's configuration pre-loaded.
+ * @param run The pipeline run object containing the run ID and pipeline type.
+ * @param navigate The navigation function from react-router.
+ * @returns A promise resolving when the navigation is complete.
  */
 export async function navigateWithRunConfig(
     run: PipelineRun,
@@ -65,46 +66,23 @@ export async function downloadConfig(run: PipelineRun | undefined) {
         return;
     }
 
-    try {
-        const response = await axios.get(
-            BACKEND_URL + `/api/runs/${run._id}/config`,
-            { withCredentials: true, responseType: "blob" }
-        );
-
-        const filename = `run-${run.pipeline}_config.json`;
-
-        const url = URL.createObjectURL(
-            new Blob([response.data], { type: response.data.type })
-        );
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
-    } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 404) {
-            showToast({
+    downloadFile(
+        BACKEND_URL + `/api/runs/${run._id}/config`,
+        `run-${run.pipeline}_config.json`,
+        {
+            notFound: {
                 title: "No Config Available",
                 content: "No saved configuration was found for this run.",
-                type: "danger",
-            });
-        } else {
-            showToast({
+            },
+            general: {
                 title: "Failed to Load Config",
                 content:
                     "An error occurred while fetching the run configuration. Please try again.",
-                type: "danger",
-            });
+            },
         }
-    }
+    );
 }
 
-/**
- * Hook that returns a stable callback for navigating to a pipeline form
- * with a run's config pre-loaded. Shared by Runs and RunDetail pages.
- */
 export function useNavigateWithRunConfig(
     run: PipelineRun | null | undefined,
     navigate: NavigateFunction

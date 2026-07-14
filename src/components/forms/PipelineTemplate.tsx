@@ -50,7 +50,15 @@ type Props = {
     schema: RJSFSchema;
     uiSchema: UiSchema;
 };
-
+/**
+ * Renders a pipeline page which includes the RJSF Form, the submit button, Turnstile and the terms acceptance banner.
+ *
+ * @param pipeline - name of the pipeline
+ * @param title - the beautified human accessible name of the pipeline
+ * @param schema - JSON Schema of the pipeline
+ * @param uiSchema - RJSF UISchema of the pipeline
+ * @returns A React Component that renders a pipeline page
+ */
 const PipelineTemplate: React.FC<Props> = ({
     pipeline,
     title,
@@ -144,6 +152,23 @@ const PipelineTemplate: React.FC<Props> = ({
     const importInputRef = useRef<HTMLInputElement>(null);
 
     const handleImport = () => importInputRef.current?.click();
+
+    const preventSubmitOnEnter = useCallback(
+        (event: React.KeyboardEvent<HTMLDivElement>) => {
+            if (event.key !== "Enter") return;
+
+            const target = event.target;
+            if (
+                target instanceof HTMLTextAreaElement ||
+                (target instanceof HTMLElement && target.isContentEditable)
+            ) {
+                return;
+            }
+
+            event.preventDefault();
+        },
+        []
+    );
 
     const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -272,85 +297,87 @@ const PipelineTemplate: React.FC<Props> = ({
                 className="visually-hidden"
                 onChange={handleImportFile}
             />
-            <Form
-                schema={schema}
-                uiSchema={uiSchema}
-                formData={formData}
-                experimental_defaultFormStateBehavior={{
-                    arrayMinItems: {
-                        populate: "never",
-                    },
-                }}
-                showErrorList={"bottom"}
-                templates={{
-                    FieldTemplate,
-                    BaseInputTemplate: WrappedBaseInputTemplate,
-                    ObjectFieldTemplate,
-                    MultiSchemaFieldTemplate,
-                    ArrayFieldTemplate,
-                    ArrayFieldItemTemplate,
-                    DescriptionFieldTemplate,
-                    ErrorListTemplate,
-                }}
-                fields={fields}
-                validator={validator}
-                liveValidate={submissionTried ? "onChange" : false}
-                onChange={(e) => setFormData(e.formData)}
-                onSubmit={handlePipelineSubmit}
-                onError={handlePipelineSubmitError}
-            >
-                <Turnstile
-                    ref={turnstileRef}
-                    className="pipeline-turnstile"
-                    siteKey={sitekey}
-                    options={{
-                        theme: "light",
-                        language: "en",
+            <div onKeyDown={preventSubmitOnEnter}>
+                <Form
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    formData={formData}
+                    experimental_defaultFormStateBehavior={{
+                        arrayMinItems: {
+                            populate: "never",
+                        },
                     }}
-                />
-                {requiresTermsAcceptance && (
-                    <div
-                        className="border rounded p-3 mb-3 bg-light"
-                        id="terms-acceptance"
-                    >
-                        <p className="mb-2">
-                            Before running this pipeline, please accept the{" "}
-                            <Link target="_blank" to="/terms">
-                                Terms of Service
-                            </Link>{" "}
-                            and review the{" "}
-                            <Link target="_blank" to="/privacy-policy">
-                                Privacy Policy
-                            </Link>
-                            .
-                        </p>
-                        <BootstrapForm.Check
-                            id={`${pipeline}-terms-acceptance`}
-                            type="checkbox"
-                            className="mb-3"
-                            checked={hasAcceptedTerms}
-                            onChange={(e) =>
-                                setHasAcceptedTerms(e.target.checked)
-                            }
-                            label="I accept the Terms of Service and acknowledge the Privacy Policy."
-                        />
-                    </div>
-                )}
-                <Button
-                    ref={submitButtonRef}
-                    type="submit"
-                    variant="primary"
-                    disabled={isAcceptingTerms}
+                    showErrorList={"bottom"}
+                    templates={{
+                        FieldTemplate,
+                        BaseInputTemplate: WrappedBaseInputTemplate,
+                        ObjectFieldTemplate,
+                        MultiSchemaFieldTemplate,
+                        ArrayFieldTemplate,
+                        ArrayFieldItemTemplate,
+                        DescriptionFieldTemplate,
+                        ErrorListTemplate,
+                    }}
+                    fields={fields}
+                    validator={validator}
+                    liveValidate={submissionTried ? "onChange" : false}
+                    onChange={(e) => setFormData(e.formData)}
+                    onSubmit={handlePipelineSubmit}
+                    onError={handlePipelineSubmitError}
                 >
-                    {isAcceptingTerms ? (
-                        "Saving..."
-                    ) : (
-                        <>
-                            Run Pipeline <Send className="ms-2" />
-                        </>
+                    <Turnstile
+                        ref={turnstileRef}
+                        className="pipeline-turnstile"
+                        siteKey={sitekey}
+                        options={{
+                            theme: "light",
+                            language: "en",
+                        }}
+                    />
+                    {requiresTermsAcceptance && (
+                        <div
+                            className="border rounded p-3 mb-3 bg-light"
+                            id="terms-acceptance"
+                        >
+                            <p className="mb-2">
+                                Before running this pipeline, please accept the{" "}
+                                <Link target="_blank" to="/terms">
+                                    Terms of Service
+                                </Link>{" "}
+                                and review the{" "}
+                                <Link target="_blank" to="/privacy-policy">
+                                    Privacy Policy
+                                </Link>
+                                .
+                            </p>
+                            <BootstrapForm.Check
+                                id={`${pipeline}-terms-acceptance`}
+                                type="checkbox"
+                                className="mb-3"
+                                checked={hasAcceptedTerms}
+                                onChange={(e) =>
+                                    setHasAcceptedTerms(e.target.checked)
+                                }
+                                label="I accept the Terms of Service and acknowledge the Privacy Policy."
+                            />
+                        </div>
                     )}
-                </Button>
-            </Form>
+                    <Button
+                        ref={submitButtonRef}
+                        type="submit"
+                        variant="primary"
+                        disabled={isAcceptingTerms}
+                    >
+                        {isAcceptingTerms ? (
+                            "Saving..."
+                        ) : (
+                            <>
+                                Run Pipeline <Send className="ms-2" />
+                            </>
+                        )}
+                    </Button>
+                </Form>
+            </div>
         </Page>
     );
 };

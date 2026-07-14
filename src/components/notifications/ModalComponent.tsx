@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { type ModalProps } from "../../utils/modalUtil";
 import { Button, Modal } from "react-bootstrap";
 
+/**
+ * A modal component for displaying notifications and user interactions.
+ *
+ * @returns A React functional component that renders a modal based on the provided props and listens for custom events to show or hide the modal.
+ */
 export default function ModalComponent() {
     const [modal, setModal] = useState<ModalProps | null>(null);
     const [show, setShow] = useState(false);

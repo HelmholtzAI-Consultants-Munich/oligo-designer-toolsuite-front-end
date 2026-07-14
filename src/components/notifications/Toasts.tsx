@@ -21,6 +21,10 @@ function ToastIcon({ type }: { type: string }) {
     }
 }
 
+/**
+ * A component for displaying toasts.
+ * @returns A React functional component that renders toasts.
+ */
 export default function Toasts() {
     const [toasts, setToasts] = useState<ToastProps[]>([]);
 

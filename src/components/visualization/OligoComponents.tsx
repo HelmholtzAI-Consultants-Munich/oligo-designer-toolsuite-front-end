@@ -1,36 +1,18 @@
 import * as d3 from "d3";
 import { useEffect, useMemo } from "react";
 import ComponentDefinition from "./oligoComponents.json";
-import { reverseComplement } from "./visualizationHelpers";
+import {
+    collectComponents,
+    type OligoComponent,
+    type OligoComponentDefinition,
+} from "./oligoComponentsHelpers";
 import type { Probe } from "../../types";
 import { Horizontal } from "../ui/Alignment";
+import { LegendItem } from "./LegendItem";
 
 type Props = {
     probes: Probe[];
     selectedOligo: string;
-};
-
-type OligoComponentDefinition =
-    | {
-          type: "entry";
-          field: string;
-          isReverseComplement?: boolean;
-          isBinding?: boolean;
-          color: string;
-          label: string;
-      }
-    | {
-          type: "sequence";
-          value: string;
-          color: string;
-          label: string;
-      };
-
-type OligoComponent = {
-    sequence: string;
-    color: string;
-    label: string;
-    isBinding: boolean;
 };
 
 type OligoBase = {
@@ -40,41 +22,25 @@ type OligoBase = {
     isBinding: boolean;
 };
 
+/**
+ * Displays the components of a single selected oligo as colored base sequences.
+ *
+ * @param probes - The list of probes to find the selected oligo from.
+ * @param selectedOligo - The ID of the currently selected oligo.
+ * @returns A React component that renders the components of the selected oligo and its legend.
+ */
 const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
     const oligo = probes.find((o) => o.oligo_id === selectedOligo);
 
     const components: OligoComponent[] = useMemo(() => {
-        const componentList: OligoComponent[] = [];
         const pipeline = oligo?.pipeline;
         if (pipeline && Object.keys(ComponentDefinition).includes(pipeline)) {
-            const components = ComponentDefinition[
+            const componentDefinitions = ComponentDefinition[
                 pipeline as keyof typeof ComponentDefinition
             ].components as OligoComponentDefinition[];
-            components.forEach((componentDef) => {
-                if (componentDef.type === "entry") {
-                    let sequence = oligo.details[
-                        componentDef.field as keyof Probe["details"]
-                    ] as string;
-                    if (componentDef.isReverseComplement) {
-                        sequence = reverseComplement(sequence);
-                    }
-                    componentList.push({
-                        sequence: sequence,
-                        color: componentDef.color,
-                        label: componentDef.label,
-                        isBinding: componentDef.isBinding ?? false,
-                    });
-                } else if (componentDef.type === "sequence") {
-                    componentList.push({
-                        sequence: componentDef.value,
-                        color: componentDef.color,
-                        label: componentDef.label,
-                        isBinding: false,
-                    });
-                }
-            });
+            return collectComponents(oligo, componentDefinitions);
         }
-        return componentList;
+        return [];
     }, [oligo]);
 
     const bases: OligoBase[] = components.flatMap((component) =>
@@ -185,18 +151,11 @@ const OligoComponents: React.FC<Props> = ({ probes, selectedOligo }) => {
                         const base = bases.find((base) => base.label === label);
                         if (!base) return null;
                         return (
-                            <Horizontal key={index} align="baseline">
-                                <span
-                                    style={{
-                                        display: "inline-block",
-                                        width: "12px",
-                                        height: "12px",
-                                        backgroundColor: base.color,
-                                        marginRight: "5px",
-                                    }}
-                                ></span>
-                                {label}
-                            </Horizontal>
+                            <LegendItem
+                                key={index}
+                                color={base.color}
+                                label={label}
+                            />
                         );
                     }
                 )}
