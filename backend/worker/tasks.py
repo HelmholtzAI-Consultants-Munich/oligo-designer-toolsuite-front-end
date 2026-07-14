@@ -103,6 +103,7 @@ def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir:
     Arguments:
         path_value {Any} -- potential filepath that should be deleted.
         root {pathlib.Path} -- The root directory path, which should be a top directory of `path_value`.
+        is_dir {bool} -- Whether the path that should be removed is a directory.
 
     Returns:
         tuple[bool, bool] -- (Record can be deleted, File or Directory was deleted).
@@ -113,15 +114,47 @@ def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir:
 
     if not file_or_directory_path.exists():
         return True, False  # file already gone — safe to delete the DB record, nothing deleted on disk
-    if not file_or_directory_path.is_file():
-        return False, False  # unexpected type (e.g. directory) — retain the DB record to avoid data loss
 
     if is_dir:
+        if not file_or_directory_path.is_dir():
+            return False, False  # unexpected type (e.g. a file) — retain the DB record to avoid data loss
         shutil.rmtree(file_or_directory_path)
     else:
+        if not file_or_directory_path.is_file():
+            return False, False  # unexpected type (e.g. directory) — retain the DB record to avoid data loss
         file_or_directory_path.unlink()
 
     return True, True  # file deleted from disk and DB record is safe to remove
+
+
+def _delete_directory_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
+    """Deletes a directory if it is located inside a specific root directory.
+
+    See `_delete_file_or_directory_if_under_root` for further details.
+
+    Arguments:
+        path_value {Any} -- The path to the directory that should be deleted.
+        root {Path} -- The root directory path, which should be a top directory of `path_value`.
+
+    Returns:
+        tuple[bool, bool] -- (Record can be deleted, Directory was deleted),
+    """
+    return _delete_file_or_directory_if_under_root(path_value, root, False)
+
+
+def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
+    """Deletes a file if it is located inside a specific root directory.
+
+    See `_delete_file_or_directory_if_under_root` for further details.
+
+    Arguments:
+        path_value {Any} -- The path to the file that should be deleted.
+        root {Path} -- The root directory path, which should be a top directory of `path_value`.
+
+    Returns:
+        tuple[bool, bool] -- (Record can be deleted, Directory was deleted),
+    """
+    return _delete_file_or_directory_if_under_root(path_value, root, True)
 
 
 def _partition_records_for_deletion(
@@ -180,6 +213,7 @@ def _has_remaining_session_data(db, session_id: str) -> bool:
 
 def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, cutoff: datetime.datetime):
     """
+    Clean up data of anonymous users, that was not used for a configurable amount of time.
 
     Arguments:
         db {_type_} -- The database the data is stored.
@@ -198,6 +232,7 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
         )
     )
 
+    # setup variables for collecting what exactly was removed
     deleted_runs = 0
     deleted_output_dirs = 0
     retained_runs = 0
@@ -220,18 +255,18 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
                 {"_id": 1, "output_path": 1},
             )
         )
+
+        # try to delete directories related to expired session
         run_ids_to_delete, session_deleted_output_dirs, session_retained_runs = (
             _partition_records_for_deletion(
                 session_runs,
                 path_key="output_path",
                 root=userdata_root,
-                delete_path=(
-                    lambda path_value, root: _delete_file_or_directory_if_under_root(
-                        path_value, root, is_dir=True
-                    )
-                ),
+                delete_path=_delete_directory_if_under_root,
             )
         )
+
+        # remove runs of which the directory could be deleted
         if run_ids_to_delete:
             db.runs.delete_many({"_id": {"$in": run_ids_to_delete}})
 
@@ -241,18 +276,18 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
                 {"_id": 1, "path": 1},
             )
         )
+
+        # try to delete uploaded files related to expired session
         upload_ids_to_delete, session_deleted_upload_files, session_retained_uploads = (
             _partition_records_for_deletion(
                 session_uploads,
                 path_key="path",
                 root=upload_root,
-                delete_path=(
-                    lambda path_value, root: _delete_file_or_directory_if_under_root(
-                        path_value, root, is_dir=False
-                    )
-                ),
+                delete_path=_delete_file_if_under_root,
             )
         )
+
+        # remove uploaded files of which the directory could be deleted
         if upload_ids_to_delete:
             db.uploads.delete_many({"_id": {"$in": upload_ids_to_delete}})
 
@@ -262,6 +297,8 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
                 {"_id": 1},
             )
         )
+
+        # remove term acceptance entries of expired session
         if session_acceptances:
             db.legal_acceptances.delete_many({"_id": {"$in": [doc["_id"] for doc in session_acceptances]}})
 
@@ -306,8 +343,7 @@ def run_pipeline(
     """Runs the pipeline via the `PipelineRunner` class.
 
     Arguments:
-        generated_region_paths {list[tuple[str, list[str]]]} -- The list of paths where results of potential preceding
-            Genomic Region Generator runs are stored.
+        generated_region_paths {list[tuple[str, list[str]]]} -- The list of paths where results of potential preceding Genomic Region Generator runs are stored.
         pipeline_name {str} -- The name of the pipeline.
         form_data {Any} -- The pipeline configuration.
         output_path {str} -- The path where all output of the pipeline should be written.
@@ -327,8 +363,7 @@ def run_genomic_region_generator(form_data: Any, id: str) -> tuple[str, list[str
         id {str} -- The ID of the Genomic Input for which the Genomic Region Generator generates an input.
 
     Returns:
-        tuple[str, list[str]] -- (The ID as it was passed, A list of paths to the resulting files
-        of the Genomic Region Generator run).
+        tuple[str, list[str]] -- (The ID as it was passed, A list of paths to the resulting files of the Genomic Region Generator run).
     """
     runner = GenomicRegionGeneratorRunner(logger=logger)
     return id, runner.run(form_data)
