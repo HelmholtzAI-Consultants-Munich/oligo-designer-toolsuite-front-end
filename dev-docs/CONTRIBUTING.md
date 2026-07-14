@@ -8,19 +8,19 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 > - Refer to this project in your project's README
 > - Mention the project and the [Oligo Designer Toolsuite Project](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite)
 
-## Table of contents
+## Table of Contents
 
 - [Short Links](#short-links)
-- [I have a question](#i-have-a-question)
-- [I Want To Contribute](#i-want-to-contribute)
-  - [Adding issues](#adding-issues)
+- [I Have a Question](#i-have-a-question)
+- [I Want to Contribute](#i-want-to-contribute)
+  - [Adding Issues](#adding-issues)
+  - [Reporting Bugs](#reporting-bugs)
+  - [Suggesting Enhancements](#suggesting-enhancements)
   - [Development Process](#development-process)
   - [Code Contributions](#code-contributions)
-  - [Documentation contributions](#documentation-contributions)
-  - [Reporting bugs](#reporting-bugs)
-  - [Suggesting enhancements](#suggesting-enhancements)
+  - [Improving the Documentation](#improving-the-documentation)
 
-## Short links
+## Short Links
 
 - [User Documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/)
 - [Architecture](/dev-docs/ARCHITECTURE.md)
@@ -40,7 +40,7 @@ If you still feel the need to ask a question, we recommend the following:
 
 We will then take care of the issue.
 
-## I Want To Contribute
+## I Want to Contribute
 
 > ### Legal Notice
 >
@@ -106,7 +106,7 @@ User stories are significant tasks, which are labeled with `user story`. The des
 
 These issues are easy tasks, e.g. easily fixable bugs, small changes or quick tasks that don't deserve to be treated as a full user story. The description should be enough to understand and resolve the issue. Further, the Project fields can be left empty. While they are small and easy, simple issues should still be solved on a separate branch to avoid time-intensive reviews and merge conflicts.
 
-#### Claiming issues
+#### Claiming Issues
 
 If you want to work on an issue, check if there is already an assignee and if not, assign yourself to show that you are working on it and avoid duplicate work.
 
@@ -154,11 +154,11 @@ Before starting to work on code, please read the [Development Process](#developm
 
 Before starting to contribute code read and follow the [README](/README.md), [Getting Started Documentation](/docs/getting-started.md) and [setup your IDE](/docs/ide-setup.md).
 
-#### Style guide
+#### Style Guide
 
 The formatting rules are enforced by our [pre-commit](/docs/ide-setup.md#installing-pre-commit) hooks, so please set them up properly. Further, refer to the [style guide](/docs/styleguide.md) to get information about other conventions we use.
 
-#### Working on an issue
+#### Working on an Issue
 
 Remember to always fetch and pull the current changes from the upstream repository to avoid any merging conflicts. This reminder is most important when wanting to merge main into your branch to submit a pull request for your branch. If main is not in sync with the upstream main, it could cause problems later on.
 
@@ -174,7 +174,7 @@ When fixing a security issue or otherwise adding a security check, you must docu
 
 Non self-explanatory must be commented, so when writing a non-trivial function or especially a class remember to add a docstring. To see how comments in the code should be structured, refer to our [style guide](/docs/styleguide.md).
 
-### Improving the documentation
+### Improving the Documentation
 
 > **NOTE:** this section is about user-facing documentation and basic development documentation such as setup/how to run tests. When you want to document code or certain behavior that is mostly interesting to developers, please refer to the [Code Documentation section](#documentation).
 
