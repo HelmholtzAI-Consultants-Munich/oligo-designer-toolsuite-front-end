@@ -165,7 +165,7 @@ class PipelineRunner:
         return config_path
 
     def execute_pipeline(self, config_path: str) -> None:
-        """Execute the pipeline and potential raise errors depending on the outcome.
+        """Executes the pipeline and potentially raises errors depending on the outcome.
 
         Arguments:
             config_path {str} -- The configuration filepath.

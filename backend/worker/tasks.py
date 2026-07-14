@@ -136,11 +136,10 @@ def _partition_records_for_deletion(
 
 
     Arguments:
-        records {list[dict[str, Any]]} -- The list of records (e.g. run entries) that should be partitioned
-        for deletion
-        path_key {str} -- The key of the record field where the path is written
-        root {Path} -- The path to the root directory of the path written at `record[path_key]`
-        delete_path {Callable[[Any, Path], tuple[bool, bool]]} -- function to delete the path
+        records {list[dict[str, Any]]} -- The list of records (e.g. run entries) that should be partitioned for deletion.
+        path_key {str} -- The key of the record field where the path is written.
+        root {Path} -- The path to the root directory of the path written at `record[path_key]`.
+        delete_path {Callable[[Any, Path], tuple[bool, bool]]} -- function to delete the path.
 
     Returns:
         tuple[list[Any], int, int] -- (deletable_ids, deleted_paths, retained_records)
@@ -320,7 +319,7 @@ def run_pipeline(
 
 @app.task()
 def run_genomic_region_generator(form_data: Any, id: str) -> tuple[str, list[str]]:
-    """Runs the Genomic Region Generator via the `GenomicRegionGeneratorRunner`
+    """Runs the Genomic Region Generator via the `GenomicRegionGeneratorRunner`.
 
     Arguments:
         form_data {Any} -- The Genomic Region Generator configuration.

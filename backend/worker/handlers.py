@@ -32,7 +32,7 @@ class PipelineTask(Task):
         _update_run_by_task_id(task_id, {"status": RunStatus.STARTED})
 
     def on_success(self, retval: Any, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
-        """Handler that gets called, if the task completes successfully.
+        """Handler that gets called if the task completes successfully.
 
         Arguments:
             retval {Any} -- The return value of the task.
@@ -52,7 +52,7 @@ class PipelineTask(Task):
         kwargs: dict[str, Any],
         einfo: ExceptionInfo,
     ) -> None:
-        """Handler that gets called, if the task completes with an Error.
+        """Handler that gets called if the task completes with an error.
 
         Arguments:
             exc {Exception} -- The exception that was raised by the task.

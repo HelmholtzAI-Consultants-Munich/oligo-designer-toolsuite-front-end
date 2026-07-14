@@ -1,4 +1,4 @@
-"""Overwrites of the pydantic models from ODT are done here."""
+"""Overwrites of the Pydantic Models from ODT are done here."""
 
 import json
 from typing import Annotated, Literal
@@ -204,9 +204,6 @@ CrossHybridizationBlastnFilterConfig = Annotated[
 class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnabledBase):
     """Overwrites `OligoSeqSpecificityBlastnFilterEnabledBase` to use our own `BlastnSearchParameters` and
     our `GenomicInput` instead of the default file path type.
-
-    Arguments:
-        OligoSeqSpecificityBlastnFilterEnabledBase {_type_} -- _description_
     """
 
     search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
