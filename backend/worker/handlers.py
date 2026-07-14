@@ -9,10 +9,9 @@ from billiard.einfo import ExceptionInfo
 from celery import Task
 from celery.exceptions import TaskRevokedError
 
-from backend.queue_accounting import start_pending_run
 from backend.types import RunStatus
 from backend.worker.celery import logger
-from backend.worker.database import _update_run_by_task_id
+from backend.worker.database import _update_run_by_task_id, start_pending_run
 
 
 class PipelineTask(Task):
