@@ -149,11 +149,6 @@ export const SEQFISH_PIPELINE: PipelineDefinition = {
 
 /**
  * Pipelines checked by the `@smoke` test's page-render sweep.
- *
- * Note: Scrinshot, MERFISH, and seqFISH are commented out below, since only
- * OligoSeq has pydantic integration yet. Their own full-run specs (02/04/05)
- * still exist, but carry no `@smoke`/`@full` tag, so CI's tag-filtered runs
- * never run them — they only run via a manual, untagged `playwright test`.
  */
 // pipelines disabled for now, since only oligoseq has pydantic
 // integration yet
@@ -343,13 +338,7 @@ export const expectRunDetailToRenderResults = async (page: Page) => {
 // Form filling helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Opens the "Configure Genomic Regions" dialog for the given file field and
- * fills it in. `SELECT_NAME_MAP` translates the caller's option keys to the
- * dialog's actual combobox labels, since they differ (e.g. `taxon` -> "Taxon").
- *
- * @param fieldName - name attribute of the button that opens the dialog
- */
+/** Opens the "Configure Genomic Regions" dialog for the given file field and fills it in. */
 const setGenomicInput = async (
     page: Page,
     fieldName: string,
