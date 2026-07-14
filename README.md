@@ -8,12 +8,12 @@
 _A lightweight, user-friendly interface for custom oligo design pipelines_
 
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Backend Tests](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/actions/workflows/backend_tests.yml/badge.svg)
-![E2E Tests](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/actions/workflows/e2e.yml/badge.svg)</div>
+![E2E Tests](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/actions/workflows/e2e.yml/badge.svg)
+![PR Tests](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/actions/workflows/pr_tests.yml/badge.svg)</div>
 
 ---
 
-This repository contains the **frontend web application** for the [Oligo Designer Toolsuite](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite):  
+This repository contains the **web application** for the [Oligo Designer Toolsuite](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) (ODT for short):  
 A modular, open-source platform for running custom oligo design pipelines (such as SeqFISH+, Scrinshot, Oligo-Seq, and MERFISH) on your own server or in the cloud.
 
 Deploying this frontend allows **multiple users to access, configure, and run oligo design pipelines via a browser**. The frontend talks to the backend REST API (Python Flask) where all core logic and computation happens.
@@ -24,23 +24,22 @@ Deploying this frontend allows **multiple users to access, configure, and run ol
 - Multi-user support with authentication
 - Uploads your sequence data and parameters
 - Visualizes pipeline progress and results
-- Integrates seamlessly with the backend to provide a full-featured design platform for:
-  - SeqFISH+
-  - Scrinshot
+- Integrates seamlessly with ODT to provide a full-featured design platform for:
   - Oligo-Seq
-  - MERFISH
   - Genomic Region Generator
+  - _SeqFISH+ (in development)_
+  - _Scrinshot (in development)_
+  - _MERFISH (in development)_
+  - _CycleHCR Probe Designer (in development)_
 
 ---
 
 ## How does it work?
 
-This web app connects to the [Oligo Designer Toolsuite backend](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite) (Flask Python API).
+This web application utilizes the [Oligo Designer Toolsuite](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite).
 
-- The **backend** runs the actual pipelines and manages all scientific computation and files.
-- The **frontend** provides a clean, multi-user web interface for running and managing jobs, tracking progress, and visualizing results.
-
-### **You must deploy both the frontend and backend to make the system available to users.**
+- **ODT** runs the actual pipelines and manages all scientific computation and files.
+- **ODT Cloud** provides a clean, multi-user web interface for running and managing jobs, tracking progress, and visualizing results.
 
 ---
 
@@ -62,9 +61,9 @@ See [Using Docker](docs/using-docker.md) for details on using Docker for this pr
 
 ## Manual Installation
 
-### 1. Install the Oligo Designer Command line interface first
+### 1. Install the Oligo Designer Toolsuite command line interface first
 
-Before running the frontend, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite). This step is crucial for running the pipelines through the frontend.
+Before running ODT Cloud, follow the [CLI installation instructions](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite#installation) to install ODT. This step is crucial for running the pipelines via the web application.
 
 ### 2. Install ODT Cloud dependencies
 
@@ -96,11 +95,12 @@ The app will open at [http://localhost:3000](http://localhost:3000).
 
 The following pipelines are available through the web interface:
 
-- **SeqFISH+ Probe Designer**
-- **Scrinshot Probe Designer**
 - **Oligo-Seq Probe Designer**
-- **MERFISH Probe Designer**
 - **Genomic Region Generator** (as a submodule)
+- _SeqFISH+ Probe Designer (in development)_
+- _Scrinshot Probe Designer (in development)_
+- _MERFISH Probe Designer (in development)_
+- _CycleHCR Probe Designer (in development)_
 
 See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.io/en/latest/) for details.
 
@@ -108,14 +108,16 @@ See the [Oligo Designer Toolsuite](https://oligo-designer-toolsuite.readthedocs.
 
 ## For Developers
 
-- Written in TypeScript + React for frontend.
+- Written in TypeScript + React for frontend
   - npm for environment setup
   - Vite as build tool
   - Vitest as testing framework
   - Playwright for smoke and full end-to-end tests
-- Written in Python + Flask for backend.
+- Written in Python + Flask for backend
   - Conda for environment setup
   - MongoDB as database
+
+For a more detailed description of the architecture see our [Architecture Documentation](ARCHITECTURE.md).
 
 ## License
 
@@ -124,12 +126,12 @@ Released under the [MIT License](https://opensource.org/licenses/MIT).
 ---
 
 **Questions? Bugs?**  
-Please open an [issue](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
+Please open an [issue](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues).
 
 ---
 
 ## Citation
 
-If you use this platform, please cite the main [Oligo Designer Toolsuite](https://doi.org/10.5281/zenodo.7823048) as described in the backend [README](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite#how-to-cite).
+If you use this platform, please cite the main [Oligo Designer Toolsuite](https://doi.org/10.5281/zenodo.7823048) as described in the its [README](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite#how-to-cite).
 
 ---

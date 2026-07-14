@@ -129,7 +129,9 @@ Commits should adhere to [Conventional Commits](https://www.conventionalcommits.
 
 Before submitting a Pull Request, ensure that you followed our [Style guide](docs/styleguide.md), and have run the [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks as well as all the [tests](docs/tests.md).
 
-A Pull Request should include a short summary at the top and a bullet list of key changes. Furthermore, it should include a `resolves/fixes <issue-number>` to link the respective User Story. Also, all merge conflicts should be solved when submitting a PR ([remember](#working-on-an-issue)). After submitting a PR, it gets reviewed by at least one person. After the PR is reviewed and the tests are passing, the PR gets merged by the author. There could be changes in the merge order, which are communicated in advance. Use Merge Commit as the merging strategy.
+A Pull Request should include a short summary at the top as well as a bullet list of key changes and update the [Changelog](CHANGELOG.md) accordingly. Furthermore, it should include a `resolves/fixes <issue-number>` to link the respective User Story. Also, all merge conflicts should be solved when submitting a PR ([remember](#working-on-an-issue)).
+
+After submitting a PR, it gets reviewed by at least one person. After the PR is reviewed and the tests are passing, the PR gets merged by the author. There could be changes in the merge order, which are communicated in advance. Use Merge Commit as the merging strategy.
 
 ##### Reviews
 
