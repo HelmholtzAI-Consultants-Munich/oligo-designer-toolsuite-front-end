@@ -14,8 +14,8 @@ def register_blueprints(app):
     Flask matches routes in registration order and /api/feedback would
     otherwise be shadowed by the catch-all /api/<pipeline_name> route.
 
-    Args:
-        app: the Flask application instance.
+    Arguments:
+        app {flask.Flask} -- the Flask application instance.
     """
     app.register_blueprint(auth_bp)
     app.register_blueprint(runs_bp)

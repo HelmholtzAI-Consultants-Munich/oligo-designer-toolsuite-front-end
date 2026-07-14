@@ -17,20 +17,21 @@ def register_error_handlers(app: Flask):
     always returns consistent JSON, instead of each route having to format
     its own error response or risk leaking a stack trace to the client.
 
-    Args:
-        app (Flask): the Flask application instance.
+    Arguments:
+        app {Flask} -- the Flask application instance.
     """
 
     @app.errorhandler(HTTPException)
     def handle_http_exception(error: HTTPException):
         """Handle Flask HTTPException (from abort()).
 
-        Args:
-            error (HTTPException): carries the description passed to abort(),
-            which is safe to show the user (unlike a raw exception message).
+        Arguments:
+            error {HTTPException} -- carries the description passed to
+            abort(), which is safe to show the user (unlike a raw exception
+            message).
 
         Returns:
-            flask.Response: JSON error with the original status code.
+            flask.Response -- JSON error with the original status code.
         """
         message = error.description or "Something went wrong."
         status_code = error.code or HTTPStatus.INTERNAL_SERVER_ERROR
@@ -42,11 +43,11 @@ def register_error_handlers(app: Flask):
         exception server-side but returns a generic message to the client,
         since an unhandled exception's message could expose internals.
 
-        Args:
-            error (Exception): the unhandled exception.
+        Arguments:
+            error {Exception} -- the unhandled exception.
 
         Returns:
-            flask.Response: generic JSON 500 error.
+            flask.Response -- generic JSON 500 error.
         """
         current_app.logger.error(
             f"Unhandled exception: {type(error).__name__}: {error!s}",

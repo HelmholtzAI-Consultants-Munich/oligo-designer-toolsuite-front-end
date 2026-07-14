@@ -12,7 +12,9 @@ Features:
     - Listing of output files for a given run
     - Secure file download with mimetype detection and subdirectory support
 
-:requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
+Notes:
+    Requires Flask, Flask-Login, MongoDB (via extensions.mongo), OS,
+    datetime, traceback.
 """
 
 from http import HTTPStatus
@@ -40,13 +42,13 @@ def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
     """Only exposes fields relevant to the frontend and converts timestamps
     to ISO strings, so raw internal metric storage doesn't leak into the API.
 
-    Args:
-        metrics (dict[str, Any] | None): raw metrics dict from the run
+    Arguments:
+        metrics {dict[str, Any] | None} -- raw metrics dict from the run
         document, or None for runs that don't have metrics yet.
 
     Returns:
-        dict[str, Any] | None: formatted metrics, or None if there's nothing
-        to show (so callers can omit the key entirely).
+        dict[str, Any] | None -- formatted metrics, or None if there's
+        nothing to show (so callers can omit the key entirely).
     """
     if not isinstance(metrics, dict):
         return None
@@ -68,11 +70,11 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
     successful/in-progress run's response doesn't carry a stale leftover
     error from an earlier attempt.
 
-    Args:
-        run (dict[Any, Any]): the raw run document from MongoDB.
+    Arguments:
+        run {dict[Any, Any]} -- the raw run document from MongoDB.
 
     Returns:
-        dict[str, Any]: run payload formatted for the frontend.
+        dict[str, Any] -- run payload formatted for the frontend.
     """
     formatted = {
         "_id": str(run["_id"]),
@@ -96,12 +98,12 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
 def delete_run(run_id: ObjectId):
     """Delete a pipeline run's output files and database entry.
 
-    Args:
-        run_id (ObjectId): the run to delete — ownership is enforced so users
-        can only delete their own runs.
+    Arguments:
+        run_id {ObjectId} -- the run to delete — ownership is enforced so
+        users can only delete their own runs.
 
     Returns:
-        flask.Response: confirmation message.
+        flask.Response -- confirmation message.
     """
     # Check ownership first (users can only delete their own runs)
     get_run_or_404(run_id, require_ownership=True)
@@ -119,7 +121,7 @@ def get_pipeline_runs():
     their own runs.
 
     Returns:
-        flask.Response: JSON list of the caller's runs, formatted for the
+        flask.Response -- JSON list of the caller's runs, formatted for the
         frontend.
     """
     if current_user.is_authenticated:
@@ -136,12 +138,12 @@ def get_pipeline_runs():
 def get_pipeline_run(run_id: ObjectId):
     """Get details of a specific pipeline run.
 
-    Args:
-        run_id (ObjectId): the run to fetch — ownership is enforced so users
-        can only view their own runs.
+    Arguments:
+        run_id {ObjectId} -- the run to fetch — ownership is enforced so
+        users can only view their own runs.
 
     Returns:
-        flask.Response: the run, formatted for the frontend.
+        flask.Response -- the run, formatted for the frontend.
     """
     # Auth or session check
     run = get_run_or_404(run_id, require_ownership=True)
@@ -156,14 +158,14 @@ def get_run_file(run_id: ObjectId, filename: str):
     comes straight from the URL and must not be able to escape the run's
     output directory (path traversal).
 
-    Args:
-        run_id (ObjectId): the run whose output directory to serve from —
+    Arguments:
+        run_id {ObjectId} -- the run whose output directory to serve from —
         ownership is enforced.
-        filename (str): possibly-nested path relative to the run's output
+        filename {str} -- possibly-nested path relative to the run's output
         directory (e.g. "annotation/example.fna").
 
     Returns:
-        flask.Response: the file as an attachment.
+        flask.Response -- the file as an attachment.
     """
     ALLOWED_FILE_ENDINGS = (".yml", ".yaml", ".tsv", ".xlsx")
 
@@ -195,12 +197,12 @@ def get_run_config(run_id: ObjectId):
     same settings"). 404s for older runs that predate this feature, since
     there's no config to return for them.
 
-    Args:
-        run_id (ObjectId): the run whose saved config to fetch — ownership
+    Arguments:
+        run_id {ObjectId} -- the run whose saved config to fetch — ownership
         is enforced.
 
     Returns:
-        flask.Response: the saved PipelineConfigExport JSON.
+        flask.Response -- the saved PipelineConfigExport JSON.
     """
     run = get_run_or_404(run_id, require_ownership=True)
 
@@ -216,11 +218,11 @@ def get_run_status(run_id: ObjectId):
     """Lightweight endpoint for the frontend to poll while a run is in
     progress, without pulling the full run document each time.
 
-    Args:
-        run_id (ObjectId): the run to check — ownership is enforced.
+    Arguments:
+        run_id {ObjectId} -- the run to check — ownership is enforced.
 
     Returns:
-        flask.Response: the run's current status.
+        flask.Response -- the run's current status.
     """
     run = get_run_or_404(run_id)
 

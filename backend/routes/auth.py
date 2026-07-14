@@ -14,7 +14,9 @@ Main features:
     - Anonymous session tracking and data directory creation for unauthenticated users
     - Seamless migration of anonymous data to authenticated users
 
-:requires: Flask, Flask-Login, Authlib, MongoDB (via extensions.mongo), requests
+Notes:
+    Requires Flask, Flask-Login, Authlib, MongoDB (via extensions.mongo),
+    requests.
 """
 
 import os
@@ -48,12 +50,9 @@ auth_bp = Blueprint("auth", __name__)
 
 # ---- User Loader and User Class ----
 class User(UserMixin):
-    """Wraps a MongoDB user document so Flask-Login can track it — id,
-    helmholtz_sub, and username are pulled out since those are the fields
+    """Wraps a MongoDB user document (user_doc) so Flask-Login can track it —
+    id, helmholtz_sub, and username are pulled out since those are the fields
     routes need, without every caller re-parsing the raw document.
-
-    Args:
-        user_doc: the raw MongoDB user document to wrap.
     """
 
     def __init__(self, user_doc):
@@ -66,11 +65,11 @@ def init_login_manager(app):
     """Uses "strong" session protection (tracks IP/user-agent) so a stolen
     session cookie stops working if replayed from a different client.
 
-    Args:
-        app: the Flask application instance.
+    Arguments:
+        app {flask.Flask} -- the Flask application instance.
 
     Returns:
-        flask_login.LoginManager: the initialized login manager.
+        flask_login.LoginManager -- the initialized login manager.
     """
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -97,10 +96,12 @@ def _login(user: User, remember: bool = True):
     and user-directory setup happen exactly once, regardless of which login
     path was used.
 
-    Args:
-        user (User): the user to log in.
-        remember (bool, optional): whether to persist the login across
-        browser sessions via Flask-Login's remember cookie. Defaults to True.
+    Arguments:
+        user {User} -- the user to log in.
+
+    Keyword Arguments:
+        remember {bool} -- whether to persist the login across browser
+        sessions via Flask-Login's remember cookie. (default: {True})
     """
     # Make session cookie temporary; Flask-Login remember cookie handles persistence
     session.permanent = False
@@ -135,14 +136,13 @@ def _build_legal_status(user_id: str | None = None, session_id: str | None = Non
     """Shared by check_auth and accept_terms so the frontend always gets the
     same shape for "does this identity need to (re-)accept terms".
 
-    Args:
-        user_id (str | None, optional): set for authenticated users; mutually
-        exclusive with session_id. Defaults to None.
-        session_id (str | None, optional): set for anonymous users. Defaults
-        to None.
+    Keyword Arguments:
+        user_id {str | None} -- set for authenticated users; mutually
+        exclusive with session_id. (default: {None})
+        session_id {str | None} -- set for anonymous users. (default: {None})
 
     Returns:
-        dict: current/accepted terms version and acceptance timestamp.
+        dict -- current/accepted terms version and acceptance timestamp.
     """
     terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
     latest_acceptance = None
@@ -170,7 +170,7 @@ def login():
     admin accounts, which have no Helmholtz identity to OAuth against.
 
     Returns:
-        flask.Response: redirect to Helmholtz AAI (GET), or JSON message (POST).
+        flask.Response -- redirect to Helmholtz AAI (GET), or JSON message (POST).
     """
 
     if request.method == "GET":
@@ -227,7 +227,7 @@ def auth_callback():
     is created.
 
     Returns:
-        flask.Response: redirect to the frontend (success or ban message).
+        flask.Response -- redirect to the frontend (success or ban message).
     """
     # Exchange authorization code for access token
     token = oauth.helmholtz.authorize_access_token()
@@ -296,7 +296,7 @@ def check_auth():
     or anonymous UI, and whether terms need (re-)accepting.
 
     Returns:
-        flask.Response: authentication status, user info if authenticated,
+        flask.Response -- authentication status, user info if authenticated,
         and legal-acceptance status either way.
     """
     if current_user.is_authenticated:
@@ -333,7 +333,7 @@ def accept_terms():
     or session.
 
     Returns:
-        flask.Response: updated legal-acceptance status.
+        flask.Response -- updated legal-acceptance status.
     """
     user_id = str(current_user.id) if current_user.is_authenticated else None
     session_id = None if user_id else session.get("session_id")
@@ -368,7 +368,7 @@ def logout():
     raised, since the user should still be logged out locally either way.
 
     Returns:
-        flask.Response: confirmation message.
+        flask.Response -- confirmation message.
     """
     # Revoke OAuth token if present
     oauth_token = session.get("oauth_token")
@@ -409,7 +409,7 @@ def delete_account():
     """Delete the current account and the user's associated data.
 
     Returns:
-        flask.Response: confirmation message.
+        flask.Response -- confirmation message.
     """
     user_id = str(current_user.id)
 

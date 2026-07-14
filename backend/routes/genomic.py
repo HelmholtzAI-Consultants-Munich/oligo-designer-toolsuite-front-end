@@ -21,7 +21,7 @@ def genomic_dropdown_dict():
     them in the frontend, since the supported list changes as NCBI data updates.
 
     Returns:
-        dict[str, dict[str, list[str]]]: dropdown options for populating the
+        dict[str, dict[str, list[str]]] -- dropdown options for populating the
         taxon/species selection form.
     """
     dropdown_options: dict[str, dict[str, list[str]]] = fetch_dropdown_options()
@@ -34,15 +34,15 @@ def genomic_get_releases(taxon: str, species: str):
     available annotation releases depends on which taxon/species the user
     already picked, and fetching every combination up front would be wasteful.
 
-    Args:
-        taxon (str): the taxon selected by the user.
-        species (str): the species selected by the user.
+    Arguments:
+        taxon {str} -- the taxon selected by the user.
+        species {str} -- the species selected by the user.
 
     Raises:
         HTTPException: 404 if NCBI has no releases for this taxon/species pair.
 
     Returns:
-        flask.Response: JSON list of available annotation release directories.
+        flask.Response -- JSON list of available annotation release directories.
     """
     # TODO: validate that taxon and species are in our dropdown options
     dirs = NCBIGenomicDataBase().fetch_annotations_releases(taxon, species)

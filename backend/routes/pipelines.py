@@ -76,11 +76,11 @@ def create_context(pipeline_name: str) -> RunContext:
     reuse an existing output path (exist_ok=False) so two runs can never
     silently overwrite each other's files.
 
-    Args:
-        pipeline_name (str): used to build a unique output directory name.
+    Arguments:
+        pipeline_name {str} -- used to build a unique output directory name.
 
     Returns:
-        RunContext: user/session identity plus the freshly created output path.
+        RunContext -- user/session identity plus the freshly created output path.
     """
     # Get user context and directory
     user_id, session_id, user_dir = get_user_context_with_directory()
@@ -113,12 +113,12 @@ def unpack_genomic_form_data(region_generation_forms: list[dict[str, Any]]) -> l
     with fully resolved regions rather than the various shorthand inputs
     users can submit (e.g. gene lists, ranges).
 
-    Args:
-        region_generation_forms (list[dict[str, Any]]): raw forms as
+    Arguments:
+        region_generation_forms {list[dict[str, Any]]} -- raw forms as
         submitted by the user.
 
     Returns:
-        list[dict[str, Any]]: flattened list of single-region forms.
+        list[dict[str, Any]] -- flattened list of single-region forms.
     """
     forms = []
     for region_generation_form_data in region_generation_forms:
@@ -135,13 +135,14 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     everything together, since enqueue_pipeline needs to know which region
     belongs to which genomic-input field when building region-generation tasks.
 
-    Args:
-        form_data (dict[str, Any]): the submitted pipeline form.
-        pipeline_name (str): determines which form paths hold genomic input,
-        since different pipelines expose different fields.
+    Arguments:
+        form_data {dict[str, Any]} -- the submitted pipeline form.
+        pipeline_name {str} -- determines which form paths hold genomic
+        input, since different pipelines expose different fields.
 
     Returns:
-        dict[str, list[dict[str, Any]]]: form-path id -> list of single-region forms.
+        dict[str, list[dict[str, Any]]] -- form-path id -> list of
+        single-region forms.
     """
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
     region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
@@ -162,7 +163,7 @@ def init_run() -> ObjectId:
     up this run by id and expects it to already exist in the database.
 
     Returns:
-        ObjectId: the newly created run's id.
+        ObjectId -- the newly created run's id.
     """
     insert_result = db.runs.insert_one({"status": RunStatus.PENDING})
     if not insert_result.acknowledged:
@@ -181,15 +182,17 @@ def update_run_with_context(
     """Called only after enqueue_pipeline() succeeds, so a run never shows
     context/queue info in the database unless it was actually queued.
 
-    Args:
-        run_id (ObjectId): the run to update.
-        pipeline_name (str): stored on the run for display/filtering.
-        context (RunContext): output path and user/session identity.
-        priority (int, optional): used to derive the "high"/"default" label
-        stored on the run. Defaults to CeleryConfig.task_default_priority.
-        queue_position (tuple[int, int], optional): (high-priority ahead,
+    Arguments:
+        run_id {ObjectId} -- the run to update.
+        pipeline_name {str} -- stored on the run for display/filtering.
+        context {RunContext} -- output path and user/session identity.
+
+    Keyword Arguments:
+        priority {int} -- used to derive the "high"/"default" label stored
+        on the run. (default: {CeleryConfig.task_default_priority})
+        queue_position {tuple[int, int]} -- (high-priority ahead,
         default-priority ahead), for frontend queue-position display.
-        Defaults to (0, 0).
+        (default: {(0, 0)})
     """
     data: dict = {
         "pipeline": pipeline_name,
@@ -212,8 +215,8 @@ def check_gene_threshold(form_data: dict[str, Any]):
     unauthenticated users have no account to rate-limit/ban if they abuse
     the full-genome case — logging in removes the cap.
 
-    Args:
-        form_data (dict[str, Any]): the submitted pipeline form.
+    Arguments:
+        form_data {dict[str, Any]} -- the submitted pipeline form.
     """
     genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
     if genes_string is None:
@@ -231,11 +234,11 @@ def get_task_priority(form_data: dict[str, Any]) -> int:
     anonymous users are also gene-capped here, since granting them high
     priority without that check would let them jump the queue for free.
 
-    Args:
-        form_data (dict[str, Any]): the submitted pipeline form.
+    Arguments:
+        form_data {dict[str, Any]} -- the submitted pipeline form.
 
     Returns:
-        int: the Celery task priority to enqueue with.
+        int -- the Celery task priority to enqueue with.
     """
     if not current_user.is_authenticated:
         check_gene_threshold(form_data)
@@ -258,17 +261,19 @@ def enqueue_pipeline(
     the pipeline task starts, since the pipeline needs all regions resolved
     up front rather than racing with generation.
 
-    Args:
-        run_id (ObjectId): used as the pipeline task's id so its status can
-        be looked up later.
-        pipeline_name (str): which pipeline to run.
-        form_data (dict[str, Any]): the submitted, validated pipeline config.
-        generated_regions (dict[str, list[dict[str, Any]]]): regions to
+    Arguments:
+        run_id {ObjectId} -- used as the pipeline task's id so its status
+        can be looked up later.
+        pipeline_name {str} -- which pipeline to run.
+        form_data {dict[str, Any]} -- the submitted, validated pipeline config.
+        generated_regions {dict[str, list[dict[str, Any]]]} -- regions to
         generate as the chord's header tasks.
-        priority (int): Celery task priority.
-        context (RunContext): output path and timestamp for the pipeline task.
-        is_authenticated (bool, optional): determines the timeout budget
-        (authenticated users get more time). Defaults to False.
+        priority {int} -- Celery task priority.
+        context {RunContext} -- output path and timestamp for the pipeline task.
+
+    Keyword Arguments:
+        is_authenticated {bool} -- determines the timeout budget
+        (authenticated users get more time). (default: {False})
     """
     soft_limit = resolve_timeout(is_authenticated)
     hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
@@ -308,12 +313,12 @@ def calculate_queue_position(priority: int) -> tuple[int, int]:
     by one, since it will now run before them — otherwise their displayed
     position would silently fall out of sync.
 
-    Args:
-        priority (int): the priority of the run being enqueued, selecting
+    Arguments:
+        priority {int} -- the priority of the run being enqueued, selecting
         which of the two counters gets incremented.
 
     Returns:
-        tuple[int, int]: (high-priority runs ahead, default-priority runs ahead).
+        tuple[int, int] -- (high-priority runs ahead, default-priority runs ahead).
     """
     redis = Redis.from_url(Config.REDIS_URI)
 
@@ -340,14 +345,15 @@ def save_file(
     file is used in more than one form field, the browser only sends its
     data once — trying to save it again would read an empty stream.
 
-    Args:
-        file_name (str): the form field name to look up in `files`.
-        files (ImmutableMultiDict[str, FileStorage]): uploaded files from the request.
-        saved_files (dict[FileStorage, Path]): already-saved files, shared
+    Arguments:
+        file_name {str} -- the form field name to look up in `files`.
+        files {ImmutableMultiDict[str, FileStorage]} -- uploaded files from
+        the request.
+        saved_files {dict[FileStorage, Path]} -- already-saved files, shared
         across calls for one submission.
 
     Returns:
-        Path | None: where the file was saved, or None if no file was
+        Path | None -- where the file was saved, or None if no file was
         submitted for this field.
     """
     if file := files.get(file_name):
@@ -380,15 +386,16 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
     fields, sharing one saved_files cache across all of them so a file
     uploaded under multiple fields is only written to disk once.
 
-    Args:
-        form_data (dict[str, Any]): the submitted pipeline form, used to find
-        which field names hold file references.
-        pipeline_name (str): determines which form paths are file inputs for
-        this pipeline.
-        files (ImmutableMultiDict[str, FileStorage]): uploaded files from the request.
+    Arguments:
+        form_data {dict[str, Any]} -- the submitted pipeline form, used to
+        find which field names hold file references.
+        pipeline_name {str} -- determines which form paths are file inputs
+        for this pipeline.
+        files {ImmutableMultiDict[str, FileStorage]} -- uploaded files from
+        the request.
 
     Returns:
-        dict[str, list[Path]]: form path -> saved file paths, ready to be
+        dict[str, list[Path]] -- form path -> saved file paths, ready to be
         written back into form_data in place of the original file names.
     """
     file_inputs: dict[str, list[Path]] = {}
@@ -411,9 +418,9 @@ def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
     so malformed input is rejected with a clear 400 here instead of
     surfacing as an obscure failure deep inside the Celery worker.
 
-    Args:
-        form_data (dict[str, Any]): the submitted pipeline form.
-        pipeline_name (str): selects which pydantic model to validate against.
+    Arguments:
+        form_data {dict[str, Any]} -- the submitted pipeline form.
+        pipeline_name {str} -- selects which pydantic model to validate against.
     """
     match pipeline_name:
         case "oligoseq":
@@ -433,9 +440,9 @@ def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
     the user-facing form, so the frontend schema doesn't need to expose
     internal/fixed configuration just to satisfy pydantic validation.
 
-    Args:
-        form_data (dict[str, Any]): mutated in place to add the missing fields.
-        pipline_name (str): selects which fields to inject for this pipeline.
+    Arguments:
+        form_data {dict[str, Any]} -- mutated in place to add the missing fields.
+        pipline_name {str} -- selects which fields to inject for this pipeline.
     """
     for field, value in PIPELINE_NON_EXPOSED_FIELDS.get(pipline_name, {}).items():
         form_data[field] = value
@@ -447,9 +454,9 @@ def enforce_concurrent_runs_limit(context: RunContext, is_authenticated: bool):
     anonymous users get separate (and different) limits since anonymous
     abuse is cheaper to attempt.
 
-    Args:
-        context (RunContext): identifies which user/session to count runs for.
-        is_authenticated (bool): selects which configured limit applies.
+    Arguments:
+        context {RunContext} -- identifies which user/session to count runs for.
+        is_authenticated {bool} -- selects which configured limit applies.
     """
     if is_authenticated:
         max_runs = Config.PIPELINE_MAX_CONCURRENT_AUTHENTICATED
@@ -489,13 +496,13 @@ def start_pipeline(pipeline_name: str):
     run document; update_run_with_context() only writes queue/context info
     afterward, once enqueueing has actually succeeded.
 
-    Args:
-        pipeline_name (str): which pipeline to run — checked against
+    Arguments:
+        pipeline_name {str} -- which pipeline to run — checked against
         EXISTING_PIPELINES since only pipelines with pydantic integration
         are enabled.
 
     Returns:
-        flask.Response: the new run's id and its queue position.
+        flask.Response -- the new run's id and its queue position.
     """
     if not validate_name(pipeline_name):
         abort(HTTPStatus.BAD_REQUEST, description=f'Pipeline "{pipeline_name}" does not exist')

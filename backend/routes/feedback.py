@@ -26,7 +26,7 @@ def _feedback_rate_limit_key() -> str:
     multiple users behind the same NAT/proxy.
 
     Returns:
-        str: rate-limit bucket key for the current user.
+        str -- rate-limit bucket key for the current user.
     """
     return f"user:{current_user.get_id()}"
 
@@ -36,11 +36,11 @@ def sanitize_feedback_message(raw_message: str) -> str:
     since feedback text is later rendered in the admin panel and must not be
     able to inject markup or invisible/spoofing characters.
 
-    Args:
-        raw_message (str): the raw message submitted by the client.
+    Arguments:
+        raw_message {str} -- the raw message submitted by the client.
 
     Returns:
-        str: sanitized, storage-safe message.
+        str -- sanitized, storage-safe message.
     """
     normalized = unicodedata.normalize("NFKC", raw_message)
     sanitized = bleach.clean(
@@ -66,7 +66,7 @@ def create_feedback():
     """Create a feedback entry for the current logged-in user.
 
     Returns:
-        flask.Response: the saved feedback entry.
+        flask.Response -- the saved feedback entry.
     """
     data = request.get_json(silent=True) or {}
     message = sanitize_feedback_message(str(data.get("message") or ""))

@@ -29,7 +29,7 @@ def get_user_context() -> tuple[None, str] | tuple[str, None]:
         session_id, since there's no user to fall back to.
 
     Returns:
-        tuple[None, str] | tuple[str, None]: (user_id, None) if authenticated,
+        tuple[None, str] | tuple[str, None] -- (user_id, None) if authenticated,
         (None, session_id) if anonymous. Callers branch on which one is set.
     """
     if current_user.is_authenticated:
@@ -53,7 +53,7 @@ def get_user_context_with_directory() -> tuple[str | None, str | None, Path]:
         session_id.
 
     Returns:
-        tuple[str | None, str | None, Path]: (user_id, session_id, user_dir).
+        tuple[str | None, str | None, Path] -- (user_id, session_id, user_dir).
     """
     user_id, session_id = get_user_context()
     userdata_path = Path(current_app.config["USERDATA_PATH"])
@@ -72,8 +72,8 @@ def require_terms_acceptance_for_current_context() -> tuple[str | None, str | No
     to separately fetch the user context and then check acceptance themselves.
 
     Returns:
-        tuple[str | None, str | None]: (user_id, session_id) for the caller to
-        reuse, since resolving it again would just repeat this same lookup.
+        tuple[str | None, str | None] -- (user_id, session_id) for the caller
+        to reuse, since resolving it again would just repeat this same lookup.
     """
     user_id, session_id = get_user_context()
     require_current_terms_acceptance(user_id=user_id, session_id=session_id)
@@ -90,13 +90,15 @@ def find_user_by_id(user_id: ObjectId, exclude_password: bool = True) -> dict | 
     checks). For API endpoints where a missing user should 404, use
     get_user_by_id_or_404() instead.
 
-    Args:
-        user_id (ObjectId): the user to look up.
-        exclude_password (bool, optional): set False only when the caller
-        needs to verify a password hash (e.g. legacy login). Defaults to True.
+    Arguments:
+        user_id {ObjectId} -- the user to look up.
+
+    Keyword Arguments:
+        exclude_password {bool} -- set False only when the caller needs to
+        verify a password hash (e.g. legacy login). (default: {True})
 
     Returns:
-        dict | None: the user document, or None if not found.
+        dict | None -- the user document, or None if not found.
     """
     projection = {"password": False} if exclude_password else {}
     return db.users.find_one({"_id": user_id}, projection)
@@ -107,16 +109,18 @@ def get_user_by_id_or_404(user_id: ObjectId, exclude_password: bool = True) -> d
     with a 404 instead of the caller having to check for None itself. For
     checks where a missing user is expected/valid, use find_user_by_id() instead.
 
-    Args:
-        user_id (ObjectId): the user to look up.
-        exclude_password (bool, optional): set False only when the caller
-        needs the password hash. Defaults to True.
+    Arguments:
+        user_id {ObjectId} -- the user to look up.
+
+    Keyword Arguments:
+        exclude_password {bool} -- set False only when the caller needs the
+        password hash. (default: {True})
 
     Raises:
         HTTPException: 404 if no user with this id exists.
 
     Returns:
-        dict: the user document.
+        dict -- the user document.
     """
     user = find_user_by_id(user_id, exclude_password=exclude_password)
     if not user:
@@ -134,18 +138,20 @@ def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
     ownership logic while opting out of it (require_ownership=False), rather
     than duplicating the user/session branching.
 
-    Args:
-        run_id (ObjectId): the run to query for.
-        require_ownership (bool, optional): False skips the ownership filter
-        entirely — only use this for admin operations that may act on any
-        run. Defaults to True.
+    Arguments:
+        run_id {ObjectId} -- the run to query for.
+
+    Keyword Arguments:
+        require_ownership {bool} -- False skips the ownership filter entirely
+        — only use this for admin operations that may act on any run.
+        (default: {True})
 
     Raises:
         HTTPException: 403 if an anonymous caller has no session_id to scope
         the query to.
 
     Returns:
-        dict: MongoDB query dict, scoped to the current user/session unless
+        dict -- MongoDB query dict, scoped to the current user/session unless
         require_ownership is False.
     """
     query: dict[str, Any] = {"_id": run_id}
@@ -165,16 +171,18 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     forgotten in a handler — pass require_ownership=False only for admin
     endpoints that are allowed to touch any user's run.
 
-    Args:
-        run_id (ObjectId): the run to fetch.
-        require_ownership (bool, optional): False skips the ownership check.
-        Defaults to True.
+    Arguments:
+        run_id {ObjectId} -- the run to fetch.
+
+    Keyword Arguments:
+        require_ownership {bool} -- False skips the ownership check.
+        (default: {True})
 
     Raises:
         HTTPException: 403 if unauthorized, 404 if the run doesn't exist.
 
     Returns:
-        dict: the run document.
+        dict -- the run document.
     """
     query = build_run_query(run_id, require_ownership=require_ownership)
     run = db.runs.find_one(query)
@@ -189,9 +197,9 @@ def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
     request on failure instead of the worker's own error handling — routes
     need the request to fail loudly, a background task doesn't.
 
-    Args:
-        run_id (ObjectId): the run to update.
-        data (dict[str, Any]): fields to $set on the run document.
+    Arguments:
+        run_id {ObjectId} -- the run to update.
+        data {dict[str, Any]} -- fields to $set on the run document.
     """
     update_result = db.runs.update_one({"_id": run_id}, {"$set": data})
     if not update_result.acknowledged:
@@ -208,11 +216,11 @@ def validate_turnstile(token):
     can't just skip it; fails open to "not verified" on network errors rather
     than raising, since a Cloudflare outage shouldn't crash the request.
 
-    Args:
-        token: the Turnstile response token submitted by the client.
+    Arguments:
+        token {str} -- the Turnstile response token submitted by the client.
 
     Returns:
-        bool: True only if Cloudflare confirms the token is valid.
+        bool -- True only if Cloudflare confirms the token is valid.
     """
     url = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
     secret = current_app.config.get("TURNSTILE_SECRET_KEY")

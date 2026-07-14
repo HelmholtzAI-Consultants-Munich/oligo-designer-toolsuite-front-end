@@ -92,8 +92,8 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
     output directory is already gone or unreachable on disk.
 
     Arguments:
-        mongo -- MongoDB database instance.
-        run_id_obj -- ObjectId of the run to delete.
+        mongo {pymongo.database.Database} -- MongoDB database instance.
+        run_id_obj {ObjectId} -- ObjectId of the run to delete.
     """
     # Fetch the run
     run = mongo.runs.find_one({"_id": run_id_obj})
@@ -125,7 +125,7 @@ def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: list[ObjectId]) ->
     callers get back which ones failed instead of an all-or-nothing error.
 
     Arguments:
-        mongo -- MongoDB database instance.
+        mongo {pymongo.database.Database} -- MongoDB database instance.
         run_id_objects {list[ObjectId]} -- run IDs to delete (already validated).
 
     Returns:
