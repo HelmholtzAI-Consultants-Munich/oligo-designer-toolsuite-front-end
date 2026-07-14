@@ -88,10 +88,14 @@ class DataRoots:
 
 @pytest.fixture(scope="session")
 def app(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Any]:
-    """Create one Flask app per test session pointed at the isolated Mongo and temp filesystem so startup cost is paid once while per-test fixtures handle data isolation.
+    """Create one Flask app per test session, pointed at the isolated Mongo and temp filesystem.
 
     Arguments:
         tmp_path_factory {pytest.TempPathFactory} -- pytest factory for session-scoped temp directories
+
+    Notes:
+        Session scope means startup cost is paid once, while per-test fixtures
+        handle data isolation.
 
     Yields:
         Iterator[Any] -- Flask application instance configured for testing
@@ -123,11 +127,15 @@ def app(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Any]:
 
 @pytest.fixture(autouse=True)
 def test_data_roots(app: Any, tmp_path: Path) -> Iterator[DataRoots]:
-    """Create per-test upload and user-data directories so path-existence assertions in one test are never affected by files left by another.
+    """Create per-test upload and user-data directories.
 
     Arguments:
         app {Any} -- Flask application instance whose config is updated to point at the fresh roots
         tmp_path {Path} -- pytest-provided per-test temp directory
+
+    Notes:
+        Per-test directories ensure path-existence assertions in one test are
+        never affected by files left by another.
 
     Yields:
         Iterator[DataRoots] -- per-test temp filesystem roots with Flask config pointing at them
@@ -152,10 +160,14 @@ def test_data_roots(app: Any, tmp_path: Path) -> Iterator[DataRoots]:
 
 @pytest.fixture(autouse=True)
 def mongo_test_db(app: Any) -> Iterator[None]:
-    """Clear every MongoDB collection before and after each test to prevent contamination from a previously failed test run that skipped teardown.
+    """Clear every MongoDB collection before and after each test.
 
     Arguments:
         app {Any} -- Flask application instance providing the app context
+
+    Notes:
+        This prevents contamination from a previously failed test run that
+        skipped teardown.
 
     Yields:
         Iterator[None] -- yields inside the app context with a clean database
@@ -170,14 +182,15 @@ def mongo_test_db(app: Any) -> Iterator[None]:
 
 @pytest.fixture
 def client(app: Any) -> Iterator[Any]:
-    """Provide a Flask test client with an anonymous current_user so tests can assert on routes that behave differently for unauthenticated callers.
+    """Provide a Flask test client with an anonymous current_user.
 
     Arguments:
         app {Any} -- Flask application instance
 
     Notes:
-        We patch the internal `flask_login.utils._get_user` because Flask-Login
-        has no public testing hook for overriding `current_user`.
+        Tests can use this to assert on routes that behave differently for
+        unauthenticated callers. We patch the internal `flask_login.utils._get_user`
+        because Flask-Login has no public testing hook for overriding `current_user`.
 
     Yields:
         Iterator[Any] -- Flask test client with anonymous current_user
@@ -190,7 +203,11 @@ def client(app: Any) -> Iterator[Any]:
 
 @pytest.fixture
 def authenticate_as() -> Iterator[Callable[[str], AuthenticatedUser]]:
-    """Provide a factory that patches Flask-Login to return a chosen user so tests can authenticate without inserting a user document or accepted terms.
+    """Provide a factory that patches Flask-Login to return a chosen user.
+
+    Notes:
+        Tests can authenticate without inserting a user document or accepted
+        terms.
 
     Yields:
         Iterator[Callable[[str], AuthenticatedUser]] -- callable that accepts a user_id and patches current_user for the remainder of the test
@@ -227,12 +244,16 @@ def _insert_terms_acceptance(**query: str) -> None:
 def authenticated_user(
     app: Any, client: Any, authenticate_as: Callable[[str], AuthenticatedUser]
 ) -> Iterator[AuthenticatedUser]:
-    """Insert a real user document and current terms acceptance so routes that query MongoDB for role and consent status work correctly without extra per-test setup.
+    """Insert a real user document and current terms acceptance, and authenticate as that user.
 
     Arguments:
         app {Any} -- Flask application instance providing the app context
         client {Any} -- Flask test client (unused directly but ensures the client fixture is active)
         authenticate_as {Callable[[str], AuthenticatedUser]} -- factory that patches Flask-Login to return the test user
+
+    Notes:
+        Routes that query MongoDB for role and consent status need this data
+        seeded directly, so no extra per-test setup is required.
 
     Yields:
         Iterator[AuthenticatedUser] -- the patched current_user for the default test user
@@ -246,11 +267,15 @@ def authenticated_user(
 
 @pytest.fixture
 def anonymous_session(app: Any, client: Any) -> Iterator[str]:
-    """Attach a known session_id and current terms acceptance to the client so anonymous routes can be exercised and assertions can reference the fixed TEST_SESSION_ID.
+    """Attach a known session_id and current terms acceptance to the client.
 
     Arguments:
         app {Any} -- Flask application instance providing the app context
         client {Any} -- Flask test client whose session receives the known session_id
+
+    Notes:
+        This lets anonymous routes be exercised and assertions reference the
+        fixed TEST_SESSION_ID.
 
     Yields:
         Iterator[str] -- the fixed anonymous session id
@@ -325,20 +350,28 @@ def run_doc(app: Any) -> Callable[..., ObjectId]:
 
 @pytest.fixture
 def pipeline_payload() -> Callable[[str, ObjectId | None], dict[str, Any]]:
-    """Return a loader for pipeline request payload JSON files so each call produces a fresh copy that tests can mutate without affecting sibling tests.
+    """Return a loader for pipeline request payload JSON files.
+
+    Notes:
+        Each call produces a fresh copy so tests can mutate it without
+        affecting sibling tests.
 
     Returns:
         Callable[[str, ObjectId | None], dict[str, Any]] -- loader that accepts a filename and optional run_id
     """
 
     def _load(payload_file: str, run_id: ObjectId | None = None) -> dict[str, Any]:
-        """Return a fresh payload copy so mutations in one test don't bleed into another.
+        """Load a payload JSON file and return a fresh copy with runid set.
 
         Arguments:
             payload_file {str} -- which pipeline's payload shape to load from tests/data/
 
         Keyword Arguments:
             run_id {ObjectId | None} -- pass a known id only when the test needs to assert the server ignored it; omit otherwise (default: {None})
+
+        Notes:
+            Returning a fresh copy prevents mutations in one test from bleeding
+            into another.
 
         Returns:
             dict[str, Any] -- payload dict with runid set, ready to post
@@ -355,10 +388,14 @@ def pipeline_payload() -> Callable[[str, ObjectId | None], dict[str, Any]]:
 def multipart_post(
     client: Any,
 ) -> Callable[[str, dict[str, Any] | None, dict[str, tuple[bytes, str]] | None], Any]:
-    """Return a helper that encodes and posts pipeline-style multipart requests so tests state only what they want to send, not how to serialize it.
+    """Return a helper that encodes and posts pipeline-style multipart requests.
 
     Arguments:
         client {Any} -- Flask test client that will send the requests
+
+    Notes:
+        This lets tests state only what they want to send, not how to
+        serialize it.
 
     Returns:
         Callable[[str, dict[str, Any] | None, dict[str, tuple[bytes, str]] | None], Any] -- post helper that handles JSON serialization and BytesIO wrapping
@@ -367,7 +404,7 @@ def multipart_post(
     def _post(
         path: str, payload: dict[str, Any] | None = None, files: dict[str, tuple[bytes, str]] | None = None
     ):
-        """Encode and post so tests don't have to manually serialize JSON or construct BytesIO wrappers.
+        """Encode and post a multipart request.
 
         Arguments:
             path {str} -- route to post to
@@ -375,6 +412,10 @@ def multipart_post(
         Keyword Arguments:
             payload {dict[str, Any] | None} -- pipeline submission data; serialized into the `payload` form field as the route expects (default: {None})
             files {dict[str, tuple[bytes, str]] | None} -- uploaded files keyed by form field name; each value is (raw bytes, filename) (default: {None})
+
+        Notes:
+            This means tests don't have to manually serialize JSON or construct
+            BytesIO wrappers.
 
         Returns:
             Any -- Flask test client response
@@ -391,11 +432,11 @@ def multipart_post(
 
 @pytest.fixture
 def celery_config() -> dict[str, Any]:
-    """Configure the test Celery worker to use an isolated Redis database so test tasks do not share state with the dev or production broker.
+    """Configure the test Celery worker to use an isolated Redis database.
 
     Notes:
-        Redis DB #15 is used so test runs don't share state with the dev or
-        production Redis databases (typically DB 0).
+        Redis DB #15 is used so test tasks don't share state with the dev or
+        production broker (typically DB 0).
 
     Returns:
         dict[str, Any] -- Celery configuration overrides for the test worker
@@ -414,7 +455,11 @@ def celery_config() -> dict[str, Any]:
 
 @pytest.fixture
 def celery_worker_parameters() -> dict[str, Any]:
-    """Keep celery.contrib.pytest workers lightweight by disabling the ping check and capping shutdown so slow tasks don't hang the test suite.
+    """Disable the ping check and cap shutdown timeout for celery.contrib.pytest workers.
+
+    Notes:
+        This keeps workers lightweight so slow tasks don't hang the test
+        suite.
 
     Returns:
         dict[str, Any] -- celery.contrib.pytest worker parameter overrides
@@ -424,10 +469,14 @@ def celery_worker_parameters() -> dict[str, Any]:
 
 @pytest.fixture
 def celery_app(celery_config: dict[str, Any]):
-    """Use the real worker Celery app so task routing and chords behave identically to production.
+    """Configure the real worker Celery app to use the test broker.
 
     Arguments:
         celery_config {dict[str, Any]} -- Celery configuration overrides from the celery_config fixture
+
+    Notes:
+        Using the real app rather than a fake one ensures task routing and
+        chords behave identically to production.
 
     Returns:
         Celery -- the production worker app reconfigured to use the test broker and flushed before each test
@@ -458,7 +507,7 @@ def assert_sanitized_error(response: Any) -> None:
 
 
 def pipeline_runner_module(runner_cls: Any):
-    """Swap the real pipeline_runner module so its visualization imports never run.
+    """Swap the real pipeline_runner module for a fake one in sys.modules.
 
     Arguments:
         runner_cls {Any} -- mock or stub class to expose as PipelineRunner in the fake module
@@ -467,8 +516,8 @@ def pipeline_runner_module(runner_cls: Any):
         pipeline_runner.py imports genomic_regions_file.py, which pulls in Biopython
         and oligo_designer_toolsuite visualization packages not installed in CI. Those
         imports run at module load time so the file crashes before any mock can help.
-        This function solves that by injecting a fake module into sys.modules so Python
-        never touches the real file.
+        Injecting a fake module into sys.modules means Python never touches the
+        real file, so its visualization imports never run.
 
     Returns:
         patch.dict -- context manager that installs the fake module for the test duration

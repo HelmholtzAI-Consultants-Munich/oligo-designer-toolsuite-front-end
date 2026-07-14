@@ -21,7 +21,11 @@ from backend.utils import utc_now
 
 @pytest.fixture
 def admin_user(authenticate_as):
-    """Persist a real admin document because admin endpoints verify role from MongoDB, not Flask-Login alone.
+    """Persist a real admin document and authenticate as that user.
+
+    Notes:
+        Admin endpoints verify role from MongoDB, not Flask-Login alone, so a
+        real document is required rather than just a patched current_user.
 
     Returns:
         dict -- admin identity with `_id` (ObjectId) and `id` (str) for use in route assertions
@@ -46,7 +50,10 @@ def regular_user():
 
 @pytest.fixture
 def regular_client(client, authenticate_as, regular_user):
-    """Authenticate the client as a non-admin so tests can assert 403 without repeating the authenticate call.
+    """Authenticate the client as a non-admin user.
+
+    Notes:
+        This lets tests assert 403 without repeating the authenticate call.
 
     Returns:
         Any -- Flask test client authenticated as a regular user
@@ -65,12 +72,15 @@ def regular_client(client, authenticate_as, regular_user):
     ],
 )
 def test_admin_endpoint_requires_admin(regular_client, method, path):
-    """Role enforcement must cover every admin endpoint — a single missed route exposes the full admin surface.
+    """Regular users get 403 from every admin endpoint.
 
     Arguments:
         regular_client {Any} -- Flask test client authenticated as a non-admin user
         method {str} -- HTTP method to call
         path {str} -- admin route path under test
+
+    Notes:
+        A single missed route would expose the full admin surface.
     """
     response = getattr(regular_client, method)(path)
 
@@ -78,12 +88,15 @@ def test_admin_endpoint_requires_admin(regular_client, method, path):
 
 
 def test_admin_get_users_success(client, admin_user, regular_user):
-    """User listing must include all users regardless of role so the panel gives a complete system view.
+    """User listing includes all users regardless of role.
 
     Arguments:
         client {Any} -- anonymous Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- persisted non-admin user to appear in the listing
+
+    Notes:
+        This gives the panel a complete system view.
     """
     response = client.get("/api/admin/users")
 
@@ -92,10 +105,13 @@ def test_admin_get_users_success(client, admin_user, regular_user):
 
 
 def test_admin_get_users_unauthenticated(client):
-    """Unauthenticated access must be rejected before role checks run so the endpoint is not reachable without a session.
+    """Unauthenticated access is rejected before role checks run.
 
     Arguments:
         client {Any} -- anonymous Flask test client with no active session
+
+    Notes:
+        The endpoint must not be reachable without a session.
     """
     response = client.get("/api/admin/users")
 
@@ -103,12 +119,15 @@ def test_admin_get_users_unauthenticated(client):
 
 
 def test_admin_get_user_success(client, admin_user, regular_user):
-    """User detail must omit the password hash even for admin callers — the panel has no legitimate reason to expose it.
+    """User detail omits the password hash, even for admin callers.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user whose detail is being fetched
+
+    Notes:
+        The panel has no legitimate reason to expose the password hash.
     """
     response = client.get(f"/api/admin/users/{regular_user['id']}")
 
@@ -118,11 +137,14 @@ def test_admin_get_user_success(client, admin_user, regular_user):
 
 
 def test_admin_get_user_not_found(client, admin_user):
-    """Missing user ids must return 404 so callers can distinguish 'not found' from 'found with no data'.
+    """A missing user id returns 404.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets callers distinguish "not found" from "found with no data".
     """
     response = client.get(f"/api/admin/users/{ObjectId()}")
 
@@ -130,11 +152,14 @@ def test_admin_get_user_not_found(client, admin_user):
 
 
 def test_admin_ban_user_success(client, admin_user):
-    """Banning a user must create a denylist entry so subsequent logins are rejected at the OAuth callback.
+    """Banning a user creates a denylist entry.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This causes subsequent logins to be rejected at the OAuth callback.
     """
     user_id = ObjectId()
     db.users.insert_one({"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-to-ban"})
@@ -148,11 +173,14 @@ def test_admin_ban_user_success(client, admin_user):
 
 
 def test_admin_ban_user_rejects_self_ban(client, admin_user):
-    """Admins cannot ban themselves because it would lock their own account out on the next OAuth login.
+    """Admins cannot ban themselves.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Doing so would lock their own account out on the next OAuth login.
     """
     response = client.post(f"/api/admin/users/{admin_user['id']}/ban")
 
@@ -160,11 +188,14 @@ def test_admin_ban_user_rejects_self_ban(client, admin_user):
 
 
 def test_admin_get_banned_users_success(client, admin_user):
-    """Banned user listing must return all active bans so the admin can see who is currently blocked and unban them.
+    """Banned user listing returns all active bans.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the admin see who is currently blocked and unban them.
     """
     user_id = ObjectId()
     db.users.insert_one({"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-listed"})
@@ -177,11 +208,14 @@ def test_admin_get_banned_users_success(client, admin_user):
 
 
 def test_admin_unban_user_success(client, admin_user):
-    """Removing a ban must delete the denylist entry so the user can log in again on their next attempt.
+    """Removing a ban deletes the denylist entry.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the user log in again on their next attempt.
     """
     user_id = ObjectId()
     db.users.insert_one(
@@ -196,11 +230,14 @@ def test_admin_unban_user_success(client, admin_user):
 
 
 def test_admin_unban_user_not_found(client, admin_user):
-    """A missing ban id must return 404 so callers know the unban had no effect.
+    """A missing ban id returns 404.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets callers know the unban had no effect.
     """
     response = client.delete(f"/api/admin/banned-users/{ObjectId()}")
 
@@ -208,11 +245,14 @@ def test_admin_unban_user_not_found(client, admin_user):
 
 
 def test_admin_get_users_includes_ban_status(client, admin_user):
-    """User listing must expose banned and ban_id fields so the panel can display ban status inline without a second request.
+    """User listing exposes banned and ban_id fields.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel display ban status inline without a second request.
     """
     user_id = ObjectId()
     db.users.insert_one(
@@ -230,12 +270,15 @@ def test_admin_get_users_includes_ban_status(client, admin_user):
 
 
 def test_admin_update_user_role_success(client, admin_user, regular_user):
-    """Role updates must persist to MongoDB so the change takes effect on the user's next request.
+    """Role updates persist to MongoDB.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user whose role is being updated
+
+    Notes:
+        This makes the change take effect on the user's next request.
     """
     response = client.put(f"/api/admin/users/{regular_user['id']}", json={"role": "admin"})
 
@@ -244,12 +287,15 @@ def test_admin_update_user_role_success(client, admin_user, regular_user):
 
 
 def test_admin_update_user_rejects_invalid_role(client, admin_user, regular_user):
-    """Invalid roles must be rejected before persisting to prevent the DB from holding values the auth system does not recognize.
+    """Invalid roles are rejected before persisting.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user whose role update is being attempted
+
+    Notes:
+        This prevents the DB from holding values the auth system does not recognize.
     """
     response = client.put(f"/api/admin/users/{regular_user['id']}", json={"role": "owner"})
 
@@ -257,12 +303,15 @@ def test_admin_update_user_rejects_invalid_role(client, admin_user, regular_user
 
 
 def test_admin_update_user_rejects_empty_payload(client, admin_user, regular_user):
-    """An empty payload must be rejected rather than silently no-opped so callers get clear feedback that the request was malformed.
+    """An empty payload is rejected rather than silently no-opped.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user whose role update is being attempted
+
+    Notes:
+        This gives callers clear feedback that the request was malformed.
     """
     response = client.put(f"/api/admin/users/{regular_user['id']}", json={})
 
@@ -270,13 +319,16 @@ def test_admin_update_user_rejects_empty_payload(client, admin_user, regular_use
 
 
 def test_admin_delete_user_success(client, admin_user, regular_user, test_data_roots):
-    """Deletion must cascade to tracked files and DB records so no orphaned data is left consuming storage.
+    """Deletion cascades to tracked files and DB records.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user being deleted
         test_data_roots {DataRoots} -- per-test temp filesystem roots
+
+    Notes:
+        This avoids leaving orphaned data that consumes storage.
     """
     user_dir = test_data_roots.user_data / regular_user["id"]
     # regular_user has a random id, so create its directory explicitly to prove deletion removes it.
@@ -299,11 +351,14 @@ def test_admin_delete_user_success(client, admin_user, regular_user, test_data_r
 
 
 def test_admin_delete_user_rejects_self_delete(client, admin_user):
-    """Admins cannot delete themselves; doing so would remove the last admin and lock everyone out of the panel.
+    """Admins cannot delete themselves.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Doing so would remove the last admin and lock everyone out of the panel.
     """
     response = client.delete(f"/api/admin/users/{admin_user['id']}")
 
@@ -311,11 +366,14 @@ def test_admin_delete_user_rejects_self_delete(client, admin_user):
 
 
 def test_admin_legal_documents_list_success(client, admin_user):
-    """Legal document listing must include at least both required types so the panel can always surface the full legal surface.
+    """Legal document listing includes at least both required types.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel always surface the full legal surface.
     """
     response = client.get("/api/admin/legal-documents")
 
@@ -324,11 +382,14 @@ def test_admin_legal_documents_list_success(client, admin_user):
 
 
 def test_admin_legal_document_detail_success(client, admin_user):
-    """Document detail must echo the document key so the panel can bind the response to the correct document type.
+    """Document detail echoes the document key.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel bind the response to the correct document type.
     """
     response = client.get(f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}")
 
@@ -337,11 +398,14 @@ def test_admin_legal_document_detail_success(client, admin_user):
 
 
 def test_admin_publish_legal_document_success(client, admin_user):
-    """Publishing must reflect the new body in the response so the admin can confirm the change without a second request.
+    """Publishing reflects the new body in the response.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the admin confirm the change without a second request.
     """
     response = client.post(
         f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}/publish",
@@ -353,11 +417,15 @@ def test_admin_publish_legal_document_success(client, admin_user):
 
 
 def test_admin_publish_legal_document_requires_new_content(client, admin_user):
-    """Re-publishing identical content would bump the version and invalidate all existing user consents without any actual change.
+    """Re-publishing identical content is rejected.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Otherwise the version would bump and invalidate all existing user
+        consents without any actual content change.
     """
     current = client.get(f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}").get_json()["published"]["body"]
 
@@ -367,11 +435,14 @@ def test_admin_publish_legal_document_requires_new_content(client, admin_user):
 
 
 def test_admin_get_pipeline_runs_success(client, admin_user):
-    """Admin run listing must expose the MongoDB id so the panel can link each row to its detail or action endpoints.
+    """Admin run listing exposes the MongoDB id.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel link each row to its detail or action endpoints.
     """
     run_id = db.runs.insert_one(
         {"pipeline": "merfish", "status": "pending", "created_at": utc_now()}
@@ -384,11 +455,14 @@ def test_admin_get_pipeline_runs_success(client, admin_user):
 
 
 def test_admin_update_pipeline_status_success(client, admin_user):
-    """Status updates must persist to MongoDB so the change is visible on the user's next poll.
+    """Status updates persist to MongoDB.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This makes the change visible on the user's next poll.
     """
     run_id = db.runs.insert_one({"status": "pending", "pipeline": "merfish"}).inserted_id
 
@@ -399,11 +473,15 @@ def test_admin_update_pipeline_status_success(client, admin_user):
 
 
 def test_admin_update_pipeline_status_rejects_invalid_status(client, admin_user):
-    """Invalid statuses must be rejected to prevent runs from reaching a state the frontend does not know how to display.
+    """Invalid statuses are rejected.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents runs from reaching a state the frontend does not know
+        how to display.
     """
     run_id = db.runs.insert_one({"status": "pending"}).inserted_id
 
@@ -413,12 +491,15 @@ def test_admin_update_pipeline_status_rejects_invalid_status(client, admin_user)
 
 
 def test_admin_delete_pipeline_run_success(client, admin_user, tmp_path):
-    """Admin run deletion must remove both the MongoDB document and output directory to avoid orphaned files.
+    """Admin run deletion removes both the MongoDB document and output directory.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         tmp_path {Path} -- pytest-provided temp directory for the output folder
+
+    Notes:
+        This avoids leaving orphaned files.
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -432,12 +513,15 @@ def test_admin_delete_pipeline_run_success(client, admin_user, tmp_path):
 
 
 def test_admin_dashboard_stats_success(client, admin_user, regular_user):
-    """Dashboard stats must aggregate across all users and statuses so the admin gets a system-wide view, not just their own data.
+    """Dashboard stats aggregate across all users and statuses.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- second persisted user to make the total user count meaningful
+
+    Notes:
+        This gives the admin a system-wide view rather than just their own data.
     """
     db.runs.insert_many([{"status": "pending"}, {"status": "success"}])
 
@@ -488,11 +572,14 @@ def _monthly_report_doc(report_id: str, year: int, month: int) -> dict:
 
 
 def test_admin_monthly_reports_list_success(client, admin_user):
-    """Reports must be returned newest-first so the panel shows the most recent period without a client-side sort.
+    """Reports are returned newest-first.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel show the most recent period without a client-side sort.
     """
     db.monthly_reports.insert_many(
         [
@@ -508,11 +595,14 @@ def test_admin_monthly_reports_list_success(client, admin_user):
 
 
 def test_admin_monthly_report_detail_success(client, admin_user):
-    """Report detail lookup by year and month must return the matching document so the panel can display a specific period on demand.
+    """Report detail lookup by year and month returns the matching document.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel display a specific period on demand.
     """
     db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
 
@@ -523,11 +613,15 @@ def test_admin_monthly_report_detail_success(client, admin_user):
 
 
 def test_admin_monthly_report_detail_not_found(client, admin_user):
-    """A missing report must return 404 so the panel can distinguish 'not generated yet' from 'generated with no data'.
+    """A missing report returns 404.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel distinguish "not generated yet" from "generated
+        with no data".
     """
     response = client.get("/api/admin/reports?year=2026&month=4")
 
@@ -535,11 +629,14 @@ def test_admin_monthly_report_detail_not_found(client, admin_user):
 
 
 def test_admin_delete_monthly_report_success(client, admin_user):
-    """Report deletion must remove the document from MongoDB so regeneration does not produce a duplicate-key conflict.
+    """Report deletion removes the document from MongoDB.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents regeneration from producing a duplicate-key conflict.
     """
     db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
 
@@ -550,11 +647,14 @@ def test_admin_delete_monthly_report_success(client, admin_user):
 
 
 def test_admin_delete_monthly_report_not_found(client, admin_user):
-    """Deleting a non-existent report must return 404 so callers know whether the delete actually took effect.
+    """Deleting a non-existent report returns 404.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets callers know whether the delete actually took effect.
     """
     response = client.delete("/api/admin/reports/2026-04")
 
@@ -562,11 +662,14 @@ def test_admin_delete_monthly_report_not_found(client, admin_user):
 
 
 def test_admin_trigger_monthly_report_success(client, admin_user):
-    """Manual report generation must forward the target period to the Celery task so it generates the correct month.
+    """Manual report generation forwards the target period to the Celery task.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This makes the task generate the correct month.
     """
 
     class FixedDate(datetime.date):
@@ -587,11 +690,14 @@ def test_admin_trigger_monthly_report_success(client, admin_user):
 
 
 def test_admin_trigger_monthly_report_default_schedule(client, admin_user):
-    """Omitting year and month must enqueue the task without arguments so the task determines the target period itself.
+    """Omitting year and month enqueues the task without arguments.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the task determine the target period itself.
     """
     with patch("backend.routes.admin.celery_app.send_task") as send_task:
         response = client.post("/api/admin/reports/generate", json={})
@@ -610,12 +716,15 @@ def test_admin_trigger_monthly_report_default_schedule(client, admin_user):
     ],
 )
 def test_admin_trigger_monthly_report_rejects_invalid_payloads(client, admin_user, payload):
-    """All malformed payloads must be rejected before the task is enqueued to avoid queuing work that will always fail.
+    """All malformed payloads are rejected before the task is enqueued.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         payload {dict} -- one of the parametrized invalid payload shapes
+
+    Notes:
+        This avoids queuing work that will always fail.
     """
     response = client.post("/api/admin/reports/generate", json=payload)
 
@@ -623,11 +732,15 @@ def test_admin_trigger_monthly_report_rejects_invalid_payloads(client, admin_use
 
 
 def test_admin_trigger_monthly_report_rejects_current_month(client, admin_user):
-    """Current-month reports are rejected because generating mid-month produces partial counts that appear final and make trend comparisons misleading.
+    """Current-month reports are rejected.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Generating mid-month would produce partial counts that appear final
+        and make trend comparisons misleading.
     """
 
     class FixedDate(datetime.date):
@@ -644,12 +757,15 @@ def test_admin_trigger_monthly_report_rejects_current_month(client, admin_user):
 
 
 def test_admin_bulk_delete_users_success(client, admin_user, regular_user):
-    """Bulk deletion must report the count of actually deleted users so the admin can verify all selected users were removed.
+    """Bulk deletion reports the count of actually deleted users.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user being deleted in bulk
+
+    Notes:
+        This lets the admin verify all selected users were removed.
     """
     response = client.post("/api/admin/users/bulk-delete", json={"user_ids": [regular_user["id"]]})
 
@@ -658,11 +774,14 @@ def test_admin_bulk_delete_users_success(client, admin_user, regular_user):
 
 
 def test_admin_bulk_delete_users_rejects_empty_array(client, admin_user):
-    """An empty id list must be rejected rather than silently no-opped to prevent accidental calls from masking client bugs.
+    """An empty id list is rejected rather than silently no-opped.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents accidental calls from masking client bugs.
     """
     response = client.post("/api/admin/users/bulk-delete", json={"user_ids": []})
 
@@ -670,11 +789,14 @@ def test_admin_bulk_delete_users_rejects_empty_array(client, admin_user):
 
 
 def test_admin_bulk_delete_users_rejects_self(client, admin_user):
-    """Self-deletion via bulk delete must be blocked by the same rule as single-user delete so the endpoint is consistent.
+    """Self-deletion via bulk delete is blocked by the same rule as single-user delete.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This keeps the endpoint's behavior consistent across both delete paths.
     """
     response = client.post("/api/admin/users/bulk-delete", json={"user_ids": [admin_user["id"]]})
 
@@ -682,12 +804,15 @@ def test_admin_bulk_delete_users_rejects_self(client, admin_user):
 
 
 def test_admin_bulk_update_user_role_success(client, admin_user, regular_user):
-    """Bulk role updates must persist to MongoDB so the change takes effect on each user's next request.
+    """Bulk role updates persist to MongoDB.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user whose role is being updated in bulk
+
+    Notes:
+        This makes the change take effect on each user's next request.
     """
     response = client.post(
         "/api/admin/users/bulk-update-role", json={"user_ids": [regular_user["id"]], "role": "admin"}
@@ -698,12 +823,15 @@ def test_admin_bulk_update_user_role_success(client, admin_user, regular_user):
 
 
 def test_admin_bulk_update_user_role_rejects_invalid_role(client, admin_user, regular_user):
-    """Invalid roles must be rejected before any writes so partial updates cannot leave some users with unrecognized roles.
+    """Invalid roles are rejected before any writes.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user whose role update is being attempted
+
+    Notes:
+        This prevents partial updates from leaving some users with unrecognized roles.
     """
     response = client.post(
         "/api/admin/users/bulk-update-role", json={"user_ids": [regular_user["id"]], "role": "owner"}
@@ -713,11 +841,15 @@ def test_admin_bulk_update_user_role_rejects_invalid_role(client, admin_user, re
 
 
 def test_admin_bulk_update_user_role_rejects_self_demotion(client, admin_user):
-    """An admin demoting themselves would revoke their own access to all admin endpoints with no way to undo it from within the panel.
+    """An admin cannot demote themselves via bulk role update.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Doing so would revoke their own access to all admin endpoints with
+        no way to undo it from within the panel.
     """
     response = client.post(
         "/api/admin/users/bulk-update-role", json={"user_ids": [admin_user["id"]], "role": "user"}
@@ -727,11 +859,14 @@ def test_admin_bulk_update_user_role_rejects_self_demotion(client, admin_user):
 
 
 def test_admin_bulk_delete_pipeline_runs_success(client, admin_user):
-    """Bulk run deletion must report the count so the admin can verify the correct number of runs were removed.
+    """Bulk run deletion reports the count of deleted runs.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the admin verify the correct number of runs were removed.
     """
     run_id = db.runs.insert_one({"status": "pending"}).inserted_id
 
@@ -742,11 +877,14 @@ def test_admin_bulk_delete_pipeline_runs_success(client, admin_user):
 
 
 def test_admin_bulk_delete_pipeline_runs_rejects_invalid_ids(client, admin_user):
-    """Malformed run ids must be rejected before any deletes so the batch cannot partially succeed with garbage input.
+    """Malformed run ids are rejected before any deletes.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents the batch from partially succeeding with garbage input.
     """
     response = client.post("/api/admin/pipelines/bulk-delete", json={"run_ids": ["not-an-id"]})
 
@@ -754,11 +892,14 @@ def test_admin_bulk_delete_pipeline_runs_rejects_invalid_ids(client, admin_user)
 
 
 def test_admin_bulk_update_pipeline_status_success(client, admin_user):
-    """Bulk status updates must persist to MongoDB so changes take effect immediately on the user's next poll.
+    """Bulk status updates persist to MongoDB.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This makes changes take effect immediately on the user's next poll.
     """
     run_id = db.runs.insert_one({"status": "pending"}).inserted_id
 
@@ -771,11 +912,14 @@ def test_admin_bulk_update_pipeline_status_success(client, admin_user):
 
 
 def test_admin_bulk_update_pipeline_status_rejects_invalid_status(client, admin_user):
-    """Invalid statuses must be rejected before any writes so partial updates cannot leave runs in unrecognized states.
+    """Invalid statuses are rejected before any writes.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents partial updates from leaving runs in unrecognized states.
     """
     response = client.post(
         "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(ObjectId())], "status": "bogus"}
@@ -785,11 +929,14 @@ def test_admin_bulk_update_pipeline_status_rejects_invalid_status(client, admin_
 
 
 def test_admin_bulk_update_pipeline_status_rejects_empty_run_ids(client, admin_user):
-    """An empty run id list must be rejected to prevent no-op calls from masking client-side bugs.
+    """An empty run id list is rejected.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents no-op calls from masking client-side bugs.
     """
     response = client.post(
         "/api/admin/pipelines/bulk-update-status", json={"run_ids": [], "status": "success"}

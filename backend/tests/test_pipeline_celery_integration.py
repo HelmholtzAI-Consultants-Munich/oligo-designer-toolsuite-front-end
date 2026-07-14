@@ -21,7 +21,7 @@ from backend.worker import tasks as task_module
 
 @pytest.fixture
 def route_celery_app(celery_app):
-    """Redirect Flask route dispatching to the test worker so integration tests observe real task execution.
+    """Redirect Flask route dispatching to the test worker.
 
     Arguments:
         celery_app {Celery} -- test-configured Celery app from the celery_app fixture
@@ -39,10 +39,14 @@ def route_celery_app(celery_app):
 
 
 def _clear_generated_regions(payload):
-    """Strip genomic region inputs so tests can isolate the pipeline body task without header tasks running first.
+    """Strip genomic region inputs from the payload.
 
     Arguments:
         payload {dict} -- pipeline submission payload loaded from a JSON fixture file
+
+    Notes:
+        This lets tests isolate the pipeline body task without header tasks
+        running first.
 
     Returns:
         dict -- the same payload with all generated-region database fields set to empty lists
@@ -160,7 +164,7 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
     user_fixture,
     expected_priority,
 ):
-    """Authenticated users must receive higher broker priority than anonymous users so registered work is not starved by anonymous submissions.
+    """Authenticated users receive higher broker priority than anonymous users.
 
     Arguments:
         request {Any} -- pytest request fixture for dynamic fixture resolution
@@ -171,6 +175,9 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
         celery_worker -- celery.contrib.pytest worker that executes tasks synchronously
         user_fixture {str} -- one of the parametrized fixture names that sets up the session
         expected_priority {int} -- broker-level priority the route must assign for this user type
+
+    Notes:
+        This keeps registered work from being starved by anonymous submissions.
     """
     request.getfixturevalue(user_fixture)
     payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))

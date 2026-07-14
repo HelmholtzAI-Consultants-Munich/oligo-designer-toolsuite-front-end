@@ -12,7 +12,12 @@ from backend.worker.handlers import PipelineTask
 
 
 def test_pipeline_task_handlers_update_run_status():
-    """Status transitions must be written to the run document by task id so the frontend can reflect the current state without needing to query Celery directly."""
+    """Status transitions are written to the run document by task id.
+
+    Notes:
+        This lets the frontend reflect the current state without needing to
+        query Celery directly.
+    """
     task = PipelineTask()
     update_result = SimpleNamespace(matched_count=1)
 

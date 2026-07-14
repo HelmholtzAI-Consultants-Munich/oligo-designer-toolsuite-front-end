@@ -16,12 +16,15 @@ from backend.utils import utc_now
 
 
 def test_get_pipeline_runs_authenticated_returns_only_user_runs(client, authenticated_user, run_doc):
-    """Run listing must be scoped to the authenticated user so a caller cannot see runs belonging to others or anonymous sessions.
+    """Run listing must be scoped to the authenticated user.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        Otherwise a caller could see runs belonging to others or anonymous sessions.
     """
     owned = run_doc(user_id=TEST_USER_ID, pipeline="merfish")
     run_doc(user_id=OTHER_USER_ID)
@@ -34,12 +37,15 @@ def test_get_pipeline_runs_authenticated_returns_only_user_runs(client, authenti
 
 
 def test_get_pipeline_runs_anonymous_returns_only_session_runs(client, anonymous_session, run_doc):
-    """Anonymous run listing must be scoped to the session so users from different browser sessions cannot see each other's runs.
+    """Anonymous run listing must be scoped to the session.
 
     Arguments:
         client {Any} -- Flask test client
         anonymous_session {str} -- session id attached to the test client
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        Otherwise users from different browser sessions could see each other's runs.
     """
     owned = run_doc(session_id=TEST_SESSION_ID)
     run_doc(session_id="other-session")
@@ -51,12 +57,15 @@ def test_get_pipeline_runs_anonymous_returns_only_session_runs(client, anonymous
 
 
 def test_get_pipeline_run_success(client, authenticated_user, run_doc):
-    """A run document must be serialized with a timezone-aware timestamp so clients can display elapsed time without making timezone assumptions.
+    """A run document must be serialized with a timezone-aware timestamp.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        This lets clients display elapsed time without making timezone assumptions.
     """
     run_id = run_doc(user_id=TEST_USER_ID, status="success", timestamp=utc_now(), priority="high")
 
@@ -70,12 +79,15 @@ def test_get_pipeline_run_success(client, authenticated_user, run_doc):
 
 
 def test_get_pipeline_run_includes_error_message_for_failure_status(client, authenticated_user, run_doc):
-    """The error message must be exposed on failed runs so users understand why their submission did not produce results.
+    """The error message must be exposed on failed runs.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        This lets users understand why their submission did not produce results.
     """
     run_id = run_doc(user_id=TEST_USER_ID, status="failure", error_message="safe failure")
 
@@ -86,12 +98,15 @@ def test_get_pipeline_run_includes_error_message_for_failure_status(client, auth
 
 
 def test_get_pipeline_run_omits_error_message_for_success(client, authenticated_user, run_doc):
-    """error_message must be omitted for non-failure statuses to avoid leaking intermediate pipeline state to users who are still waiting for results.
+    """error_message must be omitted for non-failure statuses.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        This avoids leaking intermediate pipeline state to users who are still waiting for results.
     """
     run_id = run_doc(user_id=TEST_USER_ID, status="success", error_message="old failure")
 
@@ -102,12 +117,15 @@ def test_get_pipeline_run_omits_error_message_for_success(client, authenticated_
 
 
 def test_get_pipeline_run_404_for_unowned_run(client, authenticated_user, run_doc):
-    """A run owned by another user must return 404 rather than 403 to avoid confirming that the run exists.
+    """A run owned by another user must return 404 rather than 403.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        This avoids confirming that the run exists.
     """
     run_id = run_doc(user_id=OTHER_USER_ID)
 
@@ -117,13 +135,16 @@ def test_get_pipeline_run_404_for_unowned_run(client, authenticated_user, run_do
 
 
 def test_get_run_file_serves_log_as_text(client, authenticated_user, run_doc, tmp_path):
-    """Log files must be served as plain text so browsers render them inline rather than prompting a download.
+    """Log files must be served as plain text.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
+
+    Notes:
+        This makes browsers render them inline rather than prompting a download.
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -138,13 +159,16 @@ def test_get_run_file_serves_log_as_text(client, authenticated_user, run_doc, tm
 
 
 def test_get_run_file_serves_nested_file(client, authenticated_user, run_doc, tmp_path):
-    """Pipeline outputs may include subdirectories; nested paths must be served as long as they resolve inside the run's output directory.
+    """Nested paths must be served as long as they resolve inside the run's output directory.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the nested output files
+
+    Notes:
+        Pipeline outputs may include subdirectories, so this case must be covered.
     """
     output = tmp_path / "output"
     nested = output / "annotation"
@@ -159,13 +183,16 @@ def test_get_run_file_serves_nested_file(client, authenticated_user, run_doc, tm
 
 
 def test_get_run_file_serves_yaml_as_attachment(client, authenticated_user, run_doc, tmp_path):
-    """YAML config files must be served as attachments to trigger a browser download rather than inline rendering.
+    """YAML config files must be served as attachments.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
+
+    Notes:
+        This triggers a browser download rather than inline rendering.
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -179,13 +206,16 @@ def test_get_run_file_serves_yaml_as_attachment(client, authenticated_user, run_
 
 
 def test_get_run_file_serves_fna_as_octet_stream(client, authenticated_user, run_doc, tmp_path):
-    """FASTA files must be served as octet-stream so browsers download them rather than attempting to render binary content.
+    """FASTA files must be served as octet-stream.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
+
+    Notes:
+        This makes browsers download them rather than attempting to render binary content.
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -199,13 +229,16 @@ def test_get_run_file_serves_fna_as_octet_stream(client, authenticated_user, run
 
 
 def test_get_run_file_rejects_unsupported_extension(client, authenticated_user, run_doc, tmp_path):
-    """Unknown file extensions must be blocked by default so only explicitly permitted types are ever served from run output directories.
+    """Unknown file extensions must be blocked by default.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
+
+    Notes:
+        Only explicitly permitted types should ever be served from run output directories.
     """
     # File serving uses an allowlist rather than a denylist: unknown extensions
     # are blocked by default and must be explicitly permitted to be served.
@@ -220,7 +253,7 @@ def test_get_run_file_rejects_unsupported_extension(client, authenticated_user, 
 
 
 def test_get_run_file_rejects_path_traversal(client, authenticated_user, run_doc, tmp_path):
-    """Path traversal attempts must be caught before filesystem access so attackers cannot use a valid run ID to read files outside the run directory.
+    """Path traversal attempts must be caught before filesystem access.
 
     Arguments:
         client {Any} -- Flask test client
@@ -229,6 +262,7 @@ def test_get_run_file_rejects_path_traversal(client, authenticated_user, run_doc
         tmp_path {Path} -- pytest-provided temp directory used as the output root
 
     Notes:
+        Otherwise attackers could use a valid run ID to read files outside the run directory.
         URL-encoded variants (`%2e%2e`) are tested because Flask decodes them
         before routing, but double-encoding or partial encoding can bypass naive
         string-based checks that only look for literal `..`.
@@ -261,12 +295,15 @@ def test_get_run_file_404_for_missing_file(client, authenticated_user, run_doc, 
 
 
 def test_get_run_file_500_for_missing_output_path(client, authenticated_user, run_doc):
-    """A run with no output_path on the document must return 500 because it indicates the run was never properly initialized.
+    """A run with no output_path on the document must return 500.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document without an output_path
+
+    Notes:
+        A missing output_path indicates the run was never properly initialized.
     """
     run_id = run_doc(user_id=TEST_USER_ID)
 
@@ -276,13 +313,16 @@ def test_get_run_file_500_for_missing_output_path(client, authenticated_user, ru
 
 
 def test_delete_run_removes_output_directory_and_db_record(client, authenticated_user, run_doc, tmp_path):
-    """Deleting a run must remove both the MongoDB document and the output directory so storage is reclaimed and no orphaned files remain.
+    """Deleting a run must remove both the MongoDB document and the output directory.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files to be deleted
+
+    Notes:
+        This ensures storage is reclaimed and no orphaned files remain.
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -317,12 +357,15 @@ def test_delete_run_404_for_unowned_run(client, authenticated_user, run_doc, tmp
 
 
 def test_get_run_config_success(client, authenticated_user, run_doc):
-    """A stored pipeline_run_config must be returned verbatim so the frontend can replay the exact parameters used for a previous run.
+    """A stored pipeline_run_config must be returned verbatim.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        This lets the frontend replay the exact parameters used for a previous run.
     """
     config = {"pipeline": "merfish", "values": {"a": 1}}
     run_id = run_doc(user_id=TEST_USER_ID, pipeline_run_config=config)
@@ -334,12 +377,15 @@ def test_get_run_config_success(client, authenticated_user, run_doc):
 
 
 def test_get_run_config_404_when_absent(client, authenticated_user, run_doc):
-    """Runs without a stored config must return 404 so the frontend knows config replay is unavailable for that run.
+    """Runs without a stored config must return 404.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document without a pipeline_run_config
+
+    Notes:
+        This lets the frontend know config replay is unavailable for that run.
     """
     run_id = run_doc(user_id=TEST_USER_ID)
 
@@ -361,12 +407,15 @@ def test_get_run_config_404_for_missing_run(client, authenticated_user):
 
 
 def test_get_run_config_404_for_unowned_run(client, authenticated_user, run_doc):
-    """Config must not be accessible for another user's run to prevent parameter disclosure across user boundaries.
+    """Config must not be accessible for another user's run.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document owned by another user
+
+    Notes:
+        This prevents parameter disclosure across user boundaries.
     """
     run_id = run_doc(
         user_id=OTHER_USER_ID,
@@ -379,12 +428,15 @@ def test_get_run_config_404_for_unowned_run(client, authenticated_user, run_doc)
 
 
 def test_get_run_status_success(client, authenticated_user, run_doc):
-    """The status endpoint must return the current run state as a lightweight object so the frontend can poll without fetching the full run document.
+    """The status endpoint must return the current run state as a lightweight object.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
+
+    Notes:
+        This lets the frontend poll without fetching the full run document.
     """
     run_id = run_doc(user_id=TEST_USER_ID, status="started")
 
@@ -395,12 +447,15 @@ def test_get_run_status_success(client, authenticated_user, run_doc):
 
 
 def test_get_run_status_404_for_unowned_run(client, authenticated_user, run_doc):
-    """Status polling for another user's run must return 404 to prevent information leakage about runs the caller does not own.
+    """Status polling for another user's run must return 404.
 
     Arguments:
         client {Any} -- Flask test client
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document owned by another user
+
+    Notes:
+        This prevents information leakage about runs the caller does not own.
     """
     run_id = run_doc(user_id=OTHER_USER_ID, status="started")
 
