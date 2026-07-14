@@ -1,3 +1,5 @@
+"""Defines PipelineRunner and bundles all functionality regarding running and handling a pipeline run."""
+
 import json
 import os
 import tempfile
@@ -30,6 +32,12 @@ class PipelineRunner:
     """
 
     def __init__(self, pipeline_name: str, logger: Logger):
+        """Initializes the Pipeline Runner, by setting the logger, pipeline name and loading the JSON Schema.
+
+        Arguments:
+            pipeline_name {str} -- The name of the pipeline to be run.
+            logger {Logger} -- The logger that should be used by the Pipeline Runner.
+        """
         self.logger = logger
 
         # TODO: pass root_dir config to worker, use config for absolute path
@@ -44,6 +52,14 @@ class PipelineRunner:
     def run(
         self, form_data: dict[str, Any], output_path: str, generated_region_paths: list[tuple[str, list[str]]]
     ) -> None:
+        """Orchestrates the execution of a pipeline.
+
+        Arguments:
+            form_data {dict[str, Any]} -- The pipeline configuration.
+            output_path {str} -- The path where all output of the pipeline should be written.
+            generated_region_paths {list[tuple[str, list[str]]]} -- The list of paths where results of potential preceding
+            Genomic Region Generator runs are stored.
+        """
         # Temp File Creation (if needed)
         self.populate_temp_file(form_data)
 
@@ -61,6 +77,15 @@ class PipelineRunner:
             self.cleanup_temp_files(form_data, config_path)
 
     def populate_temp_file(self, form_data: dict) -> None:
+        """Writes a tempfile which includes all Gene IDs listed in the `file_region_ids` field of
+        the pipeline configuration.
+
+        This is necessary, because ODT expects a file_path as the input
+        for the file_region_ids.
+
+        Arguments:
+            form_data {dict} -- The pipeline configuration.
+        """
         oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
         file_region_ids = oligo_generation_form["file_region_ids"]
         if file_region_ids is not None:
@@ -76,6 +101,7 @@ class PipelineRunner:
     ) -> None:
         """
         This method converts the form_data sent by the frontend to the format used by ODT.
+
         It is necessary because the Oligo Designer Toolsuite expects a list of file paths per `files_[...]` field like:
         ```py
         {"files_field": ["input_file.fna"]}
@@ -96,7 +122,7 @@ class PipelineRunner:
 
         Arguments:
             config {dict} -- Form Data of request
-            generated_region_paths {list[tuple[str, list[str]]]} -- list of tuples of input_field_id and belonging paths of generated genomic regions
+            generated_region_paths {list[tuple[str, list[str]]]} -- A list of tuples of input_field_id and belonging paths of generated genomic regions
         """
 
         # Initialize generated region paths in config with empty lists
@@ -111,6 +137,16 @@ class PipelineRunner:
     def write_config_file(
         self, form_data: dict, output_path: str, generated_region_paths: list[tuple[str, list[str]]]
     ) -> str:
+        """Writes the pipeline configuration to a file.
+
+        Arguments:
+            form_data {dict} -- The pipeline configuration.
+            output_path {str} -- The path where all output of the pipeline should be written.
+            generated_region_paths {list[tuple[str, list[str]]]} -- The list of paths where results of potential preceding Genomic Region Generator runs are stored.
+
+        Returns:
+            str -- The configuration filepath.
+        """
         config = form_data
 
         # Override output directory
@@ -131,6 +167,19 @@ class PipelineRunner:
         return config_path
 
     def execute_pipeline(self, config_path: str) -> None:
+        """Executes the pipeline and potentially raises errors depending on the outcome.
+
+        Arguments:
+            config_path {str} -- The configuration filepath.
+
+        Raises:
+            NotImplementedError: The pipeline is not implemented.
+            ODTPipelineError: Invalid Configuration file.
+            ODTPipelineError: Pipeline raised an error during the run.
+            ODTEmptyResultError: Pipeline finished without an result.
+            ODTPipelineError: Pipeline exited during the run.
+            ODTPipelineError: An arbitrary error occurred.
+        """
         # NOTE: This might require locking input files once we add automatic cleanup for generated regions
         pipeline = PIPELINE_MODELS.get(self.pipeline_name)
 
@@ -166,6 +215,12 @@ class PipelineRunner:
             raise ODTPipelineError(fallback_error_message)
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
+        """Generates the Genomic Regions file used for visualizing the result.
+
+        Arguments:
+            form_data {dict} -- The pipeline configuration.
+            output_path {str} -- The path where all output of the pipeline should be written.
+        """
         # find files_fasta_target_probe_database fasta file and read it
         regions_file = glom(form_data, "target_probe.oligo_generation.file_region_ids")
 
@@ -199,6 +254,12 @@ class PipelineRunner:
         regions_file.yaml_dump(regions_file_path)
 
     def cleanup_temp_files(self, form_data: dict, config_path: str) -> None:
+        """Deletes all temporary files necessary for the pipeline run.
+
+        Arguments:
+            form_data {dict} -- The pipeline configuration.
+            config_path {str} -- The configuration filepath.
+        """
         oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
         # Remove temp file for file_regions if it was created
         if oligo_generation_form["file_region_ids"]:

@@ -1,3 +1,5 @@
+"""Callbacks which can be added to a celery task via chaining should be defined here."""
+
 from billiard.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 from celery.exceptions import ChordError
 from celery.worker.request import Request
