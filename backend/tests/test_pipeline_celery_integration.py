@@ -65,13 +65,13 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
 ):
     """Header tasks must complete and pass their generated file paths to the pipeline body task before it runs.
 
-    Args:
-        client (Any): Flask test client
-        authenticated_user (AuthenticatedUser): active authenticated session required by the route
-        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
-        multipart_post (Callable): helper that posts multipart pipeline requests
-        route_celery_app (Celery): test Celery app patched into the route
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        client {Any} -- Flask test client
+        authenticated_user {AuthenticatedUser} -- active authenticated session required by the route
+        pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
+        multipart_post {Callable} -- helper that posts multipart pipeline requests
+        route_celery_app {Celery} -- test Celery app patched into the route
+        celery_worker -- celery.contrib.pytest worker that executes tasks synchronously
     """
     payload = pipeline_payload("oligoseq_mock_form_data.json")
     pipeline_runner_cls = MagicMock()
@@ -114,13 +114,13 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
 ):
     """When no genomic region inputs are present the route must dispatch the pipeline task directly without any header tasks.
 
-    Args:
-        client (Any): Flask test client
-        authenticated_user (AuthenticatedUser): active authenticated session required by the route
-        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
-        multipart_post (Callable): helper that posts multipart pipeline requests
-        route_celery_app (Celery): test Celery app patched into the route
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        client {Any} -- Flask test client
+        authenticated_user {AuthenticatedUser} -- active authenticated session required by the route
+        pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
+        multipart_post {Callable} -- helper that posts multipart pipeline requests
+        route_celery_app {Celery} -- test Celery app patched into the route
+        celery_worker -- celery.contrib.pytest worker that executes tasks synchronously
     """
     payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))
     pipeline_runner_cls = MagicMock()
@@ -161,15 +161,15 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
 ):
     """Authenticated users must receive higher broker priority than anonymous users so registered work is not starved by anonymous submissions.
 
-    Args:
-        request (Any): pytest request fixture for dynamic fixture resolution
-        client (Any): Flask test client
-        pipeline_payload (Callable): factory that loads a pipeline payload JSON file
-        multipart_post (Callable): helper that posts multipart pipeline requests
-        route_celery_app (Celery): test Celery app patched into the route
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
-        user_fixture (str): one of the parametrized fixture names that sets up the session
-        expected_priority (int): broker-level priority the route must assign for this user type
+    Arguments:
+        request {Any} -- pytest request fixture for dynamic fixture resolution
+        client {Any} -- Flask test client
+        pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
+        multipart_post {Callable} -- helper that posts multipart pipeline requests
+        route_celery_app {Celery} -- test Celery app patched into the route
+        celery_worker -- celery.contrib.pytest worker that executes tasks synchronously
+        user_fixture {str} -- one of the parametrized fixture names that sets up the session
+        expected_priority {int} -- broker-level priority the route must assign for this user type
     """
     request.getfixturevalue(user_fixture)
     payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))

@@ -31,11 +31,11 @@ from backend.utilities.typed_values import serialize_path
 def test_public_legal_document_route(client, path, document_key, title):
     """Legal documents must be publicly accessible without authentication so users can read terms before consenting.
 
-    Args:
-        client (Any): anonymous Flask test client
-        path (str): one of the parametrized legal document route paths
-        document_key (str): expected document key in the response
-        title (str): expected document title in the response
+    Arguments:
+        client {Any} -- anonymous Flask test client
+        path {str} -- one of the parametrized legal document route paths
+        document_key {str} -- expected document key in the response
+        title {str} -- expected document title in the response
     """
     response = client.get(path)
 
@@ -50,9 +50,9 @@ def test_public_legal_document_route(client, path, document_key, title):
 def test_accept_terms_for_authenticated_user(client, authenticate_as):
     """Authenticated consent must be stored by user_id and reflected on the user row so acceptance history and user profile stay in sync.
 
-    Args:
-        client (Any): Flask test client
-        authenticate_as (Callable): factory that patches current_user to the given id
+    Arguments:
+        client {Any} -- Flask test client
+        authenticate_as {Callable} -- factory that patches current_user to the given id
     """
     authenticate_as(TEST_USER_ID)
     db.users.insert_one({"_id": ObjectId(TEST_USER_ID), "role": "user"})
@@ -71,8 +71,8 @@ def test_accept_terms_for_authenticated_user(client, authenticate_as):
 def test_accept_terms_for_anonymous_session(client):
     """Anonymous consent must be stored by session_id rather than user_id so it can be transferred when the user later registers.
 
-    Args:
-        client (Any): anonymous Flask test client
+    Arguments:
+        client {Any} -- anonymous Flask test client
     """
     with client.session_transaction() as sess:
         sess["session_id"] = TEST_SESSION_ID
@@ -86,8 +86,8 @@ def test_accept_terms_for_anonymous_session(client):
 def test_accept_terms_auto_creates_session_for_anonymous_client(client):
     """Consent must work even on a brand-new client with no prior session so the before-request hook creates one automatically.
 
-    Args:
-        client (Any): anonymous Flask test client that has never made a prior request
+    Arguments:
+        client {Any} -- anonymous Flask test client that has never made a prior request
     """
     response = client.post("/api/legal/terms/accept")
 
@@ -98,10 +98,10 @@ def test_accept_terms_auto_creates_session_for_anonymous_client(client):
 def test_delete_account_removes_user_and_related_data(client, authenticated_user, test_data_roots):
     """Cascading deletion must cover all related collections so partial cleanup cannot leave orphaned files or DB records consuming storage.
 
-    Args:
-        client (Any): Flask test client
-        authenticated_user (AuthenticatedUser): active authenticated session for the user being deleted
-        test_data_roots (DataRoots): per-test temp filesystem roots for asserting file removal
+    Arguments:
+        client {Any} -- Flask test client
+        authenticated_user {AuthenticatedUser} -- active authenticated session for the user being deleted
+        test_data_roots {DataRoots} -- per-test temp filesystem roots for asserting file removal
     """
     upload_file = test_data_roots.uploads / "upload.fna"
     upload_file.write_text(">x\nAC\n")
@@ -128,8 +128,8 @@ def test_delete_account_removes_user_and_related_data(client, authenticated_user
 def test_delete_account_requires_authentication(client):
     """Unauthenticated account deletion must be rejected to prevent anyone from deleting accounts without a valid session.
 
-    Args:
-        client (Any): anonymous Flask test client with no active session
+    Arguments:
+        client {Any} -- anonymous Flask test client with no active session
     """
     response = client.delete("/api/account")
 

@@ -29,23 +29,23 @@ class ConcreteDatabase(BaseGenomicDataBase):
     def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
         """Always pass verification so tests can focus on download logic without checksum getting in the way.
 
-        Args:
-            file_path (Path): path to the downloaded file
-            expected_checksum (str): checksum value from the provider
+        Arguments:
+            file_path {Path} -- path to the downloaded file
+            expected_checksum {str} -- checksum value from the provider
 
         Returns:
-            bool: always True to bypass checksum validation in base-class tests
+            bool -- always True to bypass checksum validation in base-class tests
         """
         return True
 
     def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
         """Return a fixed context so tests can exercise entity fetching without real FTP navigation.
 
-        Args:
-            entity (GenomicEntity): the genomic entity being resolved
+        Arguments:
+            entity {GenomicEntity} -- the genomic entity being resolved
 
         Returns:
-            GenomicEntityContext: stub context with hardcoded paths and metadata
+            GenomicEntityContext -- stub context with hardcoded paths and metadata
         """
         return GenomicEntityContext("ann", "ann.gtf.gz", "seq", "seq.fna.gz", "1", "asm", None)
 
@@ -53,18 +53,18 @@ class ConcreteDatabase(BaseGenomicDataBase):
         """Return a fixed name to avoid coupling base-class tests to provider-specific checksum filenames.
 
         Returns:
-            str: fixed checksum filename used across base-class tests
+            str -- fixed checksum filename used across base-class tests
         """
         return "CHECKSUMS"
 
     def _parse_checksum_line(self, line):
         """Return a fixed tuple so checksum map tests don't depend on provider-specific line parsing.
 
-        Args:
-            line: raw line from the checksum file
+        Arguments:
+            line {Any} -- raw line from the checksum file
 
         Returns:
-            tuple: fixed (filename, checksum) pair
+            tuple -- fixed (filename, checksum) pair
         """
         return ("file", "checksum")
 
@@ -80,9 +80,9 @@ class FakeFTP:
     def __init__(self, lines=None, names=None):
         """Configure the fake with controlled listing data so tests can verify FTP navigation without a network connection.
 
-        Args:
-            lines (list, optional): raw FTP listing lines returned by retrlines. Defaults to None.
-            names (list, optional): filenames returned by nlst. Defaults to None.
+        Keyword Arguments:
+            lines {list} -- raw FTP listing lines returned by retrlines (default: {None})
+            names {list} -- filenames returned by nlst (default: {None})
         """
         self.lines = lines or []
         self.names = names or []
@@ -161,8 +161,8 @@ def test_download_requires_cache_dir():
 def test_download_writes_response_chunks_to_cache(tmp_path):
     """Responses must be streamed in chunks to avoid loading multi-GB genome files into memory all at once.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the cached file
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the cached file
     """
     response = MagicMock()
     response.__enter__.return_value = response
@@ -179,8 +179,8 @@ def test_download_writes_response_chunks_to_cache(tmp_path):
 def test_download_sends_if_modified_since_for_existing_file(tmp_path):
     """If-Modified-Since avoids re-downloading multi-GB genome files that haven't changed since the last fetch.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory containing the pre-existing cached file
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory containing the pre-existing cached file
     """
     db = ConcreteDatabase(name="db", host="host", cache_dir=tmp_path)
     existing = db._download.__self__.cache_dir / "db"
@@ -201,8 +201,8 @@ def test_download_sends_if_modified_since_for_existing_file(tmp_path):
 def test_download_and_process_verifies_checksum_and_unzips(tmp_path):
     """Checksum verification must happen before the archive is removed so a corrupted download is caught before it propagates.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the gzip archive and extracted file
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the gzip archive and extracted file
     """
     gz_path = tmp_path / "file.fna.gz"
     with gzip.open(gz_path, "wb") as archive:
@@ -223,8 +223,8 @@ def test_download_and_process_verifies_checksum_and_unzips(tmp_path):
 def test_download_and_process_rejects_bad_checksum(tmp_path):
     """A checksum mismatch must raise an error rather than silently handing the caller a corrupted file.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the downloaded file
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the downloaded file
     """
     file_path = tmp_path / "file.txt"
     file_path.write_text("bad")
@@ -241,8 +241,8 @@ def test_download_and_process_rejects_bad_checksum(tmp_path):
 def test_get_checksum_map_downloads_unique_dirs_once(tmp_path):
     """Annotation and sequence files often share the same remote dir; downloading the checksum file twice would waste bandwidth.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the checksum file
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the checksum file
     """
     checksum_file = tmp_path / "CHECKSUMS"
     checksum_file.write_text("123 file.txt\n")
@@ -298,8 +298,8 @@ def test_ncbi_parse_checksum_line_blank_or_malformed_returns_none():
 def test_ncbi_verify_file_matches_md5(tmp_path):
     """NCBI uses MD5 checksums; verification must compare the actual file digest, not just file existence.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the file under verification
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the file under verification
     """
     file_path = tmp_path / "file.txt"
     file_path.write_text("content")
@@ -358,8 +358,8 @@ def test_ncbi_fetch_annotations_releases_returns_none_when_no_release_dir():
 def test_ncbi_get_assembly_information_parses_report(tmp_path):
     """The assembly report is the authoritative source for the assembly name and accession used to construct NCBI filenames.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the assembly report file
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the assembly report file
     """
     report = tmp_path / "assembly_report.txt"
     report.write_text("# Assembly name: GRCh38 p14\n# RefSeq assembly accession: GCF_000001405.40\n")
@@ -372,8 +372,8 @@ def test_ncbi_get_assembly_information_parses_report(tmp_path):
 def test_ncbi_get_assembly_information_errors_when_missing_fields(tmp_path):
     """Both assembly name and accession are required to construct expected filenames; a partial report must fail loudly rather than silently producing wrong filenames.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the partial assembly report
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the partial assembly report
     """
     report = tmp_path / "assembly_report.txt"
     report.write_text("# Assembly name: GRCh38\n")
@@ -412,8 +412,8 @@ def test_ensembl_parse_checksum_line():
 def test_ensembl_verify_file_uses_sum_command(tmp_path):
     """Ensembl checksums use the `sum` command rather than MD5, so verification must call the right tool or it will always mismatch.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory for the file under verification
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the file under verification
     """
     file_path = tmp_path / "file.fa"
     file_path.write_text("AC")
@@ -427,8 +427,8 @@ def test_ensembl_verify_file_uses_sum_command(tmp_path):
 def test_ensembl_verify_file_returns_false_on_called_process_error(tmp_path):
     """If the `sum` command is unavailable or exits with an error, verification must return False rather than propagating the exception.
 
-    Args:
-        tmp_path (Path): pytest-provided temp directory
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory
     """
     with patch(
         "backend.genomic_databases.subprocess.run", side_effect=subprocess.CalledProcessError(1, "sum")
@@ -504,8 +504,8 @@ def test_ensembl_get_entity_context_builds_dirs_and_metadata():
 def test_genomic_dropdown_returns_cached_or_fetched_options(client):
     """The dropdown endpoint must return the full nested species/taxa structure so the frontend can populate selection menus without additional calls.
 
-    Args:
-        client (Any): anonymous Flask test client
+    Arguments:
+        client {Any} -- anonymous Flask test client
     """
     with patch(
         "backend.routes.genomic.fetch_dropdown_options", return_value={"ncbi": {"taxon": ["species"]}}
@@ -519,8 +519,8 @@ def test_genomic_dropdown_returns_cached_or_fetched_options(client):
 def test_genomic_releases_returns_release_list(client):
     """The releases endpoint must proxy the FTP listing so the frontend can offer release selection without knowing FTP paths.
 
-    Args:
-        client (Any): anonymous Flask test client
+    Arguments:
+        client {Any} -- anonymous Flask test client
     """
     with patch(
         "backend.routes.genomic.NCBIGenomicDataBase.fetch_annotations_releases",
@@ -535,8 +535,8 @@ def test_genomic_releases_returns_release_list(client):
 def test_genomic_releases_returns_404_when_none(client):
     """None from fetch_annotations_releases means the species has no releases on NCBI; 404 prevents the frontend from displaying an empty selection.
 
-    Args:
-        client (Any): anonymous Flask test client
+    Arguments:
+        client {Any} -- anonymous Flask test client
     """
     with patch("backend.routes.genomic.NCBIGenomicDataBase.fetch_annotations_releases", return_value=None):
         response = client.get("/api/genomic/releases/taxon/species")

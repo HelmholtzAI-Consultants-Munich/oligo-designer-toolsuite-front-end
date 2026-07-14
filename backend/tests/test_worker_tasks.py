@@ -63,9 +63,9 @@ class MongoClientForTestDb:
 def test_run_pipeline_task_calls_pipeline_runner(celery_worker, tmp_path):
     """The pipeline task must instantiate PipelineRunner with the pipeline name and pass all task arguments through to run so the correct pipeline executes with the correct inputs.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
-        tmp_path (Path): pytest-provided temp directory used as the pipeline output path
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        tmp_path {Path} -- pytest-provided temp directory used as the pipeline output path
     """
     output_path = str(tmp_path / "out")
     runner_cls = MagicMock()
@@ -83,9 +83,9 @@ def test_run_pipeline_task_calls_pipeline_runner(celery_worker, tmp_path):
 def test_run_pipeline_task_propagates_runner_error(celery_worker, tmp_path):
     """Pipeline errors must propagate through the Celery result so lifecycle hooks can set the run status to failed and surface a user-readable message.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
-        tmp_path (Path): pytest-provided temp directory used as the pipeline output path
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        tmp_path {Path} -- pytest-provided temp directory used as the pipeline output path
     """
     output_path = str(tmp_path / "out")
     runner_cls = MagicMock()
@@ -101,8 +101,8 @@ def test_run_pipeline_task_propagates_runner_error(celery_worker, tmp_path):
 def test_run_genomic_region_generator_returns_id_and_paths(celery_worker):
     """The task must return the input field id paired with generated file paths so the chord callback can inject the paths into the correct form data field.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     with patch("backend.worker.tasks.GenomicRegionGeneratorRunner") as runner_cls:
         runner_cls.return_value.run.return_value = ["region.fna"]
@@ -117,8 +117,8 @@ def test_run_genomic_region_generator_returns_id_and_paths(celery_worker):
 def test_run_genomic_region_generator_propagates_error(celery_worker):
     """Errors from the generator must propagate through the Celery result so failed header tasks abort the chord before the pipeline body task runs.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     with patch("backend.worker.tasks.GenomicRegionGeneratorRunner") as runner_cls:
         runner_cls.return_value.run.side_effect = RuntimeError("bad source")
@@ -130,8 +130,8 @@ def test_run_genomic_region_generator_propagates_error(celery_worker):
 def test_trigger_dropdown_options_fetching_calls_fetch(celery_worker):
     """The prefetch task must delegate to the dropdown fetcher so cached database options are populated before users open the submission form.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     with patch("backend.worker.tasks.fetch_dropdown_options", return_value={"ncbi": {}}) as fetch:
         trigger_dropdown_options_fetching.delay().get(timeout=CELERY_TASK_TIMEOUT)
@@ -199,8 +199,8 @@ def _generate_march_report(celery_worker) -> dict:
 def test_generate_monthly_report_for_manual_period_writes_identity_and_structure(celery_worker):
     """A manually triggered report must be persisted with the correct period identity and top-level sections so the admin panel can retrieve and display it by year-month key.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     _seed_march_report_source_data()
 
@@ -217,8 +217,8 @@ def test_generate_monthly_report_for_manual_period_writes_identity_and_structure
 def test_generate_monthly_report_for_manual_period_aggregates_counts(celery_worker):
     """Aggregate counts must reflect all runs and users in the reporting period so the admin panel shows accurate usage statistics.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     _seed_march_report_source_data()
 
@@ -241,8 +241,8 @@ def test_generate_monthly_report_for_manual_period_aggregates_counts(celery_work
 def test_generate_monthly_report_for_manual_period_calculates_rates_and_deltas(celery_worker):
     """Rates and period deltas must be computed from the stored previous-period report so trend changes are visible on the admin dashboard.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     _seed_march_report_source_data()
 
@@ -266,8 +266,8 @@ def test_generate_monthly_report_for_manual_period_calculates_rates_and_deltas(c
 def test_generate_monthly_report_default_uses_previous_month(celery_worker):
     """The scheduled task must target the previous calendar month so reports are generated for a complete period rather than the current in-progress month.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
 
     class FixedDate(datetime.date):
@@ -291,8 +291,8 @@ def test_generate_monthly_report_default_uses_previous_month(celery_worker):
 def test_generate_monthly_report_handles_no_runs(celery_worker):
     """Rates must become None when the denominator is zero so the frontend can distinguish "no runs yet" from a genuine 0% rate.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
 
     Notes:
         Rates become None (not 0) when the denominator is zero, so the frontend
@@ -310,8 +310,8 @@ def test_generate_monthly_report_handles_no_runs(celery_worker):
 def test_generate_monthly_report_replaces_existing_report(celery_worker):
     """Re-running report generation for the same period must overwrite the existing document so stale data does not persist alongside the updated figures.
 
-    Args:
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     db.monthly_reports.insert_one({"_id": "2026-03", "year": 2026, "month": 3, "old": True})
 
@@ -325,8 +325,8 @@ def test_generate_monthly_report_replaces_existing_report(celery_worker):
 def test_cleanup_anonymous_data_deletes_expired_session_data(test_data_roots):
     """Expired anonymous sessions must have all their associated runs, uploads, consent records, and output files deleted so storage is fully reclaimed.
 
-    Args:
-        test_data_roots (DataRoots): per-test temp filesystem roots providing managed upload and output directories
+    Arguments:
+        test_data_roots {DataRoots} -- per-test temp filesystem roots providing managed upload and output directories
     """
     upload_file = test_data_roots.uploads / "upload.fna"
     upload_file.write_text(">x\nAC\n")
@@ -358,8 +358,8 @@ def test_cleanup_anonymous_data_deletes_expired_session_data(test_data_roots):
 def test_cleanup_anonymous_data_keeps_unexpired_sessions(test_data_roots):
     """Sessions newer than the cutoff must not be touched so active anonymous users do not lose their work mid-session.
 
-    Args:
-        test_data_roots (DataRoots): per-test temp filesystem roots
+    Arguments:
+        test_data_roots {DataRoots} -- per-test temp filesystem roots
     """
     db.anonymous_sessions.insert_one(
         {"_id": ObjectId(), "session_id": TEST_SESSION_ID, "last_activity_at": utc_now()}
@@ -379,9 +379,9 @@ def test_cleanup_anonymous_data_keeps_unexpired_sessions(test_data_roots):
 def test_cleanup_anonymous_data_retains_records_for_paths_outside_root(test_data_roots, tmp_path):
     """Records whose file paths resolve outside the managed data roots must be skipped so a misconfigured UPLOAD_PATH or USERDATA_PATH cannot trigger accidental deletion.
 
-    Args:
-        test_data_roots (DataRoots): per-test temp filesystem roots used as the cleanup boundaries
-        tmp_path (Path): pytest-provided temp directory simulating a path outside the managed roots
+    Arguments:
+        test_data_roots {DataRoots} -- per-test temp filesystem roots used as the cleanup boundaries
+        tmp_path {Path} -- pytest-provided temp directory simulating a path outside the managed roots
 
     Notes:
         A mis-configured UPLOAD_PATH or USERDATA_PATH could point cleanup at the
@@ -410,8 +410,8 @@ def test_cleanup_anonymous_data_retains_records_for_paths_outside_root(test_data
 def test_cleanup_anonymous_data_retains_records_when_path_type_unexpected(test_data_roots):
     """Records must be kept when tracked paths exist as the wrong filesystem type so cleanup never deletes something it cannot safely remove.
 
-    Args:
-        test_data_roots (DataRoots): per-test temp filesystem roots containing the mistyped paths
+    Arguments:
+        test_data_roots {DataRoots} -- per-test temp filesystem roots containing the mistyped paths
     """
     upload_dir = test_data_roots.uploads / "directory-instead-of-file"
     upload_dir.mkdir()
@@ -441,9 +441,9 @@ def test_cleanup_anonymous_data_retains_records_when_path_type_unexpected(test_d
 def test_cleanup_anonymous_data_task_uses_configured_roots(test_data_roots, celery_worker):
     """The Celery task must read data roots from config and target the isolated test DB so it can be exercised without touching production paths or the real broker.
 
-    Args:
-        test_data_roots (DataRoots): per-test temp filesystem roots injected via the data-roots patch
-        celery_worker: celery.contrib.pytest worker that executes tasks synchronously
+    Arguments:
+        test_data_roots {DataRoots} -- per-test temp filesystem roots injected via the data-roots patch
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
     """
     with (
         patch(
