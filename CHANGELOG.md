@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - User banning controls in the admin interface
 - Public preview and contributing documentation
 - Confirmation popup on pipeline run submission including Cloudflare turnstile and acceptance of terms and privacy policy
+- deployment of ODT Cloud via Ansible
 
 ### Changed
 
@@ -49,7 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reorganize and tidy frontend components
 - Switch from react-router-dom to react-router
 - Use ODT-generated output files instead of regenerating output files in the frontend workflow
-- Updated ODT library versions, including Pydantic-related compatibility updates
+- Updated ODT library to new release (v2.1.0), which introduced Pydantic models for pipeline configurations
+- Integrated the Pydantic models provided by ODT and adjusted our code to their structure
 - Migrated Celery backend to Redis and improved Celery task error handling
 - Switched run tracking to Celery task IDs and refactored run ID/token handling
 - Improved UI/UX for sidebar navigation, status feedback, region input handling, and decimal/legend display behavior
