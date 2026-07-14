@@ -17,11 +17,12 @@ def parse_run_id(run_id_str: str | None) -> ObjectId:
     converts and validates here instead, so a malformed id fails with a
     clear 400 instead of an obscure ObjectId construction error.
 
-    For URL path parameters, use the ObjectId URL converter instead:
-        @app.route("/api/runs/<ObjectId:run_id>")
-
     Arguments:
         run_id_str {str | None} -- the run id string from request JSON.
+
+    Notes:
+        For URL path parameters, use the ObjectId URL converter instead:
+            @app.route("/api/runs/<ObjectId:run_id>")
 
     Returns:
         ObjectId -- the validated ObjectId.
