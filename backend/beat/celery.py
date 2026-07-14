@@ -1,4 +1,7 @@
-"""Celery beat is a scheduler for running scheduled tasks. The configuration for different tasks we want to run time based is done here."""
+"""Configuration for different Celery tasks, which we want to run time based is done here.
+
+We use Celery Beat as a scheduler to run tasks in pre-configured intervals.
+"""
 
 from celery import Celery, signature
 from celery.schedules import crontab

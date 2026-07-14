@@ -1,4 +1,5 @@
 """This file defines the Celery tasks available.
+
 The Tasks definition is in this separate file to avoid importing the worker's dependencies.
 """
 

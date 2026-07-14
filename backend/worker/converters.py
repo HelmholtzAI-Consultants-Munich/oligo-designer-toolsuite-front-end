@@ -1,6 +1,4 @@
-"""Converters and helper functions that are used to convert between
-closely related types should be defined here
-"""
+"""Converters and helper functions that are used to convert between closely related types should be defined here"""
 
 from datetime import datetime
 from typing import Any
@@ -19,6 +17,7 @@ def to_int(val):
 
 def parse_datetime(value: Any) -> datetime | None:
     """Parses the datetime from a string and returns the object if it already is a datetime object.
+
     For other values, or when a string is not a valid datetime, None is returned.
 
     Arguments:

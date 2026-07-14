@@ -95,6 +95,7 @@ def _resolve_path_under_root(path_value: Any, root: Path) -> Path | None:
 
 def _delete_file_or_directory_if_under_root(path_value: Any, root: Path, is_dir: bool) -> tuple[bool, bool]:
     """Tries to delete a file inside of a root directory.
+
     `can_delete_record` is True when the DB record is safe to remove: either the path
     is already gone or was never valid. False when the path points to something that
     isn't a file (e.g. a directory), so the record must be kept to avoid data loss.

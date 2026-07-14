@@ -1,4 +1,5 @@
-"""Main file of the worker. Initializes and configures Celery and the logger.
+"""Initialization and configuring Celery and the logger is done here.
+
 Further it serves as the main entry point.
 """
 

@@ -1,5 +1,6 @@
-"""Defines the Genomic Region Generator Runner class. All functionality related to handling,
-executing and configuring the Genomic Region Generator should be added in this class.
+"""Defines the Genomic Region Generator Runner class.
+
+All functionality related to handling, executing and configuring the Genomic Region Generator should be added in this class.
 """
 
 import os
@@ -33,6 +34,7 @@ class GenomicRegionGeneratorRunner:
 
     def __init__(self, logger: Logger):
         """Initializes the GenomicRegionGeneratorRunner.
+
         Sets the logger and ensures that the caching directory exists.
 
         Arguments:
@@ -45,6 +47,7 @@ class GenomicRegionGeneratorRunner:
 
     def run(self, region_form: dict[str, Any]) -> list[str]:
         """Entry point for the Genomic Region Generator run.
+
         First it generates the regions and then returns the results.
 
         Arguments:

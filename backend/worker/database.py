@@ -48,6 +48,7 @@ def _update_run(run_id: ObjectId, data: dict[str, Any]) -> None:
 
 def _update_run_by_task_id(task_id: str, data: dict[str, Any]) -> None:
     """Updates a run by its task id.
+
     Wraps the `_update_run` method to achieve this behavior.
 
     Arguments:

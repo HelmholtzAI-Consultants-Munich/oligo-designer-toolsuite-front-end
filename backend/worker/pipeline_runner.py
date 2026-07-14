@@ -78,7 +78,9 @@ class PipelineRunner:
 
     def populate_temp_file(self, form_data: dict) -> None:
         """Writes a tempfile which includes all Gene IDs listed in the `file_region_ids` field of
-        the pipeline configuration. This is necessary, because ODT expects a file_path as the input
+        the pipeline configuration.
+
+        This is necessary, because ODT expects a file_path as the input
         for the file_region_ids.
 
         Arguments:
@@ -99,6 +101,7 @@ class PipelineRunner:
     ) -> None:
         """
         This method converts the form_data sent by the frontend to the format used by ODT.
+
         It is necessary because the Oligo Designer Toolsuite expects a list of file paths per `files_[...]` field like:
         ```py
         {"files_field": ["input_file.fna"]}

@@ -1,4 +1,5 @@
-"""Signals are sent by celery when specific Events happen.
+"""Signals are sent by celery when specific events happen.
+
 Signal handlers to capture these and their helper functions are defined here.
 """
 

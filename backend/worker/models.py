@@ -92,6 +92,7 @@ class SourceParamsEnsembl(SourceParamsBase):
 
 class GenomicRegionGeneratorBase(BaseModel):
     """This Model defines the Base Model for the Genomic Region Generator.
+
     It gets overwritten by the specific Genomic Region Generator Models with the according source set.
     """
 
@@ -252,7 +253,9 @@ class OligoSeqProbeDesignerConfig(OligoSeqProbeDesignerConfigBase):
 class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
     """
     This Model overrides the default ODT Model of the Oligo-Seq pipeline, so
-    we can inject our custom genomic region generator models. Adding to that it removes attributes like
+    we can inject our custom genomic region generator models.
+
+    Adding to that it removes attributes like
     the general section of the OligoDesignerConfig, so these option do not get exposed to the user.
     """
 
