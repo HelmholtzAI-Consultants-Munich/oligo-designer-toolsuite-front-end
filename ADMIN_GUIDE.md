@@ -1,9 +1,11 @@
 # ODT Cloud: Admin Guide
 
 ## Updating ODT Cloud Dependencies
+
 ODT Cloud intentionally does **not** update its dependencies automatically. Dependency updates should be performed manually, reviewed carefully, and validated before being merged. This reduces the risk of introducing unexpected or breaking changes.
 
 It is recommended to update one dependency ecosystem at a time (for example, npm, Python, Docker, or Ansible) to simplify testing and troubleshooting.
+
 #### Dependency locations
 
 | Dependency type            | Files                                                       |
@@ -16,6 +18,7 @@ It is recommended to update one dependency ecosystem at a time (for example, npm
 | Ansible                    | `ansible/requirements.in`, `ansible/requirements.yml`       |
 
 #### Updating npm dependencies
+
 Update frontend dependencies using:
 
 ```
@@ -25,6 +28,7 @@ npm update
 This updates packages within the version ranges specified in `package.json`.
 
 #### Updating Python dependencies
+
 Update the Python environment using:
 
 ```
@@ -34,6 +38,7 @@ conda update --all
 Review any resulting dependency changes and ensure that the repository's dependency declaration files remain up to date.
 
 #### Updating Docker images
+
 Update external Docker images by modifying the image tags in the `compose.yml`, `compose.prod.yml`, and `compose.override.yml` files.
 
 To update Docker base images, modify the `FROM` statements in the `docker/*.Dockerfile` files.
@@ -50,6 +55,7 @@ using the appropriate Ansible tooling for your environment.
 ---
 
 ## Publishing a Release
+
 To publish a new ODT Cloud Docker image:
 
 1. Ensure that all required build variables are configured in `.github/workflows/publish_images.yml`.
@@ -83,20 +89,23 @@ Before starting a deployment:
 ---
 
 ## Admin Panel
+
 The Admin Panel is available to users with the **admin** role. After signing in, it can be accessed from the blue navigation menu on the left.
 
 It consists of the following sections.
 
 ### Dashboard
+
 The Dashboard provides key statistics on the total amount of users and pipeline runs.
 
-![Admin Dashboard](../assets/images/admin_dashboard.png)
+![Admin Dashboard](dev-docs/assets/images/admin_dashboard.png)
 
 ### User Management
 
 The User Management page lists all registered users.
 
 Administrators can:
+
 - edit user information
 - delete users
 - ban users
@@ -106,41 +115,47 @@ Deleting a user permanently removes all stored information associated with that 
 
 To permanently prevent account creation using a specific Helmholtz OAuth account, ban the user instead of deleting them.
 
-![Admin User Management](../assets/images/admin_user_management.png)
+![Admin User Management](dev-docs/assets/images/admin_user_management.png)
 
 ### Pipeline Management
+
 The Pipeline Management page lists all scheduled and completed pipeline runs.
 
 Administrators can:
+
 - inspect individual runs
 - delete pipeline runs and their associated data
 - manually update the status of a pipeline run
 
 Deleting a pipeline run that is currently **Scheduled** or **Running** will cancel its execution.
 
-![Admin Pipeline Management](../assets/images/admin_pipeline_management.png)
+![Admin Pipeline Management](dev-docs/assets/images/admin_pipeline_management.png)
 
 ### Feedback
+
 The Feedback page displays all feedback submitted via ODT Cloud's feedback button.
 
 For each submission, ODT Cloud records metadata including:
+
 - the page from which the feedback was submitted
 - the associated pipeline run (if applicable)
 
 This information can help reproduce and investigate reported issues.
 
-![Admin Feedback](../assets/images/admin_feedback.png)
+![Admin Feedback](dev-docs/assets/images/admin_feedback.png)
 
 ### Monthly Reports
+
 Monthly Reports provides downloadable CSV reports containing usage statistics. Reports are generated automatically on the first day of each month. Administrators can also manually trigger generation of past reports using the **Generate Reports** action.
 
 An interactive chart at the top of the page visualizes usage trends over time using the reported data.
 
-![Admin Monthly Reports](../assets/images/admin_monthly_reports.png)
+![Admin Monthly Reports](dev-docs/assets/images/admin_monthly_reports.png)
 
 ### Legal Documents
 
 The Legal Documents page is used to manage the:
+
 - Terms of Service
 - Data Protection Declaration
 
@@ -148,13 +163,14 @@ Documents are edited using Markdown.
 
 Whenever a document is modified, previous versions are retained by ODT Cloud. This allows administrators to review historical versions or create new revisions based on earlier content when required.
 
-![Admin Legal Documents](../assets/images/admin_legal_documents.png)
+![Admin Legal Documents](dev-docs/assets/images/admin_legal_documents.png)
 
 ---
 
 ## User Management from the Command Line
 
 ### Creating Users
+
 When a user signs in using Helmholtz OAuth for the first time, ODT Cloud automatically creates a corresponding user account.
 
 ODT Cloud also includes a legacy username/password authentication system. While this mechanism is expected to be deprecated after the OAuth migration is complete, new users can currently still be created using this command:
@@ -166,6 +182,7 @@ docker compose exec odt-server micromamba run flask user register
 Follow the interactive prompts to create the account.
 
 ### Granting Administrator Privileges
+
 Existing users can be promoted to administrator through the **User Management** page in the Admin Panel.
 
 Alternatively, administrator privileges can be granted from the command line:
@@ -175,6 +192,7 @@ docker compose exec odt-server micromamba run flask admin promote "<username-or-
 ```
 
 The placeholder `<username-or-helmholtz_sub>` refers either to:
+
 - the legacy system username, or
 - the user's Helmholtz OAuth `sub` identifier.
 
