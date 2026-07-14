@@ -13,7 +13,11 @@ import { confirmWithModal } from "../utils/modalUtil";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import { navigateWithRunConfig } from "../utils/runConfigHelper";
 
-const Runs = () => {
+/**
+ * Renders a list of pipeline runs with options to view, use settings, or delete each run.
+ * @returns A React functional component that renders the runs table.
+ */
+const Runs: React.FC = () => {
     const { loading } = useAuth();
     const { runs, updateRuns } = useRuns();
     const navigate = useNavigate();
@@ -56,6 +60,7 @@ const Runs = () => {
                 <thead>
                     <tr>
                         <th></th>
+                        <th>Name</th>
                         <th>Pipeline</th>
                         <th>Started</th>
                         <th>Actions</th>
@@ -75,6 +80,7 @@ const Runs = () => {
                             <td>
                                 <RunStatus status={run.status} />
                             </td>
+                            <td>{run.run_name}</td>
                             <td>{getPipelineDisplayName(run.pipeline)}</td>
                             <td>{formatDateTime(run.timestamp)}</td>
                             <td>

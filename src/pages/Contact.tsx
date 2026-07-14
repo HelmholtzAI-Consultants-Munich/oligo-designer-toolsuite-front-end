@@ -3,6 +3,10 @@ import Page from "../components/ui/Page";
 import { Grid } from "../components/ui/Alignment";
 import { Alert } from "react-bootstrap";
 
+/**
+ *
+ * @returns A React functional component that renders a page with contact information and a list of team members.
+ */
 const contact: React.FC = () => {
     const teamMembers = [
         { name: "Yarkin Eren", email: "yarkin.eren@helmholtz-munich.de" },

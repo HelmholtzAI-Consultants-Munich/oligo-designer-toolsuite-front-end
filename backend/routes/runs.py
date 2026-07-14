@@ -58,6 +58,7 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
     formatted = {
         "_id": str(run["_id"]),
         "pipeline": run.get("pipeline", "unknown"),
+        "run_name": run.get("run_name"),
         "status": run.get("status", "unknown"),
         "timestamp": timestamp_to_iso(run.get("timestamp")),
         "user_id": run.get("user_id", "unknown"),
