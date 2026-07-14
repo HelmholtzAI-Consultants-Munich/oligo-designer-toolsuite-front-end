@@ -55,12 +55,13 @@ def format_pipeline_run(run):
 
     return {
         "id": str(run["_id"]),
+        "run_name": run.get("run_name"),
         "pipeline": run.get("pipeline", "unknown"),
         "status": run.get("status", "unknown"),
         "timestamp": timestamp_for_display(run.get("timestamp"), separator="_"),
         "created_at": run.get("created_at").isoformat() if run.get("created_at") else None,
         "output_path": path_for_display(run.get("output_path")),
-        "user_id": user_id,
+        "user_id": str(user_id) if user_id else None,
         "user": user_info,
         "session_id": run.get("session_id"),
         "transferred_from_anon": run.get("transferred_from_anon", False),

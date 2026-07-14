@@ -237,7 +237,7 @@
       }
     }
   },
-  "token": "XXXX.DUMMY.TOKEN.XXXX",
+
   "pipeline_run_config": {
     "_meta": {
       "version": 1,
@@ -496,5 +496,7 @@
         }
       }
     }
-  }
+  },
+  "token": "XXXX.DUMMY.TOKEN.XXXX",
+  "run_name": "Test Run"
 }

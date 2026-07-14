@@ -34,7 +34,6 @@ import { showToast } from "../utils/toastUtil";
 import RunStatus from "../components/ui/RunStatus";
 import { confirmWithModal } from "../utils/modalUtil";
 import type { Action, FileDownloadAction } from "../components/ui/Header";
-import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import RunStatusDetails from "../components/ui/RunStatusDetails";
 import RunError from "../components/ui/RunError";
 import {
@@ -331,7 +330,7 @@ const RunDetail = () => {
 
     return (
         <Page
-            title={`Run Result - ${run ? getPipelineDisplayName(run.pipeline) : "Unknown Pipeline Run"}`}
+            title={`Run Result - ${run ? run.run_name : "Unknown Pipeline Run"}`}
             actions={actions as Action[] | undefined}
             backTo={{
                 label: fromAdmin ? "Admin Panel" : "All Runs",

@@ -1,11 +1,10 @@
-import { ArrowRight } from "react-bootstrap-icons";
 import { BACKEND_URL } from "../../config";
 import { showToast } from "../../utils/toastUtil";
 import { extractSubmissionError } from "../errorHandler";
 import type { RJSFFormData } from "../componentTypes";
 import type { PipelineConfigExport } from "../forms/pipelineConfigIO";
 import axios from "axios";
-import { Link } from "react-router";
+import { type NavigateFunction } from "react-router";
 import {
     PIPELINE_CONFIG,
     type PipelineConfig,
@@ -43,6 +42,18 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
         ownPosition: runsAhead + 1,
     };
 };
+/**
+ * Handles the submission of a pipeline form, including file uploads and API requests, navigates to the run page.
+ * @param formData - The data from the form to be submitted.
+ * @param pipeline - The name of the pipeline being run.
+ * @param run_name - The name of the run.
+ * @param updateRuns - A function to refresh the list of runs after submission.
+ * @param token - A token for turnstile verification.
+ * @param navigate - A function to navigate to a different route after submission.
+ * @param pipelineRunConfig - Optional configuration for the pipeline run.
+ *
+ * @returns A Promise that resolves when the submission process is complete.
+ */
 
 /**
  * Custom submit handler for our form that overrides the default submit handler of RJSF.
@@ -57,8 +68,10 @@ export const unwrapQueuePosition = (queue_position: [number, number]) => {
 export const handleSubmit = async (
     formData: RJSFFormData,
     pipeline: string,
+    run_name: string,
     updateRuns: () => void,
     token: string | null,
+    navigate: NavigateFunction,
     pipelineRunConfig?: PipelineConfigExport
 ) => {
     // copy to avoid modifying formData
@@ -120,6 +133,7 @@ export const handleSubmit = async (
             payload: JSON.stringify({
                 formdata: uploadFormData,
                 token,
+                run_name,
                 pipeline_run_config: pipelineRunConfig ?? null,
             }),
         };
@@ -133,22 +147,8 @@ export const handleSubmit = async (
             }
         );
 
-        const { queue_position, run_id } = response.data;
-        const { ownPosition } = unwrapQueuePosition(queue_position);
-
-        showToast({
-            title: "Pipeline Enqueued",
-            content: (
-                <>
-                    <p>The pipeline run was successfully added to the queue.</p>
-                    <p>Queue Position: {ownPosition}</p>
-                    <Link to={`/runs/${run_id}`}>
-                        View the run here <ArrowRight />
-                    </Link>
-                </>
-            ),
-            type: "success",
-        });
+        const { run_id } = response.data;
+        navigate(`/runs/${run_id}`);
     } catch (error) {
         const errorMessage = extractSubmissionError(error);
         if (axios.isAxiosError(error)) {
