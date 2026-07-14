@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Queue-backed feedback processing and redesigned admin panel UI
 - User banning controls in the admin interface
 - Public preview and contributing documentation
+- Confirmation popup on pipeline run submission including Cloudflare turnstile and acceptance of terms and privacy policy
 
 ### Changed
 
