@@ -27,13 +27,6 @@ jobs:
           pip install -r ansible/requirements.in
           ansible-galaxy collection install -r ansible/requirements.yml
 
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: unnecessary # SSH fingerprints are potentially unknown as Ansible may provision new VMs
-          name: odt-ansible-key
-
       - name: Create production .env file
         run: |
           set -euxo pipefail
@@ -54,6 +47,7 @@ jobs:
         with:
           playbook: playbook.yml
           directory: ansible
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
         env:
           OS_AUTH_TYPE: v3applicationcredential
           OS_AUTH_URL: ${{ secrets.OS_AUTH_URL }}
