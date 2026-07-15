@@ -7,7 +7,6 @@ This directory contains the Ansible code used for deploying ODT Cloud on an Open
 ### OpenStack Credentials
 
 Ansible first connects to the OpenStack server using credentials that must be provided via environment variables, typically by sourcing an OpenStack RC file.
-More information can be found in the [openstacksdk docs](https://docs.openstack.org/newton/user-guide/common/cli-set-environment-variables-using-openstack-rc.html).
 
 To use user-independent application credentials, the RC file may look like this:
 
