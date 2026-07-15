@@ -1,3 +1,6 @@
+// Playwright globalSetup hook: blocks test execution until the frontend
+// and backend are both reachable.
+
 import { pollUntil } from "./helpers";
 import dotenv from "dotenv";
 

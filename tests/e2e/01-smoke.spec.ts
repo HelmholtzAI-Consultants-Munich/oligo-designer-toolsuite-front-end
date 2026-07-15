@@ -1,3 +1,6 @@
+// @smoke: catches broken form schemas across all active pipelines without
+// running a full (slow) pipeline execution.
+
 import { expect, test } from "@playwright/test";
 import { ALL_PIPELINES, expectPipelineFields, openPipeline } from "./helpers";
 
