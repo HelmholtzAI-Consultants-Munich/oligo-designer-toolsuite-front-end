@@ -32,3 +32,6 @@
     compose:
       - /home/ubuntu/compose.yml
       - /home/ubuntu/compose.prod.yml
+    prune: true
+  environment:
+    ODT_CLOUD_VERSION: "{{ ODT_CLOUD_VERSION | default('latest') }}"
