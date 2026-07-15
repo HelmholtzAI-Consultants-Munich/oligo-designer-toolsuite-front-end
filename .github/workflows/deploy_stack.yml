@@ -31,7 +31,7 @@ jobs:
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: unnecessary # will be set by Ansible upon first connection
+          known_hosts: unnecessary # SSH fingerprints are potentially unknown as Ansible may provision new VMs
           name: odt-ansible-key
 
       - name: Create production .env file
