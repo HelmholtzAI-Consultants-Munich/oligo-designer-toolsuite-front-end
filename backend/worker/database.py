@@ -13,6 +13,14 @@ from backend.worker.celery import logger
 
 
 def _parse_run_id(run_id_str: str) -> ObjectId | None:
+    """Tries to parse a valid MongoDB `ObjectId` from a string and returns None if it fails.
+
+    Arguments:
+        run_id_str {str} -- The string that should be parsed.
+
+    Returns:
+        ObjectId | None -- An ObjectId is returned if the conversion is successful, else None is returned.
+    """
     try:
         return ObjectId(run_id_str)
     except InvalidId:
@@ -40,6 +48,14 @@ def _update_run(run_id: ObjectId, data: dict[str, Any]) -> UpdateResult:
 
 
 def _update_run_by_task_id(task_id: str, data: dict[str, Any]) -> None:
+    """Updates a run by its task id.
+
+    Wraps the `_update_run` method to achieve this behavior.
+
+    Arguments:
+        task_id {str} -- The unique task ID of the celery task.
+        data {dict[str, Any]} -- The data that should be set.
+    """
     run_id = _parse_run_id(task_id)
     if run_id is None:
         return

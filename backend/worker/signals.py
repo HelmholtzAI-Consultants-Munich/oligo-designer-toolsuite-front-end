@@ -1,3 +1,8 @@
+"""Signals are sent by celery when specific events happen.
+
+Signal handlers to capture these and their helper functions are defined here.
+"""
+
 from typing import Any
 
 from celery import Task
@@ -15,7 +20,12 @@ def _is_pipeline_task(task: Task) -> bool:
 
 
 def capture_start_time(task_id: str, task: Task) -> None:
-    """Store the task start timestamp and queue wait duration on the run."""
+    """Store the task start timestamp and queue wait duration on the run.
+
+    Arguments:
+        task_id {str} -- The unique ID of the task.
+        task {Task} -- The task of which the start time gets captured.
+    """
     started_at = utc_now()
     task.request.started_at = started_at  # pyrefly:ignore
 
@@ -28,7 +38,12 @@ def capture_start_time(task_id: str, task: Task) -> None:
 
 
 def capture_completion_metrics(task_id: str, task: Task) -> None:
-    """Store task finish timestamp and elapsed durations on the run."""
+    """Store task finish timestamp and elapsed durations on the run.
+
+    Arguments:
+        task_id {str} -- The unique ID of the task.
+        task {Task} -- The task of which the completion metrics are captured.
+    """
     finished_at = utc_now()
     metrics: dict[str, Any] = {"finished_at": finished_at}
 
@@ -49,6 +64,12 @@ def _log_signal_call(signal_name: str, task_id: str) -> None:
 
 @task_prerun.connect
 def on_task_prerun(task_id, task, *args, **kwargs) -> None:
+    """Executes before a task is run.
+
+    Arguments:
+        task_id {str} -- The unique ID of the task.
+        task {Task} -- The task that is about to get started.
+    """
     if not _is_pipeline_task(task):
         return
     _log_signal_call("on_task_prerun", task_id)
@@ -57,6 +78,12 @@ def on_task_prerun(task_id, task, *args, **kwargs) -> None:
 
 @task_postrun.connect
 def on_task_postrun(task_id, task, *args, **kwargs) -> None:
+    """Executes after a task run finishes.
+
+    Arguments:
+        task_id {str} -- The unique ID of the task.
+        task {Task} -- The task that is finished.
+    """
     if not _is_pipeline_task(task):
         return
     _log_signal_call("on_task_postrun", task_id)

@@ -192,9 +192,17 @@ export const submitPipelineAndOpenRun = async (page: Page) => {
         .first();
     await submitButton.click();
 
+    const confirmationModal = page.getByRole("dialog");
+    await expect(confirmationModal).toBeVisible();
+
+    const runNameInput = confirmationModal.getByRole("textbox");
+    await runNameInput.fill("playwright-test-run");
+    await expect(runNameInput).toHaveValue("playwright-test-run");
+
     const termsCheckbox = page.getByRole("checkbox", {
         name: /I accept the Terms of Service and acknowledge the Privacy Policy/i,
     });
+
     const needsConsent = await termsCheckbox
         .waitFor({ state: "visible", timeout: 1_000 })
         .then(() => true)
@@ -204,19 +212,15 @@ export const submitPipelineAndOpenRun = async (page: Page) => {
         await expect(termsCheckbox).toBeChecked();
     }
 
-    const toast = page
-        .getByRole("alert")
-        .filter({ hasText: /Pipeline Enqueued/i });
-    const toastAppeared = await toast
-        .waitFor({ state: "visible", timeout: 1_000 })
-        .then(() => true)
-        .catch(() => false);
-    if (!toastAppeared) {
-        await submitButton.click();
-    }
-    await expect(toast).toBeVisible();
+    await expect(
+        page.locator('input[name="cf-turnstile-response"]')
+    ).not.toHaveValue("");
 
-    await toast.getByRole("link", { name: "View the run here" }).click();
+    const confirmationButton = confirmationModal.getByRole("button", {
+        name: /Run Pipeline/i,
+    });
+    await confirmationButton.click();
+
     await expect(page).toHaveURL(/\/runs\/[a-f0-9]{24}$/i);
 
     const runId = page.url().match(/\/runs\/([a-f0-9]{24})$/i)?.[1];

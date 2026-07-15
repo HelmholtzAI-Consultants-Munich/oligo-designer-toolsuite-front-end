@@ -1,3 +1,8 @@
+"""Defines the Genomic Region Generator Runner class.
+
+All functionality related to handling, executing and configuring the Genomic Region Generator should be added in this class.
+"""
+
 import os
 import uuid
 from logging import Logger
@@ -19,11 +24,22 @@ from backend.worker.utils import build_fallback_error_message
 
 class GenomicRegionGeneratorRunner:
     """
-    For details on the genomic region generator, see 'Genomic Region Generator' and
+    The Genomic Region Generator Runner is the core of the Genomic Region Generator handling in ODT Cloud.
+    It uses the genomic database adapters to fetch the required genomic data and then configures the Genomic Region
+    Generator to run on these files.
+
+    For further details on the genomic region generator, see 'Genomic Region Generator' and
     'Caching FASTA Files' in the developer documentation.
     """
 
     def __init__(self, logger: Logger):
+        """Initializes the GenomicRegionGeneratorRunner.
+
+        Sets the logger and ensures that the caching directory exists.
+
+        Arguments:
+            logger {Logger} -- The logger that should be used by the GenomicRegionGeneratorRunner.
+        """
         self.logger = logger
 
         # TODO: read this path from config
@@ -31,13 +47,23 @@ class GenomicRegionGeneratorRunner:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self, region_form: dict[str, Any]) -> list[str]:
+        """Entry point for the Genomic Region Generator run.
+
+        First it generates the regions and then returns the results.
+
+        Arguments:
+            region_form {dict[str, Any]} -- The configuration for the genomic region generator.
+
+        Returns:
+            list[str] -- A list of FASTA file paths.
+        """
         output_path = self.generate_regions(region_form)
 
         return self.collect_result_paths(output_path)
 
     @file_cache_region.cache_on_arguments()
     def generate_regions(self, region_form: dict[str, Any]) -> Path:
-        """Executes the genomic region generator.
+        """Fetches genomic data and executes the genomic region generator.
 
         Arguments:
             region_form {dict[str, Any]} -- The provided form specifying what regions to generate.
@@ -50,7 +76,7 @@ class GenomicRegionGeneratorRunner:
             ValueError: The genomic region generator failed.
 
         Returns:
-            Path -- The output directory containing the results.
+            pathlib.Path -- The output directory containing the results.
         """
         output_path = self.cache_dir / "generated" / f"cached_genomic_{uuid.uuid4().hex}"
         output_path.mkdir(parents=True, exist_ok=True)
@@ -145,6 +171,14 @@ class GenomicRegionGeneratorRunner:
         return output_path
 
     def collect_result_paths(self, output_path: Path) -> list[str]:
+        """Collects the FASTA files paths that are created by the Genomic Region Generator.
+
+        Arguments:
+            output_path {pathlib.Path} -- The output directory of the genomic region generator.
+
+        Returns:
+            list[str] -- A list of FASTA file paths.
+        """
         fna_files: list[str] = []
 
         annotation_output_path = output_path / "annotation"
@@ -155,5 +189,10 @@ class GenomicRegionGeneratorRunner:
         return fna_files
 
     def cleanup_temp_files(self, config_path: Path):
+        """Removes the config file, that is required for the Genomic Region Generator to run.
+
+        Arguments:
+            config_path {pathlib.Path} -- The config filepath.
+        """
         if config_path.exists():
             config_path.unlink()

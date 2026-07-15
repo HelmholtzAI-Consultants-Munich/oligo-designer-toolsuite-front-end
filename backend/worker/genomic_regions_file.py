@@ -1,5 +1,7 @@
 """The GenomicRegionsFile is used to write information about genomic regions (input fasta files) and probes (result yaml file) to a single yaml file.
-The file is then used in the frontend to generate the visualization and to display probe information."""
+
+The file is then used in the frontend to generate the visualization and to display probe information.
+"""
 
 import logging
 import os

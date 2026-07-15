@@ -29,6 +29,7 @@ from backend.queue_accounting import add_pending_run, queue_accounting_lock
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
+    sanitize_input,
     update_run_in_DB,
     validate_turnstile,
 )
@@ -145,6 +146,7 @@ def init_run() -> ObjectId:
 
 def update_run_with_context(
     run_id: ObjectId,
+    run_name: str,
     pipeline_name: str,
     context: RunContext,
     priority: int = CeleryConfig.task_default_priority,
@@ -160,6 +162,7 @@ def update_run_with_context(
         "timestamp": context.timestamp,  # TODO: redundant with "created_at"
         "priority": "high" if priority == CeleryConfig.task_high_priority else "default",
         "queue_position": queue_position,
+        "run_name": run_name,
     }
     if pipeline_run_config is not None:
         data["pipeline_run_config"] = pipeline_run_config
@@ -190,6 +193,7 @@ def get_task_priority(form_data: dict[str, Any]) -> int:
 
 def prepare_pipeline_chord(
     run_id: ObjectId,
+    run_name: str,
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
@@ -397,6 +401,8 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
+    run_name = form.get("run_name")  # only used for UI display
+    sanitized_run_name = sanitize_input(run_name)
 
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
@@ -434,6 +440,7 @@ def start_pipeline(pipeline_name: str):
     )
     pipeline_chord = prepare_pipeline_chord(
         run_id,
+        sanitized_run_name,
         pipeline_name,
         form_data,
         generated_regions,
@@ -447,6 +454,7 @@ def start_pipeline(pipeline_name: str):
 
     update_run_with_context(
         run_id,
+        sanitized_run_name,
         pipeline_name,
         context,
         priority,
