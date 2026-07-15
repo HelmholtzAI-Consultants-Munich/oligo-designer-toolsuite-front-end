@@ -6,15 +6,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from bson import ObjectId
 from celery import chord
+from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
 from pydantic import ValidationError
-from redis import Redis
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
 
@@ -23,9 +23,9 @@ from backend.constants import (
     PIPELINE_FILE_INPUT,
     PIPELINE_GENOMIC_INPUT,
     PIPELINE_NON_EXPOSED_FIELDS,
-    REDIS_QUEUE_LENGTH_KEY,
 )
 from backend.extensions import celery_app, db
+from backend.queue_accounting import add_pending_run, queue_accounting_lock
 from backend.routes.route_helpers import (
     get_user_context_with_directory,
     require_terms_acceptance_for_current_context,
@@ -191,7 +191,7 @@ def get_task_priority(form_data: dict[str, Any]) -> int:
     return priority
 
 
-def enqueue_pipeline(
+def prepare_pipeline_chord(
     run_id: ObjectId,
     run_name: str,
     pipeline_name: str,
@@ -200,10 +200,9 @@ def enqueue_pipeline(
     priority: int,
     context: RunContext,
     is_authenticated: bool = False,
-) -> None:
+) -> Any:
     """
-    Builds and enqueues a chord such that all region generation tasks
-    finish executing before the pipeline is started.
+    Build a chord such that all region generation tasks finish before the pipeline starts.
     """
     soft_limit = resolve_timeout(is_authenticated)
     hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
@@ -232,27 +231,15 @@ def enqueue_pipeline(
 
     error_handler = celery_app.signature(Callbacks.PIPELINE_CHORD_ERRBACK)
 
-    chord(region_generation_signatures)(pipeline_signature.on_error(error_handler))
+    pipeline_chord = chord(region_generation_signatures, pipeline_signature.on_error(error_handler))
+    # Give every header and callback task a shared workflow identifier for whole-chord revocation.
+    pipeline_chord.stamp(**{Config.CELERY_PIPELINE_RUN_STAMP: str(run_id)})
+    return pipeline_chord
 
 
-def calculate_queue_position(priority: int) -> tuple[int, int]:
-    """Calculate the number of tasks ahead in the queue for both high and default priority levels."""
-    redis = Redis.from_url(Config.REDIS_URI)
-
-    high_priority_ahead = int(cast(str | None, redis.hget(REDIS_QUEUE_LENGTH_KEY, "high")) or 0)
-    default_priority_ahead = 0
-
-    if priority == CeleryConfig.task_high_priority:
-        # add one high priority run ahead for all low priority runs
-        db.runs.update_many(
-            {"status": "pending", "priority": "default"},
-            {"$inc": {"queue_position.0": 1}},
-        )
-        high_priority_ahead = cast(int, redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "high", 1))
-    else:
-        default_priority_ahead = cast(int, redis.hincrby(REDIS_QUEUE_LENGTH_KEY, "default", 1))
-
-    return max(high_priority_ahead - 1, 0), max(default_priority_ahead - 1, 0)
+def enqueue_pipeline(pipeline_chord: Any) -> AsyncResult:
+    """Send a prepared pipeline chord to Celery."""
+    return pipeline_chord.apply_async()
 
 
 def save_file(
@@ -448,7 +435,10 @@ def start_pipeline(pipeline_name: str):
     # Insert pending run into database
     run_id = init_run()
 
-    enqueue_pipeline(
+    pipeline_run_config = (
+        form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
+    )
+    pipeline_chord = prepare_pipeline_chord(
         run_id,
         sanitized_run_name,
         pipeline_name,
@@ -458,14 +448,10 @@ def start_pipeline(pipeline_name: str):
         context,
         current_user.is_authenticated,
     )
+    with queue_accounting_lock() as redis:
+        enqueue_pipeline(pipeline_chord)
+        high_priority_ahead, default_priority_ahead = add_pending_run(redis, db, priority)
 
-    high_priority_ahead, default_priority_ahead = calculate_queue_position(priority)
-
-    pipeline_run_config = (
-        form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
-    )
-
-    # Add context to run since enqueuing was successful
     update_run_with_context(
         run_id,
         sanitized_run_name,

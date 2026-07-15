@@ -7,10 +7,11 @@ from typing import Any
 
 from billiard.einfo import ExceptionInfo
 from celery import Task
+from celery.exceptions import TaskRevokedError
 
 from backend.types import RunStatus
 from backend.worker.celery import logger
-from backend.worker.database import _update_run_by_task_id
+from backend.worker.database import _update_run_by_task_id, start_pending_run
 
 
 class PipelineTask(Task):
@@ -29,7 +30,9 @@ class PipelineTask(Task):
         """
         self._log_handler_call("before_start", task_id)
         super().before_start(task_id, args, kwargs)
-        _update_run_by_task_id(task_id, {"status": RunStatus.STARTED})
+        if not start_pending_run(task_id):
+            logger.info(f"Pipeline before_start handler found no pending run ({task_id=})")
+            raise TaskRevokedError(task_id)
 
     def on_success(self, retval: Any, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
         """Handler that gets called if the task completes successfully.

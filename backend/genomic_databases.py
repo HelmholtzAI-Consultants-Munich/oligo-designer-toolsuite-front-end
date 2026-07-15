@@ -292,13 +292,15 @@ class BaseGenomicDatabase(ABC):
         Returns:
             pathlib.Path -- Local file path of the downloaded resource.
         """
-        # Download file
         file_path = self._download(dir, remote_filename)
 
-        # Verify checksum if provided
+        # Verify checksum if provided. On mismatch, delete the cached file and retry the
+        # download once before giving up.
         if expected_checksum is not None and not self._matches_checksum(file_path, expected_checksum):
-            # TODO: we could also retry the download a set amount of times at this point
-            raise RuntimeError(f"Checksum for {remote_filename} does not match.")
+            file_path.unlink(missing_ok=True)
+            file_path = self._download(dir, remote_filename)
+            if not self._matches_checksum(file_path, expected_checksum):
+                raise RuntimeError(f"Checksum for {remote_filename} does not match.")
 
         # Extract file if extension is .gz
         if file_path.suffix == ".gz":
