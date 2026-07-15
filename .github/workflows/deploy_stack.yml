@@ -48,6 +48,7 @@ jobs:
           directory: ansible
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           options: |
+            -vvv
             --extra-vars ODT_CLOUD_VERSION=${{ vars.ODT_CLOUD_VERSION }}
         env:
           OS_AUTH_TYPE: v3applicationcredential
