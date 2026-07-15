@@ -47,10 +47,16 @@ ansible-galaxy collection install -r requirements.yml
 
 Before deploying ODT Cloud, prepare your production environment file at `ansible/files/.env`.
 
-To provision and configure the servers, run:
+To provision the VMs and deploy the latest ODT Cloud version, run:
 
 ```bash
 ansible-playbook playbook.yml
+```
+
+To deploy a specific ODT Cloud version, also specify the Docker image tag like this:
+
+```bash
+ansible-playbook playbook.yml -e "ODT_CLOUD_VERSION=<image_tag>"
 ```
 
 ## Infrastructure
