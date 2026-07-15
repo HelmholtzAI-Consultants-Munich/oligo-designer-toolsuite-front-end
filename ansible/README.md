@@ -27,8 +27,6 @@ Given that you named your file `openrc.sh`, you can then source it like this:
 
 After provisioning the VMs, Ansible connects to them using ssh. Since only a single VM is publicly accessible, we use it as a 'jump host' (also known as 'bastion host'). Make sure you have the private key of the `odt-ansible-key` key pair in your ssh directory (i.e. `~/.ssh/odt-ansible-key`). The public IP of this jump host is currently hard-coded to `134.94.199.236`.
 
-The local `known_hosts` file will be updated with the VM fingerprints automatically. Make sure it does not include outdated fingerprints after deleting instances.
-
 ## Using Ansible
 
 ### Setup
