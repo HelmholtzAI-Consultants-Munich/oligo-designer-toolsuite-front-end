@@ -10,9 +10,9 @@ from backend.types import RunStatus
 
 
 def _decrement_queue_length(redis: Redis, priority: str) -> int:
-    new_length = redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, priority, -1)
+    new_length = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, priority, -1))
     if new_length < 0:
-        redis.hset(Config.REDIS_QUEUE_LENGTH_KEY, priority, 0)
+        redis.hset(Config.REDIS_QUEUE_LENGTH_KEY, priority, 0)  # type: ignore
         return 0
     return new_length
 
@@ -42,7 +42,7 @@ def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
     """
     default_length, high_length = (
         int(cast(str | None, value) or 0)
-        for value in redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"])
+        for value in cast(list, redis.hmget(Config.REDIS_QUEUE_LENGTH_KEY, ["default", "high"]))
     )
 
     if priority == CeleryConfig.task_high_priority:
