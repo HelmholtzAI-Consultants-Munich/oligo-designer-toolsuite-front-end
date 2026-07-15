@@ -26,7 +26,6 @@ Deploying this frontend allows **multiple users to access, configure, and run ol
 - Visualizes pipeline progress and results
 - Integrates seamlessly with ODT to provide a full-featured design platform for:
   - Oligo-Seq
-  - Genomic Region Generator
   - _SeqFISH+ (in development)_
   - _Scrinshot (in development)_
   - _MERFISH (in development)_
