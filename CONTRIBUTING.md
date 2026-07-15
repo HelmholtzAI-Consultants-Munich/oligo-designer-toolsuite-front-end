@@ -8,38 +8,40 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 > - Refer to this project in your project's README
 > - Mention the project and the [Oligo Designer Toolsuite Project](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite)
 
-## Table of contents
+## Table of Contents
 
 - [Short Links](#short-links)
-- [I have a question](#i-have-a-question)
-- [I Want To Contribute](#i-want-to-contribute)
-  - [Adding issues](#adding-issues)
+- [I Have a Question](#i-have-a-question)
+- [I Want to Contribute](#i-want-to-contribute)
+  - [Adding Issues](#adding-issues)
+  - [Reporting Bugs](#reporting-bugs)
+  - [Suggesting Enhancements](#suggesting-enhancements)
   - [Development Process](#development-process)
   - [Code Contributions](#code-contributions)
-  - [Documentation contributions](#documentation-contributions)
-  - [Reporting bugs](#reporting-bugs)
-  - [Suggesting enhancements](#suggesting-enhancements)
+  - [Improving the Documentation](#improving-the-documentation)
 
-## Short links
+## Short Links
 
-- [Documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/)
+- [User Documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/)
+- [Architecture](/dev-docs/ARCHITECTURE.md)
+- [Admin Guide](/dev-docs/ADMIN_GUIDE.md)
 - [Bugs/Enhancements](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
 
 ## I Have a Question
 
-> If you want to ask a question, we assume that you have read the available [Documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/).
+> If you want to ask a question, we assume that you have read the available [documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/).
 
-Before you ask a question, it is best to search for existing [Issues](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question as a comment on the issue. It is also advisable to search the internet for answers first.
+Before you ask a question, it is best to search for existing [issues](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues) that might help you. In case you have found a suitable issue and still need clarification, you can write your question as a comment on the issue. It is also advisable to search the internet for answers first.
 
 If you still feel the need to ask a question, we recommend the following:
 
-- Open an [Issue](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues/new).
+- Open an [issue](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues/new).
 - Provide as much context as you can about what you're running into.
-- Provide project and platform versions (Node.js, npm, docker, conda, python, pip), depending on what seems relevant.
+- Provide project and platform versions (Node.js, npm, Docker, conda, Python, pip), depending on what seems relevant.
 
 We will then take care of the issue.
 
-## I Want To Contribute
+## I Want to Contribute
 
 > ### Legal Notice
 >
@@ -47,7 +49,7 @@ We will then take care of the issue.
 
 ### Adding Issues
 
-> NOTE: if in doubt open the issue in this Repo and we will investigate the source
+> NOTE: If in doubt, open the issue in this repository and we will determine the appropriate location.
 
 Before adding any type of issue, check if the issue is related to this project. Because this project serves as a webserver for the [Oligo Designer Toolsuite Project](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite), the source of issues that are related to running a pipeline could also be in the Oligo Designer Toolsuite. Therefore, verify that using your configs and input files produces a valid pipeline run when directly using Oligo Designer Toolsuite.
 
@@ -105,7 +107,7 @@ User stories are significant tasks, which are labeled with `user story`. The des
 
 These issues are easy tasks, e.g. easily fixable bugs, small changes or quick tasks that don't deserve to be treated as a full user story. The description should be enough to understand and resolve the issue. Further, the Project fields can be left empty. While they are small and easy, simple issues should still be solved on a separate branch to avoid time-intensive reviews and merge conflicts.
 
-#### Claiming issues
+#### Claiming Issues
 
 If you want to work on an issue, check if there is already an assignee and if not, assign yourself to show that you are working on it and avoid duplicate work.
 
@@ -127,7 +129,7 @@ Commits should adhere to [Conventional Commits](https://www.conventionalcommits.
 
 #### Pull Requests
 
-Before submitting a Pull Request, ensure that you followed our [Style guide](docs/styleguide.md), and have run the [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks as well as all the [tests](docs/tests.md).
+Before submitting a Pull Request, ensure that you followed our [style guide](/docs/styleguide.md), and have run the [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks as well as all the [tests](/docs/tests.md).
 
 A Pull Request should include a short summary at the top as well as a bullet list of key changes and update the [Changelog](CHANGELOG.md) accordingly. Furthermore, it should include a `resolves/fixes <issue-number>` to link the respective User Story. Also, all merge conflicts should be solved when submitting a PR ([remember](#working-on-an-issue)).
 
@@ -147,9 +149,7 @@ Reviewers **SHOULD**:
 
 Reviewers **SHOULD NOT**:
 
-<!-- TODO: reactivate after finishing last sprints -->
-
-- ~~make direct edits on the PR branch~~(currently not enforced to speed up development)
+- make direct edits on the PR branch
 
 ### Code Contributions
 
@@ -157,19 +157,19 @@ Before starting to work on code, please read the [Development Process](#developm
 
 #### Setup
 
-Before starting to contribute code read and follow the [README](README.md), [Getting Started Documentation](docs/getting-started.md) and [setup your IDE](docs/ide-setup.md).
+Before starting to contribute code read and follow the [README](/README.md), [Getting Started Documentation](/docs/getting-started.md) and [setup your IDE](/docs/ide-setup.md).
 
-#### Style guide
+#### Style Guide
 
-The formatting rules are enforced by our [pre-commit](docs/ide-setup.md#installing-pre-commit) hooks, so please set them up properly. Further, refer to the [style guide](docs/styleguide.md) to get information about other conventions we use.
+The formatting rules are enforced by our [pre-commit](/docs/ide-setup.md#installing-pre-commit) hooks, so please set them up properly. Further, refer to the [style guide](/docs/styleguide.md) to get information about other conventions we use.
 
-#### Working on an issue
+#### Working on an Issue
 
 Remember to always fetch and pull the current changes from the upstream repository to avoid any merging conflicts later on.
 
 #### Testing
 
-The code should pass all tests. While they are run via GitHub Actions, you can also run them locally ([see](docs/tests.md)). Also, new functionality must include unit tests verifying correct behavior.
+The code should pass all tests. While they are run via GitHub Actions, you can also run them locally ([see](/docs/tests.md)). Also, new functionality must include unit tests verifying correct behavior.
 
 #### Security
 
@@ -177,13 +177,13 @@ When fixing a security issue or otherwise adding a security check, you must docu
 
 #### Documentation
 
-Non self-explanatory must be commented, so when writing a non-trivial function or especially a class remember to add a docstring. To see how comments in the code should be structured, refer to our [style guide](docs/styleguide.md).
+Non self-explanatory must be commented, so when writing a non-trivial function or especially a class remember to add a docstring. To see how comments in the code should be structured, refer to our [style guide](/docs/styleguide.md).
 
-### Improving the documentation
+### Improving the Documentation
 
 > **NOTE:** this section is about user-facing documentation and basic development documentation such as setup/how to run tests. When you want to document code or certain behavior that is mostly interesting to developers, please refer to the [Code Documentation section](#documentation).
 
-The documentation is written in the `docs` folder and is user-facing. If you want to add documentation that is relevant to developers, refer to the [style guide](docs/styleguide.md) to see our code comment style.
+The documentation is written in the [`docs/`](/docs/) folder and is user-facing. If you want to add documentation that is relevant to developers, refer to the [style guide](/docs/styleguide.md) to see our code comment style.
 The documentation is written in markdown style and we use [jekyll-build-pages](https://github.com/actions/jekyll-build-pages) with the [Just the docs](https://github.com/just-the-docs/just-the-docs) to build the documentation for deployment on GitHub pages.
 
 <!--
