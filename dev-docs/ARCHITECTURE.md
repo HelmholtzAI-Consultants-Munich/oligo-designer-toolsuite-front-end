@@ -1,7 +1,7 @@
 # Architecture
 
 This document summarizes the high-level architecture of ODT-Cloud: the main components, their repository locations, and how they interact.
-If you want to contribute to the project please also read the [Contributing Guide](CONTRIBUTING.md).
+If you want to contribute to the project please also read the [Contributing Guide](/CONTRIBUTING.md).
 For more information on how to maintain the project refer to the [Admin Guide](ADMIN_GUIDE.md).
 
 ## High-level summary
@@ -38,7 +38,7 @@ For more information on how to maintain the project refer to the [Admin Guide](A
   - Entrypoint: [`backend/beat/celery.py`](/backend/beat/celery.py)
   - Purpose: Adds scheduled tasks to the task queue.
 
-- Playwright tests: [`tests/`](/tests/):
+- Playwright tests: [`tests/`](/tests/)
   - Entrypoint: [`tests/e2e/global-setup.ts`](/tests/e2e/global-setup.ts)
   - Purpose: End-to-end integration tests.
 
@@ -74,7 +74,7 @@ For more information on how to maintain the project refer to the [Admin Guide](A
 - Responds synchronously with small results, or
 - Enqueues a background job (via Celery) and returns a job id/status endpoint.
 
-5. Workers pick up tasks, cache downloads of genomic files in [`backend/cache/`](/backend/cache/), write result artifacts to the user directory and update job status.
+5. Workers pick up tasks, cache fetched genomic files in [`backend/cache/`](/backend/cache/), write result artifacts to the user directory and update job status.
 6. Frontend polls or receives updates to surface job progress and fetch generated artifacts.
 
 ## Where to go next

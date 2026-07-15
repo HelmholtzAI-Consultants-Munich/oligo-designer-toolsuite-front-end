@@ -151,7 +151,7 @@ If you are running the Flask server outside a Docker container, simply run:
 flask --help
 ```
 
-For local development with containers, run:
+If you are running the flask server with docker compose, run:
 
 ```bash
 docker compose exec odt-server bash
@@ -199,4 +199,5 @@ The placeholder `<username-or-helmholtz_sub>` refers either to:
 - the legacy system username, or
 - the user's Helmholtz OAuth `sub` identifier.
 
-This command must be used to create the **first administrator**, since no user has access to the Admin Panel until at least one administrator exists.
+> [!IMPORTANT]
+> This command must be used to create the **first administrator**, since no user has access to the Admin Panel until at least one administrator exists.

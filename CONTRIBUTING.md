@@ -24,6 +24,7 @@ All types of contributions are encouraged and valued. See the [Table of Contents
 
 - [User Documentation](https://helmholtzai-consultants-munich.github.io/oligo-designer-toolsuite-front-end/)
 - [Architecture](/dev-docs/ARCHITECTURE.md)
+- [Admin Guide](/dev-docs/ADMIN_GUIDE.md)
 - [Bugs/Enhancements](https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite-front-end/issues)
 
 ## I Have a Question
