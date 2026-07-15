@@ -6,8 +6,23 @@ This directory contains the Ansible code used for deploying ODT Cloud on an Open
 
 ### OpenStack Credentials
 
-Ansible first connects to the OpenStack server using the credentials contained in `clouds.yaml`.
-Make sure you have it at an appropriate location (e.g. `~/.config/openstack/clouds.yaml`). More information can be found in the [openstacksdk docs](https://docs.openstack.org/openstacksdk/2026.1/user/guides/connect_from_config.html).
+Ansible first connects to the OpenStack server using credentials that must be provided via environment variables, typically by sourcing an OpenStack RC file.
+More information can be found in the [openstacksdk docs](https://docs.openstack.org/newton/user-guide/common/cli-set-environment-variables-using-openstack-rc.html).
+
+To use user-independent application credentials, the RC file may look like this:
+
+```bash
+export OS_AUTH_TYPE=v3applicationcredential
+export OS_AUTH_URL=https://cloud.jsc.fz-juelich.de:5000
+export OS_APPLICATION_CREDENTIAL_ID=<YOUR_CREDENTIAL_ID>
+export OS_APPLICATION_CREDENTIAL_SECRET=<YOUR_CREDENTIAL_SECRET>
+```
+
+Given that you named your file `openrc.sh`, you can then source it like this:
+
+```bash
+. openrc.sh
+```
 
 ### SSH Key Pair
 

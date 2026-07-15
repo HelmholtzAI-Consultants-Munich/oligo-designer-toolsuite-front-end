@@ -1,9 +1,6 @@
 ---
 - name: Provision Servers
   hosts: localhost
-  module_defaults:
-    group/openstack.cloud.openstack:
-      cloud: openstack
   tasks:
     - name: Provision OpenStack servers
       ansible.builtin.import_tasks: tasks/provisioning.yml
