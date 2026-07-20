@@ -9,10 +9,10 @@ import { PIPELINE_CONFIG } from "../pipelineConfig/config";
 import { downloadFile } from "./fileDownloadUtil";
 
 /**
- * Fetches the saved config for a run from the API and navigates to the
- * corresponding pipeline form with the config pre-loaded in router state.
- *
- * Shared by Runs and RunDetail pages.
+ * Navigates to a pipeline form with a run's configuration pre-loaded.
+ * @param run The pipeline run object containing the run ID and pipeline type.
+ * @param navigate The navigation function from react-router.
+ * @returns A promise resolving when the navigation is complete.
  */
 export async function navigateWithRunConfig(
     run: PipelineRun,
@@ -83,10 +83,6 @@ export async function downloadConfig(run: PipelineRun | undefined) {
     );
 }
 
-/**
- * Hook that returns a stable callback for navigating to a pipeline form
- * with a run's config pre-loaded. Shared by Runs and RunDetail pages.
- */
 export function useNavigateWithRunConfig(
     run: PipelineRun | null | undefined,
     navigate: NavigateFunction

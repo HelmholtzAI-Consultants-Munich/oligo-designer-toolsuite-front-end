@@ -2,17 +2,14 @@
 General feedback API. Not tied to pipelines; available from any page.
 """
 
-import re
-import unicodedata
 from http import HTTPStatus
 from typing import Any
 
-import bleach
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user, login_required
 
 from backend.extensions import db, limiter
-from backend.routes.route_helpers import validate_turnstile
+from backend.routes.route_helpers import sanitize_input, validate_turnstile
 from backend.utilities.formatting import format_feedback
 from backend.utils import utc_now
 
@@ -33,32 +30,6 @@ def _feedback_rate_limit_key() -> str:
     return f"user:{current_user.get_id()}"
 
 
-def sanitize_feedback_message(raw_message: str) -> str:
-    """Strip HTML/control characters and normalize Unicode before storage.
-
-    Arguments:
-        raw_message {str} -- the raw message submitted by the client.
-
-    Notes:
-        Feedback text is later rendered in the admin panel and must not be
-        able to inject markup or invisible/spoofing characters.
-
-    Returns:
-        str -- sanitized, storage-safe message.
-    """
-    normalized = unicodedata.normalize("NFKC", raw_message)
-    sanitized = bleach.clean(
-        normalized,
-        tags=[],
-        attributes={},
-        protocols=[],
-        strip=True,
-        strip_comments=True,
-    )
-    sanitized = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", sanitized)
-    return sanitized.replace("\r\n", "\n").replace("\r", "\n").strip()
-
-
 @feedback_bp.route("/api/feedback", methods=["POST"])
 @login_required
 @limiter.limit(
@@ -73,7 +44,7 @@ def create_feedback():
         flask.Response -- the saved feedback entry.
     """
     data = request.get_json(silent=True) or {}
-    message = sanitize_feedback_message(str(data.get("message") or ""))
+    message = sanitize_input(str(data.get("message") or ""))
     metadata = data.get("metadata") or {}
     if not validate_turnstile(data.get("token", "")):
         abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")

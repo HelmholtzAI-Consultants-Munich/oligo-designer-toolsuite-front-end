@@ -47,6 +47,13 @@ export async function downloadFile(
     }
 }
 
+/**
+ * Creates a download function for a specific file with given label, URL, and file name.
+ * @param label The label for the file.
+ * @param url The URL of the file to download.
+ * @param fileName The name of the file to download.
+ * @returns A function that triggers the file download.
+ */
 export const downloadFileFactory =
     (label: string, url: string, fileName: string) => () => {
         downloadFile(url, fileName, {

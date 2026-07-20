@@ -1,14 +1,9 @@
 ---
 - name: Provision Servers
   hosts: localhost
-  module_defaults:
-    group/openstack.cloud.openstack:
-      cloud: openstack
   tasks:
     - name: Provision OpenStack servers
       ansible.builtin.import_tasks: tasks/provisioning.yml
-    - name: Add jump host ssh key to known_hosts
-      ansible.builtin.import_tasks: tasks/ssh_checking.yml
     - name: Reload inventory
       ansible.builtin.meta: refresh_inventory
   handlers:

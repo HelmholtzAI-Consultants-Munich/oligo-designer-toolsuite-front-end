@@ -14,12 +14,26 @@ import { Vertical } from "../ui/Alignment";
 import { Plus, Trash } from "react-bootstrap-icons";
 import { Button } from "react-bootstrap";
 
+/**
+ * This ArrayFieldTitleTemplate is based on the react-bootstrap theme's template.
+ * It harmonizes the layout and styling of array fields with ODT's design system.
+ *
+ * @param props - ArrayFieldTitleTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfieldtitletemplate})
+ * @returns A React Component that is used to overwrite the default ArrayFieldTitleTemplate
+ */
 const ArrayFieldTitleTemplate = memo((props: ArrayFieldTitleProps) => {
     const { title, fieldPathId } = props;
     const id = titleId(fieldPathId);
     return <span id={id}>{title}</span>;
 });
 
+/**
+ * This ArrayFieldDescriptionTemplate is based on the react-bootstrap theme's template.
+ * It harmonizes the layout and styling of array fields with ODT's design system.
+ *
+ * @param props - Array Field Description Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfielddescriptiontemplate})
+ * @returns A React Component that is used to overwrite the default ArrayFieldDescriptionTemplate
+ */
 const ArrayFieldDescriptionTemplate = memo(
     (props: ArrayFieldDescriptionProps) => {
         const { description, fieldPathId } = props;
@@ -36,6 +50,9 @@ const ArrayFieldDescriptionTemplate = memo(
 /**
  * This ArrayFieldTemplate is based on the react-bootstrap theme's template.
  * It harmonizes the layout and styling of array fields with ODT's design system.
+ *
+ * @param props - Array Field Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfieldtemplate})
+ * @returns A React Component that is used to overwrite the default ArrayFieldTemplate
  */
 const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     const {
@@ -99,6 +116,9 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
 /**
  * This ArrayFieldItemTemplate is based on the react-bootstrap theme's template.
  * It harmonizes the layout and styling of array field items with ODT's design system.
+ *
+ * @param props - Array Field Item Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfielditemtemplate})
+ * @returns A React Component that is used to overwrite the default ArrayFieldItemTemplate
  */
 const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
     const { children, hasToolbar, buttonsProps } = props;

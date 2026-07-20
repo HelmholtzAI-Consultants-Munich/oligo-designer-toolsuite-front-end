@@ -205,6 +205,7 @@ export interface RunMetrics {
 
 export interface PipelineRun {
     _id: string;
+    run_name: string;
     pipeline: string;
     status: RunState;
     timestamp: string;

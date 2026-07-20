@@ -10,7 +10,7 @@ from http import HTTPStatus
 
 from flask import Blueprint, abort, jsonify
 
-from backend.genomic_databases import NCBIGenomicDataBase, fetch_dropdown_options
+from backend.genomic_databases import NCBIGenomicDatabase, fetch_dropdown_options
 
 genomic_bp = Blueprint("genomic", __name__)
 
@@ -52,7 +52,7 @@ def genomic_get_releases(taxon: str, species: str):
         flask.Response -- JSON list of available annotation release directories.
     """
     # TODO: validate that taxon and species are in our dropdown options
-    dirs = NCBIGenomicDataBase().fetch_annotations_releases(taxon, species)
+    dirs = NCBIGenomicDatabase().fetch_annotations_releases(taxon, species)
 
     if dirs is None:
         abort(
