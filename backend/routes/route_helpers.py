@@ -238,7 +238,7 @@ def _entitlement_matches_required_group(entitlement: str, required_entitlement: 
 
 
 def _is_entitlement_restriction_enabled() -> bool:
-    return bool(current_app.config.get("HELMHOLTZ_RESTRICT_BY_ENTITLEMENT", True))
+    return bool(current_app.config.get("HELMHOLTZ_RESTRICT_BY_ENTITLEMENT", False))
 
 
 def is_helmholtz_access_allowed(userinfo: dict[str, Any]) -> bool:

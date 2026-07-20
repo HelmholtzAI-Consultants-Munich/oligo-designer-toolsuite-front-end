@@ -254,8 +254,8 @@ user_data/
 - **Token Storage**: Access tokens stored in Flask session for revocation
 - **User Info**: The unique subject identifier (`sub`) and `entitlements` are requested from Helmholtz AAI
 - **User Identification**: Users are identified solely by `helmholtz_sub` (the `sub` field from OAuth response)
-- **Access restriction**: Login requires the `urn:geant:helmholtz.de:group:Helmholtz-member` entitlement
-- **Rejected identities**: Tokens without the required entitlement are revoked with provider-side logout before access is denied
+- **Access restriction**: Optional (via `FLASK_HELMHOLTZ_RESTRICT_BY_ENTITLEMENT`); when enabled, login requires an entitlement matching one of the comma-separated `FLASK_HELMHOLTZ_REQUIRED_ENTITLEMENT` values
+- **Rejected identities**: Tokens without a required entitlement are revoked with provider-side logout before access is denied
 
 ### Security
 

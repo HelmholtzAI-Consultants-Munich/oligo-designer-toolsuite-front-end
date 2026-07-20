@@ -36,10 +36,17 @@ const Login = () => {
     useEffect(() => {
         if (!oauthError) return;
 
-        const nextSearchParams = new URLSearchParams(searchParams);
-        nextSearchParams.delete("oauth_error");
-        setSearchParams(nextSearchParams, { replace: true });
-    }, [oauthError, searchParams, setSearchParams]);
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete("oauth_error");
+                return next;
+            },
+            { replace: true }
+        );
+        // oauthError is frozen on mount; only depend on it so this runs once
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [oauthError]);
 
     // Redirect if already logged in
     // This useEffect is necessary because navigate() cannot reliably be called during render.
@@ -115,7 +122,8 @@ const Login = () => {
                         <Vertical gap="md" align="stretch">
                             {oauthError === "vo_access_denied" && (
                                 <Alert variant="danger">
-                                    Access is restricted to Helmholtz employees
+                                    Access denied: your account is not in an
+                                    allowed Helmholtz organization.
                                 </Alert>
                             )}
                             {oauthError === "account_banned" && (
