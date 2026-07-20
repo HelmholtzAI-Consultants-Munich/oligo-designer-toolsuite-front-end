@@ -3,6 +3,11 @@ import { RunsContext } from "../hooks/useRuns";
 import type { PipelineRun } from "../types";
 import { BACKEND_URL } from "../config";
 
+/**
+ * A React context provider for managing a list of pipeline runs.
+ * @param children - The child components that will have access to the runs context.
+ * @returns A React functional component that provides runs functionality to its children.
+ */
 export default function RunsProvider({
     children,
 }: {

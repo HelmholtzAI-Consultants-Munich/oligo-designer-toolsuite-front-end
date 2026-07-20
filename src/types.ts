@@ -205,10 +205,10 @@ export interface RunMetrics {
 
 export interface PipelineRun {
     _id: string;
+    run_name: string;
     pipeline: string;
     status: RunState;
     timestamp: string;
-    output_path: string;
     user_id: string;
     error_message?: string;
     priority: "high" | "default";

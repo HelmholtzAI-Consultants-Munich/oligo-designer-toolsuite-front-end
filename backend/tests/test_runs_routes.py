@@ -11,8 +11,11 @@ from backend.tests.conftest import create_test_run, post
 def output_path(tmp_path, run_id, dummy_user):
     output_path = tmp_path / "run_output"
     output_path.mkdir()
+    (output_path / "oligo_seq_probes.xlsx").write_text("test content")
+    (output_path / "oligo_seq_probes.tsv").write_text("test content")
+    (output_path / "oligo_seq_probes.yml").write_text("test content")
+    (output_path / "oligo_seq_probes_order.yml").write_text("test content")
     (output_path / "log.txt").write_text("log content")
-    (output_path / "config.yaml").write_text("config content")
 
     create_test_run(run_id, user_id=dummy_user.id, status="success", output_path=str(output_path))
 
@@ -27,10 +30,18 @@ def test_get_pipeline_runs_authenticated(client, dummy_user, run_id):
     assert isinstance(response.get_json(), list)
 
 
-def test_get_run_file_success(client, dummy_user, run_id, output_path):
-    response = client.get(f"/api/runs/{run_id}/files/log.txt")
-    assert response.status_code == 200
-    assert response.data == b"log content"
+def test_get_run_files_success(client, dummy_user, run_id, output_path):
+    FILE_NAMES = [
+        "oligo_seq_probes.xlsx",
+        "oligo_seq_probes.tsv",
+        "oligo_seq_probes.yml",
+        "oligo_seq_probes_order.yml",
+    ]
+
+    for file_name in FILE_NAMES:
+        response = client.get(f"/api/runs/{run_id}/files/{file_name}")
+        assert response.status_code == 200
+        assert response.data == b"test content"
 
 
 def test_delete_run_success(client, monkeypatch, run_id, output_path):
@@ -48,6 +59,11 @@ def test_delete_run_success(client, monkeypatch, run_id, output_path):
 def test_get_run_file_not_found(client, dummy_user, run_id):
     response = client.get(f"/api/runs/{run_id}/files/nonexistent.txt")
     assert response.status_code == 404
+
+
+def test_get_run_file_not_available_for_download(client, dummy_user, run_id, output_path):
+    response = client.get(f"/api/runs/{run_id}/files/log.txt")
+    assert response.status_code == 400
 
 
 def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_path, tmp_path):
@@ -129,12 +145,12 @@ def test_get_run_file_permission_error_sanitized(client, dummy_user, run_id, tmp
 
     output_path = tmp_path / "run_output"
     output_path.mkdir()
-    (output_path / "test.txt").write_text("content")
+    (output_path / "test.yml").write_text("content")
 
     create_test_run(run_id, user_id=dummy_user.id, status="success", output_path=str(output_path))
 
     with patch("builtins.open", side_effect=PermissionError("Permission denied")):
-        response = client.get(f"/api/runs/{run_id}/files/test.txt")
+        response = client.get(f"/api/runs/{run_id}/files/test.yml")
         assert response.status_code == 500
         data = response.get_json()
         assert "error" in data

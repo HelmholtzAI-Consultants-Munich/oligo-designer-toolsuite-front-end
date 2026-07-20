@@ -5,9 +5,12 @@ from http import HTTPStatus
 from typing import Any
 
 from bson import ObjectId
-from flask import abort, current_app
+from flask import abort
 
-from backend.config import CeleryConfig
+from backend.config import CeleryConfig, Config
+from backend.extensions import celery_app
+from backend.queue_accounting import _remove_pending_run, queue_accounting_lock
+from backend.types import RunStatus
 from backend.utilities.typed_values import deserialize_path, path_for_display
 
 logger = logging.getLogger(__name__)
@@ -69,28 +72,40 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
     :raises: 404 if the run does not exist
     :raises: 500 if the database deletion fails
     """
-    # Fetch the run
     run = mongo.runs.find_one({"_id": run_id_obj})
-
     if not run:
         abort(HTTPStatus.NOT_FOUND)
 
+    initial_status = run.get("status")
+    if initial_status in (RunStatus.PENDING, RunStatus.STARTED):
+        try:
+            # PENDING describes the callback; genomic header tasks may already be running,
+            # so terminate matching active tasks for both cancellable run states.
+            celery_app.control.revoke_by_stamped_headers(
+                {Config.CELERY_PIPELINE_RUN_STAMP: str(run_id_obj)},
+                terminate=True,
+                signal="SIGTERM",
+            )
+        except Exception:
+            logger.exception("Failed to revoke pipeline chord for run %s", run_id_obj)
+
+    with queue_accounting_lock() as redis:
+        result = mongo.runs.delete_one({"_id": run_id_obj})
+        if result.deleted_count == 0:
+            abort(HTTPStatus.NOT_FOUND)
+
+        if initial_status == RunStatus.PENDING:
+            _remove_pending_run(redis, mongo, run)
+
     # Delete output files/folders
-    output_path = deserialize_path(run.get("output_path"))
+    output_path_value = run.get("output_path")
+    output_path = deserialize_path(output_path_value)
     if output_path and output_path.exists():
         try:
             shutil.rmtree(output_path)
         except Exception as e:
-            output_label = path_for_display(run.get("output_path"))
+            output_label = path_for_display(output_path_value)
             logger.warning(f"Failed to delete output directory {output_label}: {e!s}")
-            # Continue with DB deletion even if file deletion fails
-
-    # Remove from database
-    result = mongo.runs.delete_one({"_id": run_id_obj})
-
-    if result.deleted_count == 0:
-        current_app.logger.error(f"Failed to delete run {run_id_obj}")
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: list[ObjectId]) -> dict:

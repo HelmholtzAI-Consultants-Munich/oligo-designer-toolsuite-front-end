@@ -1,18 +1,33 @@
+# This file contains the base Docker compose configuration.
+#
+# There are two additional files containing environment-specific overrides:
+#
+#   `compose.override.yml`  -- for development, applied by default when running `docker compose ...`
+#   `compose.prod.yml`      -- for production, apply explicitly by running `docker compose -f compose.yml -f compose.prod.yml ...`
+#
+# To see the complete configuration, run Docker Compose's `config` command (e.g. `docker compose config`).
+#
+# For the Dockerfiles used to build our own container images, see the `docker/` directory.
+
+# Environment overrides that are specific to using Docker
 x-docker-env-overrides: &docker-env-overrides
   MONGO_URI: mongodb://odt-db/oligo_db
   REDIS_URI: redis://odt-redis
 
 services:
+  # Database service
   odt-db:
     image: mongo:8
 
+  # Caching service, Celery broker and result backend
   odt-redis:
     image: redis:8-alpine
     command:
       - "--loglevel warning"
 
+  # Backend: API server
   odt-server:
-    image: ghcr.io/helmholtzai-consultants-munich/odt-server:0.2.0-alpha.3
+    image: ghcr.io/helmholtzai-consultants-munich/odt-server:${ODT_CLOUD_VERSION:-latest}
     build:
       dockerfile: docker/server.Dockerfile
     volumes:
@@ -23,8 +38,9 @@ services:
       - odt-db
       - odt-redis
 
+  # Backend: Task scheduler
   odt-beat:
-    image: ghcr.io/helmholtzai-consultants-munich/odt-server:0.2.0-alpha.3
+    image: ghcr.io/helmholtzai-consultants-munich/odt-server:${ODT_CLOUD_VERSION:-latest}
     build:
       dockerfile: docker/server.Dockerfile
     env_file: .env
@@ -35,8 +51,9 @@ services:
       - odt-worker
     command: celery -A backend.beat beat
 
+  # Backend: Worker
   odt-worker:
-    image: ghcr.io/helmholtzai-consultants-munich/odt-worker:0.2.0-alpha.3
+    image: ghcr.io/helmholtzai-consultants-munich/odt-worker:${ODT_CLOUD_VERSION:-latest}
     build:
       dockerfile: docker/worker.Dockerfile
     volumes:
@@ -48,12 +65,14 @@ services:
       - odt-db
       - odt-redis
 
+  # Frontend: Web server
   odt-web:
-    image: ghcr.io/helmholtzai-consultants-munich/odt-web:0.2.0-alpha.3
+    image: ghcr.io/helmholtzai-consultants-munich/odt-web:${ODT_CLOUD_VERSION:-latest}
     build:
       dockerfile: docker/web.Dockerfile
       args:
-        # This syntax passes through vars from .env
+        # When building for production, these arguments are required at build time and embedded into the Docker image
+        # This syntax passes through environment variables from .env
         VITE_BACKEND_URL:
         VITE_FEEDBACK_MAX_LENGTH:
         VITE_TURNSTILE_SITE_KEY:

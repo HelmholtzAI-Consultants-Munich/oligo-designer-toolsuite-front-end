@@ -1,5 +1,3 @@
-// Login page component for user authentication
-
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
@@ -14,8 +12,8 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 /**
- * Login component handles user login functionality.
- * Provides legacy username/password login and Helmholtz AAI OAuth login.
+ *
+ * @returns A React functional component that renders a login page with options for Helmholtz AAI and admin login.
  */
 const Login = () => {
     const [username, setUsername] = useState("");
@@ -31,7 +29,7 @@ const Login = () => {
 
     const sitekey = TURNSTILE_SITE_KEY;
 
-    // Get redirect URL from query params
+    // Get redirect URL and error message from query params
     const redirectTo = searchParams.get("redirect") || "/";
     const [oauthError] = useState(() => searchParams.get("oauth_error"));
 
@@ -55,7 +53,7 @@ const Login = () => {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         try {
-            const res = await axios.post(
+            await axios.post(
                 BACKEND_URL + "/login",
                 {
                     username,
@@ -67,7 +65,6 @@ const Login = () => {
             );
             turnstileRef.current?.reset();
 
-            console.log(res.data);
             showToast({
                 title: "Login successful!",
                 content: "You have been logged in successfully.",
@@ -80,38 +77,20 @@ const Login = () => {
             navigate(redirectTo);
         } catch (error: unknown) {
             if (axios.isAxiosError(error)) {
-                switch (error.response?.status) {
-                    case 401: {
-                        showToast({
-                            title: "Invalid username or password.",
-                            content:
-                                "Please check your credentials and try again.",
-                            type: "danger",
-                        });
-                        break;
-                    }
-                    case 403: {
-                        showToast({
-                            title: "Verification failed.",
-                            content:
-                                " We couldn't verify that you are human. Please try again.",
-                            type: "danger",
-                        });
-                        break;
-                    }
-                    default:
-                        console.error(error);
-                        showToast({
-                            title: "Login failed.",
-                            content:
-                                "An error occurred during login. Please try again later.",
-                            type: "danger",
-                        });
-                }
+                const description: string | undefined =
+                    error.response?.data?.error;
+                showToast({
+                    title: "Login failed.",
+                    content:
+                        description ??
+                        "An error occurred during login. Please try again later.",
+                    type: "danger",
+                });
             }
         }
     };
 
+    // Redirect to Helmholtz AAI login page
     const redirectToHelmholtz = () => {
         // Include redirect parameter in OAuth flow
         const redirectParam =
@@ -121,7 +100,6 @@ const Login = () => {
         window.location.href = BACKEND_URL + `/login${redirectParam}`;
     };
 
-    // Show loading spinner while checking auth status
     if (loading) return <div>Loading...</div>;
 
     // Don't render login form if user is already authenticated (will redirect)
@@ -138,6 +116,13 @@ const Login = () => {
                             {oauthError === "vo_access_denied" && (
                                 <Alert variant="danger">
                                     Access is restricted to Helmholtz employees
+                                </Alert>
+                            )}
+                            {oauthError === "account_banned" && (
+                                <Alert variant="danger">
+                                    This account has been banned from accessing
+                                    the service. Contact support if you believe
+                                    this is an error.
                                 </Alert>
                             )}
                             <Card.Title as="h2">

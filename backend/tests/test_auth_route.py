@@ -121,3 +121,6 @@ def test_logout(client, monkeypatch, authenticate_as_user):
     response = client.post("/logout")
     assert response.status_code == 200
     assert response.get_json()["message"] == "Logged out"
+
+
+# TODO: Add deny-list OAuth and active-session tests after the pending test-suite overhaul lands.

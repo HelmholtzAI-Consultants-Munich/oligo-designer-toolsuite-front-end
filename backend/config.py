@@ -86,6 +86,9 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+    # Maximum number of concurrently running pipeline runs (status == "started").
+    PIPELINE_MAX_CONCURRENT_ANONYMOUS = int(os.environ.get("PIPELINE_MAX_CONCURRENT_ANONYMOUS", 1))
+    PIPELINE_MAX_CONCURRENT_AUTHENTICATED = int(os.environ.get("PIPELINE_MAX_CONCURRENT_AUTHENTICATED", 5))
     GENE_COUNT_THRESHOLD = 10
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024 * 1024
 
@@ -98,6 +101,9 @@ class Config:
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
+    REDIS_QUEUE_ACCOUNTING_LOCK_KEY = "pipelines:queue_accounting_lock"
+    REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT = int(os.environ.get("REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT", 30))
+    CELERY_PIPELINE_RUN_STAMP = "pipeline_run_id"
 
     @staticmethod
     def get_logging_config() -> dict:

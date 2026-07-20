@@ -53,6 +53,11 @@ interface RawDropDown {
  *
  * Renders a dynamic form for FASTA file generation, switching between NCBI and Ensembl options.
  * Handles all controlled input changes and notifies parent components of updates.
+ *
+ * @param id - unique ID of the component
+ * @param form - current state of the Genomic Region Generator Form
+ * @param onChange - callback invoked, when the form is changed, to update the form
+ * @param schema - RJSF Schema of the Genomic Region Generator Form
  */
 const FastaGenerateForm: React.FC<FastaGenerateFormProps> = memo(
     ({ id, form, onChange, schema }) => {

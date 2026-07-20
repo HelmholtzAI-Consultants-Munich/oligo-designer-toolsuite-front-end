@@ -6,14 +6,26 @@ This directory contains the Ansible code used for deploying ODT Cloud on an Open
 
 ### OpenStack Credentials
 
-Ansible first connects to the OpenStack server using the credentials contained in `clouds.yaml`.
-Make sure you have it at an appropriate location (e.g. `~/.config/openstack/clouds.yaml`). More information can be found in the [openstacksdk docs](https://docs.openstack.org/openstacksdk/2026.1/user/guides/connect_from_config.html).
+Ansible first connects to the OpenStack server using credentials that must be provided via environment variables, typically by sourcing an OpenStack RC file.
+
+To use user-independent application credentials, the RC file may look like this:
+
+```bash
+export OS_AUTH_TYPE=v3applicationcredential
+export OS_AUTH_URL=https://cloud.jsc.fz-juelich.de:5000
+export OS_APPLICATION_CREDENTIAL_ID=<YOUR_CREDENTIAL_ID>
+export OS_APPLICATION_CREDENTIAL_SECRET=<YOUR_CREDENTIAL_SECRET>
+```
+
+Given that you named your file `openrc.sh`, you can then source it like this:
+
+```bash
+. openrc.sh
+```
 
 ### SSH Key Pair
 
 After provisioning the VMs, Ansible connects to them using ssh. Since only a single VM is publicly accessible, we use it as a 'jump host' (also known as 'bastion host'). Make sure you have the private key of the `odt-ansible-key` key pair in your ssh directory (i.e. `~/.ssh/odt-ansible-key`). The public IP of this jump host is currently hard-coded to `134.94.199.236`.
-
-The local `known_hosts` file will be updated with the VM fingerprints automatically. Make sure it does not include outdated fingerprints after deleting instances.
 
 ## Using Ansible
 
@@ -35,10 +47,16 @@ ansible-galaxy collection install -r requirements.yml
 
 Before deploying ODT Cloud, prepare your production environment file at `ansible/files/.env`.
 
-To provision and configure the servers, run:
+To provision the VMs and deploy the latest ODT Cloud version, run:
 
 ```bash
 ansible-playbook playbook.yml
+```
+
+To deploy a specific ODT Cloud version, also specify the Docker image tag like this:
+
+```bash
+ansible-playbook playbook.yml -e "ODT_CLOUD_VERSION=<image_tag>"
 ```
 
 ## Infrastructure

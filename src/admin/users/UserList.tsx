@@ -18,11 +18,21 @@ interface User {
     helmholtz_sub?: string;
     role: "user" | "admin";
     created_at?: string;
+    banned: boolean;
+    ban_id?: string;
+}
+
+interface BannedAccount {
+    id: string;
+    helmholtz_sub: string;
+    banned_at?: string;
+    banned_by?: string;
 }
 
 const UserList: React.FC = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
+    const [bannedAccounts, setBannedAccounts] = useState<BannedAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isBulkOperationLoading, setIsBulkOperationLoading] = useState(false);
@@ -45,16 +55,90 @@ const UserList: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await axios.get(BACKEND_URL + "/api/admin/users", {
-                withCredentials: true,
-            });
-            setUsers(response.data);
+            const [usersResponse, bannedResponse] = await Promise.all([
+                axios.get(BACKEND_URL + "/api/admin/users", {
+                    withCredentials: true,
+                }),
+                axios.get(BACKEND_URL + "/api/admin/banned-users", {
+                    withCredentials: true,
+                }),
+            ]);
+            setUsers(usersResponse.data);
+            setBannedAccounts(bannedResponse.data);
         } catch (err: unknown) {
             setError(getErrorMessage(err, "Failed to load users"));
             console.error("Error fetching users:", err);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleBan = (user: User) => {
+        if (!user.helmholtz_sub) return;
+
+        confirmWithModal({
+            title: "Ban User",
+            content: `Ban Helmholtz account ${user.helmholtz_sub}? The account data will be retained, but access will be blocked.`,
+            primaryAction: {
+                label: "Ban",
+                variant: "danger",
+                callback: async () => {
+                    try {
+                        await axios.post(
+                            BACKEND_URL + `/api/admin/users/${user.id}/ban`,
+                            {},
+                            { withCredentials: true }
+                        );
+                        showToast({
+                            type: "success",
+                            title: "User banned",
+                            content: `Banned Helmholtz account ${user.helmholtz_sub}.`,
+                        });
+                        fetchUsers();
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Ban failed",
+                            content: getErrorMessage(err, "Failed to ban user"),
+                        });
+                    }
+                },
+            },
+        });
+    };
+
+    const handleUnban = (banId: string, helmholtzSub: string) => {
+        confirmWithModal({
+            title: "Unban User",
+            content: `Unban Helmholtz account ${helmholtzSub}?`,
+            primaryAction: {
+                label: "Unban",
+                variant: "success",
+                callback: async () => {
+                    try {
+                        await axios.delete(
+                            BACKEND_URL + `/api/admin/banned-users/${banId}`,
+                            { withCredentials: true }
+                        );
+                        showToast({
+                            type: "success",
+                            title: "User unbanned",
+                            content: `Unbanned Helmholtz account ${helmholtzSub}.`,
+                        });
+                        fetchUsers();
+                    } catch (err: unknown) {
+                        showToast({
+                            type: "danger",
+                            title: "Unban failed",
+                            content: getErrorMessage(
+                                err,
+                                "Failed to unban user"
+                            ),
+                        });
+                    }
+                },
+            },
+        });
     };
 
     const handleDelete = async (userId: string, userIdentifier: string) => {
@@ -323,6 +407,11 @@ const UserList: React.FC = () => {
                                     >
                                         {user.role || "user"}
                                     </Badge>
+                                    {user.banned && (
+                                        <Badge bg="dark" className="ms-2">
+                                            Banned
+                                        </Badge>
+                                    )}
                                 </td>
                                 <td>
                                     {
@@ -345,6 +434,31 @@ const UserList: React.FC = () => {
                                     >
                                         Edit
                                     </Button>
+                                    {user.helmholtz_sub &&
+                                        (user.banned && user.ban_id ? (
+                                            <Button
+                                                variant="outline-success"
+                                                size="sm"
+                                                className="me-2"
+                                                onClick={() =>
+                                                    handleUnban(
+                                                        user.ban_id!,
+                                                        user.helmholtz_sub!
+                                                    )
+                                                }
+                                            >
+                                                Unban
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                variant="warning"
+                                                size="sm"
+                                                className="me-2"
+                                                onClick={() => handleBan(user)}
+                                            >
+                                                Ban
+                                            </Button>
+                                        ))}
                                     <Button
                                         variant="danger"
                                         size="sm"
@@ -358,6 +472,48 @@ const UserList: React.FC = () => {
                                         }
                                     >
                                         Delete
+                                    </Button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
+            )}
+
+            <h3 className="mt-5 mb-3">Banned Accounts</h3>
+            {bannedAccounts.length === 0 ? (
+                <Alert variant="info">No banned accounts.</Alert>
+            ) : (
+                <Table striped bordered hover responsive>
+                    <thead>
+                        <tr>
+                            <th>Helmholtz ID</th>
+                            <th>Banned</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {bannedAccounts.map((account) => (
+                            <tr key={account.id}>
+                                <td>{account.helmholtz_sub}</td>
+                                <td>
+                                    {formatAdminDateTime(
+                                        account.banned_at,
+                                        "N/A"
+                                    )}
+                                </td>
+                                <td>
+                                    <Button
+                                        variant="outline-success"
+                                        size="sm"
+                                        onClick={() =>
+                                            handleUnban(
+                                                account.id,
+                                                account.helmholtz_sub
+                                            )
+                                        }
+                                    >
+                                        Unban
                                     </Button>
                                 </td>
                             </tr>

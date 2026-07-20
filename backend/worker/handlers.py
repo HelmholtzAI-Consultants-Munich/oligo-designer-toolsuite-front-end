@@ -7,31 +7,45 @@ from typing import Any
 
 from billiard.einfo import ExceptionInfo
 from celery import Task
+from celery.exceptions import TaskRevokedError
 
 from backend.types import RunStatus
 from backend.worker.celery import logger
-from backend.worker.database import _parse_run_id, _update_run
+from backend.worker.database import _update_run_by_task_id, start_pending_run
 
 
 class PipelineTask(Task):
     """Custom Task subclass that keeps the database up-to-date with the task state."""
 
-    def _update_run_status(self, task_id: str, handler_name: str, status: RunStatus) -> None:
-        run_id = _parse_run_id(task_id)
-        if run_id is None:
-            logger.error(f"No valid run_id given to {handler_name}: ({task_id=})")
-            return
-        update_result = _update_run(run_id, {"status": status})
-        if update_result.matched_count == 0:
-            logger.error(f"Pipeline {handler_name} handler could not update run in database ({task_id=})")
+    def _log_handler_call(self, handler_name: str, task_id: str) -> None:
+        logger.debug(f"Executing PipelineTask handler ({handler_name=}, {task_id=})")
 
     def before_start(self, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
+        """Handler that gets called directly before a task is started.
+
+        Arguments:
+            task_id {str} -- The unique ID of the task.
+            args {tuple} -- Original arguments for the executed task.
+            kwargs {dict} -- Original keyword arguments for the executed task.
+        """
+        self._log_handler_call("before_start", task_id)
         super().before_start(task_id, args, kwargs)
-        self._update_run_status(task_id, "before_start", RunStatus.STARTED)
+        if not start_pending_run(task_id):
+            logger.info(f"Pipeline before_start handler found no pending run ({task_id=})")
+            raise TaskRevokedError(task_id)
 
     def on_success(self, retval: Any, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]) -> None:
+        """Handler that gets called if the task completes successfully.
+
+        Arguments:
+            retval {Any} -- The return value of the task.
+            task_id {str} -- The unique ID of the task.
+            args {tuple} -- Original arguments for the executed task.
+            kwargs {Dict} -- Original keyword arguments for the executed task.
+        """
+        self._log_handler_call("on_success", task_id)
         super().on_success(retval, task_id, args, kwargs)
-        self._update_run_status(task_id, "on_success", RunStatus.SUCCESS)
+        _update_run_by_task_id(task_id, {"status": RunStatus.SUCCESS})
 
     def on_failure(
         self,
@@ -41,5 +55,14 @@ class PipelineTask(Task):
         kwargs: dict[str, Any],
         einfo: ExceptionInfo,
     ) -> None:
-        """Pipeline error handling is done in pipeline_chord_errback."""
+        """Handler that gets called if the task completes with an error.
+
+        Arguments:
+            exc {Exception} -- The exception that was raised by the task.
+            task_id {str} -- The unique ID of the task.
+            args {tuple[Any, ...]} -- Original arguments for the executed task.
+            kwargs {dict[str, Any]} -- Original keyword arguments for the executed task.
+            einfo {ExceptionInfo} -- Exception information.
+        """
+        self._log_handler_call("on_failure", task_id)
         super().on_failure(exc, task_id, args, kwargs, einfo)

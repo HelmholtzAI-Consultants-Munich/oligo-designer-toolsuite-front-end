@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Container, Form, InputGroup, Nav } from "react-bootstrap";
+import {
+    Button,
+    Container,
+    Dropdown,
+    Form,
+    InputGroup,
+    Nav,
+} from "react-bootstrap";
 import { ArrowLeft, type Icon } from "react-bootstrap-icons";
 import { Grid, Horizontal, Vertical } from "./Alignment";
 import { useNavigate } from "react-router";
+import { downloadFileFactory } from "../../utils/fileDownloadUtil";
 
 interface TabConfig {
     label: string;
@@ -22,6 +30,20 @@ interface ButtonAction {
     onClick: () => void;
 }
 
+export interface FileDownloadEntry {
+    label: string;
+    fileName: string;
+    url: string;
+    icon?: Icon;
+}
+
+export interface FileDownloadAction {
+    type: "fileDownload";
+    label: string;
+    icon?: Icon;
+    fileDownloads: FileDownloadEntry[];
+}
+
 interface SearchAction {
     type: "search";
     label: string;
@@ -29,7 +51,7 @@ interface SearchAction {
     onSearch: (query: string) => void;
 }
 
-export type Action = ButtonAction | SearchAction;
+export type Action = ButtonAction | SearchAction | FileDownloadAction;
 
 export interface HeaderProps {
     title: string;
@@ -45,26 +67,35 @@ export interface HeaderProps {
 function HeaderAction({ action }: { action: Action }) {
     const [query, setQuery] = useState("");
 
+    const ICON_SIZE = 20;
+
+    const getId = (action: Action) =>
+        `action-${action.label.replace(/\s+/g, "-")}`;
+
     if (action.type === "button") {
         return (
             <Vertical align="center" justify="end" fillHeight>
                 {action.icon && (
                     <Form.Label
                         className="small text-muted text-center"
-                        htmlFor={`action-${action.label.replace(/\s+/g, "-")}`}
+                        htmlFor={getId(action)}
                     >
                         {action.label}
                     </Form.Label>
                 )}
                 <Vertical.Item>
                     <Button
-                        id={`action-${action.label.replace(/\s+/g, "-")}`}
+                        id={getId(action)}
                         variant={action.variant}
                         onClick={action.onClick}
                         className="icon-button"
                         title={action.label}
                     >
-                        {action.icon ? <action.icon size={20} /> : action.label}
+                        {action.icon ? (
+                            <action.icon size={ICON_SIZE} />
+                        ) : (
+                            action.label
+                        )}
                     </Button>
                 </Vertical.Item>
             </Vertical>
@@ -87,6 +118,55 @@ function HeaderAction({ action }: { action: Action }) {
                     <Button type="submit">{action.label}</Button>
                 </InputGroup>
             </Form>
+        );
+    } else if (action.type === "fileDownload") {
+        return (
+            <Vertical align="center" justify="end" fillHeight>
+                {action.icon && (
+                    <Form.Label
+                        className="small text-muted text-center"
+                        htmlFor={getId(action)}
+                    >
+                        {action.label}
+                    </Form.Label>
+                )}
+                <Vertical.Item fillHeight>
+                    <Dropdown>
+                        <Dropdown.Toggle
+                            variant="outline-primary"
+                            className="icon-button"
+                            id={getId(action)}
+                        >
+                            {action.icon ? (
+                                <action.icon size={ICON_SIZE} />
+                            ) : (
+                                action.label
+                            )}
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu>
+                            {action.fileDownloads.map((fileDownloadEntry) => (
+                                <>
+                                    <Dropdown.Item
+                                        onClick={downloadFileFactory(
+                                            fileDownloadEntry.label,
+                                            fileDownloadEntry.url,
+                                            fileDownloadEntry.fileName
+                                        )}
+                                    >
+                                        {fileDownloadEntry.icon && (
+                                            <fileDownloadEntry.icon
+                                                size={ICON_SIZE}
+                                                className="me-1"
+                                            />
+                                        )}
+                                        {fileDownloadEntry.label}
+                                    </Dropdown.Item>
+                                </>
+                            ))}
+                        </Dropdown.Menu>
+                    </Dropdown>
+                </Vertical.Item>
+            </Vertical>
         );
     }
     return null;

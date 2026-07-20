@@ -1,6 +1,7 @@
-# This file defines the Celery tasks available.
-# The Tasks definition is in this separate file to avoid importing the worker's dependencies.
+"""This file defines the Celery tasks available.
 
+The Tasks definition is in this separate file to avoid importing the worker's dependencies.
+"""
 
 TASK_ROOT = "backend.worker.tasks"
 CALLBACK_ROOT = "backend.worker.callbacks"

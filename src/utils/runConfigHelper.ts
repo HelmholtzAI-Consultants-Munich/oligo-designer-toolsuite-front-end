@@ -6,12 +6,13 @@ import { showToast } from "./toastUtil";
 import type { PipelineRun } from "../types";
 import { getPipelineDisplayName } from "../pipelineConfig/utils";
 import { PIPELINE_CONFIG } from "../pipelineConfig/config";
+import { downloadFile } from "./fileDownloadUtil";
 
 /**
- * Fetches the saved config for a run from the API and navigates to the
- * corresponding pipeline form with the config pre-loaded in router state.
- *
- * Shared by Runs and RunDetail pages.
+ * Navigates to a pipeline form with a run's configuration pre-loaded.
+ * @param run The pipeline run object containing the run ID and pipeline type.
+ * @param navigate The navigation function from react-router.
+ * @returns A promise resolving when the navigation is complete.
  */
 export async function navigateWithRunConfig(
     run: PipelineRun,
@@ -52,10 +53,36 @@ export async function navigateWithRunConfig(
     }
 }
 
-/**
- * Hook that returns a stable callback for navigating to a pipeline form
- * with a run's config pre-loaded. Shared by Runs and RunDetail pages.
- */
+export async function downloadConfig(run: PipelineRun | undefined) {
+    if (!run) return;
+    const pipelineConfig =
+        PIPELINE_CONFIG[run.pipeline as keyof typeof PIPELINE_CONFIG];
+    if (!pipelineConfig?.link) {
+        showToast({
+            title: "Not Supported",
+            content: `Loading config is not supported for the "${getPipelineDisplayName(run.pipeline)}" pipeline.`,
+            type: "danger",
+        });
+        return;
+    }
+
+    downloadFile(
+        BACKEND_URL + `/api/runs/${run._id}/config`,
+        `run-${run.pipeline}_config.json`,
+        {
+            notFound: {
+                title: "No Config Available",
+                content: "No saved configuration was found for this run.",
+            },
+            general: {
+                title: "Failed to Load Config",
+                content:
+                    "An error occurred while fetching the run configuration. Please try again.",
+            },
+        }
+    );
+}
+
 export function useNavigateWithRunConfig(
     run: PipelineRun | null | undefined,
     navigate: NavigateFunction

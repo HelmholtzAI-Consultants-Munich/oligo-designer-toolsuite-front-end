@@ -1,32 +1,49 @@
 import type { FieldPathList, FieldProps } from "@rjsf/utils";
-import { type GenomicForm, type GenomicFormOrFile } from "./types";
-import FastaGenerateForm from "../forms/FastaGenerateForm";
+import {
+    type GenomicForm,
+    type GenomicFormOrFile,
+} from "../fastaGenerateForm/types";
+import FastaGenerateForm from "../fastaGenerateForm/FastaGenerateForm";
 import { showModal } from "../../utils/modalUtil";
 import { Button, Form } from "react-bootstrap";
 import { Grid, Vertical } from "../ui/Alignment";
-import { InputList } from "./InputList";
+import { InputList } from "../fastaGenerateForm/InputList";
 import { ToolTip } from "../ui/Tooltip";
 import { FileEarmarkPlus } from "react-bootstrap-icons";
-import { spaceBeforeCapitalLetters } from "../forms/utils";
+import { spaceBeforeCapitalLetters } from "./utils";
 
 type ConfigurableGenomicInputProps = FieldProps & {
     formsAllowed: boolean;
     filesAllowed: boolean;
 };
-
+/**
+ * Renders a Component for inputting genomic data, either via uploading a file and/or via configuring a Genomic Region
+ * Generator Form. Which variant is allowed is configured via the `formsAllowed` and `filesAllowed` props.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props})
+ * @param formsAllowed - whether the Genomic Input allows that Genomic Region Generators Form can be used as input
+ * @param filesAllowed - whether the Genomic Input allows that file uploads can be used as input
+ * @returns A React Component that can be configured to accept different types of Genomic Input
+ */
 const ConfigurableGenomicInput = ({
-    fieldPathId: { $id, path },
+    fieldPathId,
     name,
     schema,
+    uiSchema,
     formData,
     onChange,
     onBlur,
     formsAllowed,
     filesAllowed,
+    rawErrors,
+    registry,
 }: ConfigurableGenomicInputProps) => {
     // TODO: Currently they do not point to the buttons, but it would be good if they would do it, since
     // it would make the page more accessible and playwright tests would be easier
-    const id = $id;
+    const { $id: id, path } = fieldPathId;
+    const {
+        templates: { FieldErrorTemplate },
+    } = registry;
 
     const handleGenomicFormNew = () => {
         handleGenomicFormEdit(null, onChange, formData.length);
@@ -132,6 +149,14 @@ const ConfigurableGenomicInput = ({
                 })}
             />
 
+            <FieldErrorTemplate
+                schema={schema}
+                uiSchema={uiSchema}
+                fieldPathId={fieldPathId}
+                errors={rawErrors}
+                registry={registry}
+            />
+
             <Grid gap="md" className="w-100">
                 {formsAllowed && (
                     <Button
@@ -161,6 +186,16 @@ interface FileUploadProps {
     onUpload: (files: File[]) => void;
 }
 
+/**
+ * Renders a component that allows uploading a File, which is used as the Input
+ * for the Genomic Region Generator.
+ *
+ * @param id - unique ID of the component
+ * @param name - name of the component
+ * @param onUpload - callback which is called, when the input
+ * is changed (e.g a File is uploaded)
+ * @returns A React Component that allows uploading a file.
+ */
 export const FileUpload: React.FC<FileUploadProps> = ({
     id,
     name,
@@ -191,6 +226,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     );
 };
 
+/**
+ * Renders a Component for inputting genomic data via uploading a file and via configuring a Genomic Region
+ * Generator Form.
+ *
+ * It wraps the `ConfigurableGenomicInput` component.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props}). These are passed to the underlying `ConfigurableGenomicInput` component.
+ * @returns A React Component which accepts genomic data via uploading a file and via configuring the Genomic Region Generator
+ */
 export const GenomicAndFileInput = (props: FieldProps) => {
     return (
         <ConfigurableGenomicInput
@@ -201,6 +245,15 @@ export const GenomicAndFileInput = (props: FieldProps) => {
     );
 };
 
+/**
+ * Renders a Component for inputting genomic data via configuring a Genomic Region
+ * Generator Form.
+ *
+ * It wraps the `ConfigurableGenomicInput` component.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props}). These are passed to the underlying `ConfigurableGenomicInput` component.
+ * @returns A React Component which accepts genomic data via configuring the Genomic Region Generator
+ */
 export const GenomicInput = (props: FieldProps) => {
     return (
         <ConfigurableGenomicInput
@@ -211,6 +264,14 @@ export const GenomicInput = (props: FieldProps) => {
     );
 };
 
+/**
+ * Renders a Component for inputting genomic data, via uploading a file.
+ *
+ * It wraps the `ConfigurableGenomicInput` component.
+ *
+ * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props}). These are passed to the underlying `ConfigurableGenomicInput` component.
+ * @returns A React Component which accepts genomic data via uploading a file
+ */
 export const FileInput = (props: FieldProps) => {
     return (
         <ConfigurableGenomicInput

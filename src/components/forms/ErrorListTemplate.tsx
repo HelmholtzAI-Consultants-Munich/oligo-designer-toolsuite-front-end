@@ -1,6 +1,8 @@
 import { type ErrorListProps, type RJSFValidationError } from "@rjsf/utils";
+import { Button } from "react-bootstrap";
 import { Card, ListGroup } from "react-bootstrap";
-import { ArrowUp } from "react-bootstrap-icons";
+import { Arrow90degUp } from "react-bootstrap-icons";
+import { filterUninformativeErrors } from "./utils";
 
 const errorId = (property: string) => {
     return "root" + property.replace(/\./g, "_") + "__error";
@@ -21,32 +23,43 @@ const scrollToError = (error: RJSFValidationError) => {
 /**
  * This ErrorListTemplate is based on the react-bootstrap theme's template.
  * It adds a scroll-to-error functionality when clicking on an error message.
+ *
+ * @param props - ErrorListProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#errorlisttemplate})
+ * @returns A React Component that is used to overwrite the default ErrorListTemplate
  */
 const ErrorListTemplate = (props: ErrorListProps) => {
     const { errors } = props;
     return (
         <Card id="rjsf-error-list" border="danger" className="mt-4">
-            <Card.Header className="alert-danger">
+            <Card.Header className="border-0">
                 Please correct the following errors:
             </Card.Header>
             <Card.Body className="p-0">
-                <ListGroup>
-                    {errors.map((error, i: number) => {
-                        return (
-                            <ListGroup.Item
-                                key={i}
-                                className="border-0"
-                                action
-                                onClick={() => scrollToError(error)}
-                                role="button"
-                                title="Click to jump to error"
-                            >
-                                <span className="text-danger">
-                                    {error.stack} <ArrowUp />
-                                </span>
-                            </ListGroup.Item>
-                        );
-                    })}
+                <ListGroup
+                    style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
+                >
+                    {errors
+                        .filter((error) =>
+                            filterUninformativeErrors(error.message || "")
+                        )
+                        .map((error, i: number) => {
+                            return (
+                                <ListGroup.Item
+                                    key={i}
+                                    className="border-0 border-top border-danger text-danger d-flex justify-content-between"
+                                >
+                                    {error.stack}
+                                    <Button
+                                        size="sm"
+                                        variant="outline-danger"
+                                        onClick={() => scrollToError(error)}
+                                    >
+                                        go to error
+                                        <Arrow90degUp transform="scale(-1, 1)" />
+                                    </Button>
+                                </ListGroup.Item>
+                            );
+                        })}
                 </ListGroup>
             </Card.Body>
         </Card>

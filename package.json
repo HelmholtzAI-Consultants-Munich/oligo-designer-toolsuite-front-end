@@ -1,6 +1,6 @@
 {
   "name": "odt-cloud",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "dependencies": {
@@ -22,8 +22,7 @@
     "react-bootstrap-icons": "^1.11.6",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
-    "react-router": "^7.13.1",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "react-router": "^7.13.1"
   },
   "scripts": {
     "dev": "vite",
@@ -42,18 +41,18 @@
     "format:fix": "prettier . --write",
     "docker:start": "docker compose up -d --build",
     "docker:watch": "docker compose watch",
-    "docker:start:monitoring": "docker compose --profile monitoring up -d",
+    "docker:start:monitoring": "docker compose --profile monitoring up -d --build",
     "docker:watch:monitoring": "docker compose --profile monitoring watch",
     "docker:stop": "docker compose down --volumes",
     "docker:logs": "docker compose logs -fn 100",
     "docker:build": "docker compose build",
     "docker:update": "docker compose build --pull && docker compose pull --ignore-buildable",
     "docker:prune": "docker system prune",
-    "docker:test": "docker compose --profile tests up -d --build odt-db odt-redis odt-server odt-worker odt-web odt-tests && docker compose --profile tests run --rm odt-tests",
     "docker:test:smoke": "docker compose --profile tests run --rm odt-tests test --grep @smoke",
     "docker:test:full": "docker compose --profile tests run --rm odt-tests test --grep @full",
     "docker:test:build": "docker compose --profile tests build",
-    "docker:test:watch": "docker compose --profile tests watch"
+    "docker:test:watch": "docker compose --profile tests watch",
+    "docker:prod": "docker compose -f compose.yml -f compose.prod.yml"
   },
   "prettier": {
     "tabWidth": 4,

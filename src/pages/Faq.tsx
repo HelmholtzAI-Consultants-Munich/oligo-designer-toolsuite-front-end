@@ -1,6 +1,10 @@
 import Page from "../components/ui/Page";
 import { Accordion } from "react-bootstrap";
 
+/**
+ *
+ * @returns A React functional component that renders a FAQ page.
+ */
 const faq: React.FC = () => {
     return (
         <Page title="Frequently Asked Questions">

@@ -5,6 +5,8 @@ from oligo_designer_toolsuite.config import OligoSeqProbeDesignerConfig
 from oligo_designer_toolsuite.pipelines import oligo_seq_probe_designer
 from pydantic import BaseModel
 
+USER_DENYLIST_COLLECTION_KEY = "user_denylist"
+
 
 class Pipeline(NamedTuple):
     model: type[BaseModel]

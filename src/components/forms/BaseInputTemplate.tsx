@@ -16,6 +16,9 @@ const {
  * The WrappedBaseInputTemplate wraps the default BaseInputTemplate.
  * It adds field titles and descriptions as tooltips.
  * It also introduces special handling for empty string values, allowing optional fields to be represented without an anyOf selector.
+ *
+ * @param props - BaseInputTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#baseinputtemplate})
+ * @returns A React Component that is used to overwrite the default BaseInputTemplate
  */
 const WrappedBaseInputTemplate = memo((props: BaseInputTemplateProps) => {
     const { id, label, hideLabel, uiSchema, schema, onChange, options } = props;
