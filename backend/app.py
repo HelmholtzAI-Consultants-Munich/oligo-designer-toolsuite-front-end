@@ -137,7 +137,7 @@ def create_app():
         client_id=app.config.get("HELMHOLTZ_CLIENT_ID"),
         client_secret=app.config.get("HELMHOLTZ_CLIENT_SECRET"),
         server_metadata_url=app.config.get("HELMHOLTZ_DISCOVERY_URL"),
-        api_base_url=app.config.get("HELMHOLTZ_ISSUER") + "/",
+        api_base_url=app.config["HELMHOLTZ_ISSUER"] + "/",
         client_kwargs={
             "scope": app.config.get("HELMHOLTZ_SCOPE"),
         },
