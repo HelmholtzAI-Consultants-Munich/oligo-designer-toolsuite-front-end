@@ -18,6 +18,7 @@ shared = [
 server = [
     { include-group = "shared" },
     "Authlib >=1.6, <2",
+    "aarc-entitlement >=1.0, <2",
     "nh3 >=0.3.6, <0.4",
     "Flask >=3.1, <4",
     "flask-cors >=6, <7",

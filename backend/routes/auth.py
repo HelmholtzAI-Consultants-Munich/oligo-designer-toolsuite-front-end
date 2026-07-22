@@ -359,7 +359,7 @@ def logout():
     # Revoke OAuth token if present
     oauth_token = session.get("oauth_token")
     if oauth_token:
-        revoke_helmholtz_token(oauth_token)
+        revoke_helmholtz_token({"access_token": oauth_token, "token_type": "Bearer"})
 
         # Clear token from session
         session.pop("oauth_token", None)

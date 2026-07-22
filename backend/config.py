@@ -60,10 +60,6 @@ class Config:
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"
-    HELMHOLTZ_AUTHORIZATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2-as/oauth2-authz"
-    HELMHOLTZ_TOKEN_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/token"
-    HELMHOLTZ_USERINFO_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/userinfo"
-    HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
 
     # GPDR settings
@@ -78,7 +74,7 @@ class Config:
     HELMHOLTZ_REQUIRED_ENTITLEMENT = ""
     HELMHOLTZ_RESTRICT_BY_ENTITLEMENT = False
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
-    HELMHOLTZ_USERINFO_TIMEOUT_SECONDS = 10
+    HELMHOLTZ_AAI_TIMEOUT_SECONDS = 10
 
     # Turnstile settings
     TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA")
