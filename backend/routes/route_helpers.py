@@ -314,6 +314,8 @@ def revoke_helmholtz_token(access_token: str) -> None:
                 "token": access_token,
                 "client_id": current_app.config.get("HELMHOLTZ_CLIENT_ID"),
                 "token_type_hint": "access_token",
+                # Needed so users can switch accounts; otherwise Helmholtz AAI's SSO
+                # session silently re-authenticates the same account on next login.
                 "logout": "true",
             },
             token={"access_token": access_token, "token_type": "Bearer"},
