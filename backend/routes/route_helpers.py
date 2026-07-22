@@ -284,8 +284,6 @@ def load_helmholtz_userinfo(token: dict[str, Any]) -> dict[str, Any]:
         except Exception as error:
             current_app.logger.warning("Failed to fetch Helmholtz userinfo endpoint: %s", error)
 
-    current_app.logger.warning("DEBUG token_userinfo (ID token claims): %s", token_userinfo)
-    current_app.logger.warning("DEBUG endpoint_userinfo (userinfo endpoint): %s", endpoint_userinfo)
     return {
         **(token_userinfo if isinstance(token_userinfo, dict) else {}),
         **(endpoint_userinfo if isinstance(endpoint_userinfo, dict) else {}),
