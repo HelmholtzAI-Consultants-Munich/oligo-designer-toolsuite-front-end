@@ -256,14 +256,14 @@ def auth_callback():
             "Helmholtz AAI login denied for subject %s: account is banned",
             helmholtz_sub,
         )
-        return deny_oauth_login(token, "account_banned")
+        return deny_oauth_login(token.get("access_token"), "account_banned")
 
     if not is_helmholtz_access_allowed(userinfo):
         current_app.logger.warning(
             "Helmholtz AAI login denied for subject %s: no allowed entitlement is present",
             helmholtz_sub,
         )
-        return deny_oauth_login(token, "vo_access_denied")
+        return deny_oauth_login(token.get("access_token"), "vo_access_denied")
 
     user_doc = get_or_create_helmholtz_user(helmholtz_sub)
     # Log user in with "Remember Me" to persist login across browser sessions
@@ -359,7 +359,7 @@ def logout():
     # Revoke OAuth token if present
     oauth_token = session.get("oauth_token")
     if oauth_token:
-        revoke_helmholtz_token({"access_token": oauth_token, "token_type": "Bearer"})
+        revoke_helmholtz_token(oauth_token)
 
         # Clear token from session
         session.pop("oauth_token", None)

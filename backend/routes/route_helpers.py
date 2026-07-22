@@ -305,12 +305,8 @@ def redirect_to_login_with_oauth_error(error: str):
     return redirect(f"{_frontend_base_url()}/login?{urlencode(query)}")
 
 
-def revoke_helmholtz_token(token: dict[str, Any]) -> None:
+def revoke_helmholtz_token(access_token: str) -> None:
     """Revoke a Helmholtz access token and request provider-side logout."""
-    access_token = token.get("access_token")
-    if not access_token:
-        return
-
     try:
         response = oauth.helmholtz.post(
             "revoke",
@@ -320,7 +316,7 @@ def revoke_helmholtz_token(token: dict[str, Any]) -> None:
                 "token_type_hint": "access_token",
                 "logout": "true",
             },
-            token=token,
+            token={"access_token": access_token, "token_type": "Bearer"},
             timeout=current_app.config["HELMHOLTZ_AAI_TIMEOUT_SECONDS"],
         )
         if response.status_code != HTTPStatus.OK:
@@ -329,9 +325,9 @@ def revoke_helmholtz_token(token: dict[str, Any]) -> None:
         current_app.logger.error("Error revoking token: %s", error)
 
 
-def deny_oauth_login(token: dict[str, Any], error: str):
-    if token.get("access_token"):
-        revoke_helmholtz_token(token)
+def deny_oauth_login(access_token: str | None, error: str):
+    if access_token:
+        revoke_helmholtz_token(access_token)
     session.pop("oauth_token", None)
     return redirect_to_login_with_oauth_error(error)
 
