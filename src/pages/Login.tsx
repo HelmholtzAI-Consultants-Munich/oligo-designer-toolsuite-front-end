@@ -3,7 +3,7 @@ import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { BACKEND_URL, TURNSTILE_SITE_KEY } from "../config";
-import { Button, Card, Form } from "react-bootstrap";
+import { Alert, Button, Card, Form } from "react-bootstrap";
 import Page from "../components/ui/Page";
 import { showToast } from "../utils/toastUtil";
 import { Vertical } from "../components/ui/Alignment";
@@ -20,7 +20,7 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const [rememberMe, setRememberMe] = useState(true);
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const auth = useAuth();
     const user = auth.user;
     const { loading, checkAuth } = auth;
@@ -31,7 +31,22 @@ const Login = () => {
 
     // Get redirect URL and error message from query params
     const redirectTo = searchParams.get("redirect") || "/";
-    const errorFromQuery = searchParams.get("error");
+    const [oauthError] = useState(() => searchParams.get("oauth_error"));
+
+    useEffect(() => {
+        if (!oauthError) return;
+
+        setSearchParams(
+            (prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete("oauth_error");
+                return next;
+            },
+            { replace: true }
+        );
+        // oauthError is frozen on mount; only depend on it so this runs once
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [oauthError]);
 
     // Redirect if already logged in
     // This useEffect is necessary because navigate() cannot reliably be called during render.
@@ -41,16 +56,6 @@ const Login = () => {
             navigate(redirectTo);
         }
     }, [user, loading, navigate, redirectTo]);
-
-    useEffect(() => {
-        if (errorFromQuery) {
-            showToast({
-                title: "Login failed.",
-                content: errorFromQuery,
-                type: "danger",
-            });
-        }
-    }, [errorFromQuery]);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -115,6 +120,19 @@ const Login = () => {
                 <Card style={{ maxWidth: "500px" }}>
                     <Card.Body>
                         <Vertical gap="md" align="stretch">
+                            {oauthError === "vo_access_denied" && (
+                                <Alert variant="danger">
+                                    Access denied: your account is not in an
+                                    allowed Helmholtz organization.
+                                </Alert>
+                            )}
+                            {oauthError === "account_banned" && (
+                                <Alert variant="danger">
+                                    This account has been banned from accessing
+                                    the service. Contact support if you believe
+                                    this is an error.
+                                </Alert>
+                            )}
                             <Card.Title as="h2">
                                 Login with Helmholtz AAI
                             </Card.Title>
