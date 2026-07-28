@@ -134,8 +134,8 @@ def test_get_pipeline_run_404_for_unowned_run(client, authenticated_user, run_do
     assert response.status_code == 404
 
 
-def test_get_run_file_serves_log_as_text(client, authenticated_user, run_doc, tmp_path):
-    """Log files must be served as plain text.
+def test_get_run_file_serves_tsv_as_attachment(client, authenticated_user, run_doc, tmp_path):
+    """TSV files must be served as attachments.
 
     Arguments:
         client {Any} -- Flask test client
@@ -144,18 +144,18 @@ def test_get_run_file_serves_log_as_text(client, authenticated_user, run_doc, tm
         tmp_path {Path} -- pytest-provided temp directory containing the output files
 
     Notes:
-        This makes browsers render them inline rather than prompting a download.
+        .tsv is one of runs.py's ALLOWED_FILE_ENDINGS (.yml, .yaml, .tsv, .xlsx).
     """
     output = tmp_path / "output"
     output.mkdir()
-    (output / "run.log").write_text("hello log")
+    (output / "probes.tsv").write_text("a\tb\n1\t2\n")
     run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
 
-    response = client.get(f"/api/runs/{run_id}/files/run.log")
+    response = client.get(f"/api/runs/{run_id}/files/probes.tsv")
 
     assert response.status_code == 200
-    assert response.text == "hello log"
-    assert response.mimetype == "text/plain"
+    assert response.text == "a\tb\n1\t2\n"
+    assert "attachment" in response.headers["Content-Disposition"]
 
 
 def test_get_run_file_serves_nested_file(client, authenticated_user, run_doc, tmp_path):
@@ -173,13 +173,13 @@ def test_get_run_file_serves_nested_file(client, authenticated_user, run_doc, tm
     output = tmp_path / "output"
     nested = output / "annotation"
     nested.mkdir(parents=True)
-    (nested / "run.log").write_text("nested log")
+    (nested / "config.yml").write_text("nested: true")
     run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
 
-    response = client.get(f"/api/runs/{run_id}/files/annotation/run.log")
+    response = client.get(f"/api/runs/{run_id}/files/annotation/config.yml")
 
     assert response.status_code == 200
-    assert response.text == "nested log"
+    assert response.text == "nested: true"
 
 
 def test_get_run_file_serves_yaml_as_attachment(client, authenticated_user, run_doc, tmp_path):
@@ -192,7 +192,7 @@ def test_get_run_file_serves_yaml_as_attachment(client, authenticated_user, run_
         tmp_path {Path} -- pytest-provided temp directory containing the output files
 
     Notes:
-        This triggers a browser download rather than inline rendering.
+        .yml is one of runs.py's ALLOWED_FILE_ENDINGS (.yml, .yaml, .tsv, .xlsx).
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -205,8 +205,8 @@ def test_get_run_file_serves_yaml_as_attachment(client, authenticated_user, run_
     assert "attachment" in response.headers["Content-Disposition"]
 
 
-def test_get_run_file_serves_fna_as_octet_stream(client, authenticated_user, run_doc, tmp_path):
-    """FASTA files must be served as octet-stream.
+def test_get_run_file_serves_xlsx_as_attachment(client, authenticated_user, run_doc, tmp_path):
+    """XLSX files must be served as attachments.
 
     Arguments:
         client {Any} -- Flask test client
@@ -215,17 +215,18 @@ def test_get_run_file_serves_fna_as_octet_stream(client, authenticated_user, run
         tmp_path {Path} -- pytest-provided temp directory containing the output files
 
     Notes:
-        This makes browsers download them rather than attempting to render binary content.
+        .xlsx is one of runs.py's ALLOWED_FILE_ENDINGS (.yml, .yaml, .tsv, .xlsx).
     """
     output = tmp_path / "output"
     output.mkdir()
-    (output / "result.fna").write_text(">x\nAC\n")
+    (output / "probes.xlsx").write_bytes(b"fake-xlsx-bytes")
     run_id = run_doc(user_id=TEST_USER_ID, output_path=output)
 
-    response = client.get(f"/api/runs/{run_id}/files/result.fna")
+    response = client.get(f"/api/runs/{run_id}/files/probes.xlsx")
 
     assert response.status_code == 200
-    assert response.mimetype == "application/octet-stream"
+    assert response.data == b"fake-xlsx-bytes"
+    assert "attachment" in response.headers["Content-Disposition"]
 
 
 def test_get_run_file_rejects_unsupported_extension(client, authenticated_user, run_doc, tmp_path):

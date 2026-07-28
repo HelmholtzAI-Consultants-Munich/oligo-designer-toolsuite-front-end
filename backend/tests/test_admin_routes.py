@@ -286,6 +286,45 @@ def test_admin_update_user_role_success(client, admin_user, regular_user):
     assert response.get_json()["role"] == "admin"
 
 
+def test_admin_update_user_username_success_for_cli_user(client, admin_user, regular_user):
+    """A CLI-style user's username can be updated by an admin.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- CLI-style user (has a `username` field) whose name is being updated
+
+    Notes:
+        CLI users are identified by having a `username` field at all, unlike
+        Helmholtz users who are identified by `helmholtz_sub` instead.
+    """
+    response = client.put(f"/api/admin/users/{regular_user['id']}", json={"username": "new-name"})
+
+    assert response.status_code == 200
+    assert response.get_json()["username"] == "new-name"
+    assert db.users.find_one({"_id": regular_user["_id"]})["username"] == "new-name"
+
+
+def test_admin_update_user_rejects_username_for_helmholtz_user(client, admin_user):
+    """A Helmholtz user (no `username` field) cannot have a username set.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Helmholtz users are identified by helmholtz_sub, not username, so the
+        route must reject this rather than silently adding an unused field.
+    """
+    user_id = ObjectId()
+    db.users.insert_one({"_id": user_id, "helmholtz_sub": "sub-1", "role": "user"})
+
+    response = client.put(f"/api/admin/users/{user_id}", json={"username": "x"})
+
+    assert response.status_code == 400
+    assert "helmholtz-sub" in response.get_json()["error"]
+
+
 def test_admin_update_user_rejects_invalid_role(client, admin_user, regular_user):
     """Invalid roles are rejected before persisting.
 
@@ -943,3 +982,68 @@ def test_admin_bulk_update_pipeline_status_rejects_empty_run_ids(client, admin_u
     )
 
     assert response.status_code == 400
+
+
+def test_admin_bulk_delete_users_processes_valid_id_and_reports_invalid_one(client, admin_user, regular_user):
+    """A mixed batch deletes the valid user and reports the malformed one in invalid_ids.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user with a valid id being deleted in the same batch
+
+    Notes:
+        A malformed id must not block the rest of the batch from succeeding.
+    """
+    response = client.post(
+        "/api/admin/users/bulk-delete", json={"user_ids": [regular_user["id"], "not-an-id"]}
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["deleted_count"] == 1
+    assert db.users.find_one({"_id": regular_user["_id"]}) is None
+    assert body["invalid_ids"] == ["not-an-id"]
+
+
+def test_admin_bulk_update_user_role_processes_valid_id_and_reports_invalid_one(
+    client, admin_user, regular_user
+):
+    """A mixed batch updates the valid user's role and reports the malformed one in invalid_ids.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user with a valid id being updated in the same batch
+    """
+    response = client.post(
+        "/api/admin/users/bulk-update-role",
+        json={"user_ids": [regular_user["id"], "not-an-id"], "role": "admin"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["updated_count"] == 1
+    assert db.users.find_one({"_id": regular_user["_id"]})["role"] == "admin"
+    assert body["invalid_ids"] == ["not-an-id"]
+
+
+def test_admin_bulk_update_pipeline_status_processes_valid_id_and_reports_invalid_one(client, admin_user):
+    """A mixed batch updates the valid run's status and reports the malformed id in invalid_ids.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+    """
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
+
+    response = client.post(
+        "/api/admin/pipelines/bulk-update-status",
+        json={"run_ids": [str(run_id), "not-an-id"], "status": "success"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["updated_count"] == 1
+    assert db.runs.find_one({"_id": run_id})["status"] == "success"
+    assert body["invalid_ids"] == ["not-an-id"]

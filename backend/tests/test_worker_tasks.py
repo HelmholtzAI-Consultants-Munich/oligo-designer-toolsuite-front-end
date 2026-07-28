@@ -10,6 +10,7 @@ Notes:
 """
 
 import datetime
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -31,35 +32,15 @@ from backend.worker.tasks import (
 )
 
 
-class MongoClientForTestDb:
-    """Context-manager test double that points worker tasks at the isolated test DB.
+@contextmanager
+def _test_mongo_database():
+    """Substitute for backend.database.mongo_database that yields the real test DB.
 
     Notes:
-        Tasks create their own MongoClient connections, so intercepting at the
-        constructor level is the only way to redirect them to the test database
-        without modifying production code.
+        Tasks resolve their own DB connection via mongo_database(), so this stands
+        in for it rather than needing a separate MongoClient double.
     """
-
-    def __init__(self, db):
-        """Store the isolated test database and track close calls.
-
-        Arguments:
-            db {Database} -- isolated pytest MongoDB database instance
-        """
-        self.db = db
-        self.close = MagicMock()
-
-    def __getitem__(self, name):
-        """Return the isolated test database for any requested Mongo database name."""
-        return self.db
-
-    def __enter__(self):
-        """Support task code that uses MongoClient as a context manager."""
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        """Mirror MongoClient cleanup by closing the test double."""
-        self.close()
+    yield db
 
 
 def test_run_pipeline_task_calls_pipeline_runner(celery_worker, tmp_path):
@@ -74,7 +55,10 @@ def test_run_pipeline_task_calls_pipeline_runner(celery_worker, tmp_path):
     """
     output_path = str(tmp_path / "out")
     runner_cls = MagicMock()
-    with pipeline_runner_module(runner_cls):
+    with (
+        patch("backend.worker.handlers.start_pending_run", return_value=True),
+        pipeline_runner_module(runner_cls),
+    ):
         runner = runner_cls.return_value
 
         run_pipeline.delay(
@@ -98,7 +82,10 @@ def test_run_pipeline_task_propagates_runner_error(celery_worker, tmp_path):
     """
     output_path = str(tmp_path / "out")
     runner_cls = MagicMock()
-    with pipeline_runner_module(runner_cls):
+    with (
+        patch("backend.worker.handlers.start_pending_run", return_value=True),
+        pipeline_runner_module(runner_cls),
+    ):
         runner_cls.return_value.run.side_effect = ODTPipelineError("failed")
 
         with pytest.raises(ODTPipelineError):
@@ -219,7 +206,7 @@ def _generate_march_report(celery_worker) -> dict:
     Returns:
         dict -- the MongoDB monthly report document written by the task
     """
-    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)):
+    with patch("backend.worker.tasks.mongo_database", _test_mongo_database):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
     return db.monthly_reports.find_one({"_id": "2026-03"})
@@ -325,7 +312,7 @@ def test_generate_monthly_report_default_uses_previous_month(celery_worker):
             return cls(2026, 5, 27)
 
     with (
-        patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)),
+        patch("backend.worker.tasks.mongo_database", _test_mongo_database),
         patch("backend.worker.tasks.datetime.date", FixedDate),
     ):
         generate_monthly_report.delay().get(timeout=CELERY_TASK_TIMEOUT)
@@ -343,7 +330,7 @@ def test_generate_monthly_report_handles_no_runs(celery_worker):
     Notes:
         This lets the frontend distinguish "no runs yet" from a genuine 0% rate.
     """
-    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)):
+    with patch("backend.worker.tasks.mongo_database", _test_mongo_database):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
     report = db.monthly_reports.find_one({"_id": "2026-03"})
@@ -363,7 +350,7 @@ def test_generate_monthly_report_replaces_existing_report(celery_worker):
     """
     db.monthly_reports.insert_one({"_id": "2026-03", "year": 2026, "month": 3, "old": True})
 
-    with patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)):
+    with patch("backend.worker.tasks.mongo_database", _test_mongo_database):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
     assert db.monthly_reports.count_documents({"_id": "2026-03"}) == 1
@@ -511,7 +498,7 @@ def test_cleanup_anonymous_data_task_uses_configured_roots(test_data_roots, cele
             "backend.worker.tasks._get_data_roots",
             return_value=(test_data_roots.uploads, test_data_roots.user_data),
         ),
-        patch("backend.worker.tasks.MongoClient", return_value=MongoClientForTestDb(db)),
+        patch("backend.worker.tasks.mongo_database", _test_mongo_database),
     ):
         result = cleanup_anonymous_data.delay().get(timeout=CELERY_TASK_TIMEOUT)
 

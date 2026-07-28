@@ -74,6 +74,10 @@ class AuthenticatedUser:
         """Store the user id Flask route code reads from current_user.id."""
         self.id = user_id
 
+    def get_id(self) -> str:
+        """Return the user id as Flask-Login's UserMixin.get_id() would, for rate-limit key funcs."""
+        return self.id
+
 
 @dataclass(frozen=True)
 class DataRoots:
@@ -451,6 +455,30 @@ def celery_config() -> dict[str, Any]:
         "result_serializer": "json",
         "accept_content": ["json"],
     }
+
+
+@pytest.fixture
+def isolated_redis(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Point Config.REDIS_URI at the isolated test Redis database (#15) and flush it around each test.
+
+    Arguments:
+        monkeypatch {pytest.MonkeyPatch} -- reverts the patched config after the test
+
+    Notes:
+        queue_accounting.py and cache.py read Config.REDIS_URI at call time,
+        so patching the shared class attribute is enough without patching
+        each call site.
+
+    Yields:
+        Iterator[None] -- yields with Config.REDIS_URI already pointed at the isolated database
+    """
+    test_redis_uri = f"{Config.REDIS_URI.rstrip('/')}/15"
+    monkeypatch.setattr(Config, "REDIS_URI", test_redis_uri)
+    client = Redis.from_url(test_redis_uri)
+    client.flushdb()
+    yield
+    client.flushdb()
+    client.close()
 
 
 @pytest.fixture

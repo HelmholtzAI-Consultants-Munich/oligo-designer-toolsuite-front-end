@@ -116,7 +116,10 @@ def test_helmholtz_callback_creates_new_user(client, test_data_roots):
     Notes:
         Helmholtz AAI has no separate registration step, so the first login is registration.
     """
-    token = {"access_token": "token", "userinfo": {"sub": "sub-1"}}
+    token = {
+        "access_token": "token",
+        "userinfo": {"sub": "sub-1", "entitlements": ["urn:geant:helmholtz.de:group:Helmholtz-member"]},
+    }
     with patch("backend.routes.auth.oauth.helmholtz.authorize_access_token", return_value=token):
         response = client.get("/auth/callback")
 
@@ -157,7 +160,10 @@ def test_helmholtz_callback_fetches_userinfo_when_missing_from_token(client):
         Some OAuth providers don't embed userinfo in the token itself.
     """
     response_mock = MagicMock()
-    response_mock.json.return_value = {"sub": "sub-2"}
+    response_mock.json.return_value = {
+        "sub": "sub-2",
+        "entitlements": ["urn:geant:helmholtz.de:group:Helmholtz-member"],
+    }
 
     with (
         patch(

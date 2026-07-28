@@ -139,7 +139,7 @@ def _delete_directory_if_under_root(path_value: Any, root: Path) -> tuple[bool, 
     Returns:
         tuple[bool, bool] -- (Record can be deleted, Directory was deleted),
     """
-    return _delete_file_or_directory_if_under_root(path_value, root, False)
+    return _delete_file_or_directory_if_under_root(path_value, root, True)
 
 
 def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
@@ -154,7 +154,7 @@ def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]
     Returns:
         tuple[bool, bool] -- (Record can be deleted, Directory was deleted),
     """
-    return _delete_file_or_directory_if_under_root(path_value, root, True)
+    return _delete_file_or_directory_if_under_root(path_value, root, False)
 
 
 def _partition_records_for_deletion(

@@ -9,7 +9,7 @@ Notes:
 import copy
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 import pytest
 from bson import ObjectId
@@ -82,7 +82,7 @@ def queued_task():
         patch(
             "backend.routes.pipelines.enqueue_pipeline", return_value=SimpleNamespace(id="task-123")
         ) as enqueue,
-        patch("backend.routes.pipelines.calculate_queue_position", return_value=(2, 1)) as queue_position,
+        patch("backend.routes.pipelines.add_pending_run", return_value=(2, 1)) as queue_position,
     ):
         yield enqueue, queue_position
 
@@ -114,8 +114,9 @@ def test_start_pipeline_authenticated_success(
     assert Path(*run["output_path"]["parts"]).is_dir()
 
     enqueue, queue_position = queued_task
-    assert enqueue.call_args.args[4] == CeleryConfig.task_high_priority
-    queue_position.assert_called_once_with(CeleryConfig.task_high_priority)
+    pipeline_chord = enqueue.call_args.args[0]
+    assert pipeline_chord.body.options["priority"] == CeleryConfig.task_high_priority
+    queue_position.assert_called_once_with(ANY, db, CeleryConfig.task_high_priority)
 
 
 def test_start_pipeline_anonymous_success(anonymous_session, pipeline_payload, multipart_post, queued_task):
@@ -370,7 +371,8 @@ def test_start_pipeline_saves_uploaded_files(
     saved_files = list(test_data_roots.uploads.iterdir())
     assert len(saved_files) == 1
     assert saved_files[0].name.endswith("_input.vcf")
-    enqueued_form_data = queued_task[0].call_args.args[2]
+    pipeline_chord = queued_task[0].call_args.args[0]
+    enqueued_form_data = pipeline_chord.body.args[1]
     assert glom(enqueued_form_data, field) == [str(saved_files[0])]
 
 

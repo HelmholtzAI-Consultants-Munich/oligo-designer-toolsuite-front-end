@@ -405,7 +405,7 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
-    run_name = form.get("run_name")  # only used for UI display
+    run_name = str(form.get("run_name") or "")  # only used for UI display
     sanitized_run_name = sanitize_input(run_name)
 
     if not isinstance(form_data, dict):

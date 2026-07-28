@@ -6,28 +6,48 @@ Notes:
     without live network access.
 """
 
-import ftplib
 import gzip
 import hashlib
 import subprocess
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from backend.genomic_databases import (
-    BaseGenomicDataBase,
-    EnsemblGenomicDataBase,
+    BaseGenomicDatabase,
+    EnsemblGenomicDatabase,
     GenomicEntity,
     GenomicEntityContext,
-    NCBIGenomicDataBase,
+    NCBIGenomicDatabase,
 )
 
 
-class ConcreteDatabase(BaseGenomicDataBase):
-    """Concrete test double for exercising BaseGenomicDataBase behavior."""
+class ConcreteDatabase(BaseGenomicDatabase):
+    """Concrete test double for exercising BaseGenomicDatabase's shared logic."""
 
-    def _verify_file(self, file_path: Path, expected_checksum: str) -> bool:
+    name: ClassVar[str] = "db"
+    host: ClassVar[str] = "host"
+    base_path: ClassVar[str] = "base"
+    checksums_filename: ClassVar[str] = "CHECKSUMS"
+
+    def _build_species_mapping(self, species_dirs: dict[str, list[str]]) -> dict[str, list[str]]:
+        """Return the input unchanged.
+
+        Arguments:
+            species_dirs {dict[str, list[str]]} -- directories mapped to their subdirectories
+
+        Notes:
+            This lets tests assert on fetch_species_mapping's directory-discovery
+            plumbing without a provider-specific reshaping step getting in the way.
+
+        Returns:
+            dict[str, list[str]] -- the input, unchanged
+        """
+        return species_dirs
+
+    def _matches_checksum(self, file_path: Path, expected_checksum: str) -> bool:
         """Always pass verification.
 
         Arguments:
@@ -43,7 +63,7 @@ class ConcreteDatabase(BaseGenomicDataBase):
         """
         return True
 
-    def get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
+    def _get_entity_context(self, entity: GenomicEntity) -> GenomicEntityContext:
         """Return a fixed context.
 
         Arguments:
@@ -56,33 +76,6 @@ class ConcreteDatabase(BaseGenomicDataBase):
             GenomicEntityContext -- stub context with hardcoded paths and metadata
         """
         return GenomicEntityContext("ann", "ann.gtf.gz", "seq", "seq.fna.gz", "1", "asm", None)
-
-    def _checksum_filename(self) -> str:
-        """Return a fixed name.
-
-        Notes:
-            This avoids coupling base-class tests to provider-specific checksum
-            filenames.
-
-        Returns:
-            str -- fixed checksum filename used across base-class tests
-        """
-        return "CHECKSUMS"
-
-    def _parse_checksum_line(self, line):
-        """Return a fixed tuple.
-
-        Arguments:
-            line {Any} -- raw line from the checksum file
-
-        Notes:
-            This keeps checksum map tests independent of provider-specific line
-            parsing.
-
-        Returns:
-            tuple -- fixed (filename, checksum) pair
-        """
-        return ("file", "checksum")
 
 
 class FakeFTP:
@@ -98,7 +91,7 @@ class FakeFTP:
         """Configure the fake with controlled listing data.
 
         Keyword Arguments:
-            lines {list} -- raw FTP listing lines returned by retrlines (default: {None})
+            lines {list} -- raw FTP listing lines returned by dir (default: {None})
             names {list} -- filenames returned by nlst (default: {None})
 
         Notes:
@@ -115,7 +108,7 @@ class FakeFTP:
     def __exit__(self, exc_type, exc, tb):
         return False
 
-    def retrlines(self, command, callback):
+    def dir(self, callback):
         for line in self.lines:
             callback(line)
 
@@ -127,7 +120,7 @@ class FakeFTP:
         return self.names
 
 
-def test_get_dirs_parses_directories_and_symlinks():
+def test_get_subdirs_parses_directories_and_symlinks():
     """Directories and symlinks are both included while plain files are excluded.
 
     Notes:
@@ -141,18 +134,19 @@ def test_get_dirs_parses_directories_and_symlinks():
         ]
     )
 
-    assert ConcreteDatabase()._get_dirs(ftp) == ["dir_b", "link_a -> target"]
+    assert ConcreteDatabase()._get_subdirs(ftp) == ["dir_b", "link_a"]
 
 
-def test_get_dirs_ignores_malformed_lines():
-    """Malformed FTP listing lines are silently skipped rather than crashing.
+def test_get_subdirs_ignores_malformed_lines():
+    """Listing lines without enough whitespace-separated fields are silently skipped.
 
     Notes:
-        This means a partial listing doesn't abort the whole fetch.
+        A malformed line would otherwise abort the whole directory listing via
+        an uncaught ValueError.
     """
-    ftp = FakeFTP(["broken", "drwxr-xr-x too-short"])
+    ftp = FakeFTP(["broken", "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 dir_b"])
 
-    assert ConcreteDatabase()._get_dirs(ftp) == []
+    assert ConcreteDatabase()._get_subdirs(ftp) == ["dir_b"]
 
 
 def test_filter_allowlist_filters_when_present():
@@ -161,7 +155,7 @@ def test_filter_allowlist_filters_when_present():
     Notes:
         This ensures only intended organisms consume cache space.
     """
-    assert ConcreteDatabase(allowlist=["a", "c"])._filter_allowlist(["a", "b"]) == ["a"]
+    assert ConcreteDatabase(allowlist={"a", "c"})._filter_allowlist(["a", "b"]) == ["a"]
 
 
 def test_filter_allowlist_returns_all_without_allowlist():
@@ -173,23 +167,24 @@ def test_filter_allowlist_returns_all_without_allowlist():
     assert ConcreteDatabase()._filter_allowlist(["a", "b"]) == ["a", "b"]
 
 
-def test_fetch_ftp_directories_logs_in_and_builds_directory_dict():
+def test_fetch_species_mapping_logs_in_and_builds_mapping():
     """Login and initial cwd happen before listing.
 
     Notes:
         This ensures anonymous FTP sessions start at the right base path.
     """
     ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 release"])
+    db = ConcreteDatabase()
+
     with (
         patch("backend.genomic_databases.ftplib.FTP", return_value=ftp),
-        patch.object(ConcreteDatabase, "_get_species_dirs", return_value=[["species"]]),
+        patch.object(db, "_get_subdirectories", return_value={"release": ["species"]}),
     ):
-        name, directories = ConcreteDatabase(name="db", host="host", base_path="base").fetch_ftp_directories()
+        result = db.fetch_species_mapping()
 
     ftp.login.assert_called_once_with()
     assert ftp.cwd_calls[0] == "base"
-    assert name == "db"
-    assert directories == {"release": ["species"]}
+    assert result == {"release": ["species"]}
 
 
 def test_download_requires_cache_dir():
@@ -199,7 +194,7 @@ def test_download_requires_cache_dir():
         Without a cache dir, files would have no persistent location.
     """
     with pytest.raises(RuntimeError, match="No caching directory"):
-        ConcreteDatabase(name="db", host="host")._download("dir", "file.txt")
+        ConcreteDatabase()._download("dir", "file.txt")
 
 
 def test_download_writes_response_chunks_to_cache(tmp_path):
@@ -218,7 +213,7 @@ def test_download_writes_response_chunks_to_cache(tmp_path):
     response.iter_content.return_value = [b"ab", b"cd"]
 
     with patch("backend.genomic_databases.requests.get", return_value=response):
-        path = ConcreteDatabase(name="db", host="host", cache_dir=tmp_path)._download("dir", "file.txt")
+        path = ConcreteDatabase(cache_dir=tmp_path)._download("dir", "file.txt")
 
     assert path.read_bytes() == b"abcd"
 
@@ -233,8 +228,8 @@ def test_download_sends_if_modified_since_for_existing_file(tmp_path):
         This avoids re-downloading multi-GB genome files that haven't changed
         since the last fetch.
     """
-    db = ConcreteDatabase(name="db", host="host", cache_dir=tmp_path)
-    existing = db._download.__self__.cache_dir / "db"
+    db = ConcreteDatabase(cache_dir=tmp_path)
+    existing = tmp_path / "db"
     existing.mkdir()
     url_hash = hashlib.md5(b"https://host/dir/file.txt").hexdigest()
     (existing / f"{url_hash}-file.txt").write_text("old")
@@ -265,9 +260,9 @@ def test_download_and_process_verifies_checksum_and_unzips(tmp_path):
 
     with (
         patch.object(db, "_download", return_value=gz_path),
-        patch.object(db, "_verify_file", return_value=True),
+        patch.object(db, "_matches_checksum", return_value=True),
     ):
-        path = BaseGenomicDataBase._download_and_process.__wrapped__(db, "dir", "file.fna.gz", "checksum")
+        path = BaseGenomicDatabase._download_and_process.__wrapped__(db, "dir", "file.fna.gz", "checksum")
 
     assert path == tmp_path / "file.fna"
     assert path.read_bytes() == b">x\nAC\n"
@@ -275,24 +270,27 @@ def test_download_and_process_verifies_checksum_and_unzips(tmp_path):
 
 
 def test_download_and_process_rejects_bad_checksum(tmp_path):
-    """A checksum mismatch raises an error.
+    """A checksum mismatch that persists across a retry raises an error.
 
     Arguments:
         tmp_path {Path} -- pytest-provided temp directory for the downloaded file
 
     Notes:
-        This prevents silently handing the caller a corrupted file.
+        This prevents silently handing the caller a corrupted file. The current
+        implementation retries the download once before giving up.
     """
     file_path = tmp_path / "file.txt"
     file_path.write_text("bad")
     db = ConcreteDatabase(cache_dir=tmp_path)
 
     with (
-        patch.object(db, "_download", return_value=file_path),
-        patch.object(db, "_verify_file", return_value=False),
+        patch.object(db, "_download", return_value=file_path) as download,
+        patch.object(db, "_matches_checksum", return_value=False),
     ):
         with pytest.raises(RuntimeError, match="Checksum"):
-            BaseGenomicDataBase._download_and_process.__wrapped__(db, "dir", "file.txt", "checksum")
+            BaseGenomicDatabase._download_and_process.__wrapped__(db, "dir", "file.txt", "checksum")
+
+    assert download.call_count == 2
 
 
 def test_get_checksum_map_downloads_unique_dirs_once(tmp_path):
@@ -310,14 +308,38 @@ def test_get_checksum_map_downloads_unique_dirs_once(tmp_path):
     db = ConcreteDatabase()
     context = GenomicEntityContext("same", "a", "same", "b", "1", "asm", None)
 
-    with patch.object(db, "_download", return_value=checksum_file) as download:
-        result = db._get_checksum_map(context)
+    with patch.object(db, "_parse_checksum_line", return_value=("file", "checksum")):
+        with patch.object(db, "_download", return_value=checksum_file) as download:
+            result = db._get_checksum_map(context)
 
     download.assert_called_once_with("same", "CHECKSUMS")
     assert result == {"file": "checksum"}
 
 
+def test_get_checksum_map_skips_blank_or_malformed_lines(tmp_path):
+    """Blank and single-token lines in a checksums file are skipped rather than aborting the whole file.
+
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory for the checksum file
+
+    Notes:
+        _parse_checksum_line raises ValueError for lines it can't parse, and
+        _get_checksum_map catches that per-line so one bad line doesn't lose
+        the rest of the map.
+    """
+    checksum_file = tmp_path / "CHECKSUMS"
+    checksum_file.write_text("abcd  ./good.txt\n\nbroken\n")
+    db = NCBIGenomicDatabase()
+    context = GenomicEntityContext("dir", "good.txt", "dir", "good.txt", "1", "asm", None)
+
+    with patch.object(db, "_download", return_value=checksum_file):
+        result = db._get_checksum_map(context)
+
+    assert result == {"good.txt": "abcd"}
+
+
 def test_get_checksum_missing_filename_raises():
+    """Looking up a filename absent from the checksum map raises a descriptive RuntimeError."""
     with pytest.raises(RuntimeError, match="Required file missing"):
         ConcreteDatabase()._get_checksum({}, "missing.fna.gz")
 
@@ -333,7 +355,7 @@ def test_fetch_genomic_entity_returns_resolved_files_and_metadata():
     with (
         patch.object(
             db,
-            "get_entity_context",
+            "_get_entity_context",
             return_value=GenomicEntityContext("ann", "ann.gtf.gz", "seq", "seq.fna.gz", "2", "asm", None),
         ),
         patch.object(db, "_get_checksum_map", return_value={"ann.gtf.gz": "a", "seq.fna.gz": "s"}),
@@ -351,21 +373,19 @@ def test_fetch_genomic_entity_returns_resolved_files_and_metadata():
 
 def test_ncbi_parse_checksum_line_valid():
     """NCBI checksum files use `hash  ./filename` format with a leading `./` that must be stripped for filename matching."""
-    assert NCBIGenomicDataBase()._parse_checksum_line("abcd  ./file.fna.gz") == ("file.fna.gz", "abcd")
+    assert NCBIGenomicDatabase()._parse_checksum_line("abcd  ./file.fna.gz") == ("file.fna.gz", "abcd")
 
 
-def test_ncbi_parse_checksum_line_blank_or_malformed_returns_none():
-    """Blank and truncated lines in NCBI checksum files are skipped.
-
-    Notes:
-        This avoids crashing the parse loop.
-    """
-    db = NCBIGenomicDataBase()
-    assert db._parse_checksum_line("") is None
-    assert db._parse_checksum_line("abcd") is None
+def test_ncbi_parse_checksum_line_raises_on_blank_or_malformed():
+    """Blank and single-token lines raise ValueError so the checksum map loader can skip them."""
+    db = NCBIGenomicDatabase()
+    with pytest.raises(ValueError):
+        db._parse_checksum_line("")
+    with pytest.raises(ValueError):
+        db._parse_checksum_line("abcd")
 
 
-def test_ncbi_verify_file_matches_md5(tmp_path):
+def test_ncbi_matches_checksum_compares_md5_digest(tmp_path):
     """Verification compares the actual file digest, not just file existence.
 
     Arguments:
@@ -378,34 +398,48 @@ def test_ncbi_verify_file_matches_md5(tmp_path):
     file_path.write_text("content")
     digest = hashlib.md5(b"content").hexdigest()
 
-    assert NCBIGenomicDataBase()._verify_file(file_path, digest)
-    assert not NCBIGenomicDataBase()._verify_file(file_path, "wrong")
+    assert NCBIGenomicDatabase()._matches_checksum(file_path, digest)
+    assert not NCBIGenomicDatabase()._matches_checksum(file_path, "wrong")
 
 
-def test_ncbi_get_releases_dir_prefers_annotation_releases():
-    """annotation_releases is preferred over all_assembly_versions.
+def test_ncbi_get_all_releases_dir_prefers_annotation_releases():
+    """annotation_releases is preferred over all_assembly_versions when both exist.
 
     Notes:
         It contains curated, stable assembly versions rather than all
         historical submissions.
     """
-    ftp = FakeFTP()
+    ftp = FakeFTP(
+        [
+            "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 annotation_releases",
+            "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 all_assembly_versions",
+        ]
+    )
+    db = NCBIGenomicDatabase()
 
     assert (
-        NCBIGenomicDataBase(base_path="base")._get_releases_dir(ftp, "taxon", "species")
-        == "annotation_releases"
+        db._get_all_releases_dir(ftp, "taxon", "species")
+        == "/genomes/refseq/taxon/species/annotation_releases"
     )
 
 
-def test_ncbi_get_releases_dir_falls_back_to_all_assembly_versions():
+def test_ncbi_get_all_releases_dir_falls_back_to_all_assembly_versions():
     """Older assemblies that predate the annotation_releases directory are only available under all_assembly_versions."""
-    ftp = FakeFTP()
-    ftp.cwd = MagicMock(side_effect=[ftplib.error_perm("missing"), "ok"])
+    ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 all_assembly_versions"])
+    db = NCBIGenomicDatabase()
 
     assert (
-        NCBIGenomicDataBase(base_path="base")._get_releases_dir(ftp, "taxon", "species")
-        == "all_assembly_versions"
+        db._get_all_releases_dir(ftp, "taxon", "species")
+        == "/genomes/refseq/taxon/species/all_assembly_versions"
     )
+
+
+def test_ncbi_get_all_releases_dir_returns_none_when_neither_exists():
+    """No candidate release directory returns None rather than a nonexistent path."""
+    ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 something_else"])
+    db = NCBIGenomicDatabase()
+
+    assert db._get_all_releases_dir(ftp, "taxon", "species") is None
 
 
 def test_ncbi_fetch_annotations_releases_filters_suppressed():
@@ -413,29 +447,36 @@ def test_ncbi_fetch_annotations_releases_filters_suppressed():
 
     Notes:
         NCBI marks withdrawn assemblies this way, so excluding them ensures
-        callers never see retracted data.
+        callers never see retracted data. The filter matches when release_dir
+        (a full FTP path) ends with "all_assembly_versions", so the mocked
+        _get_all_releases_dir returns a realistic full path here rather than
+        the bare directory name.
     """
     ftp = FakeFTP(
         ["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 suppressed", "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 GCF_1"]
     )
-    db = NCBIGenomicDataBase()
+    db = NCBIGenomicDatabase()
     with (
         patch("backend.genomic_databases.ftplib.FTP", return_value=ftp),
-        patch.object(db, "_get_releases_dir", return_value="all_assembly_versions"),
+        patch.object(
+            db,
+            "_get_all_releases_dir",
+            return_value="/genomes/refseq/taxon/species/all_assembly_versions",
+        ),
     ):
-        result = NCBIGenomicDataBase.fetch_annotations_releases.__wrapped__(db, "taxon", "species")
+        result = NCBIGenomicDatabase.fetch_annotations_releases.__wrapped__(db, "taxon", "species")
 
     assert result == ["GCF_1"]
 
 
 def test_ncbi_fetch_annotations_releases_returns_none_when_no_release_dir():
     """None signals the species has no releases on NCBI, distinct from an empty list which would mean releases exist but none matched."""
-    db = NCBIGenomicDataBase()
+    db = NCBIGenomicDatabase()
     with (
         patch("backend.genomic_databases.ftplib.FTP", return_value=FakeFTP()),
-        patch.object(db, "_get_releases_dir", return_value=None),
+        patch.object(db, "_get_all_releases_dir", return_value=None),
     ):
-        assert NCBIGenomicDataBase.fetch_annotations_releases.__wrapped__(db, "taxon", "species") is None
+        assert NCBIGenomicDatabase.fetch_annotations_releases.__wrapped__(db, "taxon", "species") is None
 
 
 def test_ncbi_get_assembly_information_parses_report(tmp_path):
@@ -450,7 +491,7 @@ def test_ncbi_get_assembly_information_parses_report(tmp_path):
     """
     report = tmp_path / "assembly_report.txt"
     report.write_text("# Assembly name: GRCh38 p14\n# RefSeq assembly accession: GCF_000001405.40\n")
-    db = NCBIGenomicDataBase()
+    db = NCBIGenomicDatabase()
 
     with patch.object(db, "_download", return_value=report):
         assert db._get_assembly_information("dir", "report.txt") == ("GRCh38_p14", "GCF_000001405.40")
@@ -468,7 +509,7 @@ def test_ncbi_get_assembly_information_errors_when_missing_fields(tmp_path):
     """
     report = tmp_path / "assembly_report.txt"
     report.write_text("# Assembly name: GRCh38\n")
-    db = NCBIGenomicDataBase()
+    db = NCBIGenomicDatabase()
 
     with patch.object(db, "_download", return_value=report):
         with pytest.raises(ValueError, match="accession"):
@@ -482,43 +523,20 @@ def test_ncbi_get_entity_context_builds_expected_filenames():
         NCBI filenames follow this strict pattern, and downloads will fail
         otherwise.
     """
-    db = NCBIGenomicDataBase()
+    db = NCBIGenomicDatabase()
     with patch.object(db, "_resolve_release_and_dir", return_value=("110", "GRCh38", "GCF_1", "/remote/")):
-        context = db.get_entity_context(GenomicEntity("taxon", "species", "current"))
+        context = db._get_entity_context(GenomicEntity("taxon", "species", "current"))
 
     assert context.annotation_remote_filename == "GCF_1_GRCh38_genomic.gtf.gz"
     assert context.sequence_remote_filename == "GCF_1_GRCh38_genomic.fna.gz"
 
 
-def test_ensembl_release_dirs_current():
-    """'current' maps to the live release paths rather than a versioned path.
-
-    Notes:
-        This ensures callers always get the latest data.
-    """
-    assert EnsemblGenomicDataBase()._release_dirs("current") == ("pub/current_gtf", "pub/current_fasta")
-
-
-def test_ensembl_release_dirs_numeric():
-    """Numeric releases map to versioned paths.
-
-    Notes:
-        This lets historical data be fetched without the paths changing when a
-        new release is published.
-    """
-    assert EnsemblGenomicDataBase()._release_dirs("110") == ("pub/release-110/gtf", "pub/release-110/fasta")
-
-
 def test_ensembl_parse_checksum_line():
-    """Ensembl checksum lines are parsed in the BSD `sum` command format (checksum size filename).
-
-    Notes:
-        This differs from NCBI's MD5 format and must be parsed separately.
-    """
-    assert EnsemblGenomicDataBase()._parse_checksum_line("12345 678 file.fa.gz") == ("file.fa.gz", "12345")
+    """Ensembl checksum lines are parsed in the BSD `sum` command format (checksum size filename)."""
+    assert EnsemblGenomicDatabase()._parse_checksum_line("12345 678 file.fa.gz") == ("file.fa.gz", "12345")
 
 
-def test_ensembl_verify_file_uses_sum_command(tmp_path):
+def test_ensembl_matches_checksum_uses_sum_command(tmp_path):
     """Verification calls the `sum` command to check Ensembl checksums.
 
     Arguments:
@@ -533,11 +551,11 @@ def test_ensembl_verify_file_uses_sum_command(tmp_path):
     completed = subprocess.CompletedProcess(["sum"], 0, stdout="123 1 file.fa\n")
 
     with patch("backend.genomic_databases.subprocess.run", return_value=completed):
-        assert EnsemblGenomicDataBase()._verify_file(file_path, "123")
-        assert not EnsemblGenomicDataBase()._verify_file(file_path, "999")
+        assert EnsemblGenomicDatabase()._matches_checksum(file_path, "123")
+        assert not EnsemblGenomicDatabase()._matches_checksum(file_path, "999")
 
 
-def test_ensembl_verify_file_returns_false_on_called_process_error(tmp_path):
+def test_ensembl_matches_checksum_returns_false_on_called_process_error(tmp_path):
     """Verification returns False when the `sum` command is unavailable or exits with an error.
 
     Arguments:
@@ -549,32 +567,35 @@ def test_ensembl_verify_file_returns_false_on_called_process_error(tmp_path):
     with patch(
         "backend.genomic_databases.subprocess.run", side_effect=subprocess.CalledProcessError(1, "sum")
     ):
-        assert not EnsemblGenomicDataBase()._verify_file(tmp_path / "file", "123")
+        assert not EnsemblGenomicDatabase()._matches_checksum(tmp_path / "file", "123")
 
 
-def test_ensembl_get_species_dirs_rewrites_release_dirs_to_fasta():
+def test_ensembl_get_subdirectories_rewrites_release_dirs_to_fasta():
     """Species listing navigates to the fasta subdirectory even though the top-level listing uses gtf paths.
 
     Notes:
         The two trees are structurally parallel.
     """
     ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 homo_sapiens"])
-    db = EnsemblGenomicDataBase(base_path="pub")
+    db = EnsemblGenomicDatabase()
 
-    assert db._get_species_dirs(["release-110"], ftp) == [["homo_sapiens"]]
+    assert db._get_subdirectories(["release-110"], ftp) == {"release-110/fasta": ["homo_sapiens"]}
     assert ftp.cwd_calls == ["/pub/release-110/fasta"]
 
 
-def test_ensembl_build_directory_dict_reverses_species_to_releases():
-    """The release→species FTP structure is inverted into a directory dict keyed by species.
+def test_ensembl_build_species_mapping_reverses_species_to_releases():
+    """The release->species FTP structure is inverted into a mapping keyed by species, with plain release numbers.
 
     Notes:
         This is the shape the dropdown UI needs.
     """
-    db = EnsemblGenomicDataBase()
-    db.orig_top_dirs = ["release-110", "release-111"]
+    db = EnsemblGenomicDatabase()
+    species_dirs = {
+        "release-110/fasta": ["human"],
+        "release-111/fasta": ["human", "mouse"],
+    }
 
-    assert db._build_directory_dict(["ignored"], [["human"], ["human", "mouse"]]) == {
+    assert db._build_species_mapping(species_dirs) == {
         "human": ["110", "111"],
         "mouse": ["111"],
     }
@@ -590,10 +611,10 @@ def test_ensembl_pick_files_prefers_primary_assembly_dna_sm():
         ]
     )
     with patch("backend.genomic_databases.ftplib.FTP", return_value=ftp):
-        assert EnsemblGenomicDataBase()._pick_files("ann", "seq") == (
+        assert EnsemblGenomicDatabase()._pick_files("ann", "seq") == (
             "Homo_sapiens.GRCh38.110.gtf.gz",
             "Homo_sapiens.GRCh38.dna_sm.primary_assembly.fa.gz",
-            "GRCh38.110.gtf",
+            "GRCh38",
         )
 
 
@@ -605,8 +626,8 @@ def test_ensembl_pick_files_errors_without_gtf():
         without annotation data.
     """
     with patch("backend.genomic_databases.ftplib.FTP", return_value=FakeFTP(names=["file.fa.gz"])):
-        with pytest.raises(RuntimeError, match=r"No \.gtf\.gz"):
-            EnsemblGenomicDataBase()._pick_files("ann", "seq")
+        with pytest.raises(RuntimeError, match="No suitable annotation"):
+            EnsemblGenomicDatabase()._pick_files("ann", "seq")
 
 
 def test_ensembl_pick_files_errors_without_fasta():
@@ -620,23 +641,39 @@ def test_ensembl_pick_files_errors_without_fasta():
         "backend.genomic_databases.ftplib.FTP", return_value=FakeFTP(names=["Homo_sapiens.GRCh38.110.gtf.gz"])
     ):
         with pytest.raises(RuntimeError, match="No suitable sequence"):
-            EnsemblGenomicDataBase()._pick_files("ann", "seq")
+            EnsemblGenomicDatabase()._pick_files("ann", "seq")
+
+
+def test_ensembl_get_entity_context_uses_current_for_non_numeric_release():
+    """A non-numeric release like 'current' maps to the live release path rather than a versioned one.
+
+    Notes:
+        This ensures callers always get the latest data.
+    """
+    db = EnsemblGenomicDatabase()
+    with patch.object(db, "_pick_files", return_value=("ann.gtf.gz", "seq.fa.gz", "GRCh38")):
+        context = db._get_entity_context(GenomicEntity(None, "homo_sapiens", "current"))
+
+    assert context.annotation_remote_dir == "/pub/current/gtf/homo_sapiens"
+    assert context.sequence_remote_dir == "/pub/current/fasta/homo_sapiens/dna"
+    assert context.annotation_release == "current"
 
 
 def test_ensembl_get_entity_context_builds_dirs_and_metadata():
-    """The context includes both remote dirs and metadata.
+    """The context includes both remote dirs and metadata for a numeric release.
 
     Notes:
         This means subsequent download and annotation lookup steps don't need
-        to re-navigate the FTP tree.
+        to re-navigate the FTP tree. Numeric releases map to a versioned
+        release-NNN path rather than the live release path.
     """
-    db = EnsemblGenomicDataBase()
+    db = EnsemblGenomicDatabase()
     with patch.object(db, "_pick_files", return_value=("ann.gtf.gz", "seq.fa.gz", "GRCh38")):
-        context = db.get_entity_context(GenomicEntity(None, "homo_sapiens", "110"))
+        context = db._get_entity_context(GenomicEntity(None, "homo_sapiens", "110"))
 
-    assert context.annotation_remote_dir == "pub/release-110/gtf/homo_sapiens"
-    assert context.sequence_remote_dir == "pub/release-110/fasta/homo_sapiens/dna"
-    assert context.annotation_release == "110"
+    assert context.annotation_remote_dir == "/pub/release-110/gtf/homo_sapiens"
+    assert context.sequence_remote_dir == "/pub/release-110/fasta/homo_sapiens/dna"
+    assert context.annotation_release == "release-110"
     assert context.genome_assembly == "GRCh38"
 
 
@@ -670,7 +707,7 @@ def test_genomic_releases_returns_release_list(client):
         paths.
     """
     with patch(
-        "backend.routes.genomic.NCBIGenomicDataBase.fetch_annotations_releases",
+        "backend.routes.genomic.NCBIGenomicDatabase.fetch_annotations_releases",
         return_value=["current", "110"],
     ):
         response = client.get("/api/genomic/releases/taxon/species")
@@ -689,7 +726,7 @@ def test_genomic_releases_returns_404_when_none(client):
         None means the species has no releases on NCBI, and 404 prevents the
         frontend from displaying an empty selection.
     """
-    with patch("backend.routes.genomic.NCBIGenomicDataBase.fetch_annotations_releases", return_value=None):
+    with patch("backend.routes.genomic.NCBIGenomicDatabase.fetch_annotations_releases", return_value=None):
         response = client.get("/api/genomic/releases/taxon/species")
 
     assert response.status_code == 404
