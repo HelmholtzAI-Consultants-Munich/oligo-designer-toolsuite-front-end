@@ -190,9 +190,9 @@ def normalize_legal_body(body: str) -> str:
         body {str} -- the raw document body to normalize.
 
     Notes:
-        Normalizing before hashing/storing ensures the same content always
-        produces the same version hash regardless of the OS/editor that
-        authored it (e.g. CRLF vs LF).
+        Normalizing before hashing/storing ensures identical content always
+        produces the same version hash, regardless of the OS/editor that
+        authored it.
 
     Raises:
         ValueError: if body isn't a string, or is empty after normalizing.
@@ -242,11 +242,7 @@ def compute_legal_version(body: str) -> str:
         body {str} -- the document body to hash.
 
     Notes:
-        Using a content-addressed version instead of a manually incremented
-        number means identical text always yields the identical version.
-        This is what lets publish_legal_document detect that nothing
-        actually changed, and lets has_current_terms_acceptance compare
-        versions without a central counter.
+        uses hash function to compute the hash value to give a version to the legal text
 
     Returns:
         str -- a short, stable version identifier derived from the body's content.

@@ -90,10 +90,10 @@ def resolve_timeout(is_authenticated: bool) -> int:
         is_authenticated {bool} -- whether the current caller is logged in.
 
     Notes:
-        The timeout is deliberately static rather than based on input
-        size/complexity, since estimating actual runtime up front isn't
-        reliable; a fixed budget per user type is simpler to reason about
-        and enforce consistently.
+        Anonymous users get the base limit; authenticated users get the
+        configured multiplier on top of it. The limit is static rather than
+        based on input size/complexity, since estimating runtime up front
+        isn't reliable.
 
     Returns:
         int -- soft time limit in seconds for the Celery pipeline task.

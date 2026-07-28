@@ -214,8 +214,7 @@ def get_run_config(run_id: ObjectId):
 
     Notes:
         This lets the frontend re-populate a form from a past run (e.g.
-        "rerun with same settings"). It 404s for older runs that predate
-        this feature, since there's no config to return for them.
+        "rerun with same settings").
 
     Returns:
         flask.Response -- the saved PipelineConfigExport JSON.

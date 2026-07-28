@@ -55,10 +55,8 @@ def ban_helmholtz_sub(helmholtz_sub: str, banned_by: str):
         banned_by {str} -- which admin issued the ban.
 
     Notes:
-        This uses an upsert with $setOnInsert so banning an already-banned
-        identity is a no-op rather than overwriting the original ban's
-        timestamp/admin; the history of who banned them first shouldn't
-        change on a repeat call.
+        Banning an already-banned identity is a no-op — the original ban's
+        timestamp/admin aren't overwritten.
 
     Returns:
         dict -- the ban record (existing or newly created).

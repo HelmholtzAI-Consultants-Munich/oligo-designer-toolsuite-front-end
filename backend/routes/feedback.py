@@ -18,11 +18,7 @@ FEEDBACK_RATE_LIMIT = "10 per hour"
 
 
 def _feedback_rate_limit_key() -> str:
-    """Key the rate limit by user rather than IP.
-
-    Notes:
-        This endpoint requires login anyway, and per-IP limiting would
-        unfairly throttle multiple users behind the same NAT/proxy.
+    """Key the rate limit by user
 
     Returns:
         str -- rate-limit bucket key for the current user.

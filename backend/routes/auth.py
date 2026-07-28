@@ -181,9 +181,7 @@ def login():
 
     Notes:
         The frontend always POSTs here for username/password, while OAuth
-        needs a GET the browser can be redirected to directly. Legacy POST
-        login exists for CLI-registered admin accounts, which have no
-        Helmholtz identity to OAuth against.
+        needs a GET the browser can be redirected to directly.
 
     Returns:
         flask.Response -- redirect to Helmholtz AAI (GET), or JSON message (POST).
@@ -239,8 +237,7 @@ def auth_callback():
     """OAuth2 callback from Helmholtz AAI that looks up/creates the user and logs them in.
 
     Notes:
-        The user is looked up/created by helmholtz_sub (not email/username,
-        which Helmholtz doesn't guarantee), and the denylist is checked here
+        The user is looked up/created by helmholtz_sub and the denylist is checked here
         (rather than relying on the user_loader) so a newly-banned user is
         rejected even before their first User object is created.
 
