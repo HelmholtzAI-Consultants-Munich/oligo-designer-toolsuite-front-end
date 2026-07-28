@@ -60,10 +60,6 @@ class Config:
 
     # Helmholtz AAI OAuth2/OIDC settings (Development instance)
     HELMHOLTZ_DISCOVERY_URL = "https://login-dev.helmholtz.de/oauth2/.well-known/openid-configuration"
-    HELMHOLTZ_AUTHORIZATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2-as/oauth2-authz"
-    HELMHOLTZ_TOKEN_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/token"
-    HELMHOLTZ_USERINFO_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/userinfo"
-    HELMHOLTZ_REVOCATION_ENDPOINT = "https://login-dev.helmholtz.de/oauth2/revoke"
     HELMHOLTZ_ISSUER = "https://login-dev.helmholtz.de/oauth2"
 
     # GPDR settings
@@ -74,8 +70,11 @@ class Config:
     HELMHOLTZ_CLIENT_SECRET = None
 
     # OAuth2 settings
-    HELMHOLTZ_SCOPE = "openid single-logout"
+    HELMHOLTZ_SCOPE = "openid single-logout entitlements"
+    HELMHOLTZ_REQUIRED_ENTITLEMENT = ""
+    HELMHOLTZ_RESTRICT_BY_ENTITLEMENT = False
     HELMHOLTZ_REDIRECT_URI = BACKEND_URL + "/auth/callback"
+    HELMHOLTZ_AAI_TIMEOUT_SECONDS = 10
 
     # Turnstile settings
     TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA")
@@ -83,6 +82,9 @@ class Config:
     # Performance Settings
     DOWNLOAD_CHUNK_SIZE = int(os.environ.get("DOWNLOAD_CHUNK_SIZE", 10 * 1024 * 1024))
     FEEDBACK_MAX_LENGTH = int(os.environ.get("FEEDBACK_MAX_LENGTH", 2000))
+    # Maximum number of concurrently running pipeline runs (status == "started").
+    PIPELINE_MAX_CONCURRENT_ANONYMOUS = int(os.environ.get("PIPELINE_MAX_CONCURRENT_ANONYMOUS", 1))
+    PIPELINE_MAX_CONCURRENT_AUTHENTICATED = int(os.environ.get("PIPELINE_MAX_CONCURRENT_AUTHENTICATED", 5))
     GENE_COUNT_THRESHOLD = 10
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024 * 1024
 
@@ -94,6 +96,10 @@ class Config:
     REDIS_FILE_EXPIRATION_TIME = int(
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
+    REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
+    REDIS_QUEUE_ACCOUNTING_LOCK_KEY = "pipelines:queue_accounting_lock"
+    REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT = int(os.environ.get("REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT", 30))
+    CELERY_PIPELINE_RUN_STAMP = "pipeline_run_id"
 
     @staticmethod
     def get_logging_config() -> dict:

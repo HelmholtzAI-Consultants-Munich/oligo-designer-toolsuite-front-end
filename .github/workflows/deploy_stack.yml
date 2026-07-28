@@ -31,7 +31,7 @@ jobs:
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          known_hosts: unnecessary # will be set by Ansible upon first connection
+          known_hosts: unnecessary # SSH fingerprints are potentially unknown as Ansible may provision new VMs
           name: odt-ansible-key
 
       - name: Create production .env file
@@ -46,7 +46,6 @@ jobs:
           echo FRONTEND_URL=${{ vars.FRONTEND_URL }} >> ansible/files/.env
           echo BACKEND_URL=${{ vars.BACKEND_URL }} >> ansible/files/.env
           echo VITE_BACKEND_URL=${{ vars.VITE_BACKEND_URL }} >> ansible/files/.env
-          echo ODT_CLOUD_VERSION=${{ vars.ODT_CLOUD_VERSION }} >> ansible/files/.env
           echo PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER=${{ secrets.PIPELINE_TIMEOUT_AUTHENTICATED_MULTIPLIER }} >> ansible/files/.env
 
       - name: Run Ansible playbook
@@ -54,3 +53,11 @@ jobs:
         with:
           playbook: playbook.yml
           directory: ansible
+          options: |
+            --extra-vars ODT_CLOUD_VERSION=${{ vars.ODT_CLOUD_VERSION }}
+            --key-file ~/.ssh/odt-ansible-key
+        env:
+          OS_AUTH_TYPE: v3applicationcredential
+          OS_AUTH_URL: ${{ secrets.OS_AUTH_URL }}
+          OS_APPLICATION_CREDENTIAL_ID: ${{ secrets.OS_APPLICATION_CREDENTIAL_ID }}
+          OS_APPLICATION_CREDENTIAL_SECRET: ${{ secrets.OS_APPLICATION_CREDENTIAL_SECRET }}

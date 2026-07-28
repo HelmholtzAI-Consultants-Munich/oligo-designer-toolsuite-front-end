@@ -58,6 +58,7 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
     formatted = {
         "_id": str(run["_id"]),
         "pipeline": run.get("pipeline", "unknown"),
+        "run_name": run.get("run_name"),
         "status": run.get("status", "unknown"),
         "timestamp": timestamp_to_iso(run.get("timestamp")),
         "user_id": run.get("user_id", "unknown"),
@@ -166,6 +167,8 @@ def get_run_file(run_id: ObjectId, filename: str):
         2. Resolve the requested file path (with subdir support).
         3. Serve file with correct mimetype, or return error.
     """
+    ALLOWED_FILE_ENDINGS = (".yml", ".yaml", ".tsv", ".xlsx")
+
     # Auth or session check
     run = get_run_or_404(run_id, require_ownership=True)
 
@@ -182,13 +185,8 @@ def get_run_file(run_id: ObjectId, filename: str):
         abort(HTTPStatus.NOT_FOUND, description="File not found")
 
     # Return correct mimetype
-    file_path = str(file_path)
-    if filename.endswith((".yml", ".yaml")):
-        return send_file(file_path, as_attachment=True)
-    elif filename.endswith((".txt", ".log")):
-        return send_file(file_path, mimetype="text/plain")
-    elif filename.endswith(".fna"):
-        return send_file(file_path, mimetype="application/octet-stream")
+    if filename.endswith(ALLOWED_FILE_ENDINGS):
+        return send_file(str(file_path), as_attachment=True)
     else:
         abort(HTTPStatus.BAD_REQUEST, description="Unsupported file type")
 

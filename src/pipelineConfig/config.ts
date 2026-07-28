@@ -26,6 +26,12 @@ interface BasePipeline {
     link: string;
     fileUploadFields?: (keyof RJSFFormData)[][];
     disabled: boolean;
+    fileDownloads?: {
+        excelFile: string;
+        probes: string;
+        probesOrder: string;
+        probesTable: string;
+    };
 }
 
 type ScrinshotPipeline = BasePipeline & {
@@ -114,5 +120,11 @@ export const PIPELINE_CONFIG: PipelineConfig = {
                 "files_vcf_reference_database",
             ],
         ],
+        fileDownloads: {
+            excelFile: "oligo_seq_probes.xlsx",
+            probes: "oligo_seq_probes.yml",
+            probesTable: "oligo_seq_probes.tsv",
+            probesOrder: "oligo_seq_probes_order.yml",
+        },
     },
 };

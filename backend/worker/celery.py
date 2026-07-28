@@ -1,3 +1,8 @@
+"""Initialization and configuring Celery and the logger is done here.
+
+Further it serves as the main entry point.
+"""
+
 import logging
 
 from celery import Celery

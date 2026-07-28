@@ -1,3 +1,8 @@
+# This file contains development-specific overrides for the Docker compose configuration.
+#
+# The overrides defined here are applied by default when running `docker compose ...`.
+# For the base configuration and more information, see `compose.yml`.
+
 services:
   odt-db:
     ports:
@@ -10,11 +15,15 @@ services:
     restart: on-failure
 
   odt-server:
+    # The production container uses `gunicorn`
+    # Using `flask` instead provides debug messages and hot code reloading
     command: ["flask", "run", "--host=0.0.0.0", "--port=8000"]
     ports:
       - 8000:8000
     restart: on-failure
     develop:
+      # Hot code reloading (used by `docker compose watch`):
+      # Sync source code into running container, recognized by Flask's hot code reloading
       watch:
         - action: sync
           path: ./backend
@@ -24,6 +33,8 @@ services:
   odt-beat:
     restart: on-failure
     develop:
+      # Hot code reloading (used by `docker compose watch`):
+      # Restart container with synced source code
       watch:
         - action: sync+restart
           path: ./backend
@@ -33,6 +44,8 @@ services:
   odt-worker:
     restart: on-failure
     develop:
+      # Hot code reloading (used by `docker compose watch`):
+      # Restart container with synced source code
       watch:
         - action: sync+restart
           path: ./backend
@@ -42,19 +55,26 @@ services:
   odt-web:
     image: odt-web:dev
     build:
+      # The production container uses nginx to host compiled (i.e. bundled and minified) static files
+      # The dev target runs Vite's dev server instead, providing unmodified source files and hot code reloading
       target: dev
     ports:
       - 3000:3000
+    # The container's build-time arguments are ignored for the dev target
+    # They need to be provided as environment variables instead, allowing changes without rebuilding
     env_file:
       - .env
     restart: on-failure
     develop:
+      # Hot code reloading (used by `docker compose watch`):
+      # Sync source code into running container, recognized by Vite's hot code reloading
       watch:
         - action: sync
           path: .
           target: /app
           initial_sync: true
 
+  # Playwright tests
   odt-tests:
     image: odt-tests:dev
     build:
@@ -74,6 +94,11 @@ services:
     restart: no
     profiles: [tests] # don't run unless specified
 
+  # --- Monitoring ---
+  # The monitoring containers are currently limited to the dev environment since
+  # they are not configured for our production deployment setup (i.e. multiple nodes).
+
+  # Monitoring: MongoDB metrics exporter
   odt-mongodb-exporter:
     image: percona/mongodb_exporter:0.47.2
     command:
@@ -84,6 +109,7 @@ services:
     restart: unless-stopped
     profiles: [monitoring]
 
+  # Monitoring: System metrics exporter
   odt-node-exporter:
     image: prom/node-exporter:latest
     command:
@@ -94,6 +120,7 @@ services:
     restart: unless-stopped
     profiles: [monitoring]
 
+  # Monitoring: System metrics exporter II.
   odt-cadvisor:
     image: ghcr.io/google/cadvisor:latest
     volumes:
@@ -108,6 +135,7 @@ services:
     restart: unless-stopped
     profiles: [monitoring]
 
+  # Monitoring: Metrics aggregator
   odt-prometheus:
     image: prom/prometheus:latest
     volumes:
@@ -117,6 +145,7 @@ services:
     restart: unless-stopped
     profiles: [monitoring]
 
+  # Monitoring: Metrics visualizer
   odt-grafana:
     image: grafana/grafana:latest
     volumes:

@@ -6,6 +6,13 @@ import { useRuns } from "../hooks/useRuns";
 import { confirmWithModal } from "../utils/modalUtil";
 import { showToast } from "../utils/toastUtil";
 
+/**
+ * A React context provider for managing authentication state.
+ * It checks the user's authentication status, handles login/logout, and manages terms acceptance.
+ * @param children - The child components that will have access to the authentication context.
+ * @returns A React functional component that provides authentication state and actions to its children.
+ */
+
 export default function AuthProvider({
     children,
 }: {

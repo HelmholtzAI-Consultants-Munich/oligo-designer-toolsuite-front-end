@@ -21,8 +21,6 @@ npm run docker:start:monitoring
 npm run docker:watch:monitoring
 ```
 
-See [Using Docker]({{ site.baseurl }}{% link using-docker.md %}) for more details on Docker profiles.
-
 After starting with the monitoring profile, the following monitoring services are available:
 
 | Service              | URL                           | Description                                             |

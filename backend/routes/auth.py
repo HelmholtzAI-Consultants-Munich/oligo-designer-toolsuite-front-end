@@ -20,16 +20,22 @@ Main features:
 import os
 import uuid
 from http import HTTPStatus
-from urllib.parse import urlencode
 
-import requests
 from bson import ObjectId
-from flask import Blueprint, abort, current_app, jsonify, redirect, request, session, url_for
+from flask import Blueprint, abort, current_app, jsonify, request, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash
 
 from backend.extensions import db, oauth
-from backend.routes.route_helpers import validate_turnstile
+from backend.routes.route_helpers import (
+    deny_oauth_login,
+    get_or_create_helmholtz_user,
+    is_helmholtz_access_allowed,
+    load_helmholtz_userinfo,
+    redirect_after_oauth_login,
+    revoke_helmholtz_token,
+    validate_turnstile,
+)
 from backend.utilities.account_cleanup import delete_user_account_data
 from backend.utilities.legal import TERMS_DOCUMENT_KEY, get_published_legal_document
 from backend.utilities.legal_acceptance import (
@@ -37,10 +43,7 @@ from backend.utilities.legal_acceptance import (
     record_terms_acceptance,
 )
 from backend.utilities.session_activity import delete_anonymous_session, touch_anonymous_session
-from backend.utilities.typed_values import (
-    parse_http_url,
-    sanitize_relative_redirect_path,
-)
+from backend.utilities.typed_values import sanitize_relative_redirect_path
 from backend.utilities.user_denylist import is_helmholtz_sub_banned
 
 auth_bp = Blueprint("auth", __name__)
@@ -239,48 +242,30 @@ def auth_callback():
     """
     # Exchange authorization code for access token
     token = oauth.helmholtz.authorize_access_token()
-
-    # Fetch user information from Helmholtz AAI
-    userinfo = token.get("userinfo")
-    if not userinfo:
-        # If userinfo not in token, fetch it explicitly
-        resp = oauth.helmholtz.get("userinfo")
-        userinfo = resp.json()
-
+    userinfo = load_helmholtz_userinfo(token)
     helmholtz_sub = userinfo.get("sub")
 
-    if not helmholtz_sub:
+    if not isinstance(helmholtz_sub, str) or not helmholtz_sub:
         current_app.logger.warning(f"Failed to get 'sub' from userinfo: {userinfo}")
         abort(
             HTTPStatus.INTERNAL_SERVER_ERROR, description="Failed to get user information from Helmholtz AAI"
         )
 
-    frontend_url_raw = current_app.config.get("FRONTEND_URL", "http://localhost:3000")
-    frontend_url = parse_http_url(frontend_url_raw)
-    if frontend_url is None:
-        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
-    frontend_base = frontend_url.geturl().rstrip("/")
-
     if is_helmholtz_sub_banned(helmholtz_sub):
-        session.pop("oauth_redirect", None)
-        session.pop("oauth_token", None)
-        ban_msg = "This account has been banned from accessing the service. Contact support if you believe this is an error."
-        return redirect(f"{frontend_base}/login?{urlencode({'error': ban_msg})}")
+        current_app.logger.warning(
+            "Helmholtz AAI login denied for subject %s: account is banned",
+            helmholtz_sub,
+        )
+        return deny_oauth_login(token.get("access_token"), "account_banned")
 
-    # Check if user exists in database by helmholtz_sub
-    user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
+    if not is_helmholtz_access_allowed(userinfo):
+        current_app.logger.warning(
+            "Helmholtz AAI login denied for subject %s: no allowed entitlement is present",
+            helmholtz_sub,
+        )
+        return deny_oauth_login(token.get("access_token"), "vo_access_denied")
 
-    if not user_doc:
-        # Create new user with only helmholtz_sub and role
-        user_id = db.users.insert_one(
-            {
-                "helmholtz_sub": helmholtz_sub,
-                "role": "user",  # Default role for Helmholtz users
-                "accepted_terms_version": None,
-                "terms_accepted_at": None,
-            }
-        ).inserted_id
-        user_doc = db.users.find_one({"_id": user_id})
+    user_doc = get_or_create_helmholtz_user(helmholtz_sub)
     # Log user in with "Remember Me" to persist login across browser sessions
     # OAuth logins always use "Remember Me" since there's no way to pass preference through OAuth flow
     # _login() will create the user directory if it doesn't exist
@@ -290,11 +275,7 @@ def auth_callback():
     # Store access token in session for logout/revocation
     session["oauth_token"] = token.get("access_token")
 
-    # Redirect to frontend - check if there's a preserved redirect URL
-    redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
-    if redirect_path:
-        return redirect(f"{frontend_base}{redirect_path}")
-    return redirect(f"{frontend_base}/")  # Default to homepage
+    return redirect_after_oauth_login()
 
 
 # ---- Check Authentication Status Route ----
@@ -378,27 +359,7 @@ def logout():
     # Revoke OAuth token if present
     oauth_token = session.get("oauth_token")
     if oauth_token:
-        try:
-            # Revoke the token with Helmholtz AAI
-            revocation_url = parse_http_url(current_app.config.get("HELMHOLTZ_REVOCATION_ENDPOINT"))
-            client_id = current_app.config.get("HELMHOLTZ_CLIENT_ID")
-
-            # According to RFC 7009 and Helmholtz AAI docs, token_type_hint is mandatory
-            data = {
-                "token": oauth_token,
-                "client_id": client_id,
-                "token_type_hint": "access_token",
-                "logout": "true",
-            }
-
-            if revocation_url is None:
-                current_app.logger.warning("Token revocation skipped: invalid revocation endpoint URL")
-            else:
-                response = requests.post(revocation_url.geturl(), data=data)
-                if response.status_code != HTTPStatus.OK:
-                    current_app.logger.warning(f"Token revocation failed: {response.status_code}")
-        except Exception as e:
-            current_app.logger.error(f"Error revoking token: {e!s}")
+        revoke_helmholtz_token(oauth_token)
 
         # Clear token from session
         session.pop("oauth_token", None)

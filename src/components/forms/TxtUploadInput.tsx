@@ -4,6 +4,13 @@ import { Form, InputGroup } from "react-bootstrap";
 import { FiletypeTxt } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
 
+/**
+ * Renders a custom field, that allows users to input text or a file to input their desired gene targets.
+ * Further it allows clicking a button to select all genes.
+ *
+ * @param props - FieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#fieldtemplate})
+ * @returns A React Component which accepts various ways of input to select the desired gene targets
+ */
 const TxtUploadInput = (props: FieldProps) => {
     const {
         onChange,

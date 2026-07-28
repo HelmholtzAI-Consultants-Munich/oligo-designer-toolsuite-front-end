@@ -1,3 +1,8 @@
+"""Defines the Genomic Region Generator Runner class.
+
+All functionality related to handling, executing and configuring the Genomic Region Generator should be added in this class.
+"""
+
 import os
 import uuid
 from logging import Logger
@@ -12,31 +17,53 @@ from oligo_designer_toolsuite.pipelines._genomic_region_generator import (
 
 from backend.cache import file_cache_region
 from backend.exceptions import ODTPipelineError
-from backend.genomic_databases import EnsemblGenomicDataBase, GenomicEntity, NCBIGenomicDataBase
+from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
 from backend.worker.converters import to_bool, to_int
 from backend.worker.utils import build_fallback_error_message
 
 
 class GenomicRegionGeneratorRunner:
     """
-    For details on the genomic region generator, see 'Genomic Region Generator' and
+    The Genomic Region Generator Runner is the core of the Genomic Region Generator handling in ODT Cloud.
+    It uses the genomic database adapters to fetch the required genomic data and then configures the Genomic Region
+    Generator to run on these files.
+
+    For further details on the genomic region generator, see 'Genomic Region Generator' and
     'Caching FASTA Files' in the developer documentation.
     """
 
     def __init__(self, logger: Logger):
+        """Initializes the GenomicRegionGeneratorRunner.
+
+        Sets the logger and ensures that the caching directory exists.
+
+        Arguments:
+            logger {Logger} -- The logger that should be used by the GenomicRegionGeneratorRunner.
+        """
         self.logger = logger
 
+        # TODO: read this path from config
         self.cache_dir = (Path(os.path.dirname(__file__)) / "../cache").resolve()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self, region_form: dict[str, Any]) -> list[str]:
+        """Entry point for the Genomic Region Generator run.
+
+        First it generates the regions and then returns the results.
+
+        Arguments:
+            region_form {dict[str, Any]} -- The configuration for the genomic region generator.
+
+        Returns:
+            list[str] -- A list of FASTA file paths.
+        """
         output_path = self.generate_regions(region_form)
 
         return self.collect_result_paths(output_path)
 
     @file_cache_region.cache_on_arguments()
     def generate_regions(self, region_form: dict[str, Any]) -> Path:
-        """Executes the genomic region generator.
+        """Fetches genomic data and executes the genomic region generator.
 
         Arguments:
             region_form {dict[str, Any]} -- The provided form specifying what regions to generate.
@@ -49,7 +76,7 @@ class GenomicRegionGeneratorRunner:
             ValueError: The genomic region generator failed.
 
         Returns:
-            Path -- The output directory containing the results.
+            pathlib.Path -- The output directory containing the results.
         """
         output_path = self.cache_dir / "generated" / f"cached_genomic_{uuid.uuid4().hex}"
         output_path.mkdir(parents=True, exist_ok=True)
@@ -58,7 +85,7 @@ class GenomicRegionGeneratorRunner:
         # Determine which upstream (NCBI or Ensembl) we are caching from, then always run in custom mode
         # ---------------------------------------------
         source_params = region_form.get("source_params", {})
-        taxon = source_params.get("taxon", "H_sapiens")  # ignored by EnsemblGenomicDataBase
+        taxon = source_params.get("taxon")
         species = source_params.get("species")
         ann_rel = str(source_params.get("annotation_release"))
         if species is None or ann_rel is None:
@@ -70,11 +97,11 @@ class GenomicRegionGeneratorRunner:
         source_val = region_form.get("source", "").lower()
         if source_val == "ensembl":
             # Ensembl second-line cache
-            cache_info = EnsemblGenomicDataBase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
+            cache_info = EnsemblGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
             files_source = "Ensembl"
         else:
             # Default to NCBI second-line cache
-            cache_info = NCBIGenomicDataBase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
+            cache_info = NCBIGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
             files_source = "NCBI"
 
         genome_assembly = cache_info["genome_assembly"]
@@ -98,7 +125,7 @@ class GenomicRegionGeneratorRunner:
             "genomic_regions": {key: to_bool(val) for key, val in region_form["genomic_regions"].items()},
             "exon_exon_junction_block_size": to_int(
                 region_form["exon_exon_junction_block_size"]
-            ),  # TODO: confirm whether users should be able to set this
+            ),  # TODO: users shouldn't be able to set this
         }
 
         with open(config_path, "w") as yaml_file:
@@ -144,6 +171,14 @@ class GenomicRegionGeneratorRunner:
         return output_path
 
     def collect_result_paths(self, output_path: Path) -> list[str]:
+        """Collects the FASTA files paths that are created by the Genomic Region Generator.
+
+        Arguments:
+            output_path {pathlib.Path} -- The output directory of the genomic region generator.
+
+        Returns:
+            list[str] -- A list of FASTA file paths.
+        """
         fna_files: list[str] = []
 
         annotation_output_path = output_path / "annotation"
@@ -154,5 +189,10 @@ class GenomicRegionGeneratorRunner:
         return fna_files
 
     def cleanup_temp_files(self, config_path: Path):
+        """Removes the config file, that is required for the Genomic Region Generator to run.
+
+        Arguments:
+            config_path {pathlib.Path} -- The config filepath.
+        """
         if config_path.exists():
             config_path.unlink()

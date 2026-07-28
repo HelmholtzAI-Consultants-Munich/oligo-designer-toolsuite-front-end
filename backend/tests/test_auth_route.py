@@ -49,6 +49,10 @@ def test_logout_calls_logout_user(client, authenticated_user):
     logout_user.assert_called_once()
 
 
+# TODO: Test OAuth callbacks for accepted Helmholtz-member entitlements, rejection of non-members,
+# disabled entitlement restriction, and multiple configured required VOs.
+
+
 def test_check_auth_logged_out(client):
     """The check_auth endpoint must report unauthenticated when there is no session.
 

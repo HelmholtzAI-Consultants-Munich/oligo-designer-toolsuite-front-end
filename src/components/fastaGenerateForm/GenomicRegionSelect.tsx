@@ -10,6 +10,15 @@ interface GenomicRegionSelectProps {
     ) => void;
 }
 
+/**
+ * Displays the genomic region checkboxes (e.g. exon, intron) used to configure the Genomic Region Generator.
+ *
+ * @param id - unique ID of the component
+ * @param exon_exon_junction_block_size - current value of the exon_exon_junction_block_size
+ * @param genomic_regions - current state of the genomic_regions checkboxes
+ * @param handleChange - callback invoked to update the RJSF Form state, when the selected genomic regions or the Exon-Exon-Junction block site is changed
+ * @returns A React Component that allows for selecting genomic regions
+ */
 export const GenomicRegionSelect: React.FC<GenomicRegionSelectProps> = ({
     id,
     exon_exon_junction_block_size,

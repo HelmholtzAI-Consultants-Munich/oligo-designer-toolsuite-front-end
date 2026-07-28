@@ -1,4 +1,13 @@
+# This file contains production-specific overrides for the Docker compose configuration.
+#
+# The overrides defined here have to be applied explicitly by running `docker compose -f compose.yml -f compose.prod.yml ...`.
+# For the base configuration and more information, see `compose.yml`.
+#
+# The configuration in this file is meant for deployment using Docker Swarm. We assume a single manager node and a single worker node.
+# TODO: To use an arbitrary amount of worker nodes, services that should only exist once (e.g. the database) need to be limited to a single replica.
+
 services:
+  # Reverse proxy
   traefik:
     image: traefik:3
     networks:
@@ -13,10 +22,10 @@ services:
     volumes:
       # Mount the Docker socket for Traefik's Swarm provider
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Keep TLS certificates in dedicated volume to make them persistent
       - tls_certs:/certs
     command:
       # --- EntryPoint config ---
-
       # HTTP EntryPoint
       - "--entrypoints.web.address=:80"
       # Configure HTTP to HTTPS Redirection
@@ -35,7 +44,6 @@ services:
       - "--certificatesresolvers.lets-encrypt.acme.storage=/certs/acme.json"
 
       # --- Providers config ---
-
       # Docker Swarm Provider
       # Enable the Docker Swarm provider (instead of Docker provider)
       - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
@@ -47,7 +55,6 @@ services:
       - "--providers.swarm.network=traefik_proxy"
 
       # --- General config ---
-
       # Observability
       - "--log.level=INFO" # Set the Log Level e.g INFO, DEBUG
       - "--accesslog=true" # Enable Access Logs
@@ -110,8 +117,14 @@ services:
       placement:
         constraints:
           - node.role == worker
+      # Amount of workers to run in parallel
+      # Since we allow the execution of a single task per worker, this
+      # limits the amount of tasks that can be processed simultaneously
       replicas: 4
       resources:
+        # These resource limits are by replica (i.e. by worker)
+        # To make it possible to limit the resource usage of a single task
+        # execution, we force a worker to only process one task at a time
         limits:
           memory: 16G
 

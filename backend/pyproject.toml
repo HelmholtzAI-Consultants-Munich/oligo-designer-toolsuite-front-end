@@ -18,11 +18,12 @@ shared = [
 server = [
     { include-group = "shared" },
     "Authlib >=1.6, <2",
-    "bleach >=6.2, <7",
+    "aarc-entitlement >=1.0, <2",
+    "nh3 >=0.3.6, <0.4",
     "Flask >=3.1, <4",
     "flask-cors >=6, <7",
     "Flask-Login >=0.6, <0.7",
-    "Flask-Limiter >=3.8, <4",
+    "Flask-Limiter >=4.1, <5",
     "gunicorn >=26, <27",
     "prometheus-flask-exporter >=0.23, <0.24",
     "PyMongo >=4, <5",
@@ -35,7 +36,7 @@ test = [
     "pytest-cov >=7, <8",
 ]
 lint = ["pre-commit==4.6", "ruff==0.15.11", "pyrefly==1.1.0"]
-types = ["types-Flask-Cors", "types-PyYAML", "types-Authlib", "types-requests", "types-bleach"]
+types = ["types-Flask-Cors", "types-PyYAML", "types-Authlib", "types-requests"]
 dev = [
     { include-group = "server" },
     { include-group = "worker" },
@@ -45,7 +46,6 @@ dev = [
 ]
 
 [tool.pytest]
-addopts = ["-q"]
 testpaths = ["tests"]
 
 [tool.ruff]
@@ -55,11 +55,7 @@ target-version = "py312"
 [tool.ruff.lint]
 # Rules that Ruff will apply
 # see https://docs.astral.sh/ruff/rules
-select = [
-    "E4",
-    "E7",
-    "E9",
-    "F",   # Pyflakes
+extend-select = [
     "RUF", # ruff-specific rules
     "UP",  # pyupgrade
     "I",   # isort
