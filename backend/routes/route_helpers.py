@@ -304,7 +304,19 @@ def _parse_entitlement(value: str) -> aarc_entitlement.G002 | None:
 
 
 def is_helmholtz_access_allowed(userinfo: dict[str, Any]) -> bool:
-    """Return whether Helmholtz userinfo satisfies the configured access policy."""
+    """Checks whether Helmholtz userinfo satisfies the configured access policy.
+
+    Arguments:
+        userinfo {dict[str, Any]} -- the OIDC userinfo claims to check.
+
+    Notes:
+        Access is unrestricted unless HELMHOLTZ_RESTRICT_BY_ENTITLEMENT is
+        set, so entitlement-gating (e.g. requiring VO membership) is opt-in
+        per deployment rather than hardcoded.
+
+    Returns:
+        bool -- True if access is allowed.
+    """
     if not bool(current_app.config.get("HELMHOLTZ_RESTRICT_BY_ENTITLEMENT", False)):
         return True
 
@@ -330,7 +342,17 @@ def is_helmholtz_access_allowed(userinfo: dict[str, Any]) -> bool:
 
 
 def fetch_helmholtz_userinfo(token: dict[str, Any]) -> dict[str, Any]:
-    """Fetch OIDC userinfo claims via the registered Helmholtz OAuth client."""
+    """Fetches OIDC userinfo claims via the registered Helmholtz OAuth client.
+
+    Arguments:
+        token {dict[str, Any]} -- the OAuth token to authenticate the request with.
+
+    Raises:
+        ValueError: if the userinfo endpoint doesn't return a JSON object.
+
+    Returns:
+        dict[str, Any] -- the userinfo claims.
+    """
     response = oauth.helmholtz.get(
         "userinfo", token=token, timeout=current_app.config["HELMHOLTZ_AAI_TIMEOUT_SECONDS"]
     )
@@ -342,7 +364,20 @@ def fetch_helmholtz_userinfo(token: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_helmholtz_userinfo(token: dict[str, Any]) -> dict[str, Any]:
-    """Load complete userinfo claims for authorization and account lookup."""
+    """Loads complete userinfo claims for authorization and account lookup.
+
+    Arguments:
+        token {dict[str, Any]} -- the OAuth token, including any userinfo
+        Helmholtz already embedded in it.
+
+    Notes:
+        Merges the token's embedded userinfo with a live call to the
+        userinfo endpoint, since entitlements are only returned by the
+        endpoint, not the ID token.
+
+    Returns:
+        dict[str, Any] -- combined userinfo claims.
+    """
     token_userinfo = token.get("userinfo")
     endpoint_userinfo: dict[str, Any] = {}
     access_token = token.get("access_token")
@@ -363,6 +398,15 @@ def load_helmholtz_userinfo(token: dict[str, Any]) -> dict[str, Any]:
 
 
 def _frontend_base_url() -> str:
+    """Resolves and validates the configured frontend URL.
+
+    Notes:
+        Validated here since it's used to build redirect URLs — a malformed
+        FRONTEND_URL should fail loudly rather than produce a broken redirect.
+
+    Returns:
+        str -- the frontend base URL, without a trailing slash.
+    """
     frontend_url = parse_http_url(current_app.config.get("FRONTEND_URL"))
     if frontend_url is None:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="Frontend URL configuration is invalid")
@@ -370,6 +414,18 @@ def _frontend_base_url() -> str:
 
 
 def redirect_to_login_with_oauth_error(error: str):
+    """Redirects to the frontend login page with an OAuth error code.
+
+    Arguments:
+        error {str} -- short error code the frontend displays to the user.
+
+    Notes:
+        The pending OAuth redirect target (if any) is preserved as a query
+        param, so the user still lands where they intended after retrying.
+
+    Returns:
+        flask.Response -- redirect to the frontend login page.
+    """
     query = {"oauth_error": error}
     redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
     if redirect_path:
@@ -378,7 +434,17 @@ def redirect_to_login_with_oauth_error(error: str):
 
 
 def revoke_helmholtz_token(access_token: str) -> None:
-    """Revoke a Helmholtz access token and request provider-side logout."""
+    """Revokes a Helmholtz access token and requests provider-side logout.
+
+    Arguments:
+        access_token {str} -- the token to revoke.
+
+    Notes:
+        Requests provider-side logout so Helmholtz AAI's own SSO session
+        doesn't silently re-authenticate the same account on the next login
+        attempt. Failures are logged, not raised, since the user should
+        still be logged out locally either way.
+    """
     try:
         response = oauth.helmholtz.post(
             "revoke",
@@ -400,6 +466,16 @@ def revoke_helmholtz_token(access_token: str) -> None:
 
 
 def deny_oauth_login(access_token: str | None, error: str):
+    """Revokes the OAuth token (if any) and redirects to login with an error.
+
+    Arguments:
+        access_token {str | None} -- token to revoke, if one was issued
+        before the login was denied.
+        error {str} -- short error code the frontend displays to the user.
+
+    Returns:
+        flask.Response -- redirect to the frontend login page.
+    """
     if access_token:
         revoke_helmholtz_token(access_token)
     session.pop("oauth_token", None)
@@ -414,6 +490,19 @@ def redirect_after_oauth_login():
 
 
 def get_or_create_helmholtz_user(helmholtz_sub: str) -> dict:
+    """Looks up a user by helmholtz_sub, creating one on first login.
+
+    Arguments:
+        helmholtz_sub {str} -- the Helmholtz AAI subject identifier.
+
+    Notes:
+        New users default to role "user" with no terms accepted yet, so a
+        first-time Helmholtz AAI login provisions an account without a
+        separate registration step.
+
+    Returns:
+        dict -- the existing or newly created user document.
+    """
     user_doc = db.users.find_one({"helmholtz_sub": helmholtz_sub})
     if user_doc:
         return user_doc
@@ -437,6 +526,19 @@ def get_or_create_helmholtz_user(helmholtz_sub: str) -> dict:
 
 
 def sanitize_input(raw_message: str) -> str:
+    """Sanitizes free-text user input before it's stored or displayed.
+
+    Arguments:
+        raw_message {str} -- the raw text to sanitize.
+
+    Notes:
+        Strips HTML and stray control characters and normalizes Unicode/line
+        endings, so stored feedback/messages can't smuggle markup or
+        invisible characters back out when rendered elsewhere.
+
+    Returns:
+        str -- sanitized text.
+    """
     normalized = unicodedata.normalize("NFKC", raw_message)
     sanitized = nh3.clean(normalized)
     sanitized = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", sanitized)

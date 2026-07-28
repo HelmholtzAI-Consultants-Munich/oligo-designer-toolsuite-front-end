@@ -328,8 +328,7 @@ def check_auth():
 
 @auth_bp.route("/api/legal/terms/accept", methods=["POST"])
 def accept_terms():
-    """Record acceptance of the current terms version for the current user
-    or session.
+    """Records acceptance of the current terms version for the current user or session.
 
     Returns:
         flask.Response -- updated legal-acceptance status.
@@ -388,7 +387,7 @@ def logout():
 @auth_bp.route("/api/account", methods=["DELETE"])
 @login_required
 def delete_account():
-    """Delete the current account and the user's associated data.
+    """Deletes the current account and the user's associated data.
 
     Returns:
         flask.Response -- confirmation message.
