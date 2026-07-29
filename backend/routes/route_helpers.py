@@ -30,9 +30,10 @@ def get_user_context() -> tuple[None, str] | tuple[str, None]:
     """Resolves the identity of the current caller as either a user id or session id.
 
     Notes:
-        This is the single source of truth for who is making this request,
-        so every route handles anonymous and authenticated users the same
-        way.
+        For authenticated users, user_id is set and session_id is None; for
+        anonymous users, user_id is None and session_id is read from the
+        session. This is the single source of truth for who's making the
+        request, so every route handles both cases the same way.
 
     Raises:
         HTTPException: 401 if an anonymous user's session has expired/lost its
@@ -205,10 +206,9 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
         (default: {True})
 
     Notes:
-        This is the standard way routes fetch a run, so ownership
-        enforcement can't be forgotten in a handler — pass
-        require_ownership=False only for admin endpoints that are allowed
-        to touch any user's run.
+        Ownership is checked by user_id for authenticated callers and
+        session_id for anonymous ones. Pass require_ownership=False only for
+        admin endpoints allowed to touch any user's run.
 
     Raises:
         HTTPException: 403 if unauthorized, 404 if the run doesn't exist.
@@ -289,6 +289,15 @@ def validate_turnstile(token):
 
 
 def _string_values(value: object) -> list[str]:
+    """Normalizes a config value (comma-separated string or list) into a clean list of strings.
+
+    Arguments:
+        value {object} -- a config value, expected to be a comma-separated
+        string or a list of strings.
+
+    Returns:
+        list[str] -- the values as a clean list of strings.
+    """
     if isinstance(value, str):
         return [item.strip() for item in value.split(",") if item.strip()]
     if isinstance(value, list):
@@ -297,6 +306,15 @@ def _string_values(value: object) -> list[str]:
 
 
 def _parse_entitlement(value: str) -> aarc_entitlement.G002 | None:
+    """Parses an AARC G002 entitlement string, returning None if it's malformed.
+
+    Arguments:
+        value {str} -- the entitlement string to parse.
+
+    Returns:
+        aarc_entitlement.G002 | None -- the parsed entitlement, or None if
+        value isn't a valid G002 string.
+    """
     try:
         return aarc_entitlement.G002(value)
     except Exception:
@@ -483,6 +501,11 @@ def deny_oauth_login(access_token: str | None, error: str):
 
 
 def redirect_after_oauth_login():
+    """Redirects to the pending OAuth redirect target, or the frontend home page if none was set.
+
+    Returns:
+        flask.Response -- redirect to the frontend.
+    """
     redirect_path = sanitize_relative_redirect_path(session.pop("oauth_redirect", None))
     if redirect_path:
         return redirect(f"{_frontend_base_url()}{redirect_path}")

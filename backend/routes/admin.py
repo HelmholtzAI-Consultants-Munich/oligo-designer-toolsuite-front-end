@@ -697,7 +697,7 @@ def bulk_delete_pipeline_runs():
 @login_required
 @require_admin
 def bulk_update_pipeline_status():
-    """Bulk equivalent of update_pipeline_status.
+    """Bulk update the status of multiple pipeline runs (admin only).
 
     Request JSON:
         run_ids {list[str]} -- IDs of the pipeline runs to update.
@@ -748,6 +748,10 @@ def bulk_update_pipeline_status():
 def get_monthly_reports():
     """Get a single monthly report if year/month are given, otherwise the full report history.
 
+    Query Parameters:
+        year {int} -- optional; year of the report to fetch.
+        month {int} -- optional; month of the report to fetch.
+
     Returns:
         flask.Response -- one report, or a list of all reports (newest first).
     """
@@ -769,6 +773,14 @@ def get_monthly_reports():
 @login_required
 @require_admin
 def delete_monthly_report(report_id):
+    """Delete a monthly report (admin only).
+
+    Arguments:
+        report_id {str} -- the report to delete, e.g. "2026-06".
+
+    Returns:
+        flask.Response -- confirmation message.
+    """
     result = db.monthly_reports.delete_one({"_id": report_id})
     if result.deleted_count == 0:
         abort(HTTPStatus.NOT_FOUND, description=f"No report found for {report_id}")

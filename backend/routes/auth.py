@@ -55,9 +55,14 @@ auth_bp = Blueprint("auth", __name__)
 class User(UserMixin):
     """Wraps a MongoDB user document (user_doc) so Flask-Login can track it.
 
+    Attributes:
+        id {str} -- user ID (ObjectId as a string).
+        helmholtz_sub {str | None} -- Helmholtz AAI subject identifier (OAuth SSO user ID).
+        username {str | None} -- username, set for CLI-registered admin users.
+
     Notes:
-        id, helmholtz_sub, and username are pulled out because those are the
-        fields routes need, without every caller re-parsing the raw document.
+        These are pulled out of user_doc because they're the fields routes
+        need, without every caller re-parsing the raw document.
     """
 
     def __init__(self, user_doc):
@@ -111,9 +116,11 @@ def _login(user: User, remember: bool = True):
         sessions via Flask-Login's remember cookie. (default: {True})
 
     Notes:
-        This is shared by both OAuth and legacy login so anonymous-session
-        migration and user-directory setup happen exactly once, regardless
-        of which login path was used.
+        Post-login setup: ensures the user's data directory exists, clears
+        any stale OAuth token from a previous session, and migrates the
+        caller's anonymous runs/uploads to the now-authenticated user. This
+        is shared by both OAuth and legacy login so setup happens exactly
+        once, regardless of which login path was used.
     """
     # Make session cookie temporary; Flask-Login remember cookie handles persistence
     session.permanent = False
@@ -182,6 +189,11 @@ def _build_legal_status(user_id: str | None = None, session_id: str | None = Non
 def login():
     """Handles both OAuth (GET) and legacy username/password (POST) login on one route.
 
+    GET:
+        Redirects the user to the Helmholtz AAI authorization endpoint.
+    POST:
+        Authenticates the user via MongoDB-stored username/password credentials.
+
     Notes:
         The frontend always POSTs here for username/password, while OAuth
         needs a GET the browser can be redirected to directly.
@@ -238,6 +250,16 @@ def login():
 @auth_bp.route("/auth/callback")
 def auth_callback():
     """OAuth2 callback from Helmholtz AAI that looks up/creates the user and logs them in.
+
+    Steps:
+        1. Exchange the authorization code for an access token.
+        2. Load userinfo (merging token and userinfo-endpoint claims).
+        3. Reject if the identity is banned or lacks a required entitlement.
+        4. Look up or create the user by helmholtz_sub.
+        5. Log the user in, creating their data directory and migrating any
+           anonymous session data.
+        6. Store the access token in session for later revocation.
+        7. Redirect to the frontend, preserving any validated redirect path.
 
     Notes:
         The user is looked up/created by helmholtz_sub and the denylist is checked here
@@ -409,6 +431,10 @@ def delete_account():
 @auth_bp.before_app_request
 def assign_session_id():
     """Assigns and persists a stable anonymous session id before every request.
+
+    Runs before every request; if the caller is anonymous and has no
+    session_id yet, assigns one, makes the session permanent, and creates
+    that session's data directory.
 
     Notes:
         This runs before every request so anonymous visitors get a stable

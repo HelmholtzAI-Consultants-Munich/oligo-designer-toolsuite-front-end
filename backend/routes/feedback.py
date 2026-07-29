@@ -18,7 +18,7 @@ FEEDBACK_RATE_LIMIT = "10 per hour"
 
 
 def _feedback_rate_limit_key() -> str:
-    """Key the rate limit by user
+    """Keys the feedback rate limit by the authenticated user's id.
 
     Returns:
         str -- rate-limit bucket key for the current user.
@@ -34,7 +34,12 @@ def _feedback_rate_limit_key() -> str:
     error_message="You have reached the feedback limit. Please wait before submitting again.",
 )
 def create_feedback():
-    """Create a feedback entry for the current logged-in user.
+    """Create a general feedback entry for the current logged-in user.
+
+    Request JSON:
+        message {str} -- feedback text (sanitized, max FEEDBACK_MAX_LENGTH characters).
+        metadata {dict} -- optional; arbitrary client-supplied context.
+        token {str} -- Turnstile challenge token.
 
     Returns:
         flask.Response -- the saved feedback entry.

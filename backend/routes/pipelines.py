@@ -72,14 +72,15 @@ class RunContext:
 
 
 def create_context(pipeline_name: str) -> RunContext:
-    """Fails fast with a clear 500 if the user directory is missing, and creates a fresh, unused output path.
+    """Builds a RunContext for a new pipeline run, creating its output directory.
 
     Arguments:
         pipeline_name {str} -- used to build a unique output directory name.
 
     Notes:
-        Failing fast here avoids letting file writes fail deeper in the pipeline. Refusing to
-        reuse an existing output path (exist_ok=False) ensures two runs can never silently
+        Fails fast with a clear 500 if the user directory is missing, rather than
+        letting file writes fail deeper in the pipeline. Refusing to reuse an
+        existing output path (exist_ok=False) ensures two runs can never silently
         overwrite each other's files.
 
     Returns:
@@ -143,8 +144,8 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
         input, since different pipelines expose different fields.
 
     Notes:
-        enqueue_pipeline needs to know which region belongs to which genomic-input field when
-        building region-generation tasks.
+        prepare_pipeline_chord needs to know which region belongs to which
+        genomic-input field when building the chord's region-generation tasks.
 
     Returns:
         dict[str, list[dict[str, Any]]] -- form-path id -> list of
@@ -193,6 +194,7 @@ def update_run_with_context(
 
     Arguments:
         run_id {ObjectId} -- the run to update.
+        run_name {str} -- display name for the run, stored alongside it.
         pipeline_name {str} -- stored on the run for display/filtering.
         context {RunContext} -- output path and user/session identity.
 
@@ -253,8 +255,7 @@ def get_task_priority(form_data: dict[str, Any]) -> int:
 
     Notes:
         Authenticated users get high priority as an incentive to log in. Anonymous users are
-        also gene-capped here, since granting them high priority without that check would let
-        them jump the queue for free.
+        also gene-capped here.
 
     Returns:
         int -- the Celery task priority to enqueue with.
@@ -269,7 +270,6 @@ def get_task_priority(form_data: dict[str, Any]) -> int:
 
 def prepare_pipeline_chord(
     run_id: ObjectId,
-    run_name: str,
     pipeline_name: str,
     form_data: dict[str, Any],
     generated_regions: dict[str, list[dict[str, Any]]],
@@ -296,8 +296,7 @@ def prepare_pipeline_chord(
 
     Notes:
         Every region-generation task must finish before the pipeline task starts,
-        since the pipeline needs all regions resolved up front rather than racing
-        with generation.
+        since the pipeline needs all regions resolved up front.
     """
     soft_limit = resolve_timeout(is_authenticated)
     hard_limit = soft_limit + CeleryConfig.pipeline_timeout_hard_margin
@@ -383,7 +382,7 @@ def save_file(
 
 
 def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMultiDict[str, FileStorage]):
-    """Saves every file referenced by the pipeline's declared file-input fields.
+    """Calls save_file for every file referenced by the pipeline's declared file-input fields.
 
     Arguments:
         form_data {dict[str, Any]} -- the submitted pipeline form, used to
@@ -394,12 +393,11 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
         the request.
 
     Notes:
-        One saved_files cache is shared across all of them so a file uploaded under multiple
-        fields is only written to disk once.
+        One saved_files cache is passed to every save_file call, so a file
+        referenced by multiple fields is only saved once (see save_file).
 
     Returns:
-        dict[str, list[Path]] -- form path -> saved file paths, ready to be
-        written back into form_data in place of the original file names.
+        dict[str, list[Path]] -- form path -> list of saved file paths.
     """
     file_inputs: dict[str, list[Path]] = {}
     # Because duplicated File Objects only get uploaded once via the browser we need to map the Filestorage object
@@ -424,8 +422,7 @@ def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
         pipeline_name {str} -- selects which pydantic model to validate against.
 
     Notes:
-        This rejects malformed input with a clear 400 here instead of letting it surface as an
-        obscure failure deep inside the Celery worker.
+        This rejects malformed input with a clear 400 instead of a failure deep inside the Celery worker.
     """
     match pipeline_name:
         case "oligoseq":
@@ -446,10 +443,6 @@ def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
     Arguments:
         form_data {dict[str, Any]} -- mutated in place to add the missing fields.
         pipline_name {str} -- selects which fields to inject for this pipeline.
-
-    Notes:
-        This means the frontend schema doesn't need to expose internal/fixed configuration just
-        to satisfy pydantic validation.
     """
     for field, value in PIPELINE_NON_EXPOSED_FIELDS.get(pipline_name, {}).items():
         form_data[field] = value
@@ -458,14 +451,12 @@ def add_non_exposed_fields(form_data: dict[str, Any], pipline_name: str):
 def enforce_concurrent_runs_limit(context: RunContext, is_authenticated: bool):
     """Caps concurrent runs per identity, with separate limits for authenticated and anonymous users.
 
+    Aborts with 429 if the caller already has too many runs with status
+    "started" or "pending" in progress.
+
     Arguments:
         context {RunContext} -- identifies which user/session to count runs for.
         is_authenticated {bool} -- selects which configured limit applies.
-
-    Notes:
-        This prevents one user/session from monopolizing worker capacity by queuing many runs
-        at once. Anonymous users get a different (lower) limit since anonymous abuse is cheaper
-        to attempt.
     """
     if is_authenticated:
         max_runs = Config.PIPELINE_MAX_CONCURRENT_AUTHENTICATED
@@ -506,6 +497,22 @@ def start_pipeline(pipeline_name: str):
         pipeline_name {str} -- which pipeline to run — checked against
         EXISTING_PIPELINES since only pipelines with pydantic integration
         are enabled.
+
+    Form Data:
+        payload {str} -- JSON-encoded object with formdata (the pipeline
+        form), run_name, token (Turnstile), and optional pipeline_run_config.
+        <file fields> {file} -- files referenced by formdata's file-input fields.
+
+    Steps:
+        1. Validate the pipeline name and Turnstile token.
+        2. Parse and validate the multipart payload (form data, run name, files).
+        3. Validate the pipeline form against its pydantic model, then parse
+           region-generation input.
+        4. Save uploaded files and create the run's output directory.
+        5. Enforce the concurrent-run limit and insert a pending run record.
+        6. Build a Celery chord (region-generation tasks + pipeline task) and enqueue it.
+        7. Record the run's queue position and write final context to the run record.
+        8. Return the run's id and queue position.
 
     Notes:
         init_run() creates the DB entry before enqueue_pipeline() so the pipeline task can
@@ -573,7 +580,6 @@ def start_pipeline(pipeline_name: str):
     )
     pipeline_chord = prepare_pipeline_chord(
         run_id,
-        sanitized_run_name,
         pipeline_name,
         form_data,
         generated_regions,

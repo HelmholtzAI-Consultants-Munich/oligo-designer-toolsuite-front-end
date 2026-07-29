@@ -45,13 +45,9 @@ def format_run_metrics(metrics: dict[str, Any] | None) -> dict[str, Any] | None:
         metrics {dict[str, Any] | None} -- raw metrics dict from the run
         document, or None for runs that don't have metrics yet.
 
-    Notes:
-        Only fields relevant to the frontend are exposed, so raw internal
-        metric storage doesn't leak into the API.
-
     Returns:
         dict[str, Any] | None -- formatted metrics, or None if there's
-        nothing to show (so callers can omit the key entirely).
+        nothing to show.
     """
     if not isinstance(metrics, dict):
         return None
@@ -75,9 +71,9 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         run {dict[Any, Any]} -- the raw run document from MongoDB.
 
     Notes:
-        error_message is only included for terminal failure states, so a
-        successful/in-progress run's response doesn't carry a stale
-        leftover error from an earlier attempt.
+        error_message is included only for terminal failure states
+        ("failure", "timeout", "empty_result"), so other runs don't carry a
+        stale error.
 
     Returns:
         dict[str, Any] -- run payload formatted for the frontend.
@@ -178,7 +174,8 @@ def get_run_file(run_id: ObjectId, filename: str):
         (path traversal).
 
     Returns:
-        flask.Response -- the file as an attachment.
+        flask.Response -- the file as an attachment, with mimetype inferred
+        from its extension.
     """
     ALLOWED_FILE_ENDINGS = (".yml", ".yaml", ".tsv", ".xlsx")
 
@@ -213,8 +210,8 @@ def get_run_config(run_id: ObjectId):
         is enforced.
 
     Notes:
-        This lets the frontend re-populate a form from a past run (e.g.
-        "rerun with same settings").
+        This lets the frontend re-populate a form from a past run's saved
+        config.
 
     Returns:
         flask.Response -- the saved PipelineConfigExport JSON.
