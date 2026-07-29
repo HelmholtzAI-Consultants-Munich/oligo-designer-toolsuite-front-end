@@ -42,10 +42,6 @@ def _terms_acceptance_query(user_id: str | None = None, session_id: str | None =
 def get_current_terms_version() -> str:
     """Gets the version identifier of the currently published terms.
 
-    Notes:
-        Reading from the published document rather than a cached constant
-        means a newly published terms update takes effect immediately.
-
     Returns:
         str -- the version identifier of the currently published terms.
     """
@@ -60,9 +56,7 @@ def get_latest_terms_acceptance(user_id: str | None = None, session_id: str | No
         session_id {str | None} -- set for anonymous callers. (default: {None})
 
     Notes:
-        Results are sorted by timestamp descending, since a user may have
-        accepted multiple terms versions over time and only the most recent
-        one determines whether they're currently compliant.
+        Results are sorted by timestamp descending
 
     Returns:
         dict | None -- the most recent acceptance record, or None if this
@@ -102,9 +96,7 @@ def record_terms_acceptance(user_id: str | None = None, session_id: str | None =
 
     Notes:
         The existing record is returned instead of inserting a duplicate if
-        the caller already accepted the current version, since re-accepting
-        shouldn't create redundant acceptance rows every time this is
-        called.
+        the caller already accepted the current version
 
     Returns:
         dict -- the existing or newly created acceptance record.

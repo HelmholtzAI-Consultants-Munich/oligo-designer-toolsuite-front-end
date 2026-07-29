@@ -1,7 +1,5 @@
 """
-Bans are keyed on helmholtz_sub rather than a local user_id, since a banned
-person could otherwise just log in again and get a fresh account with full
-access — the ban has to survive across (re-)created accounts.
+Functions for banning, checking, and removing banned Helmholtz AAI identities.
 """
 
 from bson import ObjectId

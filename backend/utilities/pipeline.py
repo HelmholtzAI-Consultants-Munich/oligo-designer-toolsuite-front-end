@@ -54,11 +54,6 @@ def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
 def get_valid_pipeline_statuses():
     """Returns all valid pipeline run status values.
 
-    Notes:
-        This is the single source of truth for valid statuses, so admin
-        status-update validation and any other status check can't drift out
-        of sync with what the worker actually sets on a run.
-
     Returns:
         list[str] -- all valid pipeline run status values.
     """
@@ -89,12 +84,6 @@ def resolve_timeout(is_authenticated: bool) -> int:
     Arguments:
         is_authenticated {bool} -- whether the current caller is logged in.
 
-    Notes:
-        Anonymous users get the base limit; authenticated users get the
-        configured multiplier on top of it. The limit is static rather than
-        based on input size/complexity, since estimating runtime up front
-        isn't reliable.
-
     Returns:
         int -- soft time limit in seconds for the Celery pipeline task.
     """
@@ -109,11 +98,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
         run_id_obj {ObjectId} -- ObjectId of the run to delete.
 
     Notes:
-        This is shared by both single-run and bulk deletion, so both paths
-        clean up the same way. File deletion failures are only logged, not
-        fatal, since a user should still be able to remove a stray run
-        record even if its output directory is already gone or unreachable
-        on disk.
+        This is shared by both single-run and bulk deletion.
     """
     run = mongo.runs.find_one({"_id": run_id_obj})
     if not run:
@@ -161,8 +146,7 @@ def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: list[ObjectId]) ->
     Notes:
         Each run is deleted independently and per-run failures are caught,
         so one bad/already-missing run in a batch doesn't abort deletion of
-        the rest; callers get back which ones failed instead of an
-        all-or-nothing error.
+        the rest; callers get back which ones failed
 
     Returns:
         dict -- deleted_count, plus failed run IDs and their error messages.

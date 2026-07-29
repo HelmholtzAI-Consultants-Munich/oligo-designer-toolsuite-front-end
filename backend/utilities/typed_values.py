@@ -199,10 +199,9 @@ def parse_http_url(url_value: str | None) -> SplitResult | None:
         url_value {str | None} -- the URL to validate.
 
     Notes:
-        This is used to validate configured URLs (e.g. frontend URL, OAuth
-        revocation endpoint) at the point they're read, so a misconfigured
-        setting fails with a clear error immediately instead of surfacing as
-        a confusing failure later when actually making the request.
+        This validates configured URLs at the point they're read (currently
+        just FRONTEND_URL), so a misconfigured setting fails immediately
+        with a clear error instead of a confusing failure later.
 
     Returns:
         SplitResult | None -- the parsed URL, or None if it isn't a valid

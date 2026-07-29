@@ -13,6 +13,11 @@ from werkzeug.routing import BaseConverter
 
 class ObjectIdConverter(BaseConverter):
     def to_python(self, value):
+        """Converts a URL path segment to an ObjectId, or 400s if it's malformed.
+
+        Raises:
+            BadRequest: if value isn't a valid ObjectId.
+        """
         try:
             return bson.ObjectId(value)
         except bson.errors.InvalidId as e:

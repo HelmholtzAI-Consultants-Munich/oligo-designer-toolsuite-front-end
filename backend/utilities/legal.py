@@ -241,9 +241,6 @@ def compute_legal_version(body: str) -> str:
     Arguments:
         body {str} -- the document body to hash.
 
-    Notes:
-        uses hash function to compute the hash value to give a version to the legal text
-
     Returns:
         str -- a short, stable version identifier derived from the body's content.
     """

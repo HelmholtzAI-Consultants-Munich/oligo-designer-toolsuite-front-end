@@ -1,8 +1,5 @@
 """
-Request-input validation shared across routes: converting/validating
-ObjectId strings (single or batches) and checking submitted genomic form
-shape, so every route rejects malformed input with the same clear 400
-instead of failing later with an obscure error.
+Functions for validating and converting request input: ObjectId strings, id arrays, and genomic form data.
 """
 
 from http import HTTPStatus
@@ -18,12 +15,9 @@ def parse_run_id(run_id_str: str | None) -> ObjectId:
         run_id_str {str | None} -- the run id string from request JSON.
 
     Notes:
-        This is used for JSON-body run_id values because the ObjectId URL
-        converter can't validate those automatically, so a malformed id
-        fails with a clear 400 instead of an obscure construction error.
-
-        For URL path parameters, use the ObjectId URL converter instead:
-            @app.route("/api/runs/<ObjectId:run_id>")
+        This is used for JSON-body run_id values, where the ObjectId URL
+        converter can't validate automatically, so a malformed id fails with
+        a clear 400 instead of an obscure construction error.
 
     Returns:
         ObjectId -- the validated ObjectId.

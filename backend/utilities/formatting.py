@@ -1,9 +1,6 @@
 """
 Converts raw MongoDB documents into the JSON shapes the frontend/Refine data provider expects
 (renaming _id to id, formatting timestamps, enriching with looked-up user info).
-
-Notes:
-    This means route handlers don't each reimplement this shaping themselves.
 """
 
 from bson import ObjectId
@@ -80,14 +77,15 @@ def format_pipeline_run(run):
 
 
 def format_feedback(feedback):
-    """Looks up the submitting user for the admin panel, swallowing lookup failures.
+    """Looks up the submitting user, swallowing lookup failures.
 
     Arguments:
         feedback {dict} -- the raw feedback document from MongoDB.
 
     Notes:
-        Lookup failures are swallowed so feedback still displays even if its user was since
-        deleted.
+        Used both for the admin panel and to format a user's own
+        just-submitted entry. Lookup failures are swallowed so the entry
+        still displays/returns even if the user was since deleted.
 
     Returns:
         dict -- feedback formatted for API responses.
@@ -127,7 +125,7 @@ def format_monthly_report(report):
         report {dict} -- the raw monthly report document from MongoDB.
 
     Notes:
-        _id is renamed to id since the frontend/Refine data provider expects id, and the
+        _id is renamed to id since the frontend expects id, and the
         timestamp is pre-formatted so the frontend doesn't need to parse MongoDB's native
         datetime.
 
