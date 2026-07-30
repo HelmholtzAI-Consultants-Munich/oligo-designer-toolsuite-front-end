@@ -1,144 +1,143 @@
-from pathlib import Path
+"""Legal routes must be publicly accessible and consent must be persisted correctly."""
+
+from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
-from werkzeug.security import generate_password_hash
 
 from backend.extensions import db
-from backend.tests.conftest import get_with_check
+from backend.tests.conftest import TEST_SESSION_ID, TEST_USER_ID
 from backend.utilities.legal import (
     PRIVACY_DOCUMENT_KEY,
     TERMS_DOCUMENT_KEY,
     get_published_legal_document,
 )
+from backend.utilities.legal_acceptance import get_current_terms_version
 from backend.utilities.typed_values import serialize_path
-from backend.utils import utc_now
 
 
-@pytest.fixture
-def legal_user_doc():
-    return {
-        "_id": ObjectId(),
-        "username": "testuser",
-        "password": generate_password_hash("mypassword"),
-        "role": "user",
-    }
+@pytest.mark.parametrize(
+    ("path", "document_key", "title"),
+    [
+        ("/api/legal/terms", TERMS_DOCUMENT_KEY, "Terms of Service"),
+        ("/api/legal/privacy-policy", PRIVACY_DOCUMENT_KEY, "Data Protection Declaration"),
+    ],
+)
+def test_public_legal_document_route(client, path, document_key, title):
+    """Legal documents must be publicly accessible without authentication.
+
+    Arguments:
+        client {Any} -- anonymous Flask test client
+        path {str} -- one of the parametrized legal document route paths
+        document_key {str} -- expected document key in the response
+        title {str} -- expected document title in the response
+    """
+    response = client.get(path)
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["document"] == document_key
+    assert data["title"] == title
+    assert data["version"] == get_published_legal_document(document_key)["version"]
+    assert data["body"]
 
 
-def test_accept_terms_updates_current_user(client, authenticate_as_user, legal_user_doc):
-    db.users.insert_one(legal_user_doc)
-    authenticate_as_user(str(legal_user_doc["_id"]))
+def test_accept_terms_for_authenticated_user(client, authenticate_as):
+    """Authenticated consent must be stored by user_id and reflected on the user row.
 
-    with client.session_transaction() as sess:
-        sess["_user_id"] = str(legal_user_doc["_id"])
+    Arguments:
+        client {Any} -- Flask test client
+        authenticate_as {Callable} -- factory that patches current_user to the given id
+
+    Notes:
+        This keeps acceptance history and user profile in sync.
+    """
+    authenticate_as(TEST_USER_ID)
+    db.users.insert_one({"_id": ObjectId(TEST_USER_ID), "role": "user"})
 
     response = client.post("/api/legal/terms/accept")
 
     assert response.status_code == 200
-    data = response.get_json()
+    acceptance = db.legal_acceptances.find_one({"user_id": TEST_USER_ID})
+    assert acceptance["terms_version"] == get_current_terms_version()
     assert (
-        data["legal"]["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
+        db.users.find_one({"_id": ObjectId(TEST_USER_ID)})["accepted_terms_version"]
+        == acceptance["terms_version"]
     )
-    assert data["legal"]["terms_accepted_at"] is not None
-
-    updated_user = get_with_check({"_id": legal_user_doc["_id"]}, db.users)
-    assert (
-        updated_user["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
-    )
-    assert updated_user["terms_accepted_at"] is not None
 
 
-def test_accept_terms_updates_current_session(client):
+def test_accept_terms_for_anonymous_session(client):
+    """Anonymous consent must be stored by session_id rather than user_id.
+
+    Arguments:
+        client {Any} -- anonymous Flask test client
+
+    Notes:
+        This lets consent be transferred when the user later registers.
+    """
     with client.session_transaction() as sess:
-        sess["session_id"] = "anon-session-accept"
+        sess["session_id"] = TEST_SESSION_ID
 
     response = client.post("/api/legal/terms/accept")
 
     assert response.status_code == 200
-    data = response.get_json()
-    assert (
-        data["legal"]["accepted_terms_version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
-    )
-    assert data["legal"]["accepted_terms_version"] == data["legal"]["current_terms_version"]
+    assert db.legal_acceptances.find_one({"session_id": TEST_SESSION_ID}) is not None
 
 
-def test_delete_account_removes_user_data(client, authenticate_as_user, legal_user_doc, tmp_path):
-    db.users.insert_one(legal_user_doc)
-    authenticate_as_user(str(legal_user_doc["_id"]))
+def test_accept_terms_auto_creates_session_for_anonymous_client(client):
+    """Consent must work even on a brand-new client with no prior session.
 
-    upload_root = tmp_path / "uploads"
-    upload_root.mkdir()
-    userdata_root = tmp_path / "user_data"
-    user_dir = userdata_root / str(legal_user_doc["_id"])
-    user_dir.mkdir(parents=True)
-    (user_dir / "profile.txt").write_text("sensitive")
+    Arguments:
+        client {Any} -- anonymous Flask test client that has never made a prior request
 
-    output_dir = user_dir / "output_scrinshot_probe_designer_test"
+    Notes:
+        The before-request hook creates a session automatically for this to work.
+    """
+    response = client.post("/api/legal/terms/accept")
+
+    assert response.status_code == 200
+    assert db.legal_acceptances.count_documents({"session_id": {"$exists": True}}) == 1
+
+
+def test_delete_account_removes_user_and_related_data(client, authenticated_user, test_data_roots):
+    """Cascading deletion must cover all related collections.
+
+    Arguments:
+        client {Any} -- Flask test client
+        authenticated_user {AuthenticatedUser} -- active authenticated session for the user being deleted
+        test_data_roots {DataRoots} -- per-test temp filesystem roots for asserting file removal
+
+    Notes:
+        Partial cleanup would otherwise leave orphaned files or DB records consuming storage.
+    """
+    upload_file = test_data_roots.uploads / "upload.fna"
+    upload_file.write_text(">x\nAC\n")
+    output_dir = test_data_roots.user_dir / "output"
     output_dir.mkdir()
-    (output_dir / "result.txt").write_text("output")
-
-    upload_file = upload_root / "upload.txt"
-    upload_file.write_text("upload")
-
     db.runs.insert_one(
-        {
-            "_id": ObjectId(),
-            "user_id": str(legal_user_doc["_id"]),
-            "pipeline": "scrinshot",
-            "status": "success",
-            "timestamp": utc_now(),
-            "output_path": serialize_path(output_dir),
-        }
+        {"_id": ObjectId(), "user_id": TEST_USER_ID, "output_path": serialize_path(output_dir)}
     )
-    db.uploads.insert_one({"user_id": str(legal_user_doc["_id"]), "path": str(upload_file)})
-    db.feedback.insert_one(
-        {"user_id": str(legal_user_doc["_id"]), "message": "feedback", "created_at": utc_now()}
-    )
-    db.legal_acceptances.insert_one(
-        {
-            "user_id": str(legal_user_doc["_id"]),
-            "document": TERMS_DOCUMENT_KEY,
-            "terms_version": get_published_legal_document(TERMS_DOCUMENT_KEY)["version"],
-            "timestamp": utc_now(),
-        }
-    )
+    db.uploads.insert_one({"_id": ObjectId(), "user_id": TEST_USER_ID, "path": str(upload_file)})
+    db.feedback.insert_one({"_id": ObjectId(), "user_id": TEST_USER_ID})
 
-    client.application.config["UPLOAD_PATH"] = str(upload_root)
-    client.application.config["USERDATA_PATH"] = str(userdata_root)
+    with patch("backend.routes.auth.logout_user"):
+        response = client.delete("/api/account")
 
-    with client.session_transaction() as sess:
-        sess["_user_id"] = str(legal_user_doc["_id"])
+    assert response.status_code == 200
+    assert db.users.find_one({"_id": ObjectId(TEST_USER_ID)}) is None
+    assert db.runs.count_documents({"user_id": TEST_USER_ID}) == 0
+    assert db.uploads.count_documents({"user_id": TEST_USER_ID}) == 0
+    assert db.feedback.count_documents({"user_id": TEST_USER_ID}) == 0
+    assert not upload_file.exists()
+    assert not output_dir.exists()
 
+
+def test_delete_account_requires_authentication(client):
+    """Unauthenticated account deletion must be rejected.
+
+    Arguments:
+        client {Any} -- anonymous Flask test client with no active session
+    """
     response = client.delete("/api/account")
 
-    assert response.status_code == 200
-    assert response.get_json()["message"] == "Your account and associated data have been deleted."
-    assert db.users.find_one({"_id": legal_user_doc["_id"]}) is None
-    assert db.runs.find_one({"user_id": str(legal_user_doc["_id"])}) is None
-    assert db.uploads.find_one({"user_id": str(legal_user_doc["_id"])}) is None
-    assert db.feedback.find_one({"user_id": str(legal_user_doc["_id"])}) is None
-    assert db.legal_acceptances.find_one({"user_id": str(legal_user_doc["_id"])}) is None
-    assert not Path(upload_file).exists()
-    assert not user_dir.exists()
-
-
-def test_public_terms_route(client):
-    response = client.get("/api/legal/terms")
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["document"] == TERMS_DOCUMENT_KEY
-    assert data["title"] == "Terms of Service"
-    assert data["version"] == get_published_legal_document(TERMS_DOCUMENT_KEY)["version"]
-    assert data["body"]
-
-
-def test_public_privacy_policy_route(client):
-    response = client.get("/api/legal/privacy-policy")
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["document"] == PRIVACY_DOCUMENT_KEY
-    assert data["title"] == "Data Protection Declaration"
-    assert data["version"] == get_published_legal_document(PRIVACY_DOCUMENT_KEY)["version"]
-    assert data["body"]
+    assert response.status_code in {401, 403}

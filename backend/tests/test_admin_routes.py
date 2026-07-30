@@ -1,770 +1,1009 @@
-from datetime import datetime
+"""Admin route tests."""
+
 from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
 
 from backend.extensions import db
-from backend.tests.conftest import get_with_check
-from backend.utilities.legal import (
-    PRIVACY_DOCUMENT_KEY,
-    TERMS_DOCUMENT_KEY,
-    get_published_legal_document,
+from backend.tests.conftest import TEST_USER_ID, frozen_today
+from backend.utilities.legal import TERMS_DOCUMENT_KEY
+from backend.utilities.typed_values import serialize_path
+from backend.utils import utc_now
+
+
+@pytest.fixture
+def admin_user(authenticate_as):
+    """Persist a real admin document and authenticate as that user.
+
+    Notes:
+        Admin endpoints verify role from MongoDB, not Flask-Login alone, so a
+        real document is required rather than just a patched current_user.
+
+    Returns:
+        dict -- admin identity with `_id` (ObjectId) and `id` (str) for use in route assertions
+    """
+    user_id = ObjectId(TEST_USER_ID)
+    db.users.insert_one({"_id": user_id, "username": "admin", "role": "admin", "password": "hash"})
+    authenticate_as(str(user_id))
+    return {"_id": user_id, "id": str(user_id)}
+
+
+@pytest.fixture
+def regular_user():
+    """Persist a second user without admin privileges for authorization and mutation tests.
+
+    Returns:
+        dict -- regular user identity with `_id` (ObjectId) and `id` (str) for use in route assertions
+    """
+    user_id = ObjectId()
+    db.users.insert_one({"_id": user_id, "username": "regular", "role": "user", "password": "hash"})
+    return {"_id": user_id, "id": str(user_id)}
+
+
+@pytest.fixture
+def regular_client(client, authenticate_as, regular_user):
+    """Authenticate the client as a non-admin user.
+
+    Notes:
+        regular_user is a MongoDB document (who the test user is); client is
+        the Flask test client (how requests get sent). authenticate_as bridges
+        them so client's next requests act as regular_user — this fixture just
+        does that once so tests asserting 403 don't repeat the call.
+
+    Returns:
+        Any -- Flask test client authenticated as a regular user
+    """
+    authenticate_as(regular_user["id"])
+    return client
+
+
+@pytest.fixture
+def frozen_admin_today():
+    """Freeze datetime.date.today() (as seen by backend.routes.admin) to 2026-05-27."""
+    with frozen_today("backend.routes.admin.datetime.date", 2026, 5, 27):
+        yield
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/admin/users"),
+        ("get", "/api/admin/dashboard"),
+        ("get", "/api/admin/pipelines"),
+        ("get", "/api/admin/feedback"),
+    ],
 )
+def test_admin_endpoint_requires_admin(regular_client, method, path):
+    """Regular users get 403 from every admin endpoint.
 
+    Arguments:
+        regular_client {Any} -- Flask test client authenticated as a non-admin user
+        method {str} -- HTTP method to call
+        path {str} -- admin route path under test
+    """
+    response = getattr(regular_client, method)(path)
 
-@pytest.fixture
-def admin_user(client):
-    """Create an admin user for testing"""
-    user_id = ObjectId()
-    user = {
-        "_id": user_id,
-        "username": "admin_user",
-        "role": "admin",
-        "password": "hashed_password",
-    }
-    db.users.insert_one(user)
-    yield user
-    db.users.delete_one({"_id": user_id})
-
-
-@pytest.fixture
-def regular_user(client):
-    """Create a regular user for testing"""
-    user_id = ObjectId()
-    user = {
-        "_id": user_id,
-        "username": "regular_user",
-        "role": "user",
-        "password": "hashed_password",
-    }
-    db.users.insert_one(user)
-    yield user
-    db.users.delete_one({"_id": user_id})
-
-
-@pytest.fixture
-def admin_client(client, monkeypatch, admin_user):
-    """Test client with authenticated admin user"""
-
-    class AdminUser:
-        is_authenticated = True
-        id = str(admin_user["_id"])
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: AdminUser())
-    yield client
-
-
-@pytest.fixture
-def regular_client(client, monkeypatch, regular_user):
-    """Test client with authenticated regular user"""
-
-    class RegularUser:
-        is_authenticated = True
-        id = str(regular_user["_id"])
-
-    monkeypatch.setattr("flask_login.utils._get_user", lambda: RegularUser())
-    yield client
-
-
-@pytest.fixture
-def unauthenticated_client(client):
-    """Test client without authentication (same as base client)"""
-    yield client
-
-
-@pytest.fixture
-def pipeline_run(client):
-    """Create a pipeline run for testing"""
-    run_id = ObjectId()
-    user_id = ObjectId()
-    run = {
-        "_id": run_id,
-        "user_id": str(user_id),
-        "pipeline": "test_pipeline",
-        "status": "pending",
-        "timestamp": datetime.now(),
-        "created_at": datetime.now(),
-        "output_path": "/tmp/test_output",
-        "session_id": None,
-        "transferred_from_anon": False,
-    }
-    db.runs.insert_one(run)
-    yield run
-    db.runs.delete_one({"_id": run_id})
-
-
-@pytest.fixture
-def feedback_document(client):
-    """Create a feedback document for testing"""
-    feedback_id = ObjectId()
-    doc = {
-        "_id": feedback_id,
-        "message": "Test feedback message",
-        "user_id": None,
-    }
-    db.feedback.insert_one(doc)
-    yield doc
-    db.feedback.delete_one({"_id": feedback_id})
-
-
-@pytest.fixture(autouse=True)
-def cleanup_legal_documents(client):
-    db.legal_documents.delete_many({})
-    yield
-    db.legal_documents.delete_many({})
-
-
-# ==================== User Management Tests ====================
-
-# TODO: Add deny-list admin route tests after the pending test-suite overhaul lands.
-
-
-def test_get_users_success(admin_client, admin_user, regular_user):
-    """Test getting all users as admin"""
-    response = admin_client.get("/api/admin/users")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert isinstance(data, list)
-    assert len(data) >= 2
-    # Users have id and either username or helmholtz_sub (no longer email-only)
-    ids = [u["id"] for u in data]
-    assert str(admin_user["_id"]) in ids
-    assert str(regular_user["_id"]) in ids
-
-
-def test_get_users_unauthorized(regular_client):
-    """Test that regular users cannot access user list"""
-    response = regular_client.get("/api/admin/users")
     assert response.status_code == 403
 
 
-def test_get_users_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot access user list"""
-    response = unauthenticated_client.get("/api/admin/users")
-    assert response.status_code == 401 or response.status_code == 403
+def test_admin_get_users_success(client, admin_user, regular_user):
+    """User listing includes all users regardless of role.
 
+    Arguments:
+        client {Any} -- anonymous Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- persisted non-admin user to appear in the listing
+    """
+    response = client.get("/api/admin/users")
 
-def test_get_user_success(admin_client, regular_user):
-    """Test getting a single user by ID"""
-    response = admin_client.get(f"/api/admin/users/{regular_user['_id']}")
     assert response.status_code == 200
-    data = response.get_json()
-    assert data["id"] == str(regular_user["_id"])
-    assert data["role"] == regular_user["role"]
-    assert "password" not in data
-    # Response includes id, role; may include username and/or helmholtz_sub
+    assert {item["id"] for item in response.get_json()} == {admin_user["id"], regular_user["id"]}
 
 
-def test_get_user_not_found(admin_client):
-    """Test getting a non-existent user"""
-    fake_id = ObjectId()
-    response = admin_client.get(f"/api/admin/users/{fake_id}")
+def test_admin_get_users_unauthenticated(client):
+    """Unauthenticated access is rejected before role checks run.
+
+    Arguments:
+        client {Any} -- anonymous Flask test client with no active session
+    """
+    response = client.get("/api/admin/users")
+
+    assert response.status_code in {401, 403}
+
+
+def test_admin_get_user_success(client, admin_user, regular_user):
+    """User detail omits the password hash, even for admin callers.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user whose detail is being fetched
+
+    """
+    response = client.get(f"/api/admin/users/{regular_user['id']}")
+
+    assert response.status_code == 200
+    assert response.get_json()["id"] == regular_user["id"]
+    assert "password" not in response.get_json()
+
+
+def test_admin_get_user_not_found(client, admin_user):
+    """A missing user id returns 404.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        404 means the id doesn't exist, not "exists but empty".
+    """
+    response = client.get(f"/api/admin/users/{ObjectId()}")
+
     assert response.status_code == 404
 
 
-def test_update_user_success(admin_client, regular_user):
-    """Test updating a user (username and role; CLI users have username)"""
-    # Give regular_user a username so we can update it (CLI user)
-    db.users.update_one(
-        {"_id": regular_user["_id"]},
-        {"$set": {"username": "original_user"}},
-    )
-    response = admin_client.put(
-        f"/api/admin/users/{regular_user['_id']}",
-        json={"username": "updated_user", "role": "admin"},
-    )
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data.get("username") == "updated_user"
-    assert data["role"] == "admin"
+def test_admin_ban_user_success(client, admin_user):
+    """Banning a user creates a denylist entry.
 
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
 
-def test_update_user_invalid_role(admin_client, regular_user):
-    """Test updating user with invalid role"""
-    response = admin_client.put(f"/api/admin/users/{regular_user['_id']}", json={"role": "invalid_role"})
-    assert response.status_code == 400
-    assert "Invalid role" in response.get_json()["error"]
+    Notes:
+        This causes subsequent logins to be rejected at the OAuth callback.
+    """
+    user_id = ObjectId()
+    db.users.insert_one({"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-to-ban"})
 
-
-def test_update_user_no_fields(admin_client, regular_user):
-    """Test updating user with no fields"""
-    response = admin_client.put(f"/api/admin/users/{regular_user['_id']}", json={})
-    assert response.status_code == 400
-
-
-def test_delete_user_success(admin_client, regular_user):
-    """Test deleting a user"""
-    db.feedback.insert_one(
-        {
-            "_id": ObjectId(),
-            "user_id": str(regular_user["_id"]),
-            "message": "Feedback to remove",
-        }
-    )
-
-    response = admin_client.delete(f"/api/admin/users/{regular_user['_id']}")
-    assert response.status_code == 200
-    assert "deleted successfully" in response.get_json()["message"]
-
-    # Verify user is deleted
-    user = db.users.find_one({"_id": regular_user["_id"]})
-    assert user is None
-    assert db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
-
-
-def test_delete_user_self(admin_client, admin_user):
-    """Test that admin cannot delete their own account"""
-    response = admin_client.delete(f"/api/admin/users/{admin_user['_id']}")
-    assert response.status_code == 400
-    assert "Cannot delete your own account" in response.get_json()["error"]
-
-
-# ==================== Legal Document Tests ====================
-
-
-def test_get_legal_documents_success(admin_client):
-    response = admin_client.get("/api/admin/legal-documents")
+    response = client.post(f"/api/admin/users/{user_id}/ban")
 
     assert response.status_code == 200
     data = response.get_json()
-    assert isinstance(data, list)
-    document_keys = {item["document"] for item in data}
-    assert TERMS_DOCUMENT_KEY in document_keys
-    assert PRIVACY_DOCUMENT_KEY in document_keys
-    assert all(item["published"] is not None for item in data)
+    assert data["helmholtz_sub"] == "sub-to-ban"
+    assert data["banned_at"] is not None
 
 
-def test_get_legal_document_detail_success(admin_client):
-    response = admin_client.get(f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}")
+def test_admin_ban_user_rejects_self_ban(client, admin_user):
+    """Admins cannot ban themselves.
 
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["document"] == TERMS_DOCUMENT_KEY
-    assert len(data["history"]) >= 1
-    assert data["history"][0]["id"] == data["published"]["id"]
-    assert "status" not in data["published"]
-
-
-def test_publish_legal_document_success(admin_client):
-    response = admin_client.post(
-        f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}/publish",
-        json={
-            "body": "# Terms of Service\n\n## Scope\n\nUpdated legal paragraph.",
-        },
-    )
-
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["published"]["version"] is not None
-    assert "Updated legal paragraph." in data["published"]["body"]
-    assert len(data["history"]) >= 2
-    assert data["history"][0]["id"] == data["published"]["id"]
-    assert all("status" not in item for item in data["history"])
-
-
-def test_publish_legal_document_requires_new_content(admin_client):
-    response = admin_client.post(
-        f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}/publish",
-        json={
-            "body": get_published_legal_document(TERMS_DOCUMENT_KEY)["body"],
-        },
-    )
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+    """
+    response = client.post(f"/api/admin/users/{admin_user['id']}/ban")
 
     assert response.status_code == 400
-    assert "currently published version" in response.get_json()["error"]
 
 
-def test_legal_document_admin_routes_unauthorized(regular_client):
-    response = regular_client.get("/api/admin/legal-documents")
-    assert response.status_code == 403
+def test_admin_get_banned_users_success(client, admin_user):
+    """Banned user listing returns all active bans.
 
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+    """
+    user_id = ObjectId()
+    db.users.insert_one({"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-listed"})
+    client.post(f"/api/admin/users/{user_id}/ban")
 
-# ==================== Pipeline Management Tests ====================
+    response = client.get("/api/admin/banned-users")
 
-
-def test_get_pipeline_runs_success(admin_client, pipeline_run):
-    """Test getting all pipeline runs"""
-    response = admin_client.get("/api/admin/pipelines")
     assert response.status_code == 200
-    data = response.get_json()
-    assert isinstance(data, list)
-    assert len(data) >= 1
-    run_ids = [run["id"] for run in data]
-    assert str(pipeline_run["_id"]) in run_ids
+    assert any(ban["helmholtz_sub"] == "sub-listed" for ban in response.get_json())
 
 
-def test_update_pipeline_status_success(admin_client, pipeline_run):
-    """Test updating pipeline run status"""
-    response = admin_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "success"})
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "success"
+def test_admin_unban_user_success(client, admin_user):
+    """Removing a ban deletes the denylist entry.
 
-
-def test_update_pipeline_status_invalid(admin_client, pipeline_run):
-    """Test updating pipeline run with invalid status"""
-    response = admin_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "invalid_status"}
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+    """
+    user_id = ObjectId()
+    db.users.insert_one(
+        {"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-to-unban"}
     )
-    assert response.status_code == 400
-    assert "Invalid status" in response.get_json()["error"]
+    ban_id = client.post(f"/api/admin/users/{user_id}/ban").get_json()["id"]
+
+    response = client.delete(f"/api/admin/banned-users/{ban_id}")
+
+    assert response.status_code == 200
+    assert client.get("/api/admin/banned-users").get_json() == []
 
 
-def test_update_pipeline_status_missing_field(admin_client, pipeline_run):
-    """Test updating pipeline run without status field"""
-    response = admin_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={})
-    assert response.status_code == 400
+def test_admin_unban_user_not_found(client, admin_user):
+    """A missing ban id returns 404.
 
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
 
-def test_delete_pipeline_run_success(admin_client, pipeline_run):
-    """Test deleting a pipeline run"""
-    with patch("shutil.rmtree"):
-        response = admin_client.delete(f"/api/admin/pipelines/{pipeline_run['_id']}")
-        assert response.status_code == 200
-        assert "deleted successfully" in response.get_json()["message"]
+    """
+    response = client.delete(f"/api/admin/banned-users/{ObjectId()}")
 
-
-def test_delete_pipeline_run_not_found(admin_client):
-    """Test deleting a non-existent pipeline run"""
-    fake_id = ObjectId()
-    response = admin_client.delete(f"/api/admin/pipelines/{fake_id}")
     assert response.status_code == 404
 
 
-def test_get_pipeline_runs_unauthorized(regular_client):
-    """Test that regular users cannot access pipeline runs list"""
-    response = regular_client.get("/api/admin/pipelines")
-    assert response.status_code == 403
+def test_admin_get_users_includes_ban_status(client, admin_user):
+    """User listing exposes banned and ban_id fields.
 
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
 
-def test_get_pipeline_runs_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot access pipeline runs list"""
-    response = unauthenticated_client.get("/api/admin/pipelines")
-    assert response.status_code == 401 or response.status_code == 403
-
-
-def test_update_pipeline_status_unauthorized(regular_client, pipeline_run):
-    """Test that regular users cannot update pipeline run status"""
-    response = regular_client.put(f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "success"})
-    assert response.status_code == 403
-
-
-def test_update_pipeline_status_unauthenticated(unauthenticated_client, pipeline_run):
-    """Test that unauthenticated users cannot update pipeline run status"""
-    response = unauthenticated_client.put(
-        f"/api/admin/pipelines/{pipeline_run['_id']}", json={"status": "success"}
+    Notes:
+        This lets the panel display ban status inline without a second request.
+    """
+    user_id = ObjectId()
+    db.users.insert_one(
+        {"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-ban-check"}
     )
-    assert response.status_code == 401 or response.status_code == 403
+    client.post(f"/api/admin/users/{user_id}/ban")
+
+    response = client.get("/api/admin/users")
+    users = {u["id"]: u for u in response.get_json()}
+
+    assert users[str(user_id)]["banned"] is True
+    assert users[str(user_id)]["ban_id"] is not None
+    assert users[admin_user["id"]]["banned"] is False
+    assert users[admin_user["id"]]["ban_id"] is None
 
 
-def test_delete_pipeline_run_unauthorized(regular_client, pipeline_run):
-    """Test that regular users cannot delete pipeline runs"""
-    response = regular_client.delete(f"/api/admin/pipelines/{pipeline_run['_id']}")
-    assert response.status_code == 403
+def test_admin_update_user_role_success(client, admin_user, regular_user):
+    """Role updates persist to MongoDB.
 
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user whose role is being updated
 
-def test_delete_pipeline_run_unauthenticated(unauthenticated_client, pipeline_run):
-    """Test that unauthenticated users cannot delete pipeline runs"""
-    response = unauthenticated_client.delete(f"/api/admin/pipelines/{pipeline_run['_id']}")
-    assert response.status_code == 401 or response.status_code == 403
+    Notes:
+        This makes the change take effect on the user's next request.
+    """
+    response = client.put(f"/api/admin/users/{regular_user['id']}", json={"role": "admin"})
 
-
-# ==================== Dashboard Tests ====================
-
-
-def test_get_dashboard_stats_success(admin_client, admin_user, regular_user, pipeline_run):
-    """Test getting dashboard statistics"""
-    response = admin_client.get("/api/admin/dashboard")
     assert response.status_code == 200
-    data = response.get_json()
-
-    assert "users" in data
-    assert data["users"]["total"] >= 2
-    assert data["users"]["admin"] >= 1
-    assert data["users"]["regular"] >= 1
-
-    assert "pipeline_runs" in data
-    assert data["pipeline_runs"]["total"] >= 1
-    assert "by_status" in data["pipeline_runs"]
-    assert "pending" in data["pipeline_runs"]["by_status"]
+    assert response.get_json()["role"] == "admin"
 
 
-def test_get_dashboard_stats_unauthorized(regular_client):
-    """Test that regular users cannot access dashboard statistics"""
-    response = regular_client.get("/api/admin/dashboard")
-    assert response.status_code == 403
+def test_admin_update_user_username_success_for_cli_user(client, admin_user, regular_user):
+    """A CLI-style user's username can be updated by an admin.
 
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- CLI-style user (has a `username` field) whose name is being updated
 
-def test_get_dashboard_stats_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot access dashboard statistics"""
-    response = unauthenticated_client.get("/api/admin/dashboard")
-    assert response.status_code == 401 or response.status_code == 403
+    Notes:
+        CLI users are identified by having a `username` field at all, unlike
+        Helmholtz users who are identified by `helmholtz_sub` instead.
+    """
+    response = client.put(f"/api/admin/users/{regular_user['id']}", json={"username": "new-name"})
 
-
-# ==================== Feedback Tests ====================
-
-
-def test_get_feedback_success(admin_client, feedback_document):
-    """Test getting all feedback entries"""
-    response = admin_client.get("/api/admin/feedback")
     assert response.status_code == 200
-    data = response.get_json()
-    assert isinstance(data, list)
-    assert len(data) >= 1
-    ids = [item["id"] for item in data]
-    assert str(feedback_document["_id"]) in ids
+    assert response.get_json()["username"] == "new-name"
+    assert db.users.find_one({"_id": regular_user["_id"]})["username"] == "new-name"
 
 
-def test_get_feedback_unauthorized(regular_client):
-    """Test that regular users cannot access feedback list"""
-    response = regular_client.get("/api/admin/feedback")
-    assert response.status_code == 403
+def test_admin_update_user_rejects_username_for_helmholtz_user(client, admin_user):
+    """A Helmholtz user (no `username` field) cannot have a username set.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Helmholtz users are identified by helmholtz_sub, not username, so the
+        route must reject this rather than silently adding an unused field.
+    """
+    user_id = ObjectId()
+    db.users.insert_one({"_id": user_id, "helmholtz_sub": "sub-1", "role": "user"})
+
+    response = client.put(f"/api/admin/users/{user_id}", json={"username": "x"})
+
+    assert response.status_code == 400
+    assert "helmholtz-sub" in response.get_json()["error"]
 
 
-def test_get_feedback_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot access feedback list"""
-    response = unauthenticated_client.get("/api/admin/feedback")
-    assert response.status_code == 401 or response.status_code == 403
+def test_admin_update_user_rejects_invalid_role(client, admin_user, regular_user):
+    """Invalid roles are rejected before persisting.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user whose role update is being attempted
+
+    Notes:
+        This prevents the DB from holding values the auth system does not recognize.
+    """
+    response = client.put(f"/api/admin/users/{regular_user['id']}", json={"role": "owner"})
+
+    assert response.status_code == 400
 
 
-# ==================== Monthly Report Tests ====================
+def test_admin_update_user_rejects_empty_payload(client, admin_user, regular_user):
+    """An empty payload is rejected rather than silently no-opped.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user whose role update is being attempted
+
+    Notes:
+        This gives callers clear feedback that the request was malformed.
+    """
+    response = client.put(f"/api/admin/users/{regular_user['id']}", json={})
+
+    assert response.status_code == 400
 
 
-def test_trigger_monthly_report_success(admin_client):
-    """Test triggering monthly report generation for a specific month."""
-    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
-        response = admin_client.post("/api/admin/reports/generate", json={"year": 2026, "month": 3})
+def test_admin_delete_user_success(client, admin_user, regular_user, test_data_roots):
+    """Deletion cascades to tracked files and DB records.
 
-    assert response.status_code == 202
-    mock_send_task.assert_called_once_with(
-        "backend.worker.tasks.generate_monthly_report",
-        kwargs={"target_year": 2026, "target_month": 3},
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user being deleted
+        test_data_roots {DataRoots} -- per-test temp filesystem roots
+
+    Notes:
+        This avoids leaving orphaned data that consumes storage.
+    """
+    user_dir = test_data_roots.user_data / regular_user["id"]
+    # regular_user has a random id, so create its directory explicitly to prove deletion removes it.
+    user_dir.mkdir()
+    upload_file = test_data_roots.uploads / "upload.txt"
+    upload_file.write_text("upload")
+    output_dir = user_dir / "output"
+    output_dir.mkdir()
+    db.uploads.insert_one({"_id": ObjectId(), "user_id": regular_user["id"], "path": str(upload_file)})
+    db.runs.insert_one(
+        {"_id": ObjectId(), "user_id": regular_user["id"], "output_path": serialize_path(output_dir)}
     )
 
+    response = client.delete(f"/api/admin/users/{regular_user['id']}")
 
-def test_trigger_monthly_report_without_payload_uses_default_schedule(admin_client):
-    """Test triggering monthly report generation without an explicit period."""
-    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
-        response = admin_client.post("/api/admin/reports/generate", json={})
-
-    assert response.status_code == 202
-    mock_send_task.assert_called_once_with("backend.worker.tasks.generate_monthly_report", kwargs={})
+    assert response.status_code == 200
+    assert db.users.find_one({"_id": regular_user["_id"]}) is None
+    assert not upload_file.exists()
+    assert not user_dir.exists()
 
 
-def test_trigger_monthly_report_rejects_invalid_month(admin_client):
-    """Test invalid month values are rejected before queueing a task."""
-    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
-        response = admin_client.post("/api/admin/reports/generate", json={"year": 2026, "month": 13})
+def test_admin_delete_user_rejects_self_delete(client, admin_user):
+    """Admins cannot delete themselves.
 
-    assert response.status_code == 400
-    assert "Month must be between 1 and 12" in response.get_json()["error"]
-    mock_send_task.assert_not_called()
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
 
-
-def test_trigger_monthly_report_rejects_current_month(admin_client):
-    """Test current-month report generation is rejected."""
-    today = datetime.now()
-    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
-        response = admin_client.post(
-            "/api/admin/reports/generate",
-            json={"year": today.year, "month": today.month},
-        )
+    Notes:
+        Doing so would remove the last admin and lock everyone out of the panel.
+    """
+    response = client.delete(f"/api/admin/users/{admin_user['id']}")
 
     assert response.status_code == 400
-    assert "Cannot generate reports for the current or future month" in response.get_json()["error"]
-    mock_send_task.assert_not_called()
 
 
-def test_trigger_monthly_report_rejects_non_integer_values(admin_client):
-    """Test malformed year/month values return a validation error."""
-    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
-        response = admin_client.post(
-            "/api/admin/reports/generate", json={"year": "two thousand", "month": "3"}
-        )
+def test_admin_legal_documents_list_success(client, admin_user):
+    """Legal document listing includes at least both required types.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+    """
+    response = client.get("/api/admin/legal-documents")
+
+    assert response.status_code == 200
+    assert {item["document"] for item in response.get_json()} >= {"terms", "privacy-policy"}
+
+
+def test_admin_legal_document_detail_success(client, admin_user):
+    """Document detail echoes the document key.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel bind the response to the correct document type.
+    """
+    response = client.get(f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}")
+
+    assert response.status_code == 200
+    assert response.get_json()["document"] == TERMS_DOCUMENT_KEY
+
+
+def test_admin_publish_legal_document_success(client, admin_user):
+    """Publishing reflects the new body in the response.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the admin confirm the change without a second request.
+    """
+    response = client.post(
+        f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}/publish",
+        json={"body": "# Terms\n\nNew body"},
+    )
+
+    assert response.status_code == 200
+    assert "New body" in response.get_json()["published"]["body"]
+
+
+def test_admin_publish_legal_document_requires_new_content(client, admin_user):
+    """Re-publishing identical content is rejected.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Otherwise the version would bump and invalidate all existing user
+        consents without any actual content change.
+    """
+    current = client.get(f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}").get_json()["published"]["body"]
+
+    response = client.post(f"/api/admin/legal-documents/{TERMS_DOCUMENT_KEY}/publish", json={"body": current})
 
     assert response.status_code == 400
-    assert "Year and month must be valid integers" in response.get_json()["error"]
-    mock_send_task.assert_not_called()
 
 
-def test_trigger_monthly_report_requires_both_year_and_month(admin_client):
-    """Test partial monthly report payloads are rejected."""
-    with patch("backend.routes.admin.celery_app.send_task") as mock_send_task:
-        response = admin_client.post("/api/admin/reports/generate", json={"year": 2026})
+def test_admin_get_pipeline_runs_success(client, admin_user):
+    """Admin run listing exposes the MongoDB id.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel link each row to its detail or action endpoints.
+    """
+    run_id = db.runs.insert_one(
+        {"pipeline": "merfish", "status": "pending", "created_at": utc_now()}
+    ).inserted_id
+
+    response = client.get("/api/admin/pipelines")
+
+    assert response.status_code == 200
+    assert response.get_json()[0]["id"] == str(run_id)
+
+
+def test_admin_update_pipeline_status_success(client, admin_user):
+    """Status updates persist to MongoDB.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This makes the change visible on the user's next poll.
+    """
+    run_id = db.runs.insert_one({"status": "pending", "pipeline": "merfish"}).inserted_id
+
+    response = client.put(f"/api/admin/pipelines/{run_id}", json={"status": "success"})
+
+    assert response.status_code == 200
+    assert db.runs.find_one({"_id": run_id})["status"] == "success"
+
+
+def test_admin_update_pipeline_status_rejects_invalid_status(client, admin_user):
+    """Invalid statuses are rejected.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents runs from reaching a state the frontend does not know
+        how to display.
+    """
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
+
+    response = client.put(f"/api/admin/pipelines/{run_id}", json={"status": "bogus"})
 
     assert response.status_code == 400
-    assert "Year and month must both be provided" in response.get_json()["error"]
-    mock_send_task.assert_not_called()
 
 
-# ==================== Bulk Operations Tests ====================
+def test_admin_delete_pipeline_run_success(client, admin_user, tmp_path):
+    """Admin run deletion removes both the MongoDB document and output directory.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        tmp_path {Path} -- pytest-provided temp directory for the output folder
+
+    Notes:
+        This avoids leaving orphaned files.
+    """
+    output = tmp_path / "output"
+    output.mkdir()
+    run_id = db.runs.insert_one({"status": "pending", "output_path": serialize_path(output)}).inserted_id
+
+    response = client.delete(f"/api/admin/pipelines/{run_id}")
+
+    assert response.status_code == 200
+    assert not output.exists()
+    assert db.runs.find_one({"_id": run_id}) is None
 
 
-@pytest.fixture
-def create_test_user(client):
-    """Factory fixture to create test users"""
+def test_admin_dashboard_stats_success(client, admin_user, regular_user):
+    """Dashboard stats aggregate across all users and statuses.
 
-    def _create_user(user_id=None, role="user"):
-        """Helper function to create a test user"""
-        if user_id is None:
-            user_id = ObjectId()
-        user = {
-            "_id": user_id,
-            "username": f"user{user_id}",
-            "role": role,
-            "password": "hashed",
-        }
-        db.users.insert_one(user)
-        return user_id
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- second persisted user to make the total user count meaningful
 
-    return _create_user
+    Notes:
+        This gives the admin a system-wide view rather than just their own data.
+    """
+    db.runs.insert_many([{"status": "pending"}, {"status": "success"}])
+
+    response = client.get("/api/admin/dashboard")
+
+    assert response.status_code == 200
+    assert response.get_json()["users"]["total"] == 2
+    assert response.get_json()["pipeline_runs"]["by_status"]["pending"] == 1
 
 
-def test_bulk_delete_users_success(admin_client, regular_user, create_test_user):
-    """Test bulk deleting users"""
-    # Create additional users
-    user2_id = create_test_user()
-    db.feedback.insert_many(
+def test_admin_feedback_list_success(client, admin_user):
+    """Feedback listing must return messages in a shape the panel can display without further transformation.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+    """
+    db.feedback.insert_one({"_id": ObjectId(), "message": "hello", "created_at": utc_now()})
+
+    response = client.get("/api/admin/feedback")
+
+    assert response.status_code == 200
+    assert response.get_json()[0]["message"] == "hello"
+
+
+def _monthly_report_doc(report_id: str, year: int, month: int) -> dict:
+    """Build a minimal monthly report document for seeding report listing and detail tests.
+
+    Arguments:
+        report_id {str} -- MongoDB document id in YYYY-MM format
+        year {int} -- reporting year
+        month {int} -- reporting month
+
+    Returns:
+        dict -- report document ready to insert into the monthly_reports collection
+    """
+    return {
+        "_id": report_id,
+        "year": year,
+        "month": month,
+        "generated_at": utc_now(),
+        "generated_by": "manual",
+        "users": {"new_registrations": 1, "active": 2},
+        "runs": {"total": 3},
+        "conversions": {"anon_to_registered": 1},
+        "feedback": {"total": 4},
+    }
+
+
+def test_admin_monthly_reports_list_success(client, admin_user):
+    """Reports are returned newest-first.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel show the most recent period without a client-side sort.
+    """
+    db.monthly_reports.insert_many(
         [
-            {"_id": ObjectId(), "user_id": str(regular_user["_id"]), "message": "Feedback 1"},
-            {"_id": ObjectId(), "user_id": str(user2_id), "message": "Feedback 2"},
+            _monthly_report_doc("2026-03", 2026, 3),
+            _monthly_report_doc("2026-04", 2026, 4),
         ]
     )
 
-    try:
-        response = admin_client.post(
-            "/api/admin/users/bulk-delete", json={"user_ids": [str(regular_user["_id"]), str(user2_id)]}
-        )
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["deleted_count"] == 2
-        assert db.feedback.find_one({"user_id": str(regular_user["_id"])}) is None
-        assert db.feedback.find_one({"user_id": str(user2_id)}) is None
-    finally:
-        db.users.delete_one({"_id": user2_id})
+    response = client.get("/api/admin/reports")
+
+    assert response.status_code == 200
+    assert [report["id"] for report in response.get_json()] == ["2026-04", "2026-03"]
 
 
-def test_bulk_delete_users_empty_array(admin_client):
-    """Test bulk delete with empty array"""
-    response = admin_client.post("/api/admin/users/bulk-delete", json={"user_ids": []})
+def test_admin_monthly_report_detail_success(client, admin_user):
+    """Report detail lookup by year and month returns the matching document.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel display a specific period on demand.
+    """
+    db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
+
+    response = client.get("/api/admin/reports?year=2026&month=4")
+
+    assert response.status_code == 200
+    assert response.get_json()["id"] == "2026-04"
+
+
+def test_admin_monthly_report_detail_not_found(client, admin_user):
+    """A missing report returns 404.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the panel distinguish "not generated yet" from "generated
+        with no data".
+    """
+    response = client.get("/api/admin/reports?year=2026&month=4")
+
+    assert response.status_code == 404
+
+
+def test_admin_delete_monthly_report_success(client, admin_user):
+    """Report deletion removes the document from MongoDB.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents regeneration from producing a duplicate-key conflict.
+    """
+    db.monthly_reports.insert_one(_monthly_report_doc("2026-04", 2026, 4))
+
+    response = client.delete("/api/admin/reports/2026-04")
+
+    assert response.status_code == 200
+    assert db.monthly_reports.find_one({"_id": "2026-04"}) is None
+
+
+def test_admin_delete_monthly_report_not_found(client, admin_user):
+    """Deleting a non-existent report returns 404.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets callers know whether the delete actually took effect.
+    """
+    response = client.delete("/api/admin/reports/2026-04")
+
+    assert response.status_code == 404
+
+
+def test_admin_trigger_monthly_report_success(client, admin_user, frozen_admin_today):
+    """Manual report generation forwards the target period to the Celery task.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        frozen_admin_today {None} -- freezes datetime.date.today() for the route
+
+    Notes:
+        This makes the task generate the correct month.
+    """
+    with patch("backend.routes.admin.celery_app.send_task") as send_task:
+        response = client.post("/api/admin/reports/generate", json={"year": 2026, "month": 4})
+
+    assert response.status_code == 202
+    assert send_task.call_args.kwargs["kwargs"] == {"target_year": 2026, "target_month": 4}
+
+
+def test_admin_trigger_monthly_report_default_schedule(client, admin_user):
+    """Omitting year and month enqueues the task without arguments.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the task determine the target period itself.
+    """
+    with patch("backend.routes.admin.celery_app.send_task") as send_task:
+        response = client.post("/api/admin/reports/generate", json={})
+
+    assert response.status_code == 202
+    assert send_task.call_args.kwargs["kwargs"] == {}
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"year": 2026, "month": 13},
+        {"year": "bad", "month": 1},
+        {"year": 2026},
+        {"month": 1},
+    ],
+)
+def test_admin_trigger_monthly_report_rejects_invalid_payloads(client, admin_user, payload):
+    """All malformed payloads are rejected before the task is enqueued.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        payload {dict} -- one of the parametrized invalid payload shapes
+
+    Notes:
+        This avoids queuing work that will always fail.
+    """
+    response = client.post("/api/admin/reports/generate", json=payload)
+
     assert response.status_code == 400
 
 
-def test_bulk_delete_users_invalid_format(admin_client):
-    """Test bulk delete with invalid format"""
-    response = admin_client.post("/api/admin/users/bulk-delete", json={"user_ids": "not_an_array"})
+def test_admin_trigger_monthly_report_rejects_current_month(client, admin_user, frozen_admin_today):
+    """Current-month reports are rejected.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        frozen_admin_today {None} -- freezes datetime.date.today() for the route
+
+    Notes:
+        Generating mid-month would produce partial counts that appear final
+        and make trend comparisons misleading.
+    """
+    response = client.post("/api/admin/reports/generate", json={"year": 2026, "month": 5})
+
     assert response.status_code == 400
 
 
-def test_bulk_delete_users_self(admin_client, admin_user, create_test_user):
-    """Test bulk delete including self (should skip)"""
-    user2_id = create_test_user()
+def test_admin_bulk_delete_users_success(client, admin_user, regular_user):
+    """Bulk deletion reports the count of actually deleted users.
 
-    try:
-        response = admin_client.post(
-            "/api/admin/users/bulk-delete", json={"user_ids": [str(admin_user["_id"]), str(user2_id)]}
-        )
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["deleted_count"] == 1
-        assert "skipped" in data
-    finally:
-        db.users.delete_one({"_id": user2_id})
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user being deleted in bulk
 
+    Notes:
+        This lets the admin verify all selected users were removed.
+    """
+    response = client.post("/api/admin/users/bulk-delete", json={"user_ids": [regular_user["id"]]})
 
-def test_bulk_update_user_role_success(admin_client, regular_user, create_test_user):
-    """Test bulk updating user roles"""
-    user2_id = create_test_user()
-
-    try:
-        response = admin_client.post(
-            "/api/admin/users/bulk-update-role",
-            json={"user_ids": [str(regular_user["_id"]), str(user2_id)], "role": "admin"},
-        )
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["updated_count"] == 2
-
-        # Verify roles were updated
-        updated_user = get_with_check({"_id": regular_user["_id"]}, db.users)
-        assert updated_user["role"] == "admin"
-    finally:
-        db.users.delete_one({"_id": user2_id})
+    assert response.status_code == 200
+    assert response.get_json()["deleted_count"] == 1
 
 
-def test_bulk_update_user_role_invalid_role(admin_client, regular_user):
-    """Test bulk update with invalid role"""
-    response = admin_client.post(
-        "/api/admin/users/bulk-update-role", json={"user_ids": [str(regular_user["_id"])], "role": "invalid"}
-    )
+def test_admin_bulk_delete_users_rejects_empty_array(client, admin_user):
+    """An empty id list is rejected rather than silently no-opped.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents accidental calls from masking client bugs.
+    """
+    response = client.post("/api/admin/users/bulk-delete", json={"user_ids": []})
+
     assert response.status_code == 400
 
 
-def test_bulk_update_user_role_self_demotion(admin_client, admin_user):
-    """Test bulk update preventing self-demotion"""
-    response = admin_client.post(
-        "/api/admin/users/bulk-update-role", json={"user_ids": [str(admin_user["_id"])], "role": "user"}
-    )
-    # When trying to demote yourself and you're the only user, filtered_user_ids is empty
-    # so the endpoint returns 400
-    assert response.status_code == 400
-    assert "Cannot demote your own admin account" in response.get_json()["error"]
+def test_admin_bulk_delete_users_rejects_self(client, admin_user):
+    """Self-deletion via bulk delete is blocked by the same rule as single-user delete.
 
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
 
-def test_bulk_delete_users_unauthorized(regular_client, regular_user):
-    """Test that regular users cannot bulk delete users"""
-    response = regular_client.post(
-        "/api/admin/users/bulk-delete", json={"user_ids": [str(regular_user["_id"])]}
-    )
-    assert response.status_code == 403
+    Notes:
+        This keeps the endpoint's behavior consistent across both delete paths.
+    """
+    response = client.post("/api/admin/users/bulk-delete", json={"user_ids": [admin_user["id"]]})
 
-
-def test_bulk_delete_users_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot bulk delete users"""
-    fake_id = ObjectId()
-    response = unauthenticated_client.post("/api/admin/users/bulk-delete", json={"user_ids": [str(fake_id)]})
-    assert response.status_code == 401 or response.status_code == 403
-
-
-def test_bulk_update_user_role_unauthorized(regular_client, regular_user):
-    """Test that regular users cannot bulk update user roles"""
-    response = regular_client.post(
-        "/api/admin/users/bulk-update-role", json={"user_ids": [str(regular_user["_id"])], "role": "admin"}
-    )
-    assert response.status_code == 403
-
-
-def test_bulk_update_user_role_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot bulk update user roles"""
-    fake_id = ObjectId()
-    response = unauthenticated_client.post(
-        "/api/admin/users/bulk-update-role", json={"user_ids": [str(fake_id)], "role": "admin"}
-    )
-    assert response.status_code == 401 or response.status_code == 403
-
-
-@pytest.fixture
-def create_test_run(client):
-    """Factory fixture to create test pipeline runs"""
-
-    def _create_run(run_id=None, pipeline="test_pipeline2", status="pending"):
-        """Helper function to create a test pipeline run"""
-        if run_id is None:
-            run_id = ObjectId()
-        run = {
-            "_id": run_id,
-            "pipeline": pipeline,
-            "status": status,
-            "output_path": f"/tmp/test_output_{run_id}",
-        }
-        db.runs.insert_one(run)
-        return run_id
-
-    return _create_run
-
-
-def test_bulk_delete_pipeline_runs_success(admin_client, pipeline_run, create_test_run):
-    """Test bulk deleting pipeline runs"""
-    run2_id = create_test_run()
-
-    try:
-        with patch("shutil.rmtree"):
-            response = admin_client.post(
-                "/api/admin/pipelines/bulk-delete", json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)]}
-            )
-            assert response.status_code == 200
-            data = response.get_json()
-            assert data["deleted_count"] == 2
-    finally:
-        db.runs.delete_one({"_id": run2_id})
-
-
-def test_bulk_delete_pipeline_runs_invalid_ids(admin_client):
-    """Test bulk delete with invalid IDs"""
-    response = admin_client.post(
-        "/api/admin/pipelines/bulk-delete", json={"run_ids": ["invalid_id", "another_invalid"]}
-    )
-    # When all IDs are invalid, object_ids is empty, so the endpoint returns 400
-    assert response.status_code == 400
-    assert "No valid run IDs provided" in response.get_json()["error"]
-
-
-def test_bulk_delete_pipeline_runs_unauthorized(regular_client, pipeline_run):
-    """Test that regular users cannot bulk delete pipeline runs"""
-    response = regular_client.post(
-        "/api/admin/pipelines/bulk-delete", json={"run_ids": [str(pipeline_run["_id"])]}
-    )
-    assert response.status_code == 403
-
-
-def test_bulk_delete_pipeline_runs_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot bulk delete pipeline runs"""
-    fake_id = ObjectId()
-    response = unauthenticated_client.post(
-        "/api/admin/pipelines/bulk-delete", json={"run_ids": [str(fake_id)]}
-    )
-    assert response.status_code == 401 or response.status_code == 403
-
-
-def test_bulk_update_pipeline_status_success(admin_client, pipeline_run, create_test_run):
-    """Test bulk updating pipeline run status"""
-    run2_id = create_test_run()
-
-    try:
-        response = admin_client.post(
-            "/api/admin/pipelines/bulk-update-status",
-            json={"run_ids": [str(pipeline_run["_id"]), str(run2_id)], "status": "success"},
-        )
-        assert response.status_code == 200
-        data = response.get_json()
-        assert data["updated_count"] == 2
-
-        # Verify statuses were updated
-        updated_run = get_with_check({"_id": pipeline_run["_id"]}, db.runs)
-        assert updated_run["status"] == "success"
-    finally:
-        db.runs.delete_one({"_id": run2_id})
-
-
-def test_bulk_update_pipeline_status_invalid_status(admin_client, pipeline_run):
-    """Test bulk update with invalid status"""
-    response = admin_client.post(
-        "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(pipeline_run["_id"])], "status": "invalid_status"},
-    )
     assert response.status_code == 400
 
 
-def test_bulk_update_pipeline_status_missing_status(admin_client, pipeline_run):
-    """Test bulk update without status field"""
-    response = admin_client.post(
-        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(pipeline_run["_id"])]}
+def test_admin_bulk_update_user_role_success(client, admin_user, regular_user):
+    """Bulk role updates persist to MongoDB.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user whose role is being updated in bulk
+
+    Notes:
+        This makes the change take effect on each user's next request.
+    """
+    response = client.post(
+        "/api/admin/users/bulk-update-role", json={"user_ids": [regular_user["id"]], "role": "admin"}
     )
+
+    assert response.status_code == 200
+    assert db.users.find_one({"_id": regular_user["_id"]})["role"] == "admin"
+
+
+def test_admin_bulk_update_user_role_rejects_invalid_role(client, admin_user, regular_user):
+    """Invalid roles are rejected before any writes.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user whose role update is being attempted
+
+    Notes:
+        This prevents partial updates from leaving some users with unrecognized roles.
+    """
+    response = client.post(
+        "/api/admin/users/bulk-update-role", json={"user_ids": [regular_user["id"]], "role": "owner"}
+    )
+
     assert response.status_code == 400
 
 
-def test_bulk_update_pipeline_status_empty_run_ids(admin_client):
-    """Test bulk update with empty run_ids"""
-    response = admin_client.post(
+def test_admin_bulk_update_user_role_rejects_self_demotion(client, admin_user):
+    """An admin cannot demote themselves via bulk role update.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        Doing so would revoke their own access to all admin endpoints with
+        no way to undo it from within the panel.
+    """
+    response = client.post(
+        "/api/admin/users/bulk-update-role", json={"user_ids": [admin_user["id"]], "role": "user"}
+    )
+
+    assert response.status_code == 400
+
+
+def test_admin_bulk_delete_pipeline_runs_success(client, admin_user):
+    """Bulk run deletion reports the count of deleted runs.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This lets the admin verify the correct number of runs were removed.
+    """
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
+
+    response = client.post("/api/admin/pipelines/bulk-delete", json={"run_ids": [str(run_id)]})
+
+    assert response.status_code == 200
+    assert response.get_json()["deleted_count"] == 1
+
+
+def test_admin_bulk_delete_pipeline_runs_rejects_invalid_ids(client, admin_user):
+    """Malformed run ids are rejected before any deletes.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents the batch from partially succeeding with garbage input.
+    """
+    response = client.post("/api/admin/pipelines/bulk-delete", json={"run_ids": ["not-an-id"]})
+
+    assert response.status_code == 400
+
+
+def test_admin_bulk_update_pipeline_status_success(client, admin_user):
+    """Bulk status updates persist to MongoDB.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This makes changes take effect immediately on the user's next poll.
+    """
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
+
+    response = client.post(
+        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(run_id)], "status": "success"}
+    )
+
+    assert response.status_code == 200
+    assert db.runs.find_one({"_id": run_id})["status"] == "success"
+
+
+def test_admin_bulk_update_pipeline_status_rejects_invalid_status(client, admin_user):
+    """Invalid statuses are rejected before any writes.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents partial updates from leaving runs in unrecognized states.
+    """
+    response = client.post(
+        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(ObjectId())], "status": "bogus"}
+    )
+
+    assert response.status_code == 400
+
+
+def test_admin_bulk_update_pipeline_status_rejects_empty_run_ids(client, admin_user):
+    """An empty run id list is rejected.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+
+    Notes:
+        This prevents no-op calls from masking client-side bugs.
+    """
+    response = client.post(
         "/api/admin/pipelines/bulk-update-status", json={"run_ids": [], "status": "success"}
     )
+
     assert response.status_code == 400
 
 
-def test_bulk_update_pipeline_status_unauthorized(regular_client, pipeline_run):
-    """Test that regular users cannot bulk update pipeline run status"""
-    response = regular_client.post(
+def test_admin_bulk_delete_users_processes_valid_id_and_reports_invalid_one(client, admin_user, regular_user):
+    """A mixed batch deletes the valid user and reports the malformed one in invalid_ids.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user with a valid id being deleted in the same batch
+
+    Notes:
+        A malformed id must not block the rest of the batch from succeeding.
+    """
+    response = client.post(
+        "/api/admin/users/bulk-delete", json={"user_ids": [regular_user["id"], "not-an-id"]}
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["deleted_count"] == 1
+    assert db.users.find_one({"_id": regular_user["_id"]}) is None
+    assert body["invalid_ids"] == ["not-an-id"]
+
+
+def test_admin_bulk_update_user_role_processes_valid_id_and_reports_invalid_one(
+    client, admin_user, regular_user
+):
+    """A mixed batch updates the valid user's role and reports the malformed one in invalid_ids.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+        regular_user {dict} -- the user with a valid id being updated in the same batch
+    """
+    response = client.post(
+        "/api/admin/users/bulk-update-role",
+        json={"user_ids": [regular_user["id"], "not-an-id"], "role": "admin"},
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["updated_count"] == 1
+    assert db.users.find_one({"_id": regular_user["_id"]})["role"] == "admin"
+    assert body["invalid_ids"] == ["not-an-id"]
+
+
+def test_admin_bulk_update_pipeline_status_processes_valid_id_and_reports_invalid_one(client, admin_user):
+    """A mixed batch updates the valid run's status and reports the malformed id in invalid_ids.
+
+    Arguments:
+        client {Any} -- Flask test client
+        admin_user {dict} -- persisted admin user and authenticated session
+    """
+    run_id = db.runs.insert_one({"status": "pending"}).inserted_id
+
+    response = client.post(
         "/api/admin/pipelines/bulk-update-status",
-        json={"run_ids": [str(pipeline_run["_id"])], "status": "success"},
+        json={"run_ids": [str(run_id), "not-an-id"], "status": "success"},
     )
-    assert response.status_code == 403
 
-
-def test_bulk_update_pipeline_status_unauthenticated(unauthenticated_client):
-    """Test that unauthenticated users cannot bulk update pipeline run status"""
-    fake_id = ObjectId()
-    response = unauthenticated_client.post(
-        "/api/admin/pipelines/bulk-update-status", json={"run_ids": [str(fake_id)], "status": "success"}
-    )
-    assert response.status_code == 401 or response.status_code == 403
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["updated_count"] == 1
+    assert db.runs.find_one({"_id": run_id})["status"] == "success"
+    assert body["invalid_ids"] == ["not-an-id"]

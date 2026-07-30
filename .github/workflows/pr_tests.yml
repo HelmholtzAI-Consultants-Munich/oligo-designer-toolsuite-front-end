@@ -57,6 +57,8 @@ jobs:
     needs: detect-changes
     if: ${{ github.event_name != 'pull_request' || needs.detect-changes.outputs.backend == 'true' }}
     timeout-minutes: 15
+    env:
+      PYTEST_MONGO_HOST: localhost
 
     services:
       mongo:

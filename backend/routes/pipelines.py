@@ -14,6 +14,7 @@ from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
+from glom.core import PathAccessError
 from pydantic import ValidationError
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
@@ -115,11 +116,14 @@ def parse_region_generation(form_data: dict[str, Any], pipeline_name: str) -> di
     """
 
     generated_regions: defaultdict[str, list[dict[str, Any]]] = defaultdict(list)
-    region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
-        path: glom(form_data, path)
-        for path in PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])
-        if len(glom(form_data, path)) > 0
-    }
+    try:
+        region_generation_forms_by_id: dict[str, list[dict[str, Any]]] = {
+            path: glom(form_data, path)
+            for path in PIPELINE_GENOMIC_INPUT.get(pipeline_name, [])
+            if len(glom(form_data, path)) > 0
+        }
+    except (PathAccessError, TypeError):
+        abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
 
     for id, region_generation_forms in region_generation_forms_by_id.items():
         region_generation_list = unpack_genomic_form_data(region_generation_forms)
@@ -245,7 +249,8 @@ def enqueue_pipeline(pipeline_chord: Any) -> AsyncResult:
 def save_file(
     file_name: str, files: ImmutableMultiDict[str, FileStorage], saved_files: dict[FileStorage, Path]
 ):
-    if file := files.get(file_name):
+    file = files.get(file_name)
+    if file is not None:
         # Step 1: Check if file was already saved
         if file in saved_files:
             return saved_files[file]
@@ -287,7 +292,6 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
 
 
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
-
     match pipeline_name:
         case "oligoseq":
             pipeline_model = OligoSeqProbeDesignerConfig
@@ -401,7 +405,7 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
-    run_name = form.get("run_name")  # only used for UI display
+    run_name = str(form.get("run_name") or "")  # only used for UI display
     sanitized_run_name = sanitize_input(run_name)
 
     if not isinstance(form_data, dict):
