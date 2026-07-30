@@ -1,10 +1,6 @@
-"""Shared pytest fixtures for all backend tests.
+"""Shared pytest fixtures for all backend tests: database isolation, filesystem roots, and authentication helpers."""
 
-Notes:
-    Provides test database isolation, per-test filesystem roots, and authentication
-    helpers so individual test modules stay focused on route/task behavior.
-"""
-
+import datetime
 import json
 import os
 import shutil
@@ -12,6 +8,7 @@ import sys
 import types
 import uuid
 from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -75,7 +72,7 @@ class AuthenticatedUser:
         self.id = user_id
 
     def get_id(self) -> str:
-        """Return the user id as Flask-Login's UserMixin.get_id() would, for rate-limit key funcs."""
+        """Return the user id as Flask-Login's UserMixin.get_id() would"""
         return self.id
 
 
@@ -98,8 +95,8 @@ def app(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Any]:
         tmp_path_factory {pytest.TempPathFactory} -- pytest factory for session-scoped temp directories
 
     Notes:
-        Session scope means startup cost is paid once, while per-test fixtures
-        handle data isolation.
+        Building the app is slow, so it's built once and reused for every
+        test; test_data_roots and mongo_test_db reset data between tests instead.
 
     Yields:
         Iterator[Any] -- Flask application instance configured for testing
@@ -192,9 +189,8 @@ def client(app: Any) -> Iterator[Any]:
         app {Any} -- Flask application instance
 
     Notes:
-        Tests can use this to assert on routes that behave differently for
-        unauthenticated callers. We patch the internal `flask_login.utils._get_user`
-        because Flask-Login has no public testing hook for overriding `current_user`.
+        We patch the internal `flask_login.utils._get_user` because Flask-Login
+        has no public testing hook for overriding `current_user`.
 
     Yields:
         Iterator[Any] -- Flask test client with anonymous current_user
@@ -253,11 +249,7 @@ def authenticated_user(
     Arguments:
         app {Any} -- Flask application instance providing the app context
         client {Any} -- Flask test client (unused directly but ensures the client fixture is active)
-        authenticate_as {Callable[[str], AuthenticatedUser]} -- factory that patches Flask-Login to return the test user
-
-    Notes:
-        Routes that query MongoDB for role and consent status need this data
-        seeded directly, so no extra per-test setup is required.
+        authenticate_as {Callable[[str], AuthenticatedUser]} -- factory that patches Flask-Login to return the test use
 
     Yields:
         Iterator[AuthenticatedUser] -- the patched current_user for the default test user
@@ -293,15 +285,17 @@ def anonymous_session(app: Any, client: Any) -> Iterator[str]:
 
 @pytest.fixture
 def run_doc(app: Any) -> Callable[..., ObjectId]:
-    """Factory fixture — pytest injects the returned callable, not a document.
+    """Provide a factory that inserts a run document and returns its ObjectId.
 
     Arguments:
         app {Any} -- Flask application instance providing the app context
 
     Notes:
-        Calling run_doc(...) inside a test inserts one run document and returns its
-        ObjectId. Tests can call it multiple times with different arguments to seed
-        several documents in the same test (e.g. one owned run and one unowned run).
+        The fixture itself just returns _run_doc rather than inserting
+        directly, so the test gets a reusable callable — call it multiple
+        times with different arguments to seed several documents in one test
+        (e.g. a run owned by the caller and one owned by someone else, as in
+        test_get_pipeline_run_404_for_unowned_run).
 
     Returns:
         Callable[..., ObjectId] -- callable that inserts a run document and returns its ObjectId
@@ -373,10 +367,6 @@ def pipeline_payload() -> Callable[[str, ObjectId | None], dict[str, Any]]:
         Keyword Arguments:
             run_id {ObjectId | None} -- pass a known id only when the test needs to assert the server ignored it; omit otherwise (default: {None})
 
-        Notes:
-            Returning a fresh copy prevents mutations in one test from bleeding
-            into another.
-
         Returns:
             dict[str, Any] -- payload dict with runid set, ready to post
         """
@@ -398,8 +388,8 @@ def multipart_post(
         client {Any} -- Flask test client that will send the requests
 
     Notes:
-        This lets tests state only what they want to send, not how to
-        serialize it.
+        The fixture itself just returns _post rather than posting directly,
+        so the test gets a reusable callable
 
     Returns:
         Callable[[str, dict[str, Any] | None, dict[str, tuple[bytes, str]] | None], Any] -- post helper that handles JSON serialization and BytesIO wrapping
@@ -416,10 +406,6 @@ def multipart_post(
         Keyword Arguments:
             payload {dict[str, Any] | None} -- pipeline submission data; serialized into the `payload` form field as the route expects (default: {None})
             files {dict[str, tuple[bytes, str]] | None} -- uploaded files keyed by form field name; each value is (raw bytes, filename) (default: {None})
-
-        Notes:
-            This means tests don't have to manually serialize JSON or construct
-            BytesIO wrappers.
 
         Returns:
             Any -- Flask test client response
@@ -439,8 +425,9 @@ def celery_config() -> dict[str, Any]:
     """Configure the test Celery worker to use an isolated Redis database.
 
     Notes:
-        Redis DB #15 is used so test tasks don't share state with the dev or
-        production broker (typically DB 0).
+        Redis can host several separate databases on one server; tests use
+        DB 15 so they don't mix task data with the dev/production broker,
+        which normally uses DB 0.
 
     Returns:
         dict[str, Any] -- Celery configuration overrides for the test worker
@@ -502,10 +489,6 @@ def celery_app(celery_config: dict[str, Any]):
     Arguments:
         celery_config {dict[str, Any]} -- Celery configuration overrides from the celery_config fixture
 
-    Notes:
-        Using the real app rather than a fake one ensures task routing and
-        chords behave identically to production.
-
     Returns:
         Celery -- the production worker app reconfigured to use the test broker and flushed before each test
     """
@@ -521,10 +504,6 @@ def assert_sanitized_error(response: Any) -> None:
 
     Arguments:
         response {Any} -- Flask test client response whose JSON body must not contain internal details
-
-    Notes:
-        Each forbidden fragment is checked individually so a partial leak of one
-        pattern cannot be masked by the absence of another.
     """
     data = response.get_json() or {}
     rendered = str(data)
@@ -541,11 +520,9 @@ def pipeline_runner_module(runner_cls: Any):
         runner_cls {Any} -- mock or stub class to expose as PipelineRunner in the fake module
 
     Notes:
-        pipeline_runner.py imports genomic_regions_file.py, which pulls in Biopython
-        and oligo_designer_toolsuite visualization packages not installed in CI. Those
-        imports run at module load time so the file crashes before any mock can help.
-        Injecting a fake module into sys.modules means Python never touches the
-        real file, so its visualization imports never run.
+        Injecting a fake module into sys.modules avoids importing the real
+        pipeline_runner.py, which pulls in Biopython/oligo_designer_toolsuite
+        packages not installed in CI.
 
     Returns:
         patch.dict -- context manager that installs the fake module for the test duration
@@ -553,3 +530,31 @@ def pipeline_runner_module(runner_cls: Any):
     module = types.ModuleType("backend.worker.pipeline_runner")
     module.PipelineRunner = runner_cls
     return patch.dict(sys.modules, {"backend.worker.pipeline_runner": module})
+
+
+@contextmanager
+def frozen_today(patch_target: str, year: int, month: int, day: int) -> Iterator[None]:
+    """Freezes datetime.date.today() at a fixed date, as imported by patch_target's module.
+
+    Arguments:
+        patch_target {str} -- dotted path to the datetime.date reference to
+        patch, e.g. "backend.routes.admin.datetime.date".
+        year {int} -- fixed year.
+        month {int} -- fixed month.
+        day {int} -- fixed day.
+
+    Notes:
+        Subclassing datetime.date, rather than plain monkeypatching, lets
+        today() be overridden while keeping all other date arithmetic intact.
+
+    Yields:
+        Iterator[None] -- yields with patch_target's today() returning the fixed date
+    """
+
+    class FixedDate(datetime.date):
+        @classmethod
+        def today(cls):
+            return cls(year, month, day)
+
+    with patch(patch_target, FixedDate):
+        yield

@@ -1,12 +1,4 @@
-"""Run management route tests.
-
-Notes:
-    These tests use real temp output files and directories because file serving
-    security (path traversal, extension allowlist) and deletion correctness (both
-    DB and filesystem) require actual filesystem paths to exercise properly.
-    Mocking the filesystem would hide the path-resolution bugs these tests are
-    designed to catch.
-"""
+"""Run management route tests."""
 
 from bson import ObjectId
 
@@ -142,9 +134,6 @@ def test_get_run_file_serves_tsv_as_attachment(client, authenticated_user, run_d
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
-
-    Notes:
-        .tsv is one of runs.py's ALLOWED_FILE_ENDINGS (.yml, .yaml, .tsv, .xlsx).
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -190,9 +179,6 @@ def test_get_run_file_serves_yaml_as_attachment(client, authenticated_user, run_
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
-
-    Notes:
-        .yml is one of runs.py's ALLOWED_FILE_ENDINGS (.yml, .yaml, .tsv, .xlsx).
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -213,9 +199,6 @@ def test_get_run_file_serves_xlsx_as_attachment(client, authenticated_user, run_
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
-
-    Notes:
-        .xlsx is one of runs.py's ALLOWED_FILE_ENDINGS (.yml, .yaml, .tsv, .xlsx).
     """
     output = tmp_path / "output"
     output.mkdir()
@@ -237,9 +220,6 @@ def test_get_run_file_rejects_unsupported_extension(client, authenticated_user, 
         authenticated_user {AuthenticatedUser} -- active authenticated session
         run_doc {Callable} -- factory that inserts a run document and returns its id
         tmp_path {Path} -- pytest-provided temp directory containing the output files
-
-    Notes:
-        Only explicitly permitted types should ever be served from run output directories.
     """
     # File serving uses an allowlist rather than a denylist: unknown extensions
     # are blocked by default and must be explicitly permitted to be served.
@@ -263,10 +243,8 @@ def test_get_run_file_rejects_path_traversal(client, authenticated_user, run_doc
         tmp_path {Path} -- pytest-provided temp directory used as the output root
 
     Notes:
-        Otherwise attackers could use a valid run ID to read files outside the run directory.
-        URL-encoded variants (`%2e%2e`) are tested because Flask decodes them
-        before routing, but double-encoding or partial encoding can bypass naive
-        string-based checks that only look for literal `..`.
+        URL-encoded variants are tested because Flask decodes them before naive
+        string checks run.
     """
     output = tmp_path / "output"
     output.mkdir()

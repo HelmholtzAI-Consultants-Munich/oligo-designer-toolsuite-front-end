@@ -20,12 +20,7 @@ pytestmark = pytest.mark.usefixtures("isolated_redis")
 
 
 def test_queue_accounting_lock_yields_working_client_and_releases_lock_on_success():
-    """On success the lock is released, allowing it to be re-acquired immediately afterward.
-
-    Notes:
-        Successfully re-acquiring the same lock right after exit is the
-        simplest proof that the context manager released it.
-    """
+    """On success the lock is released, allowing it to be re-acquired immediately afterward."""
     with queue_accounting_lock() as redis_client:
         assert redis_client.ping() is True
 

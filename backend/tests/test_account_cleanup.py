@@ -13,14 +13,16 @@ def test_delete_file_if_tracked_is_a_no_op_for_falsy_path_value(tmp_path):
 
 
 def test_delete_file_if_tracked_leaves_paths_outside_root_untouched(tmp_path):
-    """A tracked path resolving outside upload_root is left in place.
+    """Paths outside upload_root must not be deleted.
 
     Arguments:
-        tmp_path {Path} -- pytest-provided temp directory split into a managed root and an outside file
+        tmp_path {Path} -- pytest-provided temp directory containing both
+        upload_root and a file outside it
 
     Notes:
-        This guards against deleting arbitrary filesystem paths if a document's
-        stored path was ever corrupted or pointed outside the managed root.
+        path_value comes from a database record, which could be corrupted or
+        tampered with; deleting whatever it points to without this check
+        would be an arbitrary file deletion vulnerability.
     """
     upload_root = tmp_path / "uploads"
     upload_root.mkdir()

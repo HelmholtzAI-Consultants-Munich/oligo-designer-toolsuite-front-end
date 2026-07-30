@@ -140,6 +140,11 @@ def test_get_raises_not_implemented(region):
 
     Arguments:
         region {CacheRegion} -- dogpile region under test
+
+    Notes:
+        get() and set() behave identically (both always raise) — this covers
+        the read side of the interface, while test_set_raises_not_implemented
+        covers the write side.
     """
     with pytest.raises(NotImplementedError):
         region.backend.get("key")

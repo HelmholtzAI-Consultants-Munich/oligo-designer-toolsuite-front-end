@@ -48,7 +48,8 @@ def test_create_feedback_rejects_missing_message(client, authenticated_user):
 
     Arguments:
         client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client, which the route requires
     """
     with patch("backend.routes.feedback.validate_turnstile", return_value=True):
         response = client.post("/api/feedback", json={"token": "tok"})
@@ -62,7 +63,8 @@ def test_create_feedback_rejects_empty_message(client, authenticated_user):
 
     Arguments:
         client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client, which the route requires
     """
     with patch("backend.routes.feedback.validate_turnstile", return_value=True):
         response = client.post("/api/feedback", json={"message": "   ", "token": "tok"})
@@ -77,7 +79,8 @@ def test_create_feedback_rejects_message_over_max_length(app, client, authentica
     Arguments:
         app {Any} -- Flask application instance whose FEEDBACK_MAX_LENGTH is lowered for this test
         client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client, which the route requires
     """
     app.config["FEEDBACK_MAX_LENGTH"] = 10
 
@@ -93,7 +96,8 @@ def test_create_feedback_rejects_failed_turnstile_validation(client, authenticat
 
     Arguments:
         client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client, which the route requires
     """
     with patch("backend.routes.feedback.validate_turnstile", return_value=False):
         response = client.post("/api/feedback", json={"message": "Great tool!", "token": "bad"})

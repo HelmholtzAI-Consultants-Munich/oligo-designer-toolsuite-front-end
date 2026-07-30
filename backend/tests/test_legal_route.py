@@ -1,10 +1,4 @@
-"""Legal routes must be publicly accessible and consent must be persisted correctly.
-
-Notes:
-    This lets users read terms before agreeing and lets the system enforce compliance.
-    Account deletion cascades across all related collections in a single test because
-    partial cleanup would leave orphaned data and violate user privacy expectations.
-"""
+"""Legal routes must be publicly accessible and consent must be persisted correctly."""
 
 from unittest.mock import patch
 
@@ -37,9 +31,6 @@ def test_public_legal_document_route(client, path, document_key, title):
         path {str} -- one of the parametrized legal document route paths
         document_key {str} -- expected document key in the response
         title {str} -- expected document title in the response
-
-    Notes:
-        This lets users read terms before consenting.
     """
     response = client.get(path)
 
@@ -146,9 +137,6 @@ def test_delete_account_requires_authentication(client):
 
     Arguments:
         client {Any} -- anonymous Flask test client with no active session
-
-    Notes:
-        This prevents anyone from deleting accounts without a valid session.
     """
     response = client.delete("/api/account")
 

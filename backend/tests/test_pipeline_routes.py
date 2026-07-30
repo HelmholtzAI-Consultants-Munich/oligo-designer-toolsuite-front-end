@@ -1,10 +1,4 @@
-"""Pipeline submission route tests.
-
-Notes:
-    These tests use real MongoDB documents and temporary filesystem paths. Celery
-    dispatch and Redis queue inspection are patched because they are external
-    boundaries for route-level behavior.
-"""
+"""Pipeline submission route tests."""
 
 import copy
 from pathlib import Path
@@ -93,7 +87,8 @@ def test_start_pipeline_authenticated_success(
     """Authenticated submissions create high-priority user-owned runs.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session with current terms accepted
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         queued_task {tuple} -- patched enqueue and queue_position mocks
@@ -123,10 +118,12 @@ def test_start_pipeline_anonymous_success(anonymous_session, pipeline_payload, m
     """Anonymous submissions must create default-priority session-owned runs routed to the anonymous data directory.
 
     Arguments:
-        anonymous_session {str} -- session id attached to the test client with current terms accepted
+        anonymous_session {str} -- not referenced by name; requesting the fixture is
+        what attaches session_id and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
+        queued_task {tuple} -- not referenced by name; requesting the fixture is what
+        mocks the broker so this success path doesn't need a real Celery worker
     """
     response = multipart_post(f"/api/{PIPELINE_NAME}", pipeline_payload(PAYLOAD_FILE))
 
@@ -141,11 +138,10 @@ def test_start_pipeline_anonymous_success(anonymous_session, pipeline_payload, m
 
 
 @pytest.mark.parametrize("pipeline_name", ["merfish", "seqfish", "scrinshot"])
-def test_start_pipeline_rejects_disabled_pipeline(client, multipart_post, pipeline_name):
+def test_start_pipeline_rejects_disabled_pipeline(multipart_post, pipeline_name):
     """Disabled pipelines are rejected at the route level.
 
     Arguments:
-        client {Any} -- Flask test client
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         pipeline_name {str} -- one of the parametrized disabled pipeline names
 
@@ -159,7 +155,7 @@ def test_start_pipeline_rejects_disabled_pipeline(client, multipart_post, pipeli
 
 
 def test_start_pipeline_requires_terms_acceptance(
-    authenticate_as, pipeline_payload, multipart_post, queued_task, test_data_roots
+    authenticate_as, pipeline_payload, multipart_post, test_data_roots
 ):
     """Terms must be accepted before any run document or output directory is created.
 
@@ -167,11 +163,12 @@ def test_start_pipeline_requires_terms_acceptance(
         authenticate_as {Callable} -- factory that patches current_user without inserting a terms acceptance
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
         test_data_roots {DataRoots} -- per-test temp filesystem roots for asserting no output was created
 
     Notes:
-        This guarantees no orphaned state exists for non-consenting users.
+        This guarantees no orphaned state exists for non-consenting users. The
+        terms check rejects the request before enqueue_pipeline/add_pending_run
+        are ever reached, so queued_task isn't needed here.
     """
     authenticate_as(TEST_USER_ID)
 
@@ -182,11 +179,10 @@ def test_start_pipeline_requires_terms_acceptance(
     assert list(test_data_roots.user_dir.glob("output_*")) == []
 
 
-def test_start_pipeline_rejects_unknown_pipeline(client, multipart_post):
+def test_start_pipeline_rejects_unknown_pipeline(multipart_post):
     """Unknown pipeline names are rejected with a clear error.
 
     Arguments:
-        client {Any} -- Flask test client
         multipart_post {Callable} -- helper that posts multipart pipeline requests
 
     Notes:
@@ -203,7 +199,8 @@ def test_start_pipeline_rejects_missing_payload(client, authenticated_user):
 
     Arguments:
         client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
     """
     response = client.post(f"/api/{PIPELINE_NAME}", data={}, content_type="multipart/form-data")
 
@@ -214,7 +211,8 @@ def test_start_pipeline_rejects_empty_payload(authenticated_user, multipart_post
     """An empty payload is rejected before any pipeline configuration is parsed.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         multipart_post {Callable} -- helper that posts multipart pipeline requests
 
     Notes:
@@ -231,10 +229,12 @@ def test_start_pipeline_ignores_client_run_id(
     """The server generates run IDs itself and ignores any client-supplied run ID.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
+        queued_task {tuple} -- not referenced by name; requesting the fixture is what
+        mocks the broker so this success path doesn't need a real Celery worker
 
     Notes:
         This prevents clients from spoofing IDs or causing collisions with other
@@ -250,11 +250,10 @@ def test_start_pipeline_ignores_client_run_id(
     assert db.runs.find_one({"_id": client_run_id}) is None
 
 
-def test_start_pipeline_rejects_missing_anonymous_terms(client, pipeline_payload, multipart_post):
+def test_start_pipeline_rejects_missing_anonymous_terms(pipeline_payload, multipart_post):
     """Anonymous users without terms acceptance are blocked at the same checkpoint as authenticated users.
 
     Arguments:
-        client {Any} -- anonymous Flask test client with no terms acceptance
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
 
@@ -268,20 +267,21 @@ def test_start_pipeline_rejects_missing_anonymous_terms(client, pipeline_payload
 
 
 def test_start_pipeline_fails_when_user_directory_missing(
-    authenticated_user, pipeline_payload, multipart_post, queued_task, test_data_roots
+    authenticated_user, pipeline_payload, multipart_post, test_data_roots
 ):
     """A missing user directory returns a 500 with a sanitized error.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
         test_data_roots {DataRoots} -- per-test temp filesystem roots; user dir is removed to trigger the failure
 
     Notes:
         Sanitizing the error ensures internal filesystem paths are not exposed to
-        the client.
+        the client. create_context() aborts before enqueue_pipeline/add_pending_run
+        are ever reached, so queued_task isn't needed here.
     """
     test_data_roots.user_dir.rmdir()
 
@@ -292,19 +292,21 @@ def test_start_pipeline_fails_when_user_directory_missing(
 
 
 def test_start_pipeline_rejects_too_many_genes_for_anonymous_user(
-    anonymous_session, pipeline_payload, multipart_post, queued_task
+    anonymous_session, pipeline_payload, multipart_post
 ):
     """Anonymous users are capped at GENE_COUNT_THRESHOLD.
 
     Arguments:
-        anonymous_session {str} -- session id attached to the test client with current terms accepted
+        anonymous_session {str} -- not referenced by name; requesting the fixture is
+        what attaches session_id and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
 
     Notes:
         This cap prevents resource abuse from unauthenticated callers without
-        requiring an account.
+        requiring an account. The gene-count check aborts before
+        enqueue_pipeline/add_pending_run are ever reached, so queued_task isn't
+        needed here.
     """
     payload = pipeline_payload(PAYLOAD_FILE)
     assign(
@@ -325,10 +327,12 @@ def test_start_pipeline_allows_too_many_genes_for_authenticated_user(
     """Authenticated users are not subject to the anonymous gene cap.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
+        queued_task {tuple} -- not referenced by name; requesting the fixture is what
+        mocks the broker so this success path doesn't need a real Celery worker
 
     Notes:
         This ensures legitimate large analyses are not blocked.
@@ -351,7 +355,8 @@ def test_start_pipeline_saves_uploaded_files(
     """Uploaded file keys are replaced with server-side paths before enqueue.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         queued_task {tuple} -- patched enqueue and queue_position mocks
@@ -384,7 +389,8 @@ def test_start_pipeline_rejects_invalid_uploaded_filename(
     """Empty and browser-placeholder filenames are rejected.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         filename {str} -- one of the parametrized invalid filenames
@@ -407,10 +413,12 @@ def test_start_pipeline_persists_pipeline_run_config_when_present(
     """pipeline_run_config is stored verbatim on the run document.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
+        queued_task {tuple} -- not referenced by name; requesting the fixture is what
+        mocks the broker so this success path doesn't need a real Celery worker
 
     Notes:
         This lets the frontend replay the exact configuration later.
@@ -430,10 +438,12 @@ def test_start_pipeline_ignores_invalid_pipeline_run_config(
     """An invalid pipeline_run_config value is silently dropped rather than blocking pipeline submission.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-        queued_task {tuple} -- patched enqueue and queue_position mocks
+        queued_task {tuple} -- not referenced by name; requesting the fixture is what
+        mocks the broker so this success path doesn't need a real Celery worker
 
     Notes:
         pipeline_run_config is best-effort metadata, not required for submission.
@@ -451,7 +461,8 @@ def test_pipeline_routes_do_not_expose_raw_errors(authenticated_user, pipeline_p
     """Internal errors are sanitized before reaching the client.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
 
@@ -471,7 +482,8 @@ def test_start_pipeline_rejects_missing_payload_formdata(authenticated_user, mul
     """A payload without the formdata field fails immediately.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         multipart_post {Callable} -- helper that posts multipart pipeline requests
 
     Notes:
@@ -489,7 +501,8 @@ def test_start_pipeline_rejects_misformatted_genomic_inputs(
     """Malformed genomic input structure is caught before dispatch.
 
     Arguments:
-        authenticated_user {AuthenticatedUser} -- active authenticated session
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client and accepts terms, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
 

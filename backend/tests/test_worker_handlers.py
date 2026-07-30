@@ -1,9 +1,4 @@
-"""Celery worker task handler tests.
-
-Notes:
-    Lifecycle hooks must persist status transitions to MongoDB so the frontend can
-    poll run status and users see accurate progress without querying Celery directly.
-"""
+"""Celery worker lifecycle hook tests for PipelineTask."""
 
 from unittest.mock import patch
 

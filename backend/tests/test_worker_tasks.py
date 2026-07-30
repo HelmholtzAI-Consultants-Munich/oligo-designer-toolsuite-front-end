@@ -1,13 +1,4 @@
-"""Celery task body tests.
-
-Notes:
-    These tests cover task bodies in isolation from the scheduler. External boundaries
-    (PipelineRunner, genomic region generators, and MongoDB) are mocked so tests can assert
-    on dispatch arguments and error propagation without running real pipelines or touching the
-    production database. Cleanup helpers use real temp filesystem paths because path-safety
-    checks (managed root enforcement, unexpected filesystem types) require actual directory
-    structures to exercise properly.
-"""
+"""Celery task body tests that mock external boundaries (PipelineRunner, genomic region generators, MongoDB) to isolate dispatch and error-propagation behavior."""
 
 import datetime
 from contextlib import contextmanager
@@ -18,7 +9,7 @@ from bson import ObjectId
 
 from backend.exceptions import ODTPipelineError
 from backend.extensions import db
-from backend.tests.conftest import CELERY_TASK_TIMEOUT, TEST_SESSION_ID, pipeline_runner_module
+from backend.tests.conftest import CELERY_TASK_TIMEOUT, TEST_SESSION_ID, frozen_today, pipeline_runner_module
 from backend.utilities.typed_values import serialize_path
 from backend.utils import utc_now
 from backend.worker import tasks as task_module
@@ -47,11 +38,9 @@ def test_run_pipeline_task_calls_pipeline_runner(celery_worker, tmp_path):
     """The pipeline task instantiates PipelineRunner with the pipeline name and passes all task arguments through to run.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
         tmp_path {Path} -- pytest-provided temp directory used as the pipeline output path
-
-    Notes:
-        This ensures the correct pipeline executes with the correct inputs.
     """
     output_path = str(tmp_path / "out")
     runner_cls = MagicMock()
@@ -73,7 +62,8 @@ def test_run_pipeline_task_propagates_runner_error(celery_worker, tmp_path):
     """Pipeline errors propagate through the Celery result.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
         tmp_path {Path} -- pytest-provided temp directory used as the pipeline output path
 
     Notes:
@@ -98,7 +88,8 @@ def test_run_genomic_region_generator_returns_id_and_paths(celery_worker):
     """The task returns the input field id paired with generated file paths.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
 
     Notes:
         This lets the chord callback inject the paths into the correct form
@@ -118,7 +109,8 @@ def test_run_genomic_region_generator_propagates_error(celery_worker):
     """Errors from the generator propagate through the Celery result.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
 
     Notes:
         This lets failed header tasks abort the chord before the pipeline body
@@ -135,7 +127,8 @@ def test_trigger_dropdown_options_fetching_calls_fetch(celery_worker):
     """The prefetch task delegates to the dropdown fetcher.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
 
     Notes:
         This populates cached database options before users open the
@@ -148,12 +141,7 @@ def test_trigger_dropdown_options_fetching_calls_fetch(celery_worker):
 
 
 def _seed_march_report_source_data() -> None:
-    """Seed one reporting period plus previous-period data.
-
-    Notes:
-        This gives monthly report tests a stable baseline for aggregate and
-        delta assertions.
-    """
+    """Seed one reporting period plus previous-period data."""
     start = datetime.datetime(2026, 3, 1)
     db.users.insert_one({"_id": ObjectId.from_datetime(start), "role": "user"})
     db.runs.insert_many(
@@ -198,10 +186,10 @@ def _generate_march_report(celery_worker) -> dict:
     """Trigger report generation for March 2026 with the test DB wired in and return the persisted report.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
-
-    Notes:
-        This lets test functions assert on its content.
+        celery_worker {Any} -- not used inside this function; it's the caller's
+        already-started celery_worker fixture, required here (rather than
+        implicitly relied upon) so this helper can't be called before the
+        worker is running
 
     Returns:
         dict -- the MongoDB monthly report document written by the task
@@ -216,7 +204,8 @@ def test_generate_monthly_report_for_manual_period_writes_identity_and_structure
     """A manually triggered report is persisted with the correct period identity and top-level sections.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks
+        synchronously; passed through to _generate_march_report
 
     Notes:
         This lets the admin panel retrieve and display it by year-month key.
@@ -237,10 +226,8 @@ def test_generate_monthly_report_for_manual_period_aggregates_counts(celery_work
     """Aggregate counts reflect all runs and users in the reporting period.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
-
-    Notes:
-        This lets the admin panel show accurate usage statistics.
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks
+        synchronously; passed through to _generate_march_report
     """
     _seed_march_report_source_data()
 
@@ -264,7 +251,8 @@ def test_generate_monthly_report_for_manual_period_calculates_rates_and_deltas(c
     """Rates and period deltas are computed from the stored previous-period report.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks
+        synchronously; passed through to _generate_march_report
 
     Notes:
         This makes trend changes visible on the admin dashboard.
@@ -292,28 +280,16 @@ def test_generate_monthly_report_default_uses_previous_month(celery_worker):
     """The scheduled task targets the previous calendar month.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
 
     Notes:
         This ensures reports are generated for a complete period rather than
         the current in-progress month.
     """
-
-    class FixedDate(datetime.date):
-        """Make datetime.date.today() return a deterministic value.
-
-        Notes:
-            This makes the scheduled report target a predictable month.
-        """
-
-        @classmethod
-        def today(cls):
-            """Return a stable date whose previous month is April 2026."""
-            return cls(2026, 5, 27)
-
     with (
         patch("backend.worker.tasks.mongo_database", _test_mongo_database),
-        patch("backend.worker.tasks.datetime.date", FixedDate),
+        frozen_today("backend.worker.tasks.datetime.date", 2026, 5, 27),
     ):
         generate_monthly_report.delay().get(timeout=CELERY_TASK_TIMEOUT)
 
@@ -325,7 +301,8 @@ def test_generate_monthly_report_handles_no_runs(celery_worker):
     """Rates become None (not 0) when the run count is zero.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
 
     Notes:
         This lets the frontend distinguish "no runs yet" from a genuine 0% rate.
@@ -343,7 +320,8 @@ def test_generate_monthly_report_replaces_existing_report(celery_worker):
     """Re-running report generation for the same period overwrites the existing document.
 
     Arguments:
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
 
     Notes:
         This means stale data does not persist alongside the updated figures.
@@ -425,9 +403,9 @@ def test_cleanup_anonymous_data_retains_records_for_paths_outside_root(test_data
         tmp_path {Path} -- pytest-provided temp directory simulating a path outside the managed roots
 
     Notes:
-        A mis-configured UPLOAD_PATH or USERDATA_PATH could point cleanup at the
-        wrong directory. Skipping records outside the expected roots prevents
-        accidental data loss from configuration errors.
+        A mis-configured UPLOAD_PATH/USERDATA_PATH could point cleanup at the
+        wrong directory, so records outside the expected roots are skipped
+        rather than deleted.
     """
     outside = tmp_path / "outside.fna"
     outside.write_text("keep")
@@ -487,7 +465,8 @@ def test_cleanup_anonymous_data_task_uses_configured_roots(test_data_roots, cele
 
     Arguments:
         test_data_roots {DataRoots} -- per-test temp filesystem roots injected via the data-roots patch
-        celery_worker {Any} -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker {Any} -- not referenced by name; requesting the fixture is
+        what starts the embedded worker that actually executes the task dispatched via .delay()
 
     Notes:
         This lets it be exercised without touching production paths or the

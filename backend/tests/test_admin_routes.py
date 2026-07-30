@@ -1,19 +1,12 @@
-"""Admin route tests.
+"""Admin route tests."""
 
-Notes:
-    The fixtures in this module are intentionally role-specific: admin endpoints
-    read the persisted user role from MongoDB, so tests need real admin and regular
-    user documents rather than only a patched Flask-Login user.
-"""
-
-import datetime
 from unittest.mock import patch
 
 import pytest
 from bson import ObjectId
 
 from backend.extensions import db
-from backend.tests.conftest import TEST_USER_ID
+from backend.tests.conftest import TEST_USER_ID, frozen_today
 from backend.utilities.legal import TERMS_DOCUMENT_KEY
 from backend.utilities.typed_values import serialize_path
 from backend.utils import utc_now
@@ -53,13 +46,23 @@ def regular_client(client, authenticate_as, regular_user):
     """Authenticate the client as a non-admin user.
 
     Notes:
-        This lets tests assert 403 without repeating the authenticate call.
+        regular_user is a MongoDB document (who the test user is); client is
+        the Flask test client (how requests get sent). authenticate_as bridges
+        them so client's next requests act as regular_user — this fixture just
+        does that once so tests asserting 403 don't repeat the call.
 
     Returns:
         Any -- Flask test client authenticated as a regular user
     """
     authenticate_as(regular_user["id"])
     return client
+
+
+@pytest.fixture
+def frozen_admin_today():
+    """Freeze datetime.date.today() (as seen by backend.routes.admin) to 2026-05-27."""
+    with frozen_today("backend.routes.admin.datetime.date", 2026, 5, 27):
+        yield
 
 
 @pytest.mark.parametrize(
@@ -78,9 +81,6 @@ def test_admin_endpoint_requires_admin(regular_client, method, path):
         regular_client {Any} -- Flask test client authenticated as a non-admin user
         method {str} -- HTTP method to call
         path {str} -- admin route path under test
-
-    Notes:
-        A single missed route would expose the full admin surface.
     """
     response = getattr(regular_client, method)(path)
 
@@ -94,9 +94,6 @@ def test_admin_get_users_success(client, admin_user, regular_user):
         client {Any} -- anonymous Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- persisted non-admin user to appear in the listing
-
-    Notes:
-        This gives the panel a complete system view.
     """
     response = client.get("/api/admin/users")
 
@@ -109,9 +106,6 @@ def test_admin_get_users_unauthenticated(client):
 
     Arguments:
         client {Any} -- anonymous Flask test client with no active session
-
-    Notes:
-        The endpoint must not be reachable without a session.
     """
     response = client.get("/api/admin/users")
 
@@ -126,8 +120,6 @@ def test_admin_get_user_success(client, admin_user, regular_user):
         admin_user {dict} -- persisted admin user and authenticated session
         regular_user {dict} -- the user whose detail is being fetched
 
-    Notes:
-        The panel has no legitimate reason to expose the password hash.
     """
     response = client.get(f"/api/admin/users/{regular_user['id']}")
 
@@ -144,7 +136,7 @@ def test_admin_get_user_not_found(client, admin_user):
         admin_user {dict} -- persisted admin user and authenticated session
 
     Notes:
-        This lets callers distinguish "not found" from "found with no data".
+        404 means the id doesn't exist, not "exists but empty".
     """
     response = client.get(f"/api/admin/users/{ObjectId()}")
 
@@ -178,9 +170,6 @@ def test_admin_ban_user_rejects_self_ban(client, admin_user):
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
-
-    Notes:
-        Doing so would lock their own account out on the next OAuth login.
     """
     response = client.post(f"/api/admin/users/{admin_user['id']}/ban")
 
@@ -193,9 +182,6 @@ def test_admin_get_banned_users_success(client, admin_user):
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
-
-    Notes:
-        This lets the admin see who is currently blocked and unban them.
     """
     user_id = ObjectId()
     db.users.insert_one({"_id": user_id, "username": "target", "role": "user", "helmholtz_sub": "sub-listed"})
@@ -213,9 +199,6 @@ def test_admin_unban_user_success(client, admin_user):
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
-
-    Notes:
-        This lets the user log in again on their next attempt.
     """
     user_id = ObjectId()
     db.users.insert_one(
@@ -236,8 +219,6 @@ def test_admin_unban_user_not_found(client, admin_user):
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
 
-    Notes:
-        This lets callers know the unban had no effect.
     """
     response = client.delete(f"/api/admin/banned-users/{ObjectId()}")
 
@@ -410,9 +391,6 @@ def test_admin_legal_documents_list_success(client, admin_user):
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
-
-    Notes:
-        This lets the panel always surface the full legal surface.
     """
     response = client.get("/api/admin/legal-documents")
 
@@ -700,28 +678,18 @@ def test_admin_delete_monthly_report_not_found(client, admin_user):
     assert response.status_code == 404
 
 
-def test_admin_trigger_monthly_report_success(client, admin_user):
+def test_admin_trigger_monthly_report_success(client, admin_user, frozen_admin_today):
     """Manual report generation forwards the target period to the Celery task.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+        frozen_admin_today {None} -- freezes datetime.date.today() for the route
 
     Notes:
         This makes the task generate the correct month.
     """
-
-    class FixedDate(datetime.date):
-        # Subclassing datetime.date lets us override today() while keeping all
-        # other date arithmetic intact, which plain monkeypatching cannot do.
-        @classmethod
-        def today(cls):
-            return cls(2026, 5, 27)
-
-    with (
-        patch("backend.routes.admin.datetime.date", FixedDate),
-        patch("backend.routes.admin.celery_app.send_task") as send_task,
-    ):
+    with patch("backend.routes.admin.celery_app.send_task") as send_task:
         response = client.post("/api/admin/reports/generate", json={"year": 2026, "month": 4})
 
     assert response.status_code == 202
@@ -770,27 +738,19 @@ def test_admin_trigger_monthly_report_rejects_invalid_payloads(client, admin_use
     assert response.status_code == 400
 
 
-def test_admin_trigger_monthly_report_rejects_current_month(client, admin_user):
+def test_admin_trigger_monthly_report_rejects_current_month(client, admin_user, frozen_admin_today):
     """Current-month reports are rejected.
 
     Arguments:
         client {Any} -- Flask test client
         admin_user {dict} -- persisted admin user and authenticated session
+        frozen_admin_today {None} -- freezes datetime.date.today() for the route
 
     Notes:
         Generating mid-month would produce partial counts that appear final
         and make trend comparisons misleading.
     """
-
-    class FixedDate(datetime.date):
-        # Subclassing datetime.date lets us override today() while keeping all
-        # other date arithmetic intact, which plain monkeypatching cannot do.
-        @classmethod
-        def today(cls):
-            return cls(2026, 5, 27)
-
-    with patch("backend.routes.admin.datetime.date", FixedDate):
-        response = client.post("/api/admin/reports/generate", json={"year": 2026, "month": 5})
+    response = client.post("/api/admin/reports/generate", json={"year": 2026, "month": 5})
 
     assert response.status_code == 400
 

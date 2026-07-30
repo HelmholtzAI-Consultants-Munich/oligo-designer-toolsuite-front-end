@@ -1,12 +1,4 @@
-"""Unit tests for PipelineRunner that must be isolated from the scheduler and task infrastructure.
-
-Notes:
-    The module-level sys.modules injection below replaces genomic_regions_file so tests can
-    import pipeline_runner without pulling in Biopython and visualization dependencies that are
-    not installed in CI. Currently only oligoseq is tested since it is the only pipeline with
-    Pydantic integration. The runner fixture is already parametrized — to add a new pipeline,
-    add its name to PIPELINE_NAMES and extend PIPELINE_FORM_DATA with its minimal form shape.
-"""
+"""Unit tests for PipelineRunner, isolated from the scheduler and task infrastructure."""
 
 import copy
 import sys
@@ -97,9 +89,6 @@ def oligo_generation(form_data):
     Arguments:
         form_data {dict} -- pipeline form data dict
 
-    Notes:
-        This keeps assertions readable without repeating the full path.
-
     Returns:
         dict -- the oligo_generation sub-dict from target_probe
     """
@@ -113,9 +102,6 @@ def populated_regions_file(runner, form_data) -> Iterator[Path]:
     Arguments:
         runner {PipelineRunner} -- runner whose populate_temp_file method is under test
         form_data {dict} -- form data dict that receives the generated file path
-
-    Notes:
-        This lets callers assert on content without managing file lifecycle.
 
     Yields:
         Path -- path to the written gene list file
@@ -206,9 +192,6 @@ def test_populate_form_data_path_fields_adds_generated_region_paths(runner, form
     Arguments:
         runner {PipelineRunner} -- runner whose populate_form_data_path_fields method is under test
         form_data {dict} -- form data dict whose file list field will receive the generated paths
-
-    Notes:
-        This ensures the pipeline task receives the correct input files.
     """
     field = "target_probe.oligo_generation.files_fasta_probe_database"
 

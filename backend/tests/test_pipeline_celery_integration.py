@@ -1,10 +1,4 @@
-"""Integration tests that verify the full route-to-Celery task chain executes correctly.
-
-Notes:
-    These tests exist because unit tests mock at the task boundary and cannot catch
-    wiring bugs where the route dispatches the wrong task, passes arguments in the
-    wrong order, or sets the wrong broker priority.
-"""
+"""Integration tests that verify the full route-to-Celery task chain executes correctly."""
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -27,12 +21,11 @@ def route_celery_app(celery_app):
         celery_app {Celery} -- test-configured Celery app from the celery_app fixture
 
     Notes:
-        Routes import the production Celery app at module load time. Swapping it
-        per-test here lets the integration test observe real task execution through
-        the test worker without touching the production broker.
+        Routes import the Celery app at module load time, so it must be patched
+        per test rather than configured globally.
 
-    Returns:
-        Celery -- the same celery_app, yielded while the route patch is active
+    Yields:
+        Celery -- the same celery_app, while the route patch is active
     """
     with patch("backend.routes.pipelines.celery_app", celery_app):
         yield celery_app
@@ -61,7 +54,6 @@ def _clear_generated_regions(payload):
 
 
 def test_start_pipeline_runs_generated_regions_then_pipeline_task(
-    client,
     authenticated_user,
     pipeline_payload,
     multipart_post,
@@ -71,12 +63,13 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
     """Header tasks must complete and pass their generated file paths to the pipeline body task before it runs.
 
     Arguments:
-        client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session required by the route
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         route_celery_app {Celery} -- test Celery app patched into the route
-        celery_worker -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker -- not referenced by name; requesting the fixture is what
+        starts the embedded worker that actually processes the dispatched task
     """
     payload = pipeline_payload("oligoseq_mock_form_data.json")
     pipeline_runner_cls = MagicMock()
@@ -110,7 +103,6 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
 
 
 def test_start_pipeline_without_generated_regions_runs_pipeline_task(
-    client,
     authenticated_user,
     pipeline_payload,
     multipart_post,
@@ -120,12 +112,13 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
     """When no genomic region inputs are present the route must dispatch the pipeline task directly without any header tasks.
 
     Arguments:
-        client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session required by the route
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what authenticates client, which the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         route_celery_app {Celery} -- test Celery app patched into the route
-        celery_worker -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker -- not referenced by name; requesting the fixture is what
+        starts the embedded worker that actually processes the dispatched task
     """
     payload = _clear_generated_regions(pipeline_payload("oligoseq_mock_form_data.json"))
     pipeline_runner_cls = MagicMock()
@@ -156,7 +149,6 @@ def test_start_pipeline_without_generated_regions_runs_pipeline_task(
 )
 def test_pipeline_route_dispatches_task_with_expected_priority(
     request,
-    client,
     pipeline_payload,
     multipart_post,
     route_celery_app,
@@ -168,11 +160,11 @@ def test_pipeline_route_dispatches_task_with_expected_priority(
 
     Arguments:
         request {Any} -- pytest request fixture for dynamic fixture resolution
-        client {Any} -- Flask test client
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         route_celery_app {Celery} -- test Celery app patched into the route
-        celery_worker -- celery.contrib.pytest worker that executes tasks synchronously
+        celery_worker -- not referenced by name; requesting the fixture is what
+        starts the embedded worker that actually processes the dispatched task
         user_fixture {str} -- one of the parametrized fixture names that sets up the session
         expected_priority {int} -- broker-level priority the route must assign for this user type
 

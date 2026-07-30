@@ -1,9 +1,4 @@
-"""Tests that Flask error handlers return sanitized JSON responses.
-
-Notes:
-    Ensures internal details (tracebacks, filesystem paths, MongoDB ObjectId reprs)
-    are never exposed to API clients, while still being logged server-side.
-"""
+"""Tests that Flask error handlers return sanitized JSON responses instead of leaking internal details."""
 
 from unittest.mock import patch
 
@@ -17,7 +12,8 @@ def test_http_exception_returns_json_error(client, authenticated_user):
 
     Arguments:
         client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session required by the route
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what creates the user and accepted terms the route requires
 
     Notes:
         This lets API clients parse errors programmatically.
@@ -33,9 +29,6 @@ def test_404_unknown_route_returns_json_error(client):
 
     Arguments:
         client {Any} -- anonymous Flask test client
-
-    Notes:
-        This keeps API clients from being surprised by Flask's default HTML 404 page.
     """
     response = client.get("/api/does/not/exist")
 
@@ -55,7 +48,6 @@ def test_404_unknown_route_returns_json_error(client):
     ],
 )
 def test_unhandled_exception_returns_generic_500_without_sensitive_info(
-    client,
     authenticated_user,
     pipeline_payload,
     multipart_post,
@@ -65,15 +57,12 @@ def test_unhandled_exception_returns_generic_500_without_sensitive_info(
     """Unhandled exceptions must return a generic message.
 
     Arguments:
-        client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session required by the route
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what creates the user and accepted terms the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
         exception_message {str} -- one of the parametrized sensitive exception messages
         forbidden_fragments {list} -- substrings that must not appear in the error response
-
-    Notes:
-        Internal details must never reach the client even if the exception message contains them.
     """
     payload = pipeline_payload("oligoseq_mock_form_data.json")
 
@@ -88,18 +77,15 @@ def test_unhandled_exception_returns_generic_500_without_sensitive_info(
         assert fragment not in data["error"]
 
 
-def test_unhandled_exception_is_logged(app, client, authenticated_user, pipeline_payload, multipart_post):
+def test_unhandled_exception_is_logged(app, authenticated_user, pipeline_payload, multipart_post):
     """Internal details must still reach the server logs even though they are stripped from the response.
 
     Arguments:
         app {Flask} -- Flask application instance for patching the logger
-        client {Any} -- Flask test client
-        authenticated_user {AuthenticatedUser} -- active authenticated session required by the route
+        authenticated_user {AuthenticatedUser} -- not referenced by name; requesting
+        the fixture is what creates the user and accepted terms the route requires
         pipeline_payload {Callable} -- factory that loads a pipeline payload JSON file
         multipart_post {Callable} -- helper that posts multipart pipeline requests
-
-    Notes:
-        Ops need these details to diagnose issues.
     """
     payload = pipeline_payload("oligoseq_mock_form_data.json")
 

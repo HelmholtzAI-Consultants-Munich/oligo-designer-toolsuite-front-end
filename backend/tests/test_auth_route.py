@@ -1,21 +1,11 @@
-"""Authentication route tests.
-
-Notes:
-    OAuth boundaries are patched here. Filesystem assertions still use real temp
-    user-data directories.
-"""
+"""Authentication route tests."""
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 from bson import ObjectId
 
 from backend.extensions import db
 from backend.tests.conftest import TEST_USER_ID
-
-pytestmark = pytest.mark.filterwarnings(
-    "ignore:datetime\\.datetime\\.utcnow\\(\\) is deprecated.*:DeprecationWarning"
-)
 
 
 def test_login_rejects_external_redirect(client):
@@ -47,10 +37,6 @@ def test_logout_calls_logout_user(client, authenticated_user):
 
     assert response.status_code == 200
     logout_user.assert_called_once()
-
-
-# TODO: Test OAuth callbacks for accepted Helmholtz-member entitlements, rejection of non-members,
-# disabled entitlement restriction, and multiple configured required VOs.
 
 
 def test_check_auth_logged_out(client):
@@ -92,9 +78,6 @@ def test_current_user_missing_db_record_returns_logged_in_payload(client, authen
     Arguments:
         client {Any} -- Flask test client
         authenticate_as {Callable} -- factory that patches current_user to the given id
-
-    Notes:
-        Forcing a logout mid-session would be unexpected.
     """
     missing_user_id = str(ObjectId())
     authenticate_as(missing_user_id)

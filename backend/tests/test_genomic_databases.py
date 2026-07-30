@@ -1,10 +1,4 @@
-"""Genomic database unit tests.
-
-Notes:
-    Network-facing FTP/HTTP behavior is replaced with fakes and mocks. Checksum,
-    cache, and decompression paths use real temp files so file handling is covered
-    without live network access.
-"""
+"""Genomic database unit tests using fakes/mocks for FTP/HTTP and real temp files for checksum/decompression logic."""
 
 import gzip
 import hashlib
@@ -55,7 +49,9 @@ class ConcreteDatabase(BaseGenomicDatabase):
             expected_checksum {str} -- checksum value from the provider
 
         Notes:
-            This lets tests focus on download logic without checksum verification
+            Both arguments are unused; they exist only to match the abstract
+            method signature, not because this stub needs them. This lets
+            tests focus on download logic without real checksum verification
             getting in the way.
 
         Returns:
@@ -70,7 +66,9 @@ class ConcreteDatabase(BaseGenomicDatabase):
             entity {GenomicEntity} -- the genomic entity being resolved
 
         Notes:
-            This lets tests exercise entity fetching without real FTP navigation.
+            entity is unused; it exists only to match the abstract method
+            signature, not because this stub needs it. This lets tests
+            exercise entity fetching without real FTP navigation.
 
         Returns:
             GenomicEntityContext -- stub context with hardcoded paths and metadata
@@ -93,9 +91,6 @@ class FakeFTP:
         Keyword Arguments:
             lines {list} -- raw FTP listing lines returned by dir (default: {None})
             names {list} -- filenames returned by nlst (default: {None})
-
-        Notes:
-            This lets tests verify FTP navigation without a network connection.
         """
         self.lines = lines or []
         self.names = names or []
@@ -159,11 +154,7 @@ def test_filter_allowlist_filters_when_present():
 
 
 def test_filter_allowlist_returns_all_without_allowlist():
-    """Omitting the allowlist returns everything.
-
-    Notes:
-        This makes the default behavior unrestricted.
-    """
+    """Omitting the allowlist returns everything."""
     assert ConcreteDatabase()._filter_allowlist(["a", "b"]) == ["a", "b"]
 
 
@@ -188,11 +179,7 @@ def test_fetch_species_mapping_logs_in_and_builds_mapping():
 
 
 def test_download_requires_cache_dir():
-    """Downloading without a cache dir fails early rather than writing to an unknown path.
-
-    Notes:
-        Without a cache dir, files would have no persistent location.
-    """
+    """Downloading without a cache dir fails early rather than writing to an unknown path."""
     with pytest.raises(RuntimeError, match="No caching directory"):
         ConcreteDatabase()._download("dir", "file.txt")
 
@@ -276,8 +263,7 @@ def test_download_and_process_rejects_bad_checksum(tmp_path):
         tmp_path {Path} -- pytest-provided temp directory for the downloaded file
 
     Notes:
-        This prevents silently handing the caller a corrupted file. The current
-        implementation retries the download once before giving up.
+        The implementation retries the download once before failing.
     """
     file_path = tmp_path / "file.txt"
     file_path.write_text("bad")
@@ -446,11 +432,8 @@ def test_ncbi_fetch_annotations_releases_filters_suppressed():
     """Assemblies under a 'suppressed' directory are excluded from results.
 
     Notes:
-        NCBI marks withdrawn assemblies this way, so excluding them ensures
-        callers never see retracted data. The filter matches when release_dir
-        (a full FTP path) ends with "all_assembly_versions", so the mocked
-        _get_all_releases_dir returns a realistic full path here rather than
-        the bare directory name.
+        NCBI marks withdrawn assemblies as suppressed, so excluding them keeps
+        retracted data from reaching callers.
     """
     ftp = FakeFTP(
         ["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 suppressed", "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 GCF_1"]
@@ -517,12 +500,7 @@ def test_ncbi_get_assembly_information_errors_when_missing_fields(tmp_path):
 
 
 def test_ncbi_get_entity_context_builds_expected_filenames():
-    """The context builder produces NCBI filenames in the exact accession_assembly_genomic.ext pattern.
-
-    Notes:
-        NCBI filenames follow this strict pattern, and downloads will fail
-        otherwise.
-    """
+    """The context builder produces NCBI filenames in the exact accession_assembly_genomic.ext pattern."""
     db = NCBIGenomicDatabase()
     with patch.object(db, "_resolve_release_and_dir", return_value=("110", "GRCh38", "GCF_1", "/remote/")):
         context = db._get_entity_context(GenomicEntity("taxon", "species", "current"))
@@ -571,11 +549,7 @@ def test_ensembl_matches_checksum_returns_false_on_called_process_error(tmp_path
 
 
 def test_ensembl_get_subdirectories_rewrites_release_dirs_to_fasta():
-    """Species listing navigates to the fasta subdirectory even though the top-level listing uses gtf paths.
-
-    Notes:
-        The two trees are structurally parallel.
-    """
+    """Species listing navigates to the fasta subdirectory even though the top-level listing uses gtf paths."""
     ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 homo_sapiens"])
     db = EnsemblGenomicDatabase()
 
@@ -619,24 +593,14 @@ def test_ensembl_pick_files_prefers_primary_assembly_dna_sm():
 
 
 def test_ensembl_pick_files_errors_without_gtf():
-    """A missing GTF raises an error early.
-
-    Notes:
-        This means annotation is unavailable, and the pipeline must not proceed
-        without annotation data.
-    """
+    """A missing GTF raises an error early."""
     with patch("backend.genomic_databases.ftplib.FTP", return_value=FakeFTP(names=["file.fa.gz"])):
         with pytest.raises(RuntimeError, match="No suitable annotation"):
             EnsemblGenomicDatabase()._pick_files("ann", "seq")
 
 
 def test_ensembl_pick_files_errors_without_fasta():
-    """A missing FASTA raises an error early.
-
-    Notes:
-        This means the sequence is unavailable, and the pipeline must not
-        proceed without sequence data.
-    """
+    """A missing FASTA raises an error early."""
     with patch(
         "backend.genomic_databases.ftplib.FTP", return_value=FakeFTP(names=["Homo_sapiens.GRCh38.110.gtf.gz"])
     ):
@@ -660,13 +624,7 @@ def test_ensembl_get_entity_context_uses_current_for_non_numeric_release():
 
 
 def test_ensembl_get_entity_context_builds_dirs_and_metadata():
-    """The context includes both remote dirs and metadata for a numeric release.
-
-    Notes:
-        This means subsequent download and annotation lookup steps don't need
-        to re-navigate the FTP tree. Numeric releases map to a versioned
-        release-NNN path rather than the live release path.
-    """
+    """A numeric release maps to a versioned release-NNN path, and the context includes both remote dirs and metadata."""
     db = EnsemblGenomicDatabase()
     with patch.object(db, "_pick_files", return_value=("ann.gtf.gz", "seq.fa.gz", "GRCh38")):
         context = db._get_entity_context(GenomicEntity(None, "homo_sapiens", "110"))
