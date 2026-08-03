@@ -18,7 +18,7 @@ export default function Hero() {
             <Vertical gap="md">
                 <h1>
                     Welcome to the <br />
-                    <span style={{ color: "#006593" }}>
+                    <span className="text-odt-blue">
                         Oligo Designer Toolsuite
                     </span>
                 </h1>
@@ -40,10 +40,7 @@ export default function Hero() {
                 <Horizontal wrap gap="md">
                     <Button
                         onClick={() => navigate("/pipelines")}
-                        style={{
-                            backgroundColor: "#006593",
-                            borderColor: "#006593",
-                        }}
+                        variant="odt-blue"
                     >
                         Start Designing <ArrowRight className="ms-1" />
                     </Button>
@@ -51,6 +48,7 @@ export default function Hero() {
                         variant="outline-primary"
                         href="https://oligo-designer-toolsuite.readthedocs.io/en/latest/index.html"
                         target="_blank"
+                        rel="noopener noreferrer"
                     >
                         Documentation <BoxArrowUpRight className="ms-1" />
                     </Button>

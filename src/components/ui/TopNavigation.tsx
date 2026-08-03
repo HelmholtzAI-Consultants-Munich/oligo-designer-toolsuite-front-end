@@ -62,6 +62,7 @@ export default function TopNavigation() {
                     <Nav.Link
                         href="https://oligo-designer-toolsuite.readthedocs.io/en/latest/index.html"
                         target="_blank"
+                        rel="noopener noreferrer"
                         active={false}
                     >
                         Docs

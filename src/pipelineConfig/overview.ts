@@ -19,7 +19,7 @@ export const pipelineOverview: PipelineOverviewItem[] = [
         available: !PIPELINE_CONFIG.oligoseq.disabled,
     },
     {
-        title: "MERFISH",
+        title: PIPELINE_CONFIG.merfish.displayName.toUpperCase(),
         description: PIPELINE_CONFIG.merfish.description,
         image: PIPELINE_CONFIG.merfish.img,
         link: PIPELINE_CONFIG.merfish.link,
@@ -33,7 +33,7 @@ export const pipelineOverview: PipelineOverviewItem[] = [
         available: !PIPELINE_CONFIG.seqfish.disabled,
     },
     {
-        title: "SCRINSHOT",
+        title: PIPELINE_CONFIG.scrinshot.displayName.toUpperCase(),
         description: PIPELINE_CONFIG.scrinshot.description,
         image: PIPELINE_CONFIG.scrinshot.img,
         link: PIPELINE_CONFIG.scrinshot.link,

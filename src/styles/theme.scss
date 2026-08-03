@@ -4,6 +4,7 @@
 // Variable overrides
 $primary: #003956;
 $primary-muted: #004a67;
+$odt-blue: #006593;
 $secondary: #037b94;
 $success: #128635;
 $warning: #ffbd11;
@@ -43,6 +44,11 @@ $input-btn-padding-y-sm: 0.5rem;
     --#{$prefix}primary-muted: #{$primary-muted};
     --#{$prefix}text-muted: #{$text-muted};
     --#{$prefix}primary-bg-subtle: #{$primary-bg-subtle};
+    --#{$prefix}odt-blue: #{$odt-blue};
+}
+
+.text-odt-blue {
+    color: $odt-blue !important;
 }
 
 .navbar-nav {
@@ -441,6 +447,14 @@ footer,
                 $btn-active-border-shade-amount
             )
     );
+}
+
+.btn-odt-blue {
+    @include button-variant($odt-blue, $odt-blue);
+}
+
+.btn-outline-odt-blue {
+    @include button-outline-variant($odt-blue);
 }
 
 .btn.icon-button {

@@ -12,14 +12,20 @@ const Pipelines: React.FC = () => {
         <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
             <Vertical gap="lg" align="stretch">
                 <Breadcrumb className="mb-0">
-                    <Breadcrumb.Item href="/">Home</Breadcrumb.Item>
+                    <Breadcrumb.Item
+                        href="/"
+                        onClick={(event) => {
+                            event.preventDefault();
+                            navigate("/");
+                        }}
+                    >
+                        Home
+                    </Breadcrumb.Item>
                     <Breadcrumb.Item active>Pipelines</Breadcrumb.Item>
                 </Breadcrumb>
 
                 <Vertical gap="sm">
-                    <h1 style={{ color: "#006593" }}>
-                        Choose a Design Pipeline
-                    </h1>
+                    <h1 className="text-odt-blue">Choose a Design Pipeline</h1>
                     <p className="lead text-muted mb-0">
                         Select the workflow that best matches your experimental
                         assay.
@@ -45,8 +51,7 @@ const Pipelines: React.FC = () => {
                                         />
                                         <Card.Title
                                             as="h2"
-                                            className="h3"
-                                            style={{ color: "#006593" }}
+                                            className="h3 text-odt-blue"
                                         >
                                             {pipeline.title}
                                         </Card.Title>
@@ -56,12 +61,8 @@ const Pipelines: React.FC = () => {
                                             </Card.Text>
                                         </Vertical.Item>
                                         <Button
-                                            variant="outline-primary"
+                                            variant="outline-odt-blue"
                                             className="w-100"
-                                            style={{
-                                                color: "#006593",
-                                                borderColor: "#006593",
-                                            }}
                                             disabled={!pipeline.available}
                                             onClick={() =>
                                                 pipeline.link &&
@@ -87,8 +88,7 @@ const Pipelines: React.FC = () => {
                             <Vertical grow gap="xs">
                                 <Card.Title
                                     as="h2"
-                                    className="h5"
-                                    style={{ color: "#006593" }}
+                                    className="h5 text-odt-blue"
                                 >
                                     Please cite Oligo Designer Toolsuite
                                 </Card.Title>
@@ -100,6 +100,7 @@ const Pipelines: React.FC = () => {
                             <Card.Link
                                 href="https://doi.org/10.5281/zenodo.7823048"
                                 target="_blank"
+                                rel="noopener noreferrer"
                                 className="ms-auto text-nowrap"
                             >
                                 View publication <ArrowRight className="ms-1" />

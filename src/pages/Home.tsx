@@ -22,11 +22,8 @@ export default function Home() {
                             gap="md"
                             className="text-center"
                         >
-                            <Cloud color="#006593" size={48} />
-                            <h2
-                                className="fs-5 mb-0"
-                                style={{ color: "#006593" }}
-                            >
+                            <Cloud className="text-odt-blue" size={48} />
+                            <h2 className="fs-5 mb-0 text-odt-blue">
                                 Cloud-based
                             </h2>
                             <p className="text-muted mb-0">
@@ -41,11 +38,8 @@ export default function Home() {
                             gap="md"
                             className="text-center"
                         >
-                            <Bullseye color="#006593" size={48} />
-                            <h2
-                                className="fs-5 mb-0"
-                                style={{ color: "#006593" }}
-                            >
+                            <Bullseye className="text-odt-blue" size={48} />
+                            <h2 className="fs-5 mb-0 text-odt-blue">
                                 High specificity
                             </h2>
                             <p className="text-muted mb-0">
@@ -60,11 +54,8 @@ export default function Home() {
                             gap="md"
                             className="text-center"
                         >
-                            <GraphUpArrow color="#006593" size={48} />
-                            <h2
-                                className="fs-5 mb-0"
-                                style={{ color: "#006593" }}
-                            >
+                            <GraphUpArrow className="text-odt-blue" size={48} />
+                            <h2 className="fs-5 mb-0 text-odt-blue">
                                 Multiple assays
                             </h2>
                             <p className="text-muted mb-0">
@@ -83,8 +74,7 @@ export default function Home() {
                             <Vertical grow gap="xs">
                                 <Card.Title
                                     as="h2"
-                                    className="h5"
-                                    style={{ color: "#006593" }}
+                                    className="h5 text-odt-blue"
                                 >
                                     Cite Oligo Designer Toolsuite
                                 </Card.Title>
@@ -96,6 +86,7 @@ export default function Home() {
                             <Card.Link
                                 href="https://doi.org/10.5281/zenodo.7823048"
                                 target="_blank"
+                                rel="noopener noreferrer"
                                 className="ms-auto text-nowrap"
                             >
                                 View the publication{" "}
