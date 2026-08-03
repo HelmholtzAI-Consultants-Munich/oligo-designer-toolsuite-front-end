@@ -1,9 +1,4 @@
-"""
-Legal document (terms/privacy) storage and versioning. Versions are
-content-addressed (hashed from the body) rather than manually numbered, so
-publishing identical content twice is a no-op and users are only asked to
-re-accept when the actual text changes.
-"""
+"""Legal document (terms/privacy) storage and versioning, using content-addressed version identifiers hashed from the document body."""
 
 import hashlib
 from http import HTTPStatus
@@ -31,35 +26,35 @@ LEGAL_DOCUMENT_LABELS = {
 
 
 def _legal_documents_dir() -> Path:
-    """Resolves the legal documents directory relative to this file.
+    """Resolves the directory containing the bundled legal document markdown files (backend/legal/).
 
     Notes:
         This is resolved relative to this file rather than the working
-        directory so the seed documents are found regardless of where the
-        app is launched from.
+        directory so these files are found regardless of where the app is
+        launched from.
 
     Returns:
-        Path -- directory containing the bundled seed legal documents.
+        Path -- directory containing the bundled terms.md/privacy-policy.md files.
     """
     return Path(__file__).resolve().parent.parent / "legal"
 
 
 def _default_legal_document_path(document_key: str) -> Path:
-    """Locates the bundled seed markdown file for a legal document.
+    """Locates the bundled markdown file for a legal document (e.g. backend/legal/terms.md).
 
     Arguments:
         document_key {str} -- which document (e.g. terms, privacy) to locate.
 
     Notes:
-        This is used to bootstrap the very first published version of a
-        document from a bundled markdown file, before anything exists in the
-        database yet.
+        Used by _create_published_legal_document to load the initial text
+        the first time a document is published, before any version exists
+        in the database.
 
     Raises:
         ValueError: if document_key isn't one of the known documents.
 
     Returns:
-        Path -- path to the bundled seed file for this document.
+        Path -- path to the bundled markdown file for this document.
     """
     filename = LEGAL_DOCUMENT_FILES.get(document_key)
     if filename is None:
@@ -72,11 +67,6 @@ def _latest_legal_document(document_key: str) -> dict | None:
 
     Arguments:
         document_key {str} -- which document to look up.
-
-    Notes:
-        Results are sorted by published_at then _id, since two versions can
-        theoretically share a published_at timestamp and _id is the
-        tiebreaker for "most recent".
 
     Returns:
         dict | None -- the most recently published version, or None if this
@@ -255,9 +245,10 @@ def ensure_published_legal_document(document_key: str) -> dict:
         document_key {str} -- which document to fetch or bootstrap.
 
     Notes:
-        This lazily bootstraps from the bundled seed file on first access
-        instead of requiring a deploy-time migration step, so every
-        environment always has a published version to serve.
+        This lazily creates the first published version from the bundled
+        markdown file on first access instead of requiring a deploy-time
+        migration step, so every environment always has a published
+        version to serve.
 
     Raises:
         ValueError: if document_key isn't a known document.
@@ -303,10 +294,8 @@ def get_legal_document_admin_view(document_key: str, published_doc: dict | None 
         skip re-fetching it. (default: {None})
 
     Notes:
-        Full version history is included here, unlike the public-facing
-        accessor, since admins need to see what changed and when. Callers
-        can pass an already-fetched published_doc to avoid a redundant
-        lookup right after publish_admin_legal_document() just created it.
+        Pass published_doc when the caller already has it (e.g. right after
+        publish_admin_legal_document()) to skip a redundant lookup.
 
     Raises:
         ValueError: if document_key isn't a known document.
@@ -351,10 +340,8 @@ def publish_legal_document(document_key: str, body: str) -> dict:
         body {str} -- the new document body.
 
     Notes:
-        Publishing is rejected if the content hashes the same as the
-        current version, so re-saving an admin edit that changed nothing
-        doesn't create a pointless new version that would force every user
-        to re-accept.
+        Rejected if the content hashes the same as the current version, so
+        a no-op edit doesn't force every user to re-accept.
 
     Raises:
         ValueError: if document_key isn't a known document, or if the body

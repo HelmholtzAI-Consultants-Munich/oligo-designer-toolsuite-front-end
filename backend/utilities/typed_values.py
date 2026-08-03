@@ -1,9 +1,4 @@
-"""
-Safe conversions between Python/pathlib values and the plain strings/dicts
-that MongoDB and JSON APIs can actually store or transmit — centralized so
-every route/worker serializes paths, timestamps, and user-supplied
-paths/URLs the same, safe way instead of reimplementing the edge cases.
-"""
+"""Safe, centralized conversions between Python/pathlib values and the plain strings/dicts MongoDB and JSON APIs can store or transmit."""
 
 from __future__ import annotations
 
@@ -24,10 +19,8 @@ def serialize_path(path: Path) -> dict[str, Any]:
         path {Path} -- the path to store.
 
     Notes:
-        MongoDB can't store a Path object directly, so the path is stored as a
-        list of parts (not a plain string) plus a "kind" tag. This lets
-        deserialize_path validate the shape and reconstruct it safely rather
-        than trusting an arbitrary string.
+        Stored as a list of parts plus a "kind" tag, not a plain string, so
+        deserialize_path can validate the shape before reconstructing it.
 
     Returns:
         dict[str, Any] -- Mongo-safe representation of the path.
@@ -46,9 +39,8 @@ def deserialize_path(path_value: dict[str, Any] | None) -> Path | None:
         deserialize, as produced by serialize_path.
 
     Notes:
-        path_value comes from the database and could be missing, malformed, or
-        from an older/different storage format. This returns None instead of
-        raising so callers can treat "no usable path" as a normal case.
+        Returns None instead of raising for missing/malformed/legacy-format
+        values, so callers can treat "no usable path" as normal.
 
     Returns:
         Path | None -- the reconstructed path, or None if it isn't valid.
@@ -72,9 +64,8 @@ def path_for_display(path_value: dict[str, Any] | None) -> str:
         path_value {dict[str, Any] | None} -- stored path representation.
 
     Notes:
-        API responses should have a consistent string type for the frontend to
-        render, not sometimes null, so this returns an empty string rather
-        than None for invalid/missing paths.
+        Returns "" rather than None so API responses stay a consistent
+        string type for the frontend.
 
     Returns:
         str -- the path as a string, or "" if there's nothing valid to show.
@@ -94,9 +85,8 @@ def timestamp_for_display(value: datetime | None, separator: str = " ") -> str:
         "_" when the result needs to be filename-safe. (default: {" "})
 
     Notes:
-        Callers use this both for human-readable display and for
-        filename-safe strings, and colons aren't valid in filenames on some
-        platforms, so colons are deliberately avoided (unlike ISO format).
+        Colons are avoided (unlike ISO format) since the result is also
+        used in filenames, where colons aren't valid on some platforms.
 
     Returns:
         str -- formatted timestamp, or "" if value is None.
@@ -113,10 +103,8 @@ def timestamp_to_iso(value: datetime | None) -> str:
         value {datetime | None} -- the timestamp to format.
 
     Notes:
-        Older records were stored before the app consistently attached
-        timezone info. Without assuming UTC, those timestamps would serialize
-        without a UTC offset and could be misread as local time by the
-        frontend.
+        Assumes UTC for naive datetimes from older records, so they don't
+        serialize without an offset and get misread as local time.
 
     Returns:
         str -- ISO 8601 timestamp, or "" if value is None.
@@ -138,9 +126,8 @@ def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
         requested_path {str} -- user-supplied, possibly-nested file path.
 
     Notes:
-        requested_path comes straight from the URL and must not be able to
-        escape the run's output directory via traversal sequences or symlinks
-        (e.g. "../../etc/passwd").
+        requested_path comes from the URL, so it must not escape base_dir
+        via traversal sequences or symlinks.
 
     Returns:
         Path | None -- the resolved path, or None if it's invalid or escapes base_dir.
@@ -165,9 +152,8 @@ def sanitize_relative_redirect_path(raw_url: str | None) -> str | None:
         raw_url {str | None} -- the redirect target as submitted by the client.
 
     Notes:
-        Anything with a scheme/host or ".." segments is rejected, so the
-        OAuth redirect parameter can't be used for an open redirect to an
-        external site or to escape the frontend's own path space.
+        Rejects anything with a scheme/host or ".." segments, so this can't
+        be used as an open redirect.
 
     Returns:
         str | None -- a normalized, same-origin relative path, or None if
@@ -199,9 +185,8 @@ def parse_http_url(url_value: str | None) -> SplitResult | None:
         url_value {str | None} -- the URL to validate.
 
     Notes:
-        This validates configured URLs at the point they're read (currently
-        just FRONTEND_URL), so a misconfigured setting fails immediately
-        with a clear error instead of a confusing failure later.
+        Validates FRONTEND_URL at read time, so a misconfigured setting
+        fails immediately instead of later.
 
     Returns:
         SplitResult | None -- the parsed URL, or None if it isn't a valid

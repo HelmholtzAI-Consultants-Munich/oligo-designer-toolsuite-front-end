@@ -1,8 +1,7 @@
 """
 Pipeline-run mechanics shared across routes and workers: splitting a
 multi-region form into single-region forms, computing timeouts, and
-deleting a run's files/database entry — centralized here so single and
-bulk deletion (and single vs. batched region generation) stay consistent.
+deleting a run's files/database entry
 """
 
 import copy
@@ -96,9 +95,6 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
     Arguments:
         mongo {pymongo.database.Database} -- MongoDB database instance.
         run_id_obj {ObjectId} -- ObjectId of the run to delete.
-
-    Notes:
-        This is shared by both single-run and bulk deletion.
     """
     run = mongo.runs.find_one({"_id": run_id_obj})
     if not run:
@@ -146,7 +142,7 @@ def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: list[ObjectId]) ->
     Notes:
         Each run is deleted independently and per-run failures are caught,
         so one bad/already-missing run in a batch doesn't abort deletion of
-        the rest; callers get back which ones failed
+        the rest.
 
     Returns:
         dict -- deleted_count, plus failed run IDs and their error messages.

@@ -16,9 +16,8 @@ def find_ban_by_helmholtz_sub(helmholtz_sub: str | None):
         helmholtz_sub {str | None} -- the identity to check for a ban.
 
     Notes:
-        An empty/missing sub returns None upfront rather than being queried,
-        since matching on an empty value could otherwise return an unrelated
-        record with the same missing field.
+        Returns None upfront for an empty/missing sub — querying it could
+        match an unrelated record with the same missing field.
 
     Returns:
         dict | None -- the ban record, or None if this identity isn't banned.
@@ -35,9 +34,8 @@ def is_helmholtz_sub_banned(helmholtz_sub: str | None) -> bool:
         helmholtz_sub {str | None} -- the identity to check.
 
     Notes:
-        This is checked on every session reload (not just at login), so a
-        ban takes effect immediately instead of waiting for the user's next
-        login.
+        Checked on every session reload, not just login, so a ban takes
+        effect immediately.
 
     Returns:
         bool -- True if this identity is currently banned.
@@ -100,9 +98,8 @@ def remove_ban(ban_id: ObjectId) -> bool:
         ban_id {ObjectId} -- the ban record to remove.
 
     Notes:
-        Returns whether anything was actually deleted, so the caller can
-        distinguish "ban not found" (404) from a successful removal without
-        a separate existence check.
+        Lets the caller return 404 for an unmatched ban_id without a
+        separate existence check.
 
     Returns:
         bool -- True if a ban was deleted, False if ban_id didn't match anything.

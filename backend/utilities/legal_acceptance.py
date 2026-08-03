@@ -21,9 +21,7 @@ def _terms_acceptance_query(user_id: str | None = None, session_id: str | None =
 
     Notes:
         This is shared by every acceptance lookup/write so authenticated and
-        anonymous identities are always scoped the same way, and callers
-        can't accidentally query or insert an acceptance record tied to
-        neither.
+        anonymous identities are always scoped the same way.
 
     Raises:
         ValueError: if neither id is given, since an acceptance record must

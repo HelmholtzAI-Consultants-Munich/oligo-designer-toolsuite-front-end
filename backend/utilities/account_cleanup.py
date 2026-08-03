@@ -47,9 +47,7 @@ def delete_user_account_data(user_id: str, upload_root: str, userdata_root: str)
         user's data directory.
 
     Notes:
-        This is shared by self-service account deletion and admin user deletion, so both paths
-        erase the same data — deleting the user document without this would leave orphaned
-        files and records behind.
+        This is shared by self-service account deletion and admin user deletion.
     """
     runs = list(db.runs.find({"user_id": user_id}, {"_id": 1}))
     for run in runs:

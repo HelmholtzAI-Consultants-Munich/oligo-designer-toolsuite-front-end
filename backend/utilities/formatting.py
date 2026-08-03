@@ -1,5 +1,5 @@
 """
-Converts raw MongoDB documents into the JSON shapes the frontend/Refine data provider expects
+Converts raw MongoDB documents into the JSON shapes the frontend expects
 (renaming _id to id, formatting timestamps, enriching with looked-up user info).
 """
 
@@ -10,13 +10,14 @@ from backend.utilities.typed_values import path_for_display, timestamp_for_displ
 
 
 def format_user(user):
-    """Derives created_at from the ObjectId's embedded generation time rather than a stored field.
+    """Formats a user document for API responses.
 
     Arguments:
         user {dict} -- the raw MongoDB user document.
 
     Notes:
-        User documents don't otherwise track when they were created.
+        created_at is derived from the ObjectId's embedded generation time,
+        since user documents don't otherwise track when they were created.
 
     Returns:
         dict -- user formatted for API responses.
@@ -35,14 +36,14 @@ def format_user(user):
 
 
 def format_pipeline_run(run):
-    """Looks up the owning user to show a human-readable identifier, swallowing lookup failures.
+    """Formats a pipeline run document for API responses, including a human-readable identifier for its owning user.
 
     Arguments:
         run {dict} -- the raw pipeline run document from MongoDB.
 
     Notes:
-        The admin panel shouldn't just show a raw user_id. Lookup failures are swallowed so a
-        run still displays even if its user was since deleted.
+        User lookup failures are swallowed so a run still displays even if
+        its user was since deleted.
 
     Returns:
         dict -- run formatted for API responses.
@@ -77,15 +78,15 @@ def format_pipeline_run(run):
 
 
 def format_feedback(feedback):
-    """Looks up the submitting user, swallowing lookup failures.
+    """Formats a feedback document for API responses, including the submitting user's info.
 
     Arguments:
         feedback {dict} -- the raw feedback document from MongoDB.
 
     Notes:
         Used both for the admin panel and to format a user's own
-        just-submitted entry. Lookup failures are swallowed so the entry
-        still displays/returns even if the user was since deleted.
+        just-submitted entry. User lookup failures are swallowed so the
+        entry still displays/returns even if the user was since deleted.
 
     Returns:
         dict -- feedback formatted for API responses.
@@ -119,15 +120,14 @@ def format_feedback(feedback):
 
 
 def format_monthly_report(report):
-    """Renames _id to id and pre-formats the timestamp for the frontend.
+    """Formats a monthly report document for the frontend.
 
     Arguments:
         report {dict} -- the raw monthly report document from MongoDB.
 
     Notes:
-        _id is renamed to id since the frontend expects id, and the
-        timestamp is pre-formatted so the frontend doesn't need to parse MongoDB's native
-        datetime.
+        generated_at is pre-formatted here since the frontend can't parse
+        MongoDB's native datetime.
 
     Returns:
         dict -- report formatted for the frontend.

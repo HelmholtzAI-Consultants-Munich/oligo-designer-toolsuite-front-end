@@ -15,9 +15,9 @@ def parse_run_id(run_id_str: str | None) -> ObjectId:
         run_id_str {str | None} -- the run id string from request JSON.
 
     Notes:
-        This is used for JSON-body run_id values, where the ObjectId URL
-        converter can't validate automatically, so a malformed id fails with
-        a clear 400 instead of an obscure construction error.
+        Used for JSON-body run_id values, which bypass the ObjectId URL
+        converter's validation — this gives a clear 400 instead of an
+        uncaught InvalidId exception.
 
     Returns:
         ObjectId -- the validated ObjectId.
@@ -37,9 +37,8 @@ def validate_and_convert_ids(id_strings: list[str]) -> tuple[list[ObjectId], lis
         id_strings {list[str]} -- ids to validate and convert.
 
     Notes:
-        Bulk endpoints (bulk-delete, bulk-update) should still process the good
-        ids and report which ones were invalid, rather than aborting the whole
-        batch over a single malformed id.
+        Lets bulk endpoints process the good ids and report which were
+        invalid, rather than aborting the whole batch over one bad id.
 
     Returns:
         tuple[list[ObjectId], list[str]] -- (valid_object_ids, invalid_ids).
@@ -64,10 +63,8 @@ def validate_id_array(data: dict, key_name: str) -> list:
         key_name {str} -- which key holds the id array (e.g. "user_ids", "run_ids").
 
     Notes:
-        This is shared by every bulk admin endpoint (bulk-delete/update for
-        users and runs), so they all reject a missing/empty/non-list payload
-        with the same error message instead of each re-implementing this
-        check slightly differently.
+        Shared by every bulk admin endpoint, so they all reject a
+        missing/empty/non-list payload the same way.
 
     Returns:
         list -- the id array, guaranteed non-empty.
@@ -92,10 +89,9 @@ def validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | Non
         (default: {None})
 
     Notes:
-        file_region_ids is required specifically for the "Custom" source,
-        since that's the only source where regions come from user-uploaded
-        data rather than a database lookup by source; everything else can
-        rely on genomic_regions alone.
+        file_region_ids is required only for the "Custom" source, since
+        that's the only source where regions come from user-uploaded data
+        rather than a database lookup.
     """
     if allowed_sources is None:
         allowed_sources = ["ncbi", "ensembl"]

@@ -1,8 +1,4 @@
-"""
-Tracks anonymous sessions' last-activity time, separately from the runs/
-uploads they own, so stale anonymous data can eventually be identified and
-cleaned up without depending on the browser session cookie still existing.
-"""
+"""Tracks last-activity timestamps for anonymous sessions, used to identify stale sessions for cleanup."""
 
 from backend.extensions import db
 from backend.utils import utc_now
@@ -18,9 +14,8 @@ def touch_anonymous_session(session_id: str | None) -> None:
         track for an authenticated caller.
 
     Notes:
-        This is called on every request from an anonymous visitor, so last_activity_at reflects
-        real recent use rather than only when the session was first created — needed to tell
-        stale sessions apart from active ones later.
+        Called on every request from an anonymous visitor, so last_activity_at
+        reflects real recent use, not just session creation.
     """
     if not session_id:
         return
@@ -39,9 +34,8 @@ def delete_anonymous_session(session_id: str | None) -> None:
         session_id {str | None} -- no-op if None.
 
     Notes:
-        This is called when an anonymous session's data is migrated to a newly logged-in user,
-        since the session_id no longer needs activity tracking once its runs/uploads have been
-        reassigned.
+        Called after an anonymous session's data is migrated to a logged-in
+        user, once activity tracking is no longer needed.
     """
     if not session_id:
         return
