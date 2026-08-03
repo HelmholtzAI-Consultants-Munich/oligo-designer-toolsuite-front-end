@@ -14,7 +14,7 @@ const anonymousAuth = {
     logoutWithConfirmation: () => {},
 };
 
-test("shows an equal-height card for each enabled pipeline only", () => {
+test("shows all pipelines while disabling unavailable options", () => {
     render(
         <MemoryRouter>
             <AuthContext.Provider value={anonymousAuth}>
@@ -24,13 +24,17 @@ test("shows an equal-height card for each enabled pipeline only", () => {
     );
 
     expect(
-        screen.getByRole("heading", { name: "Pipeline Overview" })
-    ).toBeInTheDocument();
-    expect(screen.getByText("OligoSeq Probe Designer")).toBeInTheDocument();
-    expect(
-        screen.getByRole("button", { name: "Use Pipeline" })
+        screen.getByRole("heading", { name: "Choose a Design Pipeline" })
     ).toBeInTheDocument();
     expect(
-        screen.queryByText("Merfish Probe Designer")
-    ).not.toBeInTheDocument();
+        screen.getByRole("heading", { name: "OligoSeq" })
+    ).toBeInTheDocument();
+    expect(
+        screen.getByRole("heading", { name: "cycleHCR" })
+    ).toBeInTheDocument();
+
+    const actions = screen.getAllByRole("button", { name: /Use Pipeline/i });
+    expect(actions).toHaveLength(6);
+    expect(actions[0]).toBeEnabled();
+    expect(actions[1]).toBeDisabled();
 });

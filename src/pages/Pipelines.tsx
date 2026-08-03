@@ -1,77 +1,110 @@
-import React from "react";
-import { Link, useNavigate } from "react-router";
-import { useAuth } from "../hooks/useAuth";
-import { Alert, Button, Card } from "react-bootstrap";
+import { useNavigate } from "react-router";
+import { Breadcrumb, Button, Card, Col, Row } from "react-bootstrap";
+import { ArrowRight, Book } from "react-bootstrap-icons";
 import Page from "../components/ui/Page";
-import { Grid, Vertical } from "../components/ui/Alignment";
-import { ArrowRight } from "react-bootstrap-icons";
-import { getEnabledPipelinesOnly } from "../pipelineConfig/utils";
+import { Horizontal, Vertical } from "../components/ui/Alignment";
+import { pipelineOverview } from "../pipelineConfig/overview";
 
 const Pipelines: React.FC = () => {
-    const auth = useAuth();
-    const user = auth.user;
-    const { loading } = auth;
     const navigate = useNavigate();
 
-    const pipelines = Object.values(getEnabledPipelinesOnly()).map(
-        (pipeline) => ({
-            title: pipeline.displayName,
-            description: pipeline.description,
-            link: pipeline.link!,
-            detailedLink: pipeline.detailedLink,
-            img: pipeline.img,
-        })
-    );
-
-    if (loading) return <div>Loading...</div>;
-
     return (
-        <Page title="Pipeline Overview" metaTitle="ODT Cloud">
-            <Vertical className="tight-container" gap="lg" align="stretch">
-                {!user && (
-                    <Alert variant="warning">
-                        To keep your runs saved when you close your browser,
-                        please <Link to="/login">log in</Link>.
-                    </Alert>
-                )}
+        <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
+            <Vertical gap="lg" align="stretch">
+                <Breadcrumb className="mb-0">
+                    <Breadcrumb.Item href="/">Home</Breadcrumb.Item>
+                    <Breadcrumb.Item active>Pipelines</Breadcrumb.Item>
+                </Breadcrumb>
 
-                <Grid gap="lg" itemWidth="25rem">
-                    {pipelines.map((pipeline, index) => (
-                        <Card key={index} className="h-100">
-                            <Card.Img
-                                variant="top"
-                                src={pipeline.img}
-                                alt={`${pipeline.title} pipeline`}
-                            />
-                            <Card.Body as={Vertical} gap="md" className="h-100">
-                                <Card.Title as="h4">
-                                    {pipeline.title} Probe Designer
+                <Vertical gap="sm">
+                    <h1 style={{ color: "#006593" }}>
+                        Choose a Design Pipeline
+                    </h1>
+                    <p className="lead text-muted mb-0">
+                        Select the workflow that best matches your experimental
+                        assay.
+                    </p>
+                </Vertical>
+
+                <Row xs={1} lg={2} xl={3} className="g-5">
+                    {pipelineOverview.map((pipeline) => {
+                        const Icon = pipeline.icon;
+
+                        return (
+                            <Col key={pipeline.title}>
+                                <Card
+                                    className="h-100 mx-auto"
+                                    style={{ width: "90%" }}
+                                >
+                                    <Card.Body as={Vertical} gap="md">
+                                        <Icon
+                                            size={72}
+                                            color={pipeline.iconColor}
+                                        />
+                                        <Card.Title
+                                            as="h2"
+                                            className="h3"
+                                            style={{ color: "#006593" }}
+                                        >
+                                            {pipeline.title}
+                                        </Card.Title>
+                                        <Vertical.Item grow>
+                                            <Card.Text className="text-muted">
+                                                {pipeline.description}
+                                            </Card.Text>
+                                        </Vertical.Item>
+                                        <Button
+                                            variant="outline-primary"
+                                            className="w-100"
+                                            style={{
+                                                color: "#006593",
+                                                borderColor: "#006593",
+                                            }}
+                                            disabled={!pipeline.available}
+                                            onClick={() =>
+                                                pipeline.link &&
+                                                navigate(pipeline.link)
+                                            }
+                                        >
+                                            Use Pipeline{" "}
+                                            <ArrowRight className="ms-2" />
+                                        </Button>
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        );
+                    })}
+                </Row>
+
+                <Card bg="primary-subtle" className="border-0">
+                    <Card.Body>
+                        <Horizontal align="center" gap="lg">
+                            <div className="bg-white rounded-circle d-flex align-items-center justify-content-center p-3">
+                                <Book size={24} />
+                            </div>
+                            <Vertical grow gap="xs">
+                                <Card.Title
+                                    as="h2"
+                                    className="h5"
+                                    style={{ color: "#006593" }}
+                                >
+                                    Please cite Oligo Designer Toolsuite
                                 </Card.Title>
-                                <Vertical.Item grow>
-                                    <Card.Text className="text-muted">
-                                        {pipeline.description}
-                                    </Card.Text>
-                                </Vertical.Item>
-                                <Vertical.Item>
-                                    <Card.Link
-                                        as={Button}
-                                        onClick={() => navigate(pipeline.link)}
-                                    >
-                                        Use Pipeline
-                                    </Card.Link>
-                                    <Card.Link
-                                        as={Link}
-                                        to={pipeline.detailedLink}
-                                        target="_blank"
-                                    >
-                                        Read about {pipeline.title}{" "}
-                                        <ArrowRight />
-                                    </Card.Link>
-                                </Vertical.Item>
-                            </Card.Body>
-                        </Card>
-                    ))}
-                </Grid>
+                                <Card.Text className="text-muted mb-0">
+                                    If you use Oligo Designer Toolsuite, please
+                                    cite our publication.
+                                </Card.Text>
+                            </Vertical>
+                            <Card.Link
+                                href="https://doi.org/10.5281/zenodo.7823048"
+                                target="_blank"
+                                className="ms-auto text-nowrap"
+                            >
+                                View publication <ArrowRight className="ms-1" />
+                            </Card.Link>
+                        </Horizontal>
+                    </Card.Body>
+                </Card>
             </Vertical>
         </Page>
     );

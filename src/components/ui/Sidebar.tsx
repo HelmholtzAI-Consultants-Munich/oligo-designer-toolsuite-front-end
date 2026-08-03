@@ -9,15 +9,13 @@ import {
     Gear,
     People,
     Speedometer2,
-    Window,
 } from "react-bootstrap-icons";
 import Divider from "./Divider";
 import RecentRuns from "./RecentRuns";
 import { Horizontal, Vertical } from "./Alignment";
 import { useState } from "react";
-import { type Pipeline } from "../../pipelineConfig/config";
-import { getEnabledPipelinesOnly } from "../../pipelineConfig/utils";
 import { useAuth } from "../../hooks/useAuth";
+import { pipelineOverview } from "../../pipelineConfig/overview";
 
 const adminLinks = [
     { path: "/admin/dashboard", label: "Dashboard", icon: Speedometer2 },
@@ -31,15 +29,6 @@ const adminLinks = [
 const Sidebar: React.FC = () => {
     const location = useLocation();
     const { user } = useAuth();
-
-    const pipelines: { name: string; path: string }[] = Object.entries(
-        getEnabledPipelinesOnly()
-    )
-        .filter(([key, pipeline]) => key !== "generator" && !pipeline.disabled)
-        .map(([key, pipeline]: [string, Pipeline]) => ({
-            name: pipeline.displayName,
-            path: `/pipelines/${key}`,
-        }));
 
     const [expanded, setExpanded] = useState(false);
     const [adminExpanded, setAdminExpanded] = useState(false);
@@ -65,22 +54,43 @@ const Sidebar: React.FC = () => {
                     <h5>Pipelines</h5>
 
                     <Nav variant="heavy">
-                        {pipelines.map((pipeline) => (
-                            <Nav.Link
-                                key={pipeline.path}
-                                as={Link}
-                                to={pipeline.path}
-                                active={location.pathname.startsWith(
-                                    pipeline.path
-                                )}
-                                eventKey={pipeline.path}
-                            >
-                                <Horizontal gap="lg" align="center">
-                                    <Window size={18} />
-                                    <span>{pipeline.name}</span>
-                                </Horizontal>
-                            </Nav.Link>
-                        ))}
+                        {pipelineOverview.map((pipeline) => {
+                            const Icon = pipeline.icon;
+
+                            if (!pipeline.available || !pipeline.link) {
+                                return (
+                                    <Nav.Link key={pipeline.title} disabled>
+                                        <Horizontal gap="lg" align="center">
+                                            <Icon
+                                                size={18}
+                                                color={pipeline.iconColor}
+                                            />
+                                            <span>{pipeline.title}</span>
+                                        </Horizontal>
+                                    </Nav.Link>
+                                );
+                            }
+
+                            return (
+                                <Nav.Link
+                                    key={pipeline.title}
+                                    as={Link}
+                                    to={pipeline.link}
+                                    active={location.pathname.startsWith(
+                                        pipeline.link
+                                    )}
+                                    eventKey={pipeline.link}
+                                >
+                                    <Horizontal gap="lg" align="center">
+                                        <Icon
+                                            size={18}
+                                            color={pipeline.iconColor}
+                                        />
+                                        <span>{pipeline.title}</span>
+                                    </Horizontal>
+                                </Nav.Link>
+                            );
+                        })}
                     </Nav>
 
                     <Divider />
