@@ -1,4 +1,4 @@
-import { Button, Collapse, Nav, Navbar } from "react-bootstrap";
+import { Button, Collapse, Image, Nav, Navbar } from "react-bootstrap";
 import { Link, useLocation } from "react-router";
 import {
     BarChartFill,
@@ -51,20 +51,34 @@ const Sidebar: React.FC = () => {
             />
             <Navbar.Collapse id="navigation-bar" className="mt-2">
                 <Vertical align="stretch" gap="md" fillWidth>
-                    <h5>Pipelines</h5>
+                    <h5>
+                        <Link
+                            to="/pipelines"
+                            className="text-reset text-decoration-none"
+                            onClick={() => setExpanded(false)}
+                        >
+                            Pipelines
+                        </Link>
+                    </h5>
 
                     <Nav variant="heavy">
                         {pipelineOverview.map((pipeline) => {
-                            const Icon = pipeline.icon;
+                            const pipelineIcon = (
+                                <Image
+                                    src={pipeline.image}
+                                    alt=""
+                                    width={18}
+                                    height={18}
+                                    roundedCircle
+                                    style={{ objectFit: "cover" }}
+                                />
+                            );
 
                             if (!pipeline.available || !pipeline.link) {
                                 return (
                                     <Nav.Link key={pipeline.title} disabled>
                                         <Horizontal gap="lg" align="center">
-                                            <Icon
-                                                size={18}
-                                                color={pipeline.iconColor}
-                                            />
+                                            {pipelineIcon}
                                             <span>{pipeline.title}</span>
                                         </Horizontal>
                                     </Nav.Link>
@@ -82,10 +96,7 @@ const Sidebar: React.FC = () => {
                                     eventKey={pipeline.link}
                                 >
                                     <Horizontal gap="lg" align="center">
-                                        <Icon
-                                            size={18}
-                                            color={pipeline.iconColor}
-                                        />
+                                        {pipelineIcon}
                                         <span>{pipeline.title}</span>
                                     </Horizontal>
                                 </Nav.Link>

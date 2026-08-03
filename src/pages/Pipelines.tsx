@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Breadcrumb, Button, Card, Col, Row } from "react-bootstrap";
+import { Breadcrumb, Button, Card, Col, Image, Row } from "react-bootstrap";
 import { ArrowRight, Book } from "react-bootstrap-icons";
 import Page from "../components/ui/Page";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
@@ -28,8 +28,6 @@ const Pipelines: React.FC = () => {
 
                 <Row xs={1} lg={2} xl={3} className="g-5">
                     {pipelineOverview.map((pipeline) => {
-                        const Icon = pipeline.icon;
-
                         return (
                             <Col key={pipeline.title}>
                                 <Card
@@ -37,9 +35,13 @@ const Pipelines: React.FC = () => {
                                     style={{ width: "90%" }}
                                 >
                                     <Card.Body as={Vertical} gap="md">
-                                        <Icon
-                                            size={72}
-                                            color={pipeline.iconColor}
+                                        <Image
+                                            src={pipeline.image}
+                                            alt=""
+                                            width={72}
+                                            height={72}
+                                            roundedCircle
+                                            style={{ objectFit: "cover" }}
                                         />
                                         <Card.Title
                                             as="h2"
