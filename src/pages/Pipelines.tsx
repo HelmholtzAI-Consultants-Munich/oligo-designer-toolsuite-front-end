@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { Alert, Button, Card } from "react-bootstrap";
 import Page from "../components/ui/Page";
-import Hero from "../components/ui/Hero";
 import { Grid, Vertical } from "../components/ui/Alignment";
 import { ArrowRight } from "react-bootstrap-icons";
 import { getEnabledPipelinesOnly } from "../pipelineConfig/utils";
@@ -27,9 +26,7 @@ const Pipelines: React.FC = () => {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
-            <Hero />
-
+        <Page title="Pipeline Overview" metaTitle="ODT Cloud">
             <Vertical className="tight-container" gap="lg" align="stretch">
                 {!user && (
                     <Alert variant="warning">
@@ -40,8 +37,13 @@ const Pipelines: React.FC = () => {
 
                 <Grid gap="lg" itemWidth="25rem">
                     {pipelines.map((pipeline, index) => (
-                        <Card key={index}>
-                            <Card.Body as={Vertical} gap="md">
+                        <Card key={index} className="h-100">
+                            <Card.Img
+                                variant="top"
+                                src={pipeline.img}
+                                alt={`${pipeline.title} pipeline`}
+                            />
+                            <Card.Body as={Vertical} gap="md" className="h-100">
                                 <Card.Title as="h4">
                                     {pipeline.title} Probe Designer
                                 </Card.Title>

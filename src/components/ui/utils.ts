@@ -1,4 +1,5 @@
 import { Ban, Check2, ClockHistory, XLg } from "react-bootstrap-icons";
+import type { RunState } from "../../types";
 import Pulse from "./Pulse";
 
 export const visualizationDisplayNames = {
@@ -11,35 +12,44 @@ export type VisualizationType = keyof typeof visualizationDisplayNames;
 export const runStatusDisplay = {
     success: {
         title: "Success",
+        label: "Completed",
         variant: "secondary",
         icon: Check2,
     },
     failure: {
         title: "Failure",
+        label: "Failed",
         variant: "danger",
         icon: XLg,
     },
     timeout: {
         title: "Timeout",
+        label: "Failed",
         variant: "warning",
         icon: ClockHistory,
     },
     empty_result: {
         title: "Empty Result",
+        label: "Completed",
         variant: "warning",
         icon: Ban,
     },
     started: {
         title: "Started",
+        label: "Running",
         variant: "secondary",
         icon: Pulse,
     },
     pending: {
         title: "Pending",
+        label: "Queued",
         variant: "secondary",
         icon: Pulse.Paused,
     },
 };
+
+export const getRunStatusLabel = (status: RunState) =>
+    runStatusDisplay[status].label;
 
 export const formatDateTime = (date: string | Date): string =>
     new Date(date).toLocaleString("en-US", {
