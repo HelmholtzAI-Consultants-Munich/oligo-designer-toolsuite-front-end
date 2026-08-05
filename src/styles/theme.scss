@@ -81,6 +81,17 @@ body.modal-open {
     }
 }
 
+input[type="number"] {
+    /* hide the increment/decrement spinner buttons */
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+}
+
 /* Container */
 .container {
     padding: 2rem;
@@ -474,10 +485,28 @@ form.rjsf {
 
     .rjsf-field {
         flex-grow: 1;
+        /* allow fields to shrink below their content's natural size instead of
+        forcing their grid/flex track wider and overlapping neighboring fields */
+        min-width: 0;
     }
 
     .form-label {
         margin-bottom: 0.2rem;
+    }
+
+    .compact-field-item {
+        /* size to the label + input's natural width, don't grow to fill the row */
+        flex: 0 0 auto;
+
+        .flex-grow-1 {
+            /* only the input box should be small; the label stays auto-sized
+            so longer field names aren't clipped and don't overlap the next item */
+            flex-grow: 0;
+        }
+
+        input.form-control {
+            width: 4.5rem;
+        }
     }
 
     .super-label {

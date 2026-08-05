@@ -55,28 +55,33 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
         const isEnum = mergedSchema.enum !== undefined;
 
         return (
-            <>
+            <div className="d-flex flex-wrap align-items-center gap-2">
                 {isEnum && (
-                    <Form.Label htmlFor={fieldPathId.$id}>
+                    <Form.Label
+                        htmlFor={fieldPathId.$id}
+                        className="mb-0 flex-shrink-0"
+                    >
                         {schema.title}
                     </Form.Label>
                 )}
                 {isEnum && schema.description ? (
                     <ToolTip id={schema.$id!} tip={schema.description} />
                 ) : null}
-                <SchemaField
-                    {...props}
-                    onChange={(value) => {
-                        if (value === "") {
-                            props.onChange(null, fieldPathId.path);
-                        } else {
-                            props.onChange(value, fieldPathId.path);
-                        }
-                    }}
-                    schema={mergedSchema}
-                    uiSchema={uiSchema}
-                />
-            </>
+                <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                    <SchemaField
+                        {...props}
+                        onChange={(value) => {
+                            if (value === "") {
+                                props.onChange(null, fieldPathId.path);
+                            } else {
+                                props.onChange(value, fieldPathId.path);
+                            }
+                        }}
+                        schema={mergedSchema}
+                        uiSchema={uiSchema}
+                    />
+                </div>
+            </div>
         );
     }
 
@@ -119,6 +124,16 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     props: MultiSchemaFieldTemplateProps
 ) {
     const { selector, optionSchemaField, schema } = props;
+    // When discriminated by "enabled", the title is rendered inline with the
+    // checkbox by `EnabledToggleObjectTemplate` instead of here, to keep them
+    // both on a single line.
+    const isEnabledToggle =
+        (
+            schema as RJSFSchema & {
+                discriminator?: { propertyName?: string };
+            }
+        ).discriminator?.propertyName === "enabled";
+
     return (
         <>
             <Card
@@ -128,12 +143,12 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
                 }}
             >
                 <Card.Body>
-                    {schema.title && (
+                    {!isEnabledToggle && schema.title && (
                         <span className="super-label">
                             {spaceBeforeCapitalLetters(schema.title)}
                         </span>
                     )}
-                    {schema.description ? (
+                    {!isEnabledToggle && schema.description ? (
                         <ToolTip id={schema.$id!} tip={schema.description} />
                     ) : null}
                     <div className="multi-schema-selector">{selector}</div>

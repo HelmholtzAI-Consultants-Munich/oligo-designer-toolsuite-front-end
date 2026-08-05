@@ -40,16 +40,20 @@ const WrappedBaseInputTemplate = memo((props: BaseInputTemplateProps) => {
     };
 
     return (
-        <>
+        <div className="d-flex flex-wrap align-items-center gap-2">
             {!hideLabel && !isCheckbox && (
-                <Form.Label htmlFor={id}>{label}</Form.Label>
+                <Form.Label htmlFor={id} className="mb-0 flex-shrink-0">
+                    {label}
+                </Form.Label>
             )}
             {!hideLabel && schema.description ? (
                 <ToolTip id={id} tip={schema.description} />
             ) : null}
-            {/* use lang="en" by default, enforces '.' as decimal separator in number inputs */}
-            <BaseInputTemplate lang="en" {...props} onChange={_onChange} />
-        </>
+            <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                {/* use lang="en" by default, enforces '.' as decimal separator in number inputs */}
+                <BaseInputTemplate lang="en" {...props} onChange={_onChange} />
+            </div>
+        </div>
     );
 });
 

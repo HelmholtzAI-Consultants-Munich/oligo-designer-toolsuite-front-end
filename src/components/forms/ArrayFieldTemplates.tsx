@@ -72,43 +72,47 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     const uiOptions = getUiOptions(uiSchema);
     const showOptionalDataControlInTitle = !readonly && !disabled;
     return (
-        <div>
-            <ArrayFieldTitleTemplate
-                fieldPathId={fieldPathId}
-                title={uiOptions.title || title}
-                schema={schema}
-                uiSchema={uiSchema}
-                required={required}
-                registry={registry}
-                optionalDataControl={
-                    showOptionalDataControlInTitle
+        <div className="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center gap-2">
+                <ArrayFieldTitleTemplate
+                    fieldPathId={fieldPathId}
+                    title={uiOptions.title || title}
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    required={required}
+                    registry={registry}
+                    optionalDataControl={
+                        showOptionalDataControlInTitle
+                            ? optionalDataControl
+                            : undefined
+                    }
+                />
+                <ArrayFieldDescriptionTemplate
+                    fieldPathId={fieldPathId}
+                    description={uiOptions.description || schema.description}
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    registry={registry}
+                />
+            </div>
+            <div className="flex-grow-1">
+                <Vertical gap="sm" align="stretch">
+                    {!showOptionalDataControlInTitle
                         ? optionalDataControl
-                        : undefined
-                }
-            />
-            <ArrayFieldDescriptionTemplate
-                fieldPathId={fieldPathId}
-                description={uiOptions.description || schema.description}
-                schema={schema}
-                uiSchema={uiSchema}
-                registry={registry}
-            />
-            <Vertical gap="sm" align="stretch" className="mt-2">
-                {!showOptionalDataControlInTitle
-                    ? optionalDataControl
-                    : undefined}
-                {items}
-                {canAdd && (
-                    <Button
-                        variant="primary-muted"
-                        id={buttonId(fieldPathId, "add")}
-                        onClick={onAddClick}
-                        disabled={disabled || readonly}
-                    >
-                        <Plus size={18} />
-                    </Button>
-                )}
-            </Vertical>
+                        : undefined}
+                    {items}
+                    {canAdd && (
+                        <Button
+                            variant="primary-muted"
+                            id={buttonId(fieldPathId, "add")}
+                            onClick={onAddClick}
+                            disabled={disabled || readonly}
+                        >
+                            <Plus size={18} />
+                        </Button>
+                    )}
+                </Vertical>
+            </div>
         </div>
     );
 });

@@ -3,7 +3,38 @@ import TabsLayout from "../components/forms/TabsLayout";
 import TabLayout from "../components/forms/TabLayout";
 import SectionLayout from "../components/forms/SectionLayout";
 import CollapsibleSectionLayout from "../components/forms/CollapsibleSectionLayout";
+import EnabledToggleObjectTemplate from "../components/forms/EnabledToggleObjectTemplate";
+import CompactFieldGroupTemplate from "../components/forms/CompactFieldGroupTemplate";
 import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
+
+/**
+ * Determines whether a field's schema is a "scalar" (not an object or array), following
+ * $ref and oneOf/anyOf so that e.g. nullable scalar fields (`anyOf: [{type: "integer"}, {type: "null"}]`)
+ * are still recognized as scalar.
+ */
+const isScalarSchema = (
+    schema: RJSFSchema,
+    baseSchema: RJSFSchema
+): boolean => {
+    let resolved = schema;
+    if (resolved.$ref) {
+        try {
+            resolved = findSchemaDefinition(resolved.$ref, baseSchema);
+        } catch {
+            return true;
+        }
+    }
+    if (resolved.type === "object" || resolved.type === "array") {
+        return false;
+    }
+    const options = resolved.oneOf || resolved.anyOf;
+    if (options) {
+        return options.every((option) =>
+            isScalarSchema(option as RJSFSchema, baseSchema)
+        );
+    }
+    return true;
+};
 
 export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
     return uiSchemaFromJsonSchemaRecursive(jsonSchema, jsonSchema, 0);
@@ -57,6 +88,18 @@ const uiSchemaFromJsonSchemaRecursive = (
             );
             uiSchema = mergeObjects(uiSchema, optionUiSchema);
         }
+
+        // Fields discriminated by "enabled" (e.g. optional filters) render as a single
+        // checkbox-and-name row instead of a schema-picker dropdown plus a separate title.
+        const discriminator = (
+            localSchema as RJSFSchema & {
+                discriminator?: { propertyName?: string };
+            }
+        ).discriminator;
+        if (discriminator?.propertyName === "enabled") {
+            uiSchema["ui:ObjectFieldTemplate"] = EnabledToggleObjectTemplate;
+            uiSchema["ui:title"] = localSchema.title;
+        }
     }
     if (localSchema.properties) {
         const fields = Object.keys(localSchema.properties);
@@ -69,6 +112,18 @@ const uiSchemaFromJsonSchemaRecursive = (
         } else if (level === 2) {
             // second level -> SectionLayout
             uiSchema["ui:ObjectFieldTemplate"] = SectionLayout;
+        } else if (
+            fields.length > 0 &&
+            fields.every((field) =>
+                isScalarSchema(
+                    localSchema.properties![field] as RJSFSchema,
+                    baseSchema
+                )
+            )
+        ) {
+            // A nested object made up entirely of small scalar fields (e.g. per-base
+            // thresholds) renders as a compact inline row instead of a full-width grid.
+            uiSchema["ui:ObjectFieldTemplate"] = CompactFieldGroupTemplate;
         }
 
         for (const field of fields) {
