@@ -494,18 +494,76 @@ form.rjsf {
         margin-bottom: 0.2rem;
     }
 
-    .compact-field-item {
-        /* size to the label + input's natural width, don't grow to fill the row */
-        flex: 0 0 auto;
+    .card-body .border.rounded.p-3 {
+        /* a nested group inside an enabled-toggle card gets a divider, not a second box
+        (Bootstrap's utilities are `!important`, so overriding them needs it too) */
+        border: none !important;
+        border-top: 1px solid $border-color !important;
+        border-radius: 0 !important;
+        padding: 1rem 0 0 !important;
+        margin-bottom: 0 !important;
+    }
 
-        .flex-grow-1 {
-            /* only the input box should be small; the label stays auto-sized
-            so longer field names aren't clipped and don't overlap the next item */
-            flex-grow: 0;
+    .field-row {
+        /* a name column of FIXED width, so a long name wraps instead of pushing
+        its control right and every input in the form starts at the same spot */
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .field-row-label {
+        display: flex;
+        align-items: center;
+        width: 11.5rem;
+        flex-shrink: 0;
+        overflow-wrap: anywhere;
+
+        > svg {
+            /* the tooltip's own spacing is tuned for section headings */
+            margin-left: 0.4rem !important;
+            flex-shrink: 0;
+        }
+    }
+
+    .field-row-control {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .rjsf-field-array > .field-row {
+        /* keep a list's name next to its first item, not centered on the stack */
+        align-items: flex-start;
+    }
+
+    .compact-field-item {
+        /* a grid cell too narrow for a name column beside the control, so stack them.
+        Every wrapper down to the control is a full-height column pinning its content
+        to the bottom, so a two-line name grows upwards and boxes stay on one line. */
+        &,
+        .rjsf-field,
+        .field-row,
+        .field-row-control {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-end;
+            min-width: 0;
         }
 
-        input.form-control {
-            width: 4.5rem;
+        .rjsf-field,
+        .field-row,
+        .field-row-control {
+            flex: 1 1 auto;
+        }
+
+        .field-row {
+            gap: 0.15rem;
+        }
+
+        .field-row-label {
+            width: auto;
+            flex: 0 0 auto;
         }
     }
 
@@ -532,13 +590,16 @@ form.rjsf {
     }
 
     .rjsf-field-boolean > div {
-        /* render the description below the checkbox */
+        /* keep the tooltip inline next to the checkbox, not stacked below it */
         display: flex;
-        flex-direction: column-reverse;
+        align-items: center;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: 0.25rem;
     }
 
-    .array-field-item > div > .form-label {
-        /* hide labels for array items */
+    .array-field-item .field-row-label {
+        /* an item would only repeat the list's name with an index appended */
         display: none;
     }
 

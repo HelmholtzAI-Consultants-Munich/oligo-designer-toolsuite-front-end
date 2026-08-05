@@ -1,7 +1,7 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
 import { ToolTip } from "../ui/Tooltip";
-import { spaceBeforeCapitalLetters } from "./utils";
+import { COMPACT_GRID_COLUMNS, spaceBeforeCapitalLetters } from "./utils";
 
 /**
  * This ObjectFieldTemplate is based on the react-bootstrap theme's template.
@@ -14,28 +14,46 @@ import { spaceBeforeCapitalLetters } from "./utils";
 const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
     props: ObjectFieldTemplateProps
 ) {
-    const { title, properties, description, fieldPathId } = props;
+    const { title, properties, description, fieldPathId, schema } = props;
+
+    // object/array properties span the full row on their own (see FieldTemplate)
+    const isScalarProperty = (name: string): boolean => {
+        const property = schema.properties?.[name];
+        return (
+            !property ||
+            typeof property === "boolean" ||
+            (!property.$ref &&
+                property.type !== "object" &&
+                property.type !== "array")
+        );
+    };
 
     return (
-        <div style={{ gridColumn: "1 / -1" }}>
+        <div
+            className="border rounded p-3 mb-3"
+            style={{ gridColumn: "1 / -1" }}
+        >
             {title && (
                 <span className="super-label">
                     {spaceBeforeCapitalLetters(title)}
                 </span>
             )}
-            {description ? (
-                <ToolTip id={fieldPathId.$id} tip={description.toString()} />
-            ) : null}
+            <ToolTip id={fieldPathId.$id} tip={description?.toString()} />
             <div
                 className="d-grid row-gap-5 column-gap-3"
-                style={{
-                    gridTemplateColumns:
-                        "repeat(auto-fill, minmax(250px, 1fr))",
-                }}
+                style={{ gridTemplateColumns: COMPACT_GRID_COLUMNS }}
             >
-                {properties.map((element) => (
-                    <Fragment key={element.name}>{element.content}</Fragment>
-                ))}
+                {properties.map((element) =>
+                    isScalarProperty(element.name) ? (
+                        <div key={element.name} className="compact-field-item">
+                            {element.content}
+                        </div>
+                    ) : (
+                        <Fragment key={element.name}>
+                            {element.content}
+                        </Fragment>
+                    )
+                )}
             </div>
         </div>
     );

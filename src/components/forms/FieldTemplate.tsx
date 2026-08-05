@@ -36,8 +36,12 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     const isCustomField = !!uiSchema?.["ui:field"];
     const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
 
+    // a list stacks its items, so it needs the full row rather than one column
     const spanFullWidth =
-        schema.type === "object" || schema.oneOf || isCustomField;
+        schema.type === "object" ||
+        schema.type === "array" ||
+        schema.oneOf ||
+        isCustomField;
 
     const filteredErrors = rawErrors?.filter((error) =>
         filterUninformativeErrors(error)

@@ -72,8 +72,8 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     const uiOptions = getUiOptions(uiSchema);
     const showOptionalDataControlInTitle = !readonly && !disabled;
     return (
-        <div className="d-flex align-items-center gap-2">
-            <div className="d-flex align-items-center gap-2">
+        <div className="field-row">
+            <div className="field-row-label">
                 <ArrayFieldTitleTemplate
                     fieldPathId={fieldPathId}
                     title={uiOptions.title || title}
@@ -95,7 +95,7 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
                     registry={registry}
                 />
             </div>
-            <div className="flex-grow-1">
+            <div className="field-row-control">
                 <Vertical gap="sm" align="stretch">
                     {!showOptionalDataControlInTitle
                         ? optionalDataControl

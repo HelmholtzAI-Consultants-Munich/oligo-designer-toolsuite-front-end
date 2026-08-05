@@ -15,6 +15,9 @@ const EXCLUDED_TABS = new Set(["schema_version"]);
 export const excludeHiddenTabs = (tabs: string[]) =>
     tabs.filter((tab) => !EXCLUDED_TABS.has(tab));
 
+/** Grid columns shared by every compact field group (see `.compact-field-item` in theme.scss). */
+export const COMPACT_GRID_COLUMNS = "repeat(4, 1fr)";
+
 /**
  * Helper function that checks if an error message should be removed from the output
  * These errors are caused by unsupported JSON schema discriminator usage and are not helpful to users.

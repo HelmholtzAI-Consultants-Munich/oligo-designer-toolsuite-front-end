@@ -39,17 +39,21 @@ const WrappedBaseInputTemplate = memo((props: BaseInputTemplateProps) => {
         );
     };
 
+    // checkboxes render their own inline label
+    const showLabel =
+        !hideLabel && !isCheckbox && !!(label || schema.description);
+
     return (
-        <div className="d-flex flex-wrap align-items-center gap-2">
-            {!hideLabel && !isCheckbox && (
-                <Form.Label htmlFor={id} className="mb-0 flex-shrink-0">
-                    {label}
-                </Form.Label>
+        <div className="field-row">
+            {showLabel && (
+                <div className="field-row-label">
+                    <Form.Label htmlFor={id} className="mb-0">
+                        {label}
+                    </Form.Label>
+                    <ToolTip id={id} tip={schema.description} />
+                </div>
             )}
-            {!hideLabel && schema.description ? (
-                <ToolTip id={id} tip={schema.description} />
-            ) : null}
-            <div className="flex-grow-1" style={{ minWidth: 0 }}>
+            <div className="field-row-control">
                 {/* use lang="en" by default, enforces '.' as decimal separator in number inputs */}
                 <BaseInputTemplate lang="en" {...props} onChange={_onChange} />
             </div>

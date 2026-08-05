@@ -112,6 +112,9 @@ const uiSchemaFromJsonSchemaRecursive = (
         } else if (level === 2) {
             // second level -> SectionLayout
             uiSchema["ui:ObjectFieldTemplate"] = SectionLayout;
+        } else if (fields.length === 1 && fields[0] === "enabled") {
+            // an "enabled"-only object is still a toggle, just without parameters
+            uiSchema["ui:ObjectFieldTemplate"] = EnabledToggleObjectTemplate;
         } else if (
             fields.length > 0 &&
             fields.every((field) =>

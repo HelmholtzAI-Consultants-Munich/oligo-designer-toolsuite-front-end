@@ -1,9 +1,9 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { Fragment, memo, useState } from "react";
+import { memo, useState } from "react";
 import { Button, Collapse } from "react-bootstrap";
 import { ChevronDown, ChevronUp } from "react-bootstrap-icons";
 import { ToolTip } from "../ui/Tooltip";
-import { spaceBeforeCapitalLetters } from "./utils";
+import { COMPACT_GRID_COLUMNS, spaceBeforeCapitalLetters } from "./utils";
 
 /**
  * Layout for a section within a tab, rendered collapsed by default with a toggle to expand it.
@@ -47,16 +47,16 @@ const CollapsibleSectionLayout = memo(function CollapsibleSectionLayout(
             <Collapse in={open}>
                 <div id={controlsId}>
                     <div
-                        className="d-grid row-gap-4 column-gap-3"
-                        style={{
-                            gridTemplateColumns:
-                                "repeat(auto-fill, minmax(250px, 1fr))",
-                        }}
+                        className="d-grid row-gap-3 column-gap-3"
+                        style={{ gridTemplateColumns: COMPACT_GRID_COLUMNS }}
                     >
                         {props.properties.map((element) => (
-                            <Fragment key={element.name}>
+                            <div
+                                key={element.name}
+                                className="compact-field-item"
+                            >
                                 {element.content}
-                            </Fragment>
+                            </div>
                         ))}
                     </div>
                 </div>
