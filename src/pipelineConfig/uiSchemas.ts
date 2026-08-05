@@ -2,6 +2,7 @@ import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import TabsLayout from "../components/forms/TabsLayout";
 import TabLayout from "../components/forms/TabLayout";
 import SectionLayout from "../components/forms/SectionLayout";
+import CollapsibleSectionLayout from "../components/forms/CollapsibleSectionLayout";
 import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
 
 export const uiSchemaFromJsonSchema = (jsonSchema: RJSFSchema): UiSchema => {
@@ -85,11 +86,24 @@ const uiSchemaFromJsonSchemaRecursive = (
                 // files_vcf_* (any level) -> fileUpload
                 uiSchema[field] = { "ui:field": "fileUpload" };
             } else {
-                uiSchema[field] = uiSchemaFromJsonSchemaRecursive(
+                const fieldUiSchema = uiSchemaFromJsonSchemaRecursive(
                     baseSchema,
                     propertySchema,
                     level + 1
                 );
+                // `x-collapsed` is a generic backend-set flag (json_schema_extra on a Field)
+                // read here because it sits as a sibling of `$ref`, which gets resolved away
+                // by the recursive call above. Any field carrying it renders collapsed by
+                // default, regardless of which pipeline or model sets it.
+                if (
+                    (propertySchema as RJSFSchema & Record<string, unknown>)[
+                        "x-collapsed"
+                    ] === true
+                ) {
+                    fieldUiSchema["ui:ObjectFieldTemplate"] =
+                        CollapsibleSectionLayout;
+                }
+                uiSchema[field] = fieldUiSchema;
             }
         }
     }

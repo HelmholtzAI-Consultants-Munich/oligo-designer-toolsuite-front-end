@@ -191,7 +191,10 @@ class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnable
 
     search_parameters: Annotated[  # type: ignore
         BlastnSearchParameters,
-        Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
+        Field(
+            description="Parameters for BLASTN searches used in cross-hybridization filtering.",
+            json_schema_extra={"x-collapsed": True},
+        ),
     ]
 
 
@@ -207,9 +210,13 @@ class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnab
     our `GenomicInput` instead of the default file path type.
     """
 
-    search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
-        perc_identity=80, strand="minus", word_size=10
-    )
+    search_parameters: Annotated[  # type: ignore
+        BlastnSearchParameters,
+        Field(
+            default=BlastnSearchParameters(perc_identity=80, strand="minus", word_size=10),
+            json_schema_extra={"x-collapsed": True},
+        ),
+    ]
     files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 

@@ -327,7 +327,8 @@
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
           "$ref": "#/$defs/BlastnSearchParameters",
-          "description": "Parameters for BLASTN searches used in cross-hybridization filtering."
+          "description": "Parameters for BLASTN searches used in cross-hybridization filtering.",
+          "x-collapsed": true
         },
         "hit_parameters": {
           "$ref": "#/$defs/BlastnHitParameters",
@@ -686,7 +687,8 @@
             "-strand": "minus",
             "-word_size": 10,
             "-perc_identity": 80.0
-          }
+          },
+          "x-collapsed": true
         },
         "hit_parameters": {
           "$ref": "#/$defs/BlastnHitParameters",
