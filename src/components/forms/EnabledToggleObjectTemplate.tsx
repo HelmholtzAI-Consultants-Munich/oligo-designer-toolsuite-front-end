@@ -1,18 +1,15 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
 import { Card } from "react-bootstrap";
-import { ToolTip } from "../ui/Tooltip";
-import { spaceBeforeCapitalLetters } from "./utils";
+import GroupHeading from "./GroupHeading";
 
 /**
- * Layout for a schema toggled by an "enabled" boolean, e.g. an optional filter.
- * Renders the name and the checkbox on a card header row, and any fields that only
- * exist while enabled stacked below it.
+ * Layout for a schema toggled by an "enabled" boolean, e.g. an optional filter: the name
+ * and the checkbox head a card, and the fields that only exist while enabled stack below.
  *
  * @remarks
- * This component is used in `uiSchemaFromJsonSchemaRecursive`, applied to the option
- * schemas of a `oneOf` discriminated by `enabled` as well as to plain objects whose
- * only property is `enabled`, so both look the same.
+ * Applied in `uiSchemaFromJsonSchemaRecursive` both to the option schemas of a `oneOf`
+ * discriminated by `enabled` and to plain objects whose only property is `enabled`.
  *
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that lays out an enabled/disabled toggle and its fields
@@ -20,11 +17,10 @@ import { spaceBeforeCapitalLetters } from "./utils";
 const EnabledToggleObjectTemplate = memo(function EnabledToggleObjectTemplate(
     props: ObjectFieldTemplateProps
 ) {
-    const enabledProperty = props.properties.find(
-        (property) => property.name === "enabled"
-    );
+    const isEnabled = ({ name }: { name: string }) => name === "enabled";
+    const enabledProperty = props.properties.find(isEnabled);
     const otherProperties = props.properties.filter(
-        (property) => property.name !== "enabled"
+        (property) => !isEnabled(property)
     );
 
     return (
@@ -36,12 +32,11 @@ const EnabledToggleObjectTemplate = memo(function EnabledToggleObjectTemplate(
         >
             <Card.Body>
                 <div className="d-flex align-items-center gap-2">
-                    <span className="super-label mb-0">
-                        {spaceBeforeCapitalLetters(props.title)}
-                    </span>
-                    <ToolTip
+                    <GroupHeading
                         id={props.fieldPathId.$id}
-                        tip={props.description?.toString()}
+                        title={props.title}
+                        description={props.description}
+                        className="mb-0"
                     />
                     <div className="flex-shrink-0 ms-auto">
                         {enabledProperty?.content}
@@ -49,10 +44,8 @@ const EnabledToggleObjectTemplate = memo(function EnabledToggleObjectTemplate(
                 </div>
                 {otherProperties.length > 0 && (
                     <div className="d-flex flex-column gap-2 mt-1">
-                        {otherProperties.map((element) => (
-                            <Fragment key={element.name}>
-                                {element.content}
-                            </Fragment>
+                        {otherProperties.map(({ name, content }) => (
+                            <Fragment key={name}>{content}</Fragment>
                         ))}
                     </div>
                 )}

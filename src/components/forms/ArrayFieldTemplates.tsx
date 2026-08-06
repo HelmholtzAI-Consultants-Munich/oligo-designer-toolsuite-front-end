@@ -104,6 +104,8 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
                     {canAdd && (
                         <Button
                             variant="primary-muted"
+                            size="sm"
+                            className="align-self-start"
                             id={buttonId(fieldPathId, "add")}
                             onClick={onAddClick}
                             disabled={disabled || readonly}

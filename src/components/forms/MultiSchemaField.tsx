@@ -7,7 +7,7 @@ import {
 import { ToolTip } from "../ui/Tooltip";
 import { Card, Form } from "react-bootstrap";
 import { memo } from "react";
-import { spaceBeforeCapitalLetters } from "./utils";
+import GroupHeading from "./GroupHeading";
 
 const {
     fields: { AnyOfField, OneOfField },
@@ -147,14 +147,11 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
                 }}
             >
                 <Card.Body>
-                    {schema.title && (
-                        <span className="super-label">
-                            {spaceBeforeCapitalLetters(schema.title)}
-                        </span>
-                    )}
-                    {schema.description ? (
-                        <ToolTip id={schema.$id!} tip={schema.description} />
-                    ) : null}
+                    <GroupHeading
+                        id={schema.$id!}
+                        title={schema.title}
+                        description={schema.description}
+                    />
                     <div className="multi-schema-selector">{selector}</div>
                     {optionSchemaField}
                 </Card.Body>

@@ -35,6 +35,19 @@ $card-spacer-x: 1.5rem;
 $card-spacer-y: 1.5rem;
 $input-btn-padding-y-sm: 0.5rem;
 
+// hairline borders for form surfaces, so nested boxes read as grouping rather than chrome
+$form-border-color: tint-color($border-color, 55%);
+
+$accordion-border-color: $form-border-color;
+$accordion-border-radius: $border-radius;
+$accordion-padding-y: 0.85rem;
+$accordion-padding-x: 1.15rem;
+$accordion-button-color: $primary;
+$accordion-button-active-bg: transparent;
+$accordion-button-active-color: $primary;
+$accordion-icon-color: $text-muted;
+$accordion-icon-active-color: $primary;
+
 // Bootstrap and its default variables
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
@@ -479,6 +492,14 @@ a,
 }
 
 /* RJSF */
+// The rendered height of this form's controls. Bootstrap's own $input-height-sm
+// assumes a control at 1em of the parent font size, but these are set to
+// $input-font-size-sm below, so it would overshoot.
+$form-control-height: calc(
+    #{$input-font-size-sm} * #{$line-height-base} + #{$input-padding-y-sm} * 2 +
+        #{$input-border-width} * 2
+);
+
 form.rjsf {
     display: flex;
     flex-direction: column;
@@ -490,22 +511,41 @@ form.rjsf {
         min-width: 0;
     }
 
+    .form-label,
+    .form-check-label {
+        font-size: $font-size-sm;
+        color: var(--#{$prefix}text-muted);
+    }
+
     .form-label {
         margin-bottom: 0.2rem;
     }
 
+    .accordion {
+        margin-bottom: 1rem;
+    }
+
+    .form-control,
+    .form-select {
+        /* Bootstrap's small-control metrics: a dense form of many little numbers */
+        padding: $input-padding-y-sm $input-padding-x-sm;
+        font-size: $input-font-size-sm;
+        border-radius: $input-border-radius-sm;
+        border-color: $form-border-color;
+    }
+
     .field-group-box {
         grid-column: 1 / -1;
-        border: 1px solid $border-color;
-        border-radius: $border-radius;
-        padding: 0.75rem;
+        border: 1px solid $form-border-color;
+        border-radius: $border-radius-sm;
+        padding: 0.7rem 0.9rem;
         margin-bottom: 0.5rem;
     }
 
     .card-body .field-group-box {
         /* nested inside an enabled-toggle card: a divider, not a second box */
         border: none;
-        border-top: 1px solid $border-color;
+        border-top: 1px solid $form-border-color;
         border-radius: 0;
         padding: 0.5rem 0 0;
         margin-bottom: 0;
@@ -536,6 +576,12 @@ form.rjsf {
     .field-row-control {
         flex: 1 1 auto;
         min-width: 0;
+
+        > input[type="number"] {
+            /* a number never needs the whole row, and capping them keeps the
+            boxes an even size instead of stretching to whatever space is left */
+            max-width: 10rem;
+        }
     }
 
     .rjsf-field-array > .field-row {
@@ -572,13 +618,24 @@ form.rjsf {
             width: auto;
             flex: 0 0 auto;
         }
+
+        .rjsf-field-boolean > div {
+            /* a checkbox is much shorter than an input, so give it the same band
+            height: its row then shares a centre line with the inputs beside it
+            instead of sitting low in the cell */
+            min-height: $form-control-height;
+        }
+    }
+
+    .group-heading {
+        margin-bottom: 0.35rem;
     }
 
     .super-label {
         display: inline-block;
         font-weight: 600;
-        font-size: 1rem;
-        margin-bottom: 0.35rem;
+        font-size: $font-size-sm;
+        color: $primary;
     }
 
     .multi-schema-toggle {
@@ -603,6 +660,23 @@ form.rjsf {
         flex-direction: row-reverse;
         justify-content: flex-end;
         gap: 0.25rem;
+
+        .form-check {
+            /* Bootstrap floats the box and pads the label to clear it, which
+            offsets both inside a flex row - a plain row centres them instead */
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 0;
+            margin-bottom: 0;
+            padding-left: 0;
+        }
+
+        .form-check-input {
+            float: none;
+            margin: 0;
+            flex-shrink: 0;
+        }
     }
 
     .array-field-item .field-row-label {
@@ -611,40 +685,37 @@ form.rjsf {
     }
 
     .form-section {
-        border: 1px solid $border-color;
+        /* one accordion item per section, spaced apart as its own rounded card
+        instead of Bootstrap's single stacked group */
+        margin-bottom: 0.6rem;
+        border: 1px solid $form-border-color;
         border-radius: $border-radius;
-        margin-bottom: 0.5rem;
+        box-shadow: $box-shadow-sm;
 
-        .form-section-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            width: 100%;
-            padding: 0.6rem 1rem;
-            border: 0;
-            background: none;
-            color: inherit;
-            text-align: left;
+        .accordion-button {
+            font-weight: 600;
+            border-radius: $border-radius;
 
-            h5 {
-                margin: 0;
-                font-weight: 600;
-                font-size: 1rem;
+            &:not(.collapsed) {
+                box-shadow: none;
+                border-bottom-right-radius: 0;
+                border-bottom-left-radius: 0;
             }
         }
 
-        .form-section-body {
-            align-items: start;
-            padding: 0 1rem 0.75rem;
+        .accordion-body {
+            padding-top: 0.25rem;
         }
     }
 
     .card {
         /* an optional filter's card: tighter than Bootstrap's default */
         margin-bottom: 0.5rem;
+        border-color: $form-border-color;
+        border-radius: $border-radius-sm;
 
         .card-body {
-            padding: 0.75rem;
+            padding: 0.7rem 0.9rem;
         }
     }
 }

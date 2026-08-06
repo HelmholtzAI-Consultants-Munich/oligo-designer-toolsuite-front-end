@@ -1,13 +1,11 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { memo } from "react";
-import { ToolTip } from "../ui/Tooltip";
 import CompactGrid from "./CompactGrid";
-import { spaceBeforeCapitalLetters } from "./utils";
+import GroupHeading from "./GroupHeading";
 
 /**
  * This ObjectFieldTemplate is based on the react-bootstrap theme's template.
- * It harmonizes the layout and styling of object fields with ODT's design system.
- * It also introduces a CSS grid layout to automatically arrange input fields in a responsive way.
+ * It draws an object's fields as a named box laid out on the form's compact grid.
  *
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that is used to overwrite the default ObjectFieldTemplate
@@ -15,19 +13,16 @@ import { spaceBeforeCapitalLetters } from "./utils";
 const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
     props: ObjectFieldTemplateProps
 ) {
-    const { title, properties, description, fieldPathId, schema } = props;
-
     return (
         <div className="field-group-box">
-            {title && (
-                <span className="super-label">
-                    {spaceBeforeCapitalLetters(title)}
-                </span>
-            )}
-            <ToolTip id={fieldPathId.$id} tip={description?.toString()} />
+            <GroupHeading
+                id={props.fieldPathId.$id}
+                title={props.title}
+                description={props.description}
+            />
             <CompactGrid
-                schema={schema}
-                properties={properties}
+                schema={props.schema}
+                properties={props.properties}
                 uiSchema={props.uiSchema}
                 className="row-gap-3"
             />

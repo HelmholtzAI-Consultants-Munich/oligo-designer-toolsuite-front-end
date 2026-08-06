@@ -1,8 +1,5 @@
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 
-export const isRootField = (fieldPathId: { $id: string }): boolean =>
-    fieldPathId.$id === "root";
-
 export const snakeCaseToTitleCase = (str: string): string =>
     str
         .split("_")
@@ -17,12 +14,13 @@ const EXCLUDED_TABS = new Set(["schema_version"]);
 export const excludeHiddenTabs = (tabs: string[]) =>
     tabs.filter((tab) => !EXCLUDED_TABS.has(tab));
 
-/** Grid columns shared by every compact field group (see `.compact-field-item` in theme.scss). */
-export const COMPACT_GRID_COLUMNS = "repeat(4, 1fr)";
+/** A section's accordion key, matching the `fieldPathId.$id` RJSF gives that section. */
+export const sectionKey = (tabId: string, name: string): string =>
+    `${tabId}_${name}`;
 
 /**
- * Whether a field needs a whole grid row instead of one compact column, i.e. anything
- * that lays out its own children: objects, lists, oneOf branches and custom fields.
+ * Whether a field lays out its own children (object, list, oneOf or custom field) and so
+ * needs a whole grid row rather than one compact column.
  *
  * @param schema - the field's JSON Schema, unresolved `$ref`s included
  * @param uiSchema - the field's UiSchema
@@ -41,8 +39,8 @@ export const spansFullRow = (
             schema.type === "array"));
 
 /**
- * Helper function that checks if an error message should be removed from the output
- * These errors are caused by unsupported JSON schema discriminator usage and are not helpful to users.
+ * Checks if an error message should be removed from the output. These errors are caused by
+ * unsupported JSON schema discriminator usage and are not helpful to users.
  *
  * TODO: Remove this filter once discriminators in the forms no longer produce these errors alongside the informative ones.
  *
