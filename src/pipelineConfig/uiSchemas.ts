@@ -129,7 +129,7 @@ const uiSchemaFromJsonSchemaRecursive = (
             uiSchema["ui:ObjectFieldTemplate"] = CompactFieldGroupTemplate;
         }
 
-        for (const field of fields) {
+        for (const [index, field] of fields.entries()) {
             const propertySchema = localSchema.properties[field] as RJSFSchema;
             if (field === "file_region_ids") {
                 // file_region_ids (any level) -> txtUploadInput
@@ -160,6 +160,10 @@ const uiSchemaFromJsonSchemaRecursive = (
                 ) {
                     fieldUiSchema["ui:ObjectFieldTemplate"] =
                         CollapsibleSectionLayout;
+                }
+                if (level === 1) {
+                    // a tab's sections -> open the first one, collapse the rest
+                    fieldUiSchema["ui:options"] = { defaultOpen: index === 0 };
                 }
                 uiSchema[field] = fieldUiSchema;
             }

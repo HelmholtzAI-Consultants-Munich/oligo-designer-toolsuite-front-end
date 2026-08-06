@@ -1,6 +1,6 @@
 import { type FieldTemplateProps, ANY_OF_KEY, ONE_OF_KEY } from "@rjsf/utils";
 import { memo } from "react";
-import { filterUninformativeErrors } from "./utils";
+import { filterUninformativeErrors, spansFullRow } from "./utils";
 
 /**
  * This FieldTemplate is based on the react-bootstrap theme's template.
@@ -36,13 +36,6 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     const isCustomField = !!uiSchema?.["ui:field"];
     const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
 
-    // a list stacks its items, so it needs the full row rather than one column
-    const spanFullWidth =
-        schema.type === "object" ||
-        schema.type === "array" ||
-        schema.oneOf ||
-        isCustomField;
-
     const filteredErrors = rawErrors?.filter((error) =>
         filterUninformativeErrors(error)
     );
@@ -50,7 +43,9 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     return (
         <div
             style={{
-                gridColumn: spanFullWidth ? "1 / -1" : undefined,
+                gridColumn: spansFullRow(schema, uiSchema)
+                    ? "1 / -1"
+                    : undefined,
             }}
             className={`rjsf-field rjsf-field-${schema.type}`}
         >

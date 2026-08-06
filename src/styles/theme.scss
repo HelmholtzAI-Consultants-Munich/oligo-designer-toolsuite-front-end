@@ -494,14 +494,21 @@ form.rjsf {
         margin-bottom: 0.2rem;
     }
 
-    .card-body .border.rounded.p-3 {
-        /* a nested group inside an enabled-toggle card gets a divider, not a second box
-        (Bootstrap's utilities are `!important`, so overriding them needs it too) */
-        border: none !important;
-        border-top: 1px solid $border-color !important;
-        border-radius: 0 !important;
-        padding: 1rem 0 0 !important;
-        margin-bottom: 0 !important;
+    .field-group-box {
+        grid-column: 1 / -1;
+        border: 1px solid $border-color;
+        border-radius: $border-radius;
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-body .field-group-box {
+        /* nested inside an enabled-toggle card: a divider, not a second box */
+        border: none;
+        border-top: 1px solid $border-color;
+        border-radius: 0;
+        padding: 0.5rem 0 0;
+        margin-bottom: 0;
     }
 
     .field-row {
@@ -570,8 +577,8 @@ form.rjsf {
     .super-label {
         display: inline-block;
         font-weight: 600;
-        font-size: 1.1rem;
-        margin-bottom: 1rem;
+        font-size: 1rem;
+        margin-bottom: 0.35rem;
     }
 
     .multi-schema-toggle {
@@ -604,31 +611,40 @@ form.rjsf {
     }
 
     .form-section {
-        display: grid;
-        align-items: start;
-        gap: 2rem;
-        border-bottom: 1px solid $border-color;
-        padding-bottom: 3rem;
-        margin-bottom: 3rem;
-
-        .form-section-header h5 {
-            font-weight: 600;
-            font-size: 1.3rem;
-        }
-    }
-}
-
-@include media-breakpoint-up(xxl) {
-    form.rjsf .form-section {
-        grid-template-columns: 25% 1fr;
+        border: 1px solid $border-color;
+        border-radius: $border-radius;
+        margin-bottom: 0.5rem;
 
         .form-section-header {
-            position: sticky;
-            top: 7rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+            padding: 0.6rem 1rem;
+            border: 0;
+            background: none;
+            color: inherit;
+            text-align: left;
 
             h5 {
-                font-size: 1.1rem;
+                margin: 0;
+                font-weight: 600;
+                font-size: 1rem;
             }
+        }
+
+        .form-section-body {
+            align-items: start;
+            padding: 0 1rem 0.75rem;
+        }
+    }
+
+    .card {
+        /* an optional filter's card: tighter than Bootstrap's default */
+        margin-bottom: 0.5rem;
+
+        .card-body {
+            padding: 0.75rem;
         }
     }
 }

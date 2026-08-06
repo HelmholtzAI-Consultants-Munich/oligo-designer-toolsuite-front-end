@@ -47,7 +47,7 @@ const CollapsibleSectionLayout = memo(function CollapsibleSectionLayout(
             <Collapse in={open}>
                 <div id={controlsId}>
                     <div
-                        className="d-grid row-gap-3 column-gap-3"
+                        className="d-grid row-gap-2 column-gap-3"
                         style={{ gridTemplateColumns: COMPACT_GRID_COLUMNS }}
                     >
                         {props.properties.map((element) => (

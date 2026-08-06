@@ -1,3 +1,5 @@
+import type { RJSFSchema, UiSchema } from "@rjsf/utils";
+
 export const isRootField = (fieldPathId: { $id: string }): boolean =>
     fieldPathId.$id === "root";
 
@@ -17,6 +19,26 @@ export const excludeHiddenTabs = (tabs: string[]) =>
 
 /** Grid columns shared by every compact field group (see `.compact-field-item` in theme.scss). */
 export const COMPACT_GRID_COLUMNS = "repeat(4, 1fr)";
+
+/**
+ * Whether a field needs a whole grid row instead of one compact column, i.e. anything
+ * that lays out its own children: objects, lists, oneOf branches and custom fields.
+ *
+ * @param schema - the field's JSON Schema, unresolved `$ref`s included
+ * @param uiSchema - the field's UiSchema
+ * @returns A boolean that is True if the field spans the full row
+ */
+export const spansFullRow = (
+    schema: RJSFSchema | boolean | undefined,
+    uiSchema: UiSchema | undefined
+): boolean =>
+    !!uiSchema?.["ui:field"] ||
+    (!!schema &&
+        typeof schema !== "boolean" &&
+        (!!schema.$ref ||
+            !!schema.oneOf ||
+            schema.type === "object" ||
+            schema.type === "array"));
 
 /**
  * Helper function that checks if an error message should be removed from the output

@@ -31,7 +31,6 @@ const EnabledToggleObjectTemplate = memo(function EnabledToggleObjectTemplate(
         <Card
             style={{
                 gridColumn: "1 / -1",
-                marginBottom: "1rem",
                 backgroundColor: "var(--bs-primary-bg-subtle)",
             }}
         >
@@ -49,7 +48,7 @@ const EnabledToggleObjectTemplate = memo(function EnabledToggleObjectTemplate(
                     </div>
                 </div>
                 {otherProperties.length > 0 && (
-                    <div className="d-flex flex-column gap-3 mt-2">
+                    <div className="d-flex flex-column gap-2 mt-1">
                         {otherProperties.map((element) => (
                             <Fragment key={element.name}>
                                 {element.content}

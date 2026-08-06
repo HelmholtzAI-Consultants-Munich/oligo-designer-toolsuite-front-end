@@ -18,10 +18,7 @@ const CompactFieldGroupTemplate = memo(function CompactFieldGroupTemplate(
     props: ObjectFieldTemplateProps
 ) {
     return (
-        <div
-            className="border rounded p-3 mb-3"
-            style={{ gridColumn: "1 / -1" }}
-        >
+        <div className="field-group-box">
             <div className="d-flex align-items-center gap-2">
                 {props.title && (
                     <span className="super-label mb-0">
@@ -36,7 +33,7 @@ const CompactFieldGroupTemplate = memo(function CompactFieldGroupTemplate(
                 )}
             </div>
             <div
-                className="d-grid row-gap-3 column-gap-3 mt-1"
+                className="d-grid row-gap-2 column-gap-3"
                 style={{ gridTemplateColumns: COMPACT_GRID_COLUMNS }}
             >
                 {props.properties.map((element) => (
