@@ -1,6 +1,12 @@
 import { type FieldTemplateProps, ANY_OF_KEY, ONE_OF_KEY } from "@rjsf/utils";
 import { memo } from "react";
-import { filterUninformativeErrors, spansFullRow } from "./utils";
+import { createPortal } from "react-dom";
+import { useQuickSettingsContainer } from "../../hooks/useQuickSettings";
+import {
+    filterUninformativeErrors,
+    isQuickSetting,
+    spansFullRow,
+} from "./utils";
 
 /**
  * This FieldTemplate is based on the react-bootstrap theme's template.
@@ -29,23 +35,30 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         schemaUtils,
     } = registry;
 
+    const quickSettingsContainer = useQuickSettingsContainer();
+
     if (hidden) {
         return <div className="hidden">{children}</div>;
     }
 
     const isCustomField = !!uiSchema?.["ui:field"];
     const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
+    // a quick setting keeps its place in the React tree, so its value, id and validation are
+    // untouched, and only its markup moves into the panel above the tabs
+    const quickSettingTarget =
+        isQuickSetting(schema, uiSchema) && quickSettingsContainer;
 
     const filteredErrors = rawErrors?.filter((error) =>
         filterUninformativeErrors(error)
     );
 
-    return (
+    const field = (
         <div
             style={{
-                gridColumn: spansFullRow(schema, uiSchema)
-                    ? "1 / -1"
-                    : undefined,
+                gridColumn:
+                    !quickSettingTarget && spansFullRow(schema, uiSchema)
+                        ? "1 / -1"
+                        : undefined,
             }}
             className={`rjsf-field rjsf-field-${schema.type}`}
         >
@@ -65,6 +78,8 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
             {help}
         </div>
     );
+
+    return quickSettingTarget ? createPortal(field, quickSettingTarget) : field;
 });
 
 export default FieldTemplate;

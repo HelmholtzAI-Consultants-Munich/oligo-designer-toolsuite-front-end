@@ -1,6 +1,6 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
-import { spansFullRow } from "./utils";
+import { isQuickSetting, spansFullRow } from "./utils";
 
 /** Compact fields always sit in the same four columns, so their boxes line up group to group. */
 const GRID_COLUMNS = "repeat(4, 1fr)";
@@ -31,7 +31,10 @@ const CompactGrid = memo(function CompactGrid({
             style={{ gridTemplateColumns: GRID_COLUMNS }}
         >
             {properties.map(({ name, content }) =>
-                spansFullRow(schema.properties?.[name], uiSchema?.[name]) ? (
+                // a quick setting still renders here - that is what creates its portal - but
+                // without a grid cell, which would otherwise be left empty
+                spansFullRow(schema.properties?.[name], uiSchema?.[name]) ||
+                isQuickSetting(schema.properties?.[name], uiSchema?.[name]) ? (
                     <Fragment key={name}>{content}</Fragment>
                 ) : (
                     <div key={name} className="compact-field-item">

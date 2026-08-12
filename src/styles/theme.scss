@@ -589,10 +589,10 @@ form.rjsf {
         align-items: flex-start;
     }
 
-    .compact-field-item {
-        /* a grid cell too narrow for a name column beside the control, so stack them.
-        Every wrapper down to the control is a full-height column pinning its content
-        to the bottom, so a two-line name grows upwards and boxes stay on one line. */
+    @mixin stacked-field {
+        /* too narrow for a name column beside the control, so stack them. Every wrapper down
+        to the control is a full-height column pinning its content to the bottom, so a two-line
+        name grows upwards and boxes stay on one line. */
         &,
         .rjsf-field,
         .field-row,
@@ -624,6 +624,40 @@ form.rjsf {
             height: its row then shares a centre line with the inputs beside it
             instead of sitting low in the cell */
             min-height: $form-control-height;
+        }
+    }
+
+    .compact-field-item {
+        @include stacked-field;
+    }
+
+    .quick-settings {
+        /* the parameters the backend flagged as quick settings, lifted out of their sections
+        and pinned above the tabs */
+        border: 1px solid $form-border-color;
+        border-radius: $border-radius;
+        box-shadow: $box-shadow-sm;
+        padding: 0.7rem 0.9rem;
+        margin-bottom: 0.6rem;
+
+        &:has(> .quick-settings-fields:empty) {
+            /* nothing was flagged, so there is no panel to show */
+            display: none;
+        }
+
+        .quick-settings-fields {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 0.5rem 1.25rem;
+            margin-top: 0.35rem;
+
+            > .rjsf-field {
+                /* a fixed track, so the boxes line up in a row instead of `flex-grow: 1`
+                stretching each one across the panel */
+                flex: 0 1 11rem;
+                @include stacked-field;
+            }
         }
     }
 

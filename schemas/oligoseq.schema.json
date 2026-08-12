@@ -565,19 +565,22 @@
           "description": "Number of oligo sets to generate per region. Multiple sets allow for redundancy and selection of the best-performing set based on scoring criteria.",
           "exclusiveMinimum": 0,
           "title": "N Sets",
-          "type": "integer"
+          "type": "integer",
+          "x-quick-setting": true
         },
         "set_size_min": {
           "description": "Minimum size (number of probes) required for each oligo set. Sets with fewer probes than this value will be rejected, and regions that cannot generate sets meeting this minimum will be removed. Regions with less oligos will be filtered out and stored in regions_with_insufficient_oligos_for_db_probes.",
           "exclusiveMinimum": 0,
           "title": "Set Size Min",
-          "type": "integer"
+          "type": "integer",
+          "x-quick-setting": true
         },
         "set_size_opt": {
           "description": "Optimal size (number of probes) for each oligo set. The set selection algorithm will attempt to generate sets of this size, but may produce sets with fewer probes if constraints cannot be met.",
           "exclusiveMinimum": 0,
           "title": "Set Size Opt",
-          "type": "integer"
+          "type": "integer",
+          "x-quick-setting": true
         },
         "distance_between_target_probes": {
           "description": "How much overlap should be allowed between oligos, e.g. if oligos can overlap x bases choose -x, if oligos can be next to one another choose 0, if oligos should be x bases apart choose x.",
@@ -1028,14 +1031,16 @@
           "description": "Minimum length (in nucleotides) for oligo sequences.",
           "minimum": 0,
           "title": "Probe Length Min",
-          "type": "integer"
+          "type": "integer",
+          "x-quick-setting": true
         },
         "probe_length_max": {
           "default": 30,
           "description": "Maximum length (in nucleotides) for probe sequences.",
           "minimum": 0,
           "title": "Probe Length Max",
-          "type": "integer"
+          "type": "integer",
+          "x-quick-setting": true
         },
         "probe_split_region": {
           "default": 4,
@@ -1751,7 +1756,6 @@
       "type": "object"
     }
   },
-  "description": "This Model overrides the default ODT Model of the Oligo-Seq pipeline, so\nwe can inject our custom genomic region generator models. Adding to that it removes attributes like\nthe general section of the OligoDesignerConfig, so these option do not get exposed to the user.",
   "properties": {
     "schema_version": {
       "const": 2,

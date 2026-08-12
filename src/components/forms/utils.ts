@@ -1,4 +1,4 @@
-import type { RJSFSchema, UiSchema } from "@rjsf/utils";
+import { getUiOptions, type RJSFSchema, type UiSchema } from "@rjsf/utils";
 
 export const snakeCaseToTitleCase = (str: string): string =>
     str
@@ -37,6 +37,27 @@ export const spansFullRow = (
             !!schema.oneOf ||
             schema.type === "object" ||
             schema.type === "array"));
+
+/**
+ * Whether the backend flagged a field as a quick setting, pinning it to the panel above the
+ * tabs instead of leaving it in its own section.
+ *
+ * @remarks
+ * `uiSchemaFromJsonSchema` copies the backend's `x-quick-setting` into `ui:options`; the schema
+ * is read as a fallback for the pipelines whose uiSchema is hand-written.
+ *
+ * @param schema - the field's JSON Schema, unresolved `$ref`s included
+ * @param uiSchema - the field's UiSchema
+ * @returns A boolean that is True if the field belongs in the Quick Settings panel
+ */
+export const isQuickSetting = (
+    schema: RJSFSchema | boolean | undefined,
+    uiSchema: UiSchema | undefined
+): boolean =>
+    getUiOptions(uiSchema).quickSetting === true ||
+    (!!schema &&
+        typeof schema !== "boolean" &&
+        (schema as Record<string, unknown>)["x-quick-setting"] === true);
 
 /**
  * Checks if an error message should be removed from the output. These errors are caused by

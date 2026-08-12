@@ -1,11 +1,15 @@
 """Overwrites of the Pydantic Models from ODT are done here."""
 
+import copy
 import json
 from typing import Annotated, Literal
 
 from oligo_designer_toolsuite.config._general_models import BlastnHitParameters
 from oligo_designer_toolsuite.config._general_models import (
     BlastnSearchParameters as BlastnSearchParametersBase,
+)
+from oligo_designer_toolsuite.config._oligo_scoring import (
+    IndependentSetSelection as IndependentSetSelectionBase,
 )
 from oligo_designer_toolsuite.config._specificity_filters import (
     CrossHybridizationBlastnFilterDisabled,
@@ -33,9 +37,39 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeOligoGeneration as TargetProbeOligoGenerationBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
+    TargetProbeProbeSetSelection as TargetProbeProbeSetSelectionBase,
+)
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeSpecificityFilter as TargetProbeSpecificityFilterBase,
 )
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field, create_model
+from pydantic.fields import FieldInfo
+
+
+def _with_quick_settings(model: type[BaseModel], *field_names: str) -> type[BaseModel]:
+    """Marks fields so the front-end pins them to the Quick Settings panel above the form's tabs,
+    and renders them only there.
+
+    Copies each inherited `FieldInfo` instead of redeclaring the field, because redeclaring
+    replaces it and would drop the description, default and constraints ODT set on it.
+
+    Arguments:
+        model {type[BaseModel]} -- model holding the fields
+        field_names {str} -- names of the fields to mark
+
+    Returns:
+        {type[BaseModel]} -- subclass of `model` whose named fields carry `x-quick-setting`
+    """
+    overrides: dict[str, tuple[type, FieldInfo]] = {}
+    for name in field_names:
+        field = copy.deepcopy(model.model_fields[name])
+        field.json_schema_extra = {
+            **(field.json_schema_extra or {}),
+            "x-quick-setting": True,
+        }
+        overrides[name] = (field.annotation, field)
+    return create_model(model.__name__, __base__=model, **overrides)
+
 
 ### Genomic Region Generator Models ###
 
@@ -126,7 +160,9 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
-class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
+class TargetProbeOligoGeneration(
+    _with_quick_settings(TargetProbeOligoGenerationBase, "probe_length_min", "probe_length_max")
+):
     """Overwrites the default TargetProbeOligoGenerationBase to inject our custom field for
     `file_region_ids`, because we expect a gene list and not a file path."""
 
@@ -241,11 +277,28 @@ class TargetProbeSpecificityFilter(TargetProbeSpecificityFilterBase):
     variant_filter: OligoSeqVariantFilterConfig  # type: ignore
 
 
+IndependentSetSelection = _with_quick_settings(
+    IndependentSetSelectionBase, "n_sets", "set_size_min", "set_size_opt"
+)
+
+
+class TargetProbeProbeSetSelection(TargetProbeProbeSetSelectionBase):
+    """Overwrites `TargetProbeProbeSetSelectionBase` to insert our `IndependentSetSelection`,
+    reusing ODT's own default so the pre-filled values cannot drift from it."""
+
+    independent_set_selection: IndependentSetSelection = IndependentSetSelection(  # type: ignore
+        **TargetProbeProbeSetSelectionBase.model_fields["independent_set_selection"]
+        .get_default()
+        .model_dump()
+    )
+
+
 class TargetProbe(TargetProbeBase):
     """Overwrites `TargetProbeBase` to insert our own Models for all parameters."""
 
     oligo_generation: TargetProbeOligoGeneration  # type: ignore
     specificity_filters: TargetProbeSpecificityFilter  # type: ignore
+    probe_set_selection: TargetProbeProbeSetSelection  # type: ignore
 
 
 class OligoSeqProbeDesignerConfig(OligoSeqProbeDesignerConfigBase):
@@ -270,6 +323,32 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
     target_probe: TargetProbe
 
 
+def _strip_local_descriptions(schema: dict) -> dict:
+    """Drops the descriptions Pydantic derives from this module's class docstrings.
+
+    Those docstrings say why an ODT model is overridden, which is a note for developers, but the
+    front-end renders a model's description as a section subtitle or a tooltip. ODT's own
+    descriptions are written for users and are left alone.
+
+    Arguments:
+        schema {dict} -- the generated JSON Schema, modified in place
+
+    Returns:
+        {dict} -- the same schema without this module's docstrings
+    """
+    local = {
+        name for name, value in globals().items() if isinstance(value, type) and issubclass(value, BaseModel)
+    }
+    for name, definition in schema.get("$defs", {}).items():
+        if name in local:
+            definition.pop("description", None)
+    schema.pop("description", None)
+    return schema
+
+
 if __name__ == "__main__":
     with open("oligoseq.schema.json", "w+") as f:
-        json.dump(OligoSeqProbeDesignerConfigFrontEnd.model_json_schema(), f)
+        json.dump(
+            _strip_local_descriptions(OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()),
+            f,
+        )

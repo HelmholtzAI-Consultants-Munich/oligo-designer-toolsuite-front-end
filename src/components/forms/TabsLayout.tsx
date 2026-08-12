@@ -1,6 +1,7 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { memo } from "react";
 import Page from "../ui/Page";
+import QuickSettingsPanel from "./QuickSettingsPanel";
 
 /**
  * Layout to wrap all tabs and display only the active tab, each tab is rendered by a TabLayout
@@ -13,13 +14,15 @@ import Page from "../ui/Page";
  */
 const TabsLayout = memo(function TabsLayout(props: ObjectFieldTemplateProps) {
     return (
-        <Page.Tabs>
-            {props.properties.map((element) => (
-                <Page.Tab tabKey={element.name} key={element.name}>
-                    {element.content}
-                </Page.Tab>
-            ))}
-        </Page.Tabs>
+        <QuickSettingsPanel>
+            <Page.Tabs>
+                {props.properties.map((element) => (
+                    <Page.Tab tabKey={element.name} key={element.name}>
+                        {element.content}
+                    </Page.Tab>
+                ))}
+            </Page.Tabs>
+        </QuickSettingsPanel>
     );
 });
 

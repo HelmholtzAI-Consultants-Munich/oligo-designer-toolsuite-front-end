@@ -161,6 +161,18 @@ const uiSchemaFromJsonSchemaRecursive = (
                     fieldUiSchema["ui:ObjectFieldTemplate"] =
                         CollapsibleSectionLayout;
                 }
+                // `x-quick-setting` is read here for the same reason, and pins the field to the
+                // Quick Settings panel above the tabs instead of its own section
+                if (
+                    (propertySchema as RJSFSchema & Record<string, unknown>)[
+                        "x-quick-setting"
+                    ] === true
+                ) {
+                    fieldUiSchema["ui:options"] = {
+                        ...fieldUiSchema["ui:options"],
+                        quickSetting: true,
+                    };
+                }
                 uiSchema[field] = fieldUiSchema;
             }
         }
