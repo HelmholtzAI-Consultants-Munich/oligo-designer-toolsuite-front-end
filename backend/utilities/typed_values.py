@@ -19,8 +19,8 @@ def serialize_path(path: Path) -> dict[str, Any]:
         path {Path} -- the path to store.
 
     Notes:
-        Stored as a list of parts plus a "kind" tag, not a plain string, so
-        deserialize_path can validate the shape before reconstructing it.
+        kind (e.g. "pathlib.Path/v1") flags the format, so deserialize_path
+        can reject unrelated or stale-format data.
 
     Returns:
         dict[str, Any] -- Mongo-safe representation of the path.
@@ -63,10 +63,6 @@ def path_for_display(path_value: dict[str, Any] | None) -> str:
     Arguments:
         path_value {dict[str, Any] | None} -- stored path representation.
 
-    Notes:
-        Returns "" rather than None so API responses stay a consistent
-        string type for the frontend.
-
     Returns:
         str -- the path as a string, or "" if there's nothing valid to show.
     """
@@ -102,10 +98,6 @@ def timestamp_to_iso(value: datetime | None) -> str:
     Arguments:
         value {datetime | None} -- the timestamp to format.
 
-    Notes:
-        Assumes UTC for naive datetimes from older records, so they don't
-        serialize without an offset and get misread as local time.
-
     Returns:
         str -- ISO 8601 timestamp, or "" if value is None.
     """
@@ -130,7 +122,7 @@ def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
         via traversal sequences or symlinks.
 
     Returns:
-        Path | None -- the resolved path, or None if it's invalid or escapes base_dir.
+        Path | None -- the resolved path
     """
     joined = safe_join(str(base_dir), requested_path)
     if joined is None:
@@ -152,8 +144,9 @@ def sanitize_relative_redirect_path(raw_url: str | None) -> str | None:
         raw_url {str | None} -- the redirect target as submitted by the client.
 
     Notes:
-        Rejects anything with a scheme/host or ".." segments, so this can't
-        be used as an open redirect.
+        Guards the OAuth redirect parameter: a scheme/host would allow an
+        open redirect to an external site, and ".." segments would escape
+        the frontend's own path space.
 
     Returns:
         str | None -- a normalized, same-origin relative path, or None if

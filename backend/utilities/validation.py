@@ -15,9 +15,11 @@ def parse_run_id(run_id_str: str | None) -> ObjectId:
         run_id_str {str | None} -- the run id string from request JSON.
 
     Notes:
-        Used for JSON-body run_id values, which bypass the ObjectId URL
-        converter's validation — this gives a clear 400 instead of an
-        uncaught InvalidId exception.
+        For a run_id in the URL path, use the <ObjectId:run_id> route
+        converter instead, which validates automatically.
+
+    Raises:
+        BadRequest: if run_id_str is empty or isn't a valid ObjectId.
 
     Returns:
         ObjectId -- the validated ObjectId.
@@ -31,7 +33,7 @@ def parse_run_id(run_id_str: str | None) -> ObjectId:
 
 
 def validate_and_convert_ids(id_strings: list[str]) -> tuple[list[ObjectId], list[str]]:
-    """Splits ids into valid and invalid instead of failing on the first bad one.
+    """Validates and converts a list of string ids to MongoDB ObjectIds.
 
     Arguments:
         id_strings {list[str]} -- ids to validate and convert.
@@ -66,6 +68,9 @@ def validate_id_array(data: dict, key_name: str) -> list:
         Shared by every bulk admin endpoint, so they all reject a
         missing/empty/non-list payload the same way.
 
+    Raises:
+        BadRequest: if key_name is missing, empty, or not a list.
+
     Returns:
         list -- the id array, guaranteed non-empty.
     """
@@ -88,10 +93,10 @@ def validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | Non
         supports a different/narrower set of sources than the default.
         (default: {None})
 
-    Notes:
-        file_region_ids is required only for the "Custom" source, since
-        that's the only source where regions come from user-uploaded data
-        rather than a database lookup.
+    Raises:
+        BadRequest: if form_data is empty, source is missing or not in
+        allowed_sources, genomic_regions is missing, or file_region_ids is
+        missing for the "Custom" source.
     """
     if allowed_sources is None:
         allowed_sources = ["ncbi", "ensembl"]

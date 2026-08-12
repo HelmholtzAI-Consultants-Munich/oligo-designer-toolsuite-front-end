@@ -232,7 +232,7 @@ def compute_legal_version(body: str) -> str:
         body {str} -- the document body to hash.
 
     Returns:
-        str -- a short, stable version identifier derived from the body's content.
+        str -- hash for a document body
     """
     normalized_body = normalize_legal_body(body)
     return hashlib.sha256(normalized_body.encode("utf-8")).hexdigest()[:12]

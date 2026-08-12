@@ -2,7 +2,10 @@
 Functions for banning, checking, and removing banned Helmholtz AAI identities.
 """
 
+from http import HTTPStatus
+
 from bson import ObjectId
+from flask import abort
 
 from backend.constants import USER_DENYLIST_COLLECTION_KEY
 from backend.extensions import db
@@ -14,10 +17,6 @@ def find_ban_by_helmholtz_sub(helmholtz_sub: str | None):
 
     Arguments:
         helmholtz_sub {str | None} -- the identity to check for a ban.
-
-    Notes:
-        Returns None upfront for an empty/missing sub — querying it could
-        match an unrelated record with the same missing field.
 
     Returns:
         dict | None -- the ban record, or None if this identity isn't banned.
@@ -50,9 +49,8 @@ def ban_helmholtz_sub(helmholtz_sub: str, banned_by: str):
         helmholtz_sub {str} -- the identity to ban.
         banned_by {str} -- which admin issued the ban.
 
-    Notes:
-        Banning an already-banned identity is a no-op — the original ban's
-        timestamp/admin aren't overwritten.
+    Raises:
+        InternalServerError: if the ban can't be read back after the upsert.
 
     Returns:
         dict -- the ban record (existing or newly created).
@@ -69,7 +67,9 @@ def ban_helmholtz_sub(helmholtz_sub: str, banned_by: str):
         upsert=True,
     )
     ban = find_ban_by_helmholtz_sub(helmholtz_sub)
-    assert ban is not None
+    if ban is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="error: could not save ban")
+
     return ban
 
 

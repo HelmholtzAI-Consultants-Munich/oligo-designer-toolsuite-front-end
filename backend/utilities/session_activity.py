@@ -10,8 +10,7 @@ def touch_anonymous_session(session_id: str | None) -> None:
     """Creates the session record if it doesn't exist yet, or just updates its timestamp if it does.
 
     Arguments:
-        session_id {str | None} -- no-op if None, since there's nothing to
-        track for an authenticated caller.
+        session_id {str | None} -- the anonymous session to touch.
 
     Notes:
         Called on every request from an anonymous visitor, so last_activity_at
@@ -31,7 +30,7 @@ def delete_anonymous_session(session_id: str | None) -> None:
     """Deletes the anonymous session record.
 
     Arguments:
-        session_id {str | None} -- no-op if None.
+        session_id {str | None} -- the anonymous session to delete.
 
     Notes:
         Called after an anonymous session's data is migrated to a logged-in

@@ -23,15 +23,14 @@ logger = logging.getLogger(__name__)
 
 
 def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
-    """Splits a form into one variant per selected region.
+    """Splits a form into several forms with one form per selected genomic region
 
     Arguments:
         form {dict[str, Any]} -- form with possibly multiple regions set to "true".
 
     Notes:
         The region generator task only knows how to process one region at a
-        time. Each variant is deep-copied so mutating one variant's regions
-        can't affect another's.
+        time.(gene, exon,...) Each form for each gene is deep-copied  so that the data for the different region are independent.
 
     Returns:
         list[dict[str, Any]] -- one form per originally-selected region, each
@@ -50,7 +49,7 @@ def generate_single_region_forms(form: dict[str, Any]) -> list[dict[str, Any]]:
     return form_variants
 
 
-def get_valid_pipeline_statuses():
+def get_valid_pipeline_statuses() -> list[str]:
     """Returns all valid pipeline run status values.
 
     Returns:
@@ -95,6 +94,14 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
     Arguments:
         mongo {pymongo.database.Database} -- MongoDB database instance.
         run_id_obj {ObjectId} -- ObjectId of the run to delete.
+
+    Raises:
+        NotFound: if run_id_obj doesn't match an existing run, including a
+        race where it's deleted between the lookup and the delete.
+
+    Notes:
+        An uncaught database error during the delete itself propagates as
+        a 500, rather than being caught and converted to an error response.
     """
     run = mongo.runs.find_one({"_id": run_id_obj})
     if not run:
@@ -133,7 +140,7 @@ def delete_pipeline_run_files_and_db(mongo, run_id_obj):
 
 
 def execute_bulk_pipeline_run_deletion(mongo, run_id_objects: list[ObjectId]) -> dict:
-    """Deletes multiple pipeline runs, tracking per-run failures independently.
+    """Deletes multiple pipeline runs
 
     Arguments:
         mongo {pymongo.database.Database} -- MongoDB database instance.
