@@ -1,73 +1,61 @@
 """Utility functions for the worker should be defined here."""
 
-import copy
-from collections.abc import Callable
-from typing import Any
-
-from pydantic import BaseModel, create_model
+from pydantic import BaseModel
 
 
 def build_fallback_error_message(runner_type: str):
     return f"The {runner_type} failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
 
 
-def _mark_fields(flag: str, field_names: tuple[str, ...]) -> Callable[[type[BaseModel]], type[BaseModel]]:
-    """Builds a class decorator setting a front-end flag on the named fields of a model.
+def mark_schema_flags(schema: dict, flags: dict[str, dict[str, tuple[str, ...]]]) -> dict:
+    """Sets the front-end's `x-` flags on the fields listed for them.
 
-    Copies each `FieldInfo` instead of redeclaring the field, because redeclaring replaces it
-    and would drop the description, default and constraints ODT set on it.
-
-    Arguments:
-        flag {str} -- the JSON Schema keyword to set, e.g. `x-collapsed`
-        field_names {tuple[str, ...]} -- names of the fields to mark
-
-    Returns:
-        {Callable} -- decorator returning a subclass whose named fields carry the flag
-    """
-
-    def decorator(model: type[BaseModel]) -> type[BaseModel]:
-        # `dict[str, Any]`, because `create_model` takes the field definitions as keyword
-        # arguments beside its own `__dunder__` ones, and a narrower type cannot describe both
-        overrides: dict[str, Any] = {}
-        for name in field_names:
-            field = copy.deepcopy(model.model_fields[name])
-            extra = field.json_schema_extra if isinstance(field.json_schema_extra, dict) else {}
-            field.json_schema_extra = {**extra, flag: True}
-            overrides[name] = (field.annotation, field)
-        # name, module and docstring are carried over, so the subclass is indistinguishable
-        # from the model it decorates
-        return create_model(
-            model.__name__,
-            __base__=model,
-            __doc__=model.__doc__,
-            __module__=model.__module__,
-            **overrides,
-        )
-
-    return decorator
-
-
-def with_quick_settings(*field_names: str) -> Callable[[type[BaseModel]], type[BaseModel]]:
-    """Marks fields so the front-end pins them to the Quick Settings panel above the form's tabs,
-    and renders them only there.
+    The flags only tell the front-end how to render a field, so they are stamped onto the
+    generated schema rather than declared on the models. Most of the fields they mark are ODT's,
+    and Pydantic cannot annotate an inherited field without redeclaring it, which would drop the
+    default, description and constraints ODT set on it.
 
     Arguments:
-        field_names {str} -- names of the fields to mark
+        schema {dict} -- the generated JSON Schema, modified in place
+        flags {dict[str, dict[str, tuple[str, ...]]]} -- field names per model per flag
 
     Returns:
-        {Callable} -- decorator returning a subclass carrying `x-quick-setting`
+        {dict} -- the same schema, with the flags set
+
+    Raises:
+        KeyError: if a model or field is named that the schema does not define
     """
-    return _mark_fields("x-quick-setting", field_names)
+    for flag, models in flags.items():
+        for model, fields in models.items():
+            properties = schema["$defs"][model]["properties"]
+            for field in fields:
+                properties[field][flag] = True
+    return schema
 
 
-def with_collapsed(*field_names: str) -> Callable[[type[BaseModel]], type[BaseModel]]:
-    """Marks fields so the front-end renders them collapsed behind a toggle, keeping a long list
-    of expert parameters out of the way until it is asked for.
+def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) -> dict:
+    """Drops the descriptions Pydantic derives from the caller module's own class docstrings.
+
+    Those docstrings say why an ODT model is overridden, which is a note for developers, but the
+    front-end renders a model's description as a section subtitle or a tooltip. ODT's own
+    descriptions are written for users and are left alone.
 
     Arguments:
-        field_names {str} -- names of the fields to mark
+        schema {dict} -- the generated JSON Schema, modified in place
+        namespace {dict} -- the caller's `globals()`, holding both its own models and any it imported
+        module_name {str} -- the caller's `__name__`, so an imported model can be told from its own
 
     Returns:
-        {Callable} -- decorator returning a subclass carrying `x-collapsed`
+        {dict} -- the same schema without the caller module's docstrings
     """
-    return _mark_fields("x-collapsed", field_names)
+    local = {
+        value.__name__
+        for value in namespace.values()
+        # the module has to be checked: an ODT model imported into the namespace is in there too,
+        # and dropping its description would take a user-facing one with it
+        if isinstance(value, type) and issubclass(value, BaseModel) and value.__module__ == module_name
+    }
+    for name in schema.get("$defs", {}).keys() & local:
+        schema["$defs"][name].pop("description", None)
+    schema.pop("description", None)
+    return schema

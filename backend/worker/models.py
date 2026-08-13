@@ -7,9 +7,6 @@ from oligo_designer_toolsuite.config._general_models import BlastnHitParameters
 from oligo_designer_toolsuite.config._general_models import (
     BlastnSearchParameters as BlastnSearchParametersBase,
 )
-from oligo_designer_toolsuite.config._oligo_scoring import (
-    IndependentSetSelection as IndependentSetSelectionBase,
-)
 from oligo_designer_toolsuite.config._specificity_filters import (
     CrossHybridizationBlastnFilterDisabled,
 )
@@ -36,14 +33,31 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeOligoGeneration as TargetProbeOligoGenerationBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    TargetProbeProbeSetSelection as TargetProbeProbeSetSelectionBase,
-)
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeSpecificityFilter as TargetProbeSpecificityFilterBase,
 )
 from pydantic import AliasChoices, BaseModel, Field
 
-from backend.worker.utils import with_collapsed, with_quick_settings
+from backend.worker.utils import mark_schema_flags, strip_local_descriptions
+
+# Fields the front-end renders specially. "x-quick-setting" pins a field to the Quick Settings
+# panel above the form's tabs, rendering it only there; "x-collapsed" starts a field's section
+# collapsed.
+#
+# Set here, on the generated schema, rather than with Field(json_schema_extra=...) on the
+# fields themselves: e.g. IndependentSetSelection.n_sets is declared by ODT with default=3. To
+# add json_schema_extra to it we would redeclare it in our own subclass - but a Pydantic v2
+# redeclaration replaces that field's whole FieldInfo, so the default, description and any
+# constraints would be lost unless copied over by hand for every flagged field.
+FRONT_END_FLAGS: dict[str, dict[str, tuple[str, ...]]] = {
+    "x-quick-setting": {
+        "TargetProbeOligoGeneration": ("probe_length_min", "probe_length_max"),
+        "IndependentSetSelection": ("n_sets", "set_size_min", "set_size_opt"),
+    },
+    "x-collapsed": {
+        "CrossHybridizationBlastnFilterEnabled": ("search_parameters",),
+        "OligoSeqSpecificityBlastnFilterEnabled": ("search_parameters",),
+    },
+}
 
 ### Genomic Region Generator Models ###
 
@@ -134,7 +148,6 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
-@with_quick_settings("probe_length_min", "probe_length_max")
 class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
     """Overwrites the default TargetProbeOligoGenerationBase to inject our custom field for
     `file_region_ids`, because we expect a gene list and not a file path."""
@@ -195,7 +208,6 @@ class BlastnSearchParameters(BlastnSearchParametersBase):
     )
 
 
-@with_collapsed("search_parameters")
 class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnabledBase):
     """Overwrites `CrossHybridizationBlastnFilterEnabledBase` to insert our `BlastnSearchParameters`."""
 
@@ -212,7 +224,6 @@ CrossHybridizationBlastnFilterConfig = Annotated[
 ]
 
 
-@with_collapsed("search_parameters")
 class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnabledBase):
     """Overwrites `OligoSeqSpecificityBlastnFilterEnabledBase` to use our own `BlastnSearchParameters` and
     our `GenomicInput` instead of the default file path type.
@@ -245,28 +256,11 @@ class TargetProbeSpecificityFilter(TargetProbeSpecificityFilterBase):
     variant_filter: OligoSeqVariantFilterConfig  # type: ignore
 
 
-@with_quick_settings("n_sets", "set_size_min", "set_size_opt")
-class IndependentSetSelection(IndependentSetSelectionBase):
-    """Overwrites `IndependentSetSelectionBase` only to mark its set sizes as quick settings."""
-
-
-class TargetProbeProbeSetSelection(TargetProbeProbeSetSelectionBase):
-    """Overwrites `TargetProbeProbeSetSelectionBase` to insert our `IndependentSetSelection`,
-    reusing ODT's own default so the pre-filled values cannot drift from it."""
-
-    independent_set_selection: IndependentSetSelection = IndependentSetSelection(  # type: ignore
-        **TargetProbeProbeSetSelectionBase.model_fields["independent_set_selection"]
-        .get_default()
-        .model_dump()
-    )
-
-
 class TargetProbe(TargetProbeBase):
     """Overwrites `TargetProbeBase` to insert our own Models for all parameters."""
 
     oligo_generation: TargetProbeOligoGeneration  # type: ignore
     specificity_filters: TargetProbeSpecificityFilter  # type: ignore
-    probe_set_selection: TargetProbeProbeSetSelection  # type: ignore
 
 
 class OligoSeqProbeDesignerConfig(OligoSeqProbeDesignerConfigBase):
@@ -291,35 +285,8 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
     target_probe: TargetProbe
 
 
-def _strip_local_descriptions(schema: dict) -> dict:
-    """Drops the descriptions Pydantic derives from this module's class docstrings.
-
-    Those docstrings say why an ODT model is overridden, which is a note for developers, but the
-    front-end renders a model's description as a section subtitle or a tooltip. ODT's own
-    descriptions are written for users and are left alone.
-
-    Arguments:
-        schema {dict} -- the generated JSON Schema, modified in place
-
-    Returns:
-        {dict} -- the same schema without this module's docstrings
-    """
-    local = {
-        value.__name__
-        for value in globals().values()
-        # the module has to be checked: an ODT model imported here is in `globals()` too, and
-        # dropping its description would take a user-facing one with it
-        if isinstance(value, type) and issubclass(value, BaseModel) and value.__module__ == __name__
-    }
-    for name in schema.get("$defs", {}).keys() & local:
-        schema["$defs"][name].pop("description", None)
-    schema.pop("description", None)
-    return schema
-
-
 if __name__ == "__main__":
+    schema = OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()
+    schema = strip_local_descriptions(schema, globals(), __name__)
     with open("oligoseq.schema.json", "w+") as f:
-        json.dump(
-            _strip_local_descriptions(OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()),
-            f,
-        )
+        json.dump(mark_schema_flags(schema, FRONT_END_FLAGS), f)
