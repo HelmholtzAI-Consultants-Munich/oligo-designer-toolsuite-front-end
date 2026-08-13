@@ -16,6 +16,10 @@ type CompactGridProps = Pick<
  * Lays out a field group: scalars share the compact columns, anything that lays out
  * its own children spans the full row.
  *
+ * @remarks
+ * Used by `ObjectFieldTemplate`, `SectionLayout` and `CollapsibleSectionLayout` - the three
+ * object layouts that hold a plain grid of fields.
+ *
  * @param props - the group's `schema`, `uiSchema` and `properties`, plus classes for the grid's gaps
  * @returns A React Component holding the group's fields
  */

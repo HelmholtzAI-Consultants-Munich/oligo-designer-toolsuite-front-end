@@ -3,8 +3,8 @@ import { memo } from "react";
 import CompactGrid from "./CompactGrid";
 import GroupHeading from "./GroupHeading";
 
+// RJSF never passes className; only CompactFieldGroupTemplate does, for a tighter row gap
 type Props = ObjectFieldTemplateProps & {
-    /** the grid's row gap, the one thing a group box varies */
     className?: string;
 };
 

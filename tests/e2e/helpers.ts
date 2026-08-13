@@ -164,8 +164,29 @@ export const ALL_PIPELINES: PipelineDefinition[] = [
 // UI helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Opens every section of the visible tab, which starts with only the first one expanded.
+ * A collapsed section is `display: none`, so its fields fail Playwright's actionability checks.
+ *
+ * @remarks
+ * "Expand all" rather than clicking each header: a header click closes the other sections,
+ * so expanding them one by one would re-collapse whatever an earlier step opened.
+ */
+export const expandSections = async (page: Page) => {
+    // no button on the pipelines whose uiSchema is hand-written, as those have no sections
+    for (const button of await page
+        .getByRole("button", { name: "Expand all" })
+        .all()) {
+        if (await button.isVisible()) {
+            await button.click();
+        }
+    }
+};
+
 export const clickTab = async (page: Page, name: RegExp) => {
     await page.getByRole("tab").and(page.getByTitle(name)).click();
+    // each tab owns its sections, so the one just revealed may still be collapsed
+    await expandSections(page);
 };
 
 export const openPipeline = async (
@@ -176,6 +197,7 @@ export const openPipeline = async (
     await expect(
         page.getByRole("heading", { name: pipeline.heading })
     ).toBeVisible();
+    await expandSections(page);
 };
 
 /**
