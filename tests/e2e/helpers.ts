@@ -165,8 +165,9 @@ export const ALL_PIPELINES: PipelineDefinition[] = [
 // ---------------------------------------------------------------------------
 
 /**
- * Opens every section of the visible tab, which starts with only the first one expanded.
- * A collapsed section is `display: none`, so its fields fail Playwright's actionability checks.
+ * Opens every section of the visible tab, which starts with only the first one expanded, and
+ * then the `x-collapsed` groups nested inside them, which carry their own toggle. Anything
+ * still collapsed is `display: none`, so its fields fail Playwright's actionability checks.
  *
  * @remarks
  * "Expand all" rather than clicking each header: a header click closes the other sections,
@@ -179,6 +180,39 @@ export const expandSections = async (page: Page) => {
         .all()) {
         if (await button.isVisible()) {
             await button.click();
+        }
+    }
+    // clicking one drops it out of the set, so take the first until none are left. No
+    // visibility guard here: the click has to wait out the section's opening animation,
+    // where a guard would instead skip the toggle for being hidden mid-flight.
+    const collapsed = page.locator(
+        '[aria-controls^="collapsible-section"][aria-expanded="false"]'
+    );
+    for (let remaining = await collapsed.count(); remaining > 0; remaining--) {
+        await collapsed.first().click();
+    }
+};
+
+/**
+ * Empties the blastn search fields the schema pre-fills on both specificity filters, leaving
+ * blastn to use its own defaults.
+ *
+ * @remarks
+ * The pre-filled `-strand minus`, `-word_size 10` and `-perc_identity 80` search the reference
+ * far more sensitively than blastn would by default. Every remaining oligo then matches
+ * something and is dropped as non-specific, and the run ends on an empty database.
+ */
+export const clearBlastnSearchOverrides = async (page: Page) => {
+    for (const strand of await page
+        .getByLabel("-Strand", { exact: true })
+        .all()) {
+        await strand.selectOption("");
+    }
+    for (const label of ["-Word Size", "-Perc Identity"]) {
+        for (const input of await page
+            .getByLabel(label, { exact: true })
+            .all()) {
+            await input.fill("");
         }
     }
 };
