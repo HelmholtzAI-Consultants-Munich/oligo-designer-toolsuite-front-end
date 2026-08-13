@@ -52,22 +52,24 @@ const Pipelines: React.FC = () => {
                                                 {pipeline.description}
                                             </Card.Text>
                                         </Vertical.Item>
-                                        {/* render as a real link when usable, so it
-                                            supports new-tab and middle click */}
-                                        <Button
-                                            variant="outline-odt-blue"
-                                            className="w-100"
-                                            {...(pipeline.available &&
-                                            pipeline.link
-                                                ? {
-                                                      as: Link,
-                                                      to: pipeline.link,
-                                                  }
-                                                : { disabled: true })}
-                                        >
-                                            Use Pipeline{" "}
-                                            <ArrowRight className="ms-2" />
-                                        </Button>
+                                        {pipeline.available && pipeline.link ? (
+                                            <Link
+                                                to={pipeline.link}
+                                                className="btn btn-outline-odt-blue w-100"
+                                            >
+                                                Use Pipeline{" "}
+                                                <ArrowRight className="ms-2" />
+                                            </Link>
+                                        ) : (
+                                            <Button
+                                                variant="outline-odt-blue"
+                                                className="w-100"
+                                                disabled
+                                            >
+                                                Use Pipeline{" "}
+                                                <ArrowRight className="ms-2" />
+                                            </Button>
+                                        )}
                                     </Card.Body>
                                 </Card>
                             </Col>
