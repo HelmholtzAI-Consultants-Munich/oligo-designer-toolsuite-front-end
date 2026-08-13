@@ -1,6 +1,5 @@
 """Overwrites of the Pydantic Models from ODT are done here."""
 
-import copy
 import json
 from typing import Annotated, Literal
 
@@ -42,34 +41,9 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeSpecificityFilter as TargetProbeSpecificityFilterBase,
 )
-from pydantic import AliasChoices, BaseModel, Field, create_model
-from pydantic.fields import FieldInfo
+from pydantic import AliasChoices, BaseModel, Field
 
-
-def _with_quick_settings(model: type[BaseModel], *field_names: str) -> type[BaseModel]:
-    """Marks fields so the front-end pins them to the Quick Settings panel above the form's tabs,
-    and renders them only there.
-
-    Copies each inherited `FieldInfo` instead of redeclaring the field, because redeclaring
-    replaces it and would drop the description, default and constraints ODT set on it.
-
-    Arguments:
-        model {type[BaseModel]} -- model holding the fields
-        field_names {str} -- names of the fields to mark
-
-    Returns:
-        {type[BaseModel]} -- subclass of `model` whose named fields carry `x-quick-setting`
-    """
-    overrides: dict[str, tuple[type, FieldInfo]] = {}
-    for name in field_names:
-        field = copy.deepcopy(model.model_fields[name])
-        field.json_schema_extra = {
-            **(field.json_schema_extra or {}),
-            "x-quick-setting": True,
-        }
-        overrides[name] = (field.annotation, field)
-    return create_model(model.__name__, __base__=model, **overrides)
-
+from backend.worker.utils import with_collapsed, with_quick_settings
 
 ### Genomic Region Generator Models ###
 
@@ -160,9 +134,8 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
-class TargetProbeOligoGeneration(
-    _with_quick_settings(TargetProbeOligoGenerationBase, "probe_length_min", "probe_length_max")
-):
+@with_quick_settings("probe_length_min", "probe_length_max")
+class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
     """Overwrites the default TargetProbeOligoGenerationBase to inject our custom field for
     `file_region_ids`, because we expect a gene list and not a file path."""
 
@@ -222,15 +195,13 @@ class BlastnSearchParameters(BlastnSearchParametersBase):
     )
 
 
+@with_collapsed("search_parameters")
 class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnabledBase):
     """Overwrites `CrossHybridizationBlastnFilterEnabledBase` to insert our `BlastnSearchParameters`."""
 
     search_parameters: Annotated[  # type: ignore
         BlastnSearchParameters,
-        Field(
-            description="Parameters for BLASTN searches used in cross-hybridization filtering.",
-            json_schema_extra={"x-collapsed": True},
-        ),
+        Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
     ]
 
 
@@ -241,18 +212,15 @@ CrossHybridizationBlastnFilterConfig = Annotated[
 ]
 
 
+@with_collapsed("search_parameters")
 class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnabledBase):
     """Overwrites `OligoSeqSpecificityBlastnFilterEnabledBase` to use our own `BlastnSearchParameters` and
     our `GenomicInput` instead of the default file path type.
     """
 
-    search_parameters: Annotated[  # type: ignore
-        BlastnSearchParameters,
-        Field(
-            default=BlastnSearchParameters(perc_identity=80, strand="minus", word_size=10),
-            json_schema_extra={"x-collapsed": True},
-        ),
-    ]
+    search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
+        perc_identity=80, strand="minus", word_size=10
+    )
     files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
 
 
@@ -277,9 +245,9 @@ class TargetProbeSpecificityFilter(TargetProbeSpecificityFilterBase):
     variant_filter: OligoSeqVariantFilterConfig  # type: ignore
 
 
-IndependentSetSelection = _with_quick_settings(
-    IndependentSetSelectionBase, "n_sets", "set_size_min", "set_size_opt"
-)
+@with_quick_settings("n_sets", "set_size_min", "set_size_opt")
+class IndependentSetSelection(IndependentSetSelectionBase):
+    """Overwrites `IndependentSetSelectionBase` only to mark its set sizes as quick settings."""
 
 
 class TargetProbeProbeSetSelection(TargetProbeProbeSetSelectionBase):
