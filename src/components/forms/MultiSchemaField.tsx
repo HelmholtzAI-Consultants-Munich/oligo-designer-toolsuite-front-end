@@ -54,11 +54,17 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
             description: schema.description, // preserve description from parent schema
         };
 
-        const isEnum = mergedSchema.enum !== undefined;
+        // a checkbox holds two states, but a nullable boolean has three: unchecking one would
+        // send `false`, which the pipeline does not read as "unset", with no way back to it
+        const isNullableBoolean = mergedSchema.type === "boolean";
+
+        // a select and an enum name themselves in the row's label, the other widgets do not
+        const hasOwnLabel =
+            mergedSchema.enum !== undefined || isNullableBoolean;
 
         return (
             <div className="field-row">
-                {isEnum && (
+                {hasOwnLabel && (
                     <div className="field-row-label">
                         <Form.Label htmlFor={fieldPathId.$id} className="mb-0">
                             {schema.title}
@@ -76,7 +82,12 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
                             )
                         }
                         schema={mergedSchema}
-                        uiSchema={uiSchema}
+                        uiSchema={
+                            // a select adds an empty option, which maps back to null above
+                            isNullableBoolean
+                                ? { ...uiSchema, "ui:widget": "select" }
+                                : uiSchema
+                        }
                     />
                 </div>
             </div>
