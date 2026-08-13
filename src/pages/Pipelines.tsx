@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Breadcrumb, Button, Card, Col, Image, Row } from "react-bootstrap";
 import { ArrowRight, Book } from "react-bootstrap-icons";
 import Page from "../components/ui/Page";
@@ -6,19 +6,11 @@ import { Horizontal, Vertical } from "../components/ui/Alignment";
 import { pipelineOverview } from "../pipelineConfig/overview";
 
 const Pipelines: React.FC = () => {
-    const navigate = useNavigate();
-
     return (
         <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
             <Vertical gap="lg" align="stretch">
                 <Breadcrumb className="mb-0">
-                    <Breadcrumb.Item
-                        href="/"
-                        onClick={(event) => {
-                            event.preventDefault();
-                            navigate("/");
-                        }}
-                    >
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
                         Home
                     </Breadcrumb.Item>
                     <Breadcrumb.Item active>Pipelines</Breadcrumb.Item>
@@ -60,14 +52,18 @@ const Pipelines: React.FC = () => {
                                                 {pipeline.description}
                                             </Card.Text>
                                         </Vertical.Item>
+                                        {/* render as a real link when usable, so it
+                                            supports new-tab and middle click */}
                                         <Button
                                             variant="outline-odt-blue"
                                             className="w-100"
-                                            disabled={!pipeline.available}
-                                            onClick={() =>
-                                                pipeline.link &&
-                                                navigate(pipeline.link)
-                                            }
+                                            {...(pipeline.available &&
+                                            pipeline.link
+                                                ? {
+                                                      as: Link,
+                                                      to: pipeline.link,
+                                                  }
+                                                : { disabled: true })}
                                         >
                                             Use Pipeline{" "}
                                             <ArrowRight className="ms-2" />
