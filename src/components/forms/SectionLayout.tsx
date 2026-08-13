@@ -32,12 +32,7 @@ const SectionLayout = memo(function SectionLayout(
                 </span>
             </Accordion.Header>
             <Accordion.Body>
-                <CompactGrid
-                    schema={props.schema}
-                    properties={props.properties}
-                    uiSchema={props.uiSchema}
-                    className="row-gap-2"
-                />
+                <CompactGrid {...props} className="row-gap-2" />
             </Accordion.Body>
         </Accordion.Item>
     );

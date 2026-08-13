@@ -6,6 +6,10 @@ import CollapsibleSectionLayout from "../components/forms/CollapsibleSectionLayo
 import EnabledToggleObjectTemplate from "../components/forms/EnabledToggleObjectTemplate";
 import CompactFieldGroupTemplate from "../components/forms/CompactFieldGroupTemplate";
 import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
+import {
+    hasSchemaFlag,
+    isEnabledDiscriminated,
+} from "../components/forms/utils";
 
 /**
  * Determines whether a field's schema is a "scalar" (not an object or array), following
@@ -91,12 +95,7 @@ const uiSchemaFromJsonSchemaRecursive = (
 
         // Fields discriminated by "enabled" (e.g. optional filters) render as a single
         // checkbox-and-name row instead of a schema-picker dropdown plus a separate title.
-        const discriminator = (
-            localSchema as RJSFSchema & {
-                discriminator?: { propertyName?: string };
-            }
-        ).discriminator;
-        if (discriminator?.propertyName === "enabled") {
+        if (isEnabledDiscriminated(localSchema)) {
             uiSchema["ui:ObjectFieldTemplate"] = EnabledToggleObjectTemplate;
             uiSchema["ui:title"] = localSchema.title;
         }
@@ -149,25 +148,16 @@ const uiSchemaFromJsonSchemaRecursive = (
                     propertySchema,
                     level + 1
                 );
-                // `x-collapsed` is a generic backend-set flag (json_schema_extra on a Field)
-                // read here because it sits as a sibling of `$ref`, which gets resolved away
-                // by the recursive call above. Any field carrying it renders collapsed by
-                // default, regardless of which pipeline or model sets it.
-                if (
-                    (propertySchema as RJSFSchema & Record<string, unknown>)[
-                        "x-collapsed"
-                    ] === true
-                ) {
+                // The backend's `x-` flags are read here, not in the recursive call, because
+                // they sit as siblings of `$ref`, which that call resolves away. Any field
+                // carrying one is treated the same, whichever pipeline or model set it.
+                if (hasSchemaFlag(propertySchema, "x-collapsed")) {
+                    // renders collapsed by default
                     fieldUiSchema["ui:ObjectFieldTemplate"] =
                         CollapsibleSectionLayout;
                 }
-                // `x-quick-setting` is read here for the same reason, and pins the field to the
-                // Quick Settings panel above the tabs instead of its own section
-                if (
-                    (propertySchema as RJSFSchema & Record<string, unknown>)[
-                        "x-quick-setting"
-                    ] === true
-                ) {
+                if (hasSchemaFlag(propertySchema, "x-quick-setting")) {
+                    // pinned to the Quick Settings panel above the tabs, not its own section
                     fieldUiSchema["ui:options"] = {
                         ...fieldUiSchema["ui:options"],
                         quickSetting: true,

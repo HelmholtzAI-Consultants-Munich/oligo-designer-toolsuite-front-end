@@ -337,11 +337,14 @@ def _strip_local_descriptions(schema: dict) -> dict:
         {dict} -- the same schema without this module's docstrings
     """
     local = {
-        name for name, value in globals().items() if isinstance(value, type) and issubclass(value, BaseModel)
+        value.__name__
+        for value in globals().values()
+        # the module has to be checked: an ODT model imported here is in `globals()` too, and
+        # dropping its description would take a user-facing one with it
+        if isinstance(value, type) and issubclass(value, BaseModel) and value.__module__ == __name__
     }
-    for name, definition in schema.get("$defs", {}).items():
-        if name in local:
-            definition.pop("description", None)
+    for name in schema.get("$defs", {}).keys() & local:
+        schema["$defs"][name].pop("description", None)
     schema.pop("description", None)
     return schema
 

@@ -41,12 +41,7 @@ const CollapsibleSectionLayout = memo(function CollapsibleSectionLayout(
             </div>
             <Collapse in={open}>
                 <div id={controlsId}>
-                    <CompactGrid
-                        schema={props.schema}
-                        properties={props.properties}
-                        uiSchema={props.uiSchema}
-                        className="row-gap-2"
-                    />
+                    <CompactGrid {...props} className="row-gap-2" />
                 </div>
             </Collapse>
         </div>

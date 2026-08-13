@@ -500,6 +500,17 @@ $form-control-height: calc(
         #{$input-border-width} * 2
 );
 
+// the inset shared by every box on the form
+$form-box-padding: 0.7rem 0.9rem;
+
+// a rounded card standing on its own: a tab's sections and the quick settings panel
+@mixin form-surface {
+    margin-bottom: 0.6rem;
+    border: 1px solid $form-border-color;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow-sm;
+}
+
 form.rjsf {
     display: flex;
     flex-direction: column;
@@ -538,7 +549,7 @@ form.rjsf {
         grid-column: 1 / -1;
         border: 1px solid $form-border-color;
         border-radius: $border-radius-sm;
-        padding: 0.7rem 0.9rem;
+        padding: $form-box-padding;
         margin-bottom: 0.5rem;
     }
 
@@ -634,29 +645,36 @@ form.rjsf {
     .quick-settings {
         /* the parameters the backend flagged as quick settings, lifted out of their sections
         and pinned above the tabs */
-        border: 1px solid $form-border-color;
-        border-radius: $border-radius;
-        box-shadow: $box-shadow-sm;
-        padding: 0.7rem 0.9rem;
-        margin-bottom: 0.6rem;
+        @include form-surface;
+        padding: $form-box-padding;
 
         &:has(> .quick-settings-fields:empty) {
             /* nothing was flagged, so there is no panel to show */
             display: none;
         }
 
+        > .super-label {
+            /* the panel heads the form like a section does, so it is sized like one */
+            font-size: $font-size-base;
+        }
+
         .quick-settings-fields {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: flex-end;
+            /* a grid, so every box is the same width however long its name is - and, unlike a
+            flex row, a wrapped row keeps those same widths instead of stretching to fill.
+            `auto-fit` collapses the spare tracks so the fields still span the panel. */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+            align-items: end;
             gap: 0.5rem 1.25rem;
             margin-top: 0.35rem;
 
             > .rjsf-field {
-                /* a fixed track, so the boxes line up in a row instead of `flex-grow: 1`
-                stretching each one across the panel */
-                flex: 0 1 11rem;
                 @include stacked-field;
+            }
+
+            input.form-control {
+                /* fill the box rather than stopping at the shared number-input cap */
+                max-width: none;
             }
         }
     }
@@ -721,10 +739,7 @@ form.rjsf {
     .form-section {
         /* one accordion item per section, spaced apart as its own rounded card
         instead of Bootstrap's single stacked group */
-        margin-bottom: 0.6rem;
-        border: 1px solid $form-border-color;
-        border-radius: $border-radius;
-        box-shadow: $box-shadow-sm;
+        @include form-surface;
 
         .accordion-button {
             font-weight: 600;
@@ -749,7 +764,7 @@ form.rjsf {
         border-radius: $border-radius-sm;
 
         .card-body {
-            padding: 0.7rem 0.9rem;
+            padding: $form-box-padding;
         }
     }
 }

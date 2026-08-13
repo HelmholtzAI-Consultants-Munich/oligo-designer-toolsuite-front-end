@@ -18,6 +18,38 @@ export const excludeHiddenTabs = (tabs: string[]) =>
 export const sectionKey = (tabId: string, name: string): string =>
     `${tabId}_${name}`;
 
+/** Narrows away the `true`/`false` form a property schema can take, which carries no keywords. */
+const asSchema = (
+    schema: RJSFSchema | boolean | undefined
+): (RJSFSchema & Record<string, unknown>) | undefined =>
+    schema && typeof schema !== "boolean" ? schema : undefined;
+
+/**
+ * Whether a schema carries one of the backend's `x-` flags, set on a Pydantic `Field` through
+ * `json_schema_extra` and unknown to RJSF's own types.
+ *
+ * @param schema - the field's JSON Schema, unresolved `$ref`s included
+ * @param flag - the flag's keyword, e.g. `x-collapsed`
+ * @returns A boolean that is True if the flag is set
+ */
+export const hasSchemaFlag = (
+    schema: RJSFSchema | boolean | undefined,
+    flag: string
+): boolean => asSchema(schema)?.[flag] === true;
+
+/**
+ * Whether a schema's options are discriminated by an `enabled` boolean, i.e. an optional
+ * filter, which renders as a checkbox rather than a schema picker.
+ *
+ * @param schema - the field's JSON Schema
+ * @returns A boolean that is True if the discriminator is `enabled`
+ */
+export const isEnabledDiscriminated = (
+    schema: RJSFSchema | boolean | undefined
+): boolean =>
+    (asSchema(schema)?.discriminator as { propertyName?: string } | undefined)
+        ?.propertyName === "enabled";
+
 /**
  * Whether a field lays out its own children (object, list, oneOf or custom field) and so
  * needs a whole grid row rather than one compact column.
@@ -29,14 +61,16 @@ export const sectionKey = (tabId: string, name: string): string =>
 export const spansFullRow = (
     schema: RJSFSchema | boolean | undefined,
     uiSchema: UiSchema | undefined
-): boolean =>
-    !!uiSchema?.["ui:field"] ||
-    (!!schema &&
-        typeof schema !== "boolean" &&
-        (!!schema.$ref ||
-            !!schema.oneOf ||
-            schema.type === "object" ||
-            schema.type === "array"));
+): boolean => {
+    const field = asSchema(schema);
+    return (
+        !!uiSchema?.["ui:field"] ||
+        !!field?.$ref ||
+        !!field?.oneOf ||
+        field?.type === "object" ||
+        field?.type === "array"
+    );
+};
 
 /**
  * Whether the backend flagged a field as a quick setting, pinning it to the panel above the
@@ -55,9 +89,7 @@ export const isQuickSetting = (
     uiSchema: UiSchema | undefined
 ): boolean =>
     getUiOptions(uiSchema).quickSetting === true ||
-    (!!schema &&
-        typeof schema !== "boolean" &&
-        (schema as Record<string, unknown>)["x-quick-setting"] === true);
+    hasSchemaFlag(schema, "x-quick-setting");
 
 /**
  * Checks if an error message should be removed from the output. These errors are caused by

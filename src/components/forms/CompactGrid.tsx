@@ -30,18 +30,20 @@ const CompactGrid = memo(function CompactGrid({
             className={`d-grid column-gap-3 ${className}`}
             style={{ gridTemplateColumns: GRID_COLUMNS }}
         >
-            {properties.map(({ name, content }) =>
+            {properties.map(({ name, content }) => {
+                const fieldSchema = schema.properties?.[name];
+                const fieldUiSchema = uiSchema?.[name];
                 // a quick setting still renders here - that is what creates its portal - but
                 // without a grid cell, which would otherwise be left empty
-                spansFullRow(schema.properties?.[name], uiSchema?.[name]) ||
-                isQuickSetting(schema.properties?.[name], uiSchema?.[name]) ? (
+                return spansFullRow(fieldSchema, fieldUiSchema) ||
+                    isQuickSetting(fieldSchema, fieldUiSchema) ? (
                     <Fragment key={name}>{content}</Fragment>
                 ) : (
                     <div key={name} className="compact-field-item">
                         {content}
                     </div>
-                )
-            )}
+                );
+            })}
         </div>
     );
 });

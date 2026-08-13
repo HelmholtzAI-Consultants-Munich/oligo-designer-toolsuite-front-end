@@ -3,6 +3,11 @@ import { memo } from "react";
 import CompactGrid from "./CompactGrid";
 import GroupHeading from "./GroupHeading";
 
+type Props = ObjectFieldTemplateProps & {
+    /** the grid's row gap, the one thing a group box varies */
+    className?: string;
+};
+
 /**
  * This ObjectFieldTemplate is based on the react-bootstrap theme's template.
  * It draws an object's fields as a named box laid out on the form's compact grid.
@@ -10,9 +15,10 @@ import GroupHeading from "./GroupHeading";
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that is used to overwrite the default ObjectFieldTemplate
  */
-const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
-    props: ObjectFieldTemplateProps
-) {
+const ObjectFieldTemplate = memo(function ObjectFieldTemplate({
+    className = "row-gap-3",
+    ...props
+}: Props) {
     return (
         <div className="field-group-box">
             <GroupHeading
@@ -20,12 +26,7 @@ const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
                 title={props.title}
                 description={props.description}
             />
-            <CompactGrid
-                schema={props.schema}
-                properties={props.properties}
-                uiSchema={props.uiSchema}
-                className="row-gap-3"
-            />
+            <CompactGrid {...props} className={className} />
         </div>
     );
 });

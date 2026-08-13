@@ -8,6 +8,7 @@ import { ToolTip } from "../ui/Tooltip";
 import { Card, Form } from "react-bootstrap";
 import { memo } from "react";
 import GroupHeading from "./GroupHeading";
+import { isEnabledDiscriminated } from "./utils";
 
 const {
     fields: { AnyOfField, OneOfField },
@@ -34,13 +35,14 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
         (option) => typeof option === "object" && option.type === "null"
     ) as RJSFSchema | undefined;
 
-    if (schema.anyOf?.length === 2 && constSchema && nullSchema) {
-        // turn const into enum for better handling of optional fields
-        constSchema.enum = [constSchema.const!];
-        constSchema.const = undefined;
-    }
-
+    // a two-option anyOf against null is how our schema spells an optional field
     if (schema.anyOf?.length === 2 && nullSchema) {
+        if (constSchema) {
+            // turn const into enum for better handling of optional fields
+            constSchema.enum = [constSchema.const!];
+            constSchema.const = undefined;
+        }
+
         // return just the non-null option and treat it as optional
         const nonNullSchema = schema.anyOf.find(
             (option) => typeof option === "object" && option.type !== "null"
@@ -67,13 +69,12 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
                 <div className="field-row-control">
                     <SchemaField
                         {...props}
-                        onChange={(value) => {
-                            if (value === "") {
-                                props.onChange(null, fieldPathId.path);
-                            } else {
-                                props.onChange(value, fieldPathId.path);
-                            }
-                        }}
+                        onChange={(value) =>
+                            props.onChange(
+                                value === "" ? null : value,
+                                fieldPathId.path
+                            )
+                        }
                         schema={mergedSchema}
                         uiSchema={uiSchema}
                     />
@@ -97,7 +98,7 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
 ) {
     const { schema } = props;
 
-    if (schema?.discriminator?.propertyName === "enabled") {
+    if (isEnabledDiscriminated(schema)) {
         // This is a special case for handling "enabled"/"disabled" options in a more user-friendly way
         return (
             <div className="multi-schema-toggle">
@@ -121,15 +122,9 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     props: MultiSchemaFieldTemplateProps
 ) {
     const { selector, optionSchemaField, schema } = props;
-    // when discriminated by "enabled", the card is rendered by `EnabledToggleObjectTemplate`
-    const isEnabledToggle =
-        (
-            schema as RJSFSchema & {
-                discriminator?: { propertyName?: string };
-            }
-        ).discriminator?.propertyName === "enabled";
 
-    if (isEnabledToggle) {
+    // when discriminated by "enabled", the card is rendered by `EnabledToggleObjectTemplate`
+    if (isEnabledDiscriminated(schema)) {
         return (
             <>
                 <div className="multi-schema-selector">{selector}</div>
@@ -139,24 +134,22 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     }
 
     return (
-        <>
-            <Card
-                style={{
-                    marginBottom: "1rem",
-                    backgroundColor: "var(--bs-primary-bg-subtle)",
-                }}
-            >
-                <Card.Body>
-                    <GroupHeading
-                        id={schema.$id!}
-                        title={schema.title}
-                        description={schema.description}
-                    />
-                    <div className="multi-schema-selector">{selector}</div>
-                    {optionSchemaField}
-                </Card.Body>
-            </Card>
-        </>
+        <Card
+            style={{
+                marginBottom: "1rem",
+                backgroundColor: "var(--bs-primary-bg-subtle)",
+            }}
+        >
+            <Card.Body>
+                <GroupHeading
+                    id={schema.$id!}
+                    title={schema.title}
+                    description={schema.description}
+                />
+                <div className="multi-schema-selector">{selector}</div>
+                {optionSchemaField}
+            </Card.Body>
+        </Card>
     );
 });
 

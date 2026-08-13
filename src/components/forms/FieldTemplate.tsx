@@ -41,16 +41,17 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         return <div className="hidden">{children}</div>;
     }
 
-    const isCustomField = !!uiSchema?.["ui:field"];
-    const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
     // a quick setting keeps its place in the React tree, so its value, id and validation are
     // untouched, and only its markup moves into the panel above the tabs
     const quickSettingTarget =
         isQuickSetting(schema, uiSchema) && quickSettingsContainer;
 
-    const filteredErrors = rawErrors?.filter((error) =>
-        filterUninformativeErrors(error)
-    );
+    // conditions copied from rjsf core's SchemaField.tsx
+    const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
+    const showErrors =
+        !uiSchema?.["ui:field"] &&
+        !hideError &&
+        !(isXxxOfField && !schemaUtils.isSelect(schema));
 
     const field = (
         <div
@@ -63,12 +64,9 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
             className={`rjsf-field rjsf-field-${schema.type}`}
         >
             {children}
-            {isCustomField ||
-            /* conditions copied from rjsf core's SchemaField.tsx */
-            hideError ||
-            (isXxxOfField && !schemaUtils.isSelect(schema)) ? undefined : (
+            {showErrors && (
                 <FieldErrorTemplate
-                    errors={filteredErrors}
+                    errors={rawErrors?.filter(filterUninformativeErrors)}
                     fieldPathId={fieldPathId}
                     schema={schema}
                     uiSchema={uiSchema}
