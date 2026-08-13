@@ -39,15 +39,20 @@ from pydantic import AliasChoices, BaseModel, Field
 
 from backend.worker.utils import mark_schema_flags, strip_local_descriptions
 
-# Fields the front-end renders specially. "x-quick-setting" pins a field to the Quick Settings
-# panel above the form's tabs, rendering it only there; "x-collapsed" starts a field's section
-# collapsed.
+# Fields the front-end renders specially:
+#   "x-quick-setting" -- on a scalar field, pinning it to the Quick Settings panel above the
+#                        form's tabs and rendering it only there, not in its own section
+#   "x-collapsed"     -- on a field holding a model, whose section then starts collapsed
 #
-# Set here, on the generated schema, rather than with Field(json_schema_extra=...) on the
-# fields themselves: e.g. IndependentSetSelection.n_sets is declared by ODT with default=3. To
-# add json_schema_extra to it we would redeclare it in our own subclass - but a Pydantic v2
-# redeclaration replaces that field's whole FieldInfo, so the default, description and any
-# constraints would be lost unless copied over by hand for every flagged field.
+# Whoever writes the model declares the flag on the field itself, where it sits next to what
+# it describes:
+#     n_sets: int = Field(default=3, json_schema_extra={"x-quick-setting": True})
+#     search_parameters: BlastnSearchParameters = Field(json_schema_extra={"x-collapsed": True})
+#
+# The table below is only for fields ODT owns, which we cannot annotate that way: flagging one
+# means redeclaring it in a subclass here, and a Pydantic v2 redeclaration replaces that
+# field's whole FieldInfo, so `n_sets` would lose the default, description and constraints ODT
+# gave it unless each were copied over by hand. Stamping the generated schema leaves them be.
 FRONT_END_FLAGS: dict[str, dict[str, tuple[str, ...]]] = {
     "x-quick-setting": {
         "TargetProbeOligoGeneration": ("probe_length_min", "probe_length_max"),
