@@ -87,30 +87,17 @@ body.modal-open {
     h6 {
         margin-bottom: 0;
     }
-}
-@include media-breakpoint-up(lg) {
-    #app-layout {
+
+    @include media-breakpoint-up(lg) {
         flex-direction: row;
-    }
-}
-
-input[type="number"] {
-    /* hide the increment/decrement spinner buttons */
-    -moz-appearance: textfield;
-
-    &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
     }
 }
 
 /* Container */
 .container {
     padding: 2rem;
-}
-@include media-breakpoint-up(md) {
-    .container {
+
+    @include media-breakpoint-up(md) {
         padding: 2rem 3rem;
     }
 }
@@ -118,9 +105,8 @@ input[type="number"] {
 /* Hero */
 .hero h1 {
     font-size: 3rem;
-}
-@include media-breakpoint-up(md) {
-    .hero h1 {
+
+    @include media-breakpoint-up(md) {
         font-size: 4rem;
     }
 }
@@ -167,9 +153,8 @@ input[type="number"] {
         width: 3rem;
         margin: 0 -5%;
     }
-}
-@include media-breakpoint-up(lg) {
-    .navbar-main {
+
+    @include media-breakpoint-up(lg) {
         height: 100vh;
         padding: 2rem;
         width: 25rem;
@@ -177,6 +162,7 @@ input[type="number"] {
         align-items: start;
         flex-shrink: 0;
         border-right: 1px solid $border-color;
+
         .navbar-brand {
             font-size: 1.6rem;
             font-weight: 500;
@@ -272,19 +258,16 @@ input[type="number"] {
             border-radius: $border-radius-lg;
         }
     }
-}
-@include media-breakpoint-up(xl) {
-    .nav-header {
+
+    @include media-breakpoint-up(xl) {
+        /* a row of pills once there is room for one */
         flex-direction: row;
-        border-radius: 9999px;
         width: max-content;
 
-        &::after {
-            border-radius: 9999px;
-        }
-
+        &,
+        &::after,
         .nav-link.active {
-            border-radius: 9999px;
+            border-radius: $border-radius-pill;
         }
     }
 }
@@ -327,20 +310,9 @@ input[type="number"] {
     .sticky-header-spacer {
         height: 2rem;
     }
-}
 
-.sticky-header-title {
-    background-color: white;
-    z-index: 1001;
-
-    & > .container {
-        padding-bottom: 0rem;
-    }
-}
-
-/* Progressive enhancement: on smaller devices the header content wraps, which would make a sticky header cover too much of the screen */
-@include media-breakpoint-up(xxl) {
-    .header {
+    /* Progressive enhancement: on smaller devices the header content wraps, which would make a sticky header cover too much of the screen */
+    @include media-breakpoint-up(xxl) {
         &.sticky-header {
             position: sticky;
             top: -2rem;
@@ -359,6 +331,15 @@ input[type="number"] {
             top: -1rem;
             margin-top: -2rem;
         }
+    }
+}
+
+.sticky-header-title {
+    background-color: white;
+    z-index: 1001;
+
+    & > .container {
+        padding-bottom: 0rem;
     }
 }
 
@@ -584,6 +565,18 @@ form.rjsf {
         }
     }
 
+    input[type="number"] {
+        /* hide the increment/decrement spinner buttons: this form is a dense grid of
+        small numbers, where they add noise and are easy to hit by accident */
+        -moz-appearance: textfield;
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    }
+
     .field-row-control {
         flex: 1 1 auto;
         min-width: 0;
@@ -742,7 +735,6 @@ form.rjsf {
         @include form-surface;
 
         .accordion-button {
-            font-weight: 600;
             border-radius: $border-radius;
 
             &:not(.collapsed) {
