@@ -4,37 +4,58 @@ import { InfoCircle } from "react-bootstrap-icons";
 import type { OverlayTriggerType } from "react-bootstrap/esm/OverlayTrigger";
 
 interface ToolTipProps {
+    /** id of the field being described, used to derive the popover's and the description's own ids */
     id: string;
     tip: string | undefined;
 }
 
+/**
+ * Renders an info icon that reveals `tip` on hover or focus.
+ *
+ * @remarks
+ * The tip is also written to a visually hidden element at `<id>__description`, the id RJSF
+ * puts in every field's `aria-describedby`. Without it a screen reader resolves nothing,
+ * since the popover only exists while open.
+ *
+ * @param id - id of the described field
+ * @param tip - the description to show, or nothing to render no icon at all
+ * @returns A React Component showing a description on hover, focus, or to a screen reader
+ */
 export const ToolTip: React.FC<ToolTipProps> = ({ id, tip }) => {
     const triggerArray = useMemo<OverlayTriggerType[]>(
         () => ["hover", "focus"],
         []
     );
 
+    if (!tip) {
+        return null;
+    }
+
     return (
-        tip &&
-        tip != "" && (
+        <>
+            <span id={`${id}__description`} className="visually-hidden">
+                {tip}
+            </span>
             <OverlayTrigger
                 trigger={triggerArray}
                 placement="top"
                 overlay={
-                    <Popover id={id}>
+                    <Popover id={`${id}__tooltip`}>
                         <Popover.Body>{tip}</Popover.Body>
                     </Popover>
                 }
             >
-                <InfoCircle
-                    style={{
-                        fontSize: "1rem",
-                        cursor: "pointer",
-                        color: "var(--bs-text-muted)",
-                        marginLeft: "10px",
-                    }}
-                />
+                {/* a button rather than the bare icon, so that the tip is reachable by keyboard
+                    and announced: an svg is neither focusable nor nameable, which also left the
+                    "focus" trigger above with nothing to fire on */}
+                <button
+                    type="button"
+                    className="tooltip-trigger"
+                    aria-label="More information"
+                >
+                    <InfoCircle aria-hidden="true" />
+                </button>
             </OverlayTrigger>
-        )
+        </>
     );
 };

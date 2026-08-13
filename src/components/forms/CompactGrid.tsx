@@ -2,9 +2,6 @@ import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
 import { isQuickSetting, spansFullRow } from "./utils";
 
-/** Compact fields always sit in the same four columns, so their boxes line up group to group. */
-const GRID_COLUMNS = "repeat(4, 1fr)";
-
 type CompactGridProps = Pick<
     ObjectFieldTemplateProps,
     "schema" | "properties" | "uiSchema"
@@ -30,10 +27,8 @@ const CompactGrid = memo(function CompactGrid({
     className = "",
 }: CompactGridProps) {
     return (
-        <div
-            className={`d-grid column-gap-3 ${className}`}
-            style={{ gridTemplateColumns: GRID_COLUMNS }}
-        >
+        // `.compact-grid` sets the columns every group shares, `className` only its row gap
+        <div className={`compact-grid d-grid column-gap-3 ${className}`}>
             {properties.map(({ name, content }) => {
                 const fieldSchema = schema.properties?.[name];
                 const fieldUiSchema = uiSchema?.[name];

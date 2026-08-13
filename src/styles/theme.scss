@@ -463,6 +463,19 @@ a,
     }
 }
 
+/* Tooltip trigger: a button, for keyboard reach, but drawn as the bare icon it replaced */
+.tooltip-trigger {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    border: none;
+    background: none;
+    line-height: 1;
+    font-size: 1rem;
+    color: var(--#{$prefix}text-muted);
+    margin-left: 10px;
+}
+
 /* Toasts */
 .toast {
     overflow: hidden;
@@ -558,11 +571,18 @@ form.rjsf {
         flex-shrink: 0;
         overflow-wrap: anywhere;
 
-        > svg {
+        > .tooltip-trigger {
             /* the tooltip's own spacing is tuned for section headings */
             margin-left: 0.4rem !important;
             flex-shrink: 0;
         }
+    }
+
+    .compact-grid {
+        /* the same four columns at every width, so a box lines up with the one in the group
+        above. `auto-fit` would instead give each group as many columns as its own field
+        count allows, and the boxes would stop aligning group to group */
+        grid-template-columns: repeat(4, 1fr);
     }
 
     input[type="number"] {
