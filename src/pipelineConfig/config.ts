@@ -1,9 +1,9 @@
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import type { RJSFFormData } from "../components/componentTypes";
-import scrinshotImage from "../images/scrinshot.jpg";
-import merfishImage from "../images/merfish.jpg";
-import seqfishImage from "../images/seqfish.jpg";
-import oligoseqImage from "../images/oligoseq.jpg";
+import scrinshotImage from "../images/rna_1_pink_purple.png";
+import merfishImage from "../images/rna_2_cyan_yellow.png";
+import seqfishImage from "../images/rna_3_orange_blue.png";
+import oligoseqImage from "../images/rna_4_blue_orange.png";
 
 import merfishSchemaRaw from "@schemas/merfish.schema.json";
 import scrinshotSchemaRaw from "@schemas/scrinshot.schema.json";

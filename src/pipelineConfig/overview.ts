@@ -1,6 +1,6 @@
 import { PIPELINE_CONFIG } from "./config";
-import cycleHcrImage from "../images/cyclehr.jpg";
-import hcrImage from "../images/hcr.jpg";
+import cycleHcrImage from "../images/rna_5_purple_gold.png";
+import hcrImage from "../images/rna_6_green_blue.png";
 
 export interface PipelineOverviewItem {
     title: string;
