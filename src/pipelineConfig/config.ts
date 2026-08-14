@@ -12,7 +12,6 @@ import seqfishSchemaRaw from "@schemas/seqfish.schema.json";
 import {
     merfishUiSchema,
     scrinshotUiSchema,
-    seqfishUiSchema,
     uiSchemaFromJsonSchema,
 } from "./uiSchemas";
 
@@ -90,14 +89,14 @@ export const PIPELINE_CONFIG: PipelineConfig = {
     seqfish: {
         name: "seqfish",
         schema: seqfishSchemaRaw as RJSFSchema,
-        uiSchema: seqfishUiSchema,
+        uiSchema: uiSchemaFromJsonSchema(seqfishSchemaRaw as RJSFSchema),
         displayName: "SeqFish+",
         description:
             "Sequential imaging for probing complex spatial transcriptomes.",
         detailedLink:
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/seqfishplus_probe_designer.html",
         img: seqfishImage,
-        disabled: true,
+        disabled: false,
         link: "/pipelines/seqfish",
     },
     oligoseq: {

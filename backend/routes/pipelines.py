@@ -46,14 +46,14 @@ from backend.worker.task_index import Callbacks, Tasks
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
-# Pipelines other than oligoseq are disabled at the moment, since they do not have
-# a pydantic integration
+# Pipelines are enabled once ODT exposes a pydantic model for them. seqfish is currently
+# wired to ODT's model as-is, without the front-end overrides oligoseq has in worker/models.py.
 EXISTING_PIPELINES = frozenset(
     {
         # "scrinshot",
-        # "seqfish",
         # "merfish",
         "oligoseq",
+        "seqfish",
     }
 )
 

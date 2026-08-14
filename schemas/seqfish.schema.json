@@ -1,664 +1,2192 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "odt:seqfish",
-  "description": "1.0.0",
-  "type": "object",
-  "properties": {
-    "n_jobs": {
-      "type": "integer",
-      "default": 4,
-      "title": "N Jobs",
-      "description": "number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime"
-    },
-    "write_intermediate_steps": {
-      "type": "boolean",
-      "default": true,
-      "title": "Write Intermediate Steps",
-      "description": "if true, writes the oligo sequences after each step of the pipeline into a csv file"
-    },
-    "top_n_sets": {
-      "type": "integer",
-      "default": 3,
-      "title": "Top N Sets",
-      "description": "maximum number of sets to report in padlock_probes.yaml and \"padlock_probes_order.yaml\""
-    },
-    "file_regions": {
-      "type": "string",
-      "default": "",
-      "title": "File Regions",
-      "description": "file with a list the genes used to generate the probe sequences, leave empty if all the genes are used"
-    },
-    "files_fasta_target_probe_database": {
-      "title": "Files Fasta Target Probe Database",
-      "$ref": "#/definitions/genomic_input"
-    },
-    "files_fasta_reference_database_target_probe": {
-      "title": "Files Fasta Reference Database Target Probe",
-      "$ref": "#/definitions/genomic_input"
-    },
-    "target_probe_length_min": {
-      "type": "integer",
-      "default": 28,
-      "title": "Target Probe Length Min",
-      "description": "min length of probe"
-    },
-    "target_probe_length_max": {
-      "type": "integer",
-      "default": 28,
-      "title": "Target Probe Length Max",
-      "description": "max length of probe"
-    },
-    "target_probe_isoform_consensus": {
-      "type": "integer",
-      "default": 100,
-      "title": "Target Probe Isoform Consensus",
-      "description": "min isoform consesnsus for probes, i.e. how many transcripts of the total number of transcripts of a gene are covered by the probe, given in %"
-    },
-    "target_probe_GC_content_min": {
-      "type": "integer",
-      "default": 45,
-      "title": "Target Probe Gc Content Min",
-      "description": "minimum GC content of oligos"
-    },
-    "target_probe_GC_content_opt": {
-      "type": "integer",
-      "default": 55,
-      "title": "Target Probe Gc Content Opt",
-      "description": "max and min values are defiend above"
-    },
-    "target_probe_GC_content_max": {
-      "type": "integer",
-      "default": 65,
-      "title": "Target Probe Gc Content Max",
-      "description": "maximum GC content of oligos"
-    },
-    "target_probe_homopolymeric_base_n": {
-      "type": "object",
+  "$defs": {
+    "BaseProbabilities": {
+      "additionalProperties": false,
       "properties": {
-        "A": { "type": "integer", "default": 5, "title": "A" },
-        "T": { "type": "integer", "default": 5, "title": "T" },
-        "C": { "type": "integer", "default": 5, "title": "C" },
-        "G": { "type": "integer", "default": 5, "title": "G" }
-      },
-      "title": "Target Probe Homopolymeric Base N"
-    },
-    "target_probe_GC_weight": {
-      "type": "integer",
-      "default": 1,
-      "title": "Target Probe Gc Weight",
-      "description": "weight of the GC content of the probe in the efficiency score"
-    },
-    "set_size_min": {
-      "type": "integer",
-      "default": 24,
-      "title": "Set Size Min",
-      "description": "minimum size of probe sets (in case there exist no set of the optimal size) -> genes with less oligos will be filtered out and stored in regions_with_insufficient_oligos_for_db_probes"
-    },
-    "set_size_opt": {
-      "type": "integer",
-      "default": 24,
-      "title": "Set Size Opt",
-      "description": "optimal size of probe sets"
-    },
-    "distance_between_target_probes": {
-      "type": "integer",
-      "default": 2,
-      "title": "Distance Between Target Probes",
-      "description": "how much overlap should be allowed between oligos, e.g. if oligos can overlpap x bases choose -x, if oligos can be next to one another choose 0, if oligos should be x bases apart choose x"
-    },
-    "n_sets": {
-      "type": "integer",
-      "default": 100,
-      "title": "N Sets",
-      "description": "maximum number of sets to generate"
-    },
-    "max_graph_size": {
-      "type": "integer",
-      "default": 5000,
-      "title": "Max Graph Size",
-      "description": "maximum number of oligos that are taken into consisderation in the last step (5000 -> ~5GB, 2500 -> ~1GB)"
-    },
-    "n_attempts": {
-      "type": "integer",
-      "default": 100000,
-      "title": "N Attempts",
-      "description": "number of attempts to find the optimal set of oligos"
-    },
-    "heuristic": {
-      "type": "boolean",
-      "default": true,
-      "title": "Heuristic",
-      "description": "apply heuristic pre-search to reduce search space and runtime of oligo set selection"
-    },
-    "heuristic_n_attempts": {
-      "type": "integer",
-      "default": 100,
-      "title": "Heuristic N Attempts",
-      "description": "number of attempts to find the optimal set of oligos for heuristic pre-search"
-    },
-    "target_probe_T_secondary_structure": {
-      "type": "integer",
-      "default": 76,
-      "title": "Target Probe T Secondary Structure",
-      "description": "Temperature at which the free energy is calculated"
-    },
-    "target_probe_secondary_structures_threshold_deltaG": {
-      "type": "integer",
-      "default": 0,
-      "title": "Target Probe Secondary Structures Threshold Deltag",
-      "description": "threshold for the secondary structure free energy -> oligo rejected if it presents a structure with a negative free energy at the defined temperature"
-    },
-    "target_probe_UTR_weight": {
-      "type": "integer",
-      "default": 10,
-      "title": "Target Probe Utr Weight",
-      "description": "weight of the Tm of the probe in the efficiency score"
-    },
-    "files_fasta_reference_database_readout_probe": {
-      "title": "Files Fasta Reference Database Readout Probe",
-      "$ref": "#/definitions/genomic_input"
-    },
-    "readout_probe_base_probabilities": {
-      "type": "object",
-      "properties": {
-        "A": { "type": "number", "default": 0.25, "title": "A" },
-        "T": { "type": "number", "default": 0.25, "title": "T" },
-        "C": { "type": "number", "default": 0.25, "title": "C" },
-        "G": { "type": "number", "default": 0.25, "title": "G" }
-      },
-      "title": "Readout Probe Base Probabilities"
-    },
-    "readout_probe_length": {
-      "type": "integer",
-      "default": 15,
-      "title": "Readout Probe Length",
-      "description": "length of readout probes"
-    },
-    "readout_probe_GC_content_min": {
-      "type": "integer",
-      "default": 40,
-      "title": "Readout Probe Gc Content Min",
-      "description": "minimum GC content of oligos"
-    },
-    "readout_probe_GC_content_max": {
-      "type": "integer",
-      "default": 60,
-      "title": "Readout Probe Gc Content Max",
-      "description": "maximum GC content of oligos"
-    },
-    "readout_probe_homopolymeric_base_n": {
-      "type": "object",
-      "properties": { "G": { "type": "integer", "default": 3, "title": "G" } },
-      "title": "Readout Probe Homopolymeric Base N"
-    },
-    "n_barcode_rounds": {
-      "type": "integer",
-      "default": 4,
-      "title": "N Barcode Rounds",
-      "description": "number of barcoding rounds"
-    },
-    "n_pseudocolors": {
-      "type": "integer",
-      "default": 20,
-      "title": "N Pseudocolors",
-      "description": "number of pseudocolors"
-    },
-    "channels_ids": {
-      "type": "array",
-      "default": ["Alexa488", "Cy3b", "Alexa647"],
-      "items": { "type": "string" },
-      "title": "Channels Ids",
-      "description": "names of fluorescent channels"
-    },
-    "files_fasta_reference_database_primer": {
-      "title": "Files Fasta Reference Database Primer",
-      "$ref": "#/definitions/genomic_input"
-    },
-    "reverse_primer_sequence": {
-      "type": "string",
-      "default": "CCCTATAGTGAGTCGTATTA",
-      "title": "Reverse Primer Sequence",
-      "description": "defaults to reverse complement of 20 nt T7 promoter sequence, change if different sequence desired"
-    },
-    "primer_length": {
-      "type": "integer",
-      "default": 20,
-      "title": "Primer Length",
-      "description": "length of forward primer"
-    },
-    "primer_base_probabilities": {
-      "type": "object",
-      "properties": {
-        "A": { "type": "number", "default": 0.25, "title": "A" },
-        "T": { "type": "number", "default": 0.25, "title": "T" },
-        "C": { "type": "number", "default": 0.25, "title": "C" },
-        "G": { "type": "number", "default": 0.25, "title": "G" }
-      },
-      "title": "Primer Base Probabilities"
-    },
-    "primer_GC_content_min": {
-      "type": "integer",
-      "default": 50,
-      "title": "Primer Gc Content Min",
-      "description": "minimum GC content of oligos"
-    },
-    "primer_GC_content_max": {
-      "type": "integer",
-      "default": 65,
-      "title": "Primer Gc Content Max",
-      "description": "maximum GC content of oligos"
-    },
-    "primer_number_GC_GCclamp": {
-      "type": "integer",
-      "default": 1,
-      "title": "Primer Number Gc Gcclamp",
-      "description": "the minimum number of G or C nucleotides required within the specified number of bases"
-    },
-    "primer_number_three_prime_base_GCclamp": {
-      "type": "integer",
-      "default": 2,
-      "title": "Primer Number Three Prime Base Gcclamp",
-      "description": "the number of bases to consider from the 3' end of the sequence"
-    },
-    "primer_homopolymeric_base_n": {
-      "type": "object",
-      "properties": {
-        "A": { "type": "integer", "default": 4, "title": "A" },
-        "T": { "type": "integer", "default": 4, "title": "T" },
-        "C": { "type": "integer", "default": 4, "title": "C" },
-        "G": { "type": "integer", "default": 4, "title": "G" }
-      },
-      "title": "Primer Homopolymeric Base N"
-    },
-    "primer_max_len_selfcomplement": {
-      "type": "integer",
-      "default": 6,
-      "title": "Primer Max Len Selfcomplement"
-    },
-    "primer_max_len_complement_reverse_primer": {
-      "type": "integer",
-      "default": 5,
-      "title": "Primer Max Len Complement Reverse Primer"
-    },
-    "primer_Tm_min": {
-      "type": "integer",
-      "default": 60,
-      "title": "Primer Tm Min"
-    },
-    "primer_Tm_max": {
-      "type": "integer",
-      "default": 75,
-      "title": "Primer Tm Max"
-    },
-    "primer_T_secondary_structure": {
-      "type": "integer",
-      "default": 76,
-      "title": "Primer T Secondary Structure",
-      "description": "Temperature at which the free energy is calculated"
-    },
-    "primer_secondary_structures_threshold_deltaG": {
-      "type": "integer",
-      "default": 0,
-      "title": "Primer Secondary Structures Threshold Deltag",
-      "description": "threshold for the secondary structure free energy -> oligo rejected if it presents a structure with a negative free energy at the defined temperature"
-    },
-    "target_probe_specificity_blastn_search_parameters": {
-      "type": "object",
-      "properties": {
-        "perc_identity": {
-          "type": "integer",
-          "default": 100,
-          "title": "Perc Identity",
-          "description": "the higher the percent identity is, the more significant the match"
+        "A": {
+          "description": "Probability of base 'A' when generating random sequences.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "A",
+          "type": "number"
         },
-        "strand": {
-          "type": "string",
-          "default": "minus",
-          "title": "Strand",
-          "description": "this parameter is fixed, if reference is whole genome, consider using \"both\""
+        "C": {
+          "description": "Probability of base 'C' when generating random sequences.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "C",
+          "type": "number"
         },
-        "word_size": { "type": "integer", "default": 7, "title": "Word Size" },
-        "dust": { "type": "string", "default": "no", "title": "Dust" },
-        "soft_masking": {
-          "type": "string",
-          "default": "false",
-          "title": "Soft Masking"
+        "G": {
+          "description": "Probability of base 'G' when generating random sequences.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "G",
+          "type": "number"
         },
-        "max_target_seqs": {
-          "type": "integer",
-          "default": 10,
-          "title": "Max Target Seqs"
-        },
-        "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
+        "T": {
+          "description": "Probability of base 'T' when generating random sequences.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "T",
+          "type": "number"
+        }
       },
-      "title": "Target Probe Specificity Blastn Search Parameters"
+      "required": ["A", "C", "G", "T"],
+      "title": "BaseProbabilities",
+      "type": "object"
     },
-    "target_probe_specificity_blastn_hit_parameters": {
-      "type": "object",
+    "BlastnHitParameters": {
+      "additionalProperties": false,
       "properties": {
+        "coverage": {
+          "anyOf": [
+            { "maximum": 100, "minimum": 0, "type": "number" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Coverage in %, alternatively, min_alignment_length can be used",
+          "title": "Coverage"
+        },
         "min_alignment_length": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Number of nucleotides for alignment, alternatively, coverage can be used",
+          "title": "Min Alignment Length"
+        }
+      },
+      "title": "BlastnHitParameters",
+      "type": "object"
+    },
+    "BlastnSearchParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "-query_loc": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Location on the query sequence in 1-based offsets (Format: start-stop).",
+          "title": "-Query Loc"
+        },
+        "-strand": {
+          "anyOf": [
+            { "enum": ["plus", "minus", "both"], "type": "string" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Query strand(s) to search against database/subject. Choice of both, minus, or plus.",
+          "title": "-Strand"
+        },
+        "-task": {
+          "anyOf": [
+            {
+              "enum": [
+                "megablast",
+                "dc-megablast",
+                "blastn",
+                "blastn-short",
+                "rmblastn"
+              ],
+              "type": "string"
+            },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Supported tasks.",
+          "title": "-Task"
+        },
+        "-evalue": {
+          "anyOf": [{ "type": "number" }, { "type": "null" }],
+          "default": null,
+          "description": "Expectation value (E) threshold for saving hits. Default = 10 (1000 for blastn-short)",
+          "title": "-Evalue"
+        },
+        "-word_size": {
+          "anyOf": [{ "minimum": 4, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Length of initial exact match.",
+          "title": "-Word Size"
+        },
+        "-gapopen": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Cost to open a gap.",
+          "title": "-Gapopen"
+        },
+        "-gapextend": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Cost to extend a gap.",
+          "title": "-Gapextend"
+        },
+        "-penalty": {
+          "anyOf": [{ "maximum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Penalty for a nucleotide mismatch.",
+          "title": "-Penalty"
+        },
+        "-reward": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Reward for a nucleotide match.",
+          "title": "-Reward"
+        },
+        "-num_descriptions": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Number of database sequences to show one-line descriptions for.",
+          "title": "-Num Descriptions"
+        },
+        "-num_alignments": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Number of database sequences to show alignments for.",
+          "title": "-Num Alignments"
+        },
+        "-sorthits": {
+          "anyOf": [
+            { "maximum": 4, "minimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Sorting option for hits.",
+          "title": "-Sorthits"
+        },
+        "-sorthsps": {
+          "anyOf": [
+            { "maximum": 4, "minimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Sorting option for hps.",
+          "title": "-Sorthsps"
+        },
+        "-dust": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Filter query sequence with dust.",
+          "title": "-Dust"
+        },
+        "-soft_masking": {
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
+          "default": null,
+          "description": "Apply filtering locations as soft masks (i.e., only for finding initial matches).",
+          "title": "-Soft Masking"
+        },
+        "-lcase_masking": {
+          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Use lower case filtering in query and subject sequence(s).",
+          "title": "-Lcase Masking"
+        },
+        "-db_soft_mask": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Filtering algorithm ID to apply to the BLAST database as soft mask (i.e., only for finding initial matches).",
+          "title": "-Db Soft Mask"
+        },
+        "-db_hard_mask": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Filtering algorithm ID to apply to the BLAST database as hard mask (i.e., sequence is masked for all phases of search).",
+          "title": "-Db Hard Mask"
+        },
+        "-perc_identity": {
+          "anyOf": [
+            { "maximum": 100, "minimum": 0, "type": "number" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Percent identity cutoff.",
+          "title": "-Perc Identity"
+        },
+        "-qcov_hsp_perc": {
+          "anyOf": [
+            { "maximum": 100, "minimum": 0, "type": "number" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Percent query coverage per hsp.",
+          "title": "-Qcov Hsp Perc"
+        },
+        "-max_hsps": {
+          "anyOf": [
+            { "exclusiveMinimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Set maximum number of HSPs per subject sequence to save for each query.",
+          "title": "-Max Hsps"
+        },
+        "-culling_limit": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "If the query range of a hit is enveloped by that of at least this many higher-scoring hits, delete the hit",
+          "title": "-Culling Limit"
+        },
+        "-best_hit_overhang": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 0.5,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Best Hit algorithm overhang value (recommended value: 0.1).",
+          "title": "-Best Hit Overhang"
+        },
+        "-best_hit_score_edge": {
+          "anyOf": [
+            {
+              "exclusiveMaximum": 0.5,
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Best Hit algorithm score edge value (recommended value: 0.1)",
+          "title": "-Best Hit Score Edge"
+        },
+        "-subject_besthit": {
+          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Turn on best hit per subject sequence.",
+          "title": "-Subject Besthit"
+        },
+        "-max_target_seqs": {
+          "anyOf": [
+            { "exclusiveMinimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Maximum number of aligned sequences to keep.",
+          "title": "-Max Target Seqs"
+        },
+        "-template_type": {
+          "anyOf": [
+            {
+              "enum": ["coding", "coding_and_optimal", "optimal"],
+              "type": "string"
+            },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Discontiguous MegaBLAST template type. Allowed values are coding, optimal and coding_and_optimal.",
+          "title": "-Template Type"
+        },
+        "-template_length": {
+          "anyOf": [
+            { "enum": ["16", "18", "21"], "type": "string" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Discontiguous MegaBLAST template length.",
+          "title": "-Template Length"
+        },
+        "-db_size": {
+          "anyOf": [{ "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Effective length of the database.",
+          "title": "-Db Size"
+        },
+        "-searchsp": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Effective length of the search space.",
+          "title": "-Searchsp"
+        },
+        "-xdrop_ungap": {
+          "anyOf": [{ "type": "number" }, { "type": "null" }],
+          "default": null,
+          "description": "X-dropoff value (in bits) for ungapped extensions.",
+          "title": "-Xdrop Ungap"
+        },
+        "-xdrop_gap": {
+          "anyOf": [{ "type": "number" }, { "type": "null" }],
+          "default": null,
+          "description": "X-dropoff value (in bits) for preliminary gapped extensions.",
+          "title": "-Xdrop Gap"
+        },
+        "-xdrop_gap_final": {
+          "anyOf": [{ "type": "number" }, { "type": "null" }],
+          "default": null,
+          "description": "X-dropoff value (in bits) for final gapped alignment.",
+          "title": "-Xdrop Gap Final"
+        },
+        "-no_greedy": {
+          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Use non-greedy dynamic programming extension.",
+          "title": "-No Greedy"
+        },
+        "-min_raw_gapped_score": {
+          "anyOf": [{ "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Minimum raw gapped score to keep an alignment in the preliminary gapped and trace-back stages. Normally set based upon expect value.",
+          "title": "-Min Raw Gapped Score"
+        },
+        "-ungapped": {
+          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Perform ungapped alignment only?",
+          "title": "-Ungapped"
+        },
+        "-window_size": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Multiple hits window size, use 0 to specify 1-hit algorithm.",
+          "title": "-Window Size"
+        },
+        "-off_diagonal_range": {
+          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
+          "default": null,
+          "description": "Number of off-diagonals to search for the 2nd hit, use 0 to turn off.",
+          "title": "-Off Diagonal Range"
+        }
+      },
+      "title": "BlastnSearchParameters",
+      "type": "object"
+    },
+    "ComplementReversePrimerFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "ComplementReversePrimerFilterDisabled",
+      "type": "object"
+    },
+    "ComplementReversePrimerFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_len_complement": {
+          "description": "Maximum allowable length of complementarity between the forward primer and the (known) reverse primer, to prevent primer-dimer formation.",
+          "minimum": 0,
+          "title": "Max Len Complement",
+          "type": "integer"
+        }
+      },
+      "required": ["enabled", "max_len_complement"],
+      "title": "ComplementReversePrimerFilterEnabled",
+      "type": "object"
+    },
+    "CrossHybridizationBlastnFilterDisabled": {
+      "properties": {
+        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+      },
+      "required": ["enabled"],
+      "title": "CrossHybridizationBlastnFilterDisabled",
+      "type": "object"
+    },
+    "CrossHybridizationBlastnFilterEnabled": {
+      "additionalProperties": false,
+      "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
+      "properties": {
+        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "search_parameters": {
+          "$ref": "#/$defs/BlastnSearchParameters",
+          "description": "BLAST options for the cross-hybridization search.",
+          "x-collapsed": true
+        },
+        "hit_parameters": {
+          "$ref": "#/$defs/BlastnHitParameters",
+          "description": "Hit criteria. Hits satisfying these lead to oligo rejection."
+        }
+      },
+      "required": ["enabled", "search_parameters", "hit_parameters"],
+      "title": "CrossHybridizationBlastnFilterEnabled",
+      "type": "object"
+    },
+    "GCClampFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "GCClampFilterDisabled",
+      "type": "object"
+    },
+    "GCClampFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "number_GC_GCclamp": {
+          "description": "Minimum number of G or C nucleotides required at the 3' end.",
+          "exclusiveMinimum": 0,
+          "title": "Number Gc Gcclamp",
+          "type": "integer"
+        },
+        "number_three_prime_base_GCclamp": {
+          "description": "Number of bases from the 3' end to consider for the GC clamp.",
+          "exclusiveMinimum": 0,
+          "title": "Number Three Prime Base Gcclamp",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "enabled",
+        "number_GC_GCclamp",
+        "number_three_prime_base_GCclamp"
+      ],
+      "title": "GCClampFilterEnabled",
+      "type": "object"
+    },
+    "GCContentFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "GCContentFilterDisabled",
+      "type": "object"
+    },
+    "GCContentFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "GC_content_min": {
+          "description": "Minimum GC content (%). Oligos below this are rejected.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Gc Content Min",
+          "type": "number"
+        },
+        "GC_content_max": {
+          "description": "Maximum GC content (%). Oligos above this are rejected.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Gc Content Max",
+          "type": "number"
+        }
+      },
+      "required": ["enabled", "GC_content_min", "GC_content_max"],
+      "title": "GCContentFilterEnabled",
+      "type": "object"
+    },
+    "GCContentScore": {
+      "additionalProperties": false,
+      "properties": {
+        "weight": {
+          "description": "Weight for GC content in the set-selection scoring function.",
+          "title": "Weight",
+          "type": "number"
+        },
+        "GC_content_opt": {
+          "description": "Target (optimal) GC content (%) for scoring.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Gc Content Opt",
+          "type": "number"
+        }
+      },
+      "required": ["weight", "GC_content_opt"],
+      "title": "GCContentScore",
+      "type": "object"
+    },
+    "General": {
+      "additionalProperties": false,
+      "properties": {
+        "n_jobs": {
+          "description": "number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime",
+          "exclusiveMinimum": 0,
+          "title": "N Jobs",
+          "type": "integer"
+        },
+        "dir_output": {
+          "description": "name of the directory where the output files will be written",
+          "title": "Dir Output",
+          "type": "string"
+        },
+        "write_intermediate_steps": {
+          "description": "if true, writes the oligo sequences after each step of the pipeline into a csv file",
+          "title": "Write Intermediate Steps",
+          "type": "boolean"
+        }
+      },
+      "required": ["n_jobs", "dir_output", "write_intermediate_steps"],
+      "title": "General",
+      "type": "object"
+    },
+    "HardMaskedFilterConfig": {
+      "additionalProperties": false,
+      "description": "Exclude oligos overlapping hard-masked (e.g. N) regions in the reference.",
+      "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
+      "required": ["enabled"],
+      "title": "HardMaskedFilterConfig",
+      "type": "object"
+    },
+    "HomopolymericRunThreshold": {
+      "additionalProperties": false,
+      "properties": {
+        "A": {
+          "anyOf": [
+            { "exclusiveMinimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
+          "title": "A"
+        },
+        "T": {
+          "anyOf": [
+            { "exclusiveMinimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
+          "title": "T"
+        },
+        "C": {
+          "anyOf": [
+            { "exclusiveMinimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
+          "title": "C"
+        },
+        "G": {
+          "anyOf": [
+            { "exclusiveMinimum": 0, "type": "integer" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
+          "title": "G"
+        }
+      },
+      "title": "HomopolymericRunThreshold",
+      "type": "object"
+    },
+    "HomopolymericRunsFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "HomopolymericRunsFilterDisabled",
+      "type": "object"
+    },
+    "HomopolymericRunsFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "homopolymeric_base_n": {
+          "$ref": "#/$defs/HomopolymericRunThreshold",
+          "description": "Minimum run length per base to count as homopolymeric (any base not listed is unrestricted). Oligos with longer runs are rejected."
+        }
+      },
+      "required": ["enabled", "homopolymeric_base_n"],
+      "title": "HomopolymericRunsFilterEnabled",
+      "type": "object"
+    },
+    "HybridizationProbesBlastnFilterDisabled": {
+      "properties": {
+        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+      },
+      "required": ["enabled"],
+      "title": "HybridizationProbesBlastnFilterDisabled",
+      "type": "object"
+    },
+    "HybridizationProbesBlastnFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "search_parameters": {
+          "$ref": "#/$defs/BlastnSearchParameters",
+          "description": "BLASTN search parameters for filtering primers that match the assembled hybridization probes.",
+          "x-collapsed": true
+        },
+        "hit_parameters": {
+          "$ref": "#/$defs/BlastnHitParameters",
+          "description": "Parameters for filtering BLASTN hits against the hybridization probes. Use either coverage or min_alignment_length."
+        }
+      },
+      "required": ["enabled", "search_parameters", "hit_parameters"],
+      "title": "HybridizationProbesBlastnFilterEnabled",
+      "type": "object"
+    },
+    "IndependentSetSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "n_sets": {
+          "description": "Number of probe sets to generate per gene.",
+          "exclusiveMinimum": 0,
+          "title": "N Sets",
           "type": "integer",
+          "x-quick-setting": true
+        },
+        "set_size_min": {
+          "description": "Minimum set size. Genes that cannot form a set of at least this size are reported as insufficient.",
+          "exclusiveMinimum": 0,
+          "title": "Set Size Min",
+          "type": "integer",
+          "x-quick-setting": true
+        },
+        "set_size_opt": {
+          "description": "Preferred (optimal) number of oligos per set.",
+          "exclusiveMinimum": 0,
+          "title": "Set Size Opt",
+          "type": "integer",
+          "x-quick-setting": true
+        },
+        "distance_between_probes": {
+          "description": "Required spacing: negative = allow overlap (bases), 0 = adjacent OK, positive = minimum gap (bases).",
+          "title": "Distance Between Probes",
+          "type": "integer"
+        },
+        "n_attempts_graph": {
+          "description": "Number of randomized graph attempts used to diversify set selection.",
+          "exclusiveMinimum": 0,
+          "title": "N Attempts Graph",
+          "type": "integer"
+        },
+        "n_attempts_clique_enum": {
+          "description": "Maximum cliques enumerated per graph attempt.",
+          "exclusiveMinimum": 0,
+          "title": "N Attempts Clique Enum",
+          "type": "integer"
+        },
+        "diversification_fraction": {
+          "description": "Fraction of oligos removed from the graph in each attempt to increase set diversity.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Diversification Fraction",
+          "type": "number"
+        },
+        "jaccard_opt": {
+          "description": "Target maximum Jaccard similarity between selected sets; lower = more distinct sets.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Jaccard Opt",
+          "type": "number"
+        },
+        "jaccard_step": {
+          "description": "Step size for relaxing Jaccard threshold when too few sets are found.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Jaccard Step",
+          "type": "number"
+        }
+      },
+      "required": [
+        "n_sets",
+        "set_size_min",
+        "set_size_opt",
+        "distance_between_probes",
+        "n_attempts_graph",
+        "n_attempts_clique_enum",
+        "diversification_fraction",
+        "jaccard_opt",
+        "jaccard_step"
+      ],
+      "title": "IndependentSetSelection",
+      "type": "object"
+    },
+    "IsoformConsensusFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "IsoformConsensusFilterDisabled",
+      "type": "object"
+    },
+    "IsoformConsensusFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "isoform_consensus": {
+          "description": "Minimum isoform consensus (%). Oligos must be covered by at least this fraction of a gene's transcripts.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Isoform Consensus",
+          "type": "number"
+        }
+      },
+      "required": ["enabled", "isoform_consensus"],
+      "title": "IsoformConsensusFilterEnabled",
+      "type": "object"
+    },
+    "Primers": {
+      "additionalProperties": false,
+      "properties": {
+        "forward_primer": {
+          "discriminator": {
+            "mapping": {
+              "generate": "#/$defs/SeqfishPlusForwardPrimerGenerate",
+              "load": "#/$defs/SeqfishPlusForwardPrimerLoad"
+            },
+            "propertyName": "source"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SeqfishPlusForwardPrimerGenerate" },
+            { "$ref": "#/$defs/SeqfishPlusForwardPrimerLoad" }
+          ],
+          "title": "Forward Primer"
+        },
+        "reverse_primer": { "$ref": "#/$defs/SeqfishPlusReversePrimer" }
+      },
+      "required": ["forward_primer", "reverse_primer"],
+      "title": "Primers",
+      "type": "object"
+    },
+    "ReadoutProbes": {
+      "additionalProperties": false,
+      "properties": {
+        "codebook": {
+          "discriminator": {
+            "mapping": {
+              "generate": "#/$defs/SeqfishPlusCodebookGenerate",
+              "load": "#/$defs/SeqfishPlusCodebookLoad"
+            },
+            "propertyName": "source"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SeqfishPlusCodebookGenerate" },
+            { "$ref": "#/$defs/SeqfishPlusCodebookLoad" }
+          ],
+          "title": "Codebook"
+        },
+        "readout_probe_table": {
+          "discriminator": {
+            "mapping": {
+              "generate": "#/$defs/SeqfishPlusReadoutProbeTableGenerate",
+              "load": "#/$defs/SeqfishPlusReadoutProbeTableLoad"
+            },
+            "propertyName": "source"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SeqfishPlusReadoutProbeTableGenerate" },
+            { "$ref": "#/$defs/SeqfishPlusReadoutProbeTableLoad" }
+          ],
+          "title": "Readout Probe Table"
+        }
+      },
+      "required": ["codebook", "readout_probe_table"],
+      "title": "ReadoutProbes",
+      "type": "object"
+    },
+    "SecondaryStructureFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "SecondaryStructureFilterDisabled",
+      "type": "object"
+    },
+    "SecondaryStructureFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "T": {
+          "description": "Temperature (\u00b0C) at which secondary structure free energy is evaluated.",
+          "exclusiveMinimum": 0,
+          "title": "T",
+          "type": "integer"
+        },
+        "thr_DG": {
+          "description": "Free-energy threshold (kcal/mol). Oligos with \u0394G \u2264 thr_DG (stable structure) are rejected.",
+          "title": "Thr Dg",
+          "type": "number"
+        }
+      },
+      "required": ["enabled", "T", "thr_DG"],
+      "title": "SecondaryStructureFilterEnabled",
+      "type": "object"
+    },
+    "SelfComplementarityFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "SelfComplementarityFilterDisabled",
+      "type": "object"
+    },
+    "SelfComplementarityFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_len_selfcomplement": {
+          "description": "Maximum allowable length of self-complementary sequences. Probes with longer self-complementary regions can form hairpins.",
+          "minimum": 0,
+          "title": "Max Len Selfcomplement",
+          "type": "integer"
+        }
+      },
+      "required": ["enabled", "max_len_selfcomplement"],
+      "title": "SelfComplementarityFilterEnabled",
+      "type": "object"
+    },
+    "SeqfishPlusCodebookGenerate": {
+      "properties": {
+        "n_barcode_rounds": {
+          "default": 4,
+          "description": "Number of barcode rounds. Equals active bits per gene and readout overhangs per encoding probe (first half 5' of target, second half 3').",
+          "exclusiveMinimum": 0,
+          "title": "N Barcode Rounds",
+          "type": "integer",
+          "x-quick-setting": true
+        },
+        "n_pseudocolors": {
+          "default": 4,
+          "description": "Number of pseudocolors per round.",
+          "exclusiveMinimum": 0,
+          "title": "N Pseudocolors",
+          "type": "integer",
+          "x-quick-setting": true
+        },
+        "channels_ids": {
+          "default": ["Alexa488", "Cy3b", "Alexa647"],
+          "description": "Fluorescence channels used in the experiment.",
+          "items": { "type": "string" },
+          "title": "Channels Ids",
+          "type": "array",
+          "x-quick-setting": true
+        },
+        "source": {
+          "const": "generate",
+          "default": "generate",
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "SeqfishPlusCodebookGenerate",
+      "type": "object"
+    },
+    "SeqfishPlusCodebookLoad": {
+      "properties": {
+        "n_barcode_rounds": {
+          "default": 4,
+          "description": "Number of barcode rounds. Equals active bits per gene and readout overhangs per encoding probe (first half 5' of target, second half 3').",
+          "exclusiveMinimum": 0,
+          "title": "N Barcode Rounds",
+          "type": "integer",
+          "x-quick-setting": true
+        },
+        "n_pseudocolors": {
+          "default": 4,
+          "description": "Number of pseudocolors per round.",
+          "exclusiveMinimum": 0,
+          "title": "N Pseudocolors",
+          "type": "integer",
+          "x-quick-setting": true
+        },
+        "channels_ids": {
+          "default": ["Alexa488", "Cy3b", "Alexa647"],
+          "description": "Fluorescence channels used in the experiment.",
+          "items": { "type": "string" },
+          "title": "Channels Ids",
+          "type": "array",
+          "x-quick-setting": true
+        },
+        "source": {
+          "const": "load",
+          "default": "load",
+          "title": "Source",
+          "type": "string"
+        },
+        "file": {
+          "description": "Only used when source = load. Path to the codebook file (csv/tsv): columns = 'bits', rows = 'gene_name'; entries are 0/1 bit-encodings for each gene.",
+          "title": "File",
+          "type": "string"
+        }
+      },
+      "required": ["file"],
+      "title": "SeqfishPlusCodebookLoad",
+      "type": "object"
+    },
+    "SeqfishPlusForwardPrimerGenerate": {
+      "properties": {
+        "source": {
+          "const": "generate",
+          "default": "generate",
+          "title": "Source",
+          "type": "string"
+        },
+        "oligo_generation": {
+          "$ref": "#/$defs/SeqfishPlusForwardPrimerOligoGeneration"
+        },
+        "property_filters": {
+          "$ref": "#/$defs/SeqfishPlusForwardPrimerPropertyFilter"
+        },
+        "specificity_filters": {
+          "$ref": "#/$defs/SeqfishPlusForwardPrimerSpecificityFilter"
+        },
+        "global_parameters": {
+          "$ref": "#/$defs/SeqfishPlusForwardPrimerGlobal"
+        }
+      },
+      "required": [
+        "oligo_generation",
+        "property_filters",
+        "specificity_filters",
+        "global_parameters"
+      ],
+      "title": "SeqfishPlusForwardPrimerGenerate",
+      "type": "object"
+    },
+    "SeqfishPlusForwardPrimerGlobal": {
+      "additionalProperties": false,
+      "properties": {
+        "Tm_parameters": {
+          "$ref": "#/$defs/TmParameters",
+          "default": {
+            "check": true,
+            "strict": true,
+            "c_seq": null,
+            "shift": 0,
+            "selfcomp": false,
+            "nn_table": "DNA_NN4",
+            "tmm_table": "DNA_TMM1",
+            "imm_table": "DNA_IMM1",
+            "de_table": "DNA_DE1",
+            "dnac1": 250,
+            "dnac2": 250,
+            "saltcorr": 5,
+            "Na": 300,
+            "K": 0,
+            "Tris": 0,
+            "Mg": 0,
+            "dNTPs": 0
+          }
+        },
+        "Tm_chem_correction_parameters": {
+          "default": { "enabled": false },
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/TmChemCorrectionParametersDisabled",
+              "True": "#/$defs/TmChemCorrectionParametersEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/TmChemCorrectionParametersEnabled" },
+            { "$ref": "#/$defs/TmChemCorrectionParametersDisabled" }
+          ],
+          "title": "Tm Chem Correction Parameters"
+        },
+        "Tm_salt_correction_parameters": {
+          "default": { "enabled": false },
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/TmSaltCorrectionParametersDisabled",
+              "True": "#/$defs/TmSaltCorrectionParametersEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/TmSaltCorrectionParametersEnabled" },
+            { "$ref": "#/$defs/TmSaltCorrectionParametersDisabled" }
+          ],
+          "title": "Tm Salt Correction Parameters"
+        }
+      },
+      "title": "SeqfishPlusForwardPrimerGlobal",
+      "type": "object"
+    },
+    "SeqfishPlusForwardPrimerLoad": {
+      "properties": {
+        "source": {
+          "const": "load",
+          "default": "load",
+          "title": "Source",
+          "type": "string"
+        },
+        "sequence": {
+          "description": "Only used when source = load.",
+          "pattern": "^[ATUGC]+$",
+          "title": "Sequence",
+          "type": "string"
+        }
+      },
+      "required": ["sequence"],
+      "title": "SeqfishPlusForwardPrimerLoad",
+      "type": "object"
+    },
+    "SeqfishPlusForwardPrimerOligoGeneration": {
+      "additionalProperties": false,
+      "properties": {
+        "probe_length": {
+          "default": 20,
+          "description": "Length (bases) of each generated primer.",
+          "exclusiveMinimum": 0,
+          "title": "Probe Length",
+          "type": "integer"
+        },
+        "base_probabilities": {
+          "$ref": "#/$defs/BaseProbabilities",
+          "default": { "A": 0.25, "C": 0.25, "G": 0.25, "T": 0.25 },
+          "description": "Per-base probability used to generate random primer sequences."
+        },
+        "initial_num_sequences": {
+          "default": 1000000,
+          "description": "Number of random sequences to generate before filtering.",
+          "exclusiveMinimum": 0,
+          "title": "Initial Num Sequences",
+          "type": "integer"
+        }
+      },
+      "title": "SeqfishPlusForwardPrimerOligoGeneration",
+      "type": "object"
+    },
+    "SeqfishPlusForwardPrimerPropertyFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "homopolymeric_runs_filter": {
+          "default": {
+            "enabled": true,
+            "homopolymeric_base_n": { "A": 4, "C": 4, "G": 4, "T": 4 }
+          },
+          "description": "Exclude oligos containing long homopolymeric runs (e.g. AAAAA).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/HomopolymericRunsFilterDisabled",
+              "True": "#/$defs/HomopolymericRunsFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/HomopolymericRunsFilterEnabled" },
+            { "$ref": "#/$defs/HomopolymericRunsFilterDisabled" }
+          ],
+          "title": "Homopolymeric Runs Filter"
+        },
+        "GC_content_filter": {
+          "default": {
+            "enabled": true,
+            "GC_content_min": 50.0,
+            "GC_content_max": 65.0
+          },
+          "description": "Enforce GC content within a specified range.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/GCContentFilterDisabled",
+              "True": "#/$defs/GCContentFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/GCContentFilterEnabled" },
+            { "$ref": "#/$defs/GCContentFilterDisabled" }
+          ],
+          "title": "Gc Content Filter"
+        },
+        "GC_clamp_filter": {
+          "default": {
+            "enabled": true,
+            "number_GC_GCclamp": 1,
+            "number_three_prime_base_GCclamp": 2
+          },
+          "description": "Require G/C nucleotides at the 3' end of the primer for stable binding.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/GCClampFilterDisabled",
+              "True": "#/$defs/GCClampFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/GCClampFilterEnabled" },
+            { "$ref": "#/$defs/GCClampFilterDisabled" }
+          ],
+          "title": "Gc Clamp Filter"
+        },
+        "self_complementarity_filter": {
+          "default": { "enabled": true, "max_len_selfcomplement": 6 },
+          "description": "Limit self-complementarity to avoid hairpins.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SelfComplementarityFilterDisabled",
+              "True": "#/$defs/SelfComplementarityFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SelfComplementarityFilterEnabled" },
+            { "$ref": "#/$defs/SelfComplementarityFilterDisabled" }
+          ],
+          "title": "Self Complementarity Filter"
+        },
+        "complement_reverse_primer_filter": {
+          "default": { "enabled": true, "max_len_complement": 5 },
+          "description": "Limit complementarity between the forward primer and the (known) reverse primer to prevent primer-dimer formation.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/ComplementReversePrimerFilterDisabled",
+              "True": "#/$defs/ComplementReversePrimerFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/ComplementReversePrimerFilterEnabled" },
+            { "$ref": "#/$defs/ComplementReversePrimerFilterDisabled" }
+          ],
+          "title": "Complement Reverse Primer Filter"
+        },
+        "Tm_filter": {
+          "default": { "enabled": true, "Tm_min": 60.0, "Tm_max": 75.0 },
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/TmFilterDisabled",
+              "True": "#/$defs/TmFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/TmFilterEnabled" },
+            { "$ref": "#/$defs/TmFilterDisabled" }
+          ],
+          "title": "Tm Filter"
+        },
+        "secondary_structure_filter": {
+          "default": { "enabled": true, "T": 76, "thr_DG": 0.0 },
+          "description": "Reject oligos with stable secondary structure at the given temperature.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SecondaryStructureFilterDisabled",
+              "True": "#/$defs/SecondaryStructureFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SecondaryStructureFilterEnabled" },
+            { "$ref": "#/$defs/SecondaryStructureFilterDisabled" }
+          ],
+          "title": "Secondary Structure Filter"
+        }
+      },
+      "title": "SeqfishPlusForwardPrimerPropertyFilter",
+      "type": "object"
+    },
+    "SeqfishPlusForwardPrimerSpecificityFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "specificity_blastn_filter": {
+          "description": "Ensure primer specificity against a reference database (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SeqfishPlusPrimerSpecificityBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SeqfishPlusPrimerSpecificityBlastnFilterEnabled"
+            },
+            { "$ref": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled" }
+          ],
+          "title": "Specificity Blastn Filter"
+        },
+        "hybridization_probes_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-dust": "no",
+              "-max_hsps": 1000,
+              "-max_target_seqs": 10,
+              "-perc_identity": 100.0,
+              "-soft_masking": false,
+              "-strand": "minus",
+              "-word_size": 7
+            },
+            "hit_parameters": { "min_alignment_length": 11 }
+          },
+          "description": "Remove primers that match the assembled hybridization probes (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/HybridizationProbesBlastnFilterDisabled",
+              "True": "#/$defs/HybridizationProbesBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/HybridizationProbesBlastnFilterEnabled" },
+            { "$ref": "#/$defs/HybridizationProbesBlastnFilterDisabled" }
+          ],
+          "title": "Hybridization Probes Blastn Filter"
+        }
+      },
+      "required": ["specificity_blastn_filter"],
+      "title": "SeqfishPlusForwardPrimerSpecificityFilter",
+      "type": "object"
+    },
+    "SeqfishPlusPrimerSpecificityBlastnFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "search_parameters": {
+          "$ref": "#/$defs/BlastnSearchParameters",
+          "default": {
+            "-strand": "minus",
+            "-word_size": 7,
+            "-dust": "no",
+            "-soft_masking": false,
+            "-perc_identity": 100.0,
+            "-max_hsps": 1000,
+            "-max_target_seqs": 10
+          }
+        },
+        "hit_parameters": {
+          "$ref": "#/$defs/BlastnHitParameters",
+          "default": { "min_alignment_length": 14 }
+        },
+        "files_fasta_reference_database": {
+          "description": "FASTA file(s) used as reference for specificity.",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "title": "Files Fasta Reference Database",
+          "type": "array"
+        }
+      },
+      "required": ["enabled", "files_fasta_reference_database"],
+      "title": "SeqfishPlusPrimerSpecificityBlastnFilterEnabled",
+      "type": "object"
+    },
+    "SeqfishPlusReadoutProbeOligoGeneration": {
+      "additionalProperties": false,
+      "properties": {
+        "probe_length": {
           "default": 15,
-          "title": "Min Alignment Length",
-          "description": "can be turned into coverage"
+          "description": "Length (bases) of each random readout probe.",
+          "exclusiveMinimum": 0,
+          "title": "Probe Length",
+          "type": "integer"
+        },
+        "base_probabilities": {
+          "$ref": "#/$defs/BaseProbabilities",
+          "default": { "A": 0.25, "C": 0.25, "G": 0.25, "T": 0.25 },
+          "description": "Per-base probability used to generate random readout-probe sequences."
+        },
+        "initial_num_sequences": {
+          "default": 100000,
+          "description": "Number of random sequences to generate before filtering.",
+          "exclusiveMinimum": 0,
+          "title": "Initial Num Sequences",
+          "type": "integer"
         }
       },
-      "title": "Target Probe Specificity Blastn Hit Parameters"
+      "title": "SeqfishPlusReadoutProbeOligoGeneration",
+      "type": "object"
     },
-    "target_probe_cross_hybridization_blastn_search_parameters": {
-      "type": "object",
+    "SeqfishPlusReadoutProbePropertyFilter": {
+      "additionalProperties": false,
       "properties": {
-        "perc_identity": {
-          "type": "integer",
-          "default": 80,
-          "title": "Perc Identity",
-          "description": "the higher the percent identity is, the more significant the match"
+        "homopolymeric_runs_filter": {
+          "default": {
+            "enabled": true,
+            "homopolymeric_base_n": { "A": null, "C": null, "G": 3, "T": null }
+          },
+          "description": "Exclude oligos containing long homopolymeric runs (e.g. AAAAA).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/HomopolymericRunsFilterDisabled",
+              "True": "#/$defs/HomopolymericRunsFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/HomopolymericRunsFilterEnabled" },
+            { "$ref": "#/$defs/HomopolymericRunsFilterDisabled" }
+          ],
+          "title": "Homopolymeric Runs Filter"
         },
-        "strand": {
-          "type": "string",
-          "default": "minus",
-          "title": "Strand",
-          "description": "this parameter is fixed"
-        },
-        "word_size": { "type": "integer", "default": 7, "title": "Word Size" },
-        "dust": { "type": "string", "default": "no", "title": "Dust" },
-        "soft_masking": {
-          "type": "string",
-          "default": "false",
-          "title": "Soft Masking"
-        },
-        "max_target_seqs": {
-          "type": "integer",
-          "default": 10,
-          "title": "Max Target Seqs"
+        "GC_content_filter": {
+          "default": {
+            "enabled": true,
+            "GC_content_min": 40.0,
+            "GC_content_max": 60.0
+          },
+          "description": "Enforce GC content within a specified range.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/GCContentFilterDisabled",
+              "True": "#/$defs/GCContentFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/GCContentFilterEnabled" },
+            { "$ref": "#/$defs/GCContentFilterDisabled" }
+          ],
+          "title": "Gc Content Filter"
         }
       },
-      "title": "Target Probe Cross Hybridization Blastn Search Parameters"
+      "title": "SeqfishPlusReadoutProbePropertyFilter",
+      "type": "object"
     },
-    "target_probe_cross_hybridization_blastn_hit_parameters": {
-      "type": "object",
+    "SeqfishPlusReadoutProbeSpecificityFilter": {
+      "additionalProperties": false,
       "properties": {
-        "min_alignment_length": {
-          "type": "integer",
-          "default": 17,
-          "title": "Min Alignment Length",
-          "description": "can be turned into coverage"
+        "specificity_blastn_filter": {
+          "description": "Remove readout probes with significant hits to the reference (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SeqfishPlusReadoutSpecificityBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SeqfishPlusReadoutSpecificityBlastnFilterEnabled"
+            },
+            { "$ref": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled" }
+          ],
+          "title": "Specificity Blastn Filter"
+        },
+        "cross_hybridization_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-dust": "no",
+              "-max_target_seqs": 10,
+              "-perc_identity": 100.0,
+              "-soft_masking": false,
+              "-strand": "minus",
+              "-word_size": 7
+            },
+            "hit_parameters": { "min_alignment_length": 10 }
+          },
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
+              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
+          ],
+          "title": "Cross Hybridization Blastn Filter"
         }
       },
-      "title": "Target Probe Cross Hybridization Blastn Hit Parameters"
+      "required": ["specificity_blastn_filter"],
+      "title": "SeqfishPlusReadoutProbeSpecificityFilter",
+      "type": "object"
     },
-    "readout_probe_initial_num_sequences": {
-      "type": "integer",
-      "default": 100000,
-      "title": "Readout Probe Initial Num Sequences",
-      "description": "if not enough readout probes can be generated, increase this number"
-    },
-    "readout_probe_specificity_blastn_search_parameters": {
-      "type": "object",
+    "SeqfishPlusReadoutProbeTableGenerate": {
       "properties": {
-        "perc_identity": {
-          "type": "integer",
-          "default": 100,
-          "title": "Perc Identity",
-          "description": "the higher the percent identity is, the more significant the match"
+        "source": {
+          "const": "generate",
+          "default": "generate",
+          "title": "Source",
+          "type": "string"
         },
-        "strand": {
-          "type": "string",
-          "default": "minus",
-          "title": "Strand",
-          "description": "this parameter is fixed, if reference is whole genome, consider using \"both\""
+        "oligo_generation": {
+          "$ref": "#/$defs/SeqfishPlusReadoutProbeOligoGeneration"
         },
-        "word_size": { "type": "integer", "default": 7, "title": "Word Size" },
-        "dust": { "type": "string", "default": "no", "title": "Dust" },
-        "soft_masking": {
-          "type": "string",
-          "default": "false",
-          "title": "Soft Masking"
+        "property_filters": {
+          "$ref": "#/$defs/SeqfishPlusReadoutProbePropertyFilter"
         },
-        "max_target_seqs": {
-          "type": "integer",
-          "default": 10,
-          "title": "Max Target Seqs"
-        },
-        "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
-      },
-      "title": "Readout Probe Specificity Blastn Search Parameters"
-    },
-    "readout_probe_specificity_blastn_hit_parameters": {
-      "type": "object",
-      "properties": {
-        "min_alignment_length": {
-          "type": "integer",
-          "default": 10,
-          "title": "Min Alignment Length",
-          "description": "can be turned into coverage"
+        "specificity_filters": {
+          "$ref": "#/$defs/SeqfishPlusReadoutProbeSpecificityFilter"
         }
       },
-      "title": "Readout Probe Specificity Blastn Hit Parameters"
+      "required": [
+        "oligo_generation",
+        "property_filters",
+        "specificity_filters"
+      ],
+      "title": "SeqfishPlusReadoutProbeTableGenerate",
+      "type": "object"
     },
-    "readout_probe_cross_hybridization_blastn_search_parameters": {
-      "type": "object",
+    "SeqfishPlusReadoutProbeTableLoad": {
       "properties": {
-        "perc_identity": {
-          "type": "integer",
-          "default": 100,
-          "title": "Perc Identity",
-          "description": "the higher the percent identity is, the more significant the match"
+        "source": {
+          "const": "load",
+          "default": "load",
+          "title": "Source",
+          "type": "string"
         },
-        "strand": {
-          "type": "string",
-          "default": "minus",
-          "title": "Strand",
-          "description": "this parameter is fixed"
-        },
-        "word_size": { "type": "integer", "default": 7, "title": "Word Size" },
-        "dust": { "type": "string", "default": "no", "title": "Dust" },
-        "soft_masking": {
-          "type": "string",
-          "default": "false",
-          "title": "Soft Masking"
-        },
-        "max_target_seqs": {
-          "type": "integer",
-          "default": 10,
-          "title": "Max Target Seqs"
+        "file": {
+          "description": "Only used when source = load. Path to the bit-indexed readout probe table (csv/tsv) with columns 'barcode_round', 'pseudocolor', 'channel', and 'readout_probe_sequence'.",
+          "title": "File",
+          "type": "string"
         }
       },
-      "title": "Readout Probe Cross Hybridization Blastn Search Parameters"
+      "required": ["file"],
+      "title": "SeqfishPlusReadoutProbeTableLoad",
+      "type": "object"
     },
-    "readout_probe_cross_hybridization_blastn_hit_parameters": {
-      "type": "object",
+    "SeqfishPlusReadoutSpecificityBlastnFilterEnabled": {
+      "additionalProperties": false,
       "properties": {
-        "min_alignment_length": {
-          "type": "integer",
-          "default": 10,
-          "title": "Min Alignment Length",
-          "description": "can be turned into coverage"
+        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "search_parameters": {
+          "$ref": "#/$defs/BlastnSearchParameters",
+          "default": {
+            "-strand": "minus",
+            "-word_size": 7,
+            "-dust": "no",
+            "-soft_masking": false,
+            "-perc_identity": 100.0,
+            "-max_hsps": 1000,
+            "-max_target_seqs": 10
+          }
+        },
+        "hit_parameters": {
+          "$ref": "#/$defs/BlastnHitParameters",
+          "default": { "min_alignment_length": 10 }
+        },
+        "files_fasta_reference_database": {
+          "description": "FASTA file(s) used as reference for specificity.",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "title": "Files Fasta Reference Database",
+          "type": "array"
         }
       },
-      "title": "Readout Probe Cross Hybridization Blastn Hit Parameters"
+      "required": ["enabled", "files_fasta_reference_database"],
+      "title": "SeqfishPlusReadoutSpecificityBlastnFilterEnabled",
+      "type": "object"
     },
-    "primer_initial_num_sequences": {
-      "type": "integer",
-      "default": 1000000,
-      "title": "Primer Initial Num Sequences",
-      "description": "if no primer can be generated, increase this number"
-    },
-    "primer_specificity_refrence_blastn_search_parameters": {
-      "type": "object",
+    "SeqfishPlusReversePrimer": {
+      "additionalProperties": false,
       "properties": {
-        "perc_identity": {
-          "type": "integer",
-          "default": 100,
-          "title": "Perc Identity",
-          "description": "the higher the percent identity is, the more significant the match"
+        "source": {
+          "const": "load",
+          "default": "load",
+          "title": "Source",
+          "type": "string"
         },
-        "strand": {
-          "type": "string",
-          "default": "minus",
-          "title": "Strand",
-          "description": "this parameter is fixed, if reference is whole genome, consider using \"both\""
-        },
-        "word_size": { "type": "integer", "default": 7, "title": "Word Size" },
-        "dust": { "type": "string", "default": "no", "title": "Dust" },
-        "soft_masking": {
-          "type": "string",
-          "default": "false",
-          "title": "Soft Masking"
-        },
-        "max_target_seqs": {
-          "type": "integer",
-          "default": 10,
-          "title": "Max Target Seqs"
-        },
-        "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
-      },
-      "title": "Primer Specificity Refrence Blastn Search Parameters"
-    },
-    "primer_specificity_refrence_blastn_hit_parameters": {
-      "type": "object",
-      "properties": {
-        "min_alignment_length": {
-          "type": "integer",
-          "default": 14,
-          "title": "Min Alignment Length",
-          "description": "can be turned into coverage"
+        "sequence": {
+          "default": "CCCTATAGTGAGTCGTATTA",
+          "description": "Reverse complement of 20 nt T7 promoter sequence. Only used when source = load.",
+          "pattern": "^[ATUGC]+$",
+          "title": "Sequence",
+          "type": "string"
         }
       },
-      "title": "Primer Specificity Refrence Blastn Hit Parameters"
+      "title": "SeqfishPlusReversePrimer",
+      "type": "object"
     },
-    "primer_specificity_encoding_probes_blastn_search_parameters": {
-      "type": "object",
+    "SeqfishPlusSpecificityBlastnFilterDisabled": {
       "properties": {
-        "perc_identity": {
-          "type": "integer",
-          "default": 100,
-          "title": "Perc Identity",
-          "description": "the higher the percent identity is, the more significant the match"
-        },
-        "strand": {
-          "type": "string",
-          "default": "minus",
-          "title": "Strand",
-          "description": "this parameter is fixed, if reference is whole genome, consider using \"both\""
-        },
-        "word_size": { "type": "integer", "default": 7, "title": "Word Size" },
-        "dust": { "type": "string", "default": "no", "title": "Dust" },
-        "soft_masking": {
-          "type": "string",
-          "default": "false",
-          "title": "Soft Masking"
-        },
-        "max_target_seqs": {
-          "type": "integer",
-          "default": 10,
-          "title": "Max Target Seqs"
-        },
-        "max_hsps": { "type": "integer", "default": 1000, "title": "Max Hsps" }
+        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
       },
-      "title": "Primer Specificity Encoding Probes Blastn Search Parameters"
+      "required": ["enabled"],
+      "title": "SeqfishPlusSpecificityBlastnFilterDisabled",
+      "type": "object"
     },
-    "primer_specificity_encoding_probes_blastn_hit_parameters": {
-      "type": "object",
+    "SeqfishPlusTargetSpecificityBlastnFilterEnabled": {
+      "additionalProperties": false,
       "properties": {
-        "min_alignment_length": {
-          "type": "integer",
-          "default": 11,
-          "title": "Min Alignment Length",
-          "description": "can be turned into coverage"
+        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "search_parameters": {
+          "$ref": "#/$defs/BlastnSearchParameters",
+          "default": {
+            "-strand": "minus",
+            "-word_size": 7,
+            "-dust": "no",
+            "-soft_masking": false,
+            "-perc_identity": 100.0,
+            "-max_hsps": 1000,
+            "-max_target_seqs": 10
+          }
+        },
+        "hit_parameters": {
+          "$ref": "#/$defs/BlastnHitParameters",
+          "default": { "min_alignment_length": 15 }
+        },
+        "files_fasta_reference_database": {
+          "description": "FASTA file(s) used as reference for specificity.",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "title": "Files Fasta Reference Database",
+          "type": "array"
         }
       },
-      "title": "Primer Specificity Encoding Probes Blastn Hit Parameters"
+      "required": ["enabled", "files_fasta_reference_database"],
+      "title": "SeqfishPlusTargetSpecificityBlastnFilterEnabled",
+      "type": "object"
     },
-    "primer_Tm_parameters": {
-      "type": "object",
+    "SoftMaskedFilterConfig": {
+      "additionalProperties": false,
+      "description": "Exclude oligos overlapping soft-masked (lowercase) regions in the reference.",
+      "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
+      "required": ["enabled"],
+      "title": "SoftMaskedFilterConfig",
+      "type": "object"
+    },
+    "TargetProbeOligoGeneration": {
+      "additionalProperties": false,
       "properties": {
+        "file_region_ids": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "description": "Path to file listing gene/region IDs to design probes for. Empty = use all genes from the FASTA.",
+          "title": "File Region Ids"
+        },
+        "files_fasta_probe_database": {
+          "description": "FASTA file(s) from which oligo sequences are generated. Use genomic_region_generator for custom regions..",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "title": "Files Fasta Probe Database",
+          "type": "array"
+        },
+        "probe_length_min": {
+          "default": 28,
+          "description": "Minimum allowed oligo length (bases)",
+          "minimum": 0,
+          "title": "Probe Length Min",
+          "type": "integer",
+          "x-quick-setting": true
+        },
+        "probe_length_max": {
+          "default": 28,
+          "description": "Maximum allowed oligo length (bases).",
+          "minimum": 0,
+          "title": "Probe Length Max",
+          "type": "integer",
+          "x-quick-setting": true
+        }
+      },
+      "required": ["file_region_ids", "files_fasta_probe_database"],
+      "title": "TargetProbeOligoGeneration",
+      "type": "object"
+    },
+    "TargetProbeProbeSetSelection": {
+      "additionalProperties": false,
+      "properties": {
+        "independent_set_selection": {
+          "$ref": "#/$defs/IndependentSetSelection",
+          "default": {
+            "n_sets": 3,
+            "set_size_min": 24,
+            "set_size_opt": 24,
+            "distance_between_probes": 2,
+            "n_attempts_graph": 50,
+            "n_attempts_clique_enum": 50,
+            "diversification_fraction": 0.1,
+            "jaccard_opt": 0.5,
+            "jaccard_step": 0.1
+          }
+        },
+        "GC_content_score": {
+          "$ref": "#/$defs/GCContentScore",
+          "default": { "weight": 1.0, "GC_content_opt": 55.0 }
+        },
+        "UTR_score": {
+          "$ref": "#/$defs/UTRScore",
+          "default": { "weight": 10.0 }
+        }
+      },
+      "title": "TargetProbeProbeSetSelection",
+      "type": "object"
+    },
+    "TargetProbePropertyFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "isoform_consensus_filter": {
+          "default": { "enabled": true, "isoform_consensus": 100.0 },
+          "description": "Require oligos to be supported by a minimum fraction of gene transcripts.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/IsoformConsensusFilterDisabled",
+              "True": "#/$defs/IsoformConsensusFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/IsoformConsensusFilterEnabled" },
+            { "$ref": "#/$defs/IsoformConsensusFilterDisabled" }
+          ],
+          "title": "Isoform Consensus Filter"
+        },
+        "hard_masked_sequences_filter": {
+          "$ref": "#/$defs/HardMaskedFilterConfig",
+          "default": { "enabled": true }
+        },
+        "soft_masked_sequences_filter": {
+          "$ref": "#/$defs/SoftMaskedFilterConfig",
+          "default": { "enabled": true }
+        },
+        "homopolymeric_runs_filter": {
+          "default": {
+            "enabled": true,
+            "homopolymeric_base_n": { "A": 5, "C": 5, "G": 5, "T": 5 }
+          },
+          "description": "Exclude oligos containing long homopolymeric runs (e.g. AAAAA).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/HomopolymericRunsFilterDisabled",
+              "True": "#/$defs/HomopolymericRunsFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/HomopolymericRunsFilterEnabled" },
+            { "$ref": "#/$defs/HomopolymericRunsFilterDisabled" }
+          ],
+          "title": "Homopolymeric Runs Filter"
+        },
+        "GC_content_filter": {
+          "default": {
+            "enabled": true,
+            "GC_content_min": 45.0,
+            "GC_content_max": 65.0
+          },
+          "description": "Enforce GC content within a specified range.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/GCContentFilterDisabled",
+              "True": "#/$defs/GCContentFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/GCContentFilterEnabled" },
+            { "$ref": "#/$defs/GCContentFilterDisabled" }
+          ],
+          "title": "Gc Content Filter"
+        },
+        "secondary_structure_filter": {
+          "default": { "enabled": true, "T": 76, "thr_DG": 0.0 },
+          "description": "Reject oligos with stable secondary structure at the given temperature.",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SecondaryStructureFilterDisabled",
+              "True": "#/$defs/SecondaryStructureFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SecondaryStructureFilterEnabled" },
+            { "$ref": "#/$defs/SecondaryStructureFilterDisabled" }
+          ],
+          "title": "Secondary Structure Filter"
+        }
+      },
+      "title": "TargetProbePropertyFilter",
+      "type": "object"
+    },
+    "TargetProbeSpecificityFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "specificity_blastn_filter": {
+          "description": "Ensure oligo specificity against a reference database (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SeqfishPlusTargetSpecificityBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SeqfishPlusTargetSpecificityBlastnFilterEnabled"
+            },
+            { "$ref": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled" }
+          ],
+          "title": "Specificity Blastn Filter"
+        },
+        "cross_hybridization_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-dust": "no",
+              "-max_target_seqs": 10,
+              "-perc_identity": 80.0,
+              "-soft_masking": false,
+              "-strand": "minus",
+              "-word_size": 7
+            },
+            "hit_parameters": { "min_alignment_length": 17 }
+          },
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
+              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
+          ],
+          "title": "Cross Hybridization Blastn Filter"
+        }
+      },
+      "required": ["specificity_blastn_filter"],
+      "title": "TargetProbeSpecificityFilter",
+      "type": "object"
+    },
+    "TargetProbes": {
+      "additionalProperties": false,
+      "properties": {
+        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
+        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
+        "specificity_filters": {
+          "$ref": "#/$defs/TargetProbeSpecificityFilter"
+        },
+        "probe_set_selection": {
+          "$ref": "#/$defs/TargetProbeProbeSetSelection",
+          "description": "Parameters for selecting multiple probe sets per gene (size, spacing, scoring, diversification)."
+        }
+      },
+      "required": [
+        "oligo_generation",
+        "property_filters",
+        "specificity_filters",
+        "probe_set_selection"
+      ],
+      "title": "TargetProbes",
+      "type": "object"
+    },
+    "TmChemCorrectionParametersDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "DMSO": {
+          "default": 0,
+          "description": "Percent DMSO",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Dmso",
+          "type": "number"
+        },
+        "DMSOfactor": {
+          "default": 0.75,
+          "description": "How much Tm should decrease per percent DMSO",
+          "title": "Dmsofactor",
+          "type": "number"
+        },
+        "fmd": {
+          "default": 0,
+          "description": "Formamide concentration in %(fmdmethod=1) or molar (fmdmethod=2).",
+          "title": "Fmd",
+          "type": "number"
+        },
+        "fmdfactor": {
+          "default": 0.65,
+          "description": "How much Tm should decrease per percent formamide",
+          "title": "Fmdfactor",
+          "type": "number"
+        },
+        "fmdmethod": {
+          "default": 1,
+          "description": "Tm = Tm - factor(%formamide) (Default); Tm = Tm + (0.453(f(GC)) - 2.88) x [formamide]",
+          "maximum": 2,
+          "minimum": 1,
+          "title": "Fmdmethod",
+          "type": "integer"
+        },
+        "GC": {
+          "anyOf": [
+            { "maximum": 100, "minimum": 0, "type": "number" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "GC content in percent.",
+          "title": "Gc"
+        }
+      },
+      "title": "TmChemCorrectionParametersDetails",
+      "type": "object"
+    },
+    "TmChemCorrectionParametersDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "default": false,
+          "description": "Should chem correction be used in the calculation of the melting temperature?",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "TmChemCorrectionParametersDisabled",
+      "type": "object"
+    },
+    "TmChemCorrectionParametersEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "default": true,
+          "description": "Should chem correction be used in the calculation of the melting temperature?",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "parameters": {
+          "$ref": "#/$defs/TmChemCorrectionParametersDetails",
+          "default": {
+            "DMSO": 0.0,
+            "DMSOfactor": 0.75,
+            "fmd": 0.0,
+            "fmdfactor": 0.65,
+            "fmdmethod": 1,
+            "GC": null
+          }
+        }
+      },
+      "title": "TmChemCorrectionParametersEnabled",
+      "type": "object"
+    },
+    "TmFilterDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "TmFilterDisabled",
+      "type": "object"
+    },
+    "TmFilterEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "Tm_min": {
+          "description": "Minimum melting temperature (\u00b0C). Oligos below this are rejected.",
+          "minimum": 0,
+          "title": "Tm Min",
+          "type": "number"
+        },
+        "Tm_max": {
+          "description": "Maximum melting temperature (\u00b0C). Oligos above this are rejected.",
+          "minimum": 0,
+          "title": "Tm Max",
+          "type": "number"
+        }
+      },
+      "required": ["enabled", "Tm_min", "Tm_max"],
+      "title": "TmFilterEnabled",
+      "type": "object"
+    },
+    "TmParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "check": {
+          "default": true,
+          "description": "Checks if the sequence is valid for the given method.",
+          "title": "Check",
+          "type": "boolean"
+        },
+        "strict": {
+          "default": true,
+          "description": "Do not allow base characters or neighbor duplex keys (e.g. 'AT/NA') that could not or not unambiguously be evaluated for the respective method.",
+          "title": "Strict",
+          "type": "boolean"
+        },
+        "c_seq": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "default": null,
+          "description": "Complementary sequence. The sequence of the template/target in 3'->5' direction. c_seq is necessary for mismatch correction and dangling-ends correction. Both corrections will automatically be applied if mismatches or dangling ends are present.",
+          "title": "C Seq"
+        },
+        "shift": {
+          "default": 0,
+          "description": "Shift of the primer/probe sequence on the template/target sequence. The shift parameter is necessary to align seq and c_seq if they have different lengths or if they should have dangling ends.",
+          "title": "Shift",
+          "type": "integer"
+        },
+        "selfcomp": {
+          "default": false,
+          "description": "Is the sequence self-complementary? If 'True' the primer is thought binding to itself, thus dnac2 is not considered.",
+          "title": "Selfcomp",
+          "type": "boolean"
+        },
         "nn_table": {
-          "type": "string",
-          "default": "DNA_NN4",
-          "title": "Nn Table",
-          "description": "S antaLucia (2004) taken from Moffitt (2016)"
+          "anyOf": [
+            {
+              "enum": ["DNA_NN1", "DNA_NN2", "DNA_NN3", "DNA_NN4"],
+              "type": "string"
+            },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Thermodynamic NN values.",
+          "title": "Nn Table"
         },
         "tmm_table": {
-          "type": "string",
-          "default": "DNA_TMM1",
-          "title": "Tmm Table",
-          "description": "default"
+          "anyOf": [
+            { "const": "DNA_TMM1", "type": "string" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Thermodynamic values for terminal mismatches.",
+          "title": "Tmm Table"
         },
         "imm_table": {
-          "type": "string",
-          "default": "DNA_IMM1",
-          "title": "Imm Table",
-          "description": "default"
+          "anyOf": [
+            { "const": "DNA_IMM1", "type": "string" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Thermodynamic values for internal mismatches, may include insosine mismatches.",
+          "title": "Imm Table"
         },
         "de_table": {
-          "type": "string",
-          "default": "DNA_DE1",
-          "title": "De Table",
-          "description": "default"
+          "anyOf": [
+            { "const": "DNA_DE1", "type": "string" },
+            { "type": "null" }
+          ],
+          "default": null,
+          "description": "Thermodynamic values for dangling ends.",
+          "title": "De Table"
         },
         "dnac1": {
-          "type": "integer",
-          "default": 250,
+          "default": 25,
+          "description": "Concentration of the higher concentrated strand [nM].",
+          "minimum": 0,
           "title": "Dnac1",
-          "description": "[nM] taken from https://github.com/ZhuangLab/MERFISH_analysis"
+          "type": "integer"
         },
         "dnac2": {
-          "type": "integer",
-          "default": 250,
+          "default": 25,
+          "description": "Concentration of the lower concentrated strand [nM].",
+          "minimum": 0,
           "title": "Dnac2",
-          "description": "[nM] taken from https://github.com/ZhuangLab/MERFISH_analysis"
+          "type": "integer"
         },
         "saltcorr": {
-          "type": "integer",
           "default": 5,
+          "description": "Salt correction method, see Bio.SeqUtils.MeltingTemp.salt_correction.",
+          "maximum": 7,
+          "minimum": 0,
           "title": "Saltcorr",
-          "description": "correction for deltaS, taken from https://github.com/ZhuangLab/MERFISH_analysis"
+          "type": "integer"
         },
         "Na": {
-          "type": "integer",
-          "default": 300,
+          "default": 50,
+          "description": "Concentration of the ions [mM].",
+          "minimum": 0,
           "title": "Na",
-          "description": "[mM] 0.3M, taken from https://github.com/ZhuangLab/MERFISH_analysis"
+          "type": "integer"
         },
         "K": {
-          "type": "integer",
           "default": 0,
+          "description": "Concentration of the ions [mM].",
+          "minimum": 0,
           "title": "K",
-          "description": "[mM] default"
+          "type": "integer"
         },
         "Tris": {
-          "type": "integer",
           "default": 0,
+          "description": "Concentration of the ions [mM].",
+          "minimum": 0,
           "title": "Tris",
-          "description": "[mM] default"
+          "type": "integer"
         },
         "Mg": {
-          "type": "integer",
           "default": 0,
+          "description": "Concentration of the ions [mM].",
+          "minimum": 0,
           "title": "Mg",
-          "description": "[mM] default"
+          "type": "integer"
         },
         "dNTPs": {
-          "type": "integer",
           "default": 0,
+          "description": "Concentration of the ions [mM].",
+          "minimum": 0,
           "title": "Dntps",
-          "description": "[mM] default"
+          "type": "integer"
         }
       },
-      "title": "Primer Tm Parameters"
+      "title": "TmParameters",
+      "type": "object"
     },
-    "primer_Tm_chem_correction_parameters": {
-      "type": "null",
-      "default": null,
-      "title": "Primer Tm Chem Correction Parameters",
-      "description": "if chem correction desired, please add parameters below"
+    "TmSaltCorrectionParametersDetails": {
+      "additionalProperties": false,
+      "properties": {
+        "Na": {
+          "default": 0,
+          "description": "[mM] of ion",
+          "minimum": 0,
+          "title": "Na",
+          "type": "integer"
+        },
+        "K": {
+          "default": 0,
+          "description": "[mM] of ion",
+          "minimum": 0,
+          "title": "K",
+          "type": "integer"
+        },
+        "Tris": {
+          "default": 0,
+          "description": "[mM] of ion",
+          "minimum": 0,
+          "title": "Tris",
+          "type": "integer"
+        },
+        "Mg": {
+          "default": 0,
+          "description": "[mM] of ion",
+          "minimum": 0,
+          "title": "Mg",
+          "type": "integer"
+        },
+        "dNTPs": {
+          "default": 0,
+          "description": "[mM] of ion",
+          "minimum": 0,
+          "title": "Dntps",
+          "type": "integer"
+        },
+        "method": {
+          "default": 1,
+          "description": "Correction method to be applied. Methods 1-4 correct Tm, method 5 corrects deltaS, methods 6 and 7 correct 1/Tm.",
+          "exclusiveMinimum": 0,
+          "maximum": 7,
+          "minimum": 1,
+          "title": "Method",
+          "type": "integer"
+        }
+      },
+      "title": "TmSaltCorrectionParametersDetails",
+      "type": "object"
     },
-    "primer_Tm_salt_correction_parameters": {
-      "type": "null",
-      "default": null,
-      "title": "Primer Tm Salt Correction Parameters",
-      "description": "if salt correction desired, please add parameters below"
+    "TmSaltCorrectionParametersDisabled": {
+      "properties": {
+        "enabled": {
+          "const": false,
+          "default": false,
+          "description": "Should salt correction be used in the calculation of the melting temperature?",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "title": "TmSaltCorrectionParametersDisabled",
+      "type": "object"
+    },
+    "TmSaltCorrectionParametersEnabled": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "const": true,
+          "default": true,
+          "description": "Should salt correction be used in the calculation of the melting temperature?",
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "parameters": {
+          "$ref": "#/$defs/TmSaltCorrectionParametersDetails",
+          "default": {
+            "Na": 0,
+            "K": 0,
+            "Tris": 0,
+            "Mg": 0,
+            "dNTPs": 0,
+            "method": 1
+          }
+        }
+      },
+      "title": "TmSaltCorrectionParametersEnabled",
+      "type": "object"
+    },
+    "UTRScore": {
+      "additionalProperties": false,
+      "properties": {
+        "weight": {
+          "description": "Weight for UTR-overlap targeting in the set-selection scoring function.",
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": ["weight"],
+      "title": "UTRScore",
+      "type": "object"
     }
-  }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 2,
+      "default": 2,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "general": {
+      "$ref": "#/$defs/General",
+      "default": {
+        "n_jobs": 4,
+        "dir_output": "output_SeqfishPlusplus_probe_designer",
+        "write_intermediate_steps": true
+      }
+    },
+    "target_probes": { "$ref": "#/$defs/TargetProbes" },
+    "readout_probes": { "$ref": "#/$defs/ReadoutProbes" },
+    "primers": { "$ref": "#/$defs/Primers" }
+  },
+  "required": ["target_probes", "readout_probes", "primers"],
+  "title": "SeqfishPlusProbeDesignerConfig",
+  "type": "object"
 }
