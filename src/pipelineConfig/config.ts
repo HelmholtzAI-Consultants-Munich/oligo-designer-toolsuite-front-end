@@ -113,7 +113,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         link: "/pipelines/oligoseq",
         fileUploadFields: [
             [
-                "target_probe",
+                "target_probes",
                 "specificity_filters",
                 "variant_filter",
                 "files_vcf_reference_database",

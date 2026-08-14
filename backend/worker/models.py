@@ -1,6 +1,7 @@
 """Overwrites of the Pydantic Models from ODT are done here."""
 
 import json
+import os
 from typing import Annotated, Literal
 
 from oligo_designer_toolsuite.config._general_models import BlastnHitParameters
@@ -13,27 +14,33 @@ from oligo_designer_toolsuite.config._specificity_filters import (
 from oligo_designer_toolsuite.config._specificity_filters import (
     CrossHybridizationBlastnFilterEnabled as CrossHybridizationBlastnFilterEnabledBase,
 )
-from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
-    OligoSeqSpecificityBlastnFilterDisabled,
-    OligoSeqVariantFilterDisabled,
-)
-from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
-    OligoSeqSpecificityBlastnFilterEnabled as OligoSeqSpecificityBlastnFilterEnabledBase,
-)
-from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
-    OligoSeqVariantFilterEnabled as OligoSeqVariantFilterEnabledBase,
-)
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     OligoSeqProbeDesignerConfig as OligoSeqProbeDesignerConfigBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    TargetProbe as TargetProbeBase,
+    OligoSeqSpecificityBlastnFilterDisabled,
+    OligoSeqVariantFilterDisabled,
+)
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
+    OligoSeqSpecificityBlastnFilterEnabled as OligoSeqSpecificityBlastnFilterEnabledBase,
+)
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
+    OligoSeqVariantFilterEnabled as OligoSeqVariantFilterEnabledBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeOligoGeneration as TargetProbeOligoGenerationBase,
 )
+
+# Renamed from `TargetProbe` on ODT's pydantic-refactor branch, along with the section it
+# holds (`target_probe` -> `target_probes`), matching seqfish.
+from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
+    TargetProbes as TargetProbeBase,
+)
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeSpecificityFilter as TargetProbeSpecificityFilterBase,
+)
+from oligo_designer_toolsuite.config.pipelines.seqfish_plus_probe_designer import (
+    SeqfishPlusProbeDesignerConfig,
 )
 from pydantic import AliasChoices, BaseModel, Field
 
@@ -274,7 +281,7 @@ class OligoSeqProbeDesignerConfig(OligoSeqProbeDesignerConfigBase):
     we can inject our custom genomic region generator models
     """
 
-    target_probe: TargetProbe  # type: ignore
+    target_probes: TargetProbe  # type: ignore
 
 
 class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
@@ -287,11 +294,21 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
     """
 
     schema_version: Literal[2] = 2
-    target_probe: TargetProbe
+    target_probes: TargetProbe
 
 
 if __name__ == "__main__":
+    # Written straight into the repo's `schemas/`, where the front-end imports them from,
+    # so running this module needs no follow-up move regardless of the working directory.
+    schemas_dir = os.path.join(os.path.dirname(__file__), "..", "..", "schemas")
+
     schema = OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()
     schema = strip_local_descriptions(schema, globals(), __name__)
-    with open("oligoseq.schema.json", "w+") as f:
+    with open(os.path.join(schemas_dir, "oligoseq.schema.json"), "w+") as f:
         json.dump(mark_schema_flags(schema, FRONT_END_FLAGS), f)
+
+    # seqfish is dumped straight from ODT: it has no front-end model yet, so there are no
+    # local docstrings to strip, and FRONT_END_FLAGS names oligoseq models this schema does
+    # not define. ODT declares seqfish's quick settings inline via json_schema_extra instead.
+    with open(os.path.join(schemas_dir, "seqfish.schema.json"), "w+") as f:
+        json.dump(SeqfishPlusProbeDesignerConfig.model_json_schema(), f)

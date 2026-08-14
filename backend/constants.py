@@ -23,8 +23,8 @@ PIPELINE_GENOMIC_INPUT: Mapping[str, list[str]] = dict(
     },
     **{
         pipeline: [
-            "target_probe.oligo_generation.files_fasta_probe_database",
-            "target_probe.specificity_filters.specificity_blastn_filter.files_fasta_reference_database",
+            "target_probes.oligo_generation.files_fasta_probe_database",
+            "target_probes.specificity_filters.specificity_blastn_filter.files_fasta_reference_database",
         ]
         for pipeline in ["oligoseq"]
     },
@@ -49,7 +49,7 @@ PIPELINE_GENOMIC_INPUT: Mapping[str, list[str]] = dict(
 )
 
 PIPELINE_FILE_INPUT: Mapping[str, list[str]] = {
-    "oligoseq": ["target_probe.specificity_filters.variant_filter.files_vcf_reference_database"]
+    "oligoseq": ["target_probes.specificity_filters.variant_filter.files_vcf_reference_database"]
 }
 
 PIPELINE_NON_EXPOSED_FIELDS = {

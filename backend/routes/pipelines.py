@@ -171,7 +171,7 @@ def update_run_with_context(
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
-    genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+    genes_string = glom(form_data, "target_probes.oligo_generation.file_region_ids")
     if genes_string is None:
         abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
     genes = genes_string.split(",")

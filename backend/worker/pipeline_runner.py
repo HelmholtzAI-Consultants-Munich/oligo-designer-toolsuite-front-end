@@ -86,7 +86,7 @@ class PipelineRunner:
         Arguments:
             form_data {dict} -- The pipeline configuration.
         """
-        oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
+        oligo_generation_form = glom(form_data, "target_probes.oligo_generation")
         file_region_ids = oligo_generation_form["file_region_ids"]
         if file_region_ids is not None:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
@@ -222,9 +222,9 @@ class PipelineRunner:
             output_path {str} -- The path where all output of the pipeline should be written.
         """
         # find files_fasta_target_probe_database fasta file and read it
-        regions_file = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+        regions_file = glom(form_data, "target_probes.oligo_generation.file_region_ids")
 
-        fasta_paths = glom(form_data, "target_probe.oligo_generation.files_fasta_probe_database")
+        fasta_paths = glom(form_data, "target_probes.oligo_generation.files_fasta_probe_database")
         if not fasta_paths:
             self.logger.debug("No fasta files provided, skipping visualization generation.")
             return
@@ -260,7 +260,7 @@ class PipelineRunner:
             form_data {dict} -- The pipeline configuration.
             config_path {str} -- The configuration filepath.
         """
-        oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
+        oligo_generation_form = glom(form_data, "target_probes.oligo_generation")
         # Remove temp file for file_regions if it was created
         if oligo_generation_form["file_region_ids"]:
             temp_path = oligo_generation_form["file_region_ids"].strip()

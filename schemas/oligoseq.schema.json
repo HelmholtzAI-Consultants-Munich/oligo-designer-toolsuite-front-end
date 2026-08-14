@@ -332,7 +332,7 @@
         },
         "hit_parameters": {
           "$ref": "#/$defs/BlastnHitParameters",
-          "description": "Parameters for filtering BLASTN hits in cross-hybridization searches. Use either coverage or min_alignment_length."
+          "description": "Hit criteria. Hits satisfying these lead to oligo rejection."
         }
       },
       "required": ["enabled", "search_parameters", "hit_parameters"],
@@ -341,7 +341,12 @@
     },
     "GCContentFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "GCContentFilterDisabled",
@@ -350,16 +355,21 @@
     "GCContentFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "GC_content_min": {
-          "description": "Minimum GC content (in %) for probes. Probes with GC content below this value will be filtered out/rejected.",
+          "description": "Minimum GC content (%). Oligos below this are rejected.",
           "maximum": 100,
           "minimum": 0,
           "title": "Gc Content Min",
           "type": "number"
         },
         "GC_content_max": {
-          "description": "Maximum GC content (in %) for probes. Probes with GC content above this value will be filtered out/rejected.",
+          "description": "Maximum GC content (%). Oligos above this are rejected.",
           "maximum": 100,
           "minimum": 0,
           "title": "Gc Content Max",
@@ -370,30 +380,30 @@
       "title": "GCContentFilterEnabled",
       "type": "object"
     },
-    "GCContentScore": {
+    "GCContentScoreNormalized": {
       "additionalProperties": false,
       "properties": {
         "weight": {
-          "description": "Weight assigned in the scoring function.",
+          "description": "Weight for GC content in the set-selection scoring function.",
           "title": "Weight",
           "type": "number"
         },
-        "GC_content_min": {
-          "description": "Minimum GC content (in %) for probes. Probes with GC content below this value will be filtered out/rejected.",
-          "maximum": 100,
-          "minimum": 0,
-          "title": "Gc Content Min",
-          "type": "number"
-        },
         "GC_content_opt": {
-          "description": "Optimal GC content (in %) for target probes. Used in scoring to prioritize probes closer to this value.",
+          "description": "Target (optimal) GC content (%) for scoring.",
           "maximum": 100,
           "minimum": 0,
           "title": "Gc Content Opt",
           "type": "number"
         },
+        "GC_content_min": {
+          "description": "Minimum GC content (%). Oligos below this are rejected.",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Gc Content Min",
+          "type": "number"
+        },
         "GC_content_max": {
-          "description": "Maximum GC content (in %) for probes. Probes with GC content above this value will be filtered out/rejected.",
+          "description": "Maximum GC content (%). Oligos above this are rejected.",
           "maximum": 100,
           "minimum": 0,
           "title": "Gc Content Max",
@@ -402,11 +412,11 @@
       },
       "required": [
         "weight",
-        "GC_content_min",
         "GC_content_opt",
+        "GC_content_min",
         "GC_content_max"
       ],
-      "title": "GCContentScore",
+      "title": "GCContentScoreNormalized",
       "type": "object"
     },
     "GenomicRegionGeneratorEnsembl": {
@@ -493,6 +503,7 @@
     },
     "HardMaskedFilterConfig": {
       "additionalProperties": false,
+      "description": "Exclude oligos overlapping hard-masked (e.g. N) regions in the reference.",
       "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
       "required": ["enabled"],
       "title": "HardMaskedFilterConfig",
@@ -507,6 +518,7 @@
             { "type": "null" }
           ],
           "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
           "title": "A"
         },
         "T": {
@@ -515,6 +527,7 @@
             { "type": "null" }
           ],
           "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
           "title": "T"
         },
         "C": {
@@ -523,6 +536,7 @@
             { "type": "null" }
           ],
           "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
           "title": "C"
         },
         "G": {
@@ -531,6 +545,7 @@
             { "type": "null" }
           ],
           "default": null,
+          "description": " Minimum run length per base to count as homopolymeric. Oligos with longer runs are rejected.",
           "title": "G"
         }
       },
@@ -539,7 +554,12 @@
     },
     "HomopolymericRunsFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "HomopolymericRunsFilterDisabled",
@@ -548,10 +568,15 @@
     "HomopolymericRunsFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "homopolymeric_base_n": {
           "$ref": "#/$defs/HomopolymericRunThreshold",
-          "description": "minimum number of nucleotides to consider it a homopolymeric run per base"
+          "description": "Minimum run length per base to count as homopolymeric (any base not listed is unrestricted). Oligos with longer runs are rejected."
         }
       },
       "required": ["enabled", "homopolymeric_base_n"],
@@ -562,59 +587,59 @@
       "additionalProperties": false,
       "properties": {
         "n_sets": {
-          "description": "Number of oligo sets to generate per region. Multiple sets allow for redundancy and selection of the best-performing set based on scoring criteria.",
+          "description": "Number of probe sets to generate per gene.",
           "exclusiveMinimum": 0,
           "title": "N Sets",
           "type": "integer",
           "x-quick-setting": true
         },
         "set_size_min": {
-          "description": "Minimum size (number of probes) required for each oligo set. Sets with fewer probes than this value will be rejected, and regions that cannot generate sets meeting this minimum will be removed. Regions with less oligos will be filtered out and stored in regions_with_insufficient_oligos_for_db_probes.",
+          "description": "Minimum set size. Genes that cannot form a set of at least this size are reported as insufficient.",
           "exclusiveMinimum": 0,
           "title": "Set Size Min",
           "type": "integer",
           "x-quick-setting": true
         },
         "set_size_opt": {
-          "description": "Optimal size (number of probes) for each oligo set. The set selection algorithm will attempt to generate sets of this size, but may produce sets with fewer probes if constraints cannot be met.",
+          "description": "Preferred (optimal) number of oligos per set.",
           "exclusiveMinimum": 0,
           "title": "Set Size Opt",
           "type": "integer",
           "x-quick-setting": true
         },
-        "distance_between_target_probes": {
-          "description": "How much overlap should be allowed between oligos, e.g. if oligos can overlap x bases choose -x, if oligos can be next to one another choose 0, if oligos should be x bases apart choose x.",
-          "title": "Distance Between Target Probes",
+        "distance_between_probes": {
+          "description": "Required spacing: negative = allow overlap (bases), 0 = adjacent OK, positive = minimum gap (bases).",
+          "title": "Distance Between Probes",
           "type": "integer"
         },
         "n_attempts_graph": {
-          "description": "Number of randomized graph attempts. In each attempt, a fraction of nodes is randomly removed from the compatibility graph to create diversity; more attempts increase diversity at the cost of runtime.",
+          "description": "Number of randomized graph attempts used to diversify set selection.",
           "exclusiveMinimum": 0,
           "title": "N Attempts Graph",
           "type": "integer"
         },
         "n_attempts_clique_enum": {
-          "description": "Maximum number of cliques enumerated per graph attempt. Limits how many cliques are explored before stopping enumeration for the current graph.",
+          "description": "Maximum cliques enumerated per graph attempt.",
           "exclusiveMinimum": 0,
           "title": "N Attempts Clique Enum",
           "type": "integer"
         },
         "diversification_fraction": {
-          "description": "Fraction of oligos to remove from the graph per attempt to create diversity in the set selection.",
+          "description": "Fraction of oligos removed from the graph in each attempt to increase set diversity.",
           "maximum": 1,
           "minimum": 0,
           "title": "Diversification Fraction",
           "type": "number"
         },
         "jaccard_opt": {
-          "description": "Optimal maximum Jaccard overlap allowed between selected sets. Lower values enforce more diversity between sets.",
+          "description": "Target maximum Jaccard similarity between selected sets; lower = more distinct sets.",
           "maximum": 1,
           "minimum": 0,
           "title": "Jaccard Opt",
           "type": "number"
         },
         "jaccard_step": {
-          "description": "Step size used to relax the Jaccard constraint when not enough sets are found.",
+          "description": "Step size for relaxing Jaccard threshold when too few sets are found.",
           "maximum": 1,
           "minimum": 0,
           "title": "Jaccard Step",
@@ -625,7 +650,7 @@
         "n_sets",
         "set_size_min",
         "set_size_opt",
-        "distance_between_target_probes",
+        "distance_between_probes",
         "n_attempts_graph",
         "n_attempts_clique_enum",
         "diversification_fraction",
@@ -637,7 +662,12 @@
     },
     "IsoformConsensusFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "IsoformConsensusFilterDisabled",
@@ -646,9 +676,14 @@
     "IsoformConsensusFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "isoform_consensus": {
-          "description": "Threshold for isoform consensus filtering in %. Probes with isoform consensus values below this threshold will be filtered out. This ensures that selected probes target sequences that are conserved across multiple transcript isoforms.",
+          "description": "Minimum isoform consensus (%). Oligos must be covered by at least this fraction of a gene's transcripts.",
           "maximum": 100,
           "minimum": 0,
           "title": "Isoform Consensus",
@@ -663,7 +698,7 @@
       "additionalProperties": false,
       "properties": {
         "weight": {
-          "description": "Weight assigned in the scoring function.",
+          "description": "Weight for isoform coverage in the set-selection scoring function.",
           "title": "Weight",
           "type": "number"
         }
@@ -750,7 +785,12 @@
     },
     "ProhibitedSequencesFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "ProhibitedSequencesFilterDisabled",
@@ -759,7 +799,12 @@
     "ProhibitedSequencesFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "prohibited_sequences": {
           "description": "The sequences to prohibit in the oligos. If an oligo contains any of these sequences, it will be filtered out.",
           "items": { "pattern": "^[ATUGC]+$", "type": "string" },
@@ -810,7 +855,12 @@
     },
     "SecondaryStructureFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "SecondaryStructureFilterDisabled",
@@ -819,15 +869,20 @@
     "SecondaryStructureFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "T": {
-          "description": "Temperature in degrees Celsius at which to evaluate secondary structure formation (free energy calculation). Secondary structures that form at this temperature can interfere with probe binding.",
+          "description": "Temperature (\u00b0C) at which secondary structure free energy is evaluated.",
           "exclusiveMinimum": 0,
           "title": "T",
           "type": "integer"
         },
         "thr_DG": {
-          "description": "DeltaG threshold (in kcal/mol) for secondary structure stability. Probes with secondary structures having deltaG values more negative (more stable) than this threshold will be filtered out.",
+          "description": "Free-energy threshold (kcal/mol). Oligos with \u0394G \u2264 thr_DG (stable structure) are rejected.",
           "title": "Thr Dg",
           "type": "number"
         }
@@ -838,7 +893,12 @@
     },
     "SelfComplementarityFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "SelfComplementarityFilterDisabled",
@@ -847,9 +907,14 @@
     "SelfComplementarityFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "max_len_selfcomplement": {
-          "description": "Maximum allowable length of self-complementary sequences. Probes with longer self-complementary regions can form hairpins and reduce hybridization efficiency.",
+          "description": "Maximum allowable length of self-complementary sequences. Probes with longer self-complementary regions can form hairpins.",
           "minimum": 0,
           "title": "Max Len Selfcomplement",
           "type": "integer"
@@ -861,6 +926,7 @@
     },
     "SoftMaskedFilterConfig": {
       "additionalProperties": false,
+      "description": "Exclude oligos overlapping soft-masked (lowercase) regions in the reference.",
       "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
       "required": ["enabled"],
       "title": "SoftMaskedFilterConfig",
@@ -1028,7 +1094,7 @@
         },
         "probe_length_min": {
           "default": 26,
-          "description": "Minimum length (in nucleotides) for oligo sequences.",
+          "description": "Minimum allowed oligo length (bases)",
           "minimum": 0,
           "title": "Probe Length Min",
           "type": "integer",
@@ -1036,7 +1102,7 @@
         },
         "probe_length_max": {
           "default": 30,
-          "description": "Maximum length (in nucleotides) for probe sequences.",
+          "description": "Maximum allowed oligo length (bases).",
           "minimum": 0,
           "title": "Probe Length Max",
           "type": "integer",
@@ -1063,7 +1129,7 @@
             "n_sets": 3,
             "set_size_min": 3,
             "set_size_opt": 5,
-            "distance_between_target_probes": 0,
+            "distance_between_probes": 0,
             "n_attempts_graph": 50,
             "n_attempts_clique_enum": 50,
             "diversification_fraction": 0.1,
@@ -1084,11 +1150,11 @@
           "default": { "weight": 0.0, "targeted_exons": [] }
         },
         "GC_content_score": {
-          "$ref": "#/$defs/GCContentScore",
+          "$ref": "#/$defs/GCContentScoreNormalized",
           "default": {
             "weight": 1.0,
-            "GC_content_min": 45.0,
             "GC_content_opt": 55.0,
+            "GC_content_min": 45.0,
             "GC_content_max": 65.0
           }
         },
@@ -1110,6 +1176,7 @@
       "properties": {
         "isoform_consensus_filter": {
           "default": { "enabled": true, "isoform_consensus": 0.0 },
+          "description": "Require oligos to be supported by a minimum fraction of gene transcripts.",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/IsoformConsensusFilterDisabled",
@@ -1151,6 +1218,7 @@
             "enabled": true,
             "homopolymeric_base_n": { "A": 6, "C": 6, "G": 6, "T": 6 }
           },
+          "description": "Exclude oligos containing long homopolymeric runs (e.g. AAAAA).",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/HomopolymericRunsFilterDisabled",
@@ -1170,6 +1238,7 @@
             "GC_content_min": 45.0,
             "GC_content_max": 65.0
           },
+          "description": "Enforce GC content within a specified range.",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/GCContentFilterDisabled",
@@ -1209,6 +1278,7 @@
         },
         "self_complementarity_filter": {
           "default": { "enabled": true, "max_len_selfcomplement": 10 },
+          "description": "Limit self-complementarity to avoid hairpins.",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SelfComplementarityFilterDisabled",
@@ -1239,6 +1309,7 @@
         },
         "secondary_structure_filter": {
           "default": { "enabled": true, "T": 37, "thr_DG": 0.0 },
+          "description": "Reject oligos with stable secondary structure at the given temperature.",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SecondaryStructureFilterDisabled",
@@ -1332,7 +1403,12 @@
     },
     "TargetedExonsFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "TargetedExonsFilterDisabled",
@@ -1341,7 +1417,12 @@
     "TargetedExonsFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "targeted_exons": {
           "description": "List of exon identifiers that should be preferentially targeted by probes, e.g. ['1', '2', '3']. Only probes in these exons are kept.",
           "items": { "type": "string" },
@@ -1357,7 +1438,7 @@
       "additionalProperties": false,
       "properties": {
         "weight": {
-          "description": "Weight assigned in the scoring function.",
+          "description": "Weight for targeted-exon coverage in the set-selection scoring function.",
           "title": "Weight",
           "type": "number"
         },
@@ -1462,7 +1543,12 @@
     },
     "TmFilterDisabled": {
       "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+        "enabled": {
+          "const": false,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
       },
       "required": ["enabled"],
       "title": "TmFilterDisabled",
@@ -1471,15 +1557,20 @@
     "TmFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "enabled": {
+          "const": true,
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        },
         "Tm_min": {
-          "description": "Minimum melting temperature (Tm) in degrees Celsius for probes. Probes with calculated Tm below this value will be filtered out.",
+          "description": "Minimum melting temperature (\u00b0C). Oligos below this are rejected.",
           "minimum": 0,
           "title": "Tm Min",
           "type": "number"
         },
         "Tm_max": {
-          "description": "Maximum melting temperature (Tm) in degrees Celsius for target probes. Probes with calculated Tm above this value will be filtered out. This value is also used as the optimal Tm target in probe scoring.",
+          "description": "Maximum melting temperature (\u00b0C). Oligos above this are rejected.",
           "minimum": 0,
           "title": "Tm Max",
           "type": "number"
@@ -1715,24 +1806,24 @@
       "additionalProperties": false,
       "properties": {
         "weight": {
-          "description": "Weight assigned in the scoring function.",
+          "description": "Weight for Tm in the set-selection scoring function.",
           "title": "Weight",
           "type": "number"
         },
         "Tm_min": {
-          "description": "Minimum melting temperature (Tm) in degrees Celsius for probes. Probes with calculated Tm below this value will be filtered out.",
+          "description": "Minimum melting temperature (\u00b0C). Oligos below this are rejected.",
           "minimum": 0,
           "title": "Tm Min",
           "type": "number"
         },
         "Tm_opt": {
-          "description": "Optimal melting temperature (Tm) for oligos in degrees Celsius. Used in scoring to prioritize probes closer to this value.",
+          "description": "Target (optimal) Tm (\u00b0C) for scoring.",
           "minimum": 0,
           "title": "Tm Opt",
           "type": "number"
         },
         "Tm_max": {
-          "description": "Maximum melting temperature (Tm) in degrees Celsius for target probes. Probes with calculated Tm above this value will be filtered out. This value is also used as the optimal Tm target in probe scoring.",
+          "description": "Maximum melting temperature (\u00b0C). Oligos above this are rejected.",
           "minimum": 0,
           "title": "Tm Max",
           "type": "number"
@@ -1746,7 +1837,7 @@
       "additionalProperties": false,
       "properties": {
         "weight": {
-          "description": "Weight assigned in the scoring function.",
+          "description": "Weight for uniform spacing in the set-selection scoring function.",
           "title": "Weight",
           "type": "number"
         }
@@ -1763,9 +1854,9 @@
       "title": "Schema Version",
       "type": "integer"
     },
-    "target_probe": { "$ref": "#/$defs/TargetProbe" }
+    "target_probes": { "$ref": "#/$defs/TargetProbe" }
   },
-  "required": ["target_probe"],
+  "required": ["target_probes"],
   "title": "OligoSeqProbeDesignerConfigFrontEnd",
   "type": "object"
 }

@@ -1,7 +1,7 @@
 {
   "formdata": {
     "schema_version": 2,
-    "target_probe": {
+    "target_probes": {
       "oligo_generation": {
         "file_region_ids": "GFB69_RS14600",
         "files_fasta_probe_database": [
@@ -245,7 +245,7 @@
       "exportedAt": "2026-06-03T12:27:31.761Z"
     },
     "config": {
-      "target_probe": {
+      "target_probes": {
         "oligo_generation": {
           "file_region_ids": "GFB69_RS14600",
           "files_fasta_probe_database": [
