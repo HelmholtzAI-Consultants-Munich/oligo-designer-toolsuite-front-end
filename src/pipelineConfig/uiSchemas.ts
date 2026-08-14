@@ -156,6 +156,19 @@ const uiSchemaFromJsonSchemaRecursive = (
                     fieldUiSchema["ui:ObjectFieldTemplate"] =
                         CollapsibleSectionLayout;
                 }
+                // A description written next to a `$ref` or a discriminated union
+                // describes the field, but the recursive call resolves the pointer and
+                // builds the uiSchema from the target model, which never saw it. Carry
+                // it across as `ui:description`, the same way the `x-` flags are.
+                if (
+                    propertySchema.description &&
+                    (propertySchema.$ref ||
+                        propertySchema.oneOf ||
+                        propertySchema.anyOf)
+                ) {
+                    fieldUiSchema["ui:description"] =
+                        propertySchema.description;
+                }
                 if (hasSchemaFlag(propertySchema, "x-quick-setting")) {
                     // pinned to the Quick Settings panel above the tabs, not its own section
                     fieldUiSchema["ui:options"] = {
