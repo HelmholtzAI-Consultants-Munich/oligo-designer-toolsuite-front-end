@@ -63,7 +63,7 @@ const TxtUploadInput = (props: FieldProps) => {
     return (
         <>
             <Form.Label htmlFor={fieldPathId.$id} className="super-label mb-1">
-                Region Ids
+                {schema.title}
                 {schema.description && (
                     <ToolTip id={fieldPathId.$id} tip={schema.description} />
                 )}
@@ -82,6 +82,7 @@ const TxtUploadInput = (props: FieldProps) => {
                     disabled={allGenesChecked}
                     id={fieldPathId.$id}
                     onBlur={() => onBlur(fieldPathId.$id, formData)}
+                    placeholder="e.g. FKBP5"
                     type="input"
                     onChange={(e) =>
                         onChange(

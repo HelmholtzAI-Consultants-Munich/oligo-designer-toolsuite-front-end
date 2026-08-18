@@ -56,10 +56,11 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     const field = (
         <div
             style={{
-                gridColumn:
-                    !quickSettingTarget && spansFullRow(schema, uiSchema)
-                        ? "1 / -1"
-                        : undefined,
+                // A quick setting normally occupies one panel column, but a composite field
+                // (a genome picker, a gene list) needs the whole row wherever it is drawn.
+                gridColumn: spansFullRow(schema, uiSchema)
+                    ? "1 / -1"
+                    : undefined,
             }}
             className={`rjsf-field rjsf-field-${schema.type}`}
         >

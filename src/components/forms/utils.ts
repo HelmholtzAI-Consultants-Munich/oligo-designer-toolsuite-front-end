@@ -9,7 +9,9 @@ export const snakeCaseToTitleCase = (str: string): string =>
 export const spaceBeforeCapitalLetters = (str: string): string =>
     str.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-const EXCLUDED_TABS = new Set(["schema_version"]);
+// `required_parameters` holds only the inputs pinned to the Quick Settings panel, so the
+// section itself has nothing left to show and gets no tab.
+const EXCLUDED_TABS = new Set(["schema_version", "required_parameters"]);
 
 export const excludeHiddenTabs = (tabs: string[]) =>
     tabs.filter((tab) => !EXCLUDED_TABS.has(tab));

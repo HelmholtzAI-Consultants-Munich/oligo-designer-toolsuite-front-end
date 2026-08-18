@@ -34,6 +34,8 @@ $table-cell-padding-x-sm: 0.5rem;
 $card-spacer-x: 1.5rem;
 $card-spacer-y: 1.5rem;
 $input-btn-padding-y-sm: 0.5rem;
+// Bootstrap's default is body text at 75% opacity, too dark to read as a hint
+$input-placeholder-color: #00000066; // 40% opacity black
 
 // hairline borders for form surfaces, so nested boxes read as grouping rather than chrome
 $form-border-color: tint-color($border-color, 55%);

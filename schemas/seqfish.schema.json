@@ -392,7 +392,6 @@
     },
     "CrossHybridizationBlastnFilterEnabled": {
       "additionalProperties": false,
-      "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
@@ -540,7 +539,13 @@
     "HardMaskedFilterConfig": {
       "additionalProperties": false,
       "description": "Exclude oligos overlapping hard-masked (e.g. N) regions in the reference.",
-      "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
+      "properties": {
+        "enabled": {
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
       "required": ["enabled"],
       "title": "HardMaskedFilterConfig",
       "type": "object"
@@ -813,6 +818,33 @@
       },
       "required": ["codebook", "readout_probe_table"],
       "title": "ReadoutProbes",
+      "type": "object"
+    },
+    "RequiredParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "targets": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "description": "Path to file listing gene/region IDs to design probes for. Empty = use all genes from the FASTA.",
+          "title": "Targets"
+        },
+        "target_genome": {
+          "description": "FASTA file(s) from which the target oligo sequences are generated. Use genomic_region_generator for custom regions.",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "title": "Target Genome",
+          "type": "array"
+        },
+        "reference_genome": {
+          "description": "FASTA file(s) used as reference for all specificity filters (e.g. with BLAST).",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "title": "Reference Genome",
+          "type": "array"
+        }
+      },
+      "required": ["targets", "target_genome", "reference_genome"],
+      "title": "RequiredParameters",
       "type": "object"
     },
     "SecondaryStructureFilterDisabled": {
@@ -1194,6 +1226,7 @@
         },
         "Tm_filter": {
           "default": { "enabled": true, "Tm_min": 60.0, "Tm_max": 75.0 },
+          "description": "Enforce melting temperature (Tm) within a range (additionally uses Tm parameters).",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/TmFilterDisabled",
@@ -1231,19 +1264,30 @@
       "additionalProperties": false,
       "properties": {
         "specificity_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-dust": "no",
+              "-max_hsps": 1000,
+              "-max_target_seqs": 10,
+              "-perc_identity": 100.0,
+              "-soft_masking": false,
+              "-strand": "minus",
+              "-word_size": 7
+            },
+            "hit_parameters": { "min_alignment_length": 14 }
+          },
           "description": "Ensure primer specificity against a reference database (BLAST-based).",
           "discriminator": {
             "mapping": {
-              "False": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SeqfishPlusPrimerSpecificityBlastnFilterEnabled"
+              "False": "#/$defs/SpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SpecificityBlastnFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            {
-              "$ref": "#/$defs/SeqfishPlusPrimerSpecificityBlastnFilterEnabled"
-            },
-            { "$ref": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled" }
+            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
         },
@@ -1276,40 +1320,7 @@
           "title": "Hybridization Probes Blastn Filter"
         }
       },
-      "required": ["specificity_blastn_filter"],
       "title": "SeqfishPlusForwardPrimerSpecificityFilter",
-      "type": "object"
-    },
-    "SeqfishPlusPrimerSpecificityBlastnFilterEnabled": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
-        "search_parameters": {
-          "$ref": "#/$defs/BlastnSearchParameters",
-          "default": {
-            "-strand": "minus",
-            "-word_size": 7,
-            "-dust": "no",
-            "-soft_masking": false,
-            "-perc_identity": 100.0,
-            "-max_hsps": 1000,
-            "-max_target_seqs": 10
-          }
-        },
-        "hit_parameters": {
-          "$ref": "#/$defs/BlastnHitParameters",
-          "default": { "min_alignment_length": 14 }
-        },
-        "files_fasta_reference_database": {
-          "description": "FASTA file(s) used as reference for specificity.",
-          "items": { "type": "string" },
-          "minItems": 1,
-          "title": "Files Fasta Reference Database",
-          "type": "array"
-        }
-      },
-      "required": ["enabled", "files_fasta_reference_database"],
-      "title": "SeqfishPlusPrimerSpecificityBlastnFilterEnabled",
       "type": "object"
     },
     "SeqfishPlusReadoutProbeOligoGeneration": {
@@ -1388,19 +1399,30 @@
       "additionalProperties": false,
       "properties": {
         "specificity_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-dust": "no",
+              "-max_hsps": 1000,
+              "-max_target_seqs": 10,
+              "-perc_identity": 100.0,
+              "-soft_masking": false,
+              "-strand": "minus",
+              "-word_size": 7
+            },
+            "hit_parameters": { "min_alignment_length": 10 }
+          },
           "description": "Remove readout probes with significant hits to the reference (BLAST-based).",
           "discriminator": {
             "mapping": {
-              "False": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SeqfishPlusReadoutSpecificityBlastnFilterEnabled"
+              "False": "#/$defs/SpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SpecificityBlastnFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            {
-              "$ref": "#/$defs/SeqfishPlusReadoutSpecificityBlastnFilterEnabled"
-            },
-            { "$ref": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled" }
+            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
         },
@@ -1417,6 +1439,7 @@
             },
             "hit_parameters": { "min_alignment_length": 10 }
           },
+          "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
@@ -1431,7 +1454,6 @@
           "title": "Cross Hybridization Blastn Filter"
         }
       },
-      "required": ["specificity_blastn_filter"],
       "title": "SeqfishPlusReadoutProbeSpecificityFilter",
       "type": "object"
     },
@@ -1479,38 +1501,6 @@
       "title": "SeqfishPlusReadoutProbeTableLoad",
       "type": "object"
     },
-    "SeqfishPlusReadoutSpecificityBlastnFilterEnabled": {
-      "additionalProperties": false,
-      "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
-        "search_parameters": {
-          "$ref": "#/$defs/BlastnSearchParameters",
-          "default": {
-            "-strand": "minus",
-            "-word_size": 7,
-            "-dust": "no",
-            "-soft_masking": false,
-            "-perc_identity": 100.0,
-            "-max_hsps": 1000,
-            "-max_target_seqs": 10
-          }
-        },
-        "hit_parameters": {
-          "$ref": "#/$defs/BlastnHitParameters",
-          "default": { "min_alignment_length": 10 }
-        },
-        "files_fasta_reference_database": {
-          "description": "FASTA file(s) used as reference for specificity.",
-          "items": { "type": "string" },
-          "minItems": 1,
-          "title": "Files Fasta Reference Database",
-          "type": "array"
-        }
-      },
-      "required": ["enabled", "files_fasta_reference_database"],
-      "title": "SeqfishPlusReadoutSpecificityBlastnFilterEnabled",
-      "type": "object"
-    },
     "SeqfishPlusReversePrimer": {
       "additionalProperties": false,
       "properties": {
@@ -1531,69 +1521,49 @@
       "title": "SeqfishPlusReversePrimer",
       "type": "object"
     },
-    "SeqfishPlusSpecificityBlastnFilterDisabled": {
+    "SoftMaskedFilterConfig": {
+      "additionalProperties": false,
+      "description": "Exclude oligos overlapping soft-masked (lowercase) regions in the reference.",
+      "properties": {
+        "enabled": {
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
+      "required": ["enabled"],
+      "title": "SoftMaskedFilterConfig",
+      "type": "object"
+    },
+    "SpecificityBlastnFilterDisabled": {
       "properties": {
         "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
       },
       "required": ["enabled"],
-      "title": "SeqfishPlusSpecificityBlastnFilterDisabled",
+      "title": "SpecificityBlastnFilterDisabled",
       "type": "object"
     },
-    "SeqfishPlusTargetSpecificityBlastnFilterEnabled": {
+    "SpecificityBlastnFilterEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
           "$ref": "#/$defs/BlastnSearchParameters",
-          "default": {
-            "-strand": "minus",
-            "-word_size": 7,
-            "-dust": "no",
-            "-soft_masking": false,
-            "-perc_identity": 100.0,
-            "-max_hsps": 1000,
-            "-max_target_seqs": 10
-          }
+          "description": "BLAST options for the specificity search.",
+          "x-collapsed": true
         },
         "hit_parameters": {
           "$ref": "#/$defs/BlastnHitParameters",
-          "default": { "min_alignment_length": 15 }
-        },
-        "files_fasta_reference_database": {
-          "description": "FASTA file(s) used as reference for specificity.",
-          "items": { "type": "string" },
-          "minItems": 1,
-          "title": "Files Fasta Reference Database",
-          "type": "array"
+          "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection."
         }
       },
-      "required": ["enabled", "files_fasta_reference_database"],
-      "title": "SeqfishPlusTargetSpecificityBlastnFilterEnabled",
-      "type": "object"
-    },
-    "SoftMaskedFilterConfig": {
-      "additionalProperties": false,
-      "description": "Exclude oligos overlapping soft-masked (lowercase) regions in the reference.",
-      "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
-      "required": ["enabled"],
-      "title": "SoftMaskedFilterConfig",
+      "required": ["enabled", "search_parameters", "hit_parameters"],
+      "title": "SpecificityBlastnFilterEnabled",
       "type": "object"
     },
     "TargetProbeOligoGeneration": {
       "additionalProperties": false,
       "properties": {
-        "file_region_ids": {
-          "anyOf": [{ "type": "string" }, { "type": "null" }],
-          "description": "Path to file listing gene/region IDs to design probes for. Empty = use all genes from the FASTA.",
-          "title": "File Region Ids"
-        },
-        "files_fasta_probe_database": {
-          "description": "FASTA file(s) from which oligo sequences are generated. Use genomic_region_generator for custom regions..",
-          "items": { "type": "string" },
-          "minItems": 1,
-          "title": "Files Fasta Probe Database",
-          "type": "array"
-        },
         "probe_length_min": {
           "default": 28,
           "description": "Minimum allowed oligo length (bases)",
@@ -1611,7 +1581,6 @@
           "x-quick-setting": true
         }
       },
-      "required": ["file_region_ids", "files_fasta_probe_database"],
       "title": "TargetProbeOligoGeneration",
       "type": "object"
     },
@@ -1734,19 +1703,30 @@
       "additionalProperties": false,
       "properties": {
         "specificity_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-dust": "no",
+              "-max_hsps": 1000,
+              "-max_target_seqs": 10,
+              "-perc_identity": 100.0,
+              "-soft_masking": false,
+              "-strand": "minus",
+              "-word_size": 7
+            },
+            "hit_parameters": { "min_alignment_length": 15 }
+          },
           "description": "Ensure oligo specificity against a reference database (BLAST-based).",
           "discriminator": {
             "mapping": {
-              "False": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SeqfishPlusTargetSpecificityBlastnFilterEnabled"
+              "False": "#/$defs/SpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SpecificityBlastnFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            {
-              "$ref": "#/$defs/SeqfishPlusTargetSpecificityBlastnFilterEnabled"
-            },
-            { "$ref": "#/$defs/SeqfishPlusSpecificityBlastnFilterDisabled" }
+            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
         },
@@ -1763,6 +1743,7 @@
             },
             "hit_parameters": { "min_alignment_length": 17 }
           },
+          "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
@@ -1777,7 +1758,6 @@
           "title": "Cross Hybridization Blastn Filter"
         }
       },
-      "required": ["specificity_blastn_filter"],
       "title": "TargetProbeSpecificityFilter",
       "type": "object"
     },
@@ -2182,11 +2162,17 @@
         "write_intermediate_steps": true
       }
     },
+    "required_parameters": { "$ref": "#/$defs/RequiredParameters" },
     "target_probes": { "$ref": "#/$defs/TargetProbes" },
     "readout_probes": { "$ref": "#/$defs/ReadoutProbes" },
     "primers": { "$ref": "#/$defs/Primers" }
   },
-  "required": ["target_probes", "readout_probes", "primers"],
+  "required": [
+    "required_parameters",
+    "target_probes",
+    "readout_probes",
+    "primers"
+  ],
   "title": "SeqfishPlusProbeDesignerConfig",
   "type": "object"
 }

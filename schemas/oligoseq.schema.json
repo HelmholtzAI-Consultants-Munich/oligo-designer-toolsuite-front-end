@@ -504,7 +504,13 @@
     "HardMaskedFilterConfig": {
       "additionalProperties": false,
       "description": "Exclude oligos overlapping hard-masked (e.g. N) regions in the reference.",
-      "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
+      "properties": {
+        "enabled": {
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
       "required": ["enabled"],
       "title": "HardMaskedFilterConfig",
       "type": "object"
@@ -927,7 +933,13 @@
     "SoftMaskedFilterConfig": {
       "additionalProperties": false,
       "description": "Exclude oligos overlapping soft-masked (lowercase) regions in the reference.",
-      "properties": { "enabled": { "title": "Enabled", "type": "boolean" } },
+      "properties": {
+        "enabled": {
+          "description": "Turn this filter on or off.",
+          "title": "Enabled",
+          "type": "boolean"
+        }
+      },
       "required": ["enabled"],
       "title": "SoftMaskedFilterConfig",
       "type": "object"
@@ -1159,11 +1171,11 @@
           }
         },
         "Tm_score": {
-          "$ref": "#/$defs/TmScore",
+          "$ref": "#/$defs/TmScoreNormalized",
           "default": {
             "weight": 1.0,
-            "Tm_min": 50.0,
             "Tm_opt": 60.0,
+            "Tm_min": 50.0,
             "Tm_max": 70.0
           }
         }
@@ -1294,6 +1306,7 @@
         },
         "Tm_filter": {
           "default": { "enabled": true, "Tm_min": 50.0, "Tm_max": 70.0 },
+          "description": "Enforce melting temperature (Tm) within a range (additionally uses Tm parameters).",
           "discriminator": {
             "mapping": {
               "False": "#/$defs/TmFilterDisabled",
@@ -1802,7 +1815,7 @@
       "title": "TmSaltCorrectionParametersEnabled",
       "type": "object"
     },
-    "TmScore": {
+    "TmScoreNormalized": {
       "additionalProperties": false,
       "properties": {
         "weight": {
@@ -1810,16 +1823,16 @@
           "title": "Weight",
           "type": "number"
         },
-        "Tm_min": {
-          "description": "Minimum melting temperature (\u00b0C). Oligos below this are rejected.",
-          "minimum": 0,
-          "title": "Tm Min",
-          "type": "number"
-        },
         "Tm_opt": {
           "description": "Target (optimal) Tm (\u00b0C) for scoring.",
           "minimum": 0,
           "title": "Tm Opt",
+          "type": "number"
+        },
+        "Tm_min": {
+          "description": "Minimum melting temperature (\u00b0C). Oligos below this are rejected.",
+          "minimum": 0,
+          "title": "Tm Min",
           "type": "number"
         },
         "Tm_max": {
@@ -1829,8 +1842,8 @@
           "type": "number"
         }
       },
-      "required": ["weight", "Tm_min", "Tm_opt", "Tm_max"],
-      "title": "TmScore",
+      "required": ["weight", "Tm_opt", "Tm_min", "Tm_max"],
+      "title": "TmScoreNormalized",
       "type": "object"
     },
     "UniformDistanceScore": {

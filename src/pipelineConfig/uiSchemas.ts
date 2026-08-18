@@ -11,6 +11,21 @@ import {
     isEnabledDiscriminated,
 } from "../components/forms/utils";
 
+/** Resolves a `$ref` against the full schema, returning the node unchanged if it has none. */
+const resolveSchema = (
+    schema: RJSFSchema,
+    baseSchema: RJSFSchema
+): RJSFSchema => {
+    if (!schema.$ref) {
+        return schema;
+    }
+    try {
+        return findSchemaDefinition(schema.$ref, baseSchema);
+    } catch {
+        return schema;
+    }
+};
+
 /**
  * Determines whether a field's schema is a "scalar" (not an object or array), following
  * $ref and oneOf/anyOf so that e.g. nullable scalar fields (`anyOf: [{type: "integer"}, {type: "null"}]`)
@@ -20,14 +35,7 @@ const isScalarSchema = (
     schema: RJSFSchema,
     baseSchema: RJSFSchema
 ): boolean => {
-    let resolved = schema;
-    if (resolved.$ref) {
-        try {
-            resolved = findSchemaDefinition(resolved.$ref, baseSchema);
-        } catch {
-            return true;
-        }
-    }
+    const resolved = resolveSchema(schema, baseSchema);
     if (resolved.type === "object" || resolved.type === "array") {
         return false;
     }
@@ -128,16 +136,24 @@ const uiSchemaFromJsonSchemaRecursive = (
             uiSchema["ui:ObjectFieldTemplate"] = CompactFieldGroupTemplate;
         }
 
+        // Widgets are picked by field name: nothing in the schema separates `target_genome`
+        // from `channels_ids`, both string arrays.
+        // TODO: use an `x-widget` flag on the ODT model, like `x-quick-setting`. Names are
+        // fragile -- the rename to `target_genome` silently dropped both genome pickers.
         for (const field of fields) {
             const propertySchema = localSchema.properties[field] as RJSFSchema;
-            if (field === "file_region_ids") {
-                // file_region_ids (any level) -> txtUploadInput
+            if (field === "file_region_ids" || field === "targets") {
+                // file_region_ids / targets (any level) -> txtUploadInput
                 uiSchema[field] = {
                     "ui:field": "txtUploadInput",
                     "ui:fieldReplacesAnyOrOneOf": true,
                 };
-            } else if (field.startsWith("files_fasta_")) {
-                // files_fasta_* (any level) -> genomicInput
+            } else if (
+                field.startsWith("files_fasta_") ||
+                field === "target_genome" ||
+                field === "reference_genome"
+            ) {
+                // files_fasta_* / target_genome / reference_genome -> genomicInput
                 uiSchema[field] = { "ui:field": "genomicInput" };
             } else if (field.startsWith("files_vcf_")) {
                 // files_vcf_* (any level) -> fileUpload
@@ -148,6 +164,22 @@ const uiSchemaFromJsonSchemaRecursive = (
                     propertySchema,
                     level + 1
                 );
+                // ODT groups the user-supplied inputs here without flagging them. Pinning the
+                // section, not its fields, survives a rename inside the model.
+                if (field === "required_parameters") {
+                    for (const name of Object.keys(
+                        resolveSchema(propertySchema, baseSchema).properties ??
+                            {}
+                    )) {
+                        fieldUiSchema[name] = {
+                            ...fieldUiSchema[name],
+                            "ui:options": {
+                                ...fieldUiSchema[name]?.["ui:options"],
+                                quickSetting: true,
+                            },
+                        };
+                    }
+                }
                 // The backend's `x-` flags are read here, not in the recursive call, because
                 // they sit as siblings of `$ref`, which that call resolves away. Any field
                 // carrying one is treated the same, whichever pipeline or model set it.
@@ -156,10 +188,8 @@ const uiSchemaFromJsonSchemaRecursive = (
                     fieldUiSchema["ui:ObjectFieldTemplate"] =
                         CollapsibleSectionLayout;
                 }
-                // A description written next to a `$ref` or a discriminated union
-                // describes the field, but the recursive call resolves the pointer and
-                // builds the uiSchema from the target model, which never saw it. Carry
-                // it across as `ui:description`, the same way the `x-` flags are.
+                // A description beside a `$ref` or union describes the field, but the call
+                // above resolves the pointer and never sees it. Carry it over.
                 if (
                     propertySchema.description &&
                     (propertySchema.$ref ||
