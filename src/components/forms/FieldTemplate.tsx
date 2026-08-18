@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useQuickSettingsContainer } from "../../hooks/useQuickSettings";
 import {
     filterUninformativeErrors,
-    isQuickSetting,
+    quickSettingGroup,
     spansFullRow,
 } from "./utils";
 
@@ -35,7 +35,10 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         schemaUtils,
     } = registry;
 
-    const quickSettingsContainer = useQuickSettingsContainer();
+    const group = quickSettingGroup(schema, uiSchema);
+    const quickSettingsContainer = useQuickSettingsContainer(
+        group ?? "general"
+    );
 
     if (hidden) {
         return <div className="hidden">{children}</div>;
@@ -43,8 +46,7 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
 
     // a quick setting keeps its place in the React tree, so its value, id and validation are
     // untouched, and only its markup moves into the panel above the tabs
-    const quickSettingTarget =
-        isQuickSetting(schema, uiSchema) && quickSettingsContainer;
+    const quickSettingTarget = group && quickSettingsContainer;
 
     // conditions copied from rjsf core's SchemaField.tsx
     const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];

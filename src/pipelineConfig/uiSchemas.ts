@@ -175,7 +175,7 @@ const uiSchemaFromJsonSchemaRecursive = (
                             ...fieldUiSchema[name],
                             "ui:options": {
                                 ...fieldUiSchema[name]?.["ui:options"],
-                                quickSetting: true,
+                                quickSetting: "required",
                             },
                         };
                     }

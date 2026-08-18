@@ -1,6 +1,6 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
-import { isQuickSetting, spansFullRow } from "./utils";
+import { quickSettingGroup, spansFullRow } from "./utils";
 
 type CompactGridProps = Pick<
     ObjectFieldTemplateProps,
@@ -35,7 +35,7 @@ const CompactGrid = memo(function CompactGrid({
                 // a quick setting still renders here - that is what creates its portal - but
                 // without a grid cell, which would otherwise be left empty
                 return spansFullRow(fieldSchema, fieldUiSchema) ||
-                    isQuickSetting(fieldSchema, fieldUiSchema) ? (
+                    quickSettingGroup(fieldSchema, fieldUiSchema) ? (
                     <Fragment key={name}>{content}</Fragment>
                 ) : (
                     <div key={name} className="compact-field-item">

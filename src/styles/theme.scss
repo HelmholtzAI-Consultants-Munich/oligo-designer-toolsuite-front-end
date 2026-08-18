@@ -663,8 +663,8 @@ form.rjsf {
         @include form-surface;
         padding: $form-box-padding;
 
-        &:has(> .quick-settings-fields:empty) {
-            /* nothing was flagged, so there is no panel to show */
+        &:not(:has(> .quick-settings-fields:not(:empty))) {
+            /* nothing was flagged in either group, so there is no panel to show */
             display: none;
         }
 
@@ -690,6 +690,20 @@ form.rjsf {
             input.form-control {
                 /* fill the box rather than stopping at the shared number-input cap */
                 max-width: none;
+            }
+        }
+
+        .quick-settings-required {
+            /* the inputs a run cannot start without, ruled off from the tunable ones.
+            $form-border-color is the hairline used inside boxes and is too faint to read as
+            a divider here, so this uses the full border colour. */
+            border-bottom: 1px solid $border-color;
+            padding-bottom: 1rem;
+            margin-bottom: 0.5rem;
+
+            &:empty {
+                /* a pipeline without a required-parameters section leaves no stray rule */
+                display: none;
             }
         }
     }

@@ -1,4 +1,5 @@
 import { getUiOptions, type RJSFSchema, type UiSchema } from "@rjsf/utils";
+import type { QuickSettingsGroup } from "../../hooks/useQuickSettings";
 
 export const snakeCaseToTitleCase = (str: string): string =>
     str
@@ -75,8 +76,8 @@ export const spansFullRow = (
 };
 
 /**
- * Whether the backend flagged a field as a quick setting, pinning it to the panel above the
- * tabs instead of leaving it in its own section.
+ * Which group of the Quick Settings panel a field belongs to, or null to leave it in its own
+ * section. "required" is the ruled-off group holding the inputs a run cannot start without.
  *
  * @remarks
  * `uiSchemaFromJsonSchema` copies the backend's `x-quick-setting` into `ui:options`; the schema
@@ -84,14 +85,20 @@ export const spansFullRow = (
  *
  * @param schema - the field's JSON Schema, unresolved `$ref`s included
  * @param uiSchema - the field's UiSchema
- * @returns A boolean that is True if the field belongs in the Quick Settings panel
+ * @returns The field's group, or null if it is not a quick setting
  */
-export const isQuickSetting = (
+export const quickSettingGroup = (
     schema: RJSFSchema | boolean | undefined,
     uiSchema: UiSchema | undefined
-): boolean =>
-    getUiOptions(uiSchema).quickSetting === true ||
-    hasSchemaFlag(schema, "x-quick-setting");
+): QuickSettingsGroup | null => {
+    const option = getUiOptions(uiSchema).quickSetting;
+    if (option === "required") {
+        return "required";
+    }
+    return option === true || hasSchemaFlag(schema, "x-quick-setting")
+        ? "general"
+        : null;
+};
 
 /**
  * Checks if an error message should be removed from the output. These errors are caused by
