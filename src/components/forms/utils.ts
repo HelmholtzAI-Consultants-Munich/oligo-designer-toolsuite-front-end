@@ -10,12 +10,14 @@ export const snakeCaseToTitleCase = (str: string): string =>
 export const spaceBeforeCapitalLetters = (str: string): string =>
     str.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-// `required_parameters` holds only the inputs pinned to the Quick Settings panel, so the
-// section itself has nothing left to show and gets no tab.
+// These hold only pinned quick settings, so they get no tab and no pane of their own.
+// `TabsLayout` mounts them inside the first tab so their fields still portal into its panels.
 const EXCLUDED_TABS = new Set(["schema_version", "required_parameters"]);
 
+export const isHiddenTab = (tab: string) => EXCLUDED_TABS.has(tab);
+
 export const excludeHiddenTabs = (tabs: string[]) =>
-    tabs.filter((tab) => !EXCLUDED_TABS.has(tab));
+    tabs.filter((tab) => !isHiddenTab(tab));
 
 /** A section's accordion key, matching the `fieldPathId.$id` RJSF gives that section. */
 export const sectionKey = (tabId: string, name: string): string =>
