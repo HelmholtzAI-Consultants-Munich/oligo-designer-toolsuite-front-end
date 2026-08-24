@@ -20,7 +20,6 @@ const Pipelines: React.FC = () => {
             description: pipeline.description,
             link: pipeline.link!,
             detailedLink: pipeline.detailedLink,
-            img: pipeline.img,
         })
     );
 

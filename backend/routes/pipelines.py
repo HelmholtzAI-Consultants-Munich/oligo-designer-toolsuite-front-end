@@ -40,20 +40,21 @@ from backend.utilities.typed_values import (
 )
 from backend.utilities.validation import validate_genomic_form_data
 from backend.utils import utc_now
-from backend.worker.models import OligoSeqProbeDesignerConfig
+from backend.worker.models import PIPELINE_VALIDATION_MODELS
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
-# Pipelines are enabled once ODT exposes a pydantic model for them. seqfish is currently
-# wired to ODT's model as-is, without the front-end overrides oligoseq has in worker/models.py.
+# Pipelines are enabled once ODT exposes a pydantic model for them.
 EXISTING_PIPELINES = frozenset(
     {
-        # "scrinshot",
-        # "merfish",
         "oligoseq",
+        "scrinshot",
+        "merfish",
         "seqfish",
+        "hcr",
+        "cyclehcr",
     }
 )
 
@@ -171,7 +172,7 @@ def update_run_with_context(
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
-    genes_string = glom(form_data, "target_probes.oligo_generation.file_region_ids")
+    genes_string = glom(form_data, "required_parameters.targets")
     if genes_string is None:
         abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
     genes = genes_string.split(",")
@@ -287,12 +288,9 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
 
 
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
-
-    match pipeline_name:
-        case "oligoseq":
-            pipeline_model = OligoSeqProbeDesignerConfig
-        case _:
-            abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
+    pipeline_model = PIPELINE_VALIDATION_MODELS.get(pipeline_name)
+    if pipeline_model is None:
+        abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
 
     try:
         pipeline_model.model_validate(form_data)
@@ -401,11 +399,12 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
-    run_name = form.get("run_name")  # only used for UI display
-    sanitized_run_name = sanitize_input(run_name)
 
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
+
+    run_name = form.get("run_name", "")  # only used for UI display
+    sanitized_run_name = sanitize_input(run_name)
 
     add_non_exposed_fields(form_data, pipeline_name)
 

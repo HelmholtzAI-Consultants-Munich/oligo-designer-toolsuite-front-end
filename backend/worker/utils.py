@@ -33,6 +33,27 @@ def mark_schema_flags(schema: dict, flags: dict[str, dict[str, tuple[str, ...]]]
     return schema
 
 
+def hide_fields(schema: dict, *fields: str) -> dict:
+    """Removes top-level fields from a generated schema so the front-end never renders them.
+
+    The backend fills them back in before validating a submission, see `add_non_exposed_fields`.
+    Only oligoseq's ODT model has a base class that leaves them out already; for the other
+    pipelines the field has to be dropped from the schema instead.
+
+    Arguments:
+        schema {dict} -- the generated JSON Schema, modified in place
+        *fields {str} -- names of the top-level properties to drop
+
+    Returns:
+        {dict} -- the same schema without those properties
+    """
+    for field in fields:
+        schema["properties"].pop(field, None)
+        if field in schema.get("required", []):
+            schema["required"].remove(field)
+    return schema
+
+
 def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) -> dict:
     """Drops the descriptions Pydantic derives from the caller module's own class docstrings.
 

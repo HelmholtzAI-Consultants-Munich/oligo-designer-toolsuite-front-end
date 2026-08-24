@@ -36,26 +36,45 @@
       "title": "BaseProbabilities",
       "type": "object"
     },
-    "BlastnHitParameters": {
+    "BlastnHitParametersCoverage": {
       "additionalProperties": false,
       "properties": {
-        "coverage": {
-          "anyOf": [
-            { "maximum": 100, "minimum": 0, "type": "number" },
-            { "type": "null" }
-          ],
-          "default": null,
-          "description": "Coverage in %, alternatively, min_alignment_length can be used",
-          "title": "Coverage"
+        "hit_criterion": {
+          "const": "coverage",
+          "default": "coverage",
+          "title": "Hit Criterion",
+          "type": "string"
         },
-        "min_alignment_length": {
-          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
-          "default": null,
-          "description": "Number of nucleotides for alignment, alternatively, coverage can be used",
-          "title": "Min Alignment Length"
+        "value": {
+          "description": "Coverage in %, alternatively, min_alignment_length can be used",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
         }
       },
-      "title": "BlastnHitParameters",
+      "required": ["value"],
+      "title": "BlastnHitParametersCoverage",
+      "type": "object"
+    },
+    "BlastnHitParametersMinAlignmentLength": {
+      "additionalProperties": false,
+      "properties": {
+        "hit_criterion": {
+          "const": "min_alignment_length",
+          "default": "min_alignment_length",
+          "title": "Hit Criterion",
+          "type": "string"
+        },
+        "value": {
+          "description": "Number of nucleotides for alignment, alternatively, coverage can be used",
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": ["value"],
+      "title": "BlastnHitParametersMinAlignmentLength",
       "type": "object"
     },
     "BlastnSearchParameters": {
@@ -173,7 +192,7 @@
           "title": "-Soft Masking"
         },
         "-lcase_masking": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Use lower case filtering in query and subject sequence(s).",
           "title": "-Lcase Masking"
@@ -250,7 +269,7 @@
           "title": "-Best Hit Score Edge"
         },
         "-subject_besthit": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Turn on best hit per subject sequence.",
           "title": "-Subject Besthit"
@@ -316,7 +335,7 @@
           "title": "-Xdrop Gap Final"
         },
         "-no_greedy": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Use non-greedy dynamic programming extension.",
           "title": "-No Greedy"
@@ -328,7 +347,7 @@
           "title": "-Min Raw Gapped Score"
         },
         "-ungapped": {
-          "anyOf": [{ "const": "", "type": "string" }, { "type": "null" }],
+          "anyOf": [{ "type": "boolean" }, { "type": "null" }],
           "default": null,
           "description": "Perform ungapped alignment only?",
           "title": "-Ungapped"
@@ -400,8 +419,19 @@
           "x-collapsed": true
         },
         "hit_parameters": {
-          "$ref": "#/$defs/BlastnHitParameters",
-          "description": "Hit criteria. Hits satisfying these lead to oligo rejection."
+          "description": "Hit criteria. Hits satisfying these lead to oligo rejection.",
+          "discriminator": {
+            "mapping": {
+              "coverage": "#/$defs/BlastnHitParametersCoverage",
+              "min_alignment_length": "#/$defs/BlastnHitParametersMinAlignmentLength"
+            },
+            "propertyName": "hit_criterion"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/BlastnHitParametersCoverage" },
+            { "$ref": "#/$defs/BlastnHitParametersMinAlignmentLength" }
+          ],
+          "title": "Hit Parameters"
         }
       },
       "required": ["enabled", "search_parameters", "hit_parameters"],
@@ -536,6 +566,88 @@
       "title": "General",
       "type": "object"
     },
+    "GenomicRegionGeneratorEnsembl": {
+      "properties": {
+        "source": {
+          "const": "ensembl",
+          "default": "ensembl",
+          "title": "Source",
+          "type": "string"
+        },
+        "source_params": { "$ref": "#/$defs/SourceParamsEnsembl" },
+        "genomic_regions": { "$ref": "#/$defs/GenomicRegionsBase" },
+        "exon_exon_junction_block_size": {
+          "default": 50,
+          "title": "Exon Exon Junction Block Size",
+          "type": "integer"
+        }
+      },
+      "required": ["source_params", "genomic_regions"],
+      "title": "GenomicRegionGeneratorEnsembl",
+      "type": "object"
+    },
+    "GenomicRegionGeneratorNcbi": {
+      "properties": {
+        "source": {
+          "const": "ncbi",
+          "default": "ncbi",
+          "title": "Source",
+          "type": "string"
+        },
+        "source_params": { "$ref": "#/$defs/SourceParamsNcbi" },
+        "genomic_regions": { "$ref": "#/$defs/GenomicRegionsNcbi" },
+        "exon_exon_junction_block_size": {
+          "default": 50,
+          "title": "Exon Exon Junction Block Size",
+          "type": "integer"
+        }
+      },
+      "required": ["source_params", "genomic_regions"],
+      "title": "GenomicRegionGeneratorNcbi",
+      "type": "object"
+    },
+    "GenomicRegionsBase": {
+      "properties": {
+        "gene": { "default": false, "title": "Gene", "type": "boolean" },
+        "intergenic": {
+          "default": false,
+          "title": "Intergenic",
+          "type": "boolean"
+        },
+        "exon": { "default": true, "title": "Exon", "type": "boolean" },
+        "utr": { "default": false, "title": "Utr", "type": "boolean" },
+        "cds": { "default": false, "title": "Cds", "type": "boolean" },
+        "intron": { "default": false, "title": "Intron", "type": "boolean" },
+        "exon_exon_junction": {
+          "default": false,
+          "title": "Exon Exon Junction",
+          "type": "boolean"
+        }
+      },
+      "title": "GenomicRegionsBase",
+      "type": "object"
+    },
+    "GenomicRegionsNcbi": {
+      "properties": {
+        "gene": { "default": false, "title": "Gene", "type": "boolean" },
+        "intergenic": {
+          "default": false,
+          "title": "Intergenic",
+          "type": "boolean"
+        },
+        "exon": { "default": true, "title": "Exon", "type": "boolean" },
+        "utr": { "default": false, "title": "Utr", "type": "boolean" },
+        "cds": { "default": false, "title": "Cds", "type": "boolean" },
+        "intron": { "default": false, "title": "Intron", "type": "boolean" },
+        "exon_exon_junction": {
+          "default": true,
+          "title": "Exon Exon Junction",
+          "type": "boolean"
+        }
+      },
+      "title": "GenomicRegionsNcbi",
+      "type": "object"
+    },
     "HardMaskedFilterConfig": {
       "additionalProperties": false,
       "description": "Exclude oligos overlapping hard-masked (e.g. N) regions in the reference.",
@@ -642,8 +754,19 @@
           "x-collapsed": true
         },
         "hit_parameters": {
-          "$ref": "#/$defs/BlastnHitParameters",
-          "description": "Parameters for filtering BLASTN hits against the hybridization probes. Use either coverage or min_alignment_length."
+          "description": "Parameters for filtering BLASTN hits against the hybridization probes. Use either coverage or min_alignment_length.",
+          "discriminator": {
+            "mapping": {
+              "coverage": "#/$defs/BlastnHitParametersCoverage",
+              "min_alignment_length": "#/$defs/BlastnHitParametersMinAlignmentLength"
+            },
+            "propertyName": "hit_criterion"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/BlastnHitParametersCoverage" },
+            { "$ref": "#/$defs/BlastnHitParametersMinAlignmentLength" }
+          ],
+          "title": "Hit Parameters"
         }
       },
       "required": ["enabled", "search_parameters", "hit_parameters"],
@@ -825,19 +948,29 @@
       "properties": {
         "targets": {
           "anyOf": [{ "type": "string" }, { "type": "null" }],
-          "description": "Path to file listing gene/region IDs to design probes for. Empty = use all genes from the FASTA.",
+          "description": "Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead.",
           "title": "Targets"
         },
         "target_genome": {
-          "description": "FASTA file(s) from which the target oligo sequences are generated. Use genomic_region_generator for custom regions.",
-          "items": { "type": "string" },
+          "description": "FASTA file(s) from which the target oligo sequences are generated.",
+          "items": {
+            "anyOf": [
+              { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
+              { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
+            ]
+          },
           "minItems": 1,
           "title": "Target Genome",
           "type": "array"
         },
         "reference_genome": {
           "description": "FASTA file(s) used as reference for all specificity filters (e.g. with BLAST).",
-          "items": { "type": "string" },
+          "items": {
+            "anyOf": [
+              { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
+              { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
+            ]
+          },
           "minItems": 1,
           "title": "Reference Genome",
           "type": "array"
@@ -1275,7 +1408,10 @@
               "-strand": "minus",
               "-word_size": 7
             },
-            "hit_parameters": { "min_alignment_length": 14 }
+            "hit_parameters": {
+              "hit_criterion": "min_alignment_length",
+              "value": 14
+            }
           },
           "description": "Ensure primer specificity against a reference database (BLAST-based).",
           "discriminator": {
@@ -1303,7 +1439,10 @@
               "-strand": "minus",
               "-word_size": 7
             },
-            "hit_parameters": { "min_alignment_length": 11 }
+            "hit_parameters": {
+              "hit_criterion": "min_alignment_length",
+              "value": 11
+            }
           },
           "description": "Remove primers that match the assembled hybridization probes (BLAST-based).",
           "discriminator": {
@@ -1410,7 +1549,10 @@
               "-strand": "minus",
               "-word_size": 7
             },
-            "hit_parameters": { "min_alignment_length": 10 }
+            "hit_parameters": {
+              "hit_criterion": "min_alignment_length",
+              "value": 10
+            }
           },
           "description": "Remove readout probes with significant hits to the reference (BLAST-based).",
           "discriminator": {
@@ -1437,7 +1579,10 @@
               "-strand": "minus",
               "-word_size": 7
             },
-            "hit_parameters": { "min_alignment_length": 10 }
+            "hit_parameters": {
+              "hit_criterion": "min_alignment_length",
+              "value": 10
+            }
           },
           "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
           "discriminator": {
@@ -1535,6 +1680,55 @@
       "title": "SoftMaskedFilterConfig",
       "type": "object"
     },
+    "SourceParamsEnsembl": {
+      "properties": {
+        "species": {
+          "default": "homo_sapiens",
+          "title": "Species",
+          "type": "string"
+        },
+        "annotation_release": {
+          "default": "current",
+          "title": "Annotation Release",
+          "type": "string"
+        }
+      },
+      "title": "SourceParamsEnsembl",
+      "type": "object"
+    },
+    "SourceParamsNcbi": {
+      "properties": {
+        "species": {
+          "default": "Homo_sapiens",
+          "title": "Species",
+          "type": "string"
+        },
+        "annotation_release": {
+          "default": "110",
+          "title": "Annotation Release",
+          "type": "string"
+        },
+        "mode": {
+          "const": "species",
+          "default": "species",
+          "title": "Mode",
+          "type": "string"
+        },
+        "taxon": {
+          "default": "vertebrate_mammalian",
+          "title": "Taxon",
+          "type": "string"
+        },
+        "assembly_source": {
+          "const": "auto",
+          "default": "auto",
+          "title": "Assembly Source",
+          "type": "string"
+        }
+      },
+      "title": "SourceParamsNcbi",
+      "type": "object"
+    },
     "SpecificityBlastnFilterDisabled": {
       "properties": {
         "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
@@ -1553,8 +1747,19 @@
           "x-collapsed": true
         },
         "hit_parameters": {
-          "$ref": "#/$defs/BlastnHitParameters",
-          "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection."
+          "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection.",
+          "discriminator": {
+            "mapping": {
+              "coverage": "#/$defs/BlastnHitParametersCoverage",
+              "min_alignment_length": "#/$defs/BlastnHitParametersMinAlignmentLength"
+            },
+            "propertyName": "hit_criterion"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/BlastnHitParametersCoverage" },
+            { "$ref": "#/$defs/BlastnHitParametersMinAlignmentLength" }
+          ],
+          "title": "Hit Parameters"
         }
       },
       "required": ["enabled", "search_parameters", "hit_parameters"],
@@ -1714,7 +1919,10 @@
               "-strand": "minus",
               "-word_size": 7
             },
-            "hit_parameters": { "min_alignment_length": 15 }
+            "hit_parameters": {
+              "hit_criterion": "min_alignment_length",
+              "value": 15
+            }
           },
           "description": "Ensure oligo specificity against a reference database (BLAST-based).",
           "discriminator": {
@@ -1741,7 +1949,10 @@
               "-strand": "minus",
               "-word_size": 7
             },
-            "hit_parameters": { "min_alignment_length": 17 }
+            "hit_parameters": {
+              "hit_criterion": "min_alignment_length",
+              "value": 17
+            }
           },
           "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
           "discriminator": {
@@ -2154,14 +2365,6 @@
       "title": "Schema Version",
       "type": "integer"
     },
-    "general": {
-      "$ref": "#/$defs/General",
-      "default": {
-        "n_jobs": 4,
-        "dir_output": "output_SeqfishPlusplus_probe_designer",
-        "write_intermediate_steps": true
-      }
-    },
     "required_parameters": { "$ref": "#/$defs/RequiredParameters" },
     "target_probes": { "$ref": "#/$defs/TargetProbes" },
     "readout_probes": { "$ref": "#/$defs/ReadoutProbes" },
@@ -2173,6 +2376,6 @@
     "readout_probes",
     "primers"
   ],
-  "title": "SeqfishPlusProbeDesignerConfig",
+  "title": "SeqfishPlusProbeDesignerConfigFrontEnd",
   "type": "object"
 }

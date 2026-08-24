@@ -86,15 +86,15 @@ class PipelineRunner:
         Arguments:
             form_data {dict} -- The pipeline configuration.
         """
-        oligo_generation_form = glom(form_data, "target_probes.oligo_generation")
-        file_region_ids = oligo_generation_form["file_region_ids"]
+        required_parameters = glom(form_data, "required_parameters")
+        file_region_ids = required_parameters["targets"]
         if file_region_ids is not None:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
                 file_path = temp_file.name
                 # Write each gene on a new line
                 temp_file.writelines(gene.strip() + "\n" for gene in file_region_ids.split(","))
             # Update the path in form_data to point to the temp file
-            oligo_generation_form["file_region_ids"] = file_path
+            required_parameters["targets"] = file_path
 
     def populate_form_data_path_fields(
         self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
@@ -222,9 +222,9 @@ class PipelineRunner:
             output_path {str} -- The path where all output of the pipeline should be written.
         """
         # find files_fasta_target_probe_database fasta file and read it
-        regions_file = glom(form_data, "target_probes.oligo_generation.file_region_ids")
+        regions_file = glom(form_data, "required_parameters.targets")
 
-        fasta_paths = glom(form_data, "target_probes.oligo_generation.files_fasta_probe_database")
+        fasta_paths = glom(form_data, "required_parameters.target_genome")
         if not fasta_paths:
             self.logger.debug("No fasta files provided, skipping visualization generation.")
             return
@@ -260,10 +260,10 @@ class PipelineRunner:
             form_data {dict} -- The pipeline configuration.
             config_path {str} -- The configuration filepath.
         """
-        oligo_generation_form = glom(form_data, "target_probes.oligo_generation")
+        required_parameters = glom(form_data, "required_parameters")
         # Remove temp file for file_regions if it was created
-        if oligo_generation_form["file_region_ids"]:
-            temp_path = oligo_generation_form["file_region_ids"].strip()
+        if required_parameters["targets"]:
+            temp_path = required_parameters["targets"].strip()
             if os.path.exists(temp_path):
                 os.remove(temp_path)
                 self.logger.debug(f"Deleted temp file_region_ids: {temp_path}")

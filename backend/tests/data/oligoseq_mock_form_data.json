@@ -3,46 +3,37 @@
     "schema_version": 2,
     "target_probes": {
       "oligo_generation": {
-        "file_region_ids": "GFB69_RS14600",
-        "files_fasta_probe_database": [
-          {
-            "source": "ncbi",
-            "source_params": {
-              "species": "Acidianus_ambivalens",
-              "annotation_release": "GCF_009428885.1_ASM942888v1",
-              "taxon": "archaea",
-              "assembly_source": "auto",
-              "mode": "species"
-            },
-            "genomic_regions": {
-              "gene": true,
-              "intergenic": false,
-              "exon": false,
-              "utr": false,
-              "cds": false,
-              "intron": false,
-              "exon_exon_junction": false
-            },
-            "exon_exon_junction_block_size": 50
-          }
-        ],
         "probe_length_min": 26,
         "probe_length_max": 30,
         "probe_split_region": 4
       },
       "property_filters": {
-        "isoform_consensus_filter": { "enabled": true, "isoform_consensus": 0 },
-        "targeted_exons_filter": { "enabled": false },
-        "hard_masked_sequences_filter": { "enabled": true },
-        "soft_masked_sequences_filter": { "enabled": true },
+        "isoform_consensus_filter": {
+          "enabled": true,
+          "isoform_consensus": 0.0
+        },
+        "targeted_exons_filter": {
+          "enabled": false
+        },
+        "hard_masked_sequences_filter": {
+          "enabled": true
+        },
+        "soft_masked_sequences_filter": {
+          "enabled": true
+        },
         "homopolymeric_runs_filter": {
-          "enabled": false,
-          "homopolymeric_base_n": { "A": null, "T": null, "C": null, "G": null }
+          "enabled": true,
+          "homopolymeric_base_n": {
+            "A": 6,
+            "T": 6,
+            "C": 6,
+            "G": 6
+          }
         },
         "GC_content_filter": {
           "enabled": true,
-          "GC_content_min": 45,
-          "GC_content_max": 65
+          "GC_content_min": 45.0,
+          "GC_content_max": 65.0
         },
         "prohibited_sequences_filter": {
           "enabled": true,
@@ -58,120 +49,45 @@
           "enabled": true,
           "max_len_selfcomplement": 10
         },
-        "Tm_filter": { "enabled": true, "Tm_min": 50, "Tm_max": 70 },
-        "secondary_structure_filter": { "enabled": true, "T": 37, "thr_DG": 0 }
+        "Tm_filter": {
+          "enabled": true,
+          "Tm_min": 50.0,
+          "Tm_max": 70.0
+        },
+        "secondary_structure_filter": {
+          "enabled": true,
+          "T": 37,
+          "thr_DG": 0.0
+        }
       },
       "specificity_filters": {
-        "read_length_bias_filter": { "enabled": true, "read_length_bias": 20 },
+        "read_length_bias_filter": {
+          "enabled": true,
+          "read_length_bias": 20
+        },
         "cross_hybridization_blastn_filter": {
           "enabled": true,
           "search_parameters": {
-            "-query_loc": null,
-            "-strand": null,
-            "-task": null,
-            "-evalue": null,
-            "-word_size": null,
-            "-gapopen": null,
-            "-gapextend": null,
-            "-penalty": null,
-            "-reward": null,
-            "-num_descriptions": null,
-            "-num_alignments": null,
-            "-sorthits": null,
-            "-sorthsps": null,
-            "-dust": null,
-            "-soft_masking": null,
-            "-lcase_masking": null,
-            "-db_soft_mask": null,
-            "-db_hard_mask": null,
-            "-perc_identity": null,
-            "-qcov_hsp_perc": null,
-            "-max_hsps": null,
-            "-culling_limit": null,
-            "-best_hit_overhang": null,
-            "-best_hit_score_edge": null,
-            "-subject_besthit": null,
-            "-max_target_seqs": null,
-            "-template_type": null,
-            "-template_length": null,
-            "-db_size": null,
-            "-searchsp": null,
-            "-xdrop_ungap": null,
-            "-xdrop_gap": null,
-            "-xdrop_gap_final": null,
-            "-no_greedy": null,
-            "-min_raw_gapped_score": null,
-            "-ungapped": null,
-            "-window_size": null,
-            "-off_diagonal_range": null
+            "-strand": "minus",
+            "-word_size": 10,
+            "-perc_identity": 80.0
           },
-          "hit_parameters": { "coverage": 20, "min_alignment_length": null }
+          "hit_parameters": {
+            "hit_criterion": "coverage",
+            "value": 50.0
+          }
         },
         "specificity_blastn_filter": {
           "enabled": true,
           "search_parameters": {
-            "-query_loc": null,
-            "-strand": null,
-            "-task": null,
-            "-evalue": null,
-            "-word_size": null,
-            "-gapopen": null,
-            "-gapextend": null,
-            "-penalty": null,
-            "-reward": null,
-            "-num_descriptions": null,
-            "-num_alignments": null,
-            "-sorthits": null,
-            "-sorthsps": null,
-            "-dust": null,
-            "-soft_masking": null,
-            "-lcase_masking": null,
-            "-db_soft_mask": null,
-            "-db_hard_mask": null,
-            "-perc_identity": null,
-            "-qcov_hsp_perc": null,
-            "-max_hsps": null,
-            "-culling_limit": null,
-            "-best_hit_overhang": null,
-            "-best_hit_score_edge": null,
-            "-subject_besthit": null,
-            "-max_target_seqs": null,
-            "-template_type": null,
-            "-template_length": null,
-            "-db_size": null,
-            "-searchsp": null,
-            "-xdrop_ungap": null,
-            "-xdrop_gap": null,
-            "-xdrop_gap_final": null,
-            "-no_greedy": null,
-            "-min_raw_gapped_score": null,
-            "-ungapped": null,
-            "-window_size": null,
-            "-off_diagonal_range": null
+            "-strand": "minus",
+            "-word_size": 10,
+            "-perc_identity": 80.0
           },
-          "hit_parameters": { "coverage": 20, "min_alignment_length": null },
-          "files_fasta_reference_database": [
-            {
-              "source": "ncbi",
-              "source_params": {
-                "species": "Acidianus_ambivalens",
-                "annotation_release": "GCF_009428885.1_ASM942888v1",
-                "taxon": "archaea",
-                "assembly_source": "auto",
-                "mode": "species"
-              },
-              "genomic_regions": {
-                "gene": true,
-                "intergenic": false,
-                "exon": false,
-                "utr": false,
-                "cds": false,
-                "intron": false,
-                "exon_exon_junction": false
-              },
-              "exon_exon_junction_block_size": 50
-            }
-          ]
+          "hit_parameters": {
+            "hit_criterion": "coverage",
+            "value": 50.0
+          }
         },
         "variant_filter": {
           "enabled": true,
@@ -182,25 +98,37 @@
       "probe_set_selection": {
         "independent_set_selection": {
           "n_sets": 3,
-          "set_size_min": 1,
+          "set_size_min": 3,
           "set_size_opt": 5,
-          "distance_between_target_probes": 0,
+          "distance_between_probes": 0,
           "n_attempts_graph": 50,
           "n_attempts_clique_enum": 50,
           "diversification_fraction": 0.1,
           "jaccard_opt": 0.5,
           "jaccard_step": 0.1
         },
-        "uniform_distance_score": { "weight": 1 },
-        "isoform_consensus_score": { "weight": 1 },
-        "targeted_exons_score": { "weight": 0, "targeted_exons": [] },
-        "GC_content_score": {
-          "weight": 1,
-          "GC_content_min": 45,
-          "GC_content_opt": 55,
-          "GC_content_max": 65
+        "uniform_distance_score": {
+          "weight": 1.0
         },
-        "Tm_score": { "weight": 1, "Tm_min": 50, "Tm_opt": 60, "Tm_max": 70 }
+        "isoform_consensus_score": {
+          "weight": 1.0
+        },
+        "targeted_exons_score": {
+          "weight": 0.0,
+          "targeted_exons": []
+        },
+        "GC_content_score": {
+          "weight": 1.0,
+          "GC_content_opt": 55.0,
+          "GC_content_min": 45.0,
+          "GC_content_max": 65.0
+        },
+        "Tm_score": {
+          "weight": 1.0,
+          "Tm_opt": 60.0,
+          "Tm_min": 50.0,
+          "Tm_max": 70.0
+        }
       },
       "global_parameters": {
         "Tm_parameters": {
@@ -209,14 +137,14 @@
           "c_seq": null,
           "shift": 0,
           "selfcomp": false,
-          "nn_table": null,
+          "nn_table": "DNA_NN3",
           "tmm_table": null,
-          "imm_table": null,
-          "de_table": null,
-          "dnac1": 25,
-          "dnac2": 25,
-          "saltcorr": 5,
-          "Na": 50,
+          "imm_table": "DNA_IMM1",
+          "de_table": "DNA_DE1",
+          "dnac1": 50,
+          "dnac2": 0,
+          "saltcorr": 7,
+          "Na": 1000,
           "K": 0,
           "Tris": 0,
           "Mg": 0,
@@ -225,19 +153,67 @@
         "Tm_chem_correction_parameters": {
           "enabled": true,
           "parameters": {
-            "DMSO": 0,
+            "DMSO": 0.0,
             "DMSOfactor": 0.75,
-            "fmd": 0,
+            "fmd": 20.0,
             "fmdfactor": 0.65,
             "fmdmethod": 1,
             "GC": null
           }
         },
-        "Tm_salt_correction_parameters": { "enabled": false }
+        "Tm_salt_correction_parameters": {
+          "enabled": false
+        }
       }
+    },
+    "required_parameters": {
+      "targets": "GFB69_RS14600",
+      "target_genome": [
+        {
+          "source": "ncbi",
+          "source_params": {
+            "species": "Acidianus_ambivalens",
+            "annotation_release": "GCF_009428885.1_ASM942888v1",
+            "mode": "species",
+            "taxon": "archaea",
+            "assembly_source": "auto"
+          },
+          "genomic_regions": {
+            "gene": true,
+            "intergenic": false,
+            "exon": false,
+            "utr": false,
+            "cds": false,
+            "intron": false,
+            "exon_exon_junction": false
+          },
+          "exon_exon_junction_block_size": 50
+        }
+      ],
+      "reference_genome": [
+        {
+          "source": "ncbi",
+          "source_params": {
+            "species": "Acidianus_ambivalens",
+            "annotation_release": "GCF_009428885.1_ASM942888v1",
+            "mode": "species",
+            "taxon": "archaea",
+            "assembly_source": "auto"
+          },
+          "genomic_regions": {
+            "gene": true,
+            "intergenic": false,
+            "exon": false,
+            "utr": false,
+            "cds": false,
+            "intron": false,
+            "exon_exon_junction": false
+          },
+          "exon_exon_junction_block_size": 50
+        }
+      ]
     }
   },
-
   "pipeline_run_config": {
     "_meta": {
       "version": 1,
@@ -247,29 +223,6 @@
     "config": {
       "target_probes": {
         "oligo_generation": {
-          "file_region_ids": "GFB69_RS14600",
-          "files_fasta_probe_database": [
-            {
-              "source": "ncbi",
-              "source_params": {
-                "species": "Acidianus_ambivalens",
-                "annotation_release": "GCF_009428885.1_ASM942888v1",
-                "taxon": "archaea",
-                "assembly_source": "auto",
-                "mode": "species"
-              },
-              "genomic_regions": {
-                "gene": true,
-                "intergenic": false,
-                "exon": false,
-                "utr": false,
-                "cds": false,
-                "intron": false,
-                "exon_exon_junction": false
-              },
-              "exon_exon_junction_block_size": 50
-            }
-          ],
           "probe_length_min": 26,
           "probe_length_max": 30,
           "probe_split_region": 4
@@ -277,24 +230,30 @@
         "property_filters": {
           "isoform_consensus_filter": {
             "enabled": true,
-            "isoform_consensus": 0
+            "isoform_consensus": 0.0
           },
-          "targeted_exons_filter": { "enabled": false },
-          "hard_masked_sequences_filter": { "enabled": true },
-          "soft_masked_sequences_filter": { "enabled": true },
+          "targeted_exons_filter": {
+            "enabled": false
+          },
+          "hard_masked_sequences_filter": {
+            "enabled": true
+          },
+          "soft_masked_sequences_filter": {
+            "enabled": true
+          },
           "homopolymeric_runs_filter": {
-            "enabled": false,
+            "enabled": true,
             "homopolymeric_base_n": {
-              "A": null,
-              "T": null,
-              "C": null,
-              "G": null
+              "A": 6,
+              "T": 6,
+              "C": 6,
+              "G": 6
             }
           },
           "GC_content_filter": {
             "enabled": true,
-            "GC_content_min": 45,
-            "GC_content_max": 65
+            "GC_content_min": 45.0,
+            "GC_content_max": 65.0
           },
           "prohibited_sequences_filter": {
             "enabled": true,
@@ -310,11 +269,15 @@
             "enabled": true,
             "max_len_selfcomplement": 10
           },
-          "Tm_filter": { "enabled": true, "Tm_min": 50, "Tm_max": 70 },
+          "Tm_filter": {
+            "enabled": true,
+            "Tm_min": 50.0,
+            "Tm_max": 70.0
+          },
           "secondary_structure_filter": {
             "enabled": true,
             "T": 37,
-            "thr_DG": 0
+            "thr_DG": 0.0
           }
         },
         "specificity_filters": {
@@ -325,141 +288,69 @@
           "cross_hybridization_blastn_filter": {
             "enabled": true,
             "search_parameters": {
-              "-query_loc": null,
-              "-strand": null,
-              "-task": null,
-              "-evalue": null,
-              "-word_size": null,
-              "-gapopen": null,
-              "-gapextend": null,
-              "-penalty": null,
-              "-reward": null,
-              "-num_descriptions": null,
-              "-num_alignments": null,
-              "-sorthits": null,
-              "-sorthsps": null,
-              "-dust": null,
-              "-soft_masking": null,
-              "-lcase_masking": null,
-              "-db_soft_mask": null,
-              "-db_hard_mask": null,
-              "-perc_identity": null,
-              "-qcov_hsp_perc": null,
-              "-max_hsps": null,
-              "-culling_limit": null,
-              "-best_hit_overhang": null,
-              "-best_hit_score_edge": null,
-              "-subject_besthit": null,
-              "-max_target_seqs": null,
-              "-template_type": null,
-              "-template_length": null,
-              "-db_size": null,
-              "-searchsp": null,
-              "-xdrop_ungap": null,
-              "-xdrop_gap": null,
-              "-xdrop_gap_final": null,
-              "-no_greedy": null,
-              "-min_raw_gapped_score": null,
-              "-ungapped": null,
-              "-window_size": null,
-              "-off_diagonal_range": null
+              "-strand": "minus",
+              "-word_size": 10,
+              "-perc_identity": 80.0
             },
-            "hit_parameters": { "coverage": 20, "min_alignment_length": null }
+            "hit_parameters": {
+              "hit_criterion": "coverage",
+              "value": 50.0
+            }
           },
           "specificity_blastn_filter": {
             "enabled": true,
             "search_parameters": {
-              "-query_loc": null,
-              "-strand": null,
-              "-task": null,
-              "-evalue": null,
-              "-word_size": null,
-              "-gapopen": null,
-              "-gapextend": null,
-              "-penalty": null,
-              "-reward": null,
-              "-num_descriptions": null,
-              "-num_alignments": null,
-              "-sorthits": null,
-              "-sorthsps": null,
-              "-dust": null,
-              "-soft_masking": null,
-              "-lcase_masking": null,
-              "-db_soft_mask": null,
-              "-db_hard_mask": null,
-              "-perc_identity": null,
-              "-qcov_hsp_perc": null,
-              "-max_hsps": null,
-              "-culling_limit": null,
-              "-best_hit_overhang": null,
-              "-best_hit_score_edge": null,
-              "-subject_besthit": null,
-              "-max_target_seqs": null,
-              "-template_type": null,
-              "-template_length": null,
-              "-db_size": null,
-              "-searchsp": null,
-              "-xdrop_ungap": null,
-              "-xdrop_gap": null,
-              "-xdrop_gap_final": null,
-              "-no_greedy": null,
-              "-min_raw_gapped_score": null,
-              "-ungapped": null,
-              "-window_size": null,
-              "-off_diagonal_range": null
+              "-strand": "minus",
+              "-word_size": 10,
+              "-perc_identity": 80.0
             },
-            "hit_parameters": { "coverage": 20, "min_alignment_length": null },
-            "files_fasta_reference_database": [
-              {
-                "source": "ncbi",
-                "source_params": {
-                  "species": "Acidianus_ambivalens",
-                  "annotation_release": "GCF_009428885.1_ASM942888v1",
-                  "taxon": "archaea",
-                  "assembly_source": "auto",
-                  "mode": "species"
-                },
-                "genomic_regions": {
-                  "gene": true,
-                  "intergenic": false,
-                  "exon": false,
-                  "utr": false,
-                  "cds": false,
-                  "intron": false,
-                  "exon_exon_junction": false
-                },
-                "exon_exon_junction_block_size": 50
-              }
-            ]
+            "hit_parameters": {
+              "hit_criterion": "coverage",
+              "value": 50.0
+            }
           },
           "variant_filter": {
             "enabled": true,
-            "files_vcf_reference_database": [],
+            "files_vcf_reference_database": [
+              "data/oligoseq_mock_form_data.json"
+            ],
             "action": "flag"
           }
         },
         "probe_set_selection": {
           "independent_set_selection": {
             "n_sets": 3,
-            "set_size_min": 1,
+            "set_size_min": 3,
             "set_size_opt": 5,
-            "distance_between_target_probes": 0,
+            "distance_between_probes": 0,
             "n_attempts_graph": 50,
             "n_attempts_clique_enum": 50,
             "diversification_fraction": 0.1,
             "jaccard_opt": 0.5,
             "jaccard_step": 0.1
           },
-          "uniform_distance_score": { "weight": 1 },
-          "isoform_consensus_score": { "weight": 1 },
-          "targeted_exons_score": { "weight": 0, "targeted_exons": [] },
-          "GC_content_score": {
-            "weight": 1,
-            "GC_content_min": 45,
-            "GC_content_opt": 55,
-            "GC_content_max": 65
+          "uniform_distance_score": {
+            "weight": 1.0
           },
-          "Tm_score": { "weight": 1, "Tm_min": 50, "Tm_opt": 60, "Tm_max": 70 }
+          "isoform_consensus_score": {
+            "weight": 1.0
+          },
+          "targeted_exons_score": {
+            "weight": 0.0,
+            "targeted_exons": []
+          },
+          "GC_content_score": {
+            "weight": 1.0,
+            "GC_content_opt": 55.0,
+            "GC_content_min": 45.0,
+            "GC_content_max": 65.0
+          },
+          "Tm_score": {
+            "weight": 1.0,
+            "Tm_opt": 60.0,
+            "Tm_min": 50.0,
+            "Tm_max": 70.0
+          }
         },
         "global_parameters": {
           "Tm_parameters": {
@@ -468,14 +359,14 @@
             "c_seq": null,
             "shift": 0,
             "selfcomp": false,
-            "nn_table": null,
+            "nn_table": "DNA_NN3",
             "tmm_table": null,
-            "imm_table": null,
-            "de_table": null,
-            "dnac1": 25,
-            "dnac2": 25,
-            "saltcorr": 5,
-            "Na": 50,
+            "imm_table": "DNA_IMM1",
+            "de_table": "DNA_DE1",
+            "dnac1": 50,
+            "dnac2": 0,
+            "saltcorr": 7,
+            "Na": 1000,
             "K": 0,
             "Tris": 0,
             "Mg": 0,
@@ -484,16 +375,65 @@
           "Tm_chem_correction_parameters": {
             "enabled": true,
             "parameters": {
-              "DMSO": 0,
+              "DMSO": 0.0,
               "DMSOfactor": 0.75,
-              "fmd": 0,
+              "fmd": 20.0,
               "fmdfactor": 0.65,
               "fmdmethod": 1,
               "GC": null
             }
           },
-          "Tm_salt_correction_parameters": { "enabled": false }
+          "Tm_salt_correction_parameters": {
+            "enabled": false
+          }
         }
+      },
+      "required_parameters": {
+        "targets": "GFB69_RS14600",
+        "target_genome": [
+          {
+            "source": "ncbi",
+            "source_params": {
+              "species": "Acidianus_ambivalens",
+              "annotation_release": "GCF_009428885.1_ASM942888v1",
+              "mode": "species",
+              "taxon": "archaea",
+              "assembly_source": "auto"
+            },
+            "genomic_regions": {
+              "gene": true,
+              "intergenic": false,
+              "exon": false,
+              "utr": false,
+              "cds": false,
+              "intron": false,
+              "exon_exon_junction": false
+            },
+            "exon_exon_junction_block_size": 50
+          }
+        ],
+        "reference_genome": [
+          {
+            "source": "ncbi",
+            "source_params": {
+              "species": "Acidianus_ambivalens",
+              "annotation_release": "GCF_009428885.1_ASM942888v1",
+              "mode": "species",
+              "taxon": "archaea",
+              "assembly_source": "auto"
+            },
+            "genomic_regions": {
+              "gene": true,
+              "intergenic": false,
+              "exon": false,
+              "utr": false,
+              "cds": false,
+              "intron": false,
+              "exon_exon_junction": false
+            },
+            "exon_exon_junction_block_size": 50
+          }
+        ]
       }
     }
   },

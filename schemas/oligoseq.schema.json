@@ -1,25 +1,44 @@
 {
   "$defs": {
-    "BlastnHitParameters": {
+    "BlastnHitParametersCoverage": {
       "additionalProperties": false,
       "properties": {
-        "coverage": {
-          "anyOf": [
-            { "maximum": 100, "minimum": 0, "type": "number" },
-            { "type": "null" }
-          ],
-          "default": null,
-          "description": "Coverage in %, alternatively, min_alignment_length can be used",
-          "title": "Coverage"
+        "hit_criterion": {
+          "const": "coverage",
+          "default": "coverage",
+          "title": "Hit Criterion",
+          "type": "string"
         },
-        "min_alignment_length": {
-          "anyOf": [{ "minimum": 0, "type": "integer" }, { "type": "null" }],
-          "default": null,
-          "description": "Number of nucleotides for alignment, alternatively, coverage can be used",
-          "title": "Min Alignment Length"
+        "value": {
+          "description": "Coverage in %, alternatively, min_alignment_length can be used",
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Value",
+          "type": "number"
         }
       },
-      "title": "BlastnHitParameters",
+      "required": ["value"],
+      "title": "BlastnHitParametersCoverage",
+      "type": "object"
+    },
+    "BlastnHitParametersMinAlignmentLength": {
+      "additionalProperties": false,
+      "properties": {
+        "hit_criterion": {
+          "const": "min_alignment_length",
+          "default": "min_alignment_length",
+          "title": "Hit Criterion",
+          "type": "string"
+        },
+        "value": {
+          "description": "Number of nucleotides for alignment, alternatively, coverage can be used",
+          "minimum": 0,
+          "title": "Value",
+          "type": "integer"
+        }
+      },
+      "required": ["value"],
+      "title": "BlastnHitParametersMinAlignmentLength",
       "type": "object"
     },
     "BlastnSearchParameters": {
@@ -327,12 +346,23 @@
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "search_parameters": {
           "$ref": "#/$defs/BlastnSearchParameters",
-          "description": "Parameters for BLASTN searches used in cross-hybridization filtering.",
+          "description": "BLAST options for the cross-hybridization search.",
           "x-collapsed": true
         },
         "hit_parameters": {
-          "$ref": "#/$defs/BlastnHitParameters",
-          "description": "Hit criteria. Hits satisfying these lead to oligo rejection."
+          "description": "Hit criteria. Hits satisfying these lead to oligo rejection.",
+          "discriminator": {
+            "mapping": {
+              "coverage": "#/$defs/BlastnHitParametersCoverage",
+              "min_alignment_length": "#/$defs/BlastnHitParametersMinAlignmentLength"
+            },
+            "propertyName": "hit_criterion"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/BlastnHitParametersCoverage" },
+            { "$ref": "#/$defs/BlastnHitParametersMinAlignmentLength" }
+          ],
+          "title": "Hit Parameters"
         }
       },
       "required": ["enabled", "search_parameters", "hit_parameters"],
@@ -713,45 +743,112 @@
       "title": "IsoformConsensusScore",
       "type": "object"
     },
-    "OligoSeqSpecificityBlastnFilterDisabled": {
-      "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
-      },
-      "required": ["enabled"],
-      "title": "OligoSeqSpecificityBlastnFilterDisabled",
-      "type": "object"
-    },
-    "OligoSeqSpecificityBlastnFilterEnabled": {
+    "OligoSeqTargetProbeSpecificityFilter": {
       "additionalProperties": false,
       "properties": {
-        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
-        "search_parameters": {
-          "$ref": "#/$defs/BlastnSearchParameters",
+        "read_length_bias_filter": {
+          "default": { "enabled": true, "read_length_bias": 20 },
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/ReadLengthBiasFilterDisabled",
+              "True": "#/$defs/ReadLengthBiasFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/ReadLengthBiasFilterEnabled" },
+            { "$ref": "#/$defs/ReadLengthBiasFilterDisabled" }
+          ],
+          "title": "Read Length Bias Filter"
+        },
+        "cross_hybridization_blastn_filter": {
           "default": {
-            "-strand": "minus",
-            "-word_size": 10,
-            "-perc_identity": 80.0
+            "enabled": true,
+            "search_parameters": {
+              "-perc_identity": 80.0,
+              "-strand": "minus",
+              "-word_size": 10
+            },
+            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
           },
-          "x-collapsed": true
-        },
-        "hit_parameters": {
-          "$ref": "#/$defs/BlastnHitParameters",
-          "default": { "coverage": 50.0 }
-        },
-        "files_fasta_reference_database": {
-          "items": {
-            "anyOf": [
-              { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
-              { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
-            ]
+          "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
+              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
           },
-          "minItems": 1,
-          "title": "Files Fasta Reference Database",
-          "type": "array"
+          "oneOf": [
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
+          ],
+          "title": "Cross Hybridization Blastn Filter"
+        },
+        "specificity_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-perc_identity": 80.0,
+              "-strand": "minus",
+              "-word_size": 10
+            },
+            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
+          },
+          "description": "Ensure oligo specificity against a reference database (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SpecificityBlastnFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
+          ],
+          "title": "Specificity Blastn Filter"
+        },
+        "variant_filter": {
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/OligoSeqVariantFilterDisabled",
+              "True": "#/$defs/OligoSeqVariantFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/OligoSeqVariantFilterEnabled" },
+            { "$ref": "#/$defs/OligoSeqVariantFilterDisabled" }
+          ],
+          "title": "Variant Filter"
         }
       },
-      "required": ["enabled", "files_fasta_reference_database"],
-      "title": "OligoSeqSpecificityBlastnFilterEnabled",
+      "required": ["variant_filter"],
+      "title": "OligoSeqTargetProbeSpecificityFilter",
+      "type": "object"
+    },
+    "OligoSeqTargetProbes": {
+      "additionalProperties": false,
+      "properties": {
+        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
+        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
+        "specificity_filters": {
+          "$ref": "#/$defs/OligoSeqTargetProbeSpecificityFilter"
+        },
+        "probe_set_selection": {
+          "$ref": "#/$defs/TargetProbeProbeSetSelection"
+        },
+        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
+      },
+      "required": [
+        "oligo_generation",
+        "property_filters",
+        "specificity_filters",
+        "probe_set_selection",
+        "global_parameters"
+      ],
+      "title": "OligoSeqTargetProbes",
       "type": "object"
     },
     "OligoSeqVariantFilterDisabled": {
@@ -857,6 +954,43 @@
       },
       "required": ["enabled", "read_length_bias"],
       "title": "ReadLengthBiasFilterEnabled",
+      "type": "object"
+    },
+    "RequiredParameters": {
+      "additionalProperties": false,
+      "properties": {
+        "targets": {
+          "anyOf": [{ "type": "string" }, { "type": "null" }],
+          "description": "Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead.",
+          "title": "Targets"
+        },
+        "target_genome": {
+          "description": "FASTA file(s) from which the target oligo sequences are generated.",
+          "items": {
+            "anyOf": [
+              { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
+              { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
+            ]
+          },
+          "minItems": 1,
+          "title": "Target Genome",
+          "type": "array"
+        },
+        "reference_genome": {
+          "description": "FASTA file(s) used as reference for all specificity filters (e.g. with BLAST).",
+          "items": {
+            "anyOf": [
+              { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
+              { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
+            ]
+          },
+          "minItems": 1,
+          "title": "Reference Genome",
+          "type": "array"
+        }
+      },
+      "required": ["targets", "target_genome", "reference_genome"],
+      "title": "RequiredParameters",
       "type": "object"
     },
     "SecondaryStructureFilterDisabled": {
@@ -993,27 +1127,41 @@
       "title": "SourceParamsNcbi",
       "type": "object"
     },
-    "TargetProbe": {
+    "SpecificityBlastnFilterDisabled": {
+      "properties": {
+        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+      },
+      "required": ["enabled"],
+      "title": "SpecificityBlastnFilterDisabled",
+      "type": "object"
+    },
+    "SpecificityBlastnFilterEnabled": {
       "additionalProperties": false,
       "properties": {
-        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
-        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
-        "specificity_filters": {
-          "$ref": "#/$defs/TargetProbeSpecificityFilter"
+        "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
+        "search_parameters": {
+          "$ref": "#/$defs/BlastnSearchParameters",
+          "description": "BLAST options for the specificity search.",
+          "x-collapsed": true
         },
-        "probe_set_selection": {
-          "$ref": "#/$defs/TargetProbeProbeSetSelection"
-        },
-        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
+        "hit_parameters": {
+          "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection.",
+          "discriminator": {
+            "mapping": {
+              "coverage": "#/$defs/BlastnHitParametersCoverage",
+              "min_alignment_length": "#/$defs/BlastnHitParametersMinAlignmentLength"
+            },
+            "propertyName": "hit_criterion"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/BlastnHitParametersCoverage" },
+            { "$ref": "#/$defs/BlastnHitParametersMinAlignmentLength" }
+          ],
+          "title": "Hit Parameters"
+        }
       },
-      "required": [
-        "oligo_generation",
-        "property_filters",
-        "specificity_filters",
-        "probe_set_selection",
-        "global_parameters"
-      ],
-      "title": "TargetProbe",
+      "required": ["enabled", "search_parameters", "hit_parameters"],
+      "title": "SpecificityBlastnFilterEnabled",
       "type": "object"
     },
     "TargetProbeGlobal": {
@@ -1088,22 +1236,6 @@
     "TargetProbeOligoGeneration": {
       "additionalProperties": false,
       "properties": {
-        "file_region_ids": {
-          "anyOf": [{ "type": "string" }, { "type": "null" }],
-          "description": "Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead.",
-          "title": "File Region Ids"
-        },
-        "files_fasta_probe_database": {
-          "items": {
-            "anyOf": [
-              { "$ref": "#/$defs/GenomicRegionGeneratorNcbi" },
-              { "$ref": "#/$defs/GenomicRegionGeneratorEnsembl" }
-            ]
-          },
-          "minItems": 1,
-          "title": "Files Fasta Probe Database",
-          "type": "array"
-        },
         "probe_length_min": {
           "default": 26,
           "description": "Minimum allowed oligo length (bases)",
@@ -1128,7 +1260,6 @@
           "type": "integer"
         }
       },
-      "required": ["file_region_ids", "files_fasta_probe_database"],
       "title": "TargetProbeOligoGeneration",
       "type": "object"
     },
@@ -1338,80 +1469,6 @@
         }
       },
       "title": "TargetProbePropertyFilter",
-      "type": "object"
-    },
-    "TargetProbeSpecificityFilter": {
-      "additionalProperties": false,
-      "properties": {
-        "read_length_bias_filter": {
-          "default": { "enabled": true, "read_length_bias": 20 },
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/ReadLengthBiasFilterDisabled",
-              "True": "#/$defs/ReadLengthBiasFilterEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/ReadLengthBiasFilterEnabled" },
-            { "$ref": "#/$defs/ReadLengthBiasFilterDisabled" }
-          ],
-          "title": "Read Length Bias Filter"
-        },
-        "cross_hybridization_blastn_filter": {
-          "default": {
-            "enabled": true,
-            "search_parameters": {
-              "-perc_identity": 80.0,
-              "-strand": "minus",
-              "-word_size": 10
-            },
-            "hit_parameters": { "coverage": 50.0 }
-          },
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
-          ],
-          "title": "Cross Hybridization Blastn Filter"
-        },
-        "specificity_blastn_filter": {
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/OligoSeqSpecificityBlastnFilterDisabled",
-              "True": "#/$defs/OligoSeqSpecificityBlastnFilterEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterEnabled" },
-            { "$ref": "#/$defs/OligoSeqSpecificityBlastnFilterDisabled" }
-          ],
-          "title": "Specificity Blastn Filter"
-        },
-        "variant_filter": {
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/OligoSeqVariantFilterDisabled",
-              "True": "#/$defs/OligoSeqVariantFilterEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/OligoSeqVariantFilterEnabled" },
-            { "$ref": "#/$defs/OligoSeqVariantFilterDisabled" }
-          ],
-          "title": "Variant Filter"
-        }
-      },
-      "required": ["specificity_blastn_filter", "variant_filter"],
-      "title": "TargetProbeSpecificityFilter",
       "type": "object"
     },
     "TargetedExonsFilterDisabled": {
@@ -1860,6 +1917,7 @@
       "type": "object"
     }
   },
+  "additionalProperties": false,
   "properties": {
     "schema_version": {
       "const": 2,
@@ -1867,9 +1925,10 @@
       "title": "Schema Version",
       "type": "integer"
     },
-    "target_probes": { "$ref": "#/$defs/TargetProbe" }
+    "target_probes": { "$ref": "#/$defs/OligoSeqTargetProbes" },
+    "required_parameters": { "$ref": "#/$defs/RequiredParameters" }
   },
-  "required": ["target_probes"],
+  "required": ["target_probes", "required_parameters"],
   "title": "OligoSeqProbeDesignerConfigFrontEnd",
   "type": "object"
 }
