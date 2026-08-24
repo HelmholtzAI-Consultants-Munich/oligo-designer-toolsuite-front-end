@@ -206,6 +206,26 @@ const uiSchemaFromJsonSchemaRecursive = (
                         quickSetting: true,
                     };
                 }
+                // If every field this section owns just got pinned above, its own body has
+                // nothing left to show. TabLayout uses this to skip it as the default-open
+                // section; CSS (`:has(.compact-grid:empty)`) hides the section itself.
+                const childProperties = resolveSchema(
+                    propertySchema,
+                    baseSchema
+                ).properties;
+                const childNames = Object.keys(childProperties ?? {});
+                if (
+                    childNames.length > 0 &&
+                    childNames.every(
+                        (name) =>
+                            fieldUiSchema[name]?.["ui:options"]?.quickSetting
+                    )
+                ) {
+                    fieldUiSchema["ui:options"] = {
+                        ...fieldUiSchema["ui:options"],
+                        allFieldsPortaled: true,
+                    };
+                }
                 uiSchema[field] = fieldUiSchema;
             }
         }

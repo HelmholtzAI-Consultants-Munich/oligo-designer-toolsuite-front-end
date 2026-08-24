@@ -547,6 +547,11 @@ form.rjsf {
         border-radius: $border-radius-sm;
         padding: $form-box-padding;
         margin-bottom: 0.5rem;
+
+        &:has(.compact-grid:empty) {
+            /* every field here portaled into quick settings, so there's nothing left to show */
+            display: none;
+        }
     }
 
     .card-body .field-group-box {
@@ -756,6 +761,11 @@ form.rjsf {
         /* one accordion item per section, spaced apart as its own rounded card
         instead of Bootstrap's single stacked group */
         @include form-surface;
+
+        &:has(.compact-grid:empty) {
+            /* every field here portaled into quick settings, so there's nothing left to show */
+            display: none;
+        }
 
         .accordion-button {
             border-radius: $border-radius;

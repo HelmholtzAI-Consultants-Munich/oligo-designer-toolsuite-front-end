@@ -23,6 +23,10 @@ export const excludeHiddenTabs = (tabs: string[]) =>
 export const sectionKey = (tabId: string, name: string): string =>
     `${tabId}_${name}`;
 
+/** Whether every field a section owns already portals into Quick Settings, leaving it empty. */
+export const isEmptySection = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).allFieldsPortaled === true;
+
 /** Narrows away the `true`/`false` form a property schema can take, which carries no keywords. */
 const asSchema = (
     schema: RJSFSchema | boolean | undefined
