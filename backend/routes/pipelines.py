@@ -449,9 +449,8 @@ def start_pipeline(pipeline_name: str):
         current_user.is_authenticated,
     )
     with queue_accounting_lock() as redis:
-        enqueue_pipeline(pipeline_chord)
         high_priority_ahead, default_priority_ahead = add_pending_run(redis, db, priority)
-
+        enqueue_pipeline(pipeline_chord)
     update_run_with_context(
         run_id,
         sanitized_run_name,

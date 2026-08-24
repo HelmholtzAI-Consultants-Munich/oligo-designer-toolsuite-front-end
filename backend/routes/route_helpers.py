@@ -180,6 +180,37 @@ def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to update the run in the database.")
 
 
+def append_step_to_run(run_id: ObjectId, step_payload: dict[str, Any]) -> Any:
+    """Append a new step to the run's steps array.
+
+    Arguments:
+        run_id {ObjectId} -- The pipeline run's id.
+        step_payload {dict[str, Any]} -- The step data to append.
+    """
+    update_result = db.runs.update_one(
+        {"_id": run_id},
+        {"$push": {"steps": step_payload}},
+    )
+    if not update_result.acknowledged:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to update the run in the database.")
+
+
+def sanitize_dict_for_db(obj: Any) -> Any:
+    """Recursively convert dict keys to strings so the object is BSON-serializable.
+
+    Arguments:
+        obj {Any} -- The object to sanitize (dict, list, or primitive).
+
+    Returns:
+        Any -- The sanitized object, safe to store in database.
+    """
+    if isinstance(obj, dict):
+        return {str(k): sanitize_dict_for_db(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize_dict_for_db(v) for v in obj]
+    return obj
+
+
 # ============================================================================
 # Turnstile Helpers
 # ============================================================================

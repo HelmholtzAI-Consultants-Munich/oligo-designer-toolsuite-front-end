@@ -15,11 +15,13 @@ Features:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
 """
 
+from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
 
+import redis
 from bson import ObjectId
-from flask import Blueprint, abort, current_app, jsonify, send_file, session
+from flask import Blueprint, Response, abort, current_app, jsonify, send_file, session
 from flask_login import current_user
 
 from backend.extensions import db
@@ -32,6 +34,8 @@ from backend.utilities.typed_values import (
     safe_join_under,
     timestamp_to_iso,
 )
+
+redis_client = redis.Redis()
 
 runs_bp = Blueprint("runs", __name__)
 
@@ -64,6 +68,7 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "user_id": run.get("user_id", "unknown"),
         "priority": run.get("priority", "unknown"),
         "queue_position": run.get("queue_position", "unknown"),
+        "steps": run.get("steps", []),
     }
 
     if metrics := format_run_metrics(run.get("metrics")):
@@ -229,3 +234,18 @@ def get_run_status(run_id: ObjectId):
     run = get_run_or_404(run_id)
 
     return jsonify({"state": run["status"]}), HTTPStatus.OK
+
+
+@runs_bp.route("/stream/<task_id>")
+def stream(task_id: str):
+    def event_stream() -> Iterator[str]:
+        pubsub = redis_client.pubsub()
+        pubsub.subscribe(f"pipeline:{task_id}")
+        try:
+            for message in pubsub.listen():
+                if message["type"] == "message":
+                    yield f"data: {message['data'].decode()}\n\n"
+        finally:
+            pubsub.unsubscribe()
+
+    return Response(event_stream(), mimetype="text/event-stream")

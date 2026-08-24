@@ -2,6 +2,7 @@
 
 import calendar
 import datetime
+import json
 import os
 import shutil
 from collections.abc import Callable
@@ -9,12 +10,15 @@ from logging import Logger
 from pathlib import Path
 from typing import Any
 
+import redis
 from bson import ObjectId
 from celery.utils.log import get_task_logger
+from oligo_designer_toolsuite.pipelines.utils._context import _status_callback
 
 from backend.config import CeleryConfig, Config
 from backend.database import mongo_database
 from backend.genomic_databases import fetch_dropdown_options
+from backend.routes.route_helpers import append_step_to_run, sanitize_dict_for_db
 from backend.utils import utc_now
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
@@ -24,6 +28,7 @@ logger: Logger = get_task_logger(__name__)
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
 
 ANONYMOUS_SESSIONS_COLLECTION = "anonymous_sessions"
+redis_client = redis.Redis()
 
 
 def _get_data_roots() -> tuple[Path, Path]:
@@ -336,9 +341,13 @@ def _cleanup_expired_anonymous_data(db, upload_root: Path, userdata_root: Path, 
     }
 
 
-@app.task(base=PipelineTask)
+@app.task(base=PipelineTask, bind=True)
 def run_pipeline(
-    generated_region_paths: list[tuple[str, list[str]]], pipeline_name: str, form_data: Any, output_path: str
+    self,
+    generated_region_paths: list[tuple[str, list[str]]],
+    pipeline_name: str,
+    form_data: Any,
+    output_path: str,
 ) -> None:
     """Runs the pipeline via the `PipelineRunner` class.
 
@@ -350,8 +359,28 @@ def run_pipeline(
     """
     from backend.worker.pipeline_runner import PipelineRunner  # lazy: avoids Bio at import time
 
-    runner = PipelineRunner(pipeline_name, logger=logger)
-    runner.run(form_data, output_path, generated_region_paths)
+    def handle_status(pipeline_step):
+        payload = {
+            "step_name": pipeline_step.step_name,
+            "num_oligos": pipeline_step.num_oligos,
+            "num_genes": pipeline_step.num_genes,
+            "parameters": pipeline_step.parameters,
+        }
+        self.update_state(
+            state="PROGRESS",
+            meta=payload,
+        )
+        redis_client.publish(f"pipeline:{self.request.id}", json.dumps(payload))
+
+        append_step_to_run(ObjectId(self.request.id), sanitize_dict_for_db(payload))
+
+    token = _status_callback.set(handle_status)
+
+    try:
+        runner = PipelineRunner(pipeline_name, logger=logger)
+        runner.run(form_data, output_path, generated_region_paths)
+    finally:
+        _status_callback.reset(token)
 
 
 @app.task()
