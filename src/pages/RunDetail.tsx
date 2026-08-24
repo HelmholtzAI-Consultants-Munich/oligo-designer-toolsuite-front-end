@@ -10,6 +10,7 @@ import type {
     RunState,
     ProbesetScores,
 } from "../types";
+import { ReactFlowProvider } from "@xyflow/react";
 import ComponentDefinition from "../components/visualization/oligoComponents.json";
 import ResultVisualization from "../components/visualization/ResultVisualization";
 import { BACKEND_URL } from "../config";
@@ -43,6 +44,7 @@ import {
 import RunMetrics from "../components/RunMetrics";
 import RunDetailFileAction from "./RunDetailFileAction";
 import { PIPELINE_CONFIG, type PipelineConfig } from "../pipelineConfig/config";
+import PipelineVisualization from "../components/pipelineVisualization/PipelineVisualization";
 
 interface LocationState {
     fromAdmin?: boolean;
@@ -337,6 +339,9 @@ const RunDetail = () => {
                 href: fromAdmin ? "/admin/pipelines" : "/runs",
             }}
         >
+            <ReactFlowProvider>
+                <PipelineVisualization runId={runId} />
+            </ReactFlowProvider>
             {!run && (
                 <Alert variant="danger">
                     Run not found. It may have been deleted.

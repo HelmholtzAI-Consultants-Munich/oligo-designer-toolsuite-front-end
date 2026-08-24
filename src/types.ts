@@ -214,4 +214,13 @@ export interface PipelineRun {
     priority: "high" | "default";
     queue_position: [number, number]; // [highPriorityAhead, defaultPriorityAhead]
     metrics?: RunMetrics;
+    steps?: PipelineStep[];
 }
+
+export type PipelineStep = {
+    step_name: string;
+    num_oligos: number;
+    num_genes: number;
+    parameters: Record<string, unknown>;
+    display_text?: string;
+};

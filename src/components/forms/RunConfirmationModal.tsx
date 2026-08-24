@@ -161,6 +161,7 @@ const RunConfirmationModal: React.FC<RunConfirmationModalProps> = ({
                         }}
                         placeholder=""
                         maxLength={20}
+                        autoFocus
                     />
                     <div className="text-muted small mt-1 text-end">
                         {run_name.length}/{20}
