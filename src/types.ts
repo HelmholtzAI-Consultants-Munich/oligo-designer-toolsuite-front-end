@@ -180,10 +180,9 @@ export interface ProbesetScores {
     [probeset_name: string]: ProbeScore;
 }
 
-export interface ProbeScore {
-    average: number;
-    worst: number;
-}
+/** Keyed by ODT's own score names (`set_score_average`, `set_score_worst`, `set_score_sum`),
+ * which pipelines pick between depending on how they score a set. */
+export type ProbeScore = Record<string, number>;
 
 export type ProbeDetailsValue = string | number | string[] | number[];
 

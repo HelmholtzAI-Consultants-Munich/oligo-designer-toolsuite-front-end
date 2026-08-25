@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from bson import ObjectId
 from celery import chord
@@ -272,18 +272,31 @@ def save_file(
 
 
 def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMultiDict[str, FileStorage]):
-    file_inputs: dict[str, list[Path]] = {}
+    file_inputs: dict[str, list[Path] | Path] = {}
     # Because duplicated File Objects only get uploaded once via the browser we need to map the Filestorage object
     # to the corresponding path to avoid reading an empty stream
     saved_files: dict[FileStorage, Path] = {}
 
     for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
-        for file_name in glom(form_data, path):
+        # A path is absent whenever the branch owning it was not chosen, e.g. a codebook set
+        # to "generate" has no `file`.
+        file_names = glom(form_data, path, default=None)
+        if not file_names:
+            continue
+
+        # A single name is stored as given, so it is written back the same way.
+        if isinstance(file_names, str):
+            file_path = save_file(file_names, files, saved_files)
+            if file_path is not None:
+                file_inputs[path] = file_path
+            continue
+
+        for file_name in file_names:
             file_path = save_file(file_name, files, saved_files)
             if file_path is not None:
                 if file_inputs.get(path) is None:
                     file_inputs[path] = []
-                file_inputs[path].append(file_path)
+                cast(list[Path], file_inputs[path]).append(file_path)
     return file_inputs
 
 
@@ -421,7 +434,11 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
 
     for field_path, file_paths in file_inputs.items():
-        assign(form_data, field_path, [str(file_path) for file_path in file_paths])
+        assign(
+            form_data,
+            field_path,
+            str(file_paths) if isinstance(file_paths, Path) else [str(file_path) for file_path in file_paths],
+        )
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)

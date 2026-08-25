@@ -86,6 +86,10 @@ export const PIPELINE_CONFIG: PipelineConfig = {
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/merfish_probe_designer.html",
         disabled: false,
         link: "/pipelines/merfish",
+        fileUploadFields: [
+            ["readout_probes", "codebook", "file"],
+            ["readout_probes", "readout_probe_table", "file"],
+        ],
     },
     seqfish: {
         name: "seqfish",
@@ -98,6 +102,10 @@ export const PIPELINE_CONFIG: PipelineConfig = {
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/seqfishplus_probe_designer.html",
         disabled: false,
         link: "/pipelines/seqfish",
+        fileUploadFields: [
+            ["readout_probes", "codebook", "file"],
+            ["readout_probes", "readout_probe_table", "file"],
+        ],
     },
     hcr: {
         name: "hcr",
@@ -110,6 +118,10 @@ export const PIPELINE_CONFIG: PipelineConfig = {
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/hcr_probe_designer.html",
         disabled: false,
         link: "/pipelines/hcr",
+        fileUploadFields: [
+            ["initiator_probes", "codebook", "file"],
+            ["initiator_probes", "initiator_table", "file"],
+        ],
     },
     cyclehcr: {
         name: "cyclehcr",
@@ -122,6 +134,10 @@ export const PIPELINE_CONFIG: PipelineConfig = {
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/cycle_hcr_probe_designer.html",
         disabled: false,
         link: "/pipelines/cyclehcr",
+        fileUploadFields: [
+            ["readout_probes", "codebook", "file"],
+            ["readout_probes", "readout_probe_table", "file"],
+        ],
     },
     oligoseq: {
         name: "oligoseq",

@@ -36,7 +36,12 @@ from oligo_designer_toolsuite.config.pipelines.seqfish_plus_probe_designer impor
 )
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.worker.utils import hide_fields, mark_schema_flags, strip_local_descriptions
+from backend.worker.utils import (
+    accept_uploaded_files,
+    hide_fields,
+    mark_schema_flags,
+    strip_local_descriptions,
+)
 
 # Fields the front-end renders specially:
 #   "x-quick-setting" -- on a scalar field, pinning it to the Quick Settings panel above the
@@ -272,6 +277,8 @@ if __name__ == "__main__":
         schema = strip_local_descriptions(model.model_json_schema(), globals(), __name__)
         # `general` holds run settings the backend decides, not the user
         schema = hide_fields(schema, "general")
+        # a codebook or probe table is uploaded, so the form holds a File where ODT wants a path
+        schema = accept_uploaded_files(schema, "file")
         if flags:
             schema = mark_schema_flags(schema, flags)
         with open(os.path.join(schemas_dir, f"{name}.schema.json"), "w+") as f:

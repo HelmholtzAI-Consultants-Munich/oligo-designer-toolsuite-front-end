@@ -40,6 +40,7 @@ import {
 } from "./ArrayFieldTemplates";
 import ErrorListTemplate from "./ErrorListTemplate";
 import TxtUploadInput from "./TxtUploadInput";
+import SingleFileInput from "./SingleFileInput";
 import RunConfirmationModal from "./RunConfirmationModal";
 
 type Props = {
@@ -128,6 +129,7 @@ const PipelineTemplate: React.FC<Props> = ({
         AnyOfField: WrappedAnyOfField,
         OneOfField: WrappedOneOfField,
         txtUploadInput: TxtUploadInput,
+        singleFileInput: SingleFileInput,
     };
 
     const tabs = useMemo(() => {
@@ -255,6 +257,11 @@ const PipelineTemplate: React.FC<Props> = ({
                         // the defaults the model declares for its own fields
                         nestedDefaultsPrecedence: "ancestorWins",
                     }}
+                    // Sections live in tabs, so a required field can sit in a `display: none`
+                    // pane. The browser refuses to submit for one it cannot focus, and reports
+                    // it only to the console, so the click looked like it did nothing. RJSF's
+                    // own validation reaches those fields and lists them below.
+                    noHtml5Validate
                     showErrorList={"bottom"}
                     templates={{
                         FieldTemplate,

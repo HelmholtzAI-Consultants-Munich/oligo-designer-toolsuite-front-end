@@ -195,6 +195,15 @@ const uiSchemaFromJsonSchemaRecursive = (
             } else if (field.startsWith("files_vcf_")) {
                 // files_vcf_* (any level) -> fileUpload
                 uiSchema[field] = { "ui:field": "fileUpload" };
+            } else if (field === "file") {
+                // `file` names the single file a "load" branch reads (a codebook, an
+                // initiator or readout probe table) -> singleFileInput. The field is widened
+                // to accept the picked `File` (see `accept_uploaded_files`), and the input
+                // stands in for that union rather than letting RJSF offer it as a choice.
+                uiSchema[field] = {
+                    "ui:field": "singleFileInput",
+                    "ui:fieldReplacesAnyOrOneOf": true,
+                };
             } else {
                 const fieldUiSchema = uiSchemaFromJsonSchemaRecursive(
                     baseSchema,

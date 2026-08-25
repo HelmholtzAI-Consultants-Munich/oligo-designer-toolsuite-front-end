@@ -37,8 +37,16 @@ PIPELINE_GENOMIC_INPUT: Mapping[str, list[str]] = {
     for pipeline in ["oligoseq", "scrinshot", "merfish", "seqfish", "hcr", "cyclehcr"]
 }
 
+# Paths to fields naming user-uploaded files. A path holds either a list of names or, for the
+# codebooks and probe tables a "load" branch reads, a single one; both shapes are handled where
+# these are saved (`save_files`) and cleaned up. A path missing from a submission is skipped, so
+# listing the "load" fields costs nothing when the user picked "generate" instead.
 PIPELINE_FILE_INPUT: Mapping[str, list[str]] = {
-    "oligoseq": ["target_probes.specificity_filters.variant_filter.files_vcf_reference_database"]
+    "oligoseq": ["target_probes.specificity_filters.variant_filter.files_vcf_reference_database"],
+    "merfish": ["readout_probes.codebook.file", "readout_probes.readout_probe_table.file"],
+    "seqfish": ["readout_probes.codebook.file", "readout_probes.readout_probe_table.file"],
+    "hcr": ["initiator_probes.codebook.file", "initiator_probes.initiator_table.file"],
+    "cyclehcr": ["readout_probes.codebook.file", "readout_probes.readout_probe_table.file"],
 }
 
 # `general` is dropped from the front-end schemas (see `hide_fields`), so it is filled in here

@@ -270,9 +270,13 @@ class PipelineRunner:
             else:
                 self.logger.debug(f"Temp files cleanup skipped, file_region_ids path not found: {temp_path}")
         for path in PIPELINE_FILE_INPUT.get(self.pipeline_name, []):
-            files_list = glom(form_data, path)
+            # Absent when the branch owning it was not chosen; a single name for the codebooks
+            # and probe tables, a list for the rest.
+            files_list = glom(form_data, path, default=None)
             if not files_list:
                 continue
+            if isinstance(files_list, str):
+                files_list = [files_list]
             for fname in files_list:
                 # Delete user-uploaded files, but not generated regions so they can be cached
 

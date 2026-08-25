@@ -110,15 +110,21 @@ export const handleSubmit = async (
 
             if (!parentField || !filesField) continue;
 
-            parentField[path[path.length - 1]] = filesField.map(
-                (file: File) => file.name
-            );
-            files = filesField.reduce(
+            // A codebook or probe table names one file, the other inputs take a list; both
+            // send the name in the payload and the file itself alongside it.
+            const fileList: File[] = Array.isArray(filesField)
+                ? filesField
+                : [filesField];
+
+            parentField[path[path.length - 1]] = Array.isArray(filesField)
+                ? fileList.map((file) => file.name)
+                : fileList[0].name;
+            files = fileList.reduce(
                 (acc: Record<string, File>, cur: File) => ({
                     ...acc,
                     ...{ [cur.name]: cur },
                 }),
-                {}
+                files
             );
         }
 

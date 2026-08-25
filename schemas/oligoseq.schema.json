@@ -332,7 +332,15 @@
       "title": "BlastnSearchParameters",
       "type": "object"
     },
-    "CrossHybridizationBlastnFilterCoverageEnabled": {
+    "CrossHybridizationBlastnFilterDisabled": {
+      "properties": {
+        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+      },
+      "required": ["enabled"],
+      "title": "CrossHybridizationBlastnFilterDisabled",
+      "type": "object"
+    },
+    "CrossHybridizationBlastnFilterEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -342,7 +350,6 @@
           "x-collapsed": true
         },
         "hit_parameters": {
-          "default": { "hit_criterion": "coverage", "value": 50.0 },
           "description": "Hit criteria. Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
@@ -358,16 +365,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters"],
-      "title": "CrossHybridizationBlastnFilterCoverageEnabled",
-      "type": "object"
-    },
-    "CrossHybridizationBlastnFilterDisabled": {
-      "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
-      },
-      "required": ["enabled"],
-      "title": "CrossHybridizationBlastnFilterDisabled",
+      "required": ["enabled", "search_parameters", "hit_parameters"],
+      "title": "CrossHybridizationBlastnFilterEnabled",
       "type": "object"
     },
     "GCContentFilterDisabled": {
@@ -776,12 +775,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled"
+              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"
@@ -800,12 +799,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterCoverageEnabled"
+              "True": "#/$defs/SpecificityBlastnFilterEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterCoverageEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
@@ -1128,7 +1127,15 @@
       "title": "SourceParamsNcbi",
       "type": "object"
     },
-    "SpecificityBlastnFilterCoverageEnabled": {
+    "SpecificityBlastnFilterDisabled": {
+      "properties": {
+        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+      },
+      "required": ["enabled"],
+      "title": "SpecificityBlastnFilterDisabled",
+      "type": "object"
+    },
+    "SpecificityBlastnFilterEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -1138,7 +1145,6 @@
           "x-collapsed": true
         },
         "hit_parameters": {
-          "default": { "hit_criterion": "coverage", "value": 50.0 },
           "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
@@ -1154,16 +1160,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters"],
-      "title": "SpecificityBlastnFilterCoverageEnabled",
-      "type": "object"
-    },
-    "SpecificityBlastnFilterDisabled": {
-      "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
-      },
-      "required": ["enabled"],
-      "title": "SpecificityBlastnFilterDisabled",
+      "required": ["enabled", "search_parameters", "hit_parameters"],
+      "title": "SpecificityBlastnFilterEnabled",
       "type": "object"
     },
     "TargetProbeGlobal": {

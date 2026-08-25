@@ -80,3 +80,40 @@ def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) ->
         schema["$defs"][name].pop("description", None)
     schema.pop("description", None)
     return schema
+
+
+def accept_uploaded_files(schema: dict, *fields: str) -> dict:
+    """Widens fields naming a file so the front-end's `File` object validates against them.
+
+    A file input holds the picked `File` in the form data until submission, where it is swapped
+    for the name the backend saved it under. The model types these fields as the path they end
+    up being, which a `File` is not, so the schema the form validates against has to accept an
+    object as well.
+
+    Arguments:
+        schema {dict} -- the generated JSON Schema, modified in place
+        *fields {str} -- names of the properties to widen, at any depth
+
+    Returns:
+        {dict} -- the same schema, with those properties accepting an object too
+    """
+
+    def widen(node: object) -> None:
+        if isinstance(node, list):
+            for item in node:
+                widen(item)
+            return
+        if not isinstance(node, dict):
+            return
+        for field in fields:
+            prop = node.get("properties", {}).get(field)
+            if isinstance(prop, dict) and prop.get("type") == "string":
+                node["properties"][field] = {
+                    "anyOf": [{"type": "string"}, {"type": "object"}],
+                    **{k: v for k, v in prop.items() if k != "type"},
+                }
+        for value in node.values():
+            widen(value)
+
+    widen(schema)
+    return schema

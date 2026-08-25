@@ -704,6 +704,12 @@ form.rjsf {
         margin-bottom: 0.35rem;
     }
 
+    .single-file {
+        /* the name can be long, so it truncates rather than pushing the clear button away */
+        min-width: 0;
+        font-size: $font-size-sm;
+    }
+
     .super-label {
         display: inline-block;
         font-weight: 600;
