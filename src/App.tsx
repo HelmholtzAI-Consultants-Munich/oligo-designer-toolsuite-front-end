@@ -15,7 +15,7 @@ import PrivacyPolicy from "./pages/privacy-policy";
 import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
 import FeedbackButton from "./components/feedback/FeedbackButton";
-import NotFound from "./pages/404";
+import RouteError from "./pages/RouteError";
 import { useAuth } from "./hooks/useAuth";
 import {
     createBrowserRouter,
@@ -73,7 +73,7 @@ const router = createBrowserRouter([
                 children: defaultLayoutRoutes,
             },
         ],
-        errorElement: <NotFound />,
+        errorElement: <RouteError />,
     },
 ]);
 
