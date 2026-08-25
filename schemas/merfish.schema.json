@@ -409,7 +409,7 @@
       "title": "CrossHybridizationBlastnFilterDisabled",
       "type": "object"
     },
-    "CrossHybridizationBlastnFilterEnabled": {
+    "CrossHybridizationBlastnFilterMinAlignmentEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -419,6 +419,7 @@
           "x-collapsed": true
         },
         "hit_parameters": {
+          "default": { "hit_criterion": "min_alignment_length", "value": 17 },
           "description": "Hit criteria. Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
@@ -434,8 +435,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "CrossHybridizationBlastnFilterEnabled",
+      "required": ["enabled", "search_parameters"],
+      "title": "CrossHybridizationBlastnFilterMinAlignmentEnabled",
       "type": "object"
     },
     "GCClampFilterDisabled": {
@@ -540,30 +541,6 @@
       },
       "required": ["weight", "GC_content_opt"],
       "title": "GCContentScore",
-      "type": "object"
-    },
-    "General": {
-      "additionalProperties": false,
-      "properties": {
-        "n_jobs": {
-          "description": "number of cores used to run the pipeline and 2*n_jobs +1 of regions that should be stored in cache. If memory consumption of pipeline is too high reduce this number, if a lot of RAM is available increase this number to decrease runtime",
-          "exclusiveMinimum": 0,
-          "title": "N Jobs",
-          "type": "integer"
-        },
-        "dir_output": {
-          "description": "name of the directory where the output files will be written",
-          "title": "Dir Output",
-          "type": "string"
-        },
-        "write_intermediate_steps": {
-          "description": "if true, writes the oligo sequences after each step of the pipeline into a csv file",
-          "title": "Write Intermediate Steps",
-          "type": "boolean"
-        }
-      },
-      "required": ["n_jobs", "dir_output", "write_intermediate_steps"],
-      "title": "General",
       "type": "object"
     },
     "GenomicRegionGeneratorEnsembl": {
@@ -744,7 +721,7 @@
       "title": "HybridizationProbesBlastnFilterDisabled",
       "type": "object"
     },
-    "HybridizationProbesBlastnFilterEnabled": {
+    "HybridizationProbesBlastnFilterMinAlignmentEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -754,6 +731,7 @@
           "x-collapsed": true
         },
         "hit_parameters": {
+          "default": { "hit_criterion": "min_alignment_length", "value": 11 },
           "description": "Parameters for filtering BLASTN hits against the hybridization probes. Use either coverage or min_alignment_length.",
           "discriminator": {
             "mapping": {
@@ -769,8 +747,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "HybridizationProbesBlastnFilterEnabled",
+      "required": ["enabled", "search_parameters"],
+      "title": "HybridizationProbesBlastnFilterMinAlignmentEnabled",
       "type": "object"
     },
     "IndependentSetSelection": {
@@ -926,7 +904,8 @@
           "description": "Minimum Hamming distance between any two valid barcodes (MHD4 = 4 for single-bit error correction).",
           "exclusiveMinimum": 0,
           "title": "Min Hamming Dist",
-          "type": "integer"
+          "type": "integer",
+          "x-quick-setting": true
         }
       },
       "title": "MerfishCodebookGenerate",
@@ -1312,12 +1291,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterEnabled"
+              "True": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled" },
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
@@ -1343,12 +1322,14 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/HybridizationProbesBlastnFilterDisabled",
-              "True": "#/$defs/HybridizationProbesBlastnFilterEnabled"
+              "True": "#/$defs/HybridizationProbesBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/HybridizationProbesBlastnFilterEnabled" },
+            {
+              "$ref": "#/$defs/HybridizationProbesBlastnFilterMinAlignmentEnabled"
+            },
             { "$ref": "#/$defs/HybridizationProbesBlastnFilterDisabled" }
           ],
           "title": "Hybridization Probes Blastn Filter"
@@ -1482,12 +1463,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterEnabled"
+              "True": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled" },
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
@@ -1512,12 +1493,14 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+              "True": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            {
+              "$ref": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
+            },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"
@@ -1539,7 +1522,8 @@
           "description": "Fluorescence channels used for round-robin channel assignment across bits.",
           "items": { "type": "string" },
           "title": "Channels Ids",
-          "type": "array"
+          "type": "array",
+          "x-quick-setting": true
         },
         "oligo_generation": {
           "$ref": "#/$defs/MerfishReadoutProbeOligoGeneration"
@@ -1900,7 +1884,7 @@
       "title": "SpecificityBlastnFilterDisabled",
       "type": "object"
     },
-    "SpecificityBlastnFilterEnabled": {
+    "SpecificityBlastnFilterMinAlignmentEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -1910,6 +1894,7 @@
           "x-collapsed": true
         },
         "hit_parameters": {
+          "default": { "hit_criterion": "min_alignment_length", "value": 15 },
           "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
@@ -1925,8 +1910,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "SpecificityBlastnFilterEnabled",
+      "required": ["enabled", "search_parameters"],
+      "title": "SpecificityBlastnFilterMinAlignmentEnabled",
       "type": "object"
     },
     "TargetProbeGlobal": {
@@ -2170,12 +2155,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterEnabled"
+              "True": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled" },
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
@@ -2200,12 +2185,14 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+              "True": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            {
+              "$ref": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
+            },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"
@@ -2615,16 +2602,16 @@
       "title": "Schema Version",
       "type": "integer"
     },
-    "required_parameters": { "$ref": "#/$defs/RequiredParameters" },
     "target_probes": { "$ref": "#/$defs/TargetProbes" },
     "readout_probes": { "$ref": "#/$defs/ReadoutProbes" },
-    "primers": { "$ref": "#/$defs/Primers" }
+    "primers": { "$ref": "#/$defs/Primers" },
+    "required_parameters": { "$ref": "#/$defs/RequiredParameters" }
   },
   "required": [
-    "required_parameters",
     "target_probes",
     "readout_probes",
-    "primers"
+    "primers",
+    "required_parameters"
   ],
   "title": "MerfishProbeDesignerConfigFrontEnd",
   "type": "object"

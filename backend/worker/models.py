@@ -6,11 +6,11 @@ from typing import Annotated, Literal
 
 from oligo_designer_toolsuite.config._general_models import General
 from oligo_designer_toolsuite.config.pipelines.cycle_hcr_probe_designer import (
-    CycleHcrProbeDesignerConfig,
+    CycleHcrProbeDesignerConfigBase,
 )
-from oligo_designer_toolsuite.config.pipelines.hcr_probe_designer import HcrProbeDesignerConfig
+from oligo_designer_toolsuite.config.pipelines.hcr_probe_designer import HcrProbeDesignerConfigBase
 from oligo_designer_toolsuite.config.pipelines.merfish_probe_designer import (
-    MerfishProbeDesignerConfig,
+    MerfishProbeDesignerConfigBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     OligoSeqProbeDesignerConfigBase,
@@ -29,39 +29,14 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     TargetProbeSpecificityFilterBase as OligoSeqTargetProbeSpecificityFilterBase,
 )
 from oligo_designer_toolsuite.config.pipelines.scrinshot_probe_designer import (
-    ScrinshotProbeDesignerConfig,
+    ScrinshotProbeDesignerConfigBase,
 )
 from oligo_designer_toolsuite.config.pipelines.seqfish_plus_probe_designer import (
-    SeqfishPlusProbeDesignerConfig,
+    SeqfishPlusProbeDesignerConfigBase,
 )
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
-from backend.worker.utils import (
-    accept_uploaded_files,
-    hide_fields,
-    mark_schema_flags,
-    strip_local_descriptions,
-)
-
-# Fields the front-end renders specially:
-#   "x-quick-setting" -- on a scalar field, pinning it to the Quick Settings panel above the
-#                        form's tabs and rendering it only there, not in its own section
-#   "x-collapsed"     -- on a field holding a model, whose section then starts collapsed
-#
-# Whoever writes the model declares the flag on the field itself, where it sits next to what
-# it describes:
-#     n_sets: int = Field(default=3, json_schema_extra={"x-quick-setting": True})
-#     search_parameters: BlastnSearchParameters = Field(json_schema_extra={"x-collapsed": True})
-#
-# The table below is only for fields ODT owns, which we cannot annotate that way: flagging one
-# means redeclaring it in a subclass here, and a Pydantic v2 redeclaration replaces that
-# field's whole FieldInfo, so `n_sets` would lose the default, description and constraints ODT
-# gave it unless each were copied over by hand. Stamping the generated schema leaves them be.
-FRONT_END_FLAGS: dict[str, dict[str, tuple[str, ...]]] = {
-    "x-quick-setting": {
-        "TargetProbeOligoGeneration": ("probe_length_min", "probe_length_max"),
-    },
-}
+from backend.worker.utils import accept_uploaded_files, strip_local_descriptions
 
 ### Genomic Region Generator Models ###
 
@@ -210,61 +185,48 @@ class OligoSeqProbeDesignerConfigFrontEnd(OligoSeqProbeDesignerConfigBase):
     target_probes: OligoSeqTargetProbes
 
 
-class OligoSeqProbeDesignerConfig(OligoSeqProbeDesignerConfigFrontEnd):
-    """Adds back the `general` section ODT's base model excludes, for use once a submission
-    also carries the non-exposed backend defaults (see `add_non_exposed_fields`)."""
-
-    general: General = General(
-        n_jobs=4,
-        dir_output="output_oligo_seq_probe_designer",
-        write_intermediate_steps=True,
-    )
-
-
 ### Front-end Models for the remaining pipelines ###
 
-# These pipelines need no override beyond `required_parameters`: ODT keeps every genome input
-# in that one section now, and none of them has a variant filter taking a VCF file.
+# Each ODT `...ConfigBase` leaves out `general` and `required_parameters`, so these only add the
+# genome inputs back in our own type. None of them has a variant filter taking a VCF file.
 
 
-class ScrinshotProbeDesignerConfigFrontEnd(ScrinshotProbeDesignerConfig):
-    required_parameters: RequiredParameters  # type: ignore
+class ScrinshotProbeDesignerConfigFrontEnd(ScrinshotProbeDesignerConfigBase):
+    required_parameters: RequiredParameters
 
 
-class MerfishProbeDesignerConfigFrontEnd(MerfishProbeDesignerConfig):
-    required_parameters: RequiredParameters  # type: ignore
+class MerfishProbeDesignerConfigFrontEnd(MerfishProbeDesignerConfigBase):
+    required_parameters: RequiredParameters
 
 
-class SeqfishPlusProbeDesignerConfigFrontEnd(SeqfishPlusProbeDesignerConfig):
-    required_parameters: RequiredParameters  # type: ignore
+class SeqfishPlusProbeDesignerConfigFrontEnd(SeqfishPlusProbeDesignerConfigBase):
+    required_parameters: RequiredParameters
 
 
-class HcrProbeDesignerConfigFrontEnd(HcrProbeDesignerConfig):
-    required_parameters: RequiredParameters  # type: ignore
+class HcrProbeDesignerConfigFrontEnd(HcrProbeDesignerConfigBase):
+    required_parameters: RequiredParameters
 
 
-class CycleHcrProbeDesignerConfigFrontEnd(CycleHcrProbeDesignerConfig):
-    required_parameters: RequiredParameters  # type: ignore
+class CycleHcrProbeDesignerConfigFrontEnd(CycleHcrProbeDesignerConfigBase):
+    required_parameters: RequiredParameters
 
 
-# The schema each pipeline's form is built from. FRONT_END_FLAGS only names models oligoseq
-# defines, so it is applied to that schema alone; the other pipelines carry ODT's own
-# `json_schema_extra` flags.
-FRONT_END_SCHEMAS: dict[str, tuple[type[BaseModel], dict | None]] = {
-    "oligoseq": (OligoSeqProbeDesignerConfigFrontEnd, FRONT_END_FLAGS),
-    "scrinshot": (ScrinshotProbeDesignerConfigFrontEnd, None),
-    "merfish": (MerfishProbeDesignerConfigFrontEnd, None),
-    "seqfish": (SeqfishPlusProbeDesignerConfigFrontEnd, None),
-    "hcr": (HcrProbeDesignerConfigFrontEnd, None),
-    "cyclehcr": (CycleHcrProbeDesignerConfigFrontEnd, None),
+# The schema each pipeline's form is built from. Every `x-` flag is declared on the ODT field
+# itself, so nothing is stamped on afterwards.
+FRONT_END_SCHEMAS: dict[str, type[BaseModel]] = {
+    "oligoseq": OligoSeqProbeDesignerConfigFrontEnd,
+    "scrinshot": ScrinshotProbeDesignerConfigFrontEnd,
+    "merfish": MerfishProbeDesignerConfigFrontEnd,
+    "seqfish": SeqfishPlusProbeDesignerConfigFrontEnd,
+    "hcr": HcrProbeDesignerConfigFrontEnd,
+    "cyclehcr": CycleHcrProbeDesignerConfigFrontEnd,
 }
 
-# A submission is validated once `general` has been filled back in, so the model used here has
-# to carry it. Only oligoseq needs a separate class for that: its front-end model derives from
-# an ODT base that leaves `general` out, while the others inherit it from ODT's own config.
+# Every ODT `...ConfigBase` leaves `general` out, so the form never offers it. It is filled in
+# before a submission is validated (see `add_non_exposed_fields`), hence required here.
 PIPELINE_VALIDATION_MODELS: dict[str, type[BaseModel]] = {
-    **{name: model for name, (model, _) in FRONT_END_SCHEMAS.items()},
-    "oligoseq": OligoSeqProbeDesignerConfig,
+    name: create_model(f"{model.__name__}Validated", __base__=model, general=(General, ...))
+    for name, model in FRONT_END_SCHEMAS.items()
 }
 
 
@@ -273,13 +235,9 @@ if __name__ == "__main__":
     # so running this module needs no follow-up move regardless of the working directory.
     schemas_dir = os.path.join(os.path.dirname(__file__), "..", "..", "schemas")
 
-    for name, (model, flags) in FRONT_END_SCHEMAS.items():
+    for name, model in FRONT_END_SCHEMAS.items():
         schema = strip_local_descriptions(model.model_json_schema(), globals(), __name__)
-        # `general` holds run settings the backend decides, not the user
-        schema = hide_fields(schema, "general")
         # a codebook or probe table is uploaded, so the form holds a File where ODT wants a path
         schema = accept_uploaded_files(schema, "file")
-        if flags:
-            schema = mark_schema_flags(schema, flags)
         with open(os.path.join(schemas_dir, f"{name}.schema.json"), "w+") as f:
             json.dump(schema, f)

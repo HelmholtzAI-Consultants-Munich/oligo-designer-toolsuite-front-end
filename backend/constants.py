@@ -49,7 +49,7 @@ PIPELINE_FILE_INPUT: Mapping[str, list[str]] = {
     "cyclehcr": ["readout_probes.codebook.file", "readout_probes.readout_probe_table.file"],
 }
 
-# `general` is dropped from the front-end schemas (see `hide_fields`), so it is filled in here
+# `general` is absent from the front-end models (ODT's `...ConfigBase`), so it is filled in here
 # before a submission is validated. `dir_output` is overwritten with the run's output path by
 # the worker, the value below only satisfies the model.
 PIPELINE_NON_EXPOSED_FIELDS = {
