@@ -409,7 +409,7 @@
       "title": "CrossHybridizationBlastnFilterDisabled",
       "type": "object"
     },
-    "CrossHybridizationBlastnFilterEnabled": {
+    "CrossHybridizationBlastnFilterMinAlignmentEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -419,6 +419,7 @@
           "x-collapsed": true
         },
         "hit_parameters": {
+          "default": { "hit_criterion": "min_alignment_length", "value": 17 },
           "description": "Hit criteria. Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
@@ -434,8 +435,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "CrossHybridizationBlastnFilterEnabled",
+      "required": ["enabled", "search_parameters"],
+      "title": "CrossHybridizationBlastnFilterMinAlignmentEnabled",
       "type": "object"
     },
     "GCClampFilterDisabled": {
@@ -744,7 +745,7 @@
       "title": "HybridizationProbesBlastnFilterDisabled",
       "type": "object"
     },
-    "HybridizationProbesBlastnFilterEnabled": {
+    "HybridizationProbesBlastnFilterMinAlignmentEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -754,6 +755,7 @@
           "x-collapsed": true
         },
         "hit_parameters": {
+          "default": { "hit_criterion": "min_alignment_length", "value": 11 },
           "description": "Parameters for filtering BLASTN hits against the hybridization probes. Use either coverage or min_alignment_length.",
           "discriminator": {
             "mapping": {
@@ -769,8 +771,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "HybridizationProbesBlastnFilterEnabled",
+      "required": ["enabled", "search_parameters"],
+      "title": "HybridizationProbesBlastnFilterMinAlignmentEnabled",
       "type": "object"
     },
     "IndependentSetSelection": {
@@ -1417,12 +1419,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterEnabled"
+              "True": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled" },
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
@@ -1448,12 +1450,14 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/HybridizationProbesBlastnFilterDisabled",
-              "True": "#/$defs/HybridizationProbesBlastnFilterEnabled"
+              "True": "#/$defs/HybridizationProbesBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/HybridizationProbesBlastnFilterEnabled" },
+            {
+              "$ref": "#/$defs/HybridizationProbesBlastnFilterMinAlignmentEnabled"
+            },
             { "$ref": "#/$defs/HybridizationProbesBlastnFilterDisabled" }
           ],
           "title": "Hybridization Probes Blastn Filter"
@@ -1558,12 +1562,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterEnabled"
+              "True": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled" },
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
@@ -1588,12 +1592,14 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+              "True": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            {
+              "$ref": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
+            },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"
@@ -1737,7 +1743,7 @@
       "title": "SpecificityBlastnFilterDisabled",
       "type": "object"
     },
-    "SpecificityBlastnFilterEnabled": {
+    "SpecificityBlastnFilterMinAlignmentEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -1747,6 +1753,7 @@
           "x-collapsed": true
         },
         "hit_parameters": {
+          "default": { "hit_criterion": "min_alignment_length", "value": 15 },
           "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
@@ -1762,8 +1769,8 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "SpecificityBlastnFilterEnabled",
+      "required": ["enabled", "search_parameters"],
+      "title": "SpecificityBlastnFilterMinAlignmentEnabled",
       "type": "object"
     },
     "TargetProbeOligoGeneration": {
@@ -1928,12 +1935,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterEnabled"
+              "True": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterMinAlignmentEnabled" },
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
@@ -1958,12 +1965,14 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+              "True": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            {
+              "$ref": "#/$defs/CrossHybridizationBlastnFilterMinAlignmentEnabled"
+            },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"

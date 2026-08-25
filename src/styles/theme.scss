@@ -712,8 +712,10 @@ form.rjsf {
     }
 
     .multi-schema-toggle {
-        /* hide the dropdown for selecting between schemas when the discriminator is "enabled" */
-        .multi-schema-selector {
+        /* hide the dropdown for selecting between schemas when the discriminator is "enabled".
+        Direct child only: a descendant match would also hide the selectors of any union
+        nested inside this one, e.g. a filter's own hit parameters. */
+        > .multi-schema-selector {
             display: none;
 
             + .rjsf-field

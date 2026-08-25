@@ -5,10 +5,12 @@ import SectionLayout from "../components/forms/SectionLayout";
 import CollapsibleSectionLayout from "../components/forms/CollapsibleSectionLayout";
 import EnabledToggleObjectTemplate from "../components/forms/EnabledToggleObjectTemplate";
 import CompactFieldGroupTemplate from "../components/forms/CompactFieldGroupTemplate";
+import BareGroupTemplate from "../components/forms/BareGroupTemplate";
 import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
 import {
     hasSchemaFlag,
     isEnabledDiscriminated,
+    snakeCaseToTitleCase,
 } from "../components/forms/utils";
 
 /** Resolves a `$ref` against the full schema, returning the node unchanged if it has none. */
@@ -106,6 +108,41 @@ const uiSchemaFromJsonSchemaRecursive = (
         if (isEnabledDiscriminated(localSchema)) {
             uiSchema["ui:ObjectFieldTemplate"] = EnabledToggleObjectTemplate;
             uiSchema["ui:title"] = localSchema.title;
+        } else {
+            // Any other discriminator (e.g. `source: "generate" | "load"`) is a `const` on
+            // each option, redundant with RJSF's own schema-picker dropdown and, unlike
+            // "enabled", not something the user can meaningfully edit.
+            const discriminatorProperty = (
+                localSchema.discriminator as
+                    | { propertyName?: string }
+                    | undefined
+            )?.propertyName;
+            if (discriminatorProperty) {
+                uiSchema[discriminatorProperty] = { "ui:widget": "hidden" };
+
+                // Name each option by the value it selects, so the dropdown reads
+                // "Generate"/"Load" instead of repeating the model's class name, which the
+                // field's own title already says. The option body then needs no heading.
+                const optionsKey = localSchema.oneOf ? "oneOf" : "anyOf";
+                const merged = uiSchema;
+                uiSchema[optionsKey] = (localSchema[optionsKey] ?? []).map(
+                    (option) => {
+                        const value = resolveSchema(
+                            option as RJSFSchema,
+                            baseSchema
+                        ).properties?.[discriminatorProperty] as
+                            | RJSFSchema
+                            | undefined;
+                        return {
+                            ...merged,
+                            "ui:ObjectFieldTemplate": BareGroupTemplate,
+                            ...(typeof value?.const === "string" && {
+                                "ui:title": snakeCaseToTitleCase(value.const),
+                            }),
+                        };
+                    }
+                );
+            }
         }
     }
     if (localSchema.properties) {

@@ -27,6 +27,10 @@ export const sectionKey = (tabId: string, name: string): string =>
 export const isEmptySection = (uiSchema: UiSchema | undefined): boolean =>
     getUiOptions(uiSchema).allFieldsPortaled === true;
 
+/** Whether a field renders as `<input type="hidden">`, e.g. a discriminator's own const value. */
+export const isHiddenField = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).widget === "hidden";
+
 /** Narrows away the `true`/`false` form a property schema can take, which carries no keywords. */
 const asSchema = (
     schema: RJSFSchema | boolean | undefined

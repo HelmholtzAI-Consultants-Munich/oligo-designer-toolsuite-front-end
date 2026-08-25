@@ -332,15 +332,7 @@
       "title": "BlastnSearchParameters",
       "type": "object"
     },
-    "CrossHybridizationBlastnFilterDisabled": {
-      "properties": {
-        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
-      },
-      "required": ["enabled"],
-      "title": "CrossHybridizationBlastnFilterDisabled",
-      "type": "object"
-    },
-    "CrossHybridizationBlastnFilterEnabled": {
+    "CrossHybridizationBlastnFilterCoverageEnabled": {
       "additionalProperties": false,
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
@@ -350,6 +342,7 @@
           "x-collapsed": true
         },
         "hit_parameters": {
+          "default": { "hit_criterion": "coverage", "value": 50.0 },
           "description": "Hit criteria. Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
@@ -365,8 +358,16 @@
           "title": "Hit Parameters"
         }
       },
-      "required": ["enabled", "search_parameters", "hit_parameters"],
-      "title": "CrossHybridizationBlastnFilterEnabled",
+      "required": ["enabled", "search_parameters"],
+      "title": "CrossHybridizationBlastnFilterCoverageEnabled",
+      "type": "object"
+    },
+    "CrossHybridizationBlastnFilterDisabled": {
+      "properties": {
+        "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
+      },
+      "required": ["enabled"],
+      "title": "CrossHybridizationBlastnFilterDisabled",
       "type": "object"
     },
     "DetectionOligo": {
@@ -1313,12 +1314,12 @@
           "discriminator": {
             "mapping": {
               "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterEnabled"
+              "True": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled"
             },
             "propertyName": "enabled"
           },
           "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled" },
             { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
           ],
           "title": "Cross Hybridization Blastn Filter"

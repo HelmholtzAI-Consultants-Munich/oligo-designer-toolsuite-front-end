@@ -4,16 +4,16 @@ import { createPortal } from "react-dom";
 import { useQuickSettingsContainer } from "../../hooks/useQuickSettings";
 import {
     filterUninformativeErrors,
+    isHiddenField,
     quickSettingGroup,
     spansFullRow,
 } from "./utils";
 
 /**
  * This FieldTemplate is based on the react-bootstrap theme's template.
- * It drops the `WrapIfAdditionalTemplate` wrapper, which wrapped fields unpredictably, the
- * field description, which the tooltips already cover, and the `hidden` case, unreachable
- * without a `ui:widget` no schema sets. Fields sit in a CSS grid, spanning the full row when
- * they lay out their own children.
+ * It drops the `WrapIfAdditionalTemplate` wrapper, which wrapped fields unpredictably, and the
+ * field description, which the tooltips already cover. Fields sit in a CSS grid, spanning the
+ * full row when they lay out their own children.
  *
  * @param props - FieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#fieldtemplate})
  * @returns A React Component that is used to overwrite the default FieldTemplate
@@ -51,6 +51,11 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         !hideError &&
         !(isXxxOfField && !schemaUtils.isSelect(schema));
 
+    // `<input type="hidden">` renders no visible content, but the wrapper below is still a
+    // real grid item unless told otherwise, leaving an empty cell (e.g. a discriminator's own
+    // const field, next to the one field its choice actually leaves editable).
+    const hidden = isHiddenField(uiSchema);
+
     const field = (
         <div
             style={{
@@ -60,7 +65,7 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
                     ? "1 / -1"
                     : undefined,
             }}
-            className={`rjsf-field rjsf-field-${schema.type}`}
+            className={`rjsf-field rjsf-field-${schema.type}${hidden ? " d-none" : ""}`}
         >
             {children}
             {showErrors && (
