@@ -226,6 +226,15 @@ const uiSchemaFromJsonSchemaRecursive = (
                         };
                     }
                 }
+                // A `$ref` titles the section after the model, so two fields sharing one -- a
+                // forward and a reverse primer -- read identically. The field name is unique
+                // within its object, and does not repeat the tab's own name.
+                if (
+                    propertySchema.$ref &&
+                    resolveSchema(propertySchema, baseSchema).properties
+                ) {
+                    fieldUiSchema["ui:title"] = snakeCaseToTitleCase(field);
+                }
                 // The backend's `x-` flags are read here, not in the recursive call, because
                 // they sit as siblings of `$ref`, which that call resolves away. Any field
                 // carrying one is treated the same, whichever pipeline or model set it.
@@ -244,6 +253,17 @@ const uiSchemaFromJsonSchemaRecursive = (
                 ) {
                     fieldUiSchema["ui:description"] =
                         propertySchema.description;
+                }
+                // A `const` states which branch this is, not something to fill in, and a model
+                // with only one branch has no selector to hide it as. Left alone it renders as
+                // an input showing a value that cannot be changed. `enabled` is the exception:
+                // its toggle template draws it as the section's own checkbox.
+                if (
+                    field !== "enabled" &&
+                    resolveSchema(propertySchema, baseSchema).const !==
+                        undefined
+                ) {
+                    fieldUiSchema["ui:widget"] = "hidden";
                 }
                 if (hasSchemaFlag(propertySchema, "x-quick-setting")) {
                     // pinned to the Quick Settings panel above the tabs, not its own section
