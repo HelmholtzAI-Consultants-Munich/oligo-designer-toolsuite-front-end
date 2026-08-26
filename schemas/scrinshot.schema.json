@@ -373,8 +373,14 @@
     "DetectionOligo": {
       "additionalProperties": false,
       "properties": {
-        "oligo_generation": { "$ref": "#/$defs/DetectionOligoOligoGeneration" },
-        "global_parameters": { "$ref": "#/$defs/DetectionOligoGlobal" }
+        "oligo_generation": {
+          "$ref": "#/$defs/DetectionOligoOligoGeneration",
+          "description": "Parameters that determine length and melting temperature of the probes."
+        },
+        "global_parameters": {
+          "$ref": "#/$defs/DetectionOligoGlobal",
+          "description": "Parameters for melting temperature computation that are reused for different filtering and scoring methods."
+        }
       },
       "required": ["oligo_generation", "global_parameters"],
       "title": "DetectionOligo",
@@ -1331,16 +1337,30 @@
     "TargetProbes": {
       "additionalProperties": false,
       "properties": {
-        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
-        "padlock_arms_properties": { "$ref": "#/$defs/PadlockArmsProperties" },
-        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
+        "oligo_generation": {
+          "$ref": "#/$defs/TargetProbeOligoGeneration",
+          "description": "Parameters that determine length and spacing of the probes."
+        },
+        "padlock_arms_properties": {
+          "$ref": "#/$defs/PadlockArmsProperties",
+          "description": "Parameters that determine properties of the padlock arms."
+        },
+        "property_filters": {
+          "$ref": "#/$defs/TargetProbePropertyFilter",
+          "description": "Parameters for filters that depend on properties of the filters (e.g., melting temperature)."
+        },
         "specificity_filters": {
-          "$ref": "#/$defs/TargetProbeSpecificityFilter"
+          "$ref": "#/$defs/TargetProbeSpecificityFilter",
+          "description": "Parameters for filters that test the specificity of the probes."
         },
         "probe_set_selection": {
-          "$ref": "#/$defs/TargetProbeProbeSetSelection"
+          "$ref": "#/$defs/TargetProbeProbeSetSelection",
+          "description": "Parameters for selecting multiple probe sets per gene (size, spacing, scoring, diversification)."
         },
-        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
+        "global_parameters": {
+          "$ref": "#/$defs/TargetProbeGlobal",
+          "description": "Parameters for melting temperature computation that are reused for different filtering and scoring methods."
+        }
       },
       "required": [
         "oligo_generation",
@@ -1744,7 +1764,10 @@
     },
     "target_probes": { "$ref": "#/$defs/TargetProbes" },
     "detection_oligo": { "$ref": "#/$defs/DetectionOligo" },
-    "required_parameters": { "$ref": "#/$defs/RequiredParameters" }
+    "required_parameters": {
+      "$ref": "#/$defs/RequiredParameters",
+      "description": "Parameters required for target probe generation. The reference genome is reused for all specificity filters for all probes."
+    }
   },
   "required": ["target_probes", "detection_oligo", "required_parameters"],
   "title": "ScrinshotProbeDesignerConfigFrontEnd",

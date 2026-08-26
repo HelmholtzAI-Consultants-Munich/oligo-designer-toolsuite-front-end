@@ -16,6 +16,16 @@ const EXCLUDED_TABS = new Set(["schema_version", "required_parameters"]);
 
 export const isHiddenTab = (tab: string) => EXCLUDED_TABS.has(tab);
 
+/** The `required_parameters` description, which heads a panel rather than a section of its own. */
+export const requiredParametersDescription = (
+    schema: RJSFSchema
+): string | undefined => {
+    const required = schema.properties?.["required_parameters"];
+    return required && typeof required !== "boolean"
+        ? required.description
+        : undefined;
+};
+
 export const excludeHiddenTabs = (tabs: string[]) =>
     tabs.filter((tab) => !isHiddenTab(tab));
 

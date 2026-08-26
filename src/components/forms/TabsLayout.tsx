@@ -2,7 +2,7 @@ import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo, useMemo } from "react";
 import Page from "../ui/Page";
 import QuickSettingsPanel from "./QuickSettingsPanel";
-import { isHiddenTab } from "./utils";
+import { isHiddenTab, requiredParametersDescription } from "./utils";
 
 /**
  * Layout to wrap all tabs and display only the active tab, each tab is rendered by a TabLayout
@@ -36,7 +36,11 @@ const TabsLayout = memo(function TabsLayout(props: ObjectFieldTemplateProps) {
         <Page.Tabs>
             {panes.map((element, index) => (
                 <Page.Tab tabKey={element.name} key={element.name}>
-                    <QuickSettingsPanel>
+                    <QuickSettingsPanel
+                        requiredDescription={requiredParametersDescription(
+                            props.schema
+                        )}
+                    >
                         {/* mounted here so their fields portal into the first tab's panels;
                             only the leftover markup needs hiding */}
                         {index === 0 && hidden.length > 0 && (

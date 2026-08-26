@@ -4,7 +4,7 @@ import json
 import os
 from typing import Annotated, Literal
 
-from oligo_designer_toolsuite.config._general_models import General
+from oligo_designer_toolsuite.config._general_models import REQUIRED_PARAMETERS_DESC, General
 from oligo_designer_toolsuite.config.pipelines.cycle_hcr_probe_designer import (
     CycleHcrProbeDesignerConfigBase,
 )
@@ -139,7 +139,7 @@ class OligoSeqProbeDesignerConfigFrontEnd(OligoSeqProbeDesignerConfigBase):
     """Overrides ODT's Oligo-Seq pipeline model to inject our custom genomic region generator
     models."""
 
-    required_parameters: RequiredParameters
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
 
 
 ### Front-end Models for the remaining pipelines ###
@@ -149,23 +149,23 @@ class OligoSeqProbeDesignerConfigFrontEnd(OligoSeqProbeDesignerConfigBase):
 
 
 class ScrinshotProbeDesignerConfigFrontEnd(ScrinshotProbeDesignerConfigBase):
-    required_parameters: RequiredParameters
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
 
 
 class MerfishProbeDesignerConfigFrontEnd(MerfishProbeDesignerConfigBase):
-    required_parameters: RequiredParameters
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
 
 
 class SeqfishPlusProbeDesignerConfigFrontEnd(SeqfishPlusProbeDesignerConfigBase):
-    required_parameters: RequiredParameters
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
 
 
 class HcrProbeDesignerConfigFrontEnd(HcrProbeDesignerConfigBase):
-    required_parameters: RequiredParameters
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
 
 
 class CycleHcrProbeDesignerConfigFrontEnd(CycleHcrProbeDesignerConfigBase):
-    required_parameters: RequiredParameters
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
 
 
 # The schema each pipeline's form is built from. Every `x-` flag is declared on the ODT field

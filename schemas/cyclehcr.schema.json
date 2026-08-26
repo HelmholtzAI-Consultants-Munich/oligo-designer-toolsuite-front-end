@@ -1298,15 +1298,26 @@
     "TargetProbes": {
       "additionalProperties": false,
       "properties": {
-        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
-        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
+        "oligo_generation": {
+          "$ref": "#/$defs/TargetProbeOligoGeneration",
+          "description": "Parameters that determine length and spacing of the probes."
+        },
+        "property_filters": {
+          "$ref": "#/$defs/TargetProbePropertyFilter",
+          "description": "Parameters for filters that depend on properties of the filters (e.g., melting temperature)."
+        },
         "specificity_filters": {
-          "$ref": "#/$defs/TargetProbeSpecificityFilter"
+          "$ref": "#/$defs/TargetProbeSpecificityFilter",
+          "description": "Parameters for filters that test the specificity of the probes."
         },
         "probe_set_selection": {
-          "$ref": "#/$defs/TargetProbeProbeSetSelection"
+          "$ref": "#/$defs/TargetProbeProbeSetSelection",
+          "description": "Parameters for selecting multiple probe sets per gene (size, spacing, scoring, diversification)."
         },
-        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
+        "global_parameters": {
+          "$ref": "#/$defs/TargetProbeGlobal",
+          "description": "Parameters for melting temperature computation that are reused for different filtering and scoring methods."
+        }
       },
       "required": [
         "oligo_generation",
@@ -1699,7 +1710,10 @@
     "readout_probes": { "$ref": "#/$defs/ReadoutProbes" },
     "primers": { "$ref": "#/$defs/Primers" },
     "hybridization_probes": { "$ref": "#/$defs/HybridizationProbes" },
-    "required_parameters": { "$ref": "#/$defs/RequiredParameters" }
+    "required_parameters": {
+      "$ref": "#/$defs/RequiredParameters",
+      "description": "Parameters required for target probe generation. The reference genome is reused for all specificity filters for all probes."
+    }
   },
   "required": [
     "target_probes",
