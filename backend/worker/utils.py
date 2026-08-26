@@ -51,6 +51,12 @@ def accept_uploaded_files(schema: dict, *fields: str) -> dict:
         {dict} -- the same schema, with those properties accepting an object too
     """
 
+    def as_path_or_file(schema: dict) -> dict:
+        return {
+            "anyOf": [{"type": "string"}, {"type": "object"}],
+            **{k: v for k, v in schema.items() if k != "type"},
+        }
+
     def widen(node: object) -> None:
         if isinstance(node, list):
             for item in node:
@@ -60,11 +66,13 @@ def accept_uploaded_files(schema: dict, *fields: str) -> dict:
             return
         for field in fields:
             prop = node.get("properties", {}).get(field)
-            if isinstance(prop, dict) and prop.get("type") == "string":
-                node["properties"][field] = {
-                    "anyOf": [{"type": "string"}, {"type": "object"}],
-                    **{k: v for k, v in prop.items() if k != "type"},
-                }
+            if not isinstance(prop, dict):
+                continue
+            if prop.get("type") == "string":
+                node["properties"][field] = as_path_or_file(prop)
+            # a field taking several files holds the paths in a list
+            elif prop.get("type") == "array" and prop.get("items", {}).get("type") == "string":
+                prop["items"] = as_path_or_file(prop["items"])
         for value in node.values():
             widen(value)
 

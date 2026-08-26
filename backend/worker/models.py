@@ -14,19 +14,6 @@ from oligo_designer_toolsuite.config.pipelines.merfish_probe_designer import (
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
     OligoSeqProbeDesignerConfigBase,
-    OligoSeqVariantFilterDisabled,
-)
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    OligoSeqVariantFilterEnabled as OligoSeqVariantFilterEnabledBase,
-)
-
-# Renamed from `TargetProbe` on ODT's pydantic-refactor branch, along with the section it
-# holds (`target_probe` -> `target_probes`), matching seqfish.
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    TargetProbes as OligoSeqTargetProbesBase,
-)
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    TargetProbeSpecificityFilterBase as OligoSeqTargetProbeSpecificityFilterBase,
 )
 from oligo_designer_toolsuite.config.pipelines.scrinshot_probe_designer import (
     ScrinshotProbeDesignerConfigBase,
@@ -148,41 +135,11 @@ class RequiredParameters(BaseModel):
     )  # type: ignore
 
 
-class OligoSeqVariantFilterEnabled(OligoSeqVariantFilterEnabledBase):
-    """Overwrite the default OligoSeqVariantFilterEnabledBase Model to change the expected type of
-    `files_vcf_reference_database` to accept a dict instead of a file path."""
-
-    # NOTE: this is a small trick. A dict gets converted to type
-    # `object` when building the JSON Schema from the pydantic model.
-    files_vcf_reference_database: list[dict | str] = Field(min_length=1)  # type: ignore
-
-
-# This Model overwrites OligoSeqVariantFilterConfig to use our version of OligoSeqVariantFilterEnabled
-# instead of the default one
-OligoSeqVariantFilterConfig = Annotated[
-    OligoSeqVariantFilterEnabled | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
-]
-
-
-class OligoSeqTargetProbeSpecificityFilter(OligoSeqTargetProbeSpecificityFilterBase):
-    """Overwrites `TargetProbeSpecificityFilterBase` to insert our own Models for all parameters."""
-
-    variant_filter: OligoSeqVariantFilterConfig  # type: ignore
-
-
-class OligoSeqTargetProbes(OligoSeqTargetProbesBase):
-    """Overwrites `TargetProbeBase` to insert our own Models for all parameters."""
-
-    specificity_filters: OligoSeqTargetProbeSpecificityFilter  # type: ignore
-
-
 class OligoSeqProbeDesignerConfigFrontEnd(OligoSeqProbeDesignerConfigBase):
     """Overrides ODT's Oligo-Seq pipeline model to inject our custom genomic region generator
-    models. `OligoSeqProbeDesignerConfigBase` excludes `general`, so those options never
-    reach the user."""
+    models."""
 
     required_parameters: RequiredParameters
-    target_probes: OligoSeqTargetProbes
 
 
 ### Front-end Models for the remaining pipelines ###
@@ -237,7 +194,7 @@ if __name__ == "__main__":
 
     for name, model in FRONT_END_SCHEMAS.items():
         schema = strip_local_descriptions(model.model_json_schema(), globals(), __name__)
-        # a codebook or probe table is uploaded, so the form holds a File where ODT wants a path
-        schema = accept_uploaded_files(schema, "file")
+        # every uploaded input holds a File in the form where ODT wants the path it is saved to
+        schema = accept_uploaded_files(schema, "file", "files_vcf_reference_database")
         with open(os.path.join(schemas_dir, f"{name}.schema.json"), "w+") as f:
             json.dump(schema, f)

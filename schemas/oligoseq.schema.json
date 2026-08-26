@@ -744,114 +744,6 @@
       "title": "IsoformConsensusScore",
       "type": "object"
     },
-    "OligoSeqTargetProbeSpecificityFilter": {
-      "additionalProperties": false,
-      "properties": {
-        "read_length_bias_filter": {
-          "default": { "enabled": true, "read_length_bias": 20 },
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/ReadLengthBiasFilterDisabled",
-              "True": "#/$defs/ReadLengthBiasFilterEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/ReadLengthBiasFilterEnabled" },
-            { "$ref": "#/$defs/ReadLengthBiasFilterDisabled" }
-          ],
-          "title": "Read Length Bias Filter"
-        },
-        "cross_hybridization_blastn_filter": {
-          "default": {
-            "enabled": true,
-            "search_parameters": {
-              "-perc_identity": 80.0,
-              "-strand": "minus",
-              "-word_size": 10
-            },
-            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
-          },
-          "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled" },
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
-          ],
-          "title": "Cross Hybridization Blastn Filter"
-        },
-        "specificity_blastn_filter": {
-          "default": {
-            "enabled": true,
-            "search_parameters": {
-              "-perc_identity": 80.0,
-              "-strand": "minus",
-              "-word_size": 10
-            },
-            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
-          },
-          "description": "Ensure oligo specificity against a reference database (BLAST-based).",
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/SpecificityBlastnFilterDisabled",
-              "True": "#/$defs/SpecificityBlastnFilterCoverageEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/SpecificityBlastnFilterCoverageEnabled" },
-            { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
-          ],
-          "title": "Specificity Blastn Filter"
-        },
-        "variant_filter": {
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/OligoSeqVariantFilterDisabled",
-              "True": "#/$defs/OligoSeqVariantFilterEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/OligoSeqVariantFilterEnabled" },
-            { "$ref": "#/$defs/OligoSeqVariantFilterDisabled" }
-          ],
-          "title": "Variant Filter"
-        }
-      },
-      "required": ["variant_filter"],
-      "title": "OligoSeqTargetProbeSpecificityFilter",
-      "type": "object"
-    },
-    "OligoSeqTargetProbes": {
-      "additionalProperties": false,
-      "properties": {
-        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
-        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
-        "specificity_filters": {
-          "$ref": "#/$defs/OligoSeqTargetProbeSpecificityFilter"
-        },
-        "probe_set_selection": {
-          "$ref": "#/$defs/TargetProbeProbeSetSelection"
-        },
-        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
-      },
-      "required": [
-        "oligo_generation",
-        "property_filters",
-        "specificity_filters",
-        "probe_set_selection",
-        "global_parameters"
-      ],
-      "title": "OligoSeqTargetProbes",
-      "type": "object"
-    },
     "OligoSeqVariantFilterDisabled": {
       "properties": {
         "enabled": { "const": false, "title": "Enabled", "type": "boolean" }
@@ -865,12 +757,8 @@
       "properties": {
         "enabled": { "const": true, "title": "Enabled", "type": "boolean" },
         "files_vcf_reference_database": {
-          "items": {
-            "anyOf": [
-              { "additionalProperties": true, "type": "object" },
-              { "type": "string" }
-            ]
-          },
+          "description": "List of paths to VCF files containing variant information used for filtering probes that overlap with known single nucleotide polymorphisms (SNPs) or other variants. Probes overlapping variants may have reduced specificity.",
+          "items": { "anyOf": [{ "type": "string" }, { "type": "object" }] },
           "minItems": 1,
           "title": "Files Vcf Reference Database",
           "type": "array"
@@ -1473,6 +1361,114 @@
       "title": "TargetProbePropertyFilter",
       "type": "object"
     },
+    "TargetProbeSpecificityFilter": {
+      "additionalProperties": false,
+      "properties": {
+        "read_length_bias_filter": {
+          "default": { "enabled": true, "read_length_bias": 20 },
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/ReadLengthBiasFilterDisabled",
+              "True": "#/$defs/ReadLengthBiasFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/ReadLengthBiasFilterEnabled" },
+            { "$ref": "#/$defs/ReadLengthBiasFilterDisabled" }
+          ],
+          "title": "Read Length Bias Filter"
+        },
+        "cross_hybridization_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-perc_identity": 80.0,
+              "-strand": "minus",
+              "-word_size": 10
+            },
+            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
+          },
+          "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
+              "True": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
+          ],
+          "title": "Cross Hybridization Blastn Filter"
+        },
+        "specificity_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-perc_identity": 80.0,
+              "-strand": "minus",
+              "-word_size": 10
+            },
+            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
+          },
+          "description": "Ensure oligo specificity against a reference database (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/SpecificityBlastnFilterDisabled",
+              "True": "#/$defs/SpecificityBlastnFilterCoverageEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/SpecificityBlastnFilterCoverageEnabled" },
+            { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
+          ],
+          "title": "Specificity Blastn Filter"
+        },
+        "variant_filter": {
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/OligoSeqVariantFilterDisabled",
+              "True": "#/$defs/OligoSeqVariantFilterEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/OligoSeqVariantFilterEnabled" },
+            { "$ref": "#/$defs/OligoSeqVariantFilterDisabled" }
+          ],
+          "title": "Variant Filter"
+        }
+      },
+      "required": ["variant_filter"],
+      "title": "TargetProbeSpecificityFilter",
+      "type": "object"
+    },
+    "TargetProbes": {
+      "additionalProperties": false,
+      "properties": {
+        "oligo_generation": { "$ref": "#/$defs/TargetProbeOligoGeneration" },
+        "property_filters": { "$ref": "#/$defs/TargetProbePropertyFilter" },
+        "specificity_filters": {
+          "$ref": "#/$defs/TargetProbeSpecificityFilter"
+        },
+        "probe_set_selection": {
+          "$ref": "#/$defs/TargetProbeProbeSetSelection"
+        },
+        "global_parameters": { "$ref": "#/$defs/TargetProbeGlobal" }
+      },
+      "required": [
+        "oligo_generation",
+        "property_filters",
+        "specificity_filters",
+        "probe_set_selection",
+        "global_parameters"
+      ],
+      "title": "TargetProbes",
+      "type": "object"
+    },
     "TargetedExonsFilterDisabled": {
       "properties": {
         "enabled": {
@@ -1927,7 +1923,7 @@
       "title": "Schema Version",
       "type": "integer"
     },
-    "target_probes": { "$ref": "#/$defs/OligoSeqTargetProbes" },
+    "target_probes": { "$ref": "#/$defs/TargetProbes" },
     "required_parameters": { "$ref": "#/$defs/RequiredParameters" }
   },
   "required": ["target_probes", "required_parameters"],
