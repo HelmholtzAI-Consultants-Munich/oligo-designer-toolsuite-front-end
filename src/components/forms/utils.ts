@@ -37,6 +37,10 @@ export const sectionKey = (tabId: string, name: string): string =>
 export const isEmptySection = (uiSchema: UiSchema | undefined): boolean =>
     getUiOptions(uiSchema).allFieldsPortaled === true;
 
+/** Whether a union stands where a section does, and so takes the tab's accordion. */
+export const isSectionLevel = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).sectionLevel === true;
+
 /** Whether a field renders as `<input type="hidden">`, e.g. a discriminator's own const value. */
 export const isHiddenField = (uiSchema: UiSchema | undefined): boolean =>
     getUiOptions(uiSchema).widget === "hidden";

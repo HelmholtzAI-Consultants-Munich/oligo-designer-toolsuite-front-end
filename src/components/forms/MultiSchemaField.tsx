@@ -5,10 +5,14 @@ import {
     type RJSFSchema,
 } from "@rjsf/utils";
 import { ToolTip } from "../ui/Tooltip";
-import { Card, Form } from "react-bootstrap";
+import { Accordion, Card, Form } from "react-bootstrap";
 import { memo } from "react";
 import GroupHeading from "./GroupHeading";
-import { isEnabledDiscriminated } from "./utils";
+import {
+    isEnabledDiscriminated,
+    isSectionLevel,
+    spaceBeforeCapitalLetters,
+} from "./utils";
 
 const {
     fields: { AnyOfField, OneOfField },
@@ -99,7 +103,8 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
 
 /**
  * The WrappedOneOfField wraps the default OneOfField.
- * It allows CSS-side hiding of the discriminator selector when the discriminator property is "enabled".
+ * It allows CSS-side hiding of the discriminator selector when the discriminator property is "enabled",
+ * and gives a union standing in for a section the tab's accordion.
  *
  * @param props - default Field props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props})
  * @returns A React Component that is used to overwrite the default RJSF `OneOfField`
@@ -107,7 +112,7 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
 const WrappedOneOfField = memo(function WrappedOneOfField(
     props: React.ComponentProps<typeof OneOfField>
 ) {
-    const { schema } = props;
+    const { schema, uiSchema, fieldPathId } = props as FieldProps;
 
     if (isEnabledDiscriminated(schema)) {
         // This is a special case for handling "enabled"/"disabled" options in a more user-friendly way
@@ -115,6 +120,29 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
             <div className="multi-schema-toggle">
                 <OneOfField {...props} />
             </div>
+        );
+    }
+
+    // The accordion item is built here rather than in `MultiSchemaFieldTemplate`, which is
+    // not handed the path id the tab uses as its section key.
+    if (isSectionLevel(uiSchema)) {
+        return (
+            <Accordion.Item eventKey={fieldPathId.$id} className="form-section">
+                <Accordion.Header>
+                    {/* the header is itself a button, so the tip cannot be one */}
+                    <span className="d-inline-flex align-items-center">
+                        {spaceBeforeCapitalLetters(schema.title ?? "")}
+                        <ToolTip
+                            id={fieldPathId.$id}
+                            tip={schema.description}
+                            presentational
+                        />
+                    </span>
+                </Accordion.Header>
+                <Accordion.Body>
+                    <OneOfField {...props} />
+                </Accordion.Body>
+            </Accordion.Item>
         );
     }
 
@@ -132,10 +160,11 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
 const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     props: MultiSchemaFieldTemplateProps
 ) {
-    const { selector, optionSchemaField, schema } = props;
+    const { selector, optionSchemaField, schema, uiSchema } = props;
 
-    // when discriminated by "enabled", the card is rendered by `EnabledToggleObjectTemplate`
-    if (isEnabledDiscriminated(schema)) {
+    // when discriminated by "enabled", the card is rendered by `EnabledToggleObjectTemplate`;
+    // at section level, `WrappedOneOfField` has already put this in an accordion item
+    if (isEnabledDiscriminated(schema) || isSectionLevel(uiSchema)) {
         return (
             <>
                 <div className="multi-schema-selector">{selector}</div>

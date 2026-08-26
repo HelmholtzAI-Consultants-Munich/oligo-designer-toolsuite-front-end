@@ -866,6 +866,7 @@
       "additionalProperties": false,
       "properties": {
         "forward_primer": {
+          "description": "Parameters that determine the forward primer generation or loading.",
           "discriminator": {
             "mapping": {
               "generate": "#/$defs/SeqfishPlusForwardPrimerGenerate",
@@ -879,7 +880,10 @@
           ],
           "title": "Forward Primer"
         },
-        "reverse_primer": { "$ref": "#/$defs/SeqfishPlusReversePrimer" }
+        "reverse_primer": {
+          "$ref": "#/$defs/SeqfishPlusReversePrimer",
+          "description": "Parameters that determine the reverse primer generation or loading."
+        }
       },
       "required": ["forward_primer", "reverse_primer"],
       "title": "Primers",

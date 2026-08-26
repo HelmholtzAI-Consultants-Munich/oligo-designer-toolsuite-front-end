@@ -109,6 +109,14 @@ const uiSchemaFromJsonSchemaRecursive = (
             uiSchema["ui:ObjectFieldTemplate"] = EnabledToggleObjectTemplate;
             uiSchema["ui:title"] = localSchema.title;
         } else {
+            // A union standing where a section goes is still a section: it takes the tab's
+            // accordion like its plain-object siblings do, rather than a card of its own.
+            if (level === 2) {
+                uiSchema["ui:options"] = {
+                    ...(uiSchema["ui:options"] as object),
+                    sectionLevel: true,
+                };
+            }
             // Any other discriminator (e.g. `source: "generate" | "load"`) is a `const` on
             // each option, redundant with RJSF's own schema-picker dropdown and, unlike
             // "enabled", not something the user can meaningfully edit.
