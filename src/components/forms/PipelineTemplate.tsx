@@ -27,6 +27,7 @@ import type { Pipeline } from "../../pipelineConfig/config";
 import { excludeHiddenTabs, snakeCaseToTitleCase } from "./utils";
 import { falsyDeclaredDefaults } from "../../pipelineConfig/defaults";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
+import WrappedSelectWidget from "./SelectWidget";
 import WrappedBaseInputTemplate from "./BaseInputTemplate";
 import {
     WrappedAnyOfField,
@@ -273,6 +274,7 @@ const PipelineTemplate: React.FC<Props> = ({
                         DescriptionFieldTemplate,
                         ErrorListTemplate,
                     }}
+                    widgets={{ SelectWidget: WrappedSelectWidget }}
                     fields={fields}
                     validator={validator}
                     liveValidate={submissionTried ? "onChange" : false}

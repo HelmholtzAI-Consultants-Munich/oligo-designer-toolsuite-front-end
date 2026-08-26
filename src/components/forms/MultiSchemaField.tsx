@@ -86,12 +86,20 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
                             )
                         }
                         schema={mergedSchema}
-                        uiSchema={
+                        uiSchema={{
+                            ...uiSchema,
                             // a select adds an empty option, which maps back to null above
-                            isNullableBoolean
-                                ? { ...uiSchema, "ui:widget": "select" }
-                                : uiSchema
-                        }
+                            ...(isNullableBoolean && {
+                                "ui:widget": "select",
+                            }),
+                            // the row above is the label, so the widget must not draw a second
+                            ...(hasOwnLabel && {
+                                "ui:options": {
+                                    ...uiSchema?.["ui:options"],
+                                    label: false,
+                                },
+                            }),
+                        }}
                     />
                 </div>
             </div>
