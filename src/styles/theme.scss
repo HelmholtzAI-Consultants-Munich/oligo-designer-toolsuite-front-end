@@ -547,6 +547,9 @@ form.rjsf {
         border-radius: $border-radius-sm;
         padding: $form-box-padding;
         margin-bottom: 0.5rem;
+        /* the same fill an optional filter's card carries, so a plain group and a toggled
+        one sitting side by side read as the same kind of thing */
+        background-color: var(--#{$prefix}primary-bg-subtle);
 
         &:has(.compact-grid:empty) {
             /* every field here portaled into quick settings, so there's nothing left to show */
@@ -554,13 +557,34 @@ form.rjsf {
         }
     }
 
-    .card-body .field-group-box {
-        /* nested inside an enabled-toggle card: a divider, not a second box */
+    .card.multi-schema-card {
+        /* wider spacing than the plain `.card` rule below, which it would otherwise inherit */
+        margin-bottom: 1rem;
+        background-color: var(--#{$prefix}primary-bg-subtle);
+    }
+
+    .card-body .field-group-box,
+    .card-body .multi-schema-card {
+        /* nested inside an enabled-toggle card: a divider, not a second box. indented and
+        with a lighter heading, so the card's own name reads as the parent of these */
         border: none;
         border-top: 1px solid $form-border-color;
         border-radius: 0;
-        padding: 0.5rem 0 0;
+        padding: 0.5rem 0 0 0.75rem;
         margin-bottom: 0;
+        /* already inside a filled card, so no fill of its own */
+        background-color: transparent;
+
+        .group-heading > .super-label {
+            font-weight: 500;
+            color: $text-muted;
+        }
+    }
+
+    .card-body .multi-schema-card > .card-body {
+        /* a union nested here is a sibling of a plain group, so it drops the card's padding
+        and lines its heading up with theirs */
+        padding: 0;
     }
 
     .field-row {

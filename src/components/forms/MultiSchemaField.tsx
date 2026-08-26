@@ -145,12 +145,7 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     }
 
     return (
-        <Card
-            style={{
-                marginBottom: "1rem",
-                backgroundColor: "var(--bs-primary-bg-subtle)",
-            }}
-        >
+        <Card className="multi-schema-card">
             <Card.Body>
                 <GroupHeading
                     id={schema.$id!}

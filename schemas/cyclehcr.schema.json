@@ -383,8 +383,7 @@
           "description": "Required minimum Hamming distance between codewords. Codewords have weight 2, so only 0, 2, or 4 are achievable. 4 enables single-bit error detection but limits capacity to n_readout_probes_LR * n_channels regions.",
           "enum": [0, 2, 4],
           "title": "Min Hamming Distance",
-          "type": "integer",
-          "x-quick-setting": true
+          "type": "integer"
         }
       },
       "title": "CycleHcrCodebookGenerate",
@@ -455,7 +454,9 @@
             "-perc_identity": 100.0,
             "-max_hsps": 1000,
             "-max_target_seqs": 10
-          }
+          },
+          "description": "BLAST options for the specificity search.",
+          "x-collapsed": true
         },
         "hit_parameters": {
           "default": { "hit_criterion": "coverage", "value": 90.0 },

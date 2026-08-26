@@ -759,7 +759,6 @@
         "files_vcf_reference_database": {
           "description": "List of paths to VCF files containing variant information used for filtering probes that overlap with known single nucleotide polymorphisms (SNPs) or other variants. Probes overlapping variants may have reduced specificity.",
           "items": { "anyOf": [{ "type": "string" }, { "type": "object" }] },
-          "minItems": 1,
           "title": "Files Vcf Reference Database",
           "type": "array"
         },
