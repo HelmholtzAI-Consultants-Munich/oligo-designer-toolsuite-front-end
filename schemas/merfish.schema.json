@@ -964,7 +964,8 @@
               "T": 0.25
             },
             "initial_num_sequences": 1000000
-          }
+          },
+          "x-collapsed": true
         },
         "property_filters": {
           "$ref": "#/$defs/MerfishForwardPrimerPropertyFilter",
@@ -998,11 +999,13 @@
               "thr_DG": 0.0
             }
           },
-          "description": "Parameters for filters that depend on properties of the filters (e.g., melting temperature)."
+          "description": "Parameters for filters that depend on properties of the filters (e.g., melting temperature).",
+          "x-collapsed": true
         },
         "specificity_filters": {
           "$ref": "#/$defs/MerfishForwardPrimerSpecificityFilter",
-          "description": "Parameters for filters that test the specificity of the probes."
+          "description": "Parameters for filters that test the specificity of the probes.",
+          "x-collapsed": true
         },
         "global_parameters": {
           "$ref": "#/$defs/MerfishForwardPrimerGlobal",
@@ -1029,7 +1032,8 @@
             "Tm_chem_correction_parameters": { "enabled": false },
             "Tm_salt_correction_parameters": { "enabled": false }
           },
-          "description": "Parameters for melting temperature computation that are reused for different filtering and scoring methods."
+          "description": "Parameters for melting temperature computation that are reused for different filtering and scoring methods.",
+          "x-collapsed": true
         }
       },
       "required": ["specificity_filters"],
@@ -1529,23 +1533,28 @@
           "x-quick-setting": true
         },
         "oligo_generation": {
-          "$ref": "#/$defs/MerfishReadoutProbeOligoGeneration"
+          "$ref": "#/$defs/MerfishReadoutProbeOligoGeneration",
+          "x-collapsed": true
         },
         "property_filters": {
           "$ref": "#/$defs/MerfishReadoutProbePropertyFilter",
-          "description": "Parameters for filters that depend on properties of the filters (e.g., melting temperature)."
+          "description": "Parameters for filters that depend on properties of the filters (e.g., melting temperature).",
+          "x-collapsed": true
         },
         "specificity_filters": {
           "$ref": "#/$defs/MerfishReadoutProbeSpecificityFilter",
-          "description": "Parameters for filters that test the specificity of the probes."
+          "description": "Parameters for filters that test the specificity of the probes.",
+          "x-collapsed": true
         },
         "probe_set_selection": {
           "$ref": "#/$defs/MerfishReadoutProbeSetSelection",
-          "description": "Parameters for selecting multiple probe sets per gene (size, spacing, scoring, diversification)."
+          "description": "Parameters for selecting multiple probe sets per gene (size, spacing, scoring, diversification).",
+          "x-collapsed": true
         },
         "global_parameters": {
           "$ref": "#/$defs/MerfishReadoutProbesGlobal",
-          "description": "Parameters for melting temperature computation that are reused for different filtering and scoring methods."
+          "description": "Parameters for melting temperature computation that are reused for different filtering and scoring methods.",
+          "x-collapsed": true
         }
       },
       "required": [

@@ -741,6 +741,12 @@ form.rjsf {
         color: $primary;
     }
 
+    .multi-schema-selector {
+        /* the chosen option's fields follow, spaced like they are from each other: their own
+        margin plus the grid's row gap */
+        margin-bottom: 1rem;
+    }
+
     .multi-schema-toggle {
         /* hide the dropdown for selecting between schemas when the discriminator is "enabled".
         Direct child only: a descendant match would also hide the selectors of any union
