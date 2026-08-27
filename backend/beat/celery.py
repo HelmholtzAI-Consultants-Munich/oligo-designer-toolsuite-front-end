@@ -35,8 +35,13 @@ def setup(sender: Celery, **kwargs):
     )
     sender.add_periodic_task(
         MIDNIGHT_CRON,
-        signature("backend.worker.tasks.cleanup_anonymous_data"),
+        signature(Tasks.CLEANUP_ANONYMOUS_DATA),
         name="cleanup-anonymous-data-task",
+    )
+    sender.add_periodic_task(
+        MIDNIGHT_CRON,
+        signature(Tasks.CLEANUP_CACHE_DIRS),
+        name="cleanup-cache-dirs-task",
     )
 
 
