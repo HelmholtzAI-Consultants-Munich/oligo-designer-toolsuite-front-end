@@ -11,6 +11,7 @@
 name: Security Scan
 
 on:
+  pull_request: # TEMPORARY - remove before merge
   schedule:
     - cron: "0 3 * * 1" # every Monday, catches CVEs published after we shipped
   workflow_dispatch: # Allow manual runs for testing
