@@ -45,6 +45,7 @@ class Config:
     RELATIVE_DATA_ACCESS_PATH = "data-access"  # Shared between server and worker
     RELATIVE_UPLOAD_PATH = "uploads"  # Relative to data access path
     RELATIVE_USERDATA_PATH = "user_data"  # Relative to data access path
+    RELATIVE_CACHE_PATH = "cache"  # Relative to the backend root, holds the cached files
 
     # Session settings
     PERMANENT_SESSION_LIFETIME = timedelta(days=90)
@@ -96,6 +97,7 @@ class Config:
     REDIS_FILE_EXPIRATION_TIME = int(
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
+    REDIS_FILE_CACHE_KEY_PREFIX = "file_cache:"  # Makes file cache keys enumerable via SCAN
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
     REDIS_QUEUE_ACCOUNTING_LOCK_KEY = "pipelines:queue_accounting_lock"
     REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT = int(os.environ.get("REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT", 30))
@@ -186,4 +188,5 @@ class CeleryConfig:
     )
     pipeline_timeout_hard_margin: int = int(os.environ.get("PIPELINE_TIMEOUT_HARD_MARGIN", 300))
     anonymous_data_retention_days: int = int(os.environ.get("ANONYMOUS_DATA_RETENTION_DAYS", 30))
+    cache_orphan_grace_hours: int = int(os.environ.get("CACHE_ORPHAN_GRACE_HOURS", 24))
     worker_redirect_stdouts_level = "DEBUG"

@@ -151,36 +151,51 @@ cache/generated/
 
 ## Cache Cleanup
 
-To prevent excessive disk usage, cached directories are periodically purged.
+To prevent excessive disk usage, cached files and directories that the cache no longer
+references are purged periodically.
 
 ### Cleanup Logic
 
-A scheduled job executes a cleanup script that removes cache directories under the following conditions:
+A cache key expires once it has not been used for `REDIS_FILE_EXPIRATION_TIME` (30 days by
+default): reading a cached entry renews its expiration, see `FileCacheProxy.get_serialized`,
+so files that are still in use never expire. Redis expires keys passively, which means the
+key disappears while the file or directory it pointed to stays on disk. The
+`backend.worker.tasks.cleanup_cache_dirs` task reconciles the two:
 
-- The directory has not been accessed within the last 30 days
-- The directory name is not on the exclusion list
+1. The cache root is read from the config (`RELATIVE_CACHE_PATH`, `backend/cache` by default).
+2. `backend.cache.get_cached_file_paths` collects the still referenced paths from Redis. File
+   cache keys carry the `REDIS_FILE_CACHE_KEY_PREFIX` prefix, which makes them enumerable with
+   a `SCAN` and distinguishes them from other keys in the same Redis instance.
+3. The cache root is walked and everything that is neither referenced nor part of a referenced
+   directory gets deleted, i.e. everything that has not been used for 30 days. Directories
+   are descended into rather than removed as a whole and are only removed once nothing is
+   left in them.
 
-### Exclusion Example
+Since files are written before their cache key is stored, entries modified within the last
+`CACHE_ORPHAN_GRACE_HOURS` (24 by default) are kept, so that a download or a generator run in
+progress does not get deleted.
 
-```python
-EXCLUDE_DIRS = [
-    "cached_genomic_special_human",
-    "cached_genomic_mouse_reference"
-]
-```
-
-These directories are preserved regardless of access time.
+There is no exclusion list: an entry survives as long as it is referenced in Redis.
 
 ---
 
-## Cron Job Configuration
+## Schedule
 
-To automate cleanup, a cron job is scheduled as follows:
+Celery beat dispatches the task every day at midnight, see `backend/beat/celery.py`:
 
-```bash
-0 3 1 * * /path/to/venv/bin/python /path/to/cleanup_cache_dirs.py >> /var/log/cache_cleanup.log 2>&1
+```python
+sender.add_periodic_task(
+    MIDNIGHT_CRON,
+    signature(Tasks.CLEANUP_CACHE_DIRS),
+    name="cleanup-cache-dirs-task",
+)
 ```
 
-This runs the cleanup script at 03:00 on the first day of every month.
+The task itself runs on the worker, which is the service that mounts the cache volume. It can
+also be triggered manually:
+
+```bash
+docker compose exec odt-worker celery -A backend.worker call backend.worker.tasks.cleanup_cache_dirs
+```
 
 ---
