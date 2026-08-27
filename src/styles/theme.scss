@@ -35,6 +35,19 @@ $card-spacer-x: 1.5rem;
 $card-spacer-y: 1.5rem;
 $input-btn-padding-y-sm: 0.5rem;
 
+// hairline borders for form surfaces, so nested boxes read as grouping rather than chrome
+$form-border-color: tint-color($border-color, 55%);
+
+$accordion-border-color: $form-border-color;
+$accordion-border-radius: $border-radius;
+$accordion-padding-y: 0.85rem;
+$accordion-padding-x: 1.15rem;
+$accordion-button-color: $primary;
+$accordion-button-active-bg: transparent;
+$accordion-button-active-color: $primary;
+$accordion-icon-color: $text-muted;
+$accordion-icon-active-color: $primary;
+
 // Bootstrap and its default variables
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
@@ -74,9 +87,8 @@ body.modal-open {
     h6 {
         margin-bottom: 0;
     }
-}
-@include media-breakpoint-up(lg) {
-    #app-layout {
+
+    @include media-breakpoint-up(lg) {
         flex-direction: row;
     }
 }
@@ -84,9 +96,8 @@ body.modal-open {
 /* Container */
 .container {
     padding: 2rem;
-}
-@include media-breakpoint-up(md) {
-    .container {
+
+    @include media-breakpoint-up(md) {
         padding: 2rem 3rem;
     }
 }
@@ -94,9 +105,8 @@ body.modal-open {
 /* Hero */
 .hero h1 {
     font-size: 3rem;
-}
-@include media-breakpoint-up(md) {
-    .hero h1 {
+
+    @include media-breakpoint-up(md) {
         font-size: 4rem;
     }
 }
@@ -143,9 +153,8 @@ body.modal-open {
         width: 3rem;
         margin: 0 -5%;
     }
-}
-@include media-breakpoint-up(lg) {
-    .navbar-main {
+
+    @include media-breakpoint-up(lg) {
         height: 100vh;
         padding: 2rem;
         width: 25rem;
@@ -153,6 +162,7 @@ body.modal-open {
         align-items: start;
         flex-shrink: 0;
         border-right: 1px solid $border-color;
+
         .navbar-brand {
             font-size: 1.6rem;
             font-weight: 500;
@@ -248,19 +258,16 @@ body.modal-open {
             border-radius: $border-radius-lg;
         }
     }
-}
-@include media-breakpoint-up(xl) {
-    .nav-header {
+
+    @include media-breakpoint-up(xl) {
+        /* a row of pills once there is room for one */
         flex-direction: row;
-        border-radius: 9999px;
         width: max-content;
 
-        &::after {
-            border-radius: 9999px;
-        }
-
+        &,
+        &::after,
         .nav-link.active {
-            border-radius: 9999px;
+            border-radius: $border-radius-pill;
         }
     }
 }
@@ -303,20 +310,9 @@ body.modal-open {
     .sticky-header-spacer {
         height: 2rem;
     }
-}
 
-.sticky-header-title {
-    background-color: white;
-    z-index: 1001;
-
-    & > .container {
-        padding-bottom: 0rem;
-    }
-}
-
-/* Progressive enhancement: on smaller devices the header content wraps, which would make a sticky header cover too much of the screen */
-@include media-breakpoint-up(xxl) {
-    .header {
+    /* Progressive enhancement: on smaller devices the header content wraps, which would make a sticky header cover too much of the screen */
+    @include media-breakpoint-up(xxl) {
         &.sticky-header {
             position: sticky;
             top: -2rem;
@@ -335,6 +331,15 @@ body.modal-open {
             top: -1rem;
             margin-top: -2rem;
         }
+    }
+}
+
+.sticky-header-title {
+    background-color: white;
+    z-index: 1001;
+
+    & > .container {
+        padding-bottom: 0rem;
     }
 }
 
@@ -458,6 +463,19 @@ a,
     }
 }
 
+/* Tooltip trigger: a button, for keyboard reach, but drawn as the bare icon it replaced */
+.tooltip-trigger {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    border: none;
+    background: none;
+    line-height: 1;
+    font-size: 1rem;
+    color: var(--#{$prefix}text-muted);
+    margin-left: 10px;
+}
+
 /* Toasts */
 .toast {
     overflow: hidden;
@@ -468,23 +486,221 @@ a,
 }
 
 /* RJSF */
+// The rendered height of this form's controls. Bootstrap's own $input-height-sm
+// assumes a control at 1em of the parent font size, but these are set to
+// $input-font-size-sm below, so it would overshoot.
+$form-control-height: calc(
+    #{$input-font-size-sm} * #{$line-height-base} + #{$input-padding-y-sm} * 2 +
+        #{$input-border-width} * 2
+);
+
+// the inset shared by every box on the form
+$form-box-padding: 0.7rem 0.9rem;
+
+// a rounded card standing on its own: a tab's sections and the quick settings panel
+@mixin form-surface {
+    margin-bottom: 0.6rem;
+    border: 1px solid $form-border-color;
+    border-radius: $border-radius;
+    box-shadow: $box-shadow-sm;
+}
+
 form.rjsf {
     display: flex;
     flex-direction: column;
 
     .rjsf-field {
         flex-grow: 1;
+        /* allow fields to shrink below their content's natural size instead of
+        forcing their grid/flex track wider and overlapping neighboring fields */
+        min-width: 0;
+    }
+
+    .form-label,
+    .form-check-label {
+        font-size: $font-size-sm;
+        color: var(--#{$prefix}text-muted);
     }
 
     .form-label {
         margin-bottom: 0.2rem;
     }
 
+    .accordion {
+        margin-bottom: 1rem;
+    }
+
+    .form-control,
+    .form-select {
+        /* Bootstrap's small-control metrics: a dense form of many little numbers */
+        padding: $input-padding-y-sm $input-padding-x-sm;
+        font-size: $input-font-size-sm;
+        border-radius: $input-border-radius-sm;
+        border-color: $form-border-color;
+    }
+
+    .field-group-box {
+        grid-column: 1 / -1;
+        border: 1px solid $form-border-color;
+        border-radius: $border-radius-sm;
+        padding: $form-box-padding;
+        margin-bottom: 0.5rem;
+    }
+
+    .card-body .field-group-box {
+        /* nested inside an enabled-toggle card: a divider, not a second box */
+        border: none;
+        border-top: 1px solid $form-border-color;
+        border-radius: 0;
+        padding: 0.5rem 0 0;
+        margin-bottom: 0;
+    }
+
+    .field-row {
+        /* a name column of FIXED width, so a long name wraps instead of pushing
+        its control right and every input in the form starts at the same spot */
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .field-row-label {
+        display: flex;
+        align-items: center;
+        width: 11.5rem;
+        flex-shrink: 0;
+        overflow-wrap: anywhere;
+
+        > .tooltip-trigger {
+            /* the tooltip's own spacing is tuned for section headings */
+            margin-left: 0.4rem !important;
+            flex-shrink: 0;
+        }
+    }
+
+    .compact-grid {
+        /* the same four columns at every width, so a box lines up with the one in the group
+        above. `auto-fit` would instead give each group as many columns as its own field
+        count allows, and the boxes would stop aligning group to group */
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    input[type="number"] {
+        /* hide the increment/decrement spinner buttons: this form is a dense grid of
+        small numbers, where they add noise and are easy to hit by accident */
+        -moz-appearance: textfield;
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    }
+
+    .field-row-control {
+        flex: 1 1 auto;
+        min-width: 0;
+
+        > input[type="number"] {
+            /* a number never needs the whole row, and capping them keeps the
+            boxes an even size instead of stretching to whatever space is left */
+            max-width: 10rem;
+        }
+    }
+
+    .rjsf-field-array > .field-row {
+        /* keep a list's name next to its first item, not centered on the stack */
+        align-items: flex-start;
+    }
+
+    @mixin stacked-field {
+        /* too narrow for a name column beside the control, so stack them. Every wrapper down
+        to the control is a full-height column pinning its content to the bottom, so a two-line
+        name grows upwards and boxes stay on one line. */
+        &,
+        .rjsf-field,
+        .field-row,
+        .field-row-control {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: flex-end;
+            min-width: 0;
+        }
+
+        .rjsf-field,
+        .field-row,
+        .field-row-control {
+            flex: 1 1 auto;
+        }
+
+        .field-row {
+            gap: 0.15rem;
+        }
+
+        .field-row-label {
+            width: auto;
+            flex: 0 0 auto;
+        }
+
+        .rjsf-field-boolean > div {
+            /* a checkbox is much shorter than an input, so give it the same band
+            height: its row then shares a centre line with the inputs beside it
+            instead of sitting low in the cell */
+            min-height: $form-control-height;
+        }
+    }
+
+    .compact-field-item {
+        @include stacked-field;
+    }
+
+    .quick-settings {
+        /* the parameters the backend flagged as quick settings, lifted out of their sections
+        and pinned above the tabs */
+        @include form-surface;
+        padding: $form-box-padding;
+
+        &:has(> .quick-settings-fields:empty) {
+            /* nothing was flagged, so there is no panel to show */
+            display: none;
+        }
+
+        > .super-label {
+            /* the panel heads the form like a section does, so it is sized like one */
+            font-size: $font-size-base;
+        }
+
+        .quick-settings-fields {
+            /* a grid, so every box is the same width however long its name is - and, unlike a
+            flex row, a wrapped row keeps those same widths instead of stretching to fill.
+            `auto-fit` collapses the spare tracks so the fields still span the panel. */
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+            align-items: end;
+            gap: 0.5rem 1.25rem;
+            margin-top: 0.35rem;
+
+            > .rjsf-field {
+                @include stacked-field;
+            }
+
+            input.form-control {
+                /* fill the box rather than stopping at the shared number-input cap */
+                max-width: none;
+            }
+        }
+    }
+
+    .group-heading {
+        margin-bottom: 0.35rem;
+    }
+
     .super-label {
         display: inline-block;
         font-weight: 600;
-        font-size: 1.1rem;
-        margin-bottom: 1rem;
+        font-size: $font-size-sm;
+        color: $primary;
     }
 
     .multi-schema-toggle {
@@ -503,42 +719,64 @@ form.rjsf {
     }
 
     .rjsf-field-boolean > div {
-        /* render the description below the checkbox */
+        /* keep the tooltip inline next to the checkbox, not stacked below it */
         display: flex;
-        flex-direction: column-reverse;
+        align-items: center;
+        flex-direction: row-reverse;
+        justify-content: flex-end;
+        gap: 0.25rem;
+
+        .form-check {
+            /* Bootstrap floats the box and pads the label to clear it, which
+            offsets both inside a flex row - a plain row centres them instead */
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-height: 0;
+            margin-bottom: 0;
+            padding-left: 0;
+        }
+
+        .form-check-input {
+            float: none;
+            margin: 0;
+            flex-shrink: 0;
+        }
     }
 
-    .array-field-item > div > .form-label {
-        /* hide labels for array items */
+    .array-field-item .field-row-label {
+        /* an item would only repeat the list's name with an index appended */
         display: none;
     }
 
     .form-section {
-        display: grid;
-        align-items: start;
-        gap: 2rem;
-        border-bottom: 1px solid $border-color;
-        padding-bottom: 3rem;
-        margin-bottom: 3rem;
+        /* one accordion item per section, spaced apart as its own rounded card
+        instead of Bootstrap's single stacked group */
+        @include form-surface;
 
-        .form-section-header h5 {
-            font-weight: 600;
-            font-size: 1.3rem;
+        .accordion-button {
+            border-radius: $border-radius;
+
+            &:not(.collapsed) {
+                box-shadow: none;
+                border-bottom-right-radius: 0;
+                border-bottom-left-radius: 0;
+            }
+        }
+
+        .accordion-body {
+            padding-top: 0.25rem;
         }
     }
-}
 
-@include media-breakpoint-up(xxl) {
-    form.rjsf .form-section {
-        grid-template-columns: 25% 1fr;
+    .card {
+        /* an optional filter's card: tighter than Bootstrap's default */
+        margin-bottom: 0.5rem;
+        border-color: $form-border-color;
+        border-radius: $border-radius-sm;
 
-        .form-section-header {
-            position: sticky;
-            top: 7rem;
-
-            h5 {
-                font-size: 1.1rem;
-            }
+        .card-body {
+            padding: $form-box-padding;
         }
     }
 }

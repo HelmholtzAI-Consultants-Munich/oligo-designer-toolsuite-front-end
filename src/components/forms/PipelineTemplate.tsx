@@ -25,6 +25,7 @@ import { FileInput, GenomicInput } from "./GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
 import { excludeHiddenTabs, snakeCaseToTitleCase } from "./utils";
+import { falsyDeclaredDefaults } from "../../pipelineConfig/defaults";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
 import WrappedBaseInputTemplate from "./BaseInputTemplate";
 import {
@@ -62,7 +63,9 @@ const PipelineTemplate: React.FC<Props> = ({
     schema,
     uiSchema,
 }) => {
-    const [formData, setFormData] = useState<RJSFFormData>({});
+    const [formData, setFormData] = useState<RJSFFormData>(() =>
+        falsyDeclaredDefaults(schema, schema)
+    );
     const [submissionTried, setSubmissionTried] = useState(false);
 
     const submitButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -248,6 +251,9 @@ const PipelineTemplate: React.FC<Props> = ({
                         arrayMinItems: {
                             populate: "never",
                         },
+                        // let a Pydantic override (e.g. `TmParameters(dnac2=0)`) win over
+                        // the defaults the model declares for its own fields
+                        nestedDefaultsPrecedence: "ancestorWins",
                     }}
                     showErrorList={"bottom"}
                     templates={{

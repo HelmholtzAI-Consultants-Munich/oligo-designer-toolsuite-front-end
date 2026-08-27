@@ -7,7 +7,8 @@ import {
 import { ToolTip } from "../ui/Tooltip";
 import { Card, Form } from "react-bootstrap";
 import { memo } from "react";
-import { spaceBeforeCapitalLetters } from "./utils";
+import GroupHeading from "./GroupHeading";
+import { isEnabledDiscriminated } from "./utils";
 
 const {
     fields: { AnyOfField, OneOfField },
@@ -34,13 +35,14 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
         (option) => typeof option === "object" && option.type === "null"
     ) as RJSFSchema | undefined;
 
-    if (schema.anyOf?.length === 2 && constSchema && nullSchema) {
-        // turn const into enum for better handling of optional fields
-        constSchema.enum = [constSchema.const!];
-        constSchema.const = undefined;
-    }
-
+    // a two-option anyOf against null is how our schema spells an optional field
     if (schema.anyOf?.length === 2 && nullSchema) {
+        if (constSchema) {
+            // turn const into enum for better handling of optional fields
+            constSchema.enum = [constSchema.const!];
+            constSchema.const = undefined;
+        }
+
         // return just the non-null option and treat it as optional
         const nonNullSchema = schema.anyOf.find(
             (option) => typeof option === "object" && option.type !== "null"
@@ -52,31 +54,43 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
             description: schema.description, // preserve description from parent schema
         };
 
-        const isEnum = mergedSchema.enum !== undefined;
+        // a checkbox holds two states, but a nullable boolean has three: unchecking one would
+        // send `false`, which the pipeline does not read as "unset", with no way back to it
+        const isNullableBoolean = mergedSchema.type === "boolean";
+
+        // a select and an enum name themselves in the row's label, the other widgets do not
+        const hasOwnLabel =
+            mergedSchema.enum !== undefined || isNullableBoolean;
 
         return (
-            <>
-                {isEnum && (
-                    <Form.Label htmlFor={fieldPathId.$id}>
-                        {schema.title}
-                    </Form.Label>
+            <div className="field-row">
+                {hasOwnLabel && (
+                    <div className="field-row-label">
+                        <Form.Label htmlFor={fieldPathId.$id} className="mb-0">
+                            {schema.title}
+                        </Form.Label>
+                        <ToolTip id={schema.$id!} tip={schema.description} />
+                    </div>
                 )}
-                {isEnum && schema.description ? (
-                    <ToolTip id={schema.$id!} tip={schema.description} />
-                ) : null}
-                <SchemaField
-                    {...props}
-                    onChange={(value) => {
-                        if (value === "") {
-                            props.onChange(null, fieldPathId.path);
-                        } else {
-                            props.onChange(value, fieldPathId.path);
+                <div className="field-row-control">
+                    <SchemaField
+                        {...props}
+                        onChange={(value) =>
+                            props.onChange(
+                                value === "" ? null : value,
+                                fieldPathId.path
+                            )
                         }
-                    }}
-                    schema={mergedSchema}
-                    uiSchema={uiSchema}
-                />
-            </>
+                        schema={mergedSchema}
+                        uiSchema={
+                            // a select adds an empty option, which maps back to null above
+                            isNullableBoolean
+                                ? { ...uiSchema, "ui:widget": "select" }
+                                : uiSchema
+                        }
+                    />
+                </div>
+            </div>
         );
     }
 
@@ -95,7 +109,7 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
 ) {
     const { schema } = props;
 
-    if (schema?.discriminator?.propertyName === "enabled") {
+    if (isEnabledDiscriminated(schema)) {
         // This is a special case for handling "enabled"/"disabled" options in a more user-friendly way
         return (
             <div className="multi-schema-toggle">
@@ -119,28 +133,34 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     props: MultiSchemaFieldTemplateProps
 ) {
     const { selector, optionSchemaField, schema } = props;
+
+    // when discriminated by "enabled", the card is rendered by `EnabledToggleObjectTemplate`
+    if (isEnabledDiscriminated(schema)) {
+        return (
+            <>
+                <div className="multi-schema-selector">{selector}</div>
+                {optionSchemaField}
+            </>
+        );
+    }
+
     return (
-        <>
-            <Card
-                style={{
-                    marginBottom: "1rem",
-                    backgroundColor: "var(--bs-primary-bg-subtle)",
-                }}
-            >
-                <Card.Body>
-                    {schema.title && (
-                        <span className="super-label">
-                            {spaceBeforeCapitalLetters(schema.title)}
-                        </span>
-                    )}
-                    {schema.description ? (
-                        <ToolTip id={schema.$id!} tip={schema.description} />
-                    ) : null}
-                    <div className="multi-schema-selector">{selector}</div>
-                    {optionSchemaField}
-                </Card.Body>
-            </Card>
-        </>
+        <Card
+            style={{
+                marginBottom: "1rem",
+                backgroundColor: "var(--bs-primary-bg-subtle)",
+            }}
+        >
+            <Card.Body>
+                <GroupHeading
+                    id={schema.$id!}
+                    title={schema.title}
+                    description={schema.description}
+                />
+                <div className="multi-schema-selector">{selector}</div>
+                {optionSchemaField}
+            </Card.Body>
+        </Card>
     );
 });
 

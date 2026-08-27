@@ -1,42 +1,32 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { Fragment, memo } from "react";
-import { ToolTip } from "../ui/Tooltip";
-import { spaceBeforeCapitalLetters } from "./utils";
+import { memo } from "react";
+import CompactGrid from "./CompactGrid";
+import GroupHeading from "./GroupHeading";
+
+// RJSF never passes className; only CompactFieldGroupTemplate does, for a tighter row gap
+type Props = ObjectFieldTemplateProps & {
+    className?: string;
+};
 
 /**
  * This ObjectFieldTemplate is based on the react-bootstrap theme's template.
- * It harmonizes the layout and styling of object fields with ODT's design system.
- * It also introduces a CSS grid layout to automatically arrange input fields in a responsive way.
+ * It draws an object's fields as a named box laid out on the form's compact grid.
  *
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that is used to overwrite the default ObjectFieldTemplate
  */
-const ObjectFieldTemplate = memo(function ObjectFieldTemplate(
-    props: ObjectFieldTemplateProps
-) {
-    const { title, properties, description, fieldPathId } = props;
-
+const ObjectFieldTemplate = memo(function ObjectFieldTemplate({
+    className = "row-gap-3",
+    ...props
+}: Props) {
     return (
-        <div style={{ gridColumn: "1 / -1" }}>
-            {title && (
-                <span className="super-label">
-                    {spaceBeforeCapitalLetters(title)}
-                </span>
-            )}
-            {description ? (
-                <ToolTip id={fieldPathId.$id} tip={description.toString()} />
-            ) : null}
-            <div
-                className="d-grid row-gap-5 column-gap-3"
-                style={{
-                    gridTemplateColumns:
-                        "repeat(auto-fill, minmax(250px, 1fr))",
-                }}
-            >
-                {properties.map((element) => (
-                    <Fragment key={element.name}>{element.content}</Fragment>
-                ))}
-            </div>
+        <div className="field-group-box">
+            <GroupHeading
+                id={props.fieldPathId.$id}
+                title={props.title}
+                description={props.description}
+            />
+            <CompactGrid {...props} className={className} />
         </div>
     );
 });

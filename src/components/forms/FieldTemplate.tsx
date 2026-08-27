@@ -1,12 +1,18 @@
 import { type FieldTemplateProps, ANY_OF_KEY, ONE_OF_KEY } from "@rjsf/utils";
 import { memo } from "react";
-import { filterUninformativeErrors } from "./utils";
+import { createPortal } from "react-dom";
+import { useQuickSettingsContainer } from "../../hooks/useQuickSettings";
+import {
+    filterUninformativeErrors,
+    isQuickSetting,
+    spansFullRow,
+} from "./utils";
 
 /**
  * This FieldTemplate is based on the react-bootstrap theme's template.
- * It removes the `WrapIfAdditionalTemplate` wrapper, as it wrapped all fields in an unpredictable way, making consistent styling difficult.
- * It also removes the field description, as it would be redundant with tooltips rendered in other template overrides.
- * Lastly, it is designed to be used in a CSS grid layout, allowing fields to span the full width of the form when necessary (e.g. for object fields or custom fields).
+ * It drops the `WrapIfAdditionalTemplate` wrapper, which wrapped fields unpredictably, and the
+ * field description, which the tooltips already cover. Fields sit in a CSS grid, spanning the
+ * full row when they lay out their own children.
  *
  * @param props - FieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#fieldtemplate})
  * @returns A React Component that is used to overwrite the default FieldTemplate
@@ -29,34 +35,38 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         schemaUtils,
     } = registry;
 
+    const quickSettingsContainer = useQuickSettingsContainer();
+
     if (hidden) {
         return <div className="hidden">{children}</div>;
     }
 
-    const isCustomField = !!uiSchema?.["ui:field"];
+    // a quick setting keeps its place in the React tree, so its value, id and validation are
+    // untouched, and only its markup moves into the panel above the tabs
+    const quickSettingTarget =
+        isQuickSetting(schema, uiSchema) && quickSettingsContainer;
+
+    // conditions copied from rjsf core's SchemaField.tsx
     const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
+    const showErrors =
+        !uiSchema?.["ui:field"] &&
+        !hideError &&
+        !(isXxxOfField && !schemaUtils.isSelect(schema));
 
-    const spanFullWidth =
-        schema.type === "object" || schema.oneOf || isCustomField;
-
-    const filteredErrors = rawErrors?.filter((error) =>
-        filterUninformativeErrors(error)
-    );
-
-    return (
+    const field = (
         <div
             style={{
-                gridColumn: spanFullWidth ? "1 / -1" : undefined,
+                gridColumn:
+                    !quickSettingTarget && spansFullRow(schema, uiSchema)
+                        ? "1 / -1"
+                        : undefined,
             }}
             className={`rjsf-field rjsf-field-${schema.type}`}
         >
             {children}
-            {isCustomField ||
-            /* conditions copied from rjsf core's SchemaField.tsx */
-            hideError ||
-            (isXxxOfField && !schemaUtils.isSelect(schema)) ? undefined : (
+            {showErrors && (
                 <FieldErrorTemplate
-                    errors={filteredErrors}
+                    errors={rawErrors?.filter(filterUninformativeErrors)}
                     fieldPathId={fieldPathId}
                     schema={schema}
                     uiSchema={uiSchema}
@@ -66,6 +76,8 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
             {help}
         </div>
     );
+
+    return quickSettingTarget ? createPortal(field, quickSettingTarget) : field;
 });
 
 export default FieldTemplate;
