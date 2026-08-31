@@ -1,6 +1,5 @@
 """Defines PipelineRunner and bundles all functionality regarding running and handling a pipeline run."""
 
-import json
 import os
 import tempfile
 from logging import Logger
@@ -32,22 +31,14 @@ class PipelineRunner:
     """
 
     def __init__(self, pipeline_name: str, logger: Logger):
-        """Initializes the Pipeline Runner, by setting the logger, pipeline name and loading the JSON Schema.
+        """Initializes the Pipeline Runner, by setting the logger and the pipeline name.
 
         Arguments:
             pipeline_name {str} -- The name of the pipeline to be run.
             logger {Logger} -- The logger that should be used by the Pipeline Runner.
         """
         self.logger = logger
-
-        # TODO: pass root_dir config to worker, use config for absolute path
-        #   here and in genomic_region_generator_runner.py
-        schema_path = os.path.join(os.path.dirname(__file__), f"../../schemas/{pipeline_name}.schema.json")
-        with open(schema_path) as f:
-            schema = json.load(f)
-
         self.pipeline_name = pipeline_name  # e.g., 'merfish'
-        self.schema = schema  # JSON schema
 
     def run(
         self, form_data: dict[str, Any], output_path: str, generated_region_paths: list[tuple[str, list[str]]]

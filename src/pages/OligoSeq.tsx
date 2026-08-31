@@ -1,15 +1,7 @@
 import { memo } from "react";
-import PipelineTemplate from "../components/forms/PipelineTemplate";
-import { PIPELINE_CONFIG } from "../pipelineConfig/config";
+import PipelineForm from "../components/forms/PipelineForm";
 
-const Oligoseq: React.FC = memo(() => {
-    return (
-        <PipelineTemplate
-            pipeline="oligoseq"
-            title="OligoSeq Probe Designer"
-            schema={PIPELINE_CONFIG["oligoseq"].schema}
-            uiSchema={PIPELINE_CONFIG["oligoseq"].uiSchema}
-        />
-    );
-});
-export default Oligoseq;
+const OligoSeq: React.FC = memo(() => (
+    <PipelineForm pipeline="oligoseq" title="OligoSeq Probe Designer" />
+));
+export default OligoSeq;

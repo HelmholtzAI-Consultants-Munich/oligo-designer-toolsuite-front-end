@@ -15,11 +15,6 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
 
-    /* Module paths */
-    "paths": {
-      "@schemas/*": ["./schemas/*"]
-    },
-
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

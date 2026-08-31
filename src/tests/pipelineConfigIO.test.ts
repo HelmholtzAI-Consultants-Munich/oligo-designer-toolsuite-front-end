@@ -15,9 +15,11 @@ import {
     buildExportPayload,
     importAndValidate,
 } from "../components/forms/pipelineConfigIO";
-import { PIPELINE_CONFIG } from "../pipelineConfig/config";
+import oligoseqSchema from "./fixtures/oligoseq.schema.json";
 
-const testSchema = PIPELINE_CONFIG["oligoseq"].schema;
+// A copy of what the backend generates for oligoseq. The round trip is tested against the real
+// schema, and `test_schema_routes.py` fails if this copy falls behind it.
+const testSchema = oligoseqSchema as RJSFSchema;
 
 // ---- buildExportPayload ----
 //

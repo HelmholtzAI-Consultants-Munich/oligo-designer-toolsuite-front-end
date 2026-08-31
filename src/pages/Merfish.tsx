@@ -1,15 +1,7 @@
 import { memo } from "react";
-import PipelineTemplate from "../components/forms/PipelineTemplate";
-import { PIPELINE_CONFIG } from "../pipelineConfig/config";
+import PipelineForm from "../components/forms/PipelineForm";
 
-const Merfish: React.FC = memo(() => {
-    return (
-        <PipelineTemplate
-            pipeline="merfish"
-            title="Merfish Probe Designer"
-            schema={PIPELINE_CONFIG["merfish"].schema}
-            uiSchema={PIPELINE_CONFIG["merfish"].uiSchema}
-        />
-    );
-});
+const Merfish: React.FC = memo(() => (
+    <PipelineForm pipeline="merfish" title="Merfish Probe Designer" />
+));
 export default Merfish;

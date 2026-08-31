@@ -47,10 +47,8 @@ RUN --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
     fi
 
 # --- Copy Celery worker ---
-# schemas are copied to /app/schemas to match the relative path in pipeline_runner.py
 WORKDIR /app
 # Copy the entire backend directory
 COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
-COPY --chown=$MAMBA_USER:$MAMBA_USER schemas schemas
 
 CMD ["celery", "-A", "backend.worker", "worker", "--concurrency", "1"]

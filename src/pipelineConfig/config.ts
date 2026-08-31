@@ -1,18 +1,7 @@
-import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import type { RJSFFormData } from "../components/componentTypes";
 
-import merfishSchemaRaw from "@schemas/merfish.schema.json";
-import scrinshotSchemaRaw from "@schemas/scrinshot.schema.json";
-import oligoseqSchemaRaw from "@schemas/oligoseq.schema.json";
-import seqfishSchemaRaw from "@schemas/seqfish.schema.json";
-import hcrSchemaRaw from "@schemas/hcr.schema.json";
-import cyclehcrSchemaRaw from "@schemas/cyclehcr.schema.json";
-import { uiSchemaFromJsonSchema } from "./uiSchemas";
-
 interface BasePipeline {
-    schema: RJSFSchema;
     displayName: string;
-    uiSchema: UiSchema;
     description: string;
     detailedLink: string;
     link: string;
@@ -65,8 +54,6 @@ export type PipelineConfig = {
 export const PIPELINE_CONFIG: PipelineConfig = {
     scrinshot: {
         name: "scrinshot",
-        schema: scrinshotSchemaRaw as RJSFSchema,
-        uiSchema: uiSchemaFromJsonSchema(scrinshotSchemaRaw as RJSFSchema),
         displayName: "Scrinshot",
         description:
             "Spatial gene expression analysis using scrinshot technology.",
@@ -77,8 +64,6 @@ export const PIPELINE_CONFIG: PipelineConfig = {
     },
     merfish: {
         name: "merfish",
-        schema: merfishSchemaRaw as RJSFSchema,
-        uiSchema: uiSchemaFromJsonSchema(merfishSchemaRaw as RJSFSchema),
         displayName: "Merfish",
         description:
             "Highly multiplexed imaging for spatially resolved transcriptomics.",
@@ -93,8 +78,6 @@ export const PIPELINE_CONFIG: PipelineConfig = {
     },
     seqfish: {
         name: "seqfish",
-        schema: seqfishSchemaRaw as RJSFSchema,
-        uiSchema: uiSchemaFromJsonSchema(seqfishSchemaRaw as RJSFSchema),
         displayName: "SeqFish+",
         description:
             "Sequential imaging for probing complex spatial transcriptomes.",
@@ -109,8 +92,6 @@ export const PIPELINE_CONFIG: PipelineConfig = {
     },
     hcr: {
         name: "hcr",
-        schema: hcrSchemaRaw as RJSFSchema,
-        uiSchema: uiSchemaFromJsonSchema(hcrSchemaRaw as RJSFSchema),
         displayName: "HCR",
         description:
             "Hybridization chain reaction probes for signal-amplified imaging.",
@@ -125,8 +106,6 @@ export const PIPELINE_CONFIG: PipelineConfig = {
     },
     cyclehcr: {
         name: "cyclehcr",
-        schema: cyclehcrSchemaRaw as RJSFSchema,
-        uiSchema: uiSchemaFromJsonSchema(cyclehcrSchemaRaw as RJSFSchema),
         displayName: "Cycle HCR",
         description:
             "Multiplexed hybridization chain reaction across sequential imaging cycles.",
@@ -141,8 +120,6 @@ export const PIPELINE_CONFIG: PipelineConfig = {
     },
     oligoseq: {
         name: "oligoseq",
-        schema: oligoseqSchemaRaw as RJSFSchema,
-        uiSchema: uiSchemaFromJsonSchema(oligoseqSchemaRaw as RJSFSchema),
         displayName: "OligoSeq",
         description:
             "High-throughput sequencing tailored for spatial transcriptomics.",

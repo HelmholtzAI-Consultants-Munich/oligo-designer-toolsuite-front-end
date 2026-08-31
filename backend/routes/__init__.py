@@ -5,6 +5,7 @@ from backend.routes.genomic import genomic_bp
 from backend.routes.legal import legal_bp
 from backend.routes.pipelines import pipelines_bp
 from backend.routes.runs import runs_bp
+from backend.routes.schemas import schemas_bp
 
 
 def register_blueprints(app):
@@ -15,5 +16,6 @@ def register_blueprints(app):
     app.register_blueprint(
         feedback_bp
     )  # before pipelines so /api/feedback is not caught by /api/<pipeline_name>
+    app.register_blueprint(schemas_bp)  # same reason
     app.register_blueprint(pipelines_bp)
     app.register_blueprint(admin_bp)

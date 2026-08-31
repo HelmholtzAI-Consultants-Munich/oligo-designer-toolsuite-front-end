@@ -1,2 +1,2 @@
-/schemas/* linguist-generated
+/src/tests/fixtures/*.schema.json linguist-generated
 /backend/data/** linguist-vendored

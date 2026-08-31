@@ -1,7 +1,5 @@
 """Overwrites of the Pydantic Models from ODT are done here."""
 
-import json
-import os
 from typing import Annotated, Literal
 
 from oligo_designer_toolsuite.config._general_models import REQUIRED_PARAMETERS_DESC, General
@@ -187,14 +185,16 @@ PIPELINE_VALIDATION_MODELS: dict[str, type[BaseModel]] = {
 }
 
 
-if __name__ == "__main__":
-    # Written straight into the repo's `schemas/`, where the front-end imports them from,
-    # so running this module needs no follow-up move regardless of the working directory.
-    schemas_dir = os.path.join(os.path.dirname(__file__), "..", "..", "schemas")
+def build_pipeline_schema(name: str) -> dict:
+    """Generates the JSON Schema the front-end builds `name`'s form from.
 
-    for name, model in FRONT_END_SCHEMAS.items():
-        schema = strip_local_descriptions(model.model_json_schema(), globals(), __name__)
-        # every uploaded input holds a File in the form where ODT wants the path it is saved to
-        schema = accept_uploaded_files(schema, "file", "files_vcf_reference_database")
-        with open(os.path.join(schemas_dir, f"{name}.schema.json"), "w+") as f:
-            json.dump(schema, f)
+    Arguments:
+        name {str} -- the pipeline's key in `FRONT_END_SCHEMAS`
+
+    Returns:
+        {dict} -- the JSON Schema, without this module's developer-facing docstrings and with the
+        file inputs widened to accept the front-end's `File` objects
+    """
+    schema = strip_local_descriptions(FRONT_END_SCHEMAS[name].model_json_schema(), globals(), __name__)
+    # every uploaded input holds a File in the form where ODT wants the path it is saved to
+    return accept_uploaded_files(schema, "file", "files_vcf_reference_database")
