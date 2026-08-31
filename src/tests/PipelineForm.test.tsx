@@ -16,6 +16,10 @@ import { BACKEND_URL } from "../config";
 import { clearPipelineSchemaCache } from "../pipelineConfig/schemaApi";
 import oligoseqSchema from "./fixtures/oligoseq.schema.json";
 
+/** Answers every schema request with the fixture, as the backend would. */
+const mockSchemaResponse = () =>
+    vi.spyOn(axios, "get").mockResolvedValue({ data: oligoseqSchema });
+
 /** Mounts the form under a router, which `ErrorAlert`'s contact link needs. */
 const renderForm = () =>
     render(
@@ -32,9 +36,7 @@ beforeEach(() => {
 
 describe("PipelineForm", () => {
     it("fetches the pipeline's schema and renders the form once it arrives", async () => {
-        const get = vi
-            .spyOn(axios, "get")
-            .mockResolvedValue({ data: oligoseqSchema });
+        const get = mockSchemaResponse();
 
         renderForm();
 
@@ -46,15 +48,16 @@ describe("PipelineForm", () => {
                 screen.getByRole("tab", { name: /target probes/i })
             ).toBeInTheDocument()
         );
+        // the timeout is asserted here because without one a hung backend leaves the form on
+        // its spinner with no error and no way out
         expect(get).toHaveBeenCalledWith(
-            `${BACKEND_URL}/api/pipelines/oligoseq/schema`
+            `${BACKEND_URL}/api/pipelines/oligoseq/schema`,
+            expect.objectContaining({ timeout: expect.any(Number) })
         );
     });
 
     it("asks for a schema only once, however many forms want it", async () => {
-        const get = vi
-            .spyOn(axios, "get")
-            .mockResolvedValue({ data: oligoseqSchema });
+        const get = mockSchemaResponse();
 
         renderForm();
         renderForm();
@@ -62,11 +65,46 @@ describe("PipelineForm", () => {
         await waitFor(() => expect(get).toHaveBeenCalledTimes(1));
     });
 
+    it("tells an unreachable backend apart from one that answered with a reason", async () => {
+        // axios words this failure "Network Error", which is not advice a reader can act on
+        vi.spyOn(axios, "get").mockRejectedValue(
+            Object.assign(new Error("Network Error"), {
+                isAxiosError: true,
+                response: undefined,
+            })
+        );
+
+        renderForm();
+
+        await waitFor(() =>
+            expect(
+                screen.getByText(/check your connection/i)
+            ).toBeInTheDocument()
+        );
+        expect(screen.queryByText("Network Error")).not.toBeInTheDocument();
+    });
+
+    it("shows the backend's own explanation when it gave one", async () => {
+        vi.spyOn(axios, "get").mockRejectedValue(
+            Object.assign(new Error("Request failed with status code 404"), {
+                isAxiosError: true,
+                response: {
+                    data: { error: 'Pipeline "oligoseq" does not exist' },
+                },
+            })
+        );
+
+        renderForm();
+
+        await waitFor(() =>
+            expect(screen.getByText(/does not exist/i)).toBeInTheDocument()
+        );
+    });
+
     it("reports a schema that could not be fetched, and retries on the next mount", async () => {
-        const get = vi
-            .spyOn(axios, "get")
-            .mockRejectedValueOnce(new Error("offline"))
-            .mockResolvedValue({ data: oligoseqSchema });
+        const get = mockSchemaResponse().mockRejectedValueOnce(
+            new Error("offline")
+        );
 
         const { unmount } = renderForm();
 

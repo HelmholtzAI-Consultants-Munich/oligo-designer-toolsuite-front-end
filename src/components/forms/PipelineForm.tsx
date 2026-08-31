@@ -6,9 +6,9 @@ import type { Pipeline } from "../../pipelineConfig/config";
 import {
     fetchPipelineSchema,
     peekPipelineSchema,
+    schemaErrorMessage,
     type PipelineSchemas,
 } from "../../pipelineConfig/schemaApi";
-import { getErrorMessage } from "../../utils/errorUtil";
 import ErrorAlert from "../ui/ErrorAlert";
 import Page from "../ui/Page";
 import PipelineTemplate from "./PipelineTemplate";
@@ -52,10 +52,7 @@ const usePipelineSchema = (pipeline: Pipeline["name"]): SchemaState => {
                 if (!cancelled) {
                     setState({
                         status: "error",
-                        message: getErrorMessage(
-                            error,
-                            "The form could not be loaded. Please try again later."
-                        ),
+                        message: schemaErrorMessage(error),
                     });
                 }
             });
@@ -83,21 +80,27 @@ const usePipelineSchema = (pipeline: Pipeline["name"]): SchemaState => {
 const PipelineForm: React.FC<Props> = ({ pipeline, title }) => {
     const state = usePipelineSchema(pipeline);
 
-    if (state.status === "loading") {
+    if (state.status === "ready") {
         return (
-            <Page title={title}>
+            <PipelineTemplate
+                pipeline={pipeline}
+                title={title}
+                schema={state.schemas.schema}
+                uiSchema={state.schemas.uiSchema}
+            />
+        );
+    }
+
+    // one shell for both, so the header cannot shift as the page moves between them
+    return (
+        <Page title={title}>
+            {state.status === "loading" ? (
                 <div className="d-flex justify-content-center py-5">
                     <Spinner animation="border" role="status">
                         <span className="visually-hidden">Loading form…</span>
                     </Spinner>
                 </div>
-            </Page>
-        );
-    }
-
-    if (state.status === "error") {
-        return (
-            <Page title={title}>
+            ) : (
                 <ErrorAlert
                     variant="danger"
                     icon={ExclamationTriangleFill}
@@ -105,17 +108,8 @@ const PipelineForm: React.FC<Props> = ({ pipeline, title }) => {
                 >
                     <p className="mb-0">{state.message}</p>
                 </ErrorAlert>
-            </Page>
-        );
-    }
-
-    return (
-        <PipelineTemplate
-            pipeline={pipeline}
-            title={title}
-            schema={state.schemas.schema}
-            uiSchema={state.schemas.uiSchema}
-        />
+            )}
+        </Page>
     );
 };
 

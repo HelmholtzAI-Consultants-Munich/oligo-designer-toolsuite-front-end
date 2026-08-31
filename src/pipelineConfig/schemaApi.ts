@@ -5,6 +5,11 @@ import { BACKEND_URL } from "../config";
 import { uiSchemaFromJsonSchema } from "./uiSchemas";
 import type { Pipeline } from "./config";
 
+// Without a limit axios waits forever, leaving the form on its spinner for a backend that
+// accepts the connection but never answers. Generous: the backend serves this from memory, so
+// anything approaching it is a hung server rather than a slow one.
+const SCHEMA_REQUEST_TIMEOUT_MS = 15_000;
+
 export interface PipelineSchemas {
     schema: RJSFSchema;
     uiSchema: UiSchema;
@@ -21,7 +26,8 @@ const requestPipelineSchema = async (
     pipeline: Pipeline["name"]
 ): Promise<PipelineSchemas> => {
     const { data } = await axios.get<RJSFSchema>(
-        `${BACKEND_URL}/api/pipelines/${pipeline}/schema`
+        `${BACKEND_URL}/api/pipelines/${pipeline}/schema`,
+        { timeout: SCHEMA_REQUEST_TIMEOUT_MS }
     );
     const schemas = { schema: data, uiSchema: uiSchemaFromJsonSchema(data) };
     resolved.set(pipeline, schemas);
@@ -53,6 +59,21 @@ export const fetchPipelineSchema = (
     }
     return request;
 };
+
+/**
+ * Explains a failed schema fetch in the terms the reader needs.
+ *
+ * @remarks
+ * `getErrorMessage` prefers axios's own wording, which is "Network Error" whenever the backend
+ * cannot be reached at all -- the very case a reader needs telling what to do about.
+ *
+ * @param error - whatever `fetchPipelineSchema` rejected with
+ * @returns The backend's own explanation if it answered, and advice if it did not
+ */
+export const schemaErrorMessage = (error: unknown): string =>
+    (axios.isAxiosError<{ error?: string }>(error) &&
+        error.response?.data?.error) ||
+    "The form could not be loaded. Check your connection and try again.";
 
 /** Drops everything cached, so a test can start from a cold cache. */
 export const clearPipelineSchemaCache = () => {

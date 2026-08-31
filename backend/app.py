@@ -151,7 +151,12 @@ def create_app():
 
     # Register all blueprints from the routes package
     register_blueprints(app)
-    warm_pipeline_schemas()
+    try:
+        warm_pipeline_schemas()
+    except Exception:
+        # a schema that will not build is one broken form, not a reason to lose every endpoint;
+        # `_serialized_schema` tries again per request
+        app.logger.exception("Could not pre-build the pipeline schemas")
 
     # Register error handlers for centralized error handling
     register_error_handlers(app)

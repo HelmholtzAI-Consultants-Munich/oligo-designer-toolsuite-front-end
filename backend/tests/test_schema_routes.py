@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from glom import glom
 
+from backend.worker import models
 from backend.worker.models import FRONT_END_SCHEMAS, build_pipeline_schema
 
 SCHEMA_ROUTE = "/api/pipelines/{}/schema"
@@ -14,6 +15,11 @@ SCHEMA_ROUTE = "/api/pipelines/{}/schema"
 # oligoseq schema instead. The last test in this file compares the two, so it cannot fall behind
 # the models without failing.
 FIXTURE_PATH = Path(__file__).parents[2] / "src" / "tests" / "fixtures" / "oligoseq.schema.json"
+
+
+def get_schema(client, pipeline_name: str) -> dict:
+    """Returns the pipeline's schema as the front-end receives it."""
+    return client.get(SCHEMA_ROUTE.format(pipeline_name)).get_json()
 
 
 @pytest.mark.parametrize("pipeline_name", FRONT_END_SCHEMAS)
@@ -33,22 +39,33 @@ def test_schema_is_served_for_every_pipeline(client, pipeline_name):
 @pytest.mark.parametrize("pipeline_name", FRONT_END_SCHEMAS)
 def test_schema_leaves_out_the_fields_the_server_fills_in(client, pipeline_name):
     """`general` is set from `PIPELINE_NON_EXPOSED_FIELDS`, so the form must never offer it."""
-    schema = client.get(SCHEMA_ROUTE.format(pipeline_name)).get_json()
+    schema = get_schema(client, pipeline_name)
 
     assert "general" not in schema["properties"]
 
 
 @pytest.mark.parametrize("pipeline_name", FRONT_END_SCHEMAS)
 def test_schema_drops_the_docstrings_written_for_developers(client, pipeline_name):
-    """The front-end renders a description as a tooltip, so `models.py`'s own must be stripped."""
-    schema = client.get(SCHEMA_ROUTE.format(pipeline_name)).get_json()
+    """The front-end renders a description as a tooltip, so `models.py`'s own must be stripped.
+
+    Notes:
+        The models declared in `models.py` are checked as well as the root, since their docstrings
+        say why an ODT model is overridden and would otherwise reach users as help text.
+    """
+    schema = get_schema(client, pipeline_name)
+    local_models = {
+        name for name, model in vars(models).items() if getattr(model, "__module__", None) == models.__name__
+    }
 
     assert "description" not in schema
+    assert not [
+        name for name in schema["$defs"].keys() & local_models if "description" in schema["$defs"][name]
+    ]
 
 
 def test_schema_widens_the_fields_holding_an_uploaded_file(client):
     """A file input holds a `File` until submission, where the model wants the path it is saved to."""
-    schema = client.get(SCHEMA_ROUTE.format("oligoseq")).get_json()
+    schema = get_schema(client, "oligoseq")
 
     vcf_files = glom(schema, "$defs.OligoSeqVariantFilterEnabled.properties.files_vcf_reference_database")
 
