@@ -91,78 +91,95 @@ export type PipelineDefinition = {
 // Pipeline definitions (used by the smoke test)
 // ---------------------------------------------------------------------------
 
-/** Not included in {@link ALL_PIPELINES}; its full-run spec is untagged, so CI never runs it automatically. */
+// Tab labels are the schema's top-level sections, title-cased. `general` is not among them:
+// the backend keeps it out of the front-end schemas.
+
 export const SCRINSHOT_PIPELINE: PipelineDefinition = {
     route: "/pipelines/scrinshot",
     heading: /Scrinshot/i,
     pipeline: "scrinshot",
-    expectedTabs: [
-        /Target Probe Parameters/i,
-        /Detection Oligo Parameters/i,
-        /Developer Settings/i,
-    ],
-    representativeFieldChecks: [
-        { tab: /Target Probe Parameters/i, label: /File Regions/i },
-    ],
+    expectedTabs: [/Target Probes/i, /Detection Oligo/i],
+    representativeFieldChecks: [{ tab: /Target Probes/i, label: /Targets/i }],
 };
 
-/** The only pipeline currently included in {@link ALL_PIPELINES}. */
 export const OLIGOSEQ_PIPELINE: PipelineDefinition = {
     route: "/pipelines/oligoSeq",
     heading: /OligoSeq Probe Designer/i,
     pipeline: "oligoseq",
-    expectedTabs: [/Target Probe/i],
-    representativeFieldChecks: [{ tab: /Target Probe/i, label: /Region Ids/i }],
+    expectedTabs: [/Target Probes/i],
+    representativeFieldChecks: [{ tab: /Target Probes/i, label: /Targets/i }],
 };
 
-/** Not included in {@link ALL_PIPELINES}; its full-run spec is untagged, so CI never runs it automatically. */
 export const MERFISH_PIPELINE: PipelineDefinition = {
     route: "/pipelines/merfish",
     heading: /MERFISH/i,
     pipeline: "merfish",
-    expectedTabs: [
-        /Target Probe Parameters/i,
-        /Readout Probe Parameters/i,
-        /Primer Parameters/i,
-        /Developer Settings/i,
-    ],
+    expectedTabs: [/Target Probes/i, /Readout Probes/i, /Primers/i],
     representativeFieldChecks: [
-        { tab: /Target Probe Parameters/i, label: /File Regions/i },
+        { tab: /Target Probes/i, label: /Targets/i },
+        // a readout-probe quick setting, so it must not leak into the first tab
+        { tab: /Readout Probes/i, label: /N Bits/i },
     ],
 };
 
-/** Not included in {@link ALL_PIPELINES}; its full-run spec is untagged, so CI never runs it automatically. */
 export const SEQFISH_PIPELINE: PipelineDefinition = {
     route: "/pipelines/seqfish",
     heading: /seqFISH/i,
     pipeline: "seqfish",
-    expectedTabs: [
-        /Target Probe Parameters/i,
-        /Readout Probe Parameters/i,
-        /Primer Parameters/i,
-        /Developer Settings/i,
-    ],
+    expectedTabs: [/Target Probes/i, /Readout Probes/i, /Primers/i],
     representativeFieldChecks: [
-        { tab: /Target Probe Parameters/i, label: /File Regions/i },
+        { tab: /Target Probes/i, label: /Targets/i },
+        { tab: /Readout Probes/i, label: /N Barcode Rounds/i },
     ],
+};
+
+export const HCR_PIPELINE: PipelineDefinition = {
+    route: "/pipelines/hcr",
+    heading: /HCR Probe Designer/i,
+    pipeline: "hcr",
+    expectedTabs: [
+        /Target Probes/i,
+        /Initiator Probes/i,
+        /Hybridization Probes/i,
+    ],
+    representativeFieldChecks: [{ tab: /Target Probes/i, label: /Targets/i }],
+};
+
+export const CYCLEHCR_PIPELINE: PipelineDefinition = {
+    route: "/pipelines/cyclehcr",
+    heading: /Cycle HCR Probe Designer/i,
+    pipeline: "cyclehcr",
+    expectedTabs: [
+        /Target Probes/i,
+        /Readout Probes/i,
+        /Primers/i,
+        /Hybridization Probes/i,
+    ],
+    representativeFieldChecks: [{ tab: /Target Probes/i, label: /Targets/i }],
 };
 
 /**
  * Pipelines checked by the `@smoke` test's page-render sweep.
+ *
+ * @remarks
+ * All of them, now that every pipeline has an ODT pydantic model. The sweep only renders the
+ * pages and spot-checks a field per tab, so it stays cheap.
  */
-// pipelines disabled for now, since only oligoseq has pydantic
-// integration yet
-// TODO: reintegrate these pipelines
 export const ALL_PIPELINES: PipelineDefinition[] = [
-    // SCRINSHOT_PIPELINE,
+    SCRINSHOT_PIPELINE,
     OLIGOSEQ_PIPELINE,
-    // MERFISH_PIPELINE,
-    // SEQFISH_PIPELINE,
+    MERFISH_PIPELINE,
+    SEQFISH_PIPELINE,
+    HCR_PIPELINE,
+    CYCLEHCR_PIPELINE,
 ];
 
 // ---------------------------------------------------------------------------
 // UI helpers
 // ---------------------------------------------------------------------------
+
+/** Bound on the expand loop, in case a toggle ever fails to flip when clicked. */
+const MAX_COLLAPSED_SECTIONS = 100;
 
 /**
  * Opens every section of the visible tab, which starts with only the first one expanded, and
@@ -174,21 +191,27 @@ export const ALL_PIPELINES: PipelineDefinition[] = [
  * so expanding them one by one would re-collapse whatever an earlier step opened.
  */
 export const expandSections = async (page: Page) => {
-    // no button on the pipelines whose uiSchema is hand-written, as those have no sections
-    for (const button of await page
+    // scoped to the tab on screen: a toggle in another pane is `display: none` forever, so
+    // clicking it just burns the timeout. Inside this pane the hidden block still needs the
+    // visibility check below.
+    const activeTab = page.locator(".tab-pane.active");
+
+    for (const button of await activeTab
         .getByRole("button", { name: "Expand all" })
         .all()) {
         if (await button.isVisible()) {
             await button.click();
         }
     }
-    // clicking one drops it out of the set, so take the first until none are left. No
-    // visibility guard here: the click has to wait out the section's opening animation,
-    // where a guard would instead skip the toggle for being hidden mid-flight.
-    const collapsed = page.locator(
-        '[aria-controls^="collapsible-section"][aria-expanded="false"]'
+    // recounted each pass: opening a section reveals the collapsed groups nested inside it
+    const collapsed = activeTab.locator(
+        '[aria-controls^="collapsible-section"][aria-expanded="false"]:visible'
     );
-    for (let remaining = await collapsed.count(); remaining > 0; remaining--) {
+    for (
+        let guard = 0;
+        guard < MAX_COLLAPSED_SECTIONS && (await collapsed.count()) > 0;
+        guard++
+    ) {
         await collapsed.first().click();
     }
 };
@@ -451,19 +474,21 @@ const setGenomicInput = async (
         .click();
 };
 
-/** Opens the probe-database and reference-database genomic-region dialogs, in addition to the visible fields. */
-export const fillTargetProbeParameters = async (
+/**
+ * Fills the inputs a run cannot start without, plus the VCF upload where a pipeline has one.
+ *
+ * @remarks
+ * Every pipeline shares these three, and `reference_genome` now covers the readout-probe and
+ * primer specificity filters that used to take a fasta file each.
+ */
+export const fillRequiredParameters = async (
     page: Page,
     options: {
-        fileRegions: string;
-        fastaTargetFiles: string[];
-        fastaReferenceFiles: string[];
+        targets: string;
         fastaVcfFiles?: string[];
     }
 ) => {
-    await page
-        .getByRole("textbox", { name: /Region Ids/i })
-        .fill(options.fileRegions);
+    await page.getByRole("textbox", { name: /Targets/i }).fill(options.targets);
 
     const genomicInput = {
         taxon: "Archaea",
@@ -475,41 +500,14 @@ export const fillTargetProbeParameters = async (
         },
     };
 
-    await setGenomicInput(page, "files_fasta_probe_database", genomicInput);
-
-    await setGenomicInput(page, "files_fasta_reference_database", genomicInput);
+    await setGenomicInput(page, "target_genome", genomicInput);
+    await setGenomicInput(page, "reference_genome", genomicInput);
 
     if (options.fastaVcfFiles) {
         await page
             .locator("input[name=files_vcf_reference_database]")
             .setInputFiles(options.fastaVcfFiles);
     }
-};
-
-export const fillReadoutProbeParameters = async (
-    page: Page,
-    options: {
-        fastaReferenceFiles: string[];
-    }
-) => {
-    await clickTab(page, /Readout Probe Parameters/i);
-    await page
-        .getByRole("button", {
-            name: /Files Fasta Reference Database Readout Probe/i,
-        })
-        .setInputFiles(options.fastaReferenceFiles);
-};
-
-export const fillPrimerParameters = async (
-    page: Page,
-    options: {
-        fastaReferenceFiles: string[];
-    }
-) => {
-    await clickTab(page, /Primer Parameters/i);
-    await page
-        .getByRole("button", { name: /Files Fasta Reference Database Primer/i })
-        .setInputFiles(options.fastaReferenceFiles);
 };
 
 export const fillConfig = async (
@@ -538,9 +536,8 @@ export const fillConfig = async (
             .fill(options.primerInitialNumSequences);
     }
     if (options.setSizeMin || options.setSizeOpt) {
-        // Unlike the other config fields, set size lives under the Target
-        // Probe tab rather than Developer Settings.
-        await clickTab(page, /Target Probe/i);
+        // set size is a target-probe quick setting, so it is only on that tab's panel
+        await clickTab(page, /Target Probes/i);
         if (options.setSizeMin) {
             await page.getByLabel(/Set Size Min/i).fill(options.setSizeMin);
         }

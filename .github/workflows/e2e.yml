@@ -41,7 +41,6 @@ jobs:
               - 'backend/**'
               - 'src/**'
               - 'public/**'
-              - 'schemas/**'
               - 'tests/**'
               - 'playwright/**'
               - 'playwright.config.ts'

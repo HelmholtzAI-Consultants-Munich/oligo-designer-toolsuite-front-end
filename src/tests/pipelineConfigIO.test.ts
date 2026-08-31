@@ -15,9 +15,11 @@ import {
     buildExportPayload,
     importAndValidate,
 } from "../components/forms/pipelineConfigIO";
-import { PIPELINE_CONFIG } from "../pipelineConfig/config";
+import oligoseqSchema from "./fixtures/oligoseq.schema.json";
 
-const testSchema = PIPELINE_CONFIG["oligoseq"].schema;
+// A copy of what the backend generates for oligoseq. The round trip is tested against the real
+// schema, and `test_schema_routes.py` fails if this copy falls behind it.
+const testSchema = oligoseqSchema as RJSFSchema;
 
 // ---- buildExportPayload ----
 //
@@ -89,7 +91,7 @@ describe("importAndValidate", () => {
             exportedAt: "2026-06-02T11:28:27.523Z",
         },
         config: {
-            target_probe: {
+            target_probes: {
                 oligo_generation: {
                     file_region_ids: "GFB69_RS14600",
                     files_fasta_probe_database: [
@@ -381,14 +383,15 @@ describe("importAndValidate", () => {
 
         if (result.ok) {
             expect(
-                result.config.target_probe.global_parameters.Tm_parameters.dnac1
+                result.config.target_probes.global_parameters.Tm_parameters
+                    .dnac1
             ).toBe(25);
             expect(
-                result.config.target_probe.property_filters.GC_content_filter
+                result.config.target_probes.property_filters.GC_content_filter
                     .GC_content_min
             ).toBe(45);
             expect(
-                result.config.target_probe.oligo_generation.probe_length_min
+                result.config.target_probes.oligo_generation.probe_length_min
             ).toBe(26);
         }
     });
@@ -483,7 +486,7 @@ describe("importAndValidate", () => {
             {
                 ...validPayload,
                 config: {
-                    target_probe: {
+                    target_probes: {
                         oligo_generation: {
                             probe_split_region: "not-a-number",
                         },
@@ -498,7 +501,7 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             config: {
-                target_probe: {
+                target_probes: {
                     oligo_generation: { probe_split_region: 2 },
                 },
             },
@@ -507,7 +510,7 @@ describe("importAndValidate", () => {
         expect(result.ok).toBe(true);
         if (result.ok)
             expect(
-                result.config.target_probe.oligo_generation.probe_split_region
+                result.config.target_probes.oligo_generation.probe_split_region
             ).toBe(2);
     });
 
@@ -522,7 +525,7 @@ describe("importAndValidate", () => {
         const payload = {
             ...validPayload,
             config: {
-                target_probe: {
+                target_probes: {
                     property_filters: {
                         GC_content_filter: { enabled: false },
                     },
@@ -533,7 +536,7 @@ describe("importAndValidate", () => {
         expect(result.ok).toBe(true);
         if (result.ok)
             expect(
-                result.config.target_probe.property_filters.GC_content_filter
+                result.config.target_probes.property_filters.GC_content_filter
                     .enabled
             ).toBe(false);
     });

@@ -32,7 +32,6 @@ jobs:
             backend:
               - 'backend/**'
               - 'tests/**'
-              - 'schemas/**'
               - 'docker/**'
               - '.env.sample'
               - 'compose.yml'
@@ -41,7 +40,6 @@ jobs:
             frontend:
               - 'src/**'
               - 'public/**'
-              - 'schemas/**'
               - 'package.json'
               - 'package-lock.json'
               - 'vite.config.ts'

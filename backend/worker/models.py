@@ -1,68 +1,27 @@
 """Overwrites of the Pydantic Models from ODT are done here."""
 
-import json
 from typing import Annotated, Literal
 
-from oligo_designer_toolsuite.config._general_models import BlastnHitParameters
-from oligo_designer_toolsuite.config._general_models import (
-    BlastnSearchParameters as BlastnSearchParametersBase,
+from oligo_designer_toolsuite.config._general_models import REQUIRED_PARAMETERS_DESC, General
+from oligo_designer_toolsuite.config.pipelines.cycle_hcr_probe_designer import (
+    CycleHcrProbeDesignerConfigBase,
 )
-from oligo_designer_toolsuite.config._specificity_filters import (
-    CrossHybridizationBlastnFilterDisabled,
-)
-from oligo_designer_toolsuite.config._specificity_filters import (
-    CrossHybridizationBlastnFilterEnabled as CrossHybridizationBlastnFilterEnabledBase,
-)
-from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
-    OligoSeqSpecificityBlastnFilterDisabled,
-    OligoSeqVariantFilterDisabled,
-)
-from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
-    OligoSeqSpecificityBlastnFilterEnabled as OligoSeqSpecificityBlastnFilterEnabledBase,
-)
-from oligo_designer_toolsuite.config.overrides.oligo_seq_probe_designer_overrides import (
-    OligoSeqVariantFilterEnabled as OligoSeqVariantFilterEnabledBase,
+from oligo_designer_toolsuite.config.pipelines.hcr_probe_designer import HcrProbeDesignerConfigBase
+from oligo_designer_toolsuite.config.pipelines.merfish_probe_designer import (
+    MerfishProbeDesignerConfigBase,
 )
 from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    OligoSeqProbeDesignerConfig as OligoSeqProbeDesignerConfigBase,
+    OligoSeqProbeDesignerConfigBase,
 )
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    TargetProbe as TargetProbeBase,
+from oligo_designer_toolsuite.config.pipelines.scrinshot_probe_designer import (
+    ScrinshotProbeDesignerConfigBase,
 )
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    TargetProbeOligoGeneration as TargetProbeOligoGenerationBase,
+from oligo_designer_toolsuite.config.pipelines.seqfish_plus_probe_designer import (
+    SeqfishPlusProbeDesignerConfigBase,
 )
-from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
-    TargetProbeSpecificityFilter as TargetProbeSpecificityFilterBase,
-)
-from pydantic import AliasChoices, BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
-from backend.worker.utils import mark_schema_flags, strip_local_descriptions
-
-# Fields the front-end renders specially:
-#   "x-quick-setting" -- on a scalar field, pinning it to the Quick Settings panel above the
-#                        form's tabs and rendering it only there, not in its own section
-#   "x-collapsed"     -- on a field holding a model, whose section then starts collapsed
-#
-# Whoever writes the model declares the flag on the field itself, where it sits next to what
-# it describes:
-#     n_sets: int = Field(default=3, json_schema_extra={"x-quick-setting": True})
-#     search_parameters: BlastnSearchParameters = Field(json_schema_extra={"x-collapsed": True})
-#
-# The table below is only for fields ODT owns, which we cannot annotate that way: flagging one
-# means redeclaring it in a subclass here, and a Pydantic v2 redeclaration replaces that
-# field's whole FieldInfo, so `n_sets` would lose the default, description and constraints ODT
-# gave it unless each were copied over by hand. Stamping the generated schema leaves them be.
-FRONT_END_FLAGS: dict[str, dict[str, tuple[str, ...]]] = {
-    "x-quick-setting": {
-        "TargetProbeOligoGeneration": ("probe_length_min", "probe_length_max"),
-        "IndependentSetSelection": ("n_sets", "set_size_min", "set_size_opt"),
-    },
-    "x-collapsed": {
-        "CrossHybridizationBlastnFilterEnabled": ("search_parameters",),
-        "OligoSeqSpecificityBlastnFilterEnabled": ("search_parameters",),
-    },
-}
+from backend.worker.utils import accept_uploaded_files, strip_local_descriptions
 
 ### Genomic Region Generator Models ###
 
@@ -153,145 +112,89 @@ class GenomicRegionGeneratorEnsembl(GenomicRegionGeneratorBase):
 GenomicInput = list[GenomicRegionGeneratorNcbi | GenomicRegionGeneratorEnsembl]
 
 
-class TargetProbeOligoGeneration(TargetProbeOligoGenerationBase):
-    """Overwrites the default TargetProbeOligoGenerationBase to inject our custom field for
-    `file_region_ids`, because we expect a gene list and not a file path."""
+class RequiredParameters(BaseModel):
+    """Overwrites ODT's `RequiredParameters` to use `GenomicInput` for the genome fields
+    instead of the default file path type."""
 
-    file_region_ids: Annotated[
+    model_config = ConfigDict(extra="forbid")
+
+    targets: Annotated[
         str | None,
         Field(
             description="Comma separated list of genes used to generate the probe sequences. You can also upload a .txt file with one gene per line instead.",
         ),
-    ]  # undefined by default, has to be set by user
-    files_fasta_probe_database: GenomicInput = Field(min_length=1)  # type: ignore
-
-
-class OligoSeqVariantFilterEnabled(OligoSeqVariantFilterEnabledBase):
-    """Overwrite the default OligoSeqVariantFilterEnabledBase Model to change the expected type of
-    `files_vcf_reference_database` to accept a dict instead of a file path."""
-
-    # NOTE: this is a small trick. A dict gets converted to type
-    # `object` when building the JSON Schema from the pydantic model.
-    files_vcf_reference_database: list[dict | str] = Field(min_length=1)  # type: ignore
-
-
-# This Model overwrites OligoSeqVariantFilterConfig to use our version of OligoSeqVariantFilterEnabled
-# instead of the default one
-OligoSeqVariantFilterConfig = Annotated[
-    OligoSeqVariantFilterEnabled | OligoSeqVariantFilterDisabled, Field(discriminator="enabled")
-]
-
-
-class BlastnSearchParameters(BlastnSearchParametersBase):
-    """Overwrites the default `BlastnSearchParametersBase` to set the type of the overwritten
-    parameters to bool | None to ensure they are displayed nicely.
-    """
-
-    lcase_masking: bool | None = Field(  # type: ignore
-        default=None,
-        validation_alias=AliasChoices("-lcase_masking", "lcase_masking"),
-        serialization_alias="-lcase_masking",
-        description="Use lower case filtering in query and subject sequence(s).",
-    )
-    no_greedy: bool | None = Field(  # type: ignore
-        default=None,
-        validation_alias=AliasChoices("-no_greedy", "no_greedy"),
-        serialization_alias="-no_greedy",
-        description="Use non-greedy dynamic programming extension.",
-    )
-    subject_besthit: bool | None = Field(  # type: ignore
-        default=None,
-        validation_alias=AliasChoices("-subject_besthit", "subject_besthit"),
-        serialization_alias="-subject_besthit",
-        description="Turn on best hit per subject sequence.",
-    )
-    ungapped: bool | None = Field(  # type: ignore
-        default=None,
-        validation_alias=AliasChoices("-ungapped", "ungapped"),
-        serialization_alias="-ungapped",
-        description="Perform ungapped alignment only?",
-    )
-
-
-class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnabledBase):
-    """Overwrites `CrossHybridizationBlastnFilterEnabledBase` to insert our `BlastnSearchParameters`."""
-
-    search_parameters: Annotated[  # type: ignore
-        BlastnSearchParameters,
-        Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
     ]
+    target_genome: GenomicInput = Field(
+        min_length=1, description="FASTA file(s) from which the target oligo sequences are generated."
+    )  # type: ignore
+    reference_genome: GenomicInput = Field(
+        min_length=1,
+        description="FASTA file(s) used as reference for all specificity filters (e.g. with BLAST).",
+    )  # type: ignore
 
 
-# Overwrites CrossHybridizationBlastnFilterConfig to insert our own CrossHybridizationBlastnFilterEnabled
-CrossHybridizationBlastnFilterConfig = Annotated[
-    CrossHybridizationBlastnFilterEnabled | CrossHybridizationBlastnFilterDisabled,
-    Field(discriminator="enabled"),
-]
+class OligoSeqProbeDesignerConfigFrontEnd(OligoSeqProbeDesignerConfigBase):
+    """Overrides ODT's Oligo-Seq pipeline model to inject our custom genomic region generator
+    models."""
+
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
 
 
-class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnabledBase):
-    """Overwrites `OligoSeqSpecificityBlastnFilterEnabledBase` to use our own `BlastnSearchParameters` and
-    our `GenomicInput` instead of the default file path type.
+### Front-end Models for the remaining pipelines ###
+
+# Each ODT `...ConfigBase` leaves out `general` and `required_parameters`, so these only add the
+# genome inputs back in our own type. None of them has a variant filter taking a VCF file.
+
+
+class ScrinshotProbeDesignerConfigFrontEnd(ScrinshotProbeDesignerConfigBase):
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
+
+
+class MerfishProbeDesignerConfigFrontEnd(MerfishProbeDesignerConfigBase):
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
+
+
+class SeqfishPlusProbeDesignerConfigFrontEnd(SeqfishPlusProbeDesignerConfigBase):
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
+
+
+class HcrProbeDesignerConfigFrontEnd(HcrProbeDesignerConfigBase):
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
+
+
+class CycleHcrProbeDesignerConfigFrontEnd(CycleHcrProbeDesignerConfigBase):
+    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
+
+
+# The schema each pipeline's form is built from. Every `x-` flag is declared on the ODT field
+# itself, so nothing is stamped on afterwards.
+FRONT_END_SCHEMAS: dict[str, type[BaseModel]] = {
+    "oligoseq": OligoSeqProbeDesignerConfigFrontEnd,
+    "scrinshot": ScrinshotProbeDesignerConfigFrontEnd,
+    "merfish": MerfishProbeDesignerConfigFrontEnd,
+    "seqfish": SeqfishPlusProbeDesignerConfigFrontEnd,
+    "hcr": HcrProbeDesignerConfigFrontEnd,
+    "cyclehcr": CycleHcrProbeDesignerConfigFrontEnd,
+}
+
+# Every ODT `...ConfigBase` leaves `general` out, so the form never offers it. It is filled in
+# before a submission is validated (see `add_non_exposed_fields`), hence required here.
+PIPELINE_VALIDATION_MODELS: dict[str, type[BaseModel]] = {
+    name: create_model(f"{model.__name__}Validated", __base__=model, general=(General, ...))
+    for name, model in FRONT_END_SCHEMAS.items()
+}
+
+
+def build_pipeline_schema(name: str) -> dict:
+    """Generates the JSON Schema the front-end builds `name`'s form from.
+
+    Arguments:
+        name {str} -- the pipeline's key in `FRONT_END_SCHEMAS`
+
+    Returns:
+        {dict} -- the JSON Schema, without this module's developer-facing docstrings and with the
+        file inputs widened to accept the front-end's `File` objects
     """
-
-    search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
-        perc_identity=80, strand="minus", word_size=10
-    )
-    files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
-
-
-# Overwrites OligoSpecificityBlastnFilterConfig to insert our own OligoSeqSpecificityBlastnFilterEnabled
-OligoSpecificityBlastnFilterConfig = Annotated[
-    OligoSeqSpecificityBlastnFilterEnabled | OligoSeqSpecificityBlastnFilterDisabled,
-    Field(discriminator="enabled"),
-]
-
-
-class TargetProbeSpecificityFilter(TargetProbeSpecificityFilterBase):
-    """Overwrites `TargetProbeSpecificityFilterBase` to insert our own Models for all parameters."""
-
-    cross_hybridization_blastn_filter: CrossHybridizationBlastnFilterConfig = (  # type: ignore
-        CrossHybridizationBlastnFilterEnabled(
-            enabled=True,
-            search_parameters=BlastnSearchParameters(perc_identity=80, strand="minus", word_size=10),
-            hit_parameters=BlastnHitParameters(coverage=50),
-        )
-    )
-    specificity_blastn_filter: OligoSpecificityBlastnFilterConfig  # type: ignore
-    variant_filter: OligoSeqVariantFilterConfig  # type: ignore
-
-
-class TargetProbe(TargetProbeBase):
-    """Overwrites `TargetProbeBase` to insert our own Models for all parameters."""
-
-    oligo_generation: TargetProbeOligoGeneration  # type: ignore
-    specificity_filters: TargetProbeSpecificityFilter  # type: ignore
-
-
-class OligoSeqProbeDesignerConfig(OligoSeqProbeDesignerConfigBase):
-    """
-    This Model overrides the default ODT Model of the Oligo-Seq pipeline, so
-    we can inject our custom genomic region generator models
-    """
-
-    target_probe: TargetProbe  # type: ignore
-
-
-class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
-    """
-    This Model overrides the default ODT Model of the Oligo-Seq pipeline, so
-    we can inject our custom genomic region generator models.
-
-    Adding to that it removes attributes like
-    the general section of the OligoDesignerConfig, so these option do not get exposed to the user.
-    """
-
-    schema_version: Literal[2] = 2
-    target_probe: TargetProbe
-
-
-if __name__ == "__main__":
-    schema = OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()
-    schema = strip_local_descriptions(schema, globals(), __name__)
-    with open("oligoseq.schema.json", "w+") as f:
-        json.dump(mark_schema_flags(schema, FRONT_END_FLAGS), f)
+    schema = strip_local_descriptions(FRONT_END_SCHEMAS[name].model_json_schema(), globals(), __name__)
+    # every uploaded input holds a File in the form where ODT wants the path it is saved to
+    return accept_uploaded_files(schema, "file", "files_vcf_reference_database")

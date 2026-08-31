@@ -1,13 +1,11 @@
-// Scrinshot isn't in ALL_PIPELINES yet (pydantic integration pending). This
-// spec has no @smoke/@full tag, so CI's tag-filtered runs skip it too —
-// it only runs via a manual, untagged `playwright test`.
+// Runs a full pipeline, so it carries no @smoke/@full tag and CI skips it; run it
+// manually with an untagged `playwright test`.
 
 import { test } from "@playwright/test";
 import {
-    FASTA_FIXTURES,
     SCRINSHOT_PIPELINE,
     fillConfig,
-    fillTargetProbeParameters,
+    fillRequiredParameters,
     openPipeline,
     submitAndVerifyRun,
 } from "./helpers";
@@ -15,10 +13,8 @@ import {
 test("scrinshot run completes and exposes artifacts", async ({ page }) => {
     await openPipeline(page, SCRINSHOT_PIPELINE);
 
-    await fillTargetProbeParameters(page, {
-        fileRegions: "AARS1",
-        fastaTargetFiles: [FASTA_FIXTURES.utr],
-        fastaReferenceFiles: [FASTA_FIXTURES.utr],
+    await fillRequiredParameters(page, {
+        targets: "AARS1",
     });
 
     await fillConfig(page, {

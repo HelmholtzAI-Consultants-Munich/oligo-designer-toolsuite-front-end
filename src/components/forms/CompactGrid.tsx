@@ -1,6 +1,6 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo } from "react";
-import { isQuickSetting, spansFullRow } from "./utils";
+import { isHiddenField, quickSettingGroup, spansFullRow } from "./utils";
 
 type CompactGridProps = Pick<
     ObjectFieldTemplateProps,
@@ -33,9 +33,11 @@ const CompactGrid = memo(function CompactGrid({
                 const fieldSchema = schema.properties?.[name];
                 const fieldUiSchema = uiSchema?.[name];
                 // a quick setting still renders here - that is what creates its portal - but
-                // without a grid cell, which would otherwise be left empty
+                // without a grid cell, which would otherwise be left empty. A hidden field
+                // (e.g. a discriminator's own const) has nothing to show at all.
                 return spansFullRow(fieldSchema, fieldUiSchema) ||
-                    isQuickSetting(fieldSchema, fieldUiSchema) ? (
+                    quickSettingGroup(fieldSchema, fieldUiSchema) ||
+                    isHiddenField(fieldUiSchema) ? (
                     <Fragment key={name}>{content}</Fragment>
                 ) : (
                     <div key={name} className="compact-field-item">

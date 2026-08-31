@@ -7,32 +7,6 @@ def build_fallback_error_message(runner_type: str):
     return f"The {runner_type} failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
 
 
-def mark_schema_flags(schema: dict, flags: dict[str, dict[str, tuple[str, ...]]]) -> dict:
-    """Sets the front-end's `x-` flags on the fields listed for them.
-
-    The flags only tell the front-end how to render a field, so they are stamped onto the
-    generated schema rather than declared on the models. Most of the fields they mark are ODT's,
-    and Pydantic cannot annotate an inherited field without redeclaring it, which would drop the
-    default, description and constraints ODT set on it.
-
-    Arguments:
-        schema {dict} -- the generated JSON Schema, modified in place
-        flags {dict[str, dict[str, tuple[str, ...]]]} -- field names per model per flag
-
-    Returns:
-        {dict} -- the same schema, with the flags set
-
-    Raises:
-        KeyError: if a model or field is named that the schema does not define
-    """
-    for flag, models in flags.items():
-        for model, fields in models.items():
-            properties = schema["$defs"][model]["properties"]
-            for field in fields:
-                properties[field][flag] = True
-    return schema
-
-
 def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) -> dict:
     """Drops the descriptions Pydantic derives from the caller module's own class docstrings.
 
@@ -58,4 +32,49 @@ def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) ->
     for name in schema.get("$defs", {}).keys() & local:
         schema["$defs"][name].pop("description", None)
     schema.pop("description", None)
+    return schema
+
+
+def accept_uploaded_files(schema: dict, *fields: str) -> dict:
+    """Widens fields naming a file so the front-end's `File` object validates against them.
+
+    A file input holds the picked `File` in the form data until submission, where it is swapped
+    for the name the backend saved it under. The model types these fields as the path they end
+    up being, which a `File` is not, so the schema the form validates against has to accept an
+    object as well.
+
+    Arguments:
+        schema {dict} -- the generated JSON Schema, modified in place
+        *fields {str} -- names of the properties to widen, at any depth
+
+    Returns:
+        {dict} -- the same schema, with those properties accepting an object too
+    """
+
+    def as_path_or_file(schema: dict) -> dict:
+        return {
+            "anyOf": [{"type": "string"}, {"type": "object"}],
+            **{k: v for k, v in schema.items() if k != "type"},
+        }
+
+    def widen(node: object) -> None:
+        if isinstance(node, list):
+            for item in node:
+                widen(item)
+            return
+        if not isinstance(node, dict):
+            return
+        for field in fields:
+            prop = node.get("properties", {}).get(field)
+            if not isinstance(prop, dict):
+                continue
+            if prop.get("type") == "string":
+                node["properties"][field] = as_path_or_file(prop)
+            # a field taking several files holds the paths in a list
+            elif prop.get("type") == "array" and prop.get("items", {}).get("type") == "string":
+                prop["items"] = as_path_or_file(prop["items"])
+        for value in node.values():
+            widen(value)
+
+    widen(schema)
     return schema

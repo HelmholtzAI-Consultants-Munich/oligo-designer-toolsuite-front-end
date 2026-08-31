@@ -4,7 +4,8 @@ import { createPortal } from "react-dom";
 import { useQuickSettingsContainer } from "../../hooks/useQuickSettings";
 import {
     filterUninformativeErrors,
-    isQuickSetting,
+    isHiddenField,
+    quickSettingGroup,
     spansFullRow,
 } from "./utils";
 
@@ -23,7 +24,6 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         rawErrors,
         hideError,
         help,
-        hidden,
         schema,
         uiSchema,
         registry,
@@ -35,16 +35,14 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         schemaUtils,
     } = registry;
 
-    const quickSettingsContainer = useQuickSettingsContainer();
-
-    if (hidden) {
-        return <div className="hidden">{children}</div>;
-    }
+    const group = quickSettingGroup(schema, uiSchema);
+    const quickSettingsContainer = useQuickSettingsContainer(
+        group ?? "general"
+    );
 
     // a quick setting keeps its place in the React tree, so its value, id and validation are
-    // untouched, and only its markup moves into the panel above the tabs
-    const quickSettingTarget =
-        isQuickSetting(schema, uiSchema) && quickSettingsContainer;
+    // untouched, and only its markup moves into its tab's panel
+    const quickSettingTarget = group && quickSettingsContainer;
 
     // conditions copied from rjsf core's SchemaField.tsx
     const isXxxOfField = schema[ANY_OF_KEY] || schema[ONE_OF_KEY];
@@ -53,15 +51,21 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
         !hideError &&
         !(isXxxOfField && !schemaUtils.isSelect(schema));
 
+    // `<input type="hidden">` renders no visible content, but the wrapper below is still a
+    // real grid item unless told otherwise, leaving an empty cell (e.g. a discriminator's own
+    // const field, next to the one field its choice actually leaves editable).
+    const hidden = isHiddenField(uiSchema);
+
     const field = (
         <div
             style={{
-                gridColumn:
-                    !quickSettingTarget && spansFullRow(schema, uiSchema)
-                        ? "1 / -1"
-                        : undefined,
+                // A quick setting normally occupies one panel column, but a composite field
+                // (a genome picker, a gene list) needs the whole row wherever it is drawn.
+                gridColumn: spansFullRow(schema, uiSchema)
+                    ? "1 / -1"
+                    : undefined,
             }}
-            className={`rjsf-field rjsf-field-${schema.type}`}
+            className={`rjsf-field rjsf-field-${schema.type}${hidden ? " d-none" : ""}`}
         >
             {children}
             {showErrors && (

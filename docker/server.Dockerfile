@@ -28,6 +28,19 @@ RUN --mount=source=backend/pyproject.toml,target=pyproject.toml \
     --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
     pip install --group test
 
+# --- Optionally install oligo-designer-toolsuite from source instead of PyPI ---
+# Set ODT_REF to a branch, tag or commit SHA to try out an unreleased ODT version.
+# git is only pulled in when the override is used, and setuptools_scm needs the
+# repository history to derive a version, so this installs from a clone, not a tarball.
+ARG ODT_REF=
+RUN --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
+    --mount=type=cache,target=/home/$MAMBA_USER/.cache/pip,uid=$MAMBA_USER_ID \
+    if [ -n "$ODT_REF" ]; then \
+    micromamba install -y -n base -c conda-forge git && \
+    pip install \
+    "oligo-designer-toolsuite @ git+https://github.com/HelmholtzAI-Consultants-Munich/oligo-designer-toolsuite@${ODT_REF}"; \
+    fi
+
 # --- Copy Flask server ---
 WORKDIR /app
 COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend

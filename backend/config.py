@@ -96,6 +96,12 @@ class Config:
     REDIS_FILE_EXPIRATION_TIME = int(
         os.environ.get("REDIS_FILE_EXPIRATION_TIME", 3600 * 24 * 30)
     )  # in seconds (default: 30 days)
+    # How long a cache region may hold its generation lock. Without it the lock never expires,
+    # so a worker killed mid-generation (e.g. by the OOM killer) wedges that key for good and
+    # every later run asking for it blocks. Set above the longest pipeline run, since a
+    # generation outliving its lock is only repeated, never corrupted: each call writes to its
+    # own path and the cache replaces the entry.
+    REDIS_CACHE_LOCK_TIMEOUT = int(os.environ.get("REDIS_CACHE_LOCK_TIMEOUT", 3600 * 2))
     REDIS_QUEUE_LENGTH_KEY = "pipelines:queue_lengths"
     REDIS_QUEUE_ACCOUNTING_LOCK_KEY = "pipelines:queue_accounting_lock"
     REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT = int(os.environ.get("REDIS_QUEUE_ACCOUNTING_LOCK_TIMEOUT", 30))

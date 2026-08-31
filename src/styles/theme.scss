@@ -34,6 +34,8 @@ $table-cell-padding-x-sm: 0.5rem;
 $card-spacer-x: 1.5rem;
 $card-spacer-y: 1.5rem;
 $input-btn-padding-y-sm: 0.5rem;
+// Bootstrap's default is body text at 75% opacity, too dark to read as a hint
+$input-placeholder-color: #00000066; // 40% opacity black
 
 // hairline borders for form surfaces, so nested boxes read as grouping rather than chrome
 $form-border-color: tint-color($border-color, 55%);
@@ -545,15 +547,44 @@ form.rjsf {
         border-radius: $border-radius-sm;
         padding: $form-box-padding;
         margin-bottom: 0.5rem;
+        /* the same fill an optional filter's card carries, so a plain group and a toggled
+        one sitting side by side read as the same kind of thing */
+        background-color: var(--#{$prefix}primary-bg-subtle);
+
+        &:has(.compact-grid:empty) {
+            /* every field here portaled into quick settings, so there's nothing left to show */
+            display: none;
+        }
     }
 
-    .card-body .field-group-box {
-        /* nested inside an enabled-toggle card: a divider, not a second box */
+    .card.multi-schema-card {
+        /* wider spacing than the plain `.card` rule below, which it would otherwise inherit */
+        margin-bottom: 1rem;
+        background-color: var(--#{$prefix}primary-bg-subtle);
+    }
+
+    .card-body .field-group-box,
+    .card-body .multi-schema-card {
+        /* nested inside an enabled-toggle card: a divider, not a second box. indented and
+        with a lighter heading, so the card's own name reads as the parent of these */
         border: none;
         border-top: 1px solid $form-border-color;
         border-radius: 0;
-        padding: 0.5rem 0 0;
+        padding: 0.5rem 0 0 0.75rem;
         margin-bottom: 0;
+        /* already inside a filled card, so no fill of its own */
+        background-color: transparent;
+
+        .group-heading > .super-label {
+            font-weight: 500;
+            color: $text-muted;
+        }
+    }
+
+    .card-body .multi-schema-card > .card-body {
+        /* a union nested here is a sibling of a plain group, so it drops the card's padding
+        and lines its heading up with theirs */
+        padding: 0;
     }
 
     .field-row {
@@ -657,12 +688,13 @@ form.rjsf {
 
     .quick-settings {
         /* the parameters the backend flagged as quick settings, lifted out of their sections
-        and pinned above the tabs */
+        and pinned to the top of their own tab */
         @include form-surface;
         padding: $form-box-padding;
 
-        &:has(> .quick-settings-fields:empty) {
-            /* nothing was flagged, so there is no panel to show */
+        &:not(:has(> .quick-settings-fields:not(:empty))) {
+            /* nothing portaled in. Every tab renders both panels, so this is what keeps the
+            required one off all but the first */
             display: none;
         }
 
@@ -696,6 +728,12 @@ form.rjsf {
         margin-bottom: 0.35rem;
     }
 
+    .single-file {
+        /* the name can be long, so it truncates rather than pushing the clear button away */
+        min-width: 0;
+        font-size: $font-size-sm;
+    }
+
     .super-label {
         display: inline-block;
         font-weight: 600;
@@ -703,9 +741,17 @@ form.rjsf {
         color: $primary;
     }
 
+    .multi-schema-selector {
+        /* the chosen option's fields follow, spaced like they are from each other: their own
+        margin plus the grid's row gap */
+        margin-bottom: 1rem;
+    }
+
     .multi-schema-toggle {
-        /* hide the dropdown for selecting between schemas when the discriminator is "enabled" */
-        .multi-schema-selector {
+        /* hide the dropdown for selecting between schemas when the discriminator is "enabled".
+        Direct child only: a descendant match would also hide the selectors of any union
+        nested inside this one, e.g. a filter's own hit parameters. */
+        > .multi-schema-selector {
             display: none;
 
             + .rjsf-field
@@ -753,6 +799,11 @@ form.rjsf {
         /* one accordion item per section, spaced apart as its own rounded card
         instead of Bootstrap's single stacked group */
         @include form-surface;
+
+        &:has(.compact-grid:empty) {
+            /* every field here portaled into quick settings, so there's nothing left to show */
+            display: none;
+        }
 
         .accordion-button {
             border-radius: $border-radius;

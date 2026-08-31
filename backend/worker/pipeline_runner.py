@@ -1,6 +1,5 @@
 """Defines PipelineRunner and bundles all functionality regarding running and handling a pipeline run."""
 
-import json
 import os
 import tempfile
 from logging import Logger
@@ -32,22 +31,14 @@ class PipelineRunner:
     """
 
     def __init__(self, pipeline_name: str, logger: Logger):
-        """Initializes the Pipeline Runner, by setting the logger, pipeline name and loading the JSON Schema.
+        """Initializes the Pipeline Runner, by setting the logger and the pipeline name.
 
         Arguments:
             pipeline_name {str} -- The name of the pipeline to be run.
             logger {Logger} -- The logger that should be used by the Pipeline Runner.
         """
         self.logger = logger
-
-        # TODO: pass root_dir config to worker, use config for absolute path
-        #   here and in genomic_region_generator_runner.py
-        schema_path = os.path.join(os.path.dirname(__file__), f"../../schemas/{pipeline_name}.schema.json")
-        with open(schema_path) as f:
-            schema = json.load(f)
-
         self.pipeline_name = pipeline_name  # e.g., 'merfish'
-        self.schema = schema  # JSON schema
 
     def run(
         self, form_data: dict[str, Any], output_path: str, generated_region_paths: list[tuple[str, list[str]]]
@@ -86,15 +77,15 @@ class PipelineRunner:
         Arguments:
             form_data {dict} -- The pipeline configuration.
         """
-        oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
-        file_region_ids = oligo_generation_form["file_region_ids"]
+        required_parameters = glom(form_data, "required_parameters")
+        file_region_ids = required_parameters["targets"]
         if file_region_ids is not None:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt") as temp_file:
                 file_path = temp_file.name
                 # Write each gene on a new line
                 temp_file.writelines(gene.strip() + "\n" for gene in file_region_ids.split(","))
             # Update the path in form_data to point to the temp file
-            oligo_generation_form["file_region_ids"] = file_path
+            required_parameters["targets"] = file_path
 
     def populate_form_data_path_fields(
         self, config: dict, generated_region_paths: list[tuple[str, list[str]]]
@@ -222,9 +213,9 @@ class PipelineRunner:
             output_path {str} -- The path where all output of the pipeline should be written.
         """
         # find files_fasta_target_probe_database fasta file and read it
-        regions_file = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+        regions_file = glom(form_data, "required_parameters.targets")
 
-        fasta_paths = glom(form_data, "target_probe.oligo_generation.files_fasta_probe_database")
+        fasta_paths = glom(form_data, "required_parameters.target_genome")
         if not fasta_paths:
             self.logger.debug("No fasta files provided, skipping visualization generation.")
             return
@@ -260,19 +251,23 @@ class PipelineRunner:
             form_data {dict} -- The pipeline configuration.
             config_path {str} -- The configuration filepath.
         """
-        oligo_generation_form = glom(form_data, "target_probe.oligo_generation")
+        required_parameters = glom(form_data, "required_parameters")
         # Remove temp file for file_regions if it was created
-        if oligo_generation_form["file_region_ids"]:
-            temp_path = oligo_generation_form["file_region_ids"].strip()
+        if required_parameters["targets"]:
+            temp_path = required_parameters["targets"].strip()
             if os.path.exists(temp_path):
                 os.remove(temp_path)
                 self.logger.debug(f"Deleted temp file_region_ids: {temp_path}")
             else:
                 self.logger.debug(f"Temp files cleanup skipped, file_region_ids path not found: {temp_path}")
         for path in PIPELINE_FILE_INPUT.get(self.pipeline_name, []):
-            files_list = glom(form_data, path)
+            # Absent when the branch owning it was not chosen; a single name for the codebooks
+            # and probe tables, a list for the rest.
+            files_list = glom(form_data, path, default=None)
             if not files_list:
                 continue
+            if isinstance(files_list, str):
+                files_list = [files_list]
             for fname in files_list:
                 # Delete user-uploaded files, but not generated regions so they can be cached
 

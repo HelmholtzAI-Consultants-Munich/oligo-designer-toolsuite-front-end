@@ -1,7 +1,7 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, memo, useMemo, useState, type ComponentProps } from "react";
 import { Accordion, Button } from "react-bootstrap";
-import { sectionKey } from "./utils";
+import { isEmptySection, sectionKey } from "./utils";
 
 /**
  * Layout for a single tab: an accordion of its sections, each rendered by a SectionLayout.
@@ -14,11 +14,17 @@ import { sectionKey } from "./utils";
  */
 const TabLayout = memo(function TabLayout(props: ObjectFieldTemplateProps) {
     const sectionKeys = useMemo(
+        // sections with nothing left to show (every field pinned to Quick Settings) are
+        // excluded here so they're never picked as the one auto-opened below
         () =>
-            props.properties.map((element) =>
-                sectionKey(props.fieldPathId.$id, element.name)
-            ),
-        [props.fieldPathId.$id, props.properties]
+            props.properties
+                .filter(
+                    (element) => !isEmptySection(props.uiSchema?.[element.name])
+                )
+                .map((element) =>
+                    sectionKey(props.fieldPathId.$id, element.name)
+                ),
+        [props.fieldPathId.$id, props.properties, props.uiSchema]
     );
     // only the first section starts open, so a tab opens as a short list of sections
     const [openSections, setOpenSections] = useState(sectionKeys.slice(0, 1));

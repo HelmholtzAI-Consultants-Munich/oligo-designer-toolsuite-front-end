@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from bson import ObjectId
 from celery import chord
@@ -40,20 +40,21 @@ from backend.utilities.typed_values import (
 )
 from backend.utilities.validation import validate_genomic_form_data
 from backend.utils import utc_now
-from backend.worker.models import OligoSeqProbeDesignerConfig
+from backend.worker.models import PIPELINE_VALIDATION_MODELS
 from backend.worker.task_index import Callbacks, Tasks
 
 # Blueprint for Merfish endpoints
 pipelines_bp = Blueprint("pipelines", __name__)
 
-# Pipelines other than oligoseq are disabled at the moment, since they do not have
-# a pydantic integration
+# Pipelines are enabled once ODT exposes a pydantic model for them.
 EXISTING_PIPELINES = frozenset(
     {
-        # "scrinshot",
-        # "seqfish",
-        # "merfish",
         "oligoseq",
+        "scrinshot",
+        "merfish",
+        "seqfish",
+        "hcr",
+        "cyclehcr",
     }
 )
 
@@ -171,7 +172,7 @@ def update_run_with_context(
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
-    genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+    genes_string = glom(form_data, "required_parameters.targets")
     if genes_string is None:
         abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
     genes = genes_string.split(",")
@@ -271,28 +272,38 @@ def save_file(
 
 
 def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMultiDict[str, FileStorage]):
-    file_inputs: dict[str, list[Path]] = {}
+    file_inputs: dict[str, list[Path] | Path] = {}
     # Because duplicated File Objects only get uploaded once via the browser we need to map the Filestorage object
     # to the corresponding path to avoid reading an empty stream
     saved_files: dict[FileStorage, Path] = {}
 
     for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
-        for file_name in glom(form_data, path):
+        # A path is absent whenever the branch owning it was not chosen, e.g. a codebook set
+        # to "generate" has no `file`.
+        file_names = glom(form_data, path, default=None)
+        if not file_names:
+            continue
+
+        # A single name is stored as given, so it is written back the same way.
+        if isinstance(file_names, str):
+            file_path = save_file(file_names, files, saved_files)
+            if file_path is not None:
+                file_inputs[path] = file_path
+            continue
+
+        for file_name in file_names:
             file_path = save_file(file_name, files, saved_files)
             if file_path is not None:
                 if file_inputs.get(path) is None:
                     file_inputs[path] = []
-                file_inputs[path].append(file_path)
+                cast(list[Path], file_inputs[path]).append(file_path)
     return file_inputs
 
 
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
-
-    match pipeline_name:
-        case "oligoseq":
-            pipeline_model = OligoSeqProbeDesignerConfig
-        case _:
-            abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
+    pipeline_model = PIPELINE_VALIDATION_MODELS.get(pipeline_name)
+    if pipeline_model is None:
+        abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")
 
     try:
         pipeline_model.model_validate(form_data)
@@ -401,11 +412,12 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.FORBIDDEN, description="We couldn't verify that you are human. Please try again.")
 
     form_data = form.get("formdata")  # Form data from React
-    run_name = form.get("run_name")  # only used for UI display
-    sanitized_run_name = sanitize_input(run_name)
 
     if not isinstance(form_data, dict):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: formdata must be an object")
+
+    run_name = form.get("run_name", "")  # only used for UI display
+    sanitized_run_name = sanitize_input(run_name)
 
     add_non_exposed_fields(form_data, pipeline_name)
 
@@ -422,7 +434,11 @@ def start_pipeline(pipeline_name: str):
         abort(HTTPStatus.BAD_REQUEST, description="Invalid input: genomic input files are misformatted")
 
     for field_path, file_paths in file_inputs.items():
-        assign(form_data, field_path, [str(file_path) for file_path in file_paths])
+        assign(
+            form_data,
+            field_path,
+            str(file_paths) if isinstance(file_paths, Path) else [str(file_path) for file_path in file_paths],
+        )
 
     # User Directory and Session / User ID Logic
     context = create_context(pipeline_name)

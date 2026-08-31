@@ -3,6 +3,7 @@ import { memo } from "react";
 import { Accordion } from "react-bootstrap";
 import CompactGrid from "./CompactGrid";
 import { spaceBeforeCapitalLetters } from "./utils";
+import { ToolTip } from "../ui/Tooltip";
 
 /**
  * Layout for a section within a tab, rendered as one item of the tab's accordion.
@@ -22,13 +23,15 @@ const SectionLayout = memo(function SectionLayout(
             className="form-section"
         >
             <Accordion.Header>
-                <span>
+                {/* the header is itself a button, so the tip cannot be one; its hidden text
+                    lands in this button's accessible name, which is where it belongs anyway */}
+                <span className="d-inline-flex align-items-center">
                     {spaceBeforeCapitalLetters(props.title)}
-                    {props.description && (
-                        <small className="d-block fw-normal text-muted">
-                            {props.description}
-                        </small>
-                    )}
+                    <ToolTip
+                        id={props.fieldPathId.$id}
+                        tip={props.description?.toString()}
+                        presentational
+                    />
                 </span>
             </Accordion.Header>
             <Accordion.Body>

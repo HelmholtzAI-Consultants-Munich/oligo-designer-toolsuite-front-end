@@ -33,7 +33,6 @@ jobs:
             frontend:
               - 'src/**'
               - 'public/**'
-              - 'schemas/**'
               - 'package.json'
               - 'package-lock.json'
               - 'vite.config.ts'

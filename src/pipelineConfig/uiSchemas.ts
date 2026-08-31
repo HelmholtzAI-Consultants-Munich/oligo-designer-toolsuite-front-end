@@ -5,11 +5,28 @@ import SectionLayout from "../components/forms/SectionLayout";
 import CollapsibleSectionLayout from "../components/forms/CollapsibleSectionLayout";
 import EnabledToggleObjectTemplate from "../components/forms/EnabledToggleObjectTemplate";
 import CompactFieldGroupTemplate from "../components/forms/CompactFieldGroupTemplate";
+import BareGroupTemplate from "../components/forms/BareGroupTemplate";
 import { findSchemaDefinition, mergeObjects } from "@rjsf/utils";
 import {
     hasSchemaFlag,
     isEnabledDiscriminated,
+    snakeCaseToTitleCase,
 } from "../components/forms/utils";
+
+/** Resolves a `$ref` against the full schema, returning the node unchanged if it has none. */
+const resolveSchema = (
+    schema: RJSFSchema,
+    baseSchema: RJSFSchema
+): RJSFSchema => {
+    if (!schema.$ref) {
+        return schema;
+    }
+    try {
+        return findSchemaDefinition(schema.$ref, baseSchema);
+    } catch {
+        return schema;
+    }
+};
 
 /**
  * Determines whether a field's schema is a "scalar" (not an object or array), following
@@ -20,14 +37,7 @@ const isScalarSchema = (
     schema: RJSFSchema,
     baseSchema: RJSFSchema
 ): boolean => {
-    let resolved = schema;
-    if (resolved.$ref) {
-        try {
-            resolved = findSchemaDefinition(resolved.$ref, baseSchema);
-        } catch {
-            return true;
-        }
-    }
+    const resolved = resolveSchema(schema, baseSchema);
     if (resolved.type === "object" || resolved.type === "array") {
         return false;
     }
@@ -98,6 +108,49 @@ const uiSchemaFromJsonSchemaRecursive = (
         if (isEnabledDiscriminated(localSchema)) {
             uiSchema["ui:ObjectFieldTemplate"] = EnabledToggleObjectTemplate;
             uiSchema["ui:title"] = localSchema.title;
+        } else {
+            // A union standing where a section goes is still a section: it takes the tab's
+            // accordion like its plain-object siblings do, rather than a card of its own.
+            if (level === 2) {
+                uiSchema["ui:options"] = {
+                    ...(uiSchema["ui:options"] as object),
+                    sectionLevel: true,
+                };
+            }
+            // Any other discriminator (e.g. `source: "generate" | "load"`) is a `const` on
+            // each option, redundant with RJSF's own schema-picker dropdown and, unlike
+            // "enabled", not something the user can meaningfully edit.
+            const discriminatorProperty = (
+                localSchema.discriminator as
+                    | { propertyName?: string }
+                    | undefined
+            )?.propertyName;
+            if (discriminatorProperty) {
+                uiSchema[discriminatorProperty] = { "ui:widget": "hidden" };
+
+                // Name each option by the value it selects, so the dropdown reads
+                // "Generate"/"Load" instead of repeating the model's class name, which the
+                // field's own title already says. The option body then needs no heading.
+                const optionsKey = localSchema.oneOf ? "oneOf" : "anyOf";
+                const merged = uiSchema;
+                uiSchema[optionsKey] = (localSchema[optionsKey] ?? []).map(
+                    (option) => {
+                        const value = resolveSchema(
+                            option as RJSFSchema,
+                            baseSchema
+                        ).properties?.[discriminatorProperty] as
+                            | RJSFSchema
+                            | undefined;
+                        return {
+                            ...merged,
+                            "ui:ObjectFieldTemplate": BareGroupTemplate,
+                            ...(typeof value?.const === "string" && {
+                                "ui:title": snakeCaseToTitleCase(value.const),
+                            }),
+                        };
+                    }
+                );
+            }
         }
     }
     if (localSchema.properties) {
@@ -128,26 +181,68 @@ const uiSchemaFromJsonSchemaRecursive = (
             uiSchema["ui:ObjectFieldTemplate"] = CompactFieldGroupTemplate;
         }
 
+        // Widgets are picked by field name: nothing in the schema separates `target_genome`
+        // from `channels_ids`, both string arrays.
+        // TODO: use an `x-widget` flag on the ODT model, like `x-quick-setting`. Names are
+        // fragile -- the rename to `target_genome` silently dropped both genome pickers.
         for (const field of fields) {
             const propertySchema = localSchema.properties[field] as RJSFSchema;
-            if (field === "file_region_ids") {
-                // file_region_ids (any level) -> txtUploadInput
+            if (field === "file_region_ids" || field === "targets") {
+                // file_region_ids / targets (any level) -> txtUploadInput
                 uiSchema[field] = {
                     "ui:field": "txtUploadInput",
                     "ui:fieldReplacesAnyOrOneOf": true,
                 };
-            } else if (field.startsWith("files_fasta_")) {
-                // files_fasta_* (any level) -> genomicInput
+            } else if (
+                field.startsWith("files_fasta_") ||
+                field === "target_genome" ||
+                field === "reference_genome"
+            ) {
+                // files_fasta_* / target_genome / reference_genome -> genomicInput
                 uiSchema[field] = { "ui:field": "genomicInput" };
             } else if (field.startsWith("files_vcf_")) {
                 // files_vcf_* (any level) -> fileUpload
                 uiSchema[field] = { "ui:field": "fileUpload" };
+            } else if (field === "file") {
+                // `file` names the single file a "load" branch reads (a codebook, an
+                // initiator or readout probe table) -> singleFileInput. The field is widened
+                // to accept the picked `File` (see `accept_uploaded_files`), and the input
+                // stands in for that union rather than letting RJSF offer it as a choice.
+                uiSchema[field] = {
+                    "ui:field": "singleFileInput",
+                    "ui:fieldReplacesAnyOrOneOf": true,
+                };
             } else {
                 const fieldUiSchema = uiSchemaFromJsonSchemaRecursive(
                     baseSchema,
                     propertySchema,
                     level + 1
                 );
+                // ODT groups the user-supplied inputs here without flagging them. Pinning the
+                // section, not its fields, survives a rename inside the model.
+                if (field === "required_parameters") {
+                    for (const name of Object.keys(
+                        resolveSchema(propertySchema, baseSchema).properties ??
+                            {}
+                    )) {
+                        fieldUiSchema[name] = {
+                            ...fieldUiSchema[name],
+                            "ui:options": {
+                                ...fieldUiSchema[name]?.["ui:options"],
+                                quickSetting: "required",
+                            },
+                        };
+                    }
+                }
+                // A `$ref` titles the section after the model, so two fields sharing one -- a
+                // forward and a reverse primer -- read identically. The field name is unique
+                // within its object, and does not repeat the tab's own name.
+                if (
+                    propertySchema.$ref &&
+                    resolveSchema(propertySchema, baseSchema).properties
+                ) {
+                    fieldUiSchema["ui:title"] = snakeCaseToTitleCase(field);
+                }
                 // The backend's `x-` flags are read here, not in the recursive call, because
                 // they sit as siblings of `$ref`, which that call resolves away. Any field
                 // carrying one is treated the same, whichever pipeline or model set it.
@@ -156,11 +251,53 @@ const uiSchemaFromJsonSchemaRecursive = (
                     fieldUiSchema["ui:ObjectFieldTemplate"] =
                         CollapsibleSectionLayout;
                 }
+                // A description beside a `$ref` or union describes the field, but the call
+                // above resolves the pointer and never sees it. Carry it over.
+                if (
+                    propertySchema.description &&
+                    (propertySchema.$ref ||
+                        propertySchema.oneOf ||
+                        propertySchema.anyOf)
+                ) {
+                    fieldUiSchema["ui:description"] =
+                        propertySchema.description;
+                }
+                // A `const` states which branch this is, not something to fill in, and a model
+                // with only one branch has no selector to hide it as. Left alone it renders as
+                // an input showing a value that cannot be changed. `enabled` is the exception:
+                // its toggle template draws it as the section's own checkbox.
+                if (
+                    field !== "enabled" &&
+                    resolveSchema(propertySchema, baseSchema).const !==
+                        undefined
+                ) {
+                    fieldUiSchema["ui:widget"] = "hidden";
+                }
                 if (hasSchemaFlag(propertySchema, "x-quick-setting")) {
                     // pinned to the Quick Settings panel above the tabs, not its own section
                     fieldUiSchema["ui:options"] = {
                         ...fieldUiSchema["ui:options"],
                         quickSetting: true,
+                    };
+                }
+                // If every field this section owns just got pinned above, its own body has
+                // nothing left to show. TabLayout uses this to skip it as the default-open
+                // section; CSS (`:has(.compact-grid:empty)`) hides the section itself.
+                const childProperties = resolveSchema(
+                    propertySchema,
+                    baseSchema
+                ).properties;
+                const childNames = Object.keys(childProperties ?? {});
+                if (
+                    childNames.length > 0 &&
+                    childNames.every(
+                        (name) =>
+                            fieldUiSchema[name]?.["ui:options"]?.quickSetting
+                    )
+                ) {
+                    fieldUiSchema["ui:options"] = {
+                        ...fieldUiSchema["ui:options"],
+                        allFieldsPortaled: true,
                     };
                 }
                 uiSchema[field] = fieldUiSchema;
@@ -169,289 +306,4 @@ const uiSchemaFromJsonSchemaRecursive = (
     }
 
     return uiSchema;
-};
-
-export const merfishUiSchema: UiSchema = {
-    "ui:ObjectFieldTemplate": TabsLayout,
-    "ui:tabs": [
-        {
-            title: "Target Probe Parameters",
-            fields: [
-                "file_regions",
-                "files_fasta_target_probe_database",
-                "files_fasta_reference_database_target_probe",
-                "top_n_sets",
-                "target_probe_length_min",
-                "target_probe_length_max",
-                "target_probe_isoform_consensus",
-                [
-                    "target_probe_GC_content_min",
-                    "target_probe_GC_content_opt",
-                    "target_probe_GC_content_max",
-                ],
-                [
-                    "target_probe_Tm_min",
-                    "target_probe_Tm_opt",
-                    "target_probe_Tm_max",
-                ],
-                "target_probe_homopolymeric_base_n",
-                "target_probe_T_secondary_structure",
-                "target_probe_secondary_structures_threshold_deltaG",
-                "target_probe_GC_weight",
-                "target_probe_Tm_weight",
-                "target_probe_isoform_weight",
-                [
-                    "set_size_min",
-                    "set_size_opt",
-                    "distance_between_target_probes",
-                    "n_sets",
-                ],
-            ],
-        },
-        {
-            title: "Readout Probe Parameters",
-            fields: [
-                "files_fasta_reference_database_readout_probe",
-                "readout_probe_length",
-                "readout_probe_base_probabilities",
-                [
-                    "readout_probe_GC_content_min",
-                    "readout_probe_GC_content_max",
-                ],
-                "readout_probe_homopolymeric_base_n",
-                "readout_probe_set_size",
-                "readout_probe_homogeneous_properties_weights",
-                [
-                    "n_bits",
-                    "min_hamming_dist",
-                    "hamming_weight",
-                    "channels_ids",
-                ],
-            ],
-        },
-        {
-            title: "Primer Parameters",
-            fields: [
-                [
-                    "files_fasta_reference_database_primer",
-                    "reverse_primer_sequence",
-                ],
-                "primer_length",
-                "primer_base_probabilities",
-                ["primer_GC_content_min", "primer_GC_content_max"],
-                [
-                    "primer_number_GC_GCclamp",
-                    "primer_number_three_prime_base_GCclamp",
-                ],
-                "primer_homopolymeric_base_n",
-                [
-                    "primer_max_len_selfcomplement",
-                    "primer_max_len_complement_reverse_primer",
-                    "primer_Tm_min",
-                    "primer_Tm_max",
-                ],
-                [
-                    "primer_T_secondary_structure",
-                    "primer_secondary_structures_threshold_deltaG",
-                ],
-            ],
-        },
-        {
-            title: "Developer Settings",
-            fields: [
-                "target_probe_specificity_blastn_search_parameters",
-                "target_probe_specificity_blastn_hit_parameters",
-                "max_graph_size",
-                "n_attempts",
-                "heuristic",
-                "heuristic_n_attempts",
-                "target_probe_Tm_parameters",
-                "target_probe_Tm_chem_correction_parameters",
-                "target_probe_Tm_salt_correction_parameters",
-            ],
-        },
-    ],
-};
-
-export const scrinshotUiSchema: UiSchema = {
-    "ui:ObjectFieldTemplate": TabsLayout,
-    "ui:tabs": [
-        {
-            title: "Target Probe Parameters",
-            fields: [
-                "file_regions",
-                "files_fasta_target_probe_database",
-                "files_fasta_reference_database_target_probe",
-                "top_n_sets",
-                [
-                    "target_probe_length_min",
-                    "target_probe_length_max",
-                    "target_probe_isoform_consensus",
-                ],
-                [
-                    "target_probe_GC_content_min",
-                    "target_probe_GC_content_opt",
-                    "target_probe_GC_content_max",
-                ],
-                [
-                    "target_probe_Tm_min",
-                    "target_probe_Tm_opt",
-                    "target_probe_Tm_max",
-                ],
-                "target_probe_homopolymeric_base_n",
-                "target_probe_padlock_arm_Tm_dif_max",
-                [
-                    "target_probe_padlock_arm_length_min",
-                    "target_probe_padlock_arm_Tm_min",
-                    "target_probe_padlock_arm_Tm_max",
-                ],
-                "target_probe_ligation_region_size",
-                "target_probe_isoform_weight",
-                "target_probe_GC_weight",
-                "target_probe_Tm_weight",
-                [
-                    "set_size_min",
-                    "set_size_opt",
-                    "distance_between_target_probes",
-                    "n_sets",
-                ],
-            ],
-        },
-        {
-            title: "Detection Oligo Parameters",
-            fields: [
-                [
-                    "detection_oligo_min_thymines",
-                    "detection_oligo_length_min",
-                    "detection_oligo_length_max",
-                ],
-                "detection_oligo_U_distance",
-                "detection_oligo_Tm_opt",
-            ],
-        },
-        {
-            title: "Developer Settings",
-            fields: [
-                //not sorted
-                "max_graph_size",
-                "n_attempts",
-                "heuristic",
-                "heuristic_n_attempts",
-                "target_probe_specificity_blastn_search_parameters",
-                "target_probe_specificity_blastn_hit_parameters",
-                "target_probe_cross_hybridization_blastn_search_parameters",
-                "target_probe_cross_hybridization_blastn_hit_parameters",
-                "target_probe_Tm_parameters",
-                "target_probe_Tm_chem_correction_parameters",
-                "target_probe_Tm_salt_correction_parameters",
-                "detection_oligo_Tm_parameters",
-                "detection_oligo_Tm_chem_correction_parameters",
-                "detection_oligo_Tm_salt_correction_parameters",
-            ],
-        },
-    ],
-};
-
-export const seqfishUiSchema: UiSchema = {
-    "ui:ObjectFieldTemplate": TabsLayout,
-    "ui:tabs": [
-        {
-            title: "Target Probe Parameters",
-            fields: [
-                "file_regions",
-                "files_fasta_target_probe_database",
-                "files_fasta_reference_database_target_probe",
-                "top_n_sets",
-                [
-                    "target_probe_length_min",
-                    "target_probe_length_max",
-                    "target_probe_isoform_consensus",
-                ],
-                [
-                    "target_probe_GC_content_min",
-                    "target_probe_GC_content_opt",
-                    "target_probe_GC_content_max",
-                ],
-                "target_probe_homopolymeric_base_n",
-
-                "target_probe_GC_weight",
-                [
-                    "set_size_min",
-                    "set_size_opt",
-                    "distance_between_target_probes",
-                    "n_sets",
-                ],
-            ],
-        },
-        {
-            title: "Readout Probe Parameters",
-            fields: [
-                "files_fasta_reference_database_readout_probe",
-                "readout_probe_length",
-                "readout_probe_base_probabilities",
-                [
-                    "readout_probe_GC_content_min",
-                    "readout_probe_GC_content_max",
-                ],
-                "readout_probe_homopolymeric_base_n",
-                "n_barcode_rounds",
-                "n_pseudocolors",
-                "channels_ids",
-            ],
-        },
-        {
-            title: "Primer Parameters",
-            fields: [
-                "files_fasta_reference_database_primer",
-                ["reverse_primer_sequence", "primer_length"],
-                "primer_base_probabilities",
-                ["primer_GC_content_min", "primer_GC_content_max"],
-                [
-                    "primer_number_GC_GCclamp",
-                    "primer_number_three_prime_base_GCclamp",
-                ],
-                "primer_homopolymeric_base_n",
-                [
-                    "primer_max_len_selfcomplement",
-                    "primer_max_len_complement_reverse_primer",
-                    "primer_Tm_min",
-                    "primer_Tm_max",
-                ],
-                [
-                    "primer_T_secondary_structure",
-                    "primer_secondary_structures_threshold_deltaG",
-                ],
-            ],
-        },
-        {
-            title: "Developer Settings",
-            fields: [
-                // not yet sorted by tabs
-                "max_graph_size",
-                "n_attempts",
-                "heuristic",
-                "heuristic_n_attempts",
-                "target_probe_T_secondary_structure",
-                "target_probe_secondary_structures_threshold_deltaG",
-                "target_probe_UTR_weight",
-                "target_probe_specificity_blastn_search_parameters",
-                "target_probe_specificity_blastn_hit_parameters",
-                "target_probe_cross_hybridization_blastn_search_parameters",
-                "target_probe_cross_hybridization_blastn_hit_parameters",
-                "readout_probe_initial_num_sequences",
-                "readout_probe_specificity_blastn_search_parameters",
-                "readout_probe_specificity_blastn_hit_parameters",
-                "readout_probe_cross_hybridization_blastn_search_parameters",
-                "readout_probe_cross_hybridization_blastn_hit_parameters",
-                "primer_initial_num_sequences",
-                "primer_specificity_refrence_blastn_search_parameters",
-                "primer_specificity_refrence_blastn_hit_parameters",
-                "primer_specificity_encoding_probes_blastn_search_parameters",
-                "primer_specificity_encoding_probes_blastn_hit_parameters",
-                "primer_Tm_parameters",
-                "primer_Tm_chem_correction_parameters",
-                "primer_Tm_salt_correction_parameters",
-            ],
-        },
-    ],
 };

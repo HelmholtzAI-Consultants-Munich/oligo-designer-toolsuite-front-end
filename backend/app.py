@@ -15,6 +15,7 @@ from backend.extensions import celery_app, db, limiter, oauth
 from backend.routes import register_blueprints
 from backend.routes.auth import init_login_manager
 from backend.routes.error_handlers import register_error_handlers
+from backend.routes.schemas import warm_pipeline_schemas
 from backend.utilities.objectid_converter import ObjectIdConverter
 from backend.utilities.session_activity import ANONYMOUS_SESSIONS_COLLECTION
 from backend.worker.task_index import Tasks
@@ -150,6 +151,12 @@ def create_app():
 
     # Register all blueprints from the routes package
     register_blueprints(app)
+    try:
+        warm_pipeline_schemas()
+    except Exception:
+        # a schema that will not build is one broken form, not a reason to lose every endpoint;
+        # `_serialized_schema` tries again per request
+        app.logger.exception("Could not pre-build the pipeline schemas")
 
     # Register error handlers for centralized error handling
     register_error_handlers(app)

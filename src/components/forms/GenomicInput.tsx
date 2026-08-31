@@ -30,7 +30,10 @@ const ConfigurableGenomicInput = ({
     name,
     schema,
     uiSchema,
-    formData,
+    // RJSF omits a nested default when an ancestor object is supplied
+    // (`nestedDefaultsPrecedence: "ancestorWins"`), so an imported config naming this field's
+    // parent but not the field itself arrives here as undefined.
+    formData = [],
     onChange,
     onBlur,
     formsAllowed,

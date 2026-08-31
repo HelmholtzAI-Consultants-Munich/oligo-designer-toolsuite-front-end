@@ -1,4 +1,5 @@
 import { getUiOptions, type RJSFSchema, type UiSchema } from "@rjsf/utils";
+import type { QuickSettingsGroup } from "../../hooks/useQuickSettings";
 
 export const snakeCaseToTitleCase = (str: string): string =>
     str
@@ -9,14 +10,40 @@ export const snakeCaseToTitleCase = (str: string): string =>
 export const spaceBeforeCapitalLetters = (str: string): string =>
     str.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-const EXCLUDED_TABS = new Set(["schema_version"]);
+// These hold only pinned quick settings, so they get no tab and no pane of their own.
+// `TabsLayout` mounts them inside the first tab so their fields still portal into its panels.
+const EXCLUDED_TABS = new Set(["schema_version", "required_parameters"]);
+
+export const isHiddenTab = (tab: string) => EXCLUDED_TABS.has(tab);
+
+/** The `required_parameters` description, which heads a panel rather than a section of its own. */
+export const requiredParametersDescription = (
+    schema: RJSFSchema
+): string | undefined => {
+    const required = schema.properties?.["required_parameters"];
+    return required && typeof required !== "boolean"
+        ? required.description
+        : undefined;
+};
 
 export const excludeHiddenTabs = (tabs: string[]) =>
-    tabs.filter((tab) => !EXCLUDED_TABS.has(tab));
+    tabs.filter((tab) => !isHiddenTab(tab));
 
 /** A section's accordion key, matching the `fieldPathId.$id` RJSF gives that section. */
 export const sectionKey = (tabId: string, name: string): string =>
     `${tabId}_${name}`;
+
+/** Whether every field a section owns already portals into Quick Settings, leaving it empty. */
+export const isEmptySection = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).allFieldsPortaled === true;
+
+/** Whether a union stands where a section does, and so takes the tab's accordion. */
+export const isSectionLevel = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).sectionLevel === true;
+
+/** Whether a field renders as `<input type="hidden">`, e.g. a discriminator's own const value. */
+export const isHiddenField = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).widget === "hidden";
 
 /** Narrows away the `true`/`false` form a property schema can take, which carries no keywords. */
 const asSchema = (
@@ -73,8 +100,8 @@ export const spansFullRow = (
 };
 
 /**
- * Whether the backend flagged a field as a quick setting, pinning it to the panel above the
- * tabs instead of leaving it in its own section.
+ * Which group of the Quick Settings panel a field belongs to, or null to leave it in its own
+ * section. "required" is the ruled-off group holding the inputs a run cannot start without.
  *
  * @remarks
  * `uiSchemaFromJsonSchema` copies the backend's `x-quick-setting` into `ui:options`; the schema
@@ -82,14 +109,20 @@ export const spansFullRow = (
  *
  * @param schema - the field's JSON Schema, unresolved `$ref`s included
  * @param uiSchema - the field's UiSchema
- * @returns A boolean that is True if the field belongs in the Quick Settings panel
+ * @returns The field's group, or null if it is not a quick setting
  */
-export const isQuickSetting = (
+export const quickSettingGroup = (
     schema: RJSFSchema | boolean | undefined,
     uiSchema: UiSchema | undefined
-): boolean =>
-    getUiOptions(uiSchema).quickSetting === true ||
-    hasSchemaFlag(schema, "x-quick-setting");
+): QuickSettingsGroup | null => {
+    const option = getUiOptions(uiSchema).quickSetting;
+    if (option === "required") {
+        return "required";
+    }
+    return option === true || hasSchemaFlag(schema, "x-quick-setting")
+        ? "general"
+        : null;
+};
 
 /**
  * Checks if an error message should be removed from the output. These errors are caused by
