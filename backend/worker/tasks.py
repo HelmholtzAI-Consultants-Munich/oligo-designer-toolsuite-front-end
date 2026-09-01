@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 from collections.abc import Callable
+from dataclasses import asdict
 from logging import Logger
 from pathlib import Path
 from typing import Any
@@ -13,7 +14,7 @@ from typing import Any
 import redis
 from bson import ObjectId
 from celery.utils.log import get_task_logger
-from oligo_designer_toolsuite.pipelines.utils._context import _status_callback
+from oligo_designer_toolsuite.utils._context import _status_callback
 
 from backend.config import CeleryConfig, Config
 from backend.database import mongo_database
@@ -359,19 +360,11 @@ def run_pipeline(
     """
     from backend.worker.pipeline_runner import PipelineRunner  # lazy: avoids Bio at import time
 
-    def handle_status(pipeline_step):
-        payload = {
-            "step_name": pipeline_step.step_name,
-            "num_oligos": pipeline_step.num_oligos,
-            "num_genes": pipeline_step.num_genes,
-            "parameters": pipeline_step.parameters,
-        }
-        self.update_state(
-            state="PROGRESS",
-            meta=payload,
-        )
-        redis_client.publish(f"pipeline:{self.request.id}", json.dumps(payload))
+    def handle_status(type: str, data) -> None:
+        data = asdict(data)
+        payload = {"type": type, "data": data}
 
+        redis_client.publish(f"pipeline:{self.request.id}", json.dumps(payload))
         append_step_to_run(ObjectId(self.request.id), sanitize_dict_for_db(payload))
 
     token = _status_callback.set(handle_status)

@@ -7,6 +7,7 @@ from logging import Logger
 from typing import Any
 
 import yaml
+from billiard.exceptions import SoftTimeLimitExceeded, TimeLimitExceeded
 from glom import assign, glom
 from oligo_designer_toolsuite._exceptions import OligoDesignerError
 from pydantic import ValidationError
@@ -199,6 +200,8 @@ class PipelineRunner:
             raise ODTPipelineError(f"Invalid configuration file: {e!s}")
         except (OligoDesignerError, ValueError):
             raise ODTPipelineError(fallback_error_message)
+        except (SoftTimeLimitExceeded, TimeLimitExceeded):
+            raise
         except SystemExit as e:
             if e.code == 1:
                 raise ODTEmptyResultError(

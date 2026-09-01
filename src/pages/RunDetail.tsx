@@ -349,17 +349,12 @@ const RunDetail = () => {
             )}
 
             {/* Polling/waiting for YAML/log */}
-            {(run?.status == "pending" || run?.status == "started") && (
+            {run?.status == "pending" && (
                 <Vertical align="center" className="my-5" gap="lg">
                     <RunStatus status={run.status} size={100} />
                     <RunStatusDetails run={run} />
                 </Vertical>
             )}
-
-            {run &&
-                ["failure", "empty_result", "timeout"].includes(run.status) && (
-                    <RunError run={run} />
-                )}
 
             {/* YAML/table logic remains unchanged below */}
             {run?.status === "success" && (

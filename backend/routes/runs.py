@@ -68,7 +68,7 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
         "user_id": run.get("user_id", "unknown"),
         "priority": run.get("priority", "unknown"),
         "queue_position": run.get("queue_position", "unknown"),
-        "steps": run.get("steps", []),
+        "events": run.get("events", []),
     }
 
     if metrics := format_run_metrics(run.get("metrics")):

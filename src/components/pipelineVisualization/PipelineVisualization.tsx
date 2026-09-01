@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-
+import { MarkerType } from "@xyflow/react";
 import {
     ReactFlow,
     addEdge,
@@ -10,11 +10,14 @@ import {
     type OnConnect,
     type OnNodesChange,
     type OnEdgesChange,
-    useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { nodeTypes, type PipelineStepType } from "./types";
-import type { PipelineStep } from "../../types";
+import {
+    nodeTypes,
+    type PipelineEvent,
+    type DefaultNodeType,
+    type NodeType,
+} from "./types";
 import { BACKEND_URL } from "../../config";
 import { useRuns } from "../../hooks/useRuns";
 import { getNewId, getNewPosition } from "./utils";
@@ -31,18 +34,17 @@ type PipelineVisualizationProps = {
 const PipelineVisualization: React.FC<PipelineVisualizationProps> = ({
     runId,
 }) => {
-    const { screenToFlowPosition } = useReactFlow();
-    const startNode: Node = useMemo(() => {
+    const startNode: DefaultNodeType = useMemo(() => {
         return {
             id: "0",
             type: "defaultNode",
-            position: screenToFlowPosition({ x: 20, y: 20 }),
+            position: { x: 20, y: 20 },
             data: {
-                name: "Start",
-                type: "start",
+                label: "Start",
+                position: "start",
             },
         };
-    }, [screenToFlowPosition]);
+    }, []);
 
     const initialNodes: Node[] = [startNode];
     const initialEdges: Edge[] = [];
@@ -56,36 +58,71 @@ const PipelineVisualization: React.FC<PipelineVisualizationProps> = ({
 
     const createNode = (
         id: string,
-        xPosition: number,
-        pipelineStep: PipelineStep
+        position: { x: number; y: number },
+        pipelineEvent: PipelineEvent
     ) => {
-        const newNode: PipelineStepType = {
+        const newNode: NodeType = {
             id: id,
-            position: { x: xPosition, y: 0 },
-            type: "pipelineStep",
-            data: {
-                step_name: pipelineStep.step_name,
-                num_oligos: pipelineStep.num_oligos,
-                num_genes: pipelineStep.num_genes,
-                parameters: pipelineStep.parameters,
-                display_text: pipelineStep.display_text,
-            },
-        };
+            position: position,
+            type: pipelineEvent.type,
+            data: pipelineEvent.data,
+        } as NodeType;
         return newNode;
+    };
+
+    const markerStyle = {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+        color: "#000000",
     };
 
     const addNode = useCallback((newNode: Node, connectingNodeId: string) => {
         setNodes((nodes) => [...nodes, newNode]);
-        setEdges((edges) =>
-            addEdge(
-                {
-                    id: `${connectingNodeId} - ${newNode.id}`,
-                    source: connectingNodeId,
-                    target: newNode.id,
-                },
-                edges
-            )
-        );
+
+        setEdges((edges) => {
+            let newEdges = edges;
+            const firstStep = "1";
+            const lastStep = (parseInt(newNode.id) - 2).toString();
+            const oligoDatabase = parseInt(newNode.id) % 2 === 0;
+
+            if (oligoDatabase) {
+                newEdges = addEdge(
+                    {
+                        id: `${connectingNodeId} - ${newNode.id} - oligoDatabase`,
+                        source: connectingNodeId,
+                        sourceHandle: "oligoDatabase",
+                        target: newNode.id,
+                    },
+                    newEdges
+                );
+            } else {
+                if (newNode.id == firstStep) {
+                    newEdges = addEdge(
+                        {
+                            id: `${connectingNodeId} - ${newNode.id} - nextStep`,
+                            source: connectingNodeId,
+                            target: newNode.id,
+                            markerEnd: markerStyle,
+                        },
+                        newEdges
+                    );
+                } else {
+                    newEdges = addEdge(
+                        {
+                            id: `${lastStep} - ${newNode.id} - nextStep`,
+                            source: lastStep,
+                            sourceHandle: "nextStep",
+                            target: newNode.id,
+                            markerEnd: markerStyle,
+                        },
+                        newEdges
+                    );
+                }
+            }
+
+            return newEdges;
+        });
     }, []);
     const onNodesChange: OnNodesChange = useCallback(
         (changes) =>
@@ -107,11 +144,14 @@ const PipelineVisualization: React.FC<PipelineVisualizationProps> = ({
         []
     );
     const processStep = useCallback(
-        (step: PipelineStep, displayText?: string) => {
+        (event: PipelineEvent) => {
             const newNode = createNode(
                 getNewId(connectingNodeRef.current.id),
-                getNewPosition(connectingNodeRef.current.position.x),
-                { ...step, display_text: displayText }
+                getNewPosition(
+                    connectingNodeRef.current.id,
+                    connectingNodeRef.current.position.x
+                ),
+                event
             );
             addNode(newNode, connectingNodeRef.current.id);
             connectingNodeRef.current = newNode;
@@ -119,22 +159,39 @@ const PipelineVisualization: React.FC<PipelineVisualizationProps> = ({
         [addNode]
     );
 
+    // load steps from database if run is finished
     useEffect(() => {
-        if (run?.status === "success" && run.steps) {
+        if (
+            ["success", "failure", "timeout", "empty_result"].includes(
+                run?.status ?? ""
+            ) &&
+            run?.events
+        ) {
             connectingNodeRef.current = startNode;
             // reset loading
-            const newSteps = run?.steps?.slice(stepCountRef.current);
-            newSteps?.forEach((step) => processStep(step, "after Run"));
-            stepCountRef.current = run?.steps?.length;
+            const newSteps = run?.events?.slice(stepCountRef.current);
+            newSteps?.forEach((step) => processStep(step));
+            stepCountRef.current = run?.events?.length;
+            if (
+                run?.status === "success" &&
+                connectingNodeRef.current !== startNode
+            ) {
+                processStep({
+                    type: "default",
+                    data: { label: "Finished", position: "end" },
+                });
+            }
         }
     }, [run, startNode, processStep]);
 
+    // load steps from event stream if run is started
     useEffect(() => {
         if (run?.status === "started" && runId) {
             const es = new EventSource(BACKEND_URL + `/stream/${runId}`);
             es.onmessage = (event) => {
-                const pipeline_step: PipelineStep = JSON.parse(event.data);
-                processStep(pipeline_step, "from Stream");
+                const pipeline_event: PipelineEvent = JSON.parse(event.data);
+                processStep(pipeline_event);
+
                 // set loading
             };
             return () => {

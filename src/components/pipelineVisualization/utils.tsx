@@ -1,28 +1,21 @@
-import { Check, X } from "react-bootstrap-icons";
-import { defaultNodeWidth, offset } from "./constants";
+import { defaultNodeWidth, offset, startNodeSpacing } from "./constants";
 
-export const formatParameterValue = (value: unknown): React.ReactNode => {
-    if (value == "True") {
-        return (
-            <Check style={{ width: "1rem", height: "1rem", color: "green" }} />
-        );
-    } else if (value == "False") {
-        return <X style={{ width: "1rem", height: "1rem", color: "red" }} />;
-    }
-    if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-        return Object.entries(value).map(([key, value]) => (
-            <div key={key}>
-                <span className="fw-semibold me-2">{key}:</span>
-                <span className="text-muted">
-                    {formatParameterValue(value)}
-                </span>
-            </div>
-        ));
-    }
-    return String(value);
+export const formatParameterName = (value: string): string => {
+    const formatted = value.replaceAll("_", " ");
+
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 };
 
 export const getNewId = (id: string) => (parseInt(id) + 1).toString();
 
-export const getNewPosition = (xPosition: number) =>
-    xPosition + defaultNodeWidth + offset;
+export const getNewPosition = (id: string, xPosition: number) => {
+    const oligoDatabase = parseInt(id) % 2 == 0;
+    const x =
+        id == "0"
+            ? xPosition + startNodeSpacing + offset
+            : oligoDatabase
+              ? xPosition + defaultNodeWidth + offset
+              : xPosition;
+    const y = oligoDatabase ? 0 : 150;
+    return { x: x, y: y };
+};
