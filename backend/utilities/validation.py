@@ -1,3 +1,7 @@
+"""
+Functions for validating and converting request input: ObjectId strings, id arrays, and genomic form data.
+"""
+
 from http import HTTPStatus
 
 from bson import ObjectId
@@ -5,17 +9,20 @@ from flask import abort
 
 
 def parse_run_id(run_id_str: str | None) -> ObjectId:
-    """Convert a run_id string from JSON body to ObjectId.
+    """Converts and validates a run_id string from the request JSON body.
 
-    Use this for validating run_id from request JSON body (e.g., pipelines.py).
-    For URL path parameters, use the ObjectId URL converter instead:
-        @app.route("/api/runs/<ObjectId:run_id>")
+    Arguments:
+        run_id_str {str | None} -- the run id string from request JSON.
 
-    :param run_id_str: The ObjectId string from request JSON
-    :type run_id_str: str | None
-    :returns: The validated ObjectId
-    :rtype: ObjectId
-    :raises: 400 if the string is empty or not a valid ObjectId format
+    Notes:
+        For a run_id in the URL path, use the <ObjectId:run_id> route
+        converter instead, which validates automatically.
+
+    Raises:
+        BadRequest: if run_id_str is empty or isn't a valid ObjectId.
+
+    Returns:
+        ObjectId -- the validated ObjectId.
     """
     if not run_id_str:
         abort(400, description="Run ID is required")
@@ -26,13 +33,17 @@ def parse_run_id(run_id_str: str | None) -> ObjectId:
 
 
 def validate_and_convert_ids(id_strings: list[str]) -> tuple[list[ObjectId], list[str]]:
-    """
-    Validate and convert a list of string IDs to MongoDB ObjectIds.
+    """Validates and converts a list of string ids to MongoDB ObjectIds.
 
-    :param id_strings: List of string IDs to validate and convert
-    :type id_strings: list[str]
-    :returns: Tuple of (valid_object_ids, invalid_ids)
-    :rtype: tuple[list[ObjectId], list[str]]
+    Arguments:
+        id_strings {list[str]} -- ids to validate and convert.
+
+    Notes:
+        Lets bulk endpoints process the good ids and report which were
+        invalid, rather than aborting the whole batch over one bad id.
+
+    Returns:
+        tuple[list[ObjectId], list[str]] -- (valid_object_ids, invalid_ids).
     """
     object_ids = []
     invalid_ids = []
@@ -47,16 +58,21 @@ def validate_and_convert_ids(id_strings: list[str]) -> tuple[list[ObjectId], lis
 
 
 def validate_id_array(data: dict, key_name: str) -> list:
-    """
-    Validate that a request data dictionary contains a non-empty array of IDs.
+    """Validates that the request body contains a non-empty array under the given key.
 
-    :param data: Request JSON data dictionary
-    :type data: dict
-    :param key_name: The key name in the data dict (e.g., 'user_ids', 'run_ids')
-    :type key_name: str
-    :returns: The validated list of ID strings
-    :rtype: list
-    :raises: 400 if the key is missing or not a non-empty array
+    Arguments:
+        data {dict} -- request JSON body.
+        key_name {str} -- which key holds the id array (e.g. "user_ids", "run_ids").
+
+    Notes:
+        Shared by every bulk admin endpoint, so they all reject a
+        missing/empty/non-list payload the same way.
+
+    Raises:
+        BadRequest: if key_name is missing, empty, or not a list.
+
+    Returns:
+        list -- the id array, guaranteed non-empty.
     """
     ids = data.get(key_name, [])
 
@@ -67,15 +83,20 @@ def validate_id_array(data: dict, key_name: str) -> list:
 
 
 def validate_genomic_form_data(form_data: dict, allowed_sources: list[str] | None = None) -> None:
-    """
-    Validate genomic form data structure and required fields.
+    """Validates the shape of a submitted genomic region-generation form.
 
-    Args:
-        form_data: The form data dictionary to validate
-        allowed_sources: List of allowed source values. Defaults to ["NCBI", "Ensembl"]
+    Arguments:
+        form_data {dict} -- the region-generation form to validate.
+
+    Keyword Arguments:
+        allowed_sources {list[str] | None} -- override when a pipeline
+        supports a different/narrower set of sources than the default.
+        (default: {None})
 
     Raises:
-        400: If validation fails
+        BadRequest: if form_data is empty, source is missing or not in
+        allowed_sources, genomic_regions is missing, or file_region_ids is
+        missing for the "Custom" source.
     """
     if allowed_sources is None:
         allowed_sources = ["ncbi", "ensembl"]
