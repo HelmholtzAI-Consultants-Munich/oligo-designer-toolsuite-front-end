@@ -29,7 +29,11 @@ const DefaultNode = ({ data }: NodeProps<DefaultNodeType>) => {
             {data.position === "start" ? (
                 <Handle type="source" position={Position.Right} />
             ) : data.position === "end" ? (
-                <Handle type="target" position={Position.Left} />
+                <Handle
+                    className="no-handle"
+                    type="target"
+                    position={Position.Left}
+                />
             ) : (
                 ""
             )}

@@ -6,6 +6,20 @@ export const formatParameterName = (value: string): string => {
     return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 };
 
+export const parseFastaFilePath = (value: string): Record<string, string> => {
+    const pathParts = value.split("/");
+    const fileName = pathParts[pathParts.length - 1];
+
+    const parts = fileName.split("__");
+
+    return Object.fromEntries(
+        Array.from({ length: Math.floor(parts.length / 2) }, (_, i) => [
+            parts[i * 2],
+            parts[i * 2 + 1],
+        ])
+    );
+};
+
 export const getNewId = (id: string) => (parseInt(id) + 1).toString();
 
 export const getNewPosition = (id: string, xPosition: number) => {

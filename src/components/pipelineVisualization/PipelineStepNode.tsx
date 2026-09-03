@@ -115,11 +115,7 @@ const PipelineStepNode = ({ data }: NodeProps<PipelineStepType>) => {
             <Handle
                 type="target"
                 position={Position.Left}
-                style={{
-                    width: 0,
-                    height: 0,
-                    backgroundColor: "#ffffff",
-                }}
+                className="no-handle"
             ></Handle>
             <Handle type="source" position={Position.Right} id="nextStep" />
 

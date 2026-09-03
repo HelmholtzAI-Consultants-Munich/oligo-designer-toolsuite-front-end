@@ -31,14 +31,13 @@ const OligoInfoNode = ({ data }: NodeProps<OligoInfoNodeType>) => {
                 <Card.Body className="px-3 py-2 pt-0">
                     <div className="d-flex flex-wrap gap-2 mb-2">
                         <Badge bg="info-subtle" text="info" className="me-2">
-                            <CaretRight className="me-1" />
                             {data.num_genes}{" "}
                             {data.num_genes === 1 ? "gene" : "genes"}
                         </Badge>
 
                         <Badge bg="info-subtle" text="info">
-                            <FileCheck className="me-1" />
-                            {data.num_oligos} oligos
+                            {data.num_oligos}{" "}
+                            {data.num_oligos === 1 ? "oligo" : "oligos"}
                         </Badge>
                     </div>
                 </Card.Body>

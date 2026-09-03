@@ -11,7 +11,7 @@ from celery.worker.request import Request
 from backend.database import mongo_database
 from backend.exceptions import ODTCloudError, ODTEmptyResultError
 from backend.queue_accounting import _remove_pending_run, queue_accounting_lock
-from backend.routes.route_helpers import append_step_to_run
+from backend.routes.route_helpers import append_event_to_run
 from backend.types import RunStatus
 from backend.worker.celery import app, logger
 from backend.worker.database import _parse_run_id, _update_run
@@ -63,7 +63,7 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
 
     payload = {"type": "error", "data": {"type": status.value, "data": error_message}}
     redis_client.publish(f"pipeline:{run_id}", json.dumps(payload))
-    append_step_to_run(ObjectId(run_id), payload)
+    append_event_to_run(ObjectId(run_id), payload)
 
     with mongo_database() as db:
         with queue_accounting_lock() as redis:

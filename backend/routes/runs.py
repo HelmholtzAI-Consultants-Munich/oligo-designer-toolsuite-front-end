@@ -15,6 +15,7 @@ Features:
 :requires: Flask, Flask-Login, MongoDB (via extensions.mongo), OS, datetime, traceback
 """
 
+import json
 from collections.abc import Iterator
 from http import HTTPStatus
 from typing import Any
@@ -26,6 +27,7 @@ from flask_login import current_user
 
 from backend.extensions import db
 from backend.routes.route_helpers import (
+    get_events_for_run,
     get_run_or_404,
 )
 from backend.utilities.pipeline import delete_pipeline_run_files_and_db
@@ -238,7 +240,12 @@ def get_run_status(run_id: ObjectId):
 
 @runs_bp.route("/stream/<task_id>")
 def stream(task_id: str):
+    existing_events = get_events_for_run(ObjectId(task_id))
+
     def event_stream() -> Iterator[str]:
+
+        for event in existing_events:
+            yield f"data: {json.dumps(event)}\n\n"
         pubsub = redis_client.pubsub()
         pubsub.subscribe(f"pipeline:{task_id}")
         try:

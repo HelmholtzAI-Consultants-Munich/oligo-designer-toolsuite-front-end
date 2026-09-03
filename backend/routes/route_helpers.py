@@ -130,7 +130,7 @@ def build_run_query(run_id: ObjectId, require_ownership: bool = True) -> dict:
     """
     query: dict[str, Any] = {"_id": run_id}
     if require_ownership:
-        if current_user.is_authenticated:
+        if current_user is not None and current_user.is_authenticated:
             query["user_id"] = str(current_user.id)
         else:
             session_id = session.get("session_id")
@@ -158,6 +158,7 @@ def get_run_or_404(run_id: ObjectId, require_ownership: bool = True) -> dict:
     """
     query = build_run_query(run_id, require_ownership=require_ownership)
     run = db.runs.find_one(query)
+    current_app.logger.debug(f"Retrieved run {run_id} with query {query}: {run}")
     if not run:
         abort(HTTPStatus.NOT_FOUND)
     return run
@@ -180,7 +181,7 @@ def update_run_in_DB(run_id: ObjectId, data: dict[str, Any]) -> None:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to update the run in the database.")
 
 
-def append_step_to_run(run_id: ObjectId, step_payload: dict[str, Any]) -> Any:
+def append_event_to_run(run_id: ObjectId, step_payload: dict[str, Any]) -> Any:
     """Append a new step to the run's steps array.
 
     Arguments:
@@ -193,6 +194,19 @@ def append_step_to_run(run_id: ObjectId, step_payload: dict[str, Any]) -> Any:
     )
     if not update_result.acknowledged:
         abort(HTTPStatus.INTERNAL_SERVER_ERROR, "Failed to update the run in the database.")
+
+
+def get_events_for_run(run_id: ObjectId) -> list[dict[str, Any]]:
+    """Retrieve all events for a given run.
+
+    Arguments:
+        run_id {ObjectId} -- The pipeline run's id.
+
+    Returns:
+        list[dict[str, Any]] -- A list of all events for the given run.
+    """
+    run = get_run_or_404(run_id)
+    return run.get("events", [])
 
 
 def sanitize_dict_for_db(obj: Any) -> Any:

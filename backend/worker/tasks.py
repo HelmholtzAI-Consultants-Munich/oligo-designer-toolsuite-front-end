@@ -19,7 +19,7 @@ from oligo_designer_toolsuite.utils._context import _status_callback
 from backend.config import CeleryConfig, Config
 from backend.database import mongo_database
 from backend.genomic_databases import fetch_dropdown_options
-from backend.routes.route_helpers import append_step_to_run, sanitize_dict_for_db
+from backend.routes.route_helpers import append_event_to_run, sanitize_dict_for_db
 from backend.utils import utc_now
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
@@ -365,7 +365,7 @@ def run_pipeline(
         payload = {"type": type, "data": data}
 
         redis_client.publish(f"pipeline:{self.request.id}", json.dumps(payload))
-        append_step_to_run(ObjectId(self.request.id), sanitize_dict_for_db(payload))
+        append_event_to_run(ObjectId(self.request.id), sanitize_dict_for_db(payload))
 
     token = _status_callback.set(handle_status)
 

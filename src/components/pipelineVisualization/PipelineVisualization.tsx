@@ -22,6 +22,7 @@ import { BACKEND_URL } from "../../config";
 import { useRuns } from "../../hooks/useRuns";
 import { getNewId, getNewPosition } from "./utils";
 import { viewportHeight } from "./constants";
+import "./styles.scss";
 
 /**
  *
@@ -61,10 +62,15 @@ const PipelineVisualization: React.FC<PipelineVisualizationProps> = ({
         position: { x: number; y: number },
         pipelineEvent: PipelineEvent
     ) => {
+        const nodeType =
+            pipelineEvent.type === "default"
+                ? "defaultNode"
+                : pipelineEvent.type;
+
         const newNode: NodeType = {
             id: id,
             position: position,
-            type: pipelineEvent.type,
+            type: nodeType,
             data: pipelineEvent.data,
         } as NodeType;
         return newNode;
@@ -187,7 +193,9 @@ const PipelineVisualization: React.FC<PipelineVisualizationProps> = ({
     // load steps from event stream if run is started
     useEffect(() => {
         if (run?.status === "started" && runId) {
-            const es = new EventSource(BACKEND_URL + `/stream/${runId}`);
+            const es = new EventSource(BACKEND_URL + `/stream/${runId}`, {
+                withCredentials: true,
+            });
             es.onmessage = (event) => {
                 const pipeline_event: PipelineEvent = JSON.parse(event.data);
                 processStep(pipeline_event);
