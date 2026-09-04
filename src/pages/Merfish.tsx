@@ -6,7 +6,7 @@ const Merfish: React.FC = memo(() => {
     return (
         <PipelineTemplate
             pipeline="merfish"
-            title="Merfish Probe Designer"
+            title={`${PIPELINE_CONFIG["merfish"].displayName} Probe Designer`}
             schema={PIPELINE_CONFIG["merfish"].schema}
             uiSchema={PIPELINE_CONFIG["merfish"].uiSchema}
         />

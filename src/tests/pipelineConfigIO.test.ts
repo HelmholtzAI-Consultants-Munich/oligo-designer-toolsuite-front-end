@@ -435,7 +435,7 @@ describe("importAndValidate", () => {
                 ...validPayload,
                 _meta: { ...validPayload._meta, pipeline: "merfish" },
             },
-            /Merfish/,
+            /MERFISH/,
             /OligoSeq/
         );
     });

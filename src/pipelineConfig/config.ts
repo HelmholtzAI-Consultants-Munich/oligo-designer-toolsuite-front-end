@@ -1,9 +1,9 @@
 import type { RJSFSchema, UiSchema } from "@rjsf/utils";
 import type { RJSFFormData } from "../components/componentTypes";
-import scrinshotImage from "../images/scrinshot.jpg";
-import merfishImage from "../images/merfish.jpg";
-import seqfishImage from "../images/seqfish.jpg";
-import oligoseqImage from "../images/oligoseq.jpg";
+import scrinshotImage from "../images/rna_1_pink_purple.webp";
+import merfishImage from "../images/rna_2_cyan_yellow.webp";
+import seqfishImage from "../images/rna_3_orange_blue.webp";
+import oligoseqImage from "../images/rna_4_blue_orange.webp";
 
 import merfishSchemaRaw from "@schemas/merfish.schema.json";
 import scrinshotSchemaRaw from "@schemas/scrinshot.schema.json";
@@ -65,9 +65,9 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         name: "scrinshot",
         schema: scrinshotSchemaRaw as RJSFSchema,
         uiSchema: scrinshotUiSchema,
-        displayName: "Scrinshot",
+        displayName: "SCRINSHOT",
         description:
-            "Spatial gene expression analysis using scrinshot technology.",
+            "Spatial gene expression analysis using SCRINSHOT technology.",
         detailedLink:
             "https://oligo-designer-toolsuite.readthedocs.io/en/latest/_pipelines/scrinshot_probe_designer.html",
         img: scrinshotImage,
@@ -78,7 +78,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         name: "merfish",
         schema: merfishSchemaRaw as RJSFSchema,
         uiSchema: merfishUiSchema,
-        displayName: "Merfish",
+        displayName: "MERFISH",
         description:
             "Highly multiplexed imaging for spatially resolved transcriptomics.",
         detailedLink:
@@ -91,7 +91,7 @@ export const PIPELINE_CONFIG: PipelineConfig = {
         name: "seqfish",
         schema: seqfishSchemaRaw as RJSFSchema,
         uiSchema: seqfishUiSchema,
-        displayName: "SeqFish+",
+        displayName: "seqFISH+",
         description:
             "Sequential imaging for probing complex spatial transcriptomes.",
         detailedLink:

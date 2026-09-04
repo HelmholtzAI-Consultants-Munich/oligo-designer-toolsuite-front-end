@@ -1,20 +1,19 @@
 import { forwardRef, useState, type Ref } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { Button, Dropdown } from "react-bootstrap";
-import {
-    ArrowRight,
-    CheckCircleFill,
-    ChevronUp,
-    Person,
-} from "react-bootstrap-icons";
-import { Horizontal } from "./Alignment";
+import { CheckCircleFill, Person } from "react-bootstrap-icons";
 
 const UserDisplay = forwardRef(
     (
         {
             onClick,
             noUserCallback,
-        }: { onClick: () => void; noUserCallback: () => void },
+            fullWidth,
+        }: {
+            onClick: () => void;
+            noUserCallback: () => void;
+            fullWidth?: boolean;
+        },
         ref: Ref<HTMLButtonElement>
     ) => {
         const auth = useAuth();
@@ -24,20 +23,12 @@ const UserDisplay = forwardRef(
             <Button
                 ref={ref}
                 onClick={user ? onClick : noUserCallback}
-                className="w-100 user-dropdown filled"
+                className={`${fullWidth ? "w-100 " : ""}user-dropdown filled`}
                 variant="outline-border"
+                aria-label={user ? "User menu" : "Login / Register"}
+                title={user ? "User menu" : "Login / Register"}
             >
-                <Horizontal align="center" gap="sm">
-                    <Horizontal.Item className="user-icon">
-                        <Person size={25} />
-                    </Horizontal.Item>
-                    <Horizontal grow>
-                        {user
-                            ? user.username || user.helmholtz_sub
-                            : "Login / Register"}
-                    </Horizontal>
-                    {user ? <ChevronUp size={15} /> : <ArrowRight size={15} />}
-                </Horizontal>
+                <Person size={25} />
             </Button>
         );
     }
@@ -45,8 +36,10 @@ const UserDisplay = forwardRef(
 
 export default function UserDropdown({
     noUserCallback,
+    fullWidth = true,
 }: {
     noUserCallback: () => void;
+    fullWidth?: boolean;
 }) {
     const auth = useAuth();
     const user = auth.user;
@@ -54,11 +47,12 @@ export default function UserDropdown({
     const [copied, setCopied] = useState(false);
 
     return (
-        <Dropdown drop="up-centered">
+        <Dropdown drop={fullWidth ? "up-centered" : "down"} align="end">
             <Dropdown.Toggle
                 as={UserDisplay}
                 id="user-dropdown-toggle"
                 noUserCallback={noUserCallback}
+                fullWidth={fullWidth}
             />
             <Dropdown.Menu>
                 {user && (

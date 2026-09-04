@@ -1,75 +1,87 @@
-import React from "react";
-import { Link, useNavigate } from "react-router";
-import { useAuth } from "../hooks/useAuth";
-import { Alert, Button, Card } from "react-bootstrap";
-import Page from "../components/ui/Page";
-import Hero from "../components/ui/Hero";
-import { Grid, Vertical } from "../components/ui/Alignment";
+import { Link } from "react-router";
+import { Breadcrumb, Button, Card, Col, Image, Row } from "react-bootstrap";
 import { ArrowRight } from "react-bootstrap-icons";
-import { getEnabledPipelinesOnly } from "../pipelineConfig/utils";
+import Page from "../components/ui/Page";
+import { Vertical } from "../components/ui/Alignment";
+import CitationCard from "../components/ui/CitationCard";
+import { pipelineOverview } from "../pipelineConfig/overview";
 
 const Pipelines: React.FC = () => {
-    const auth = useAuth();
-    const user = auth.user;
-    const { loading } = auth;
-    const navigate = useNavigate();
-
-    const pipelines = Object.values(getEnabledPipelinesOnly()).map(
-        (pipeline) => ({
-            title: pipeline.displayName,
-            description: pipeline.description,
-            link: pipeline.link!,
-            detailedLink: pipeline.detailedLink,
-            img: pipeline.img,
-        })
-    );
-
-    if (loading) return <div>Loading...</div>;
-
     return (
         <Page title="Pipelines" metaTitle="ODT Cloud" hideHeader>
-            <Hero />
+            <Vertical gap="lg" align="stretch">
+                <Breadcrumb className="mb-0">
+                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/" }}>
+                        Home
+                    </Breadcrumb.Item>
+                    <Breadcrumb.Item active>Pipelines</Breadcrumb.Item>
+                </Breadcrumb>
 
-            <Vertical className="tight-container" gap="lg" align="stretch">
-                {!user && (
-                    <Alert variant="warning">
-                        To keep your runs saved when you close your browser,
-                        please <Link to="/login">log in</Link>.
-                    </Alert>
-                )}
+                <Vertical gap="sm">
+                    <h1 className="text-odt-blue">Choose a Design Pipeline</h1>
+                    <p className="lead text-muted mb-0">
+                        Select the workflow that best matches your experimental
+                        assay.
+                    </p>
+                </Vertical>
 
-                <Grid gap="lg" itemWidth="25rem">
-                    {pipelines.map((pipeline, index) => (
-                        <Card key={index}>
-                            <Card.Body as={Vertical} gap="md">
-                                <Card.Title as="h4">
-                                    {pipeline.title} Probe Designer
-                                </Card.Title>
-                                <Vertical.Item grow>
-                                    <Card.Text className="text-muted">
-                                        {pipeline.description}
-                                    </Card.Text>
-                                </Vertical.Item>
-                                <Vertical.Item>
-                                    <Card.Link
-                                        as={Button}
-                                        onClick={() => navigate(pipeline.link)}
-                                    >
-                                        Use Pipeline
-                                    </Card.Link>
-                                    <Card.Link
-                                        as={Link}
-                                        to={pipeline.detailedLink}
-                                        target="_blank"
-                                    >
-                                        Read about {pipeline.title}{" "}
-                                        <ArrowRight />
-                                    </Card.Link>
-                                </Vertical.Item>
-                            </Card.Body>
-                        </Card>
-                    ))}
-                </Grid>
+                {/* TODO: restore the anonymous-user warning dropped in f99c3a8.
+                    Anonymous runs are lost when the browser closes, and runs can
+                    take a long time, so users can lose work with no warning. The
+                    old copy was: "To keep your runs saved when you close your
+                    browser, please <Link to="/login">log in</Link>." Needs
+                    useAuth() here (or on the pipeline form) to gate on !user. */}
+                <Row xs={1} lg={2} xl={3} className="g-5">
+                    {pipelineOverview.map((pipeline) => {
+                        return (
+                            <Col key={pipeline.title}>
+                                <Card className="h-100">
+                                    <Card.Body as={Vertical} gap="md">
+                                        <Image
+                                            src={pipeline.image}
+                                            alt=""
+                                            width={72}
+                                            height={72}
+                                            roundedCircle
+                                            style={{ objectFit: "cover" }}
+                                        />
+                                        <Card.Title
+                                            as="h2"
+                                            className="h3 text-odt-blue"
+                                        >
+                                            {pipeline.title}
+                                        </Card.Title>
+                                        <Vertical.Item grow>
+                                            <Card.Text className="text-muted">
+                                                {pipeline.description}
+                                            </Card.Text>
+                                        </Vertical.Item>
+                                        {pipeline.available && pipeline.link ? (
+                                            <Link
+                                                to={pipeline.link}
+                                                className="btn btn-outline-odt-blue w-100"
+                                            >
+                                                Use Pipeline{" "}
+                                                <ArrowRight className="ms-2" />
+                                            </Link>
+                                        ) : (
+                                            <Button
+                                                variant="outline-odt-blue"
+                                                className="w-100"
+                                                disabled
+                                            >
+                                                Use Pipeline{" "}
+                                                <ArrowRight className="ms-2" />
+                                            </Button>
+                                        )}
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        );
+                    })}
+                </Row>
+
+                <CitationCard />
             </Vertical>
         </Page>
     );
