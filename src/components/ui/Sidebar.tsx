@@ -38,6 +38,16 @@ const Sidebar: React.FC = () => {
         setExpanded(false);
     };
 
+    const pipelinesHeading = (
+        <Link
+            to="/pipelines"
+            className="text-reset text-decoration-none"
+            onClick={() => setExpanded(false)}
+        >
+            Pipelines
+        </Link>
+    );
+
     return (
         <Navbar
             onSelect={handleSelect}
@@ -47,19 +57,15 @@ const Sidebar: React.FC = () => {
         >
             <Navbar.Toggle
                 aria-controls="navigation-bar"
+                label="Toggle pipelines and recent runs"
                 onClick={() => setExpanded(!expanded)}
             />
+            {/* Names what the collapsed toggle opens; the heading inside the
+                collapse serves that purpose once the sidebar is expanded. */}
+            <h5 className="d-lg-none ms-2 me-auto">{pipelinesHeading}</h5>
             <Navbar.Collapse id="navigation-bar" className="mt-2">
                 <Vertical align="stretch" gap="md" fillWidth>
-                    <h5>
-                        <Link
-                            to="/pipelines"
-                            className="text-reset text-decoration-none"
-                            onClick={() => setExpanded(false)}
-                        >
-                            Pipelines
-                        </Link>
-                    </h5>
+                    <h5 className="d-none d-lg-block">{pipelinesHeading}</h5>
 
                     <Nav variant="heavy">
                         {pipelineOverview.map((pipeline) => {

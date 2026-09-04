@@ -15,7 +15,8 @@ test("renders page", () => {
     expect(
         screen.getByRole("link", { name: /View the publication/i })
     ).toHaveAttribute("href", "https://doi.org/10.5281/zenodo.7823048");
+    // renders as a link, not a button, so it supports new-tab and middle click
     expect(
-        screen.getByRole("button", { name: /Start Designing/i })
-    ).toBeInTheDocument();
+        screen.getByRole("link", { name: /Start Designing/i })
+    ).toHaveAttribute("href", "/pipelines");
 });

@@ -6,7 +6,7 @@ const Oligoseq: React.FC = memo(() => {
     return (
         <PipelineTemplate
             pipeline="oligoseq"
-            title="OligoSeq Probe Designer"
+            title={`${PIPELINE_CONFIG["oligoseq"].displayName} Probe Designer`}
             schema={PIPELINE_CONFIG["oligoseq"].schema}
             uiSchema={PIPELINE_CONFIG["oligoseq"].uiSchema}
         />

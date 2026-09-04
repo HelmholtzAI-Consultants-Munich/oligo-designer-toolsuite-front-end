@@ -1,19 +1,14 @@
-import { Card, Col, Row } from "react-bootstrap";
-import {
-    Book,
-    BoxArrowUpRight,
-    Bullseye,
-    Cloud,
-    GraphUpArrow,
-} from "react-bootstrap-icons";
+import { Col, Row } from "react-bootstrap";
+import { Bullseye, Cloud, GraphUpArrow } from "react-bootstrap-icons";
 import Page from "../components/ui/Page";
 import Hero from "../components/ui/Hero";
-import { Horizontal, Vertical } from "../components/ui/Alignment";
+import { Vertical } from "../components/ui/Alignment";
+import CitationCard from "../components/ui/CitationCard";
 
 export default function Home() {
     return (
         <Page title="Oligo Designer Toolsuite" metaTitle="ODT Cloud" hideHeader>
-            <Vertical align="stretch" gap="lg" className="ms-lg-5 ps-lg-4">
+            <Vertical align="stretch" gap="lg">
                 <Hero />
                 <Row xs={1} lg={4} className="g-5">
                     <Col>
@@ -65,36 +60,7 @@ export default function Home() {
                         </Vertical>
                     </Col>
                 </Row>
-                <Card bg="primary-subtle" className="w-100 border-0">
-                    <Card.Body>
-                        <Horizontal align="center" gap="lg">
-                            <div className="bg-white rounded-circle d-flex align-items-center justify-content-center p-3">
-                                <Book size={24} />
-                            </div>
-                            <Vertical grow gap="xs">
-                                <Card.Title
-                                    as="h2"
-                                    className="h5 text-odt-blue"
-                                >
-                                    Cite Oligo Designer Toolsuite
-                                </Card.Title>
-                                <Card.Text className="text-muted mb-0">
-                                    If you use ODT in your research, please cite
-                                    the associated publication.
-                                </Card.Text>
-                            </Vertical>
-                            <Card.Link
-                                href="https://doi.org/10.5281/zenodo.7823048"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ms-auto text-nowrap"
-                            >
-                                View the publication{" "}
-                                <BoxArrowUpRight size={14} />
-                            </Card.Link>
-                        </Horizontal>
-                    </Card.Body>
-                </Card>
+                <CitationCard />
             </Vertical>
         </Page>
     );

@@ -6,7 +6,7 @@ const Scrinshot: React.FC = memo(() => {
     return (
         <PipelineTemplate
             pipeline="scrinshot"
-            title="Scrinshot Probe Designer"
+            title={`${PIPELINE_CONFIG["scrinshot"].displayName} Probe Designer`}
             schema={PIPELINE_CONFIG["scrinshot"].schema}
             uiSchema={PIPELINE_CONFIG["scrinshot"].uiSchema}
         />

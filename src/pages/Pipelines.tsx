@@ -1,8 +1,9 @@
 import { Link } from "react-router";
 import { Breadcrumb, Button, Card, Col, Image, Row } from "react-bootstrap";
-import { ArrowRight, Book } from "react-bootstrap-icons";
+import { ArrowRight } from "react-bootstrap-icons";
 import Page from "../components/ui/Page";
-import { Horizontal, Vertical } from "../components/ui/Alignment";
+import { Vertical } from "../components/ui/Alignment";
+import CitationCard from "../components/ui/CitationCard";
 import { pipelineOverview } from "../pipelineConfig/overview";
 
 const Pipelines: React.FC = () => {
@@ -24,14 +25,17 @@ const Pipelines: React.FC = () => {
                     </p>
                 </Vertical>
 
+                {/* TODO: restore the anonymous-user warning dropped in f99c3a8.
+                    Anonymous runs are lost when the browser closes, and runs can
+                    take a long time, so users can lose work with no warning. The
+                    old copy was: "To keep your runs saved when you close your
+                    browser, please <Link to="/login">log in</Link>." Needs
+                    useAuth() here (or on the pipeline form) to gate on !user. */}
                 <Row xs={1} lg={2} xl={3} className="g-5">
                     {pipelineOverview.map((pipeline) => {
                         return (
                             <Col key={pipeline.title}>
-                                <Card
-                                    className="h-100 mx-auto"
-                                    style={{ width: "90%" }}
-                                >
+                                <Card className="h-100">
                                     <Card.Body as={Vertical} gap="md">
                                         <Image
                                             src={pipeline.image}
@@ -77,35 +81,7 @@ const Pipelines: React.FC = () => {
                     })}
                 </Row>
 
-                <Card bg="primary-subtle" className="border-0">
-                    <Card.Body>
-                        <Horizontal align="center" gap="lg">
-                            <div className="bg-white rounded-circle d-flex align-items-center justify-content-center p-3">
-                                <Book size={24} />
-                            </div>
-                            <Vertical grow gap="xs">
-                                <Card.Title
-                                    as="h2"
-                                    className="h5 text-odt-blue"
-                                >
-                                    Please cite Oligo Designer Toolsuite
-                                </Card.Title>
-                                <Card.Text className="text-muted mb-0">
-                                    If you use Oligo Designer Toolsuite, please
-                                    cite our publication.
-                                </Card.Text>
-                            </Vertical>
-                            <Card.Link
-                                href="https://doi.org/10.5281/zenodo.7823048"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ms-auto text-nowrap"
-                            >
-                                View publication <ArrowRight className="ms-1" />
-                            </Card.Link>
-                        </Horizontal>
-                    </Card.Body>
-                </Card>
+                <CitationCard />
             </Vertical>
         </Page>
     );

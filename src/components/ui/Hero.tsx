@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Button, Image } from "react-bootstrap";
 import { ArrowRight, BoxArrowUpRight } from "react-bootstrap-icons";
 import { Horizontal, Vertical } from "./Alignment";
 
 export default function Hero() {
-    const navigate = useNavigate();
-
     return (
         <Horizontal
             justify="start"
@@ -33,17 +31,14 @@ export default function Hero() {
                     className="fs-6 text-muted mb-0"
                     style={{ maxWidth: "500px" }}
                 >
-                    Generate probe sets for OligoSeq, MERFISH, SEQFISH,
+                    Generate probe sets for OligoSeq, MERFISH, seqFISH+,
                     SCRINSHOT, cycleHCR and HCR directly from genomic
                     annotations.
                 </p>
                 <Horizontal wrap gap="md">
-                    <Button
-                        onClick={() => navigate("/pipelines")}
-                        variant="odt-blue"
-                    >
+                    <Link to="/pipelines" className="btn btn-odt-blue">
                         Start Designing <ArrowRight className="ms-1" />
-                    </Button>
+                    </Link>
                     <Button
                         variant="outline-primary"
                         href="https://oligo-designer-toolsuite.readthedocs.io/en/latest/index.html"

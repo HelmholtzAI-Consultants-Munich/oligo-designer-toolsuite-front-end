@@ -24,13 +24,13 @@ export const runStatusDisplay = {
     },
     timeout: {
         title: "Timeout",
-        label: "Failed",
+        label: "Timed out",
         variant: "warning",
         icon: ClockHistory,
     },
     empty_result: {
         title: "Empty Result",
-        label: "Completed",
+        label: "No results found",
         variant: "warning",
         icon: Ban,
     },

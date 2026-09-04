@@ -36,6 +36,22 @@ $card-spacer-x: 1.5rem;
 $card-spacer-y: 1.5rem;
 $input-btn-padding-y-sm: 0.5rem;
 
+// Bootstrap's variable definitions, needed before extending $theme-colors
+@import "../../node_modules/bootstrap/scss/variables";
+@import "../../node_modules/bootstrap/scss/variables-dark";
+
+// Registering the brand blue as a theme colour generates its utilities
+// (.text-*, .bg-*, .btn-*, .btn-outline-*, --bs-odt-blue) automatically.
+// Must come before `maps`, which derives the text/bg utility maps from this.
+$theme-colors: map-merge(
+    $theme-colors,
+    (
+        "odt-blue": $odt-blue,
+    )
+);
+
+@import "../../node_modules/bootstrap/scss/maps";
+
 // Bootstrap and its default variables
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
@@ -44,11 +60,6 @@ $input-btn-padding-y-sm: 0.5rem;
     --#{$prefix}primary-muted: #{$primary-muted};
     --#{$prefix}text-muted: #{$text-muted};
     --#{$prefix}primary-bg-subtle: #{$primary-bg-subtle};
-    --#{$prefix}odt-blue: #{$odt-blue};
-}
-
-.text-odt-blue {
-    color: $odt-blue !important;
 }
 
 .navbar-nav {
@@ -63,21 +74,27 @@ $input-btn-padding-y-sm: 0.5rem;
     color: $text-muted;
     position: relative;
 
-    &::after {
-        content: "";
-        position: absolute;
-        right: 0;
-        bottom: -1.2rem;
-        left: 0;
-        height: 0.2rem;
-        background-color: transparent;
-    }
-
     &:hover,
     &.active {
         color: $primary;
+    }
 
+    // The underline is drawn 1.2rem below the link. Once the links stack in
+    // the mobile menu that lands on the next item's text, so only draw it
+    // while they sit side by side.
+    @include media-breakpoint-up(lg) {
         &::after {
+            content: "";
+            position: absolute;
+            right: 0;
+            bottom: -1.2rem;
+            left: 0;
+            height: 0.2rem;
+            background-color: transparent;
+        }
+
+        &:hover::after,
+        &.active::after {
             background-color: $secondary;
         }
     }
@@ -170,7 +187,14 @@ body.modal-open {
 }
 @include media-breakpoint-up(lg) {
     .navbar-main {
-        height: auto;
+        // Pin the sidebar so navigation stays reachable while scrolling long
+        // form pages; align-self stops the flex row stretching it to the full
+        // page height, which is what breaks sticky.
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        height: 100vh;
+        overflow-y: auto;
         padding: 2rem;
         width: 18rem;
         flex-direction: column;
@@ -447,14 +471,6 @@ footer,
                 $btn-active-border-shade-amount
             )
     );
-}
-
-.btn-odt-blue {
-    @include button-variant($odt-blue, $odt-blue);
-}
-
-.btn-outline-odt-blue {
-    @include button-outline-variant($odt-blue);
 }
 
 .btn.icon-button {

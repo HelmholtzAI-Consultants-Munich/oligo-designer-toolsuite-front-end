@@ -1,6 +1,6 @@
-import { PIPELINE_CONFIG } from "./config";
-import cycleHcrImage from "../images/rna_5_purple_gold.png";
-import hcrImage from "../images/rna_6_green_blue.png";
+import { PIPELINE_CONFIG, type Pipeline } from "./config";
+import cycleHcrImage from "../images/rna_5_purple_gold.webp";
+import hcrImage from "../images/rna_6_green_blue.webp";
 
 export interface PipelineOverviewItem {
     title: string;
@@ -10,35 +10,40 @@ export interface PipelineOverviewItem {
     available: boolean;
 }
 
-export const pipelineOverview: PipelineOverviewItem[] = [
-    {
-        title: PIPELINE_CONFIG.oligoseq.displayName,
-        description: PIPELINE_CONFIG.oligoseq.description,
-        image: PIPELINE_CONFIG.oligoseq.img,
-        link: PIPELINE_CONFIG.oligoseq.link,
-        available: !PIPELINE_CONFIG.oligoseq.disabled,
-    },
-    {
-        title: PIPELINE_CONFIG.merfish.displayName.toUpperCase(),
-        description: PIPELINE_CONFIG.merfish.description,
-        image: PIPELINE_CONFIG.merfish.img,
-        link: PIPELINE_CONFIG.merfish.link,
-        available: !PIPELINE_CONFIG.merfish.disabled,
-    },
-    {
-        title: PIPELINE_CONFIG.seqfish.displayName,
-        description: PIPELINE_CONFIG.seqfish.description,
-        image: PIPELINE_CONFIG.seqfish.img,
-        link: PIPELINE_CONFIG.seqfish.link,
-        available: !PIPELINE_CONFIG.seqfish.disabled,
-    },
-    {
-        title: PIPELINE_CONFIG.scrinshot.displayName.toUpperCase(),
-        description: PIPELINE_CONFIG.scrinshot.description,
-        image: PIPELINE_CONFIG.scrinshot.img,
-        link: PIPELINE_CONFIG.scrinshot.link,
-        available: !PIPELINE_CONFIG.scrinshot.disabled,
-    },
+/**
+ * Order the configured pipelines are shown in. Any pipeline missing from this
+ * list still appears, after the listed ones, so adding one to PIPELINE_CONFIG
+ * is enough to surface it here.
+ */
+const displayOrder: Pipeline["name"][] = [
+    "oligoseq",
+    "merfish",
+    "seqfish",
+    "scrinshot",
+];
+
+const rank = (name: Pipeline["name"]) => {
+    const index = displayOrder.indexOf(name);
+    return index === -1 ? displayOrder.length : index;
+};
+
+const configuredPipelines: PipelineOverviewItem[] = (
+    Object.keys(PIPELINE_CONFIG) as Pipeline["name"][]
+)
+    .sort((a, b) => rank(a) - rank(b))
+    .map((name) => {
+        const pipeline = PIPELINE_CONFIG[name];
+        return {
+            title: pipeline.displayName,
+            description: pipeline.description,
+            image: pipeline.img,
+            link: pipeline.link,
+            available: !pipeline.disabled,
+        };
+    });
+
+// Announced pipelines that have no PIPELINE_CONFIG entry yet
+const upcomingPipelines: PipelineOverviewItem[] = [
     {
         title: "cycleHCR",
         description: "Cyclic hybridization chain reaction probe design.",
@@ -51,4 +56,9 @@ export const pipelineOverview: PipelineOverviewItem[] = [
         image: hcrImage,
         available: false,
     },
+];
+
+export const pipelineOverview: PipelineOverviewItem[] = [
+    ...configuredPipelines,
+    ...upcomingPipelines,
 ];
