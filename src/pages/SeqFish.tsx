@@ -6,7 +6,7 @@ const Seqfish: React.FC = memo(() => {
     return (
         <PipelineTemplate
             pipeline="seqfish"
-            title="Seqfish+ Probe Designer"
+            title={`${PIPELINE_CONFIG["seqfish"].displayName} Probe Designer`}
             schema={PIPELINE_CONFIG["seqfish"].schema}
             uiSchema={PIPELINE_CONFIG["seqfish"].uiSchema}
         />

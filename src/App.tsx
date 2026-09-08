@@ -1,6 +1,7 @@
 import FAQ from "./pages/Faq";
 import Contact from "./pages/Contact";
 import Pipelines from "./pages/Pipelines";
+import Home from "./pages/Home";
 import Scrinshot from "./pages/Scrinshot";
 import Runs from "./pages/Runs";
 import Merfish from "./pages/Merfish";
@@ -47,7 +48,7 @@ const defaultLayoutRoutes = [
     { path: "/login", element: <Login /> },
     { path: "/runs", element: <Runs /> },
     { path: "/admin/*", element: <AdminApp /> },
-    { path: "/", element: <Pipelines /> },
+    { path: "/", element: <Home /> },
     { path: "/faq", element: <FAQ /> },
     { path: "/contact", element: <Contact /> },
     { path: "/terms", element: <Terms /> },
