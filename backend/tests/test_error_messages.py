@@ -57,6 +57,7 @@ class TestClean:
         """A tool printing its usage text must still say which tool failed."""
         message = clean("bowtie2 failed with exit status 1: " + "usage " * 1000)
 
+        assert message is not None
         assert message.startswith("bowtie2 failed with exit status 1: usage")
         assert len(message) == MAX_MESSAGE_LENGTH + 1
 

@@ -26,13 +26,8 @@ def region_form():
 
 
 @pytest.fixture
-def runner(monkeypatch, tmp_path):
-    """A runner writing to tmp_path, whose NCBI download succeeds with local files."""
-    monkeypatch.setattr(GenomicRegionGeneratorRunner, "__init__", lambda self, logger: None)
-    runner = GenomicRegionGeneratorRunner(logger=logging.getLogger("test"))
-    runner.logger = logging.getLogger("test")
-    runner.cache_dir = tmp_path
-
+def ncbi_database(monkeypatch, tmp_path):
+    """Replaces the NCBI download with one that succeeds with local files."""
     database = MagicMock()
     database.return_value.fetch_genomic_entity.return_value = {
         "genome_assembly": "GRCh38",
@@ -41,12 +36,22 @@ def runner(monkeypatch, tmp_path):
         "sequence_file": str(tmp_path / "sequence.fna"),
     }
     monkeypatch.setattr(module, "NCBIGenomicDatabase", database)
+    return database
+
+
+@pytest.fixture
+def runner(monkeypatch, tmp_path, ncbi_database):
+    """A runner writing to tmp_path."""
+    monkeypatch.setattr(GenomicRegionGeneratorRunner, "__init__", lambda self, logger: None)
+    runner = GenomicRegionGeneratorRunner(logger=logging.getLogger("test"))
+    runner.logger = logging.getLogger("test")
+    runner.cache_dir = tmp_path
     return runner
 
 
 def generate_regions(runner, region_form):
     """Bypasses the file cache, which would otherwise remember results across tests."""
-    return GenomicRegionGeneratorRunner.generate_regions.original(runner, region_form)
+    return GenomicRegionGeneratorRunner.generate_regions.original(runner, region_form)  # type: ignore
 
 
 def test_toolsuite_message_and_warnings_reach_the_user(runner, region_form, monkeypatch):
@@ -67,8 +72,8 @@ def test_toolsuite_message_and_warnings_reach_the_user(runner, region_form, monk
     assert raised.value.details == ["Could not calculate the number of total transcripts."]
 
 
-def test_a_failed_download_says_why(runner, region_form):
-    module.NCBIGenomicDatabase.return_value.fetch_genomic_entity.side_effect = RuntimeError(
+def test_a_failed_download_says_why(runner, region_form, ncbi_database):
+    ncbi_database.return_value.fetch_genomic_entity.side_effect = RuntimeError(
         "No assembly report found in /genomes/refseq/archaea/Acidianus/latest."
     )
 
@@ -84,8 +89,8 @@ def test_a_failed_download_says_why(runner, region_form):
     "error",
     [ftplib.error_temp("421 Service not available"), requests.ConnectionError("Connection refused")],
 )
-def test_a_network_failure_says_why(runner, region_form, error):
-    module.NCBIGenomicDatabase.return_value.fetch_genomic_entity.side_effect = error
+def test_a_network_failure_says_why(runner, region_form, ncbi_database, error):
+    ncbi_database.return_value.fetch_genomic_entity.side_effect = error
 
     with pytest.raises(ODTPipelineError) as raised:
         generate_regions(runner, region_form)

@@ -106,6 +106,7 @@ def test_details_survive_celery_serialization():
     error = ODTEmptyResultError("No sequences found.", ["Region ACTB not available in reference file."])
 
     backend_ = app.backend
+    assert backend_ is not None
     restored = backend_.exception_to_python(backend_.prepare_exception(error))
 
     assert str(restored) == "No sequences found."
