@@ -13,6 +13,7 @@ from pydantic import ValidationError
 
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_MODELS
 from backend.exceptions import ODTEmptyResultError, ODTPipelineError
+from backend.worker.error_messages import UserWarningCollector, clean
 from backend.worker.genomic_regions_file import GenomicRegionsFile
 from backend.worker.utils import build_fallback_error_message
 
@@ -187,32 +188,39 @@ class PipelineRunner:
             raise NotImplementedError(f"Pipeline execution not implemented for {self.pipeline_name}")
 
         fallback_error_message = build_fallback_error_message("pipeline")
+        collector = UserWarningCollector()
 
         try:
             with open(config_path) as handle:
                 config_raw = yaml.safe_load(handle)
 
             config_validated = pipeline.model.model_validate(config_raw)
-            pipeline.function(config_validated)
+            with collector:
+                pipeline.function(config_validated)
 
         except ValidationError as e:
             raise ODTPipelineError(f"Invalid configuration file: {e!s}")
-        except (OligoDesignerError, ValueError):
-            raise ODTPipelineError(fallback_error_message)
+        except OligoDesignerError as error:
+            # Above `except SystemExit`: the toolsuite's EmptyResultError is both.
+            error_class = ODTEmptyResultError if isinstance(error, SystemExit) else ODTPipelineError
+            raise error_class(clean(str(error)) or fallback_error_message, collector.messages)
+        except ValueError:
+            raise ODTPipelineError(fallback_error_message, collector.messages)
         except SystemExit as e:
             if e.code == 1:
                 raise ODTEmptyResultError(
-                    "The pipeline did not generate any results. Please tweak your input parameters."
+                    "The pipeline did not generate any results. Please tweak your input parameters.",
+                    collector.messages,
                 )
             else:
-                raise ODTPipelineError(fallback_error_message)
+                raise ODTPipelineError(fallback_error_message, collector.messages)
         except Exception as error:
             if hasattr(error, "stderr"):
                 self.logger.debug(f"STDERR: {error.stderr}")
             if hasattr(error, "stdout"):
                 self.logger.debug(f"STDOUT: {error.stdout}")
             self.logger.debug(f"PLAIN: {error}")
-            raise ODTPipelineError(fallback_error_message)
+            raise ODTPipelineError(fallback_error_message, collector.messages)
 
     def generate_genomic_regions_file(self, form_data: dict, output_path: str) -> None:
         """Generates the Genomic Regions file used for visualizing the result.
