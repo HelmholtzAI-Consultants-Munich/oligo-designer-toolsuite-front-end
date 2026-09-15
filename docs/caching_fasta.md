@@ -157,23 +157,37 @@ references are purged periodically.
 ### Cleanup Logic
 
 A cache key expires once it has not been used for `REDIS_FILE_EXPIRATION_TIME` (30 days by
-default): reading a cached entry renews its expiration, see `FileCacheProxy.get_serialized`,
-so files that are still in use never expire. Redis expires keys passively, which means the
-key disappears while the file or directory it pointed to stays on disk. The
-`backend.worker.tasks.cleanup_cache_dirs` task reconciles the two:
+default): every cache hit resets its expiration, see `FileCacheProxy.get_serialized`. Redis
+expires keys passively, which means the key disappears while the file or directory it pointed
+to stays on disk. The `backend.worker.tasks.cleanup_cache_dirs` task reconciles the two:
 
 1. The cache root is read from the config (`RELATIVE_CACHE_PATH`, `backend/cache` by default).
 2. `backend.cache.get_cached_file_paths` collects the still referenced paths from Redis. File
    cache keys carry the `REDIS_FILE_CACHE_KEY_PREFIX` prefix, which makes them enumerable with
-   a `SCAN` and distinguishes them from other keys in the same Redis instance.
+   a `SCAN` and distinguishes them from other keys in the same Redis instance. Keys whose value
+   is not a path are logged and skipped.
 3. The cache root is walked and everything that is neither referenced nor part of a referenced
-   directory gets deleted, i.e. everything that has not been used for 30 days. Directories
-   are descended into rather than removed as a whole and are only removed once nothing is
-   left in them.
+   directory gets deleted. Whether an entry is still used is decided by Redis alone: an entry
+   is unreferenced once its key expired, i.e. once it has not been used for 30 days.
+   Directories are descended into rather than removed as a whole and are only removed once
+   they are empty.
 
-Since files are written before their cache key is stored, entries modified within the last
-`CACHE_ORPHAN_GRACE_HOURS` (24 by default) are kept, so that a download or a generator run in
-progress does not get deleted.
+Entries that cannot be accessed are logged and counted as `failed` in the task result, and the
+cleanup continues with the remaining entries.
+
+### Grace Period
+
+Files are written before their cache key is stored, so an unreferenced entry may still be in
+creation. Entries changed within the last `CACHE_ORPHAN_GRACE_HOURS` (24 by default) are
+therefore kept.
+
+The check uses the change time (`st_ctime`), not the modification time (`st_mtime`): downloads
+set the modification time to the remote's `Last-Modified` date for `If-Modified-Since`
+requests, so a file downloaded seconds ago can have a modification time years in the past. The
+change time is set by the operating system on every change and cannot be set by the download.
+
+Directories emptied during the same run skip the grace period, since deleting their content
+just updated their change time.
 
 There is no exclusion list: an entry survives as long as it is referenced in Redis.
 
@@ -195,7 +209,7 @@ The task itself runs on the worker, which is the service that mounts the cache v
 also be triggered manually:
 
 ```bash
-docker compose exec odt-worker celery -A backend.worker call backend.worker.tasks.cleanup_cache_dirs
+docker compose exec odt-worker /usr/local/bin/_entrypoint.sh celery -A backend.worker call backend.worker.tasks.cleanup_cache_dirs
 ```
 
 ---

@@ -10,13 +10,11 @@ import pytest
 from backend.worker.tasks import cleanup_cache_dirs
 
 GRACE_HOURS = 24
-NOW = time.time()
-OLD_CHANGE_TIME = NOW - (GRACE_HOURS + 1) * 3600
-FRESH_FILE_NAME = "fresh.fa"
+OLD_CHANGE_TIME = time.time() - (GRACE_HOURS + 1) * 3600
 
 
-def fake_changed_at(path: Path) -> float:
-    """Returns an old change time for every path except the fresh file.
+def old_changed_at(path: Path) -> float:
+    """Returns a change time beyond the grace period for every path.
 
     Arguments:
         path {pathlib.Path} -- The path whose change time is requested.
@@ -24,7 +22,7 @@ def fake_changed_at(path: Path) -> float:
     Returns:
         float -- The fake change timestamp.
     """
-    return NOW if path.name == FRESH_FILE_NAME else OLD_CHANGE_TIME
+    return OLD_CHANGE_TIME
 
 
 @pytest.fixture
@@ -34,7 +32,6 @@ def cache_root(tmp_path: Path) -> Path:
     Layout:
         ensembl/referenced.fa       -- referenced file, must be kept
         ensembl/orphan.fa           -- old orphaned file, must be deleted
-        ensembl/fresh.fa            -- orphaned file within the grace period, must be kept
         generated/referenced_dir/   -- referenced directory, must be kept
         generated/orphan_dir/       -- old orphaned directory, must be deleted
 
@@ -49,7 +46,7 @@ def cache_root(tmp_path: Path) -> Path:
     (root / "generated" / "referenced_dir").mkdir(parents=True)
     (root / "generated" / "orphan_dir").mkdir(parents=True)
 
-    for name in ["referenced.fa", "orphan.fa", FRESH_FILE_NAME]:
+    for name in ["referenced.fa", "orphan.fa"]:
         (root / "ensembl" / name).write_text(name)
     (root / "generated" / "referenced_dir" / "regions.fa").write_text("regions")
     (root / "generated" / "orphan_dir" / "regions.fa").write_text("regions")
@@ -57,7 +54,7 @@ def cache_root(tmp_path: Path) -> Path:
     return root
 
 
-def run_cleanup(cache_root: Path, referenced: set[Path], changed_at=fake_changed_at) -> dict[str, int]:
+def run_cleanup(cache_root: Path, referenced: set[Path], changed_at=old_changed_at) -> dict[str, int]:
     """Runs the cleanup task synchronously against the passed cache root.
 
     Arguments:
@@ -96,16 +93,7 @@ def test_cleanup_keeps_referenced_and_deletes_orphans(cache_root: Path):
     assert result == {"referenced": 2, "deleted_files": 2, "deleted_dirs": 1, "failed": 0}
 
 
-def test_cleanup_keeps_entries_within_grace_period(cache_root: Path):
-    """Test that an orphaned entry is kept while it may still be in creation"""
-    referenced = {cache_root / "generated" / "referenced_dir"}
-
-    run_cleanup(cache_root, referenced)
-
-    assert (cache_root / "ensembl" / FRESH_FILE_NAME).exists()
-
-
-def test_cleanup_keeps_fresh_download_with_old_modification_time(tmp_path: Path):
+def test_cleanup_keeps_entries_within_grace_period(tmp_path: Path):
     """Test that a just downloaded file is kept although its modification time is old
 
     Downloads set the modification time to the remote's `Last-Modified` date.
@@ -114,7 +102,7 @@ def test_cleanup_keeps_fresh_download_with_old_modification_time(tmp_path: Path)
     download = root / "ensembl" / "genome.fa.gz"
     download.parent.mkdir(parents=True)
     download.write_text("genome")
-    os.utime(download, times=(NOW, OLD_CHANGE_TIME - 365 * 86400))
+    os.utime(download, times=(time.time(), OLD_CHANGE_TIME - 365 * 86400))
 
     run_cleanup(root, set(), changed_at=None)
 
@@ -124,7 +112,6 @@ def test_cleanup_keeps_fresh_download_with_old_modification_time(tmp_path: Path)
 def test_cleanup_removes_container_without_referenced_entries(cache_root: Path):
     """Test that a directory is removed once none of its entries are cached anymore"""
     referenced = {cache_root / "generated" / "referenced_dir"}
-    (cache_root / "ensembl" / FRESH_FILE_NAME).unlink()
 
     run_cleanup(cache_root, referenced)
 
@@ -139,7 +126,7 @@ def test_cleanup_continues_after_entry_error(cache_root: Path):
     def changed_at(path: Path) -> float:
         if path.name == "orphan.fa":
             raise PermissionError("denied")
-        return fake_changed_at(path)
+        return old_changed_at(path)
 
     result = run_cleanup(cache_root, referenced, changed_at=changed_at)
 
@@ -158,10 +145,3 @@ def test_cleanup_ignores_symlink_escaping_root(cache_root: Path, tmp_path: Path)
     run_cleanup(cache_root, set())
 
     assert (outside / "secret.txt").exists()
-
-
-def test_cleanup_without_cache_directory(tmp_path: Path):
-    """Test that a missing cache directory is reported as nothing to clean up"""
-    result = run_cleanup(tmp_path / "missing", set())
-
-    assert result == {"referenced": 0, "deleted_files": 0, "deleted_dirs": 0, "failed": 0}

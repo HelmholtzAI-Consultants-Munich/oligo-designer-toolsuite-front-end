@@ -35,7 +35,7 @@ class FileCacheProxy(ProxyBackend):
         cache or the same key is associated with a new file or directory.
 
         Cached files and directories expire after not being used for the expiration
-        time configured on the region, since retrieving a value renews its expiration.
+        time configured on the cache backen, since retrieving a value renews its expiration.
 
         If a key is invalidated or expires, the associated file or directory will
         not get deleted. This is handled externally by the periodic

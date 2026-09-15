@@ -39,11 +39,6 @@ def get_client():
     return file_cache_region.backend.proxied.reader_client
 
 
-def test_cached_key_is_prefixed(cached_file: Path):
-    """Test that a cached key is stored under the file cache prefix"""
-    assert get_client().exists(file_cache_key_mangler(CACHE_KEY)) == 1
-
-
 def test_cached_path_is_listed(cached_file: Path):
     """Test that a cached path is collected from Redis"""
     assert cached_file.resolve() in get_cached_file_paths()

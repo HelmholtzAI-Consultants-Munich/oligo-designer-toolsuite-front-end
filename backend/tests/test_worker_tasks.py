@@ -43,22 +43,17 @@ def test_generate_monthly_report_closes_mongo_client_on_failure():
     client.close.assert_called_once()
 
 
-def test_delete_directory_if_under_root_removes_directory(tmp_path: Path):
-    """Test that a directory including its content gets deleted"""
+def test_delete_helpers_remove_paths_of_expected_type(tmp_path: Path):
+    """Test that the directory helper deletes a directory and the file helper deletes a file"""
     directory = tmp_path / "run_output"
     directory.mkdir()
     (directory / "result.fa").write_text("result")
-
-    assert _delete_directory_if_under_root(directory, tmp_path) == (True, True)
-    assert not directory.exists()
-
-
-def test_delete_file_if_under_root_removes_file(tmp_path: Path):
-    """Test that a file gets deleted"""
     file = tmp_path / "upload.csv"
     file.write_text("upload")
 
+    assert _delete_directory_if_under_root(directory, tmp_path) == (True, True)
     assert _delete_file_if_under_root(file, tmp_path) == (True, True)
+    assert not directory.exists()
     assert not file.exists()
 
 

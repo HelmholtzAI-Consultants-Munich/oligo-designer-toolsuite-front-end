@@ -637,8 +637,9 @@ def _cleanup_cache_entry(
             if any(path.iterdir()):
                 return
 
-        # Entries may still be in the process of being cached, so respect the grace period.
-        # Emptied directories are exempt since deleting their content just changed them.
+        # Keep entries changed within the grace period (`_changed_at(path) > cutoff`), they may
+        # still be written before getting their cache key. Directories emptied above
+        # (`had_content`) skip this check, since deleting their content just changed them.
         if not had_content and _changed_at(path) > cutoff:
             return
 
