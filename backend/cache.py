@@ -1,6 +1,6 @@
 """Shared file for caching utils."""
 
-import os
+import logging
 import shutil
 from pathlib import Path
 
@@ -11,20 +11,16 @@ from dogpile.cache.util import sha1_mangle_key
 
 from backend.config import Config
 
+logger = logging.getLogger(__name__)
+
 
 def get_cache_root() -> Path:
     """Get the root directory of the file cache.
 
-    Notes:
-        The worker does not run Flask's from_prefixed_env, so the FLASK_ prefixed
-        environment variable is read directly.
-
     Returns:
         pathlib.Path -- The path to the file cache root directory.
     """
-    backend_root = Path(__file__).resolve().parent
-    cache_root = backend_root / os.environ.get("FLASK_RELATIVE_CACHE_PATH", Config.RELATIVE_CACHE_PATH)
-    return cache_root.resolve(strict=False)
+    return Path(__file__).resolve().parent / Config.RELATIVE_CACHE_PATH
 
 
 class FileCacheProxy(ProxyBackend):
@@ -104,17 +100,19 @@ class FileCacheProxy(ProxyBackend):
         Returns:
             SerializedReturnType -- The cached value representing a pathlib.Path or NO_VALUE.
         """
-        value = self.proxied.get_serialized(key)
+        if expiration_time := self.proxied.redis_expiration_time:
+            # Read and renew the expiration in a single atomic call
+            value = self.proxied.writer_client.getex(key, ex=expiration_time)
+        else:
+            value = self.proxied.get_serialized(key)
         if not value:
-            return value
+            return NO_VALUE
 
         # Ensure file or directory is actually present
         if not self._get_path_from_value(value).exists():
             self.proxied.delete(key)
             return NO_VALUE
 
-        if expiration_time := self.proxied.redis_expiration_time:
-            self.proxied.writer_client.expire(key, expiration_time)
         return value
 
     def set(self, key: str, value: BackendSetType) -> None:
@@ -258,6 +256,6 @@ def get_cached_file_paths() -> set[Path]:
             continue
         try:
             paths.add(backend._get_path_from_value(value).resolve())
-        except (AssertionError, ValueError, TypeError):
-            continue
+        except Exception as error:
+            logger.warning(f"Skipping file cache key {key!r}, its value is not a path: {error!r}")
     return paths

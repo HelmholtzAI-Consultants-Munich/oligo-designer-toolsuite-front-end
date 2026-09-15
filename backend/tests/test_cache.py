@@ -79,3 +79,15 @@ def test_missing_file_invalidates_the_cache_entry(cached_file: Path):
 
     assert file_cache_region.get(CACHE_KEY) is NO_VALUE
     assert get_client().exists(file_cache_key_mangler(CACHE_KEY)) == 0
+
+
+def test_malformed_value_is_skipped():
+    """Test that a file cache key without a path value does not break collecting the paths"""
+    key = f"{Config.REDIS_FILE_CACHE_KEY_PREFIX}malformed-test-entry"
+    client = get_client()
+    client.set(key, b"not a dogpile value")
+
+    try:
+        get_cached_file_paths()
+    finally:
+        client.delete(key)
