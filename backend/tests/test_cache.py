@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 from dogpile.cache.api import NO_VALUE
 
-from backend.cache import file_cache_key_mangler, file_cache_region, get_cached_file_paths
+from backend.cache import (
+    file_cache_key_mangler,
+    file_cache_region,
+    get_cached_file_paths,
+    get_file_cache_redis_backend,
+)
 from backend.config import Config
 
 CACHE_KEY = "test-file-cache-entry"
@@ -36,7 +41,7 @@ def get_client():
     Returns:
         redis.StrictRedis -- The client of the file cache region's Redis backend.
     """
-    return file_cache_region.backend.proxied.reader_client
+    return get_file_cache_redis_backend().reader_client
 
 
 def test_cached_path_is_listed(cached_file: Path):

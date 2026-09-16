@@ -14,7 +14,13 @@ const DescriptionFieldTemplate = memo(function DescriptionFieldTemplate(
     props: DescriptionFieldProps
 ) {
     const { description, id } = props;
-    return <ToolTip id={id} tip={description?.toString()} />;
+    // RJSF passes the description's own id, while ToolTip wants the field's to derive it from
+    return (
+        <ToolTip
+            id={id.replace(/__description$/, "")}
+            tip={description?.toString()}
+        />
+    );
 });
 
 export default DescriptionFieldTemplate;

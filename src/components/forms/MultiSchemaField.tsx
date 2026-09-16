@@ -69,7 +69,10 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
                         <Form.Label htmlFor={fieldPathId.$id} className="mb-0">
                             {schema.title}
                         </Form.Label>
-                        <ToolTip id={schema.$id!} tip={schema.description} />
+                        <ToolTip
+                            id={fieldPathId.$id}
+                            tip={schema.description}
+                        />
                     </div>
                 )}
                 <div className="field-row-control">
@@ -152,8 +155,8 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
             }}
         >
             <Card.Body>
+                {/* RJSF passes this template no field id, and our schemas carry no `$id` */}
                 <GroupHeading
-                    id={schema.$id!}
                     title={schema.title}
                     description={schema.description}
                 />

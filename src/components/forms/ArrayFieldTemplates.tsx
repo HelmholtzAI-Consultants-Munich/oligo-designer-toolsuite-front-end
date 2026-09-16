@@ -1,5 +1,4 @@
 import {
-    descriptionId,
     titleId,
     type ArrayFieldDescriptionProps,
     type ArrayFieldTitleProps,
@@ -37,13 +36,12 @@ const ArrayFieldTitleTemplate = memo((props: ArrayFieldTitleProps) => {
 const ArrayFieldDescriptionTemplate = memo(
     (props: ArrayFieldDescriptionProps) => {
         const { description, fieldPathId } = props;
-        const id = descriptionId(fieldPathId);
 
         if (!description) {
             return null;
         }
 
-        return <ToolTip id={id} tip={description.toString()} />;
+        return <ToolTip id={fieldPathId.$id} tip={description.toString()} />;
     }
 );
 

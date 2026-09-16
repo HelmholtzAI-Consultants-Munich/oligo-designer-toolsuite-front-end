@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { OverlayTrigger, Popover } from "react-bootstrap";
 import { InfoCircle } from "react-bootstrap-icons";
 import type { OverlayTriggerType } from "react-bootstrap/esm/OverlayTrigger";
 
 interface ToolTipProps {
     /** id of the field being described, used to derive the popover's and the description's own ids */
-    id: string;
+    id?: string;
     tip: string | undefined;
 }
 
@@ -15,9 +15,10 @@ interface ToolTipProps {
  * @remarks
  * The tip is also written to a visually hidden element at `<id>__description`, the id RJSF
  * puts in every field's `aria-describedby`. Without it a screen reader resolves nothing,
- * since the popover only exists while open.
+ * since the popover only exists while open. Without an `id` there is no field to describe, so
+ * only the popover is rendered, under a generated id.
  *
- * @param id - id of the described field
+ * @param id - id of the described field, not its `__description` id
  * @param tip - the description to show, or nothing to render no icon at all
  * @returns A React Component showing a description on hover, focus, or to a screen reader
  */
@@ -26,6 +27,7 @@ export const ToolTip: React.FC<ToolTipProps> = ({ id, tip }) => {
         () => ["hover", "focus"],
         []
     );
+    const generatedId = useId();
 
     if (!tip) {
         return null;
@@ -33,14 +35,16 @@ export const ToolTip: React.FC<ToolTipProps> = ({ id, tip }) => {
 
     return (
         <>
-            <span id={`${id}__description`} className="visually-hidden">
-                {tip}
-            </span>
+            {id && (
+                <span id={`${id}__description`} className="visually-hidden">
+                    {tip}
+                </span>
+            )}
             <OverlayTrigger
                 trigger={triggerArray}
                 placement="top"
                 overlay={
-                    <Popover id={`${id}__tooltip`}>
+                    <Popover id={`${id ?? generatedId}__tooltip`}>
                         <Popover.Body>{tip}</Popover.Body>
                     </Popover>
                 }
