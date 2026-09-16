@@ -15,7 +15,7 @@ from oligo_designer_toolsuite.pipelines._genomic_region_generator import (
     GenomicRegionGenerator,
 )
 
-from backend.cache import file_cache_region
+from backend.cache import file_cache_region, get_cache_root
 from backend.exceptions import ODTPipelineError
 from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
 from backend.worker.converters import to_bool, to_int
@@ -42,8 +42,7 @@ class GenomicRegionGeneratorRunner:
         """
         self.logger = logger
 
-        # TODO: read this path from config
-        self.cache_dir = (Path(os.path.dirname(__file__)) / "../cache").resolve()
+        self.cache_dir = get_cache_root()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def run(self, region_form: dict[str, Any]) -> list[str]:

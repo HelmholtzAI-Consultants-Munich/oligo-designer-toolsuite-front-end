@@ -14,7 +14,9 @@ Main features:
     - Anonymous session tracking and data directory creation for unauthenticated users
     - Seamless migration of anonymous data to authenticated users
 
-:requires: Flask, Flask-Login, Authlib, MongoDB (via extensions.mongo), requests
+Notes:
+    Requires Flask, Flask-Login, Authlib, MongoDB (via extensions.mongo),
+    requests.
 """
 
 import os
@@ -51,17 +53,16 @@ auth_bp = Blueprint("auth", __name__)
 
 # ---- User Loader and User Class ----
 class User(UserMixin):
-    """
-    Flask-Login User class wrapper for MongoDB user documents.
+    """Wraps a MongoDB user document (user_doc) so Flask-Login can track it.
 
-    Stores user information from Helmholtz AAI OAuth2/OIDC authentication or CLI registration.
+    Attributes:
+        id {str} -- user ID (ObjectId as a string).
+        helmholtz_sub {str | None} -- Helmholtz AAI subject identifier (OAuth SSO user ID).
+        username {str | None} -- username, set for CLI-registered admin users.
 
-    :param user_doc: The MongoDB user document.
-    :type user_doc: dict
-
-    :ivar id: User ID, as a string (ObjectId).
-    :ivar helmholtz_sub: Helmholtz AAI subject identifier (unique user ID from OAuth).
-    :ivar username: Username for CLI-registered admin users.
+    Notes:
+        These are pulled out of user_doc because they're the fields routes
+        need, without every caller re-parsing the raw document.
     """
 
     def __init__(self, user_doc):
@@ -71,16 +72,18 @@ class User(UserMixin):
 
 
 def init_login_manager(app):
-    """
-    Initialize Flask-Login's LoginManager and user loader.
+    """Initializes and configures the Flask-Login login manager.
 
-    :param app: The Flask application instance.
-    :type app: flask.Flask
-    :returns: The initialized LoginManager object.
-    :rtype: flask_login.LoginManager
+    Arguments:
+        app {flask.Flask} -- the Flask application instance.
 
-    The user_loader loads a user from the database using their ObjectId.
-    Session protection is enabled in "strong" mode to prevent session hijacking.
+    Notes:
+        "Strong" session protection is used (tracks IP/user-agent), so a
+        stolen session cookie stops working if replayed from a different
+        client.
+
+    Returns:
+        flask_login.LoginManager -- the initialized login manager.
     """
     login_manager = LoginManager()
     login_manager.init_app(app)
@@ -103,14 +106,21 @@ def init_login_manager(app):
 
 # ---- Helper Function for User Login Logic ----
 def _login(user: User, remember: bool = True):
-    """
-    Helper function to handle user login logic including directory creation,
-    session management, and anonymous run migration.
+    """Logs in the given user and performs post-login setup.
 
-    :param user: The User instance to log in.
-    :type user: User
-    :param remember: Whether to use "Remember Me" functionality.
-    :type remember: bool
+    Arguments:
+        user {User} -- the user to log in.
+
+    Keyword Arguments:
+        remember {bool} -- whether to persist the login across browser
+        sessions via Flask-Login's remember cookie. (default: {True})
+
+    Notes:
+        Post-login setup: ensures the user's data directory exists, clears
+        any stale OAuth token from a previous session, and migrates the
+        caller's anonymous runs/uploads to the now-authenticated user. This
+        is shared by both OAuth and legacy login so setup happens exactly
+        once, regardless of which login path was used.
     """
     # Make session cookie temporary; Flask-Login remember cookie handles persistence
     session.permanent = False
@@ -142,6 +152,21 @@ def _login(user: User, remember: bool = True):
 
 
 def _build_legal_status(user_id: str | None = None, session_id: str | None = None) -> dict:
+    """Builds the legal terms-acceptance status for a user or session.
+
+    Keyword Arguments:
+        user_id {str | None} -- set for authenticated users; mutually
+        exclusive with session_id. (default: {None})
+        session_id {str | None} -- set for anonymous users. (default: {None})
+
+    Notes:
+        This is shared by check_auth and accept_terms so the frontend always
+        gets the same shape for whether this identity needs to (re-)accept
+        terms.
+
+    Returns:
+        dict -- current/accepted terms version and acceptance timestamp.
+    """
     terms_doc = get_published_legal_document(TERMS_DOCUMENT_KEY)
     latest_acceptance = None
     accepted_terms_version = None
@@ -162,15 +187,19 @@ def _build_legal_status(user_id: str | None = None, session_id: str | None = Non
 # ---- Login Route (OAuth GET + Legacy POST) ----
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    Handle both Helmholtz AAI OAuth login (GET) and legacy username/password login (POST).
+    """Handles both OAuth (GET) and legacy username/password (POST) login on one route.
 
     GET:
         Redirects the user to the Helmholtz AAI authorization endpoint.
     POST:
-        Authenticates user via MongoDB-stored username/password credentials.
+        Authenticates the user via MongoDB-stored username/password credentials.
 
-    :returns: Redirect response (GET) or JSON message (POST).
+    Notes:
+        The frontend always POSTs here for username/password, while OAuth
+        needs a GET the browser can be redirected to directly.
+
+    Returns:
+        flask.Response -- redirect to Helmholtz AAI (GET), or JSON message (POST).
     """
 
     if request.method == "GET":
@@ -220,25 +249,25 @@ def login():
 # ---- OAuth Callback Route ----
 @auth_bp.route("/auth/callback")
 def auth_callback():
-    """
-    Handle OAuth2 callback from Helmholtz AAI.
+    """OAuth2 callback from Helmholtz AAI that looks up/creates the user and logs them in.
 
-    Exchanges authorization code for access token, fetches user info,
-    creates or updates user in MongoDB, logs user in, and migrates
-    any anonymous session data.
+    Steps:
+        1. Exchange the authorization code for an access token.
+        2. Load userinfo (merging token and userinfo-endpoint claims).
+        3. Reject if the identity is banned or lacks a required entitlement.
+        4. Look up or create the user by helmholtz_sub.
+        5. Log the user in, creating their data directory and migrating any
+           anonymous session data.
+        6. Store the access token in session for later revocation.
+        7. Redirect to the frontend, preserving any validated redirect path.
 
-    :returns: Redirect to frontend or JSON error message.
-    :rtype: flask.Response
+    Notes:
+        The user is looked up/created by helmholtz_sub and the denylist is checked here
+        (rather than relying on the user_loader) so a newly-banned user is
+        rejected even before their first User object is created.
 
-    Workflow:
-      1. Exchange authorization code for access token.
-      2. Fetch user info from Helmholtz AAI userinfo endpoint.
-      3. Check if user exists in MongoDB by helmholtz_sub.
-      4. If new user: create a user document with helmholtz_sub, role, and legal acceptance fields.
-      5. Log user in via Flask-Login with remember-me enabled.
-      6. Let _login() create the user data directory if needed and migrate any anonymous session data.
-      7. Store the access token in session for later revocation.
-      8. Redirect to the frontend, preserving any validated redirect path from the OAuth flow.
+    Returns:
+        flask.Response -- redirect to the frontend (success or ban message).
     """
     # Exchange authorization code for access token
     token = oauth.helmholtz.authorize_access_token()
@@ -281,13 +310,15 @@ def auth_callback():
 # ---- Check Authentication Status Route ----
 @auth_bp.route("/api/check_auth", methods=["GET"])
 def check_auth():
-    """
-    Check if current user is authenticated.
+    """Returns the current authentication and legal-acceptance status for the caller.
 
-    Returns user info if authenticated, otherwise just `authenticated: False`.
+    Notes:
+        The frontend polls this on load to decide whether to show a
+        logged-in or anonymous UI, and whether terms need (re-)accepting.
 
-    :returns: JSON containing authentication status and user info (if authenticated).
-    :rtype: flask.Response
+    Returns:
+        flask.Response -- authentication status, user info if authenticated,
+        and legal-acceptance status either way.
     """
     if current_user.is_authenticated:
         # Get user document to include role, helmholtz_sub, and username
@@ -319,7 +350,11 @@ def check_auth():
 
 @auth_bp.route("/api/legal/terms/accept", methods=["POST"])
 def accept_terms():
-    """Record acceptance of the current terms version for the current user or session."""
+    """Records acceptance of the current terms version for the current user or session.
+
+    Returns:
+        flask.Response -- updated legal-acceptance status.
+    """
     user_id = str(current_user.id) if current_user.is_authenticated else None
     session_id = None if user_id else session.get("session_id")
 
@@ -347,14 +382,16 @@ def accept_terms():
 @auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
-    """
-    Log out the current authenticated user and revoke OAuth token.
+    """Logs out the current user and revokes their OAuth token with Helmholtz AAI.
 
-    Revokes the access token with Helmholtz AAI (if present),
-    logs out the user from Flask-Login, and clears the session.
+    Notes:
+        Revoking the token (not just clearing the local session) ensures the
+        access token can't still be used elsewhere after the user has logged
+        out here. Revocation failures are logged, not raised, since the user
+        should still be logged out locally either way.
 
-    :returns: JSON message confirming logout.
-    :rtype: flask.Response
+    Returns:
+        flask.Response -- confirmation message.
     """
     # Revoke OAuth token if present
     oauth_token = session.get("oauth_token")
@@ -372,7 +409,11 @@ def logout():
 @auth_bp.route("/api/account", methods=["DELETE"])
 @login_required
 def delete_account():
-    """Delete the current account and the user's associated data."""
+    """Deletes the current account and the user's associated data.
+
+    Returns:
+        flask.Response -- confirmation message.
+    """
     user_id = str(current_user.id)
 
     delete_user_account_data(
@@ -389,15 +430,17 @@ def delete_account():
 # ---- Before Request Handler to Assign Anonymous Session ID ----
 @auth_bp.before_app_request
 def assign_session_id():
-    """
-    Assign a unique session_id to anonymous users for tracking their runs
-    and data before they log in or register.
+    """Assigns and persists a stable anonymous session id before every request.
 
-    If the current user is not authenticated and session does not have a 'session_id',
-    assigns a new UUID as session_id. Makes the session permanent so it persists across browser sessions.
-    Creates a directory for anonymous user data if it does not exists already.
+    Runs before every request; if the caller is anonymous and has no
+    session_id yet, assigns one, makes the session permanent, and creates
+    that session's data directory.
 
-    :modifies session: Adds 'session_id' to Flask session for anonymous user tracking.
+    Notes:
+        This runs before every request so anonymous visitors get a stable
+        identity (and data directory) even before they submit anything,
+        since a pipeline run needs somewhere to write output as soon as it
+        starts.
     """
     if request.method == "OPTIONS":
         return

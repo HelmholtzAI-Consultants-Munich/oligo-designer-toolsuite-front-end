@@ -1,3 +1,15 @@
+# Builds the three production Docker images and publishes them to the GitHub Container
+# Registry (GHCR, ghcr.io) - GitHub's own place to host Docker images, alongside the repo.
+#
+# Runs only when a release is tagged: a git tag starting with "v", e.g. v0.2.0.
+# Ordinary pushes and pull requests do NOT trigger this.
+#
+# Each image is then scanned by Trivy, using the digest it was just published under:
+#   - an SBOM (a full list of everything inside the image) is saved as a workflow artifact
+#   - vulnerabilities are reported to Security -> Code scanning
+# Neither one fails the build; a CVE in a base image must not block a release.
+# See security_scan.yml for the weekly re-scan of images already published.
+
 name: Create and publish Docker images for all production services
 
 on:
@@ -31,6 +43,7 @@ jobs:
       packages: write
       attestations: write
       id-token: write
+      security-events: write
 
     steps:
       - name: Get metadata for server Docker image
@@ -53,6 +66,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build and push server Docker image
+        id: build
         uses: docker/build-push-action@v7
         with:
           file: ${{ matrix.dockerfile_path }}
@@ -60,3 +74,46 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      # Registry references must be lowercase, but the organisation name is not.
+      - name: Compose the pushed image reference
+        id: image
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          OWNER: ${{ github.repository_owner }}
+          IMAGE_NAME: ${{ matrix.image_name }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: echo "ref=${REGISTRY,,}/${OWNER,,}/${IMAGE_NAME,,}@${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate SBOM for the published image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image.outputs.ref }}
+          format: cyclonedx
+          output: sbom-${{ matrix.image_name }}.cdx.json
+          # no severity filter: an SBOM has to be complete
+
+      - name: Upload the SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: sbom-${{ matrix.image_name }}
+          path: sbom-${{ matrix.image_name }}.cdx.json
+
+      - name: Scan the published image for vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image.outputs.ref }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          limit-severities-for-sarif: true # without this the severity filter is ignored for SARIF
+          format: sarif
+          output: trivy-${{ matrix.image_name }}.sarif
+          exit-code: "0" # report only, a CVE in a base image must not block a release
+
+      - name: Upload results to GitHub code scanning
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        with:
+          sarif_file: trivy-${{ matrix.image_name }}.sarif
+          category: trivy-${{ matrix.image_name }} # each category is replaced on upload, so keep them distinct

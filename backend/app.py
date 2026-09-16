@@ -1,3 +1,7 @@
+"""
+Flask application factory: configuration, extensions, blueprints, and startup tasks.
+"""
+
 import logging.config
 import os
 import time
@@ -21,6 +25,16 @@ from backend.worker.task_index import Tasks
 
 
 def register_teardown_handler(app):
+    """Closes the MongoDB client when the app context tears down.
+
+    Arguments:
+        app {flask.Flask} -- the Flask application instance.
+
+    Notes:
+        Without this, MongoDB connections opened per app context would leak
+        instead of being released when the context ends.
+    """
+
     @app.teardown_appcontext
     def teardown(exception=None):
 
@@ -28,7 +42,7 @@ def register_teardown_handler(app):
 
 
 def ensure_mongo_indexes() -> None:
-    """Create MongoDB indexes used by recurring cleanup and consent lookups."""
+    """Creates MongoDB indexes for anonymous-session lookups, consent tracking, and ban checks."""
     db.runs.create_index(
         [("session_id", 1)],
         name="runs_session_id_idx",
@@ -58,11 +72,17 @@ def ensure_mongo_indexes() -> None:
 
 
 def prepare_paths(app: Flask):
-    """Extract and expand relative path definitions in the app's config.
+    """Expands the app's relative path config values into absolute paths, creating the directories.
 
-    The initial config contains relative paths which this functions expands to their full absolute paths.
-    The "data access" path points to the directory assumed to be shared by the Flask server and Celery workers.
-    All other relative paths are relative to this directory.
+    Arguments:
+        app {Flask} -- the Flask application instance; app.config is
+        updated in place.
+
+    Notes:
+        RELATIVE_DATA_ACCESS_PATH is the directory shared by the Flask
+        server and Celery workers; every other relative path is resolved
+        under it, since the server and workers may otherwise run with
+        different working directories.
     """
     relative_data_access_path_key = "RELATIVE_DATA_ACCESS_PATH"
     relative_to_data_access_keys = ["RELATIVE_UPLOAD_PATH", "RELATIVE_USERDATA_PATH"]
@@ -82,6 +102,16 @@ def prepare_paths(app: Flask):
 
 # TODO: investigate double execution due to server restart in development mode
 def initial_dropdown_prefetch(celery_app, app):
+    """Triggers the dropdown-options prefetch task, retrying until Celery accepts it.
+
+    Arguments:
+        celery_app {Celery} -- the Celery app to send the task through.
+        app {Flask} -- used for logging.
+
+    Notes:
+        Retries on OperationalError since the broker may not be reachable
+        yet immediately at startup.
+    """
     while True:
         try:
             app.logger.debug("Prefetching dropdown")
@@ -95,6 +125,11 @@ def initial_dropdown_prefetch(celery_app, app):
 
 
 def create_app():
+    """Builds and configures the Flask application: config, extensions, blueprints, and startup tasks.
+
+    Returns:
+        Flask -- the configured application, ready to run.
+    """
     # Configure logging before creating Flask app (as Flask docs recommend)
     # This ensures logging is configured before app.logger is accessed
     logging.config.dictConfig(Config.get_logging_config())
