@@ -3,6 +3,7 @@
 All functionality related to handling, executing and configuring the Genomic Region Generator should be added in this class.
 """
 
+import ftplib
 import os
 import uuid
 from logging import Logger
@@ -11,6 +12,7 @@ from typing import Any
 
 import yaml
 from filelock import SoftFileLock
+from oligo_designer_toolsuite._exceptions import OligoDesignerError
 from oligo_designer_toolsuite.pipelines._genomic_region_generator import (
     GenomicRegionGenerator,
 )
@@ -19,6 +21,7 @@ from backend.cache import file_cache_region, get_cache_root
 from backend.exceptions import ODTPipelineError
 from backend.genomic_databases import EnsemblGenomicDatabase, GenomicEntity, NCBIGenomicDatabase
 from backend.worker.converters import to_bool, to_int
+from backend.worker.error_messages import UserWarningCollector, clean
 from backend.worker.utils import build_fallback_error_message
 
 
@@ -94,14 +97,16 @@ class GenomicRegionGeneratorRunner:
         genomic_entity = GenomicEntity(taxon=taxon, species=species, release=ann_rel)
 
         source_val = region_form.get("source", "").lower()
-        if source_val == "ensembl":
-            # Ensembl second-line cache
-            cache_info = EnsemblGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
-            files_source = "Ensembl"
-        else:
-            # Default to NCBI second-line cache
-            cache_info = NCBIGenomicDatabase(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
-            files_source = "NCBI"
+        files_source = "Ensembl" if source_val == "ensembl" else "NCBI"
+        genomic_database = EnsemblGenomicDatabase if files_source == "Ensembl" else NCBIGenomicDatabase
+        try:
+            cache_info = genomic_database(cache_dir=self.cache_dir).fetch_genomic_entity(genomic_entity)
+        # ftplib.all_errors includes OSError, which also covers requests' network errors.
+        except (RuntimeError, ValueError, *ftplib.all_errors) as error:
+            raise ODTPipelineError(
+                clean(f"Could not fetch the genomic data from {files_source}: {error}")
+                or build_fallback_error_message("genomic region generator")
+            )
 
         genome_assembly = cache_info["genome_assembly"]
         resolved_rel = cache_info["annotation_release"]
@@ -137,24 +142,34 @@ class GenomicRegionGeneratorRunner:
         sequence_file_lock = SoftFileLock(Path(sequence_file + ".lock"))
         with annotation_file_lock, sequence_file_lock:
             # start Genomic Region Generator
+            collector = UserWarningCollector()
             try:
                 pipeline = GenomicRegionGenerator(config_genomic["dir_output"])
 
-                # Load annotations
-                region_generator = pipeline.load_annotations(
-                    source=config_genomic["source"],
-                    source_params=config_genomic["source_params"],
-                )
+                with collector:
+                    # Load annotations
+                    region_generator = pipeline.load_annotations(
+                        source=config_genomic["source"],
+                        source_params=config_genomic["source_params"],
+                    )
 
-                # Generate regions
-                pipeline.generate_genomic_regions(
-                    region_generator=region_generator,
-                    genomic_regions=config_genomic["genomic_regions"],
-                    block_size=config_genomic["exon_exon_junction_block_size"],
-                )
+                    # Generate regions
+                    pipeline.generate_genomic_regions(
+                        region_generator=region_generator,
+                        genomic_regions=config_genomic["genomic_regions"],
+                        block_size=config_genomic["exon_exon_junction_block_size"],
+                    )
 
+            except OligoDesignerError as error:
+                self.cleanup_temp_files(config_path)
+                raise ODTPipelineError(
+                    clean(str(error)) or build_fallback_error_message("genomic region generator"),
+                    collector.messages,
+                )
             except ValueError:
-                raise ODTPipelineError(build_fallback_error_message("genomic region generator"))
+                raise ODTPipelineError(
+                    build_fallback_error_message("genomic region generator"), collector.messages
+                )
             except Exception as error:
                 if hasattr(error, "stderr"):
                     self.logger.warning(f"The genomic region generator failed STDERR: {error.stderr}")
@@ -162,7 +177,8 @@ class GenomicRegionGeneratorRunner:
                 self.cleanup_temp_files(config_path)
                 other_files_source = "Ensembl" if files_source == "NCBI" else "NCBI"
                 raise ODTPipelineError(
-                    f"An error occured while fetching data from {files_source}. Please try again. If the error persists, please inform us of the issue and consider switching to {other_files_source} data for now."
+                    f"An error occured while fetching data from {files_source}. Please try again. If the error persists, please inform us of the issue and consider switching to {other_files_source} data for now.",
+                    collector.messages,
                 )
 
         self.cleanup_temp_files(config_path)

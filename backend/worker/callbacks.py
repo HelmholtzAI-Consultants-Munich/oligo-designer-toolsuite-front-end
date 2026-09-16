@@ -35,6 +35,7 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
 
     status = RunStatus.FAILURE
     error_message: str
+    error_details: list[str] = []
 
     match exc:
         case TaskRevokedError():
@@ -46,13 +47,19 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
         case ODTEmptyResultError():
             status = RunStatus.EMPTY_RESULT  # override run status
             error_message = str(exc)
+            error_details = exc.details
         case ODTCloudError():
             error_message = str(exc)
+            error_details = exc.details
         case TimeLimitExceeded() | SoftTimeLimitExceeded():
             status = RunStatus.TIMEOUT  # override run status
             error_message = "The pipeline exceeded the time limit."
         case _:
             error_message = "An unexpected error occured."
+
+    update: dict = {"status": status, "error_message": error_message}
+    if error_details:
+        update["error_details"] = error_details
 
     with mongo_database() as db:
         with queue_accounting_lock() as redis:
@@ -61,8 +68,8 @@ def pipeline_chord_errback(request: Request, exc: BaseException, trace: str | No
                 # The run never left the queue (e.g. a genomic region generation header task
                 # failed before the pipeline body task started), so its accounting was never
                 # cleared by PipelineTask.before_start. Clear it here instead.
-                _update_run(run_id, {"status": status, "error_message": error_message})
+                _update_run(run_id, update)
                 _remove_pending_run(redis, db, run)
                 return
 
-    _update_run(run_id, {"status": status, "error_message": error_message})
+    _update_run(run_id, update)

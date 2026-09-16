@@ -113,6 +113,10 @@ class Config:
         log_level = os.environ.get("LOG_LEVEL", "INFO")
         return {
             "version": 1,
+            # dictConfig disables every logger that already exists unless it is named
+            # below, which would silence third-party libraries imported before the app
+            # is created, such as the ODT. Therefore by making it false we can get the ODT warnings to show the users
+            "disable_existing_loggers": False,
             "formatters": {
                 "default": {
                     "format": "[%(asctime)s] %(levelname)s in %(module)s: %(message)s",

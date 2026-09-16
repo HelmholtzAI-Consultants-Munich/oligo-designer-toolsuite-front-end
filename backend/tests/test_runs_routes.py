@@ -258,3 +258,19 @@ def test_get_run_config_unauthorized(client, dummy_user, run_id):
 
     response = client.get(f"/api/runs/{run_id}/config")
     assert response.status_code == 404
+
+
+def test_get_pipeline_run_returns_error_details_with_the_message(client, dummy_user, run_id):
+    """Test get_pipeline_run returns the toolsuite's warnings next to the error_message."""
+    details = ["Region GFB69_RS0013 not available in reference file."]
+    create_test_run(
+        run_id,
+        user_id=dummy_user.id,
+        status="empty_result",
+        error_message="No sequences were found for the requested regions.",
+        error_details=details,
+    )
+
+    response = client.get(f"/api/runs/{run_id}")
+    assert response.status_code == 200
+    assert response.get_json()["error_details"] == details

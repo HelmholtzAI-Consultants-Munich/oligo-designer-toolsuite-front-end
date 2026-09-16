@@ -211,6 +211,8 @@ export interface PipelineRun {
     timestamp: string;
     user_id: string;
     error_message?: string;
+    /** Warnings the toolsuite logged during the run. Absent when there were none. */
+    error_details?: string[];
     priority: "high" | "default";
     queue_position: [number, number]; // [highPriorityAhead, defaultPriorityAhead]
     metrics?: RunMetrics;

@@ -73,7 +73,8 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
     Notes:
         error_message is included only for terminal failure states
         ("failure", "timeout", "empty_result"), so other runs don't carry a
-        stale error.
+        stale error. error_details carries the warnings the toolsuite logged
+        during the run, and is absent when there were none.
 
     Returns:
         dict[str, Any] -- run payload formatted for the frontend.
@@ -94,6 +95,8 @@ def format_run(run: dict[Any, Any]) -> dict[str, Any]:
 
     if run.get("status") in ["failure", "timeout", "empty_result"] and run.get("error_message"):
         formatted["error_message"] = run.get("error_message")
+        if run.get("error_details"):
+            formatted["error_details"] = run.get("error_details")
     return formatted
 
 
