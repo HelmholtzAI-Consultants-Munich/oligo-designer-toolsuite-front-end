@@ -1,5 +1,4 @@
 import {
-    descriptionId,
     titleId,
     type ArrayFieldDescriptionProps,
     type ArrayFieldTitleProps,
@@ -37,13 +36,12 @@ const ArrayFieldTitleTemplate = memo((props: ArrayFieldTitleProps) => {
 const ArrayFieldDescriptionTemplate = memo(
     (props: ArrayFieldDescriptionProps) => {
         const { description, fieldPathId } = props;
-        const id = descriptionId(fieldPathId);
 
         if (!description) {
             return null;
         }
 
-        return <ToolTip id={id} tip={description.toString()} />;
+        return <ToolTip id={fieldPathId.$id} tip={description.toString()} />;
     }
 );
 
@@ -72,43 +70,49 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     const uiOptions = getUiOptions(uiSchema);
     const showOptionalDataControlInTitle = !readonly && !disabled;
     return (
-        <div>
-            <ArrayFieldTitleTemplate
-                fieldPathId={fieldPathId}
-                title={uiOptions.title || title}
-                schema={schema}
-                uiSchema={uiSchema}
-                required={required}
-                registry={registry}
-                optionalDataControl={
-                    showOptionalDataControlInTitle
+        <div className="field-row">
+            <div className="field-row-label">
+                <ArrayFieldTitleTemplate
+                    fieldPathId={fieldPathId}
+                    title={uiOptions.title || title}
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    required={required}
+                    registry={registry}
+                    optionalDataControl={
+                        showOptionalDataControlInTitle
+                            ? optionalDataControl
+                            : undefined
+                    }
+                />
+                <ArrayFieldDescriptionTemplate
+                    fieldPathId={fieldPathId}
+                    description={uiOptions.description || schema.description}
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    registry={registry}
+                />
+            </div>
+            <div className="field-row-control">
+                <Vertical gap="sm" align="stretch">
+                    {!showOptionalDataControlInTitle
                         ? optionalDataControl
-                        : undefined
-                }
-            />
-            <ArrayFieldDescriptionTemplate
-                fieldPathId={fieldPathId}
-                description={uiOptions.description || schema.description}
-                schema={schema}
-                uiSchema={uiSchema}
-                registry={registry}
-            />
-            <Vertical gap="sm" align="stretch" className="mt-2">
-                {!showOptionalDataControlInTitle
-                    ? optionalDataControl
-                    : undefined}
-                {items}
-                {canAdd && (
-                    <Button
-                        variant="primary-muted"
-                        id={buttonId(fieldPathId, "add")}
-                        onClick={onAddClick}
-                        disabled={disabled || readonly}
-                    >
-                        <Plus size={18} />
-                    </Button>
-                )}
-            </Vertical>
+                        : undefined}
+                    {items}
+                    {canAdd && (
+                        <Button
+                            variant="primary-muted"
+                            size="sm"
+                            className="align-self-start"
+                            id={buttonId(fieldPathId, "add")}
+                            onClick={onAddClick}
+                            disabled={disabled || readonly}
+                        >
+                            <Plus size={18} />
+                        </Button>
+                    )}
+                </Vertical>
+            </div>
         </div>
     );
 });

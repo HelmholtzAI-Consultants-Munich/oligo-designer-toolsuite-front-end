@@ -6,6 +6,7 @@ from pathlib import Path
 
 from dogpile.cache import CacheRegion, make_region
 from dogpile.cache.api import NO_VALUE, BackendFormatted, BackendSetType, SerializedReturnType
+from dogpile.cache.backends.redis import RedisBackend
 from dogpile.cache.proxy import ProxyBackend
 from dogpile.cache.util import sha1_mangle_key
 
@@ -100,12 +101,13 @@ class FileCacheProxy(ProxyBackend):
         Returns:
             SerializedReturnType -- The cached value representing a pathlib.Path or NO_VALUE.
         """
-        if expiration_time := self.proxied.redis_expiration_time:
+        if isinstance(self.proxied, RedisBackend) and (expiration_time := self.proxied.redis_expiration_time):
             # Read and renew the expiration in a single atomic call
             value = self.proxied.writer_client.getex(key, ex=expiration_time)
         else:
             value = self.proxied.get_serialized(key)
-        if not value:
+        # the Redis client types values as bytes or str, but without decode_responses it returns bytes
+        if not value or not isinstance(value, bytes):
             return NO_VALUE
 
         # Ensure file or directory is actually present
@@ -236,6 +238,21 @@ Usage:
 """
 
 
+def get_file_cache_redis_backend() -> RedisBackend:
+    """Returns the Redis backend that the file cache region's FileCacheProxy wraps.
+
+    Raises:
+        AssertionError: The file cache region is not a FileCacheProxy around a Redis backend.
+
+    Returns:
+        RedisBackend -- The wrapped Redis backend.
+    """
+    backend = file_cache_region.backend
+    assert isinstance(backend, FileCacheProxy)
+    assert isinstance(backend.proxied, RedisBackend)
+    return backend.proxied
+
+
 def get_cached_file_paths() -> set[Path]:
     """Collects the paths of all files and directories currently held in the file cache.
 
@@ -248,11 +265,12 @@ def get_cached_file_paths() -> set[Path]:
     """
     backend = file_cache_region.backend
     assert isinstance(backend, FileCacheProxy)
+    redis_backend = get_file_cache_redis_backend()
 
     paths: set[Path] = set()
-    for key in backend.proxied.reader_client.scan_iter(match=f"{Config.REDIS_FILE_CACHE_KEY_PREFIX}*"):
-        value = backend.proxied.get_serialized(key)
-        if not value:
+    for key in redis_backend.reader_client.scan_iter(match=f"{Config.REDIS_FILE_CACHE_KEY_PREFIX}*"):
+        value = redis_backend.get_serialized(key)
+        if not value or not isinstance(value, bytes):
             continue
         try:
             paths.add(backend._get_path_from_value(value).resolve())

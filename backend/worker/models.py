@@ -37,6 +37,33 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
 )
 from pydantic import AliasChoices, BaseModel, Field
 
+from backend.worker.utils import mark_schema_flags, strip_local_descriptions
+
+# Fields the front-end renders specially:
+#   "x-quick-setting" -- on a scalar field, pinning it to the Quick Settings panel above the
+#                        form's tabs and rendering it only there, not in its own section
+#   "x-collapsed"     -- on a field holding a model, whose section then starts collapsed
+#
+# Whoever writes the model declares the flag on the field itself, where it sits next to what
+# it describes:
+#     n_sets: int = Field(default=3, json_schema_extra={"x-quick-setting": True})
+#     search_parameters: BlastnSearchParameters = Field(json_schema_extra={"x-collapsed": True})
+#
+# The table below is only for fields ODT owns, which we cannot annotate that way: flagging one
+# means redeclaring it in a subclass here, and a Pydantic v2 redeclaration replaces that
+# field's whole FieldInfo, so `n_sets` would lose the default, description and constraints ODT
+# gave it unless each were copied over by hand. Stamping the generated schema leaves them be.
+FRONT_END_FLAGS: dict[str, dict[str, tuple[str, ...]]] = {
+    "x-quick-setting": {
+        "TargetProbeOligoGeneration": ("probe_length_min", "probe_length_max"),
+        "IndependentSetSelection": ("n_sets", "set_size_min", "set_size_opt"),
+    },
+    "x-collapsed": {
+        "CrossHybridizationBlastnFilterEnabled": ("search_parameters",),
+        "OligoSeqSpecificityBlastnFilterEnabled": ("search_parameters",),
+    },
+}
+
 ### Genomic Region Generator Models ###
 
 
@@ -264,5 +291,7 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
 
 
 if __name__ == "__main__":
+    schema = OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()
+    schema = strip_local_descriptions(schema, globals(), __name__)
     with open("oligoseq.schema.json", "w+") as f:
-        json.dump(OligoSeqProbeDesignerConfigFrontEnd.model_json_schema(), f)
+        json.dump(mark_schema_flags(schema, FRONT_END_FLAGS), f)
