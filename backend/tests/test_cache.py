@@ -70,7 +70,10 @@ def test_listing_cached_paths_does_not_renew_the_expiration(cached_file: Path):
 
     get_cached_file_paths()
 
-    assert client.ttl(key) <= 10
+    # redis-py types a reply as possibly awaitable, the sync client returns an int
+    ttl = client.ttl(key)
+    assert isinstance(ttl, int)
+    assert ttl <= 10
 
 
 def test_missing_file_invalidates_the_cache_entry(cached_file: Path):
