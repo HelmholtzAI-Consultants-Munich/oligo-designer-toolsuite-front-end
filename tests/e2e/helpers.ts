@@ -182,38 +182,16 @@ export const expandSections = async (page: Page) => {
             await button.click();
         }
     }
-    // clicking one drops it out of the set, so take the first until none are left. No
-    // visibility guard here: the click has to wait out the section's opening animation,
+    // only the active tab: the other panes stay in the DOM, hidden, and a click there would hang.
+    // No visibility guard here: the click has to wait out the section's opening animation,
     // where a guard would instead skip the toggle for being hidden mid-flight.
     const collapsed = page.locator(
-        '[aria-controls^="collapsible-section"][aria-expanded="false"]'
+        '.tab-pane.active [aria-controls^="collapsible-section"][aria-expanded="false"]'
     );
-    for (let remaining = await collapsed.count(); remaining > 0; remaining--) {
+    // clicking one drops it out of the set; re-count each time, so a group revealed by
+    // opening another is opened too
+    while ((await collapsed.count()) > 0) {
         await collapsed.first().click();
-    }
-};
-
-/**
- * Empties the blastn search fields the schema pre-fills on both specificity filters, leaving
- * blastn to use its own defaults.
- *
- * @remarks
- * The pre-filled `-strand minus`, `-word_size 10` and `-perc_identity 80` search the reference
- * far more sensitively than blastn would by default. Every remaining oligo then matches
- * something and is dropped as non-specific, and the run ends on an empty database.
- */
-export const clearBlastnSearchOverrides = async (page: Page) => {
-    for (const strand of await page
-        .getByLabel("-Strand", { exact: true })
-        .all()) {
-        await strand.selectOption("");
-    }
-    for (const label of ["-Word Size", "-Perc Identity"]) {
-        for (const input of await page
-            .getByLabel(label, { exact: true })
-            .all()) {
-            await input.fill("");
-        }
     }
 };
 

@@ -1,5 +1,5 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { memo, useState } from "react";
+import { useState } from "react";
 import { Button, Collapse } from "react-bootstrap";
 import { ChevronDown, ChevronUp } from "react-bootstrap-icons";
 import CompactGrid from "./CompactGrid";
@@ -14,9 +14,7 @@ import GroupHeading from "./GroupHeading";
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that lays out a field group behind a collapse toggle
  */
-const CollapsibleSectionLayout = memo(function CollapsibleSectionLayout(
-    props: ObjectFieldTemplateProps
-) {
+function CollapsibleSectionLayout(props: ObjectFieldTemplateProps) {
     const [open, setOpen] = useState(false);
     const controlsId = `collapsible-section-${props.fieldPathId.$id}`;
 
@@ -46,6 +44,6 @@ const CollapsibleSectionLayout = memo(function CollapsibleSectionLayout(
             </Collapse>
         </div>
     );
-});
+}
 
 export default CollapsibleSectionLayout;

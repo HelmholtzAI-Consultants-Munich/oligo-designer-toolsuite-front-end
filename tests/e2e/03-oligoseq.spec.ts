@@ -4,7 +4,6 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     OLIGOSEQ_PIPELINE,
-    clearBlastnSearchOverrides,
     fillConfig,
     fillTargetProbeParameters,
     openPipeline,
@@ -37,8 +36,6 @@ test("@smoke @full oligoseq run completes and exposes artifacts", async ({
     for (const locator of await page.getByLabel(/Coverage/i).all()) {
         await locator.fill("20");
     }
-
-    await clearBlastnSearchOverrides(page);
 
     await page
         .locator(

@@ -7,32 +7,6 @@ def build_fallback_error_message(runner_type: str):
     return f"The {runner_type} failed to execute. Please check your input and try again. If the error persists, please inform us of the issue."
 
 
-def mark_schema_flags(schema: dict, flags: dict[str, dict[str, tuple[str, ...]]]) -> dict:
-    """Sets the front-end's `x-` flags on the fields listed for them.
-
-    The flags only tell the front-end how to render a field, so they are stamped onto the
-    generated schema rather than declared on the models. Most of the fields they mark are ODT's,
-    and Pydantic cannot annotate an inherited field without redeclaring it, which would drop the
-    default, description and constraints ODT set on it.
-
-    Arguments:
-        schema {dict} -- the generated JSON Schema, modified in place
-        flags {dict[str, dict[str, tuple[str, ...]]]} -- field names per model per flag
-
-    Returns:
-        {dict} -- the same schema, with the flags set
-
-    Raises:
-        KeyError: if a model or field is named that the schema does not define
-    """
-    for flag, models in flags.items():
-        for model, fields in models.items():
-            properties = schema["$defs"][model]["properties"]
-            for field in fields:
-                properties[field][flag] = True
-    return schema
-
-
 def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) -> dict:
     """Drops the descriptions Pydantic derives from the caller module's own class docstrings.
 

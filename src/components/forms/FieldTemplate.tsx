@@ -1,5 +1,4 @@
 import { type FieldTemplateProps, ANY_OF_KEY, ONE_OF_KEY } from "@rjsf/utils";
-import { memo } from "react";
 import { createPortal } from "react-dom";
 import { useQuickSettingsContainer } from "../../hooks/useQuickSettings";
 import {
@@ -17,7 +16,7 @@ import {
  * @param props - FieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#fieldtemplate})
  * @returns A React Component that is used to overwrite the default FieldTemplate
  */
-const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
+function FieldTemplate(props: FieldTemplateProps) {
     const {
         children,
         rawErrors,
@@ -78,6 +77,6 @@ const FieldTemplate = memo(function FieldTemplate(props: FieldTemplateProps) {
     );
 
     return quickSettingTarget ? createPortal(field, quickSettingTarget) : field;
-});
+}
 
 export default FieldTemplate;

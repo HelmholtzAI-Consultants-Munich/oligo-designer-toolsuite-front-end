@@ -37,32 +37,11 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
 )
 from pydantic import AliasChoices, BaseModel, Field
 
-from backend.worker.utils import mark_schema_flags, strip_local_descriptions
+from backend.worker.utils import strip_local_descriptions
 
-# Fields the front-end renders specially:
-#   "x-quick-setting" -- on a scalar field, pinning it to the Quick Settings panel above the
-#                        form's tabs and rendering it only there, not in its own section
-#   "x-collapsed"     -- on a field holding a model, whose section then starts collapsed
-#
-# Whoever writes the model declares the flag on the field itself, where it sits next to what
-# it describes:
-#     n_sets: int = Field(default=3, json_schema_extra={"x-quick-setting": True})
+# Front-end flags: "x-quick-setting" pins a field to the Quick Settings panel,
+# "x-collapsed" starts a section collapsed. Declare them on the field, e.g.
 #     search_parameters: BlastnSearchParameters = Field(json_schema_extra={"x-collapsed": True})
-#
-# The table below is only for fields ODT owns, which we cannot annotate that way: flagging one
-# means redeclaring it in a subclass here, and a Pydantic v2 redeclaration replaces that
-# field's whole FieldInfo, so `n_sets` would lose the default, description and constraints ODT
-# gave it unless each were copied over by hand. Stamping the generated schema leaves them be.
-FRONT_END_FLAGS: dict[str, dict[str, tuple[str, ...]]] = {
-    "x-quick-setting": {
-        "TargetProbeOligoGeneration": ("probe_length_min", "probe_length_max"),
-        "IndependentSetSelection": ("n_sets", "set_size_min", "set_size_opt"),
-    },
-    "x-collapsed": {
-        "CrossHybridizationBlastnFilterEnabled": ("search_parameters",),
-        "OligoSeqSpecificityBlastnFilterEnabled": ("search_parameters",),
-    },
-}
 
 ### Genomic Region Generator Models ###
 
@@ -218,7 +197,10 @@ class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnable
 
     search_parameters: Annotated[  # type: ignore
         BlastnSearchParameters,
-        Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
+        Field(
+            description="Parameters for BLASTN searches used in cross-hybridization filtering.",
+            json_schema_extra={"x-collapsed": True},
+        ),
     ]
 
 
@@ -234,8 +216,9 @@ class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnab
     our `GenomicInput` instead of the default file path type.
     """
 
-    search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
-        perc_identity=80, strand="minus", word_size=10
+    search_parameters: BlastnSearchParameters = Field(  # type: ignore
+        default=BlastnSearchParameters(perc_identity=80, strand="minus", word_size=10),
+        json_schema_extra={"x-collapsed": True},
     )
     files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
 
@@ -294,4 +277,4 @@ if __name__ == "__main__":
     schema = OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()
     schema = strip_local_descriptions(schema, globals(), __name__)
     with open("oligoseq.schema.json", "w+") as f:
-        json.dump(mark_schema_flags(schema, FRONT_END_FLAGS), f)
+        json.dump(schema, f)

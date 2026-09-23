@@ -4,12 +4,13 @@ from pathlib import Path
 
 import pytest
 from dogpile.cache.api import NO_VALUE
+from dogpile.cache.backends.redis import RedisBackend
 
 from backend.cache import (
+    FileCacheProxy,
     file_cache_key_mangler,
     file_cache_region,
     get_cached_file_paths,
-    get_file_cache_redis_backend,
 )
 from backend.config import Config
 
@@ -41,7 +42,11 @@ def get_client():
     Returns:
         redis.StrictRedis -- The client of the file cache region's Redis backend.
     """
-    return get_file_cache_redis_backend().reader_client
+    file_cache_proxy = file_cache_region.backend
+    assert isinstance(file_cache_proxy, FileCacheProxy)
+    redis_backend = file_cache_proxy.proxied
+    assert isinstance(redis_backend, RedisBackend)
+    return redis_backend.reader_client
 
 
 def test_cached_path_is_listed(cached_file: Path):

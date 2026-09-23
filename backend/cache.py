@@ -238,21 +238,6 @@ Usage:
 """
 
 
-def get_file_cache_redis_backend() -> RedisBackend:
-    """Returns the Redis backend that the file cache region's FileCacheProxy wraps.
-
-    Raises:
-        AssertionError: The file cache region is not a FileCacheProxy around a Redis backend.
-
-    Returns:
-        RedisBackend -- The wrapped Redis backend.
-    """
-    backend = file_cache_region.backend
-    assert isinstance(backend, FileCacheProxy)
-    assert isinstance(backend.proxied, RedisBackend)
-    return backend.proxied
-
-
 def get_cached_file_paths() -> set[Path]:
     """Collects the paths of all files and directories currently held in the file cache.
 
@@ -263,9 +248,11 @@ def get_cached_file_paths() -> set[Path]:
     Returns:
         set[pathlib.Path] -- The resolved paths that the file cache still references.
     """
-    backend = file_cache_region.backend
-    assert isinstance(backend, FileCacheProxy)
-    redis_backend = get_file_cache_redis_backend()
+    file_cache_proxy = file_cache_region.backend
+    assert isinstance(file_cache_proxy, FileCacheProxy)
+    # read Redis directly, since reading through the proxy would renew every entry's expiration
+    redis_backend = file_cache_proxy.proxied
+    assert isinstance(redis_backend, RedisBackend)
 
     paths: set[Path] = set()
     for key in redis_backend.reader_client.scan_iter(match=f"{Config.REDIS_FILE_CACHE_KEY_PREFIX}*"):
@@ -273,7 +260,7 @@ def get_cached_file_paths() -> set[Path]:
         if not value or not isinstance(value, bytes):
             continue
         try:
-            paths.add(backend._get_path_from_value(value).resolve())
+            paths.add(file_cache_proxy._get_path_from_value(value).resolve())
         except Exception as error:
             logger.warning(f"Skipping file cache key {key!r}, its value is not a path: {error!r}")
     return paths

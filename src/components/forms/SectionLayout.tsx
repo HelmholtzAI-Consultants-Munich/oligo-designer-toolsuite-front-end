@@ -1,5 +1,4 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { memo } from "react";
 import { Accordion } from "react-bootstrap";
 import CompactGrid from "./CompactGrid";
 import { spaceBeforeCapitalLetters } from "./utils";
@@ -13,9 +12,7 @@ import { spaceBeforeCapitalLetters } from "./utils";
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that is used to overwrite the default ObjectFieldTemplate to layout a section within a tab
  */
-const SectionLayout = memo(function SectionLayout(
-    props: ObjectFieldTemplateProps
-) {
+function SectionLayout(props: ObjectFieldTemplateProps) {
     return (
         <Accordion.Item
             eventKey={props.fieldPathId.$id}
@@ -36,6 +33,6 @@ const SectionLayout = memo(function SectionLayout(
             </Accordion.Body>
         </Accordion.Item>
     );
-});
+}
 
 export default SectionLayout;

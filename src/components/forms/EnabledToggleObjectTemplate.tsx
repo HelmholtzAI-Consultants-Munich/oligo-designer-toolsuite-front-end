@@ -1,5 +1,5 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { Fragment, memo } from "react";
+import { Fragment } from "react";
 import { Card } from "react-bootstrap";
 import GroupHeading from "./GroupHeading";
 
@@ -14,9 +14,7 @@ import GroupHeading from "./GroupHeading";
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that lays out an enabled/disabled toggle and its fields
  */
-const EnabledToggleObjectTemplate = memo(function EnabledToggleObjectTemplate(
-    props: ObjectFieldTemplateProps
-) {
+function EnabledToggleObjectTemplate(props: ObjectFieldTemplateProps) {
     const isEnabled = ({ name }: { name: string }) => name === "enabled";
     const enabledProperty = props.properties.find(isEnabled);
     const otherProperties = props.properties.filter(
@@ -52,6 +50,6 @@ const EnabledToggleObjectTemplate = memo(function EnabledToggleObjectTemplate(
             </Card.Body>
         </Card>
     );
-});
+}
 
 export default EnabledToggleObjectTemplate;

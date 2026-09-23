@@ -50,8 +50,13 @@ export const isEnabledDiscriminated = (
     (asSchema(schema)?.discriminator as { propertyName?: string } | undefined)
         ?.propertyName === "enabled";
 
+const holdsChildren = (option: RJSFSchema | boolean): boolean => {
+    const field = asSchema(option);
+    return !!field?.$ref || field?.type === "object" || field?.type === "array";
+};
+
 /**
- * Whether a field lays out its own children (object, list, oneOf or custom field) and so
+ * Whether a field lays out its own children (object, list, oneOf, optional model or custom field) and so
  * needs a whole grid row rather than one compact column.
  *
  * @param schema - the field's JSON Schema, unresolved `$ref`s included
@@ -67,6 +72,8 @@ export const spansFullRow = (
         !!uiSchema?.["ui:field"] ||
         !!field?.$ref ||
         !!field?.oneOf ||
+        // `X | None` scalars are anyOf too, so only an optional model or list spans the row
+        !!field?.anyOf?.some(holdsChildren) ||
         field?.type === "object" ||
         field?.type === "array"
     );
