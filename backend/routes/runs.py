@@ -18,8 +18,9 @@ Features:
 from http import HTTPStatus
 from typing import Any
 
+import yaml
 from bson import ObjectId
-from flask import Blueprint, abort, current_app, jsonify, send_file, session
+from flask import Blueprint, Response, abort, current_app, jsonify, request, send_file, session
 from flask_login import current_user
 
 from backend.extensions import db
@@ -197,7 +198,7 @@ def get_run_config(run_id: ObjectId):
     Return the stored UI config for a specific pipeline run.
 
     The config is a PipelineConfigExport JSON object saved when the run was started.
-    Older runs that pre-date this feature will return 404.
+    Older runs that pre-date this feature will return 404. `?format=yaml` returns it as YAML.
 
     :param run_id: The ObjectId of the run.
     :type run_id: ObjectId
@@ -210,6 +211,8 @@ def get_run_config(run_id: ObjectId):
     if pipeline_run_config is None:
         abort(HTTPStatus.NOT_FOUND, description="No saved config for this run.")
 
+    if request.args.get("format") == "yaml":
+        return Response(yaml.safe_dump(pipeline_run_config, sort_keys=False), mimetype="application/yaml")
     return jsonify(pipeline_run_config), HTTPStatus.OK
 
 

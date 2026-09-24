@@ -11,12 +11,13 @@ import { customizeValidator } from "@rjsf/validator-ajv8";
 import type { UiSchema, RJSFSchema } from "@rjsf/utils";
 
 import type { RJSFFormData } from "../componentTypes";
-import { showModal } from "../../utils/modalUtil";
+import { closeModal, showModal } from "../../utils/modalUtil";
 import FieldTemplate from "./FieldTemplate";
 import Ajv2020 from "ajv/dist/2020";
 import Page from "../ui/Page";
 import { formatDateTime } from "../ui/utils";
-import { BoxArrowInDown, Send } from "react-bootstrap-icons";
+import { BoxArrowInDown, Sliders, Send } from "react-bootstrap-icons";
+import YAML from "js-yaml";
 import { importAndValidate } from "./pipelineConfigIO";
 
 import { Button } from "react-bootstrap";
@@ -24,6 +25,10 @@ import { useLocation } from "react-router";
 import { FileInput, GenomicInput } from "./GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
+import {
+    fetchPipelinePresets,
+    type PipelinePreset,
+} from "../../pipelineConfig/schemaApi";
 import { excludeHiddenTabs, snakeCaseToTitleCase } from "./utils";
 import { falsyDeclaredDefaults } from "../../pipelineConfig/defaults";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
@@ -114,6 +119,89 @@ const PipelineTemplate: React.FC<Props> = ({
     );
     const applyValidatedConfigEvent = useEffectEvent(applyValidatedConfig);
 
+    const [presets, setPresets] = useState<PipelinePreset[]>([]);
+    const presetStorageKey = `odt.preset.${pipeline}`;
+
+    const applyPreset = useCallback(
+        (preset: PipelinePreset) => {
+            // a preset only holds parameters, so the targets and genomes entered so far are kept
+            const payload = preset.payload as { config: RJSFFormData };
+            applyValidatedConfig(
+                {
+                    ...payload,
+                    config: {
+                        ...payload.config,
+                        required_parameters: formData.required_parameters,
+                    },
+                },
+                `${preset.label} Defaults Loaded`,
+                "Load Defaults Failed"
+            );
+            try {
+                localStorage.setItem(presetStorageKey, preset.id);
+            } catch {
+                // without storage the choice is simply asked for again
+            }
+        },
+        [applyValidatedConfig, formData.required_parameters, presetStorageKey]
+    );
+
+    const showPresetPicker = useCallback(
+        (options: PipelinePreset[]) =>
+            showModal({
+                title: "Choose Default Parameters",
+                content: (
+                    <div className="d-grid gap-2">
+                        {options.map((preset) => (
+                            <Button
+                                key={preset.id}
+                                variant="outline-border"
+                                onClick={() => {
+                                    applyPreset(preset);
+                                    closeModal();
+                                }}
+                            >
+                                {preset.label}
+                            </Button>
+                        ))}
+                    </div>
+                ),
+                centered: true,
+            }),
+        [applyPreset]
+    );
+
+    // A run's imported config wins; otherwise the remembered or only preset is applied, and a
+    // choice between several is asked for.
+    const choosePreset = useEffectEvent((options: PipelinePreset[]) => {
+        if (location.state?.importedConfig || options.length === 0) return;
+        let rememberedId: string | null = null;
+        try {
+            rememberedId = localStorage.getItem(presetStorageKey);
+        } catch {
+            // storage unavailable, ask instead
+        }
+        const remembered = options.find((p) => p.id === rememberedId);
+        if (remembered) applyPreset(remembered);
+        else if (options.length === 1) applyPreset(options[0]);
+        else showPresetPicker(options);
+    });
+
+    useEffect(() => {
+        let ignore = false;
+        fetchPipelinePresets(pipeline)
+            .then((options) => {
+                if (ignore) return;
+                setPresets(options);
+                choosePreset(options);
+            })
+            // without presets the form keeps the defaults from the schema
+            .catch(() => undefined);
+        return () => {
+            ignore = true;
+        };
+    }, [pipeline]);
+
     useEffect(() => {
         const importedConfig = location.state?.importedConfig;
         if (!importedConfig) return;
@@ -168,11 +256,12 @@ const PipelineTemplate: React.FC<Props> = ({
         reader.onload = (ev) => {
             let parsed: unknown;
             try {
-                parsed = JSON.parse(ev.target?.result as string);
+                // JSON is valid YAML, so one parser reads both export formats
+                parsed = YAML.load(ev.target?.result as string);
             } catch {
                 showToast({
                     title: "Import Failed",
-                    content: "The file is not valid JSON.",
+                    content: "The file is not valid YAML or JSON.",
                     type: "danger",
                 });
                 return;
@@ -221,6 +310,17 @@ const PipelineTemplate: React.FC<Props> = ({
                 tabKey: key,
             }))}
             actions={[
+                ...(presets.length > 1
+                    ? [
+                          {
+                              type: "button" as const,
+                              label: "Load Defaults",
+                              icon: Sliders,
+                              variant: "outline-border",
+                              onClick: () => showPresetPicker(presets),
+                          },
+                      ]
+                    : []),
                 {
                     type: "button",
                     label: "Import Settings",
@@ -241,7 +341,7 @@ const PipelineTemplate: React.FC<Props> = ({
             <input
                 ref={importInputRef}
                 type="file"
-                accept=".json,application/json"
+                accept=".yaml,.yml,.json"
                 className="visually-hidden"
                 onChange={handleImportFile}
             />

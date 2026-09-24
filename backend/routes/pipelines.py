@@ -14,6 +14,7 @@ from celery.result import AsyncResult
 from flask import Blueprint, abort, current_app, jsonify, request
 from flask_login import current_user
 from glom import assign, glom
+from oligo_designer_toolsuite import _version as odt_version
 from pydantic import ValidationError
 from werkzeug.datastructures import FileStorage, ImmutableMultiDict
 from werkzeug.utils import secure_filename
@@ -454,6 +455,13 @@ def start_pipeline(pipeline_name: str):
     pipeline_run_config = (
         form.get("pipeline_run_config") if isinstance(form.get("pipeline_run_config"), dict) else None
     )
+    if pipeline_run_config is not None:
+        # documents the ODT build a run used, for debugging only; imports ignore it
+        commit = getattr(odt_version, "commit_id", None)
+        pipeline_run_config.setdefault("_meta", {})["odt"] = {
+            "version": odt_version.version,
+            "commit": commit.removeprefix("g") if commit else None,
+        }
     pipeline_chord = prepare_pipeline_chord(
         run_id,
         sanitized_run_name,
