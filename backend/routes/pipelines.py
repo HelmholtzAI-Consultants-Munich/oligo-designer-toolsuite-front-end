@@ -228,7 +228,6 @@ def update_run_with_context(
 
 
 def check_gene_threshold(form_data: dict[str, Any]):
-    genes_string = glom(form_data, "required_parameters.targets")
     """Caps how many genes an anonymous request can analyze at once.
 
     Arguments:
@@ -238,7 +237,7 @@ def check_gene_threshold(form_data: dict[str, Any]):
         Unauthenticated users have no account to rate-limit/ban if they abuse the full-genome
         case — logging in removes the cap.
     """
-    genes_string = glom(form_data, "target_probe.oligo_generation.file_region_ids")
+    genes_string = glom(form_data, "required_parameters.targets")
     if genes_string is None:
         abort(HTTPStatus.BAD_REQUEST, description="Please login to analyse all genes. No gene list provided.")
     genes = genes_string.split(",")

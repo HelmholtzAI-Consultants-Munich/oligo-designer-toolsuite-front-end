@@ -1026,7 +1026,7 @@
         },
         "hit_parameters": {
           "default": { "hit_criterion": "coverage", "value": 50.0 },
-          "description": "Hit criteria (either coverage % or mininum alignment length). Hits satisfying these lead to oligo rejection.",
+          "description": "Hit criteria (either coverage % or minimum alignment length). Hits satisfying these lead to oligo rejection.",
           "discriminator": {
             "mapping": {
               "coverage": "#/$defs/BlastnHitParametersCoverage",
@@ -1378,35 +1378,12 @@
           ],
           "title": "Read Length Bias Filter"
         },
-        "cross_hybridization_blastn_filter": {
-          "default": {
-            "enabled": true,
-            "search_parameters": {
-              "-perc_identity": 80.0,
-              "-strand": "minus",
-              "-word_size": 10
-            },
-            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
-          },
-          "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
-          "discriminator": {
-            "mapping": {
-              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
-              "True": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled"
-            },
-            "propertyName": "enabled"
-          },
-          "oneOf": [
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled" },
-            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
-          ],
-          "title": "Cross Hybridization Blastn Filter"
-        },
         "specificity_blastn_filter": {
           "default": {
             "enabled": true,
             "search_parameters": {
               "-perc_identity": 80.0,
+              "-soft_masking": "none",
               "-strand": "minus",
               "-word_size": 10
             },
@@ -1425,6 +1402,31 @@
             { "$ref": "#/$defs/SpecificityBlastnFilterDisabled" }
           ],
           "title": "Specificity Blastn Filter"
+        },
+        "cross_hybridization_blastn_filter": {
+          "default": {
+            "enabled": true,
+            "search_parameters": {
+              "-perc_identity": 80.0,
+              "-soft_masking": "none",
+              "-strand": "minus",
+              "-word_size": 10
+            },
+            "hit_parameters": { "hit_criterion": "coverage", "value": 50.0 }
+          },
+          "description": "Remove oligos that may cross-hybridize to other probes (BLAST-based).",
+          "discriminator": {
+            "mapping": {
+              "False": "#/$defs/CrossHybridizationBlastnFilterDisabled",
+              "True": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled"
+            },
+            "propertyName": "enabled"
+          },
+          "oneOf": [
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterCoverageEnabled" },
+            { "$ref": "#/$defs/CrossHybridizationBlastnFilterDisabled" }
+          ],
+          "title": "Cross Hybridization Blastn Filter"
         },
         "variant_filter": {
           "discriminator": {
