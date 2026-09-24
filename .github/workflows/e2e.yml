@@ -93,6 +93,9 @@ jobs:
           mkdir -p playwright-report test-results
 
       - name: Build test stack
+        env:
+          # repo variable ODT_REF (branch, tag or commit SHA) overrides the PyPI release; unset means PyPI
+          ODT_REF: ${{ vars.ODT_REF }}
         run: |
           set -euxo pipefail
           docker compose --profile tests build odt-server odt-worker odt-web odt-tests
