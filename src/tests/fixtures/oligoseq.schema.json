@@ -1383,7 +1383,6 @@
             "enabled": true,
             "search_parameters": {
               "-perc_identity": 80.0,
-              "-soft_masking": "none",
               "-strand": "minus",
               "-word_size": 10
             },
@@ -1408,7 +1407,6 @@
             "enabled": true,
             "search_parameters": {
               "-perc_identity": 80.0,
-              "-soft_masking": "none",
               "-strand": "minus",
               "-word_size": 10
             },
