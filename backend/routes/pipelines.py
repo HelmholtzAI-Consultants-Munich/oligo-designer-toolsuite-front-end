@@ -384,7 +384,6 @@ def save_file(
 
 
 def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMultiDict[str, FileStorage]):
-    file_inputs: dict[str, list[Path] | Path] = {}
     """Calls save_file for every file referenced by the pipeline's declared file-input fields.
 
     Arguments:
@@ -400,9 +399,10 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
         referenced by multiple fields is only saved once (see save_file).
 
     Returns:
-        dict[str, list[Path]] -- form path -> list of saved file paths.
+        dict[str, list[Path] | Path] -- form path -> saved file path, or a list of them
+        when the field holds several.
     """
-    file_inputs: dict[str, list[Path]] = {}
+    file_inputs: dict[str, list[Path] | Path] = {}
     # Because duplicated File Objects only get uploaded once via the browser we need to map the Filestorage object
     # to the corresponding path to avoid reading an empty stream
     saved_files: dict[FileStorage, Path] = {}

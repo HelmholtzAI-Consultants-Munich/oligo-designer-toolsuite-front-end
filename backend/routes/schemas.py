@@ -46,4 +46,6 @@ def pipeline_schema(pipeline_name: str) -> Response:
     # with a new ODT version is never served stale.
     response.set_etag(etag)
     response.cache_control.no_cache = True
-    return response.make_conditional(request)
+    # updates the response in place; its return value is typed as werkzeug's base `Response`
+    response.make_conditional(request)
+    return response
