@@ -28,7 +28,8 @@ const SingleFileInput = (props: FieldProps) => {
         templates: { FieldErrorTemplate },
     } = registry;
 
-    // An imported config carries the file name as a string; a fresh pick is a File.
+    // A picked file is a File. Exported configs drop files entirely, so a plain name only
+    // turns up in a hand-edited import; it is shown, but the file still has to be uploaded.
     const fileName = formData instanceof File ? formData.name : formData;
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {

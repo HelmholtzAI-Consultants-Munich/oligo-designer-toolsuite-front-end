@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from bson import ObjectId
 from celery import chord
@@ -415,18 +415,34 @@ def save_files(form_data: dict[str, Any], pipeline_name: str, files: ImmutableMu
 
         # A single name is stored as given, so it is written back the same way.
         if isinstance(file_names, str):
-            file_path = save_file(file_names, files, saved_files)
-            if file_path is not None:
-                file_inputs[path] = file_path
+            file_inputs[path] = _require_saved_file(file_names, files, saved_files)
             continue
 
-        for file_name in file_names:
-            file_path = save_file(file_name, files, saved_files)
-            if file_path is not None:
-                if file_inputs.get(path) is None:
-                    file_inputs[path] = []
-                cast(list[Path], file_inputs[path]).append(file_path)
+        file_inputs[path] = [_require_saved_file(file_name, files, saved_files) for file_name in file_names]
     return file_inputs
+
+
+def _require_saved_file(
+    file_name: str, files: ImmutableMultiDict[str, FileStorage], saved_files: dict[FileStorage, Path]
+) -> Path:
+    """Saves the upload named `file_name`, rejecting a name no file was uploaded under.
+
+    Arguments:
+        file_name {str} -- the name the form data refers to the upload by.
+        files {ImmutableMultiDict[str, FileStorage]} -- uploaded files from the request.
+        saved_files {dict[FileStorage, Path]} -- already-saved files, shared across calls.
+
+    Notes:
+        A name left unreplaced would reach the worker as a path on this server, so a request
+        could point the pipeline at any file it can read.
+
+    Returns:
+        Path -- where the file was saved.
+    """
+    file_path = save_file(file_name, files, saved_files)
+    if file_path is None:
+        abort(HTTPStatus.BAD_REQUEST, description=f"Invalid input: no file was uploaded for {file_name}")
+    return file_path
 
 
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):

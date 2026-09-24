@@ -27,10 +27,14 @@ jobs:
         include:
           - image_name: odt-server
             dockerfile_path: docker/server.Dockerfile
-            build_args: ""
+            # repo variable ODT_REF (branch, tag or commit SHA) overrides the PyPI release; unset means PyPI
+            build_args: |
+              ODT_REF=${{ vars.ODT_REF }}
           - image_name: odt-worker
             dockerfile_path: docker/worker.Dockerfile
-            build_args: ""
+            # repo variable ODT_REF (branch, tag or commit SHA) overrides the PyPI release; unset means PyPI
+            build_args: |
+              ODT_REF=${{ vars.ODT_REF }}
           - image_name: odt-web
             dockerfile_path: docker/web.Dockerfile
             build_args: |
