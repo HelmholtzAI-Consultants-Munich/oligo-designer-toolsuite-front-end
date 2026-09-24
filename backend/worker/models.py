@@ -37,6 +37,12 @@ from oligo_designer_toolsuite.config.pipelines.oligo_seq_probe_designer import (
 )
 from pydantic import AliasChoices, BaseModel, Field
 
+from backend.worker.utils import strip_local_descriptions
+
+# Front-end flags: "x-quick-setting" pins a field to the Quick Settings panel,
+# "x-collapsed" starts a section collapsed. Declare them on the field, e.g.
+#     search_parameters: BlastnSearchParameters = Field(json_schema_extra={"x-collapsed": True})
+
 ### Genomic Region Generator Models ###
 
 
@@ -191,7 +197,10 @@ class CrossHybridizationBlastnFilterEnabled(CrossHybridizationBlastnFilterEnable
 
     search_parameters: Annotated[  # type: ignore
         BlastnSearchParameters,
-        Field(description="Parameters for BLASTN searches used in cross-hybridization filtering."),
+        Field(
+            description="Parameters for BLASTN searches used in cross-hybridization filtering.",
+            json_schema_extra={"x-collapsed": True},
+        ),
     ]
 
 
@@ -207,8 +216,9 @@ class OligoSeqSpecificityBlastnFilterEnabled(OligoSeqSpecificityBlastnFilterEnab
     our `GenomicInput` instead of the default file path type.
     """
 
-    search_parameters: BlastnSearchParameters = BlastnSearchParameters(  # type: ignore
-        perc_identity=80, strand="minus", word_size=10
+    search_parameters: BlastnSearchParameters = Field(  # type: ignore
+        default=BlastnSearchParameters(perc_identity=80, strand="minus", word_size=10),
+        json_schema_extra={"x-collapsed": True},
     )
     files_fasta_reference_database: GenomicInput = Field(min_length=1)  # type: ignore
 
@@ -264,5 +274,7 @@ class OligoSeqProbeDesignerConfigFrontEnd(BaseModel):
 
 
 if __name__ == "__main__":
+    schema = OligoSeqProbeDesignerConfigFrontEnd.model_json_schema()
+    schema = strip_local_descriptions(schema, globals(), __name__)
     with open("oligoseq.schema.json", "w+") as f:
-        json.dump(OligoSeqProbeDesignerConfigFrontEnd.model_json_schema(), f)
+        json.dump(schema, f)
