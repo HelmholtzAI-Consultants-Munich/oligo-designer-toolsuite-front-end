@@ -189,8 +189,14 @@ export const expandSections = async (page: Page) => {
         '.tab-pane.active [aria-controls^="collapsible-section"][aria-expanded="false"]'
     );
     // clicking one drops it out of the set; re-count each time, so a group revealed by
-    // opening another is opened too
-    while ((await collapsed.count()) > 0) {
+    // opening another is opened too. Capped, so a toggle that stops flipping aria-expanded
+    // fails here instead of at the 20-minute test timeout.
+    for (let clicks = 0; (await collapsed.count()) > 0; clicks++) {
+        if (clicks >= 20) {
+            throw new Error(
+                "expandSections: collapsed groups did not open after 20 clicks"
+            );
+        }
         await collapsed.first().click();
     }
 };
