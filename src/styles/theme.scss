@@ -551,8 +551,9 @@ form.rjsf {
         one sitting side by side read as the same kind of thing */
         background-color: var(--#{$prefix}primary-bg-subtle);
 
-        &:has(.compact-grid:empty) {
-            /* every field here portaled into quick settings, so there's nothing left to show */
+        &:has(> .compact-grid:empty) {
+            /* every field here portaled into quick settings, so there's nothing left to show;
+            only its own grid counts, a nested group without fields is empty as well */
             display: none;
         }
     }
@@ -800,8 +801,9 @@ form.rjsf {
         instead of Bootstrap's single stacked group */
         @include form-surface;
 
-        &:has(.compact-grid:empty) {
-            /* every field here portaled into quick settings, so there's nothing left to show */
+        &:has(> .accordion-collapse > .accordion-body > .compact-grid:empty) {
+            /* every field here portaled into quick settings, so there's nothing left to show;
+            only its own grid counts, a nested group without fields is empty as well */
             display: none;
         }
 

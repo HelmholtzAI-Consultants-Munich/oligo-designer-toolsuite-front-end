@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 from glom import glom
 
 from backend.routes import schemas
@@ -131,6 +132,7 @@ def preset_dir(tmp_path, monkeypatch):
     (tmp_path / "hcr_probe_designer.yaml").write_text(
         "required_parameters:\n  targets: data/genes/custom_3.txt\n"
         "target_probes:\n  oligo_generation:\n    L_probe_sequence_length: 45\n"
+        "initiator_probes:\n  codebook:\n    source: load\n    file: data/example_hcr_codebook.tsv\n"
         "schema_version: 2\ngeneral:\n  n_jobs: 2\n"
     )
     (tmp_path / "hcr_probe_designer_gandin.yaml").write_text("target_probes: {}\nschema_version: 2\n")
@@ -142,13 +144,16 @@ def preset_dir(tmp_path, monkeypatch):
 
 
 def test_presets_are_served_as_importable_configs(client, preset_dir):
-    """Each YAML becomes a preset in the export shape, without ODT's local paths or `general`."""
+    """Each YAML becomes a preset in the export shape, without ODT's file paths or `general`."""
     presets = client.get(PRESETS_ROUTE.format("hcr")).get_json()
 
     assert [(p["id"], p["label"]) for p in presets] == [("default", "Default"), ("gandin", "Gandin")]
     assert presets[0]["payload"] == {
         "_meta": {"version": 2, "pipeline": "hcr"},
-        "config": {"target_probes": {"oligo_generation": {"L_probe_sequence_length": 45}}},
+        "config": {
+            "target_probes": {"oligo_generation": {"L_probe_sequence_length": 45}},
+            "initiator_probes": {"codebook": {"source": "load"}},
+        },
     }
 
 
@@ -164,11 +169,17 @@ def test_presets_404_for_unknown_pipeline(client):
 @pytest.mark.parametrize("pipeline_name", FRONT_END_SCHEMAS)
 def test_shipped_presets_match_the_models(pipeline_name):
     """The configs ODT ships fit its models, so a preset never loads fields the form cannot hold."""
-    schemas.load_presets.cache_clear()
-    presets = schemas.load_presets(pipeline_name)
-    if not presets:
+    try:
+        config_dir = schemas.files("oligo_designer_toolsuite.configs")
+    except ModuleNotFoundError:
         pytest.skip("the installed ODT version ships no configs")
 
     model = FRONT_END_SCHEMAS[pipeline_name].__bases__[0]
-    for preset in presets:
-        model.model_validate(preset["payload"]["config"])
+    prefix = schemas.PRESET_FILE_PREFIXES[pipeline_name]
+    for file in config_dir.iterdir():
+        if file.name.startswith(prefix) and file.name.endswith(".yaml"):
+            config = yaml.safe_load(file.read_text())
+            # ODT's `...ConfigBase` leaves out the fields the form fills in on its own
+            config.pop("required_parameters")
+            config.pop("general")
+            model.model_validate(config)

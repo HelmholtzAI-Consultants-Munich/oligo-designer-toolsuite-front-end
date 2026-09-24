@@ -12,7 +12,9 @@ from importlib.resources import files
 
 import yaml
 from flask import Blueprint, Response, abort, jsonify, request
+from glom import delete
 
+from backend.constants import PIPELINE_FILE_INPUT
 from backend.worker.models import FRONT_END_SCHEMAS, build_pipeline_schema
 
 schemas_bp = Blueprint("schemas", __name__)
@@ -87,10 +89,13 @@ def load_presets(pipeline_name: str) -> list[dict]:
             continue
         preset_id = file.name.removeprefix(prefix).removesuffix(".yaml").lstrip("_") or "default"
         config = yaml.safe_load(file.read_text())
-        # the file paths are local to ODT's repository and `general` is not part of the form
+        # the file paths are local to ODT's repository, so the user uploads or generates their
+        # own; `general` is not part of the form
         schema_version = config.pop("schema_version", None)
         config.pop("required_parameters", None)
         config.pop("general", None)
+        for path in PIPELINE_FILE_INPUT.get(pipeline_name, []):
+            delete(config, path, ignore_missing=True)
         presets.append(
             {
                 "id": preset_id,

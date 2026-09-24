@@ -89,7 +89,12 @@ const PipelineTemplate: React.FC<Props> = ({
     const location = useLocation();
 
     const applyValidatedConfig = useCallback(
-        (importedConfig: unknown, successTitle: string, errorTitle: string) => {
+        (
+            importedConfig: unknown,
+            // `null` applies the config quietly, e.g. the defaults loaded with the page
+            successTitle: string | null,
+            errorTitle: string
+        ) => {
             const result = importAndValidate(importedConfig, schema, pipeline);
             if (!result.ok) {
                 showToast({
@@ -100,6 +105,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 return;
             }
             setFormData(result.config);
+            if (successTitle === null) return;
             const exportedAt = (
                 importedConfig as { _meta?: { exportedAt?: string } }
             )._meta?.exportedAt;
@@ -123,7 +129,7 @@ const PipelineTemplate: React.FC<Props> = ({
     const presetStorageKey = `odt.preset.${pipeline}`;
 
     const applyPreset = useCallback(
-        (preset: PipelinePreset) => {
+        (preset: PipelinePreset, quiet = false) => {
             // a preset only holds parameters, so the targets and genomes entered so far are kept
             const payload = preset.payload as { config: RJSFFormData };
             applyValidatedConfig(
@@ -134,7 +140,7 @@ const PipelineTemplate: React.FC<Props> = ({
                         required_parameters: formData.required_parameters,
                     },
                 },
-                `${preset.label} Defaults Loaded`,
+                quiet ? null : `${preset.label} Defaults Loaded`,
                 "Load Defaults Failed"
             );
             try {
@@ -182,8 +188,9 @@ const PipelineTemplate: React.FC<Props> = ({
             // storage unavailable, ask instead
         }
         const remembered = options.find((p) => p.id === rememberedId);
-        if (remembered) applyPreset(remembered);
-        else if (options.length === 1) applyPreset(options[0]);
+        // applied with the page, not picked by the user, so no toast
+        if (remembered) applyPreset(remembered, true);
+        else if (options.length === 1) applyPreset(options[0], true);
         else showPresetPicker(options);
     });
 
