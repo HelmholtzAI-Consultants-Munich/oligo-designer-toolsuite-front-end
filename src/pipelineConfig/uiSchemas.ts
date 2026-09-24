@@ -141,7 +141,10 @@ const uiSchemaFromJsonSchemaRecursive = (
                 uiSchema[field] = { "ui:field": "genomicInput" };
             } else if (field.startsWith("files_vcf_")) {
                 // files_vcf_* (any level) -> fileUpload
-                uiSchema[field] = { "ui:field": "fileUpload" };
+                uiSchema[field] = {
+                    "ui:field": "fileUpload",
+                    "ui:options": { accept: ".vcf" },
+                };
             } else {
                 const fieldUiSchema = uiSchemaFromJsonSchemaRecursive(
                     baseSchema,
