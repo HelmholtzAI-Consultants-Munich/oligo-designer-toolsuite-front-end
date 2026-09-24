@@ -1,5 +1,4 @@
 import {
-    descriptionId,
     titleId,
     type ArrayFieldDescriptionProps,
     type ArrayFieldTitleProps,
@@ -37,13 +36,12 @@ const ArrayFieldTitleTemplate = memo((props: ArrayFieldTitleProps) => {
 const ArrayFieldDescriptionTemplate = memo(
     (props: ArrayFieldDescriptionProps) => {
         const { description, fieldPathId } = props;
-        const id = descriptionId(fieldPathId);
 
         if (!description) {
             return null;
         }
 
-        return <ToolTip id={id} tip={description.toString()} />;
+        return <ToolTip id={fieldPathId.$id} tip={description.toString()} />;
     }
 );
 
@@ -54,7 +52,7 @@ const ArrayFieldDescriptionTemplate = memo(
  * @param props - Array Field Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfieldtemplate})
  * @returns A React Component that is used to overwrite the default ArrayFieldTemplate
  */
-const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
+const ArrayFieldTemplate = (props: ArrayFieldTemplateProps) => {
     const {
         canAdd,
         disabled,
@@ -117,7 +115,7 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
             </div>
         </div>
     );
-});
+};
 
 /**
  * This ArrayFieldItemTemplate is based on the react-bootstrap theme's template.
@@ -126,7 +124,7 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
  * @param props - Array Field Item Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfielditemtemplate})
  * @returns A React Component that is used to overwrite the default ArrayFieldItemTemplate
  */
-const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
+const ArrayFieldItemTemplate = (props: ArrayFieldItemTemplateProps) => {
     const { children, hasToolbar, buttonsProps } = props;
     return (
         <div className="d-flex gap-1 array-field-item align-items-start">
@@ -142,6 +140,6 @@ const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
             )}
         </div>
     );
-});
+};
 
 export { ArrayFieldTemplate, ArrayFieldItemTemplate };

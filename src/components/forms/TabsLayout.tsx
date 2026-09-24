@@ -1,5 +1,5 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { Fragment, memo, useMemo } from "react";
+import { Fragment } from "react";
 import Page from "../ui/Page";
 import QuickSettingsPanel from "./QuickSettingsPanel";
 import { isHiddenTab, requiredParametersDescription } from "./utils";
@@ -16,21 +16,17 @@ import { isHiddenTab, requiredParametersDescription } from "./utils";
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that is used to overwrite the default ObjectFieldTemplate to layout multiple tabs
  */
-const TabsLayout = memo(function TabsLayout(props: ObjectFieldTemplateProps) {
-    const { panes, hidden } = useMemo(() => {
-        const visible = props.properties.filter(
-            (element) => !isHiddenTab(element.name)
-        );
-        // with nothing visible there is no first tab to hide them in, so give them panes
-        return visible.length > 0
-            ? {
-                  panes: visible,
-                  hidden: props.properties.filter((element) =>
-                      isHiddenTab(element.name)
-                  ),
-              }
-            : { panes: props.properties, hidden: [] };
-    }, [props.properties]);
+function TabsLayout(props: ObjectFieldTemplateProps) {
+    // not memoized: RJSF rebuilds `properties` on every render, so a memo would never hit
+    const visible = props.properties.filter(
+        (element) => !isHiddenTab(element.name)
+    );
+    // with nothing visible there is no first tab to hide them in, so give them panes
+    const panes = visible.length > 0 ? visible : props.properties;
+    const hidden =
+        visible.length > 0
+            ? props.properties.filter((element) => isHiddenTab(element.name))
+            : [];
 
     return (
         <Page.Tabs>
@@ -58,6 +54,6 @@ const TabsLayout = memo(function TabsLayout(props: ObjectFieldTemplateProps) {
             ))}
         </Page.Tabs>
     );
-});
+}
 
 export default TabsLayout;

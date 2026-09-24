@@ -1,5 +1,4 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { memo } from "react";
 import CompactGrid from "./CompactGrid";
 import GroupHeading from "./GroupHeading";
 
@@ -15,10 +14,7 @@ type Props = ObjectFieldTemplateProps & {
  * @param props - ObjectFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#objectfieldtemplate})
  * @returns A React Component that is used to overwrite the default ObjectFieldTemplate
  */
-const ObjectFieldTemplate = memo(function ObjectFieldTemplate({
-    className = "row-gap-3",
-    ...props
-}: Props) {
+function ObjectFieldTemplate({ className = "row-gap-3", ...props }: Props) {
     return (
         <div className="field-group-box">
             <GroupHeading
@@ -29,6 +25,6 @@ const ObjectFieldTemplate = memo(function ObjectFieldTemplate({
             <CompactGrid {...props} className={className} />
         </div>
     );
-});
+}
 
 export default ObjectFieldTemplate;
