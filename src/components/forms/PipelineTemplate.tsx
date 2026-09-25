@@ -94,7 +94,7 @@ const PipelineTemplate: React.FC<Props> = ({
             // `null` applies the config quietly, e.g. the defaults loaded with the page
             successTitle: string | null,
             errorTitle: string
-        ) => {
+        ): boolean => {
             const result = importAndValidate(importedConfig, schema, pipeline);
             if (!result.ok) {
                 showToast({
@@ -102,10 +102,10 @@ const PipelineTemplate: React.FC<Props> = ({
                     content: result.error,
                     type: "danger",
                 });
-                return;
+                return false;
             }
             setFormData(result.config);
-            if (successTitle === null) return;
+            if (successTitle === null) return true;
             const exportedAt = (
                 importedConfig as { _meta?: { exportedAt?: string } }
             )._meta?.exportedAt;
@@ -120,6 +120,7 @@ const PipelineTemplate: React.FC<Props> = ({
                 content: `Configuration${datePart} loaded.${skipNote}`,
                 type: "success",
             });
+            return true;
         },
         [schema, pipeline]
     );
@@ -132,7 +133,7 @@ const PipelineTemplate: React.FC<Props> = ({
         (preset: PipelinePreset, quiet = false) => {
             // a preset only holds parameters, so the targets and genomes entered so far are kept
             const payload = preset.payload as { config: RJSFFormData };
-            applyValidatedConfig(
+            const applied = applyValidatedConfig(
                 {
                     ...payload,
                     config: {
@@ -144,7 +145,9 @@ const PipelineTemplate: React.FC<Props> = ({
                 "Load Defaults Failed"
             );
             try {
-                localStorage.setItem(presetStorageKey, preset.id);
+                // a preset that failed is forgotten, so the picker is offered again
+                if (applied) localStorage.setItem(presetStorageKey, preset.id);
+                else localStorage.removeItem(presetStorageKey);
             } catch {
                 // without storage the choice is simply asked for again
             }
