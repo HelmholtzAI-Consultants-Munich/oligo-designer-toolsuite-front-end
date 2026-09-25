@@ -1,20 +1,12 @@
 """Tests the endpoint serving the JSON Schemas the front-end builds its pipeline forms from."""
 
-import json
-from pathlib import Path
-
 import pytest
 from glom import glom
 
 from backend.worker import models
-from backend.worker.models import FRONT_END_SCHEMAS, build_pipeline_schema
+from backend.worker.models import FRONT_END_SCHEMAS
 
 SCHEMA_ROUTE = "/api/pipelines/{}/schema"
-
-# The front-end tests cannot reach a running backend, so they read this committed copy of the
-# oligoseq schema instead. The last test in this file compares the two, so it cannot fall behind
-# the models without failing.
-FIXTURE_PATH = Path(__file__).parents[2] / "src" / "tests" / "fixtures" / "oligoseq.schema.json"
 
 
 def get_schema(client, pipeline_name: str) -> dict:
@@ -98,24 +90,3 @@ def test_route_is_not_swallowed_by_the_pipeline_submission_route(client):
     response = client.post(SCHEMA_ROUTE.format("oligoseq"))
 
     assert response.status_code == 405
-
-
-@pytest.mark.skipif(
-    not FIXTURE_PATH.exists(),
-    reason="the server image holds `backend/` alone, so there is no front-end fixture to compare",
-)
-def test_front_end_test_fixture_matches_the_generated_schema():
-    """The schema the front-end tests run against is still the one the models produce.
-
-    Notes:
-        Vitest has no backend to fetch from, so two of its specs read a committed copy of this
-        schema. This is the only checked-in schema left, and this test is what keeps it from
-        drifting the way the deleted `schemas/` directory could.
-    """
-    fixture = json.loads(FIXTURE_PATH.read_text())
-
-    assert fixture == build_pipeline_schema("oligoseq"), (
-        f"{FIXTURE_PATH.name} is out of date. Refresh it with:\n"
-        "  curl -s http://localhost:8000/api/pipelines/oligoseq/schema"
-        f" | npx prettier --parser json > {FIXTURE_PATH}"
-    )

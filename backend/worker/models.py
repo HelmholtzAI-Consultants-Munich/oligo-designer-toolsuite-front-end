@@ -133,9 +133,6 @@ class RequiredParameters(BaseModel):
     )  # type: ignore
 
 
-# The schema each pipeline's form is built from. Each ODT `...ConfigBase` leaves out `general`
-# and `required_parameters`, so only the genome inputs are added back, in our own type. Every
-# `x-` flag is declared on the ODT field itself, so nothing is stamped on afterwards.
 FRONT_END_SCHEMAS: dict[str, type[BaseModel]] = {
     name: create_model(
         f"{base.__name__.removesuffix('Base')}FrontEnd",

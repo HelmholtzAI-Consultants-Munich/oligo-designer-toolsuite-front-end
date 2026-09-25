@@ -5,9 +5,9 @@
  * that imported payloads are validated against the pipeline schema, and that
  * invalid or unsupported payloads are rejected or filtered correctly.
  *
- * The schema fixture mirrors the shape used by the real pipeline
- * configuration logic so import/validation behavior is tested against the
- * same expected structure.
+ * The checks only look at the top-level fields and `schema_version`, so a small
+ * hand-written schema covers them. Whether a real ODT config round-trips is left
+ * to the e2e tests, which run against the schema the backend serves.
  */
 import { describe, it, expect } from "vitest";
 import type { RJSFSchema } from "@rjsf/utils";
@@ -15,11 +15,9 @@ import {
     buildExportPayload,
     importAndValidate,
 } from "../components/forms/pipelineConfigIO";
-import oligoseqSchema from "./fixtures/oligoseq.schema.json";
+import pipelineSchema from "./fixtures/pipeline.schema.json";
 
-// A copy of what the backend generates for oligoseq. The round trip is tested against the real
-// schema, and `test_schema_routes.py` fails if this copy falls behind it.
-const testSchema = oligoseqSchema as RJSFSchema;
+const testSchema = pipelineSchema as RJSFSchema;
 
 // ---- buildExportPayload ----
 //
@@ -32,22 +30,21 @@ describe("buildExportPayload", () => {
         expect(payload._meta.pipeline).toBe("merfish");
     });
 
-    it("reads _meta.version from schema.description", () => {
+    it("reads _meta.version from schema_version", () => {
         const payload = buildExportPayload({}, "scrinshot", testSchema);
         expect(payload._meta.version).toBe(2);
     });
 
-    it("falls back to 1.0.0 if schema has no description", () => {
-        const schemaWithoutVersion = {
-            ...testSchema,
-            description: undefined,
-        } as RJSFSchema;
+    it("falls back to version 1 if the schema has no schema_version", () => {
+        const properties = { ...testSchema.properties };
+        delete properties.schema_version;
+        const schemaWithoutVersion = { ...testSchema, properties };
         const payload = buildExportPayload(
             {},
             "scrinshot",
             schemaWithoutVersion
         );
-        expect(payload._meta.version).toBe(2);
+        expect(payload._meta.version).toBe(1);
     });
 
     it("sets _meta.exportedAt to an ISO timestamp", () => {
@@ -77,13 +74,7 @@ describe("importAndValidate", () => {
         }
     };
 
-    /**
-     * A canonical valid export payload used for positive validation coverage.
-     *
-     * This fixture is intentionally complete and representative of a real
-     * pipeline configuration, so valid import paths are covered and nested
-     * config preservation can be asserted.
-     */
+    /** A valid export payload that sets every field of the test schema. */
     const validPayload = {
         _meta: {
             version: 2,
@@ -91,289 +82,16 @@ describe("importAndValidate", () => {
             exportedAt: "2026-06-02T11:28:27.523Z",
         },
         config: {
+            schema_version: 2,
             target_probes: {
                 oligo_generation: {
-                    file_region_ids: "GFB69_RS14600",
-                    files_fasta_probe_database: [
-                        {
-                            source: "ncbi",
-                            source_params: {
-                                species: "Acidianus_ambivalens",
-                                annotation_release:
-                                    "GCF_009428885.1_ASM942888v1",
-                                taxon: "archaea",
-                                assembly_source: "auto",
-                                mode: "species",
-                            },
-                            genomic_regions: {
-                                gene: true,
-                                intergenic: false,
-                                exon: false,
-                                utr: false,
-                                cds: false,
-                                intron: false,
-                                exon_exon_junction: false,
-                            },
-                            exon_exon_junction_block_size: 50,
-                        },
-                    ],
                     probe_length_min: 26,
-                    probe_length_max: 30,
                     probe_split_region: 4,
                 },
                 property_filters: {
-                    isoform_consensus_filter: {
-                        enabled: true,
-                        isoform_consensus: 0,
-                    },
-                    targeted_exons_filter: {
-                        enabled: false,
-                    },
-                    hard_masked_sequences_filter: {
-                        enabled: true,
-                    },
-                    soft_masked_sequences_filter: {
-                        enabled: true,
-                    },
-                    homopolymeric_runs_filter: {
-                        enabled: false,
-                        homopolymeric_base_n: {
-                            A: null,
-                            T: null,
-                            C: null,
-                            G: null,
-                        },
-                    },
-                    GC_content_filter: {
-                        enabled: true,
-                        GC_content_min: 45,
-                        GC_content_max: 65,
-                    },
-                    prohibited_sequences_filter: {
-                        enabled: true,
-                        prohibited_sequences: ["TCT", "CTC"],
-                        kmer_abundance_threshold: {
-                            "3": 0.0469,
-                            "4": 0.0117,
-                            "5": 0.0029,
-                            "6": 0.00073,
-                        },
-                    },
-                    self_complementarity_filter: {
-                        enabled: true,
-                        max_len_selfcomplement: 10,
-                    },
-                    Tm_filter: {
-                        enabled: true,
-                        Tm_min: 50,
-                        Tm_max: 70,
-                    },
-                    secondary_structure_filter: {
-                        enabled: true,
-                        T: 37,
-                        thr_DG: 0,
-                    },
-                },
-                specificity_filters: {
-                    read_length_bias_filter: {
-                        enabled: true,
-                        read_length_bias: 20,
-                    },
-                    cross_hybridization_blastn_filter: {
-                        enabled: true,
-                        search_parameters: {
-                            "-query_loc": null,
-                            "-strand": null,
-                            "-task": null,
-                            "-evalue": null,
-                            "-word_size": null,
-                            "-gapopen": null,
-                            "-gapextend": null,
-                            "-penalty": null,
-                            "-reward": null,
-                            "-num_descriptions": null,
-                            "-num_alignments": null,
-                            "-sorthits": null,
-                            "-sorthsps": null,
-                            "-dust": null,
-                            "-soft_masking": null,
-                            "-lcase_masking": null,
-                            "-db_soft_mask": null,
-                            "-db_hard_mask": null,
-                            "-perc_identity": null,
-                            "-qcov_hsp_perc": null,
-                            "-max_hsps": null,
-                            "-culling_limit": null,
-                            "-best_hit_overhang": null,
-                            "-best_hit_score_edge": null,
-                            "-subject_besthit": null,
-                            "-max_target_seqs": null,
-                            "-template_type": null,
-                            "-template_length": null,
-                            "-db_size": null,
-                            "-searchsp": null,
-                            "-xdrop_ungap": null,
-                            "-xdrop_gap": null,
-                            "-xdrop_gap_final": null,
-                            "-no_greedy": null,
-                            "-min_raw_gapped_score": null,
-                            "-ungapped": null,
-                            "-window_size": null,
-                            "-off_diagonal_range": null,
-                        },
-                        hit_parameters: {
-                            coverage: 20,
-                            min_alignment_length: null,
-                        },
-                    },
-                    specificity_blastn_filter: {
-                        enabled: true,
-                        search_parameters: {
-                            "-query_loc": null,
-                            "-strand": null,
-                            "-task": null,
-                            "-evalue": null,
-                            "-word_size": null,
-                            "-gapopen": null,
-                            "-gapextend": null,
-                            "-penalty": null,
-                            "-reward": null,
-                            "-num_descriptions": null,
-                            "-num_alignments": null,
-                            "-sorthits": null,
-                            "-sorthsps": null,
-                            "-dust": null,
-                            "-soft_masking": null,
-                            "-lcase_masking": null,
-                            "-db_soft_mask": null,
-                            "-db_hard_mask": null,
-                            "-perc_identity": null,
-                            "-qcov_hsp_perc": null,
-                            "-max_hsps": null,
-                            "-culling_limit": null,
-                            "-best_hit_overhang": null,
-                            "-best_hit_score_edge": null,
-                            "-subject_besthit": null,
-                            "-max_target_seqs": null,
-                            "-template_type": null,
-                            "-template_length": null,
-                            "-db_size": null,
-                            "-searchsp": null,
-                            "-xdrop_ungap": null,
-                            "-xdrop_gap": null,
-                            "-xdrop_gap_final": null,
-                            "-no_greedy": null,
-                            "-min_raw_gapped_score": null,
-                            "-ungapped": null,
-                            "-window_size": null,
-                            "-off_diagonal_range": null,
-                        },
-                        hit_parameters: {
-                            coverage: 20,
-                            min_alignment_length: null,
-                        },
-                        files_fasta_reference_database: [
-                            {
-                                source: "ncbi",
-                                source_params: {
-                                    species: "Acidianus_ambivalens",
-                                    annotation_release:
-                                        "GCF_009428885.1_ASM942888v1",
-                                    taxon: "archaea",
-                                    assembly_source: "auto",
-                                    mode: "species",
-                                },
-                                genomic_regions: {
-                                    gene: true,
-                                    intergenic: false,
-                                    exon: false,
-                                    utr: false,
-                                    cds: false,
-                                    intron: false,
-                                    exon_exon_junction: false,
-                                },
-                                exon_exon_junction_block_size: 50,
-                            },
-                        ],
-                    },
-                    variant_filter: {
-                        enabled: true,
-                        files_vcf_reference_database: [],
-                        action: "flag",
-                    },
-                },
-                probe_set_selection: {
-                    independent_set_selection: {
-                        n_sets: 3,
-                        set_size_min: 1,
-                        set_size_opt: 5,
-                        distance_between_target_probes: 0,
-                        n_attempts_graph: 50,
-                        n_attempts_clique_enum: 50,
-                        diversification_fraction: 0.1,
-                        jaccard_opt: 0.5,
-                        jaccard_step: 0.1,
-                    },
-                    uniform_distance_score: {
-                        weight: 1,
-                    },
-                    isoform_consensus_score: {
-                        weight: 1,
-                    },
-                    targeted_exons_score: {
-                        weight: 0,
-                        targeted_exons: [],
-                    },
-                    GC_content_score: {
-                        weight: 1,
-                        GC_content_min: 45,
-                        GC_content_opt: 55,
-                        GC_content_max: 65,
-                    },
-                    Tm_score: {
-                        weight: 1,
-                        Tm_min: 50,
-                        Tm_opt: 60,
-                        Tm_max: 70,
-                    },
-                },
-                global_parameters: {
-                    Tm_parameters: {
-                        check: true,
-                        strict: true,
-                        c_seq: null,
-                        shift: 0,
-                        selfcomp: false,
-                        nn_table: null,
-                        tmm_table: null,
-                        imm_table: null,
-                        de_table: null,
-                        dnac1: 25,
-                        dnac2: 25,
-                        saltcorr: 5,
-                        Na: 50,
-                        K: 0,
-                        Tris: 0,
-                        Mg: 0,
-                        dNTPs: 0,
-                    },
-                    Tm_chem_correction_parameters: {
-                        enabled: true,
-                        parameters: {
-                            DMSO: 0,
-                            DMSOfactor: 0.75,
-                            fmd: 0,
-                            fmdfactor: 0.65,
-                            fmdmethod: 1,
-                            GC: null,
-                        },
-                    },
-                    Tm_salt_correction_parameters: {
-                        enabled: false,
-                    },
+                    GC_content_filter: { enabled: true, GC_content_min: 45 },
                 },
             },
-            schema_version: 2,
         },
     };
 
@@ -382,10 +100,6 @@ describe("importAndValidate", () => {
         expect(result.ok).toBe(true);
 
         if (result.ok) {
-            expect(
-                result.config.target_probes.global_parameters.Tm_parameters
-                    .dnac1
-            ).toBe(25);
             expect(
                 result.config.target_probes.property_filters.GC_content_filter
                     .GC_content_min

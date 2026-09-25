@@ -3,8 +3,8 @@
  * reports a fetch that fails instead of leaving the page blank.
  *
  * @remarks
- * The schema is read from a committed fixture rather than the running backend, which vitest has
- * no way to reach. `test_schema_routes.py` fails if that copy drifts from the models.
+ * Vitest cannot reach a backend, so the schema request is answered with a small hand-written
+ * schema. These tests are about fetching, not about any pipeline's fields.
  */
 import { render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
@@ -14,11 +14,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import PipelineForm from "../components/forms/PipelineForm";
 import { BACKEND_URL } from "../config";
 import { clearPipelineSchemaCache } from "../pipelineConfig/schemaApi";
-import oligoseqSchema from "./fixtures/oligoseq.schema.json";
+import testSchema from "./fixtures/pipeline.schema.json";
 
-/** Answers every schema request with the fixture, as the backend would. */
+/** Answers every schema request with the test schema, as the backend would. */
 const mockSchemaResponse = () =>
-    vi.spyOn(axios, "get").mockResolvedValue({ data: oligoseqSchema });
+    vi.spyOn(axios, "get").mockResolvedValue({ data: testSchema });
 
 /** Mounts the form under a router, which `ErrorAlert`'s contact link needs. */
 const renderForm = () =>
