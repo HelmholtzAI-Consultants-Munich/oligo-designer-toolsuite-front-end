@@ -22,6 +22,7 @@ from backend.config import CeleryConfig, Config
 from backend.constants import (
     PIPELINE_FILE_INPUT,
     PIPELINE_GENOMIC_INPUT,
+    PIPELINE_MODELS,
     PIPELINE_NON_EXPOSED_FIELDS,
 )
 from backend.extensions import celery_app, db
@@ -47,16 +48,7 @@ from backend.worker.task_index import Callbacks, Tasks
 pipelines_bp = Blueprint("pipelines", __name__)
 
 # Pipelines are enabled once ODT exposes a pydantic model for them.
-EXISTING_PIPELINES = frozenset(
-    {
-        "oligoseq",
-        "scrinshot",
-        "merfish",
-        "seqfish",
-        "hcr",
-        "cyclehcr",
-    }
-)
+EXISTING_PIPELINES = frozenset(PIPELINE_MODELS)
 
 
 def validate_name(pipeline_name: str) -> bool:
@@ -446,6 +438,15 @@ def _require_saved_file(
 
 
 def validate_pipeline_config(form_data: dict[str, Any], pipeline_name: str):
+    """Validates the submitted form against the pipeline's pydantic model before enqueueing.
+
+    Arguments:
+        form_data {dict[str, Any]} -- the submitted pipeline form.
+        pipeline_name {str} -- selects which pydantic model to validate against.
+
+    Notes:
+        This rejects malformed input with a clear 400 instead of a failure deep inside the Celery worker.
+    """
     pipeline_model = PIPELINE_VALIDATION_MODELS.get(pipeline_name)
     if pipeline_model is None:
         abort(HTTPStatus.BAD_REQUEST, description="unknown pipeline")

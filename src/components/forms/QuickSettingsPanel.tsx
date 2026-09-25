@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 import { QuickSettingsContext } from "../../hooks/useQuickSettings";
 import { ToolTip } from "../ui/Tooltip";
 
@@ -33,6 +33,8 @@ const QuickSettingsPanel = ({
 }: Props) => {
     // state rather than a ref: a ref is only populated after the fields have rendered and
     // already read the container as null, so nothing would portal into it
+    // one panel per tab pane, and every pane stays in the DOM, so the tooltip ids need a prefix
+    const id = useId();
     const [required, setRequired] = useState<HTMLDivElement | null>(null);
     const [general, setGeneral] = useState<HTMLDivElement | null>(null);
     const containers = useMemo(
@@ -49,12 +51,18 @@ const QuickSettingsPanel = ({
                 aria-label="Required Parameters"
             >
                 <span className="super-label">Required Parameters</span>
-                <ToolTip id="required-parameters" tip={requiredDescription} />
+                <ToolTip
+                    id={`${id}-required-parameters`}
+                    tip={requiredDescription}
+                />
                 <div className="quick-settings-fields" ref={setRequired} />
             </section>
             <section className="quick-settings" aria-label={title}>
                 <span className="super-label">{title}</span>
-                <ToolTip id="quick-settings" tip={QUICK_SETTINGS_DESCRIPTION} />
+                <ToolTip
+                    id={`${id}-quick-settings`}
+                    tip={QUICK_SETTINGS_DESCRIPTION}
+                />
                 <div className="quick-settings-fields" ref={setGeneral} />
             </section>
             {children}

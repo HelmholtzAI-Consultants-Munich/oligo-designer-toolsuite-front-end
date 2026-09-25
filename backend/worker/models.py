@@ -133,48 +133,23 @@ class RequiredParameters(BaseModel):
     )  # type: ignore
 
 
-class OligoSeqProbeDesignerConfigFrontEnd(OligoSeqProbeDesignerConfigBase):
-    """Overrides ODT's Oligo-Seq pipeline model to inject our custom genomic region generator
-    models."""
-
-    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
-
-
-### Front-end Models for the remaining pipelines ###
-
-# Each ODT `...ConfigBase` leaves out `general` and `required_parameters`, so these only add the
-# genome inputs back in our own type. None of them has a variant filter taking a VCF file.
-
-
-class ScrinshotProbeDesignerConfigFrontEnd(ScrinshotProbeDesignerConfigBase):
-    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
-
-
-class MerfishProbeDesignerConfigFrontEnd(MerfishProbeDesignerConfigBase):
-    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
-
-
-class SeqfishPlusProbeDesignerConfigFrontEnd(SeqfishPlusProbeDesignerConfigBase):
-    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
-
-
-class HcrProbeDesignerConfigFrontEnd(HcrProbeDesignerConfigBase):
-    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
-
-
-class CycleHcrProbeDesignerConfigFrontEnd(CycleHcrProbeDesignerConfigBase):
-    required_parameters: RequiredParameters = Field(description=REQUIRED_PARAMETERS_DESC)
-
-
-# The schema each pipeline's form is built from. Every `x-` flag is declared on the ODT field
-# itself, so nothing is stamped on afterwards.
+# The schema each pipeline's form is built from. Each ODT `...ConfigBase` leaves out `general`
+# and `required_parameters`, so only the genome inputs are added back, in our own type. Every
+# `x-` flag is declared on the ODT field itself, so nothing is stamped on afterwards.
 FRONT_END_SCHEMAS: dict[str, type[BaseModel]] = {
-    "oligoseq": OligoSeqProbeDesignerConfigFrontEnd,
-    "scrinshot": ScrinshotProbeDesignerConfigFrontEnd,
-    "merfish": MerfishProbeDesignerConfigFrontEnd,
-    "seqfish": SeqfishPlusProbeDesignerConfigFrontEnd,
-    "hcr": HcrProbeDesignerConfigFrontEnd,
-    "cyclehcr": CycleHcrProbeDesignerConfigFrontEnd,
+    name: create_model(
+        f"{base.__name__.removesuffix('Base')}FrontEnd",
+        __base__=base,
+        required_parameters=(RequiredParameters, Field(description=REQUIRED_PARAMETERS_DESC)),
+    )
+    for name, base in {
+        "oligoseq": OligoSeqProbeDesignerConfigBase,
+        "scrinshot": ScrinshotProbeDesignerConfigBase,
+        "merfish": MerfishProbeDesignerConfigBase,
+        "seqfish": SeqfishPlusProbeDesignerConfigBase,
+        "hcr": HcrProbeDesignerConfigBase,
+        "cyclehcr": CycleHcrProbeDesignerConfigBase,
+    }.items()
 }
 
 # Every ODT `...ConfigBase` leaves `general` out, so the form never offers it. It is filled in
