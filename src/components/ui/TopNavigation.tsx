@@ -21,9 +21,9 @@ export default function TopNavigation() {
             <Navbar.Brand as={Link} to="/" onClick={closeNavigation}>
                 <Horizontal gap="sm" align="center">
                     <Image
-                        src="/odt-logo.svg"
+                        src="/logo.png"
                         alt="Oligo Designer Toolsuite"
-                        width="48"
+                        width="34"
                         height="48"
                     />
                     Oligo Designer Toolsuite

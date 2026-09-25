@@ -164,8 +164,47 @@ export const ALL_PIPELINES: PipelineDefinition[] = [
 // UI helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * Opens every section of the visible tab, which starts with only the first one expanded, and
+ * then the `x-collapsed` groups nested inside them, which carry their own toggle. Anything
+ * still collapsed is `display: none`, so its fields fail Playwright's actionability checks.
+ *
+ * @remarks
+ * "Expand all" rather than clicking each header: a header click closes the other sections,
+ * so expanding them one by one would re-collapse whatever an earlier step opened.
+ */
+export const expandSections = async (page: Page) => {
+    // no button on the pipelines whose uiSchema is hand-written, as those have no sections
+    for (const button of await page
+        .getByRole("button", { name: "Expand all" })
+        .all()) {
+        if (await button.isVisible()) {
+            await button.click();
+        }
+    }
+    // only the active tab: the other panes stay in the DOM, hidden, and a click there would hang.
+    // No visibility guard here: the click has to wait out the section's opening animation,
+    // where a guard would instead skip the toggle for being hidden mid-flight.
+    const collapsed = page.locator(
+        '.tab-pane.active [aria-controls^="collapsible-section"][aria-expanded="false"]'
+    );
+    // clicking one drops it out of the set; re-count each time, so a group revealed by
+    // opening another is opened too. Capped, so a toggle that stops flipping aria-expanded
+    // fails here instead of at the 20-minute test timeout.
+    for (let clicks = 0; (await collapsed.count()) > 0; clicks++) {
+        if (clicks >= 20) {
+            throw new Error(
+                "expandSections: collapsed groups did not open after 20 clicks"
+            );
+        }
+        await collapsed.first().click();
+    }
+};
+
 export const clickTab = async (page: Page, name: RegExp) => {
     await page.getByRole("tab").and(page.getByTitle(name)).click();
+    // each tab owns its sections, so the one just revealed may still be collapsed
+    await expandSections(page);
 };
 
 export const openPipeline = async (
@@ -176,6 +215,7 @@ export const openPipeline = async (
     await expect(
         page.getByRole("heading", { name: pipeline.heading })
     ).toBeVisible();
+    await expandSections(page);
 };
 
 /**

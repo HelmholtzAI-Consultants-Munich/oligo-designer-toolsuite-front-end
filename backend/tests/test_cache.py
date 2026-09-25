@@ -4,8 +4,14 @@ from pathlib import Path
 
 import pytest
 from dogpile.cache.api import NO_VALUE
+from dogpile.cache.backends.redis import RedisBackend
 
-from backend.cache import file_cache_key_mangler, file_cache_region, get_cached_file_paths
+from backend.cache import (
+    FileCacheProxy,
+    file_cache_key_mangler,
+    file_cache_region,
+    get_cached_file_paths,
+)
 from backend.config import Config
 
 CACHE_KEY = "test-file-cache-entry"
@@ -36,7 +42,11 @@ def get_client():
     Returns:
         redis.StrictRedis -- The client of the file cache region's Redis backend.
     """
-    return file_cache_region.backend.proxied.reader_client
+    file_cache_proxy = file_cache_region.backend
+    assert isinstance(file_cache_proxy, FileCacheProxy)
+    redis_backend = file_cache_proxy.proxied
+    assert isinstance(redis_backend, RedisBackend)
+    return redis_backend.reader_client
 
 
 def test_cached_path_is_listed(cached_file: Path):
@@ -65,7 +75,10 @@ def test_listing_cached_paths_does_not_renew_the_expiration(cached_file: Path):
 
     get_cached_file_paths()
 
-    assert client.ttl(key) <= 10
+    # redis-py types a reply as possibly awaitable, the sync client returns an int
+    ttl = client.ttl(key)
+    assert isinstance(ttl, int)
+    assert ttl <= 10
 
 
 def test_missing_file_invalidates_the_cache_entry(cached_file: Path):

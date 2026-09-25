@@ -4,9 +4,8 @@ import {
     type ErrorSchema,
 } from "@rjsf/utils";
 import { getDefaultRegistry } from "@rjsf/core";
-import { Form } from "react-bootstrap";
-import { ToolTip } from "../ui/Tooltip";
 import { memo } from "react";
+import FieldRowLabel from "./FieldRowLabel";
 
 const {
     templates: { BaseInputTemplate },
@@ -39,17 +38,24 @@ const WrappedBaseInputTemplate = memo((props: BaseInputTemplateProps) => {
         );
     };
 
+    // checkboxes render their own inline label
+    const showLabel =
+        !hideLabel && !isCheckbox && !!(label || schema.description);
+
     return (
-        <>
-            {!hideLabel && !isCheckbox && (
-                <Form.Label htmlFor={id}>{label}</Form.Label>
+        <div className="field-row">
+            {showLabel && (
+                <FieldRowLabel
+                    id={id}
+                    label={label}
+                    description={schema.description}
+                />
             )}
-            {!hideLabel && schema.description ? (
-                <ToolTip id={id} tip={schema.description} />
-            ) : null}
-            {/* use lang="en" by default, enforces '.' as decimal separator in number inputs */}
-            <BaseInputTemplate lang="en" {...props} onChange={_onChange} />
-        </>
+            <div className="field-row-control">
+                {/* use lang="en" by default, enforces '.' as decimal separator in number inputs */}
+                <BaseInputTemplate lang="en" {...props} onChange={_onChange} />
+            </div>
+        </div>
     );
 });
 
