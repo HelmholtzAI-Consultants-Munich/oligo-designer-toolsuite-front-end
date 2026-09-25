@@ -4,7 +4,7 @@
 // Variable overrides
 $primary: #003956;
 $primary-muted: #004a67;
-$odt-blue: #006593;
+$odt-blue: #002864;
 $secondary: #037b94;
 $success: #128635;
 $warning: #ffbd11;
@@ -108,7 +108,7 @@ $theme-colors: map-merge(
 
         &:hover::after,
         &.active::after {
-            background-color: $secondary;
+            background-color: $odt-blue;
         }
     }
 }

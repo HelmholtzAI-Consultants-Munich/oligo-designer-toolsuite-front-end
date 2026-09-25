@@ -50,9 +50,9 @@ export default function Hero() {
                 </Horizontal>
             </Vertical>
             <Image
-                src="/odt-logo.svg"
+                src="/logo.png"
                 alt="Oligo Designer Toolsuite"
-                width="200"
+                width="143"
                 height="200"
             />
         </Horizontal>
