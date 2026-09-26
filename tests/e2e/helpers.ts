@@ -481,6 +481,7 @@ const setGenomicInput = async (
 
 /**
  * Fills the inputs a run cannot start without, plus the VCF upload where a pipeline has one.
+ * The variant filter taking the VCF files is off by default, so it is switched on first.
  *
  * @remarks
  * Every pipeline shares these three, and `reference_genome` now covers the readout-probe and
@@ -509,6 +510,8 @@ export const fillRequiredParameters = async (
     await setGenomicInput(page, "reference_genome", genomicInput);
 
     if (options.fastaVcfFiles) {
+        // the upload only renders once the filter is on
+        await page.locator('input[id$="variant_filter_enabled"]').check();
         await page
             .locator("input[name=files_vcf_reference_database]")
             .setInputFiles(options.fastaVcfFiles);
