@@ -1,7 +1,6 @@
-# Ignore everything except the schemas and backend directory
+# Ignore everything except the backend directory
 # see https://docs.docker.com/build/cache/optimize/#keep-the-context-small
 /*
-!/schemas
 !/backend
 
 # Ignore directory contents in the backend directory except for specific files and directories

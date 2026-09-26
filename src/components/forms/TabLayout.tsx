@@ -1,7 +1,7 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
 import { Fragment, useState, type ComponentProps } from "react";
 import { Accordion, Button } from "react-bootstrap";
-import { sectionKey } from "./utils";
+import { isEmptySection, sectionKey } from "./utils";
 
 /**
  * Layout for a single tab: an accordion of its sections, each rendered by a SectionLayout.
@@ -14,9 +14,9 @@ import { sectionKey } from "./utils";
  */
 function TabLayout(props: ObjectFieldTemplateProps) {
     // not memoized: RJSF rebuilds `properties` on every render, so a memo would never hit
-    const sectionKeys = props.properties.map((element) =>
-        sectionKey(props.fieldPathId.$id, element.name)
-    );
+    const sectionKeys = props.properties
+        .filter((element) => !isEmptySection(props.uiSchema?.[element.name]))
+        .map((element) => sectionKey(props.fieldPathId.$id, element.name));
     // only the first section starts open, so a tab opens as a short list of sections
     const [openSections, setOpenSections] = useState(sectionKeys.slice(0, 1));
     const allOpen =

@@ -75,7 +75,8 @@ def test_get_run_file_path_traversal_blocked(client, dummy_user, run_id, output_
 
 
 def test_runid_null(client, mock_celery, session_user):
-    form = {"runid": None}
+    # a token is needed to get past the turnstile check, which runs before the payload is read
+    form = {"runid": None, "token": "XXXX.DUMMY.TOKEN.XXXX"}
 
     response = post(client, "/api/scrinshot", form)
     assert response.status_code == 400

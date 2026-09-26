@@ -87,11 +87,9 @@ class GenomicRegionsFile:
                 if self.genes and gene not in self.genes:
                     continue
                 for oligoset_name, oligoset_entries in oligosets.items():
-                    score = oligoset_entries["Oligoset Score"]
-                    scores[gene][oligoset_name] = {
-                        "average": score["set_score_average"],
-                        "worst": score["set_score_worst"],
-                    }
+                    # Which scores ODT reports depends on the pipeline's set scoring:
+                    # average + worst, or worst + sum. Passing them through keeps both.
+                    scores[gene][oligoset_name] = dict(oligoset_entries["Oligoset Score"])
                     # only keep entries whose key begins with "Oligo "
                     oligo_probes = filter(lambda x: x[0].startswith("Oligo "), oligoset_entries.items())
                     for _, probe_info in oligo_probes:

@@ -50,9 +50,10 @@ For more information on how to maintain the project refer to the [Admin Guide](A
   - Contains: User directories with generated pipeline results, genomic file caches, genomic regions and other runtime artifacts.
   - Configuration: Configurable using environment variables.
 
-- Schemas & Validation: [`schemas/`](/schemas/)
-  - JSON schemas used to validate pipeline inputs and forms (e.g., [`oligoseq.schema.json`](/schemas/oligoseq.schema.json)).
-  - Origin: These files are generated from ODT's Pydantic models by executing [`backend/worker/models.py`](/backend/worker/models.py).
+- Form schemas: [`backend/worker/models.py`](/backend/worker/models.py), [`backend/routes/schemas.py`](/backend/routes/schemas.py)
+  - Each pipeline's JSON Schema is generated from ODT's Pydantic models when the Flask server starts, and served at `GET /api/pipelines/<pipeline_name>/schema`.
+  - The frontend fetches a schema when its pipeline page opens (see [`src/pipelineConfig/schemaApi.ts`](/src/pipelineConfig/schemaApi.ts)) and derives the RJSF UI Schema from it.
+  - No schema files are checked in, so there is nothing to regenerate after an ODT upgrade: rebuild the `odt-server` image and the forms follow.
 
 - Deployment & DevOps:
   - Dockerfiles: [`docker/`](/docker/)
@@ -66,9 +67,9 @@ For more information on how to maintain the project refer to the [Admin Guide](A
 
 ## Data flow on pipeline submission
 
-1. User interacts with the frontend [RJSF](https://github.com/rjsf-team/react-jsonschema-form) form and submits a request.
-2. Frontend sends an HTTP request to the backend API.
-3. Backend validates input using JSON schemas in [`schemas/`](/schemas/).
+1. Frontend fetches the pipeline's JSON Schema from the backend and builds the [RJSF](https://github.com/rjsf-team/react-jsonschema-form) form from it.
+2. User fills in the form and submits it, and the frontend sends an HTTP request to the backend API.
+3. Backend validates the submission against the pipeline's Pydantic model (`PIPELINE_VALIDATION_MODELS` in [`backend/worker/models.py`](/backend/worker/models.py)).
 4. Backend prepares user directory in [`backend/data-access/`](/backend/data-access/) for uploaded files and either:
 
 - Responds synchronously with small results, or

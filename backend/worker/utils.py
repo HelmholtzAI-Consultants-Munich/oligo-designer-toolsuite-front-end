@@ -33,3 +33,48 @@ def strip_local_descriptions(schema: dict, namespace: dict, module_name: str) ->
         schema["$defs"][name].pop("description", None)
     schema.pop("description", None)
     return schema
+
+
+def accept_uploaded_files(schema: dict, *fields: str) -> dict:
+    """Widens fields naming a file so the front-end's `File` object validates against them.
+
+    A file input holds the picked `File` in the form data until submission, where it is swapped
+    for the name the backend saved it under. The model types these fields as the path they end
+    up being, which a `File` is not, so the schema the form validates against has to accept an
+    object as well.
+
+    Arguments:
+        schema {dict} -- the generated JSON Schema, modified in place
+        *fields {str} -- names of the properties to widen, at any depth
+
+    Returns:
+        {dict} -- the same schema, with those properties accepting an object too
+    """
+
+    def as_path_or_file(schema: dict) -> dict:
+        return {
+            "anyOf": [{"type": "string"}, {"type": "object"}],
+            **{k: v for k, v in schema.items() if k != "type"},
+        }
+
+    def widen(node: object) -> None:
+        if isinstance(node, list):
+            for item in node:
+                widen(item)
+            return
+        if not isinstance(node, dict):
+            return
+        for field in fields:
+            prop = node.get("properties", {}).get(field)
+            if not isinstance(prop, dict):
+                continue
+            if prop.get("type") == "string":
+                node["properties"][field] = as_path_or_file(prop)
+            # a field taking several files holds the paths in a list
+            elif prop.get("type") == "array" and prop.get("items", {}).get("type") == "string":
+                prop["items"] = as_path_or_file(prop["items"])
+        for value in node.values():
+            widen(value)
+
+    widen(schema)
+    return schema

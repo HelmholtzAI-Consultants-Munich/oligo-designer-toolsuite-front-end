@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Pipeline form schemas are generated from ODT's Pydantic models when the backend starts and fetched by the frontend at page load, instead of being checked into `schemas/`. Upgrading ODT now updates the forms without regenerating anything, but a pipeline page needs the backend to be reachable in order to render.
+
 ## [0.2.0] - 2026-07-16
 
 ### Added

@@ -4,7 +4,9 @@ import { test } from "@playwright/test";
 import {
     FASTA_FIXTURES,
     OLIGOSEQ_PIPELINE,
-    fillTargetProbeParameters,
+    clearBlastnSearchOverrides,
+    fillConfig,
+    fillRequiredParameters,
     openPipeline,
     submitAndVerifyRun,
 } from "./helpers";
@@ -14,21 +16,25 @@ test("@smoke @full oligoseq run completes and exposes artifacts", async ({
 }) => {
     await openPipeline(page, OLIGOSEQ_PIPELINE);
 
-    await fillTargetProbeParameters(page, {
-        fileRegions: "GFB69_RS00135",
-        fastaTargetFiles: [
-            FASTA_FIXTURES.exon,
-            FASTA_FIXTURES.exon_exon_junction,
-        ],
-        fastaReferenceFiles: [
-            FASTA_FIXTURES.exon,
-            FASTA_FIXTURES.exon_exon_junction,
-        ],
+    await fillRequiredParameters(page, {
+        targets: "GFB69_RS14600",
+        fastaVcfFiles: [FASTA_FIXTURES.vcf],
     });
+
+    await fillConfig(page, {
+        nAttemptsGraph: "60",
+        setSizeMin: "1",
+    });
+
+    for (const locator of await page.getByLabel(/Coverage/i).all()) {
+        await locator.fill("20");
+    }
+
+    await clearBlastnSearchOverrides(page);
 
     await page
         .locator(
-            "#root_target_probe_specificity_filters_variant_filter_enabled"
+            "#root_target_probes_property_filters_homopolymeric_runs_filter_enabled"
         )
         .uncheck();
 

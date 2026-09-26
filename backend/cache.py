@@ -193,6 +193,7 @@ generic_cache_region: CacheRegion = make_region().configure(
         "redis_expiration_time": Config.REDIS_GENERIC_EXPIRATION_TIME,
         "distributed_lock": True,
         "thread_local_lock": False,
+        "lock_timeout": Config.REDIS_CACHE_LOCK_TIMEOUT,
     },
 )
 """A generic dogpile.cache region for Python values.
@@ -227,6 +228,7 @@ file_cache_region: CacheRegion = make_region(key_mangler=file_cache_key_mangler)
         "redis_expiration_time": Config.REDIS_FILE_EXPIRATION_TIME,
         "distributed_lock": True,
         "thread_local_lock": False,
+        "lock_timeout": Config.REDIS_CACHE_LOCK_TIMEOUT,
     },
     wrap=[FileCacheProxy],
 )
