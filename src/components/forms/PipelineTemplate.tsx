@@ -25,7 +25,9 @@ import { FileInput, GenomicInput } from "./GenomicInput";
 import { showToast } from "../../utils/toastUtil";
 import type { Pipeline } from "../../pipelineConfig/config";
 import { excludeHiddenTabs, snakeCaseToTitleCase } from "./utils";
+import { falsyDeclaredDefaults } from "../../pipelineConfig/defaults";
 import ObjectFieldTemplate from "./ObjectFieldTemplate";
+import WrappedSelectWidget from "./SelectWidget";
 import WrappedBaseInputTemplate from "./BaseInputTemplate";
 import {
     WrappedAnyOfField,
@@ -39,6 +41,7 @@ import {
 } from "./ArrayFieldTemplates";
 import ErrorListTemplate from "./ErrorListTemplate";
 import TxtUploadInput from "./TxtUploadInput";
+import SingleFileInput from "./SingleFileInput";
 import RunConfirmationModal from "./RunConfirmationModal";
 
 type Props = {
@@ -62,7 +65,9 @@ const PipelineTemplate: React.FC<Props> = ({
     schema,
     uiSchema,
 }) => {
-    const [formData, setFormData] = useState<RJSFFormData>({});
+    const [formData, setFormData] = useState<RJSFFormData>(() =>
+        falsyDeclaredDefaults(schema, schema)
+    );
     const [submissionTried, setSubmissionTried] = useState(false);
 
     const submitButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -125,6 +130,7 @@ const PipelineTemplate: React.FC<Props> = ({
         AnyOfField: WrappedAnyOfField,
         OneOfField: WrappedOneOfField,
         txtUploadInput: TxtUploadInput,
+        singleFileInput: SingleFileInput,
     };
 
     const tabs = useMemo(() => {
@@ -248,7 +254,15 @@ const PipelineTemplate: React.FC<Props> = ({
                         arrayMinItems: {
                             populate: "never",
                         },
+                        // let a Pydantic override (e.g. `TmParameters(dnac2=0)`) win over
+                        // the defaults the model declares for its own fields
+                        nestedDefaultsPrecedence: "ancestorWins",
                     }}
+                    // Sections live in tabs, so a required field can sit in a `display: none`
+                    // pane. The browser refuses to submit for one it cannot focus, and reports
+                    // it only to the console, so the click looked like it did nothing. RJSF's
+                    // own validation reaches those fields and lists them below.
+                    noHtml5Validate
                     showErrorList={"bottom"}
                     templates={{
                         FieldTemplate,
@@ -260,6 +274,7 @@ const PipelineTemplate: React.FC<Props> = ({
                         DescriptionFieldTemplate,
                         ErrorListTemplate,
                     }}
+                    widgets={{ SelectWidget: WrappedSelectWidget }}
                     fields={fields}
                     validator={validator}
                     liveValidate={submissionTried ? "onChange" : false}

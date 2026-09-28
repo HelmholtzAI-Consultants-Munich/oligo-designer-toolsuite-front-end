@@ -1,5 +1,4 @@
 import {
-    descriptionId,
     titleId,
     type ArrayFieldDescriptionProps,
     type ArrayFieldTitleProps,
@@ -37,13 +36,12 @@ const ArrayFieldTitleTemplate = memo((props: ArrayFieldTitleProps) => {
 const ArrayFieldDescriptionTemplate = memo(
     (props: ArrayFieldDescriptionProps) => {
         const { description, fieldPathId } = props;
-        const id = descriptionId(fieldPathId);
 
         if (!description) {
             return null;
         }
 
-        return <ToolTip id={id} tip={description.toString()} />;
+        return <ToolTip id={fieldPathId.$id} tip={description.toString()} />;
     }
 );
 
@@ -54,7 +52,7 @@ const ArrayFieldDescriptionTemplate = memo(
  * @param props - Array Field Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfieldtemplate})
  * @returns A React Component that is used to overwrite the default ArrayFieldTemplate
  */
-const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
+const ArrayFieldTemplate = (props: ArrayFieldTemplateProps) => {
     const {
         canAdd,
         disabled,
@@ -72,46 +70,52 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
     const uiOptions = getUiOptions(uiSchema);
     const showOptionalDataControlInTitle = !readonly && !disabled;
     return (
-        <div>
-            <ArrayFieldTitleTemplate
-                fieldPathId={fieldPathId}
-                title={uiOptions.title || title}
-                schema={schema}
-                uiSchema={uiSchema}
-                required={required}
-                registry={registry}
-                optionalDataControl={
-                    showOptionalDataControlInTitle
+        <div className="field-row">
+            <div className="field-row-label">
+                <ArrayFieldTitleTemplate
+                    fieldPathId={fieldPathId}
+                    title={uiOptions.title || title}
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    required={required}
+                    registry={registry}
+                    optionalDataControl={
+                        showOptionalDataControlInTitle
+                            ? optionalDataControl
+                            : undefined
+                    }
+                />
+                <ArrayFieldDescriptionTemplate
+                    fieldPathId={fieldPathId}
+                    description={uiOptions.description || schema.description}
+                    schema={schema}
+                    uiSchema={uiSchema}
+                    registry={registry}
+                />
+            </div>
+            <div className="field-row-control">
+                <Vertical gap="sm" align="stretch">
+                    {!showOptionalDataControlInTitle
                         ? optionalDataControl
-                        : undefined
-                }
-            />
-            <ArrayFieldDescriptionTemplate
-                fieldPathId={fieldPathId}
-                description={uiOptions.description || schema.description}
-                schema={schema}
-                uiSchema={uiSchema}
-                registry={registry}
-            />
-            <Vertical gap="sm" align="stretch" className="mt-2">
-                {!showOptionalDataControlInTitle
-                    ? optionalDataControl
-                    : undefined}
-                {items}
-                {canAdd && (
-                    <Button
-                        variant="primary-muted"
-                        id={buttonId(fieldPathId, "add")}
-                        onClick={onAddClick}
-                        disabled={disabled || readonly}
-                    >
-                        <Plus size={18} />
-                    </Button>
-                )}
-            </Vertical>
+                        : undefined}
+                    {items}
+                    {canAdd && (
+                        <Button
+                            variant="primary-muted"
+                            size="sm"
+                            className="align-self-start"
+                            id={buttonId(fieldPathId, "add")}
+                            onClick={onAddClick}
+                            disabled={disabled || readonly}
+                        >
+                            <Plus size={18} />
+                        </Button>
+                    )}
+                </Vertical>
+            </div>
         </div>
     );
-});
+};
 
 /**
  * This ArrayFieldItemTemplate is based on the react-bootstrap theme's template.
@@ -120,7 +124,7 @@ const ArrayFieldTemplate = memo((props: ArrayFieldTemplateProps) => {
  * @param props - Array Field Item Template Props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#arrayfielditemtemplate})
  * @returns A React Component that is used to overwrite the default ArrayFieldItemTemplate
  */
-const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
+const ArrayFieldItemTemplate = (props: ArrayFieldItemTemplateProps) => {
     const { children, hasToolbar, buttonsProps } = props;
     return (
         <div className="d-flex gap-1 array-field-item align-items-start">
@@ -136,6 +140,6 @@ const ArrayFieldItemTemplate = memo((props: ArrayFieldItemTemplateProps) => {
             )}
         </div>
     );
-});
+};
 
 export { ArrayFieldTemplate, ArrayFieldItemTemplate };

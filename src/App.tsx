@@ -1,10 +1,13 @@
 import FAQ from "./pages/Faq";
 import Contact from "./pages/Contact";
 import Pipelines from "./pages/Pipelines";
+import Home from "./pages/Home";
 import Scrinshot from "./pages/Scrinshot";
 import Runs from "./pages/Runs";
 import Merfish from "./pages/Merfish";
 import SeqFish from "./pages/SeqFish";
+import Hcr from "./pages/Hcr";
+import CycleHcr from "./pages/CycleHcr";
 import OligoSeq from "./pages/OligoSeq";
 import Login from "./pages/Login";
 import RunDetail from "./pages/RunDetail";
@@ -13,7 +16,7 @@ import PrivacyPolicy from "./pages/privacy-policy";
 import AdminApp from "./admin/AdminApp";
 import DefaultLayout from "./components/layouts/DefaultLayout";
 import FeedbackButton from "./components/feedback/FeedbackButton";
-import NotFound from "./pages/404";
+import RouteError from "./pages/RouteError";
 import { useAuth } from "./hooks/useAuth";
 import {
     createBrowserRouter,
@@ -47,7 +50,7 @@ const defaultLayoutRoutes = [
     { path: "/login", element: <Login /> },
     { path: "/runs", element: <Runs /> },
     { path: "/admin/*", element: <AdminApp /> },
-    { path: "/", element: <Pipelines /> },
+    { path: "/", element: <Home /> },
     { path: "/faq", element: <FAQ /> },
     { path: "/contact", element: <Contact /> },
     { path: "/terms", element: <Terms /> },
@@ -56,6 +59,8 @@ const defaultLayoutRoutes = [
     { path: "/pipelines/scrinshot", element: <Scrinshot /> },
     { path: "/pipelines/merfish", element: <Merfish /> },
     { path: "/pipelines/seqfish", element: <SeqFish /> },
+    { path: "/pipelines/hcr", element: <Hcr /> },
+    { path: "/pipelines/cyclehcr", element: <CycleHcr /> },
     { path: "/pipelines/oligoseq", element: <OligoSeq /> },
     { path: "/runs/:runId", element: <RunDetailWrapper /> },
 ];
@@ -69,7 +74,7 @@ const router = createBrowserRouter([
                 children: defaultLayoutRoutes,
             },
         ],
-        errorElement: <NotFound />,
+        errorElement: <RouteError />,
     },
 ]);
 

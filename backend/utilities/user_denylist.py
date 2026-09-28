@@ -1,4 +1,11 @@
+"""
+Functions for banning, checking, and removing banned Helmholtz AAI identities.
+"""
+
+from http import HTTPStatus
+
 from bson import ObjectId
+from flask import abort
 
 from backend.constants import USER_DENYLIST_COLLECTION_KEY
 from backend.extensions import db
@@ -6,16 +13,48 @@ from backend.utils import utc_now
 
 
 def find_ban_by_helmholtz_sub(helmholtz_sub: str | None):
+    """Finds the ban record for a helmholtz_sub, if any.
+
+    Arguments:
+        helmholtz_sub {str | None} -- the identity to check for a ban.
+
+    Returns:
+        dict | None -- the ban record, or None if this identity isn't banned.
+    """
     if not helmholtz_sub:
         return None
     return db[USER_DENYLIST_COLLECTION_KEY].find_one({"helmholtz_sub": helmholtz_sub})
 
 
 def is_helmholtz_sub_banned(helmholtz_sub: str | None) -> bool:
+    """Checks whether a helmholtz_sub is currently banned.
+
+    Arguments:
+        helmholtz_sub {str | None} -- the identity to check.
+
+    Notes:
+        Checked on every session reload, not just login, so a ban takes
+        effect immediately.
+
+    Returns:
+        bool -- True if this identity is currently banned.
+    """
     return find_ban_by_helmholtz_sub(helmholtz_sub) is not None
 
 
 def ban_helmholtz_sub(helmholtz_sub: str, banned_by: str):
+    """Bans a helmholtz_sub identity.
+
+    Arguments:
+        helmholtz_sub {str} -- the identity to ban.
+        banned_by {str} -- which admin issued the ban.
+
+    Raises:
+        InternalServerError: if the ban can't be read back after the upsert.
+
+    Returns:
+        dict -- the ban record (existing or newly created).
+    """
     db[USER_DENYLIST_COLLECTION_KEY].update_one(
         {"helmholtz_sub": helmholtz_sub},
         {
@@ -28,11 +67,21 @@ def ban_helmholtz_sub(helmholtz_sub: str, banned_by: str):
         upsert=True,
     )
     ban = find_ban_by_helmholtz_sub(helmholtz_sub)
-    assert ban is not None
+    if ban is None:
+        abort(HTTPStatus.INTERNAL_SERVER_ERROR, description="error: could not save ban")
+
     return ban
 
 
 def format_ban(ban: dict) -> dict:
+    """Format a ban record for API responses (admin panel).
+
+    Arguments:
+        ban {dict} -- the raw ban document from MongoDB.
+
+    Returns:
+        dict -- ban formatted for API responses.
+    """
     banned_at = ban.get("banned_at")
     return {
         "id": str(ban["_id"]),
@@ -43,4 +92,16 @@ def format_ban(ban: dict) -> dict:
 
 
 def remove_ban(ban_id: ObjectId) -> bool:
+    """Removes a ban record.
+
+    Arguments:
+        ban_id {ObjectId} -- the ban record to remove.
+
+    Notes:
+        Lets the caller return 404 for an unmatched ban_id without a
+        separate existence check.
+
+    Returns:
+        bool -- True if a ban was deleted, False if ban_id didn't match anything.
+    """
     return db[USER_DENYLIST_COLLECTION_KEY].delete_one({"_id": ban_id}).deleted_count > 0

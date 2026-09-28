@@ -1,3 +1,7 @@
+"""
+Tracks pipeline-run queue length and position, keeping Redis counters and MongoDB queue_position fields in sync.
+"""
+
 from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any, cast
@@ -10,6 +14,20 @@ from backend.types import RunStatus
 
 
 def _decrement_queue_length(redis: Redis, priority: str) -> int:
+    """Decrements a queue-length counter, clamping at 0.
+
+    Arguments:
+        redis {Redis} -- client to update.
+        priority {str} -- "high" or "default".
+
+    Notes:
+        Clamped rather than allowed to go negative, so drift between the
+        counter and actual pending runs can't compound into an increasingly
+        wrong queue-position estimate.
+
+    Returns:
+        int -- the counter's new value.
+    """
     new_length = cast(int, redis.hincrby(Config.REDIS_QUEUE_LENGTH_KEY, priority, -1))
     if new_length < 0:
         redis.hset(Config.REDIS_QUEUE_LENGTH_KEY, priority, 0)  # type: ignore
@@ -19,7 +37,17 @@ def _decrement_queue_length(redis: Redis, priority: str) -> int:
 
 @contextmanager
 def queue_accounting_lock() -> Generator[Redis, None, None]:
-    """Hold the global queue-accounting lock and yield its Redis client."""
+    """Holds the global queue-accounting lock and yields its Redis client.
+
+    Notes:
+        Queue-length counters and per-run queue positions are updated together
+        across Redis and MongoDB; without a shared lock, concurrent
+        enqueues/dequeues could interleave and leave them inconsistent.
+
+    Returns:
+        Redis -- client to use for queue-accounting operations while the
+        lock is held.
+    """
     redis = Redis.from_url(Config.REDIS_URI)
     lock = redis.lock(
         Config.REDIS_QUEUE_ACCOUNTING_LOCK_KEY,
@@ -36,9 +64,22 @@ def queue_accounting_lock() -> Generator[Redis, None, None]:
 
 
 def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
-    """Account for a newly enqueued run and return its queue position.
+    """Accounts for a newly enqueued run and returns its queue position.
 
-    Must be called while holding queue_accounting_lock.
+    Arguments:
+        redis {Redis} -- client for queue-length counters.
+        db {Any} -- MongoDB database, used to shift other pending runs' positions.
+        priority {int} -- the run's Celery task priority.
+
+    Notes:
+        Must be called while holding queue_accounting_lock, since it reads
+        and updates the shared counters. A new high-priority run pushes every
+        pending default-priority run's high-priority-ahead count up by one,
+        since it will run before them.
+
+    Returns:
+        tuple[int, int] -- (high-priority runs ahead, default-priority runs
+        ahead) for the new run.
     """
     default_length, high_length = (
         int(cast(str | None, value) or 0)
@@ -58,9 +99,17 @@ def add_pending_run(redis: Redis, db: Any, priority: int) -> tuple[int, int]:
 
 
 def _remove_pending_run(redis: Redis, db: Any, run: dict[str, Any]) -> None:
-    """Decrement queue counters and shift positions for runs queued behind the removed run.
+    """Decrements queue counters and shifts positions for runs queued behind the removed run.
 
-    Must be called while holding queue_accounting_lock.
+    Arguments:
+        redis {Redis} -- client for queue-length counters.
+        db {Any} -- MongoDB database, used to shift other pending runs' positions.
+        run {dict[str, Any]} -- the pending run being removed, used for its
+        priority and queue_position.
+
+    Notes:
+        Must be called while holding queue_accounting_lock, since it reads
+        and updates the shared counters.
     """
     priority = run.get("priority", "default")
     position = run.get("queue_position") or (0, 0)

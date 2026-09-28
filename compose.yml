@@ -30,6 +30,9 @@ services:
     image: ghcr.io/helmholtzai-consultants-munich/odt-server:${ODT_CLOUD_VERSION:-latest}
     build:
       dockerfile: docker/server.Dockerfile
+      args:
+        # Optional: install oligo-designer-toolsuite from this git ref instead of PyPI
+        ODT_REF:
     volumes:
       - data-access:/app/backend/data-access
     env_file: .env
@@ -43,6 +46,8 @@ services:
     image: ghcr.io/helmholtzai-consultants-munich/odt-server:${ODT_CLOUD_VERSION:-latest}
     build:
       dockerfile: docker/server.Dockerfile
+      args:
+        ODT_REF:
     env_file: .env
     environment: *docker-env-overrides
     depends_on:
@@ -56,6 +61,8 @@ services:
     image: ghcr.io/helmholtzai-consultants-munich/odt-worker:${ODT_CLOUD_VERSION:-latest}
     build:
       dockerfile: docker/worker.Dockerfile
+      args:
+        ODT_REF:
     volumes:
       - data-access:/app/backend/data-access
       - cache:/app/backend/cache

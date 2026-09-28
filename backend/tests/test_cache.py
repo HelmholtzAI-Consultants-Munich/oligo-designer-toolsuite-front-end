@@ -1,11 +1,21 @@
-"""FileCacheProxy tests."""
+"""FileCacheProxy and file cache region tests, requires a running Redis instance."""
+
+from pathlib import Path
 
 import pytest
 from dogpile.cache import make_region
 from dogpile.cache.api import NO_VALUE
+from dogpile.cache.backends.redis import RedisBackend
 
-from backend.cache import FileCacheProxy
+from backend.cache import (
+    FileCacheProxy,
+    file_cache_key_mangler,
+    file_cache_region,
+    get_cached_file_paths,
+)
 from backend.config import Config
+
+CACHE_KEY = "test-file-cache-entry"
 
 
 @pytest.fixture
@@ -33,6 +43,38 @@ def region():
     cache_region.backend.proxied.writer_client.flushdb()
     yield cache_region
     cache_region.backend.proxied.writer_client.flushdb()
+
+
+@pytest.fixture
+def cached_file(tmp_path: Path):
+    """Cache a file in the shared file cache region under a test key and remove it afterwards.
+
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory the file is created in
+
+    Yields:
+        Path -- the path to the cached file
+    """
+    path = tmp_path / "cached.txt"
+    path.write_text("content")
+    file_cache_region.set(CACHE_KEY, path)
+
+    yield path
+
+    file_cache_region.delete(CACHE_KEY)
+
+
+def get_client():
+    """Return the Redis client the file cache region writes to.
+
+    Returns:
+        redis.StrictRedis -- the client of the file cache region's Redis backend
+    """
+    file_cache_proxy = file_cache_region.backend
+    assert isinstance(file_cache_proxy, FileCacheProxy)
+    redis_backend = file_cache_proxy.proxied
+    assert isinstance(redis_backend, RedisBackend)
+    return redis_backend.reader_client
 
 
 def test_set_then_get_round_trips_existing_file(region, tmp_path):
@@ -159,3 +201,71 @@ def test_set_raises_not_implemented(region, tmp_path):
     """
     with pytest.raises(NotImplementedError):
         region.backend.set("key", tmp_path)
+
+
+def test_cached_path_is_listed(cached_file: Path):
+    """A cached path is collected from Redis by get_cached_file_paths.
+
+    Arguments:
+        cached_file {Path} -- file cached under CACHE_KEY
+    """
+    assert cached_file.resolve() in get_cached_file_paths()
+
+
+def test_reading_renews_the_expiration(cached_file: Path):
+    """Reading a cached entry resets its expiration to the configured file expiration time.
+
+    Arguments:
+        cached_file {Path} -- file cached under CACHE_KEY
+    """
+    key = file_cache_key_mangler(CACHE_KEY)
+    client = get_client()
+    client.expire(key, 10)
+
+    assert file_cache_region.get(CACHE_KEY) == cached_file
+    assert client.ttl(key) == Config.REDIS_FILE_EXPIRATION_TIME
+
+
+def test_listing_cached_paths_does_not_renew_the_expiration(cached_file: Path):
+    """Collecting the cached paths leaves the expiration untouched.
+
+    Arguments:
+        cached_file {Path} -- file cached under CACHE_KEY
+
+    Notes:
+        The cleanup task must not keep entries alive just by looking at them.
+    """
+    key = file_cache_key_mangler(CACHE_KEY)
+    client = get_client()
+    client.expire(key, 10)
+
+    get_cached_file_paths()
+
+    # redis-py types a reply as possibly awaitable, the sync client returns an int
+    ttl = client.ttl(key)
+    assert isinstance(ttl, int)
+    assert ttl <= 10
+
+
+def test_missing_file_invalidates_the_cache_entry(cached_file: Path):
+    """A cached entry is dropped from Redis once its file is gone.
+
+    Arguments:
+        cached_file {Path} -- file cached under CACHE_KEY
+    """
+    cached_file.unlink()
+
+    assert file_cache_region.get(CACHE_KEY) is NO_VALUE
+    assert get_client().exists(file_cache_key_mangler(CACHE_KEY)) == 0
+
+
+def test_malformed_value_is_skipped():
+    """A file cache key without a path value does not break collecting the paths."""
+    key = f"{Config.REDIS_FILE_CACHE_KEY_PREFIX}malformed-test-entry"
+    client = get_client()
+    client.set(key, b"not a dogpile value")
+
+    try:
+        get_cached_file_paths()
+    finally:
+        client.delete(key)

@@ -1,3 +1,5 @@
+"""Safe, centralized conversions between Python/pathlib values and the plain strings/dicts MongoDB and JSON APIs can store or transmit."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,7 +13,18 @@ PATH_STORAGE_KIND = "pathlib.Path/v1"
 
 
 def serialize_path(path: Path) -> dict[str, Any]:
-    """Serialize a pathlib.Path to a structured Mongo-safe representation."""
+    """Serializes a Path into a Mongo-safe representation.
+
+    Arguments:
+        path {Path} -- the path to store.
+
+    Notes:
+        kind (e.g. "pathlib.Path/v1") flags the format, so deserialize_path
+        can reject unrelated or stale-format data.
+
+    Returns:
+        dict[str, Any] -- Mongo-safe representation of the path.
+    """
     return {
         "kind": PATH_STORAGE_KIND,
         "parts": list(path.parts),
@@ -19,7 +32,19 @@ def serialize_path(path: Path) -> dict[str, Any]:
 
 
 def deserialize_path(path_value: dict[str, Any] | None) -> Path | None:
-    """Deserialize a structured path representation."""
+    """Validates the shape and kind before rebuilding a Path.
+
+    Arguments:
+        path_value {dict[str, Any] | None} -- stored path representation to
+        deserialize, as produced by serialize_path.
+
+    Notes:
+        Returns None instead of raising for missing/malformed/legacy-format
+        values, so callers can treat "no usable path" as normal.
+
+    Returns:
+        Path | None -- the reconstructed path, or None if it isn't valid.
+    """
     if not isinstance(path_value, dict):
         return None
     if path_value.get("kind") != PATH_STORAGE_KIND:
@@ -33,20 +58,49 @@ def deserialize_path(path_value: dict[str, Any] | None) -> Path | None:
 
 
 def path_for_display(path_value: dict[str, Any] | None) -> str:
-    """Convert a structured path representation to string for API output."""
+    """Formats a stored path as a display string.
+
+    Arguments:
+        path_value {dict[str, Any] | None} -- stored path representation.
+
+    Returns:
+        str -- the path as a string, or "" if there's nothing valid to show.
+    """
     path = deserialize_path(path_value)
     return str(path) if path else ""
 
 
 def timestamp_for_display(value: datetime | None, separator: str = " ") -> str:
-    """Format a datetime for display."""
+    """Formats a timestamp for display without colons.
+
+    Arguments:
+        value {datetime | None} -- the timestamp to format.
+
+    Keyword Arguments:
+        separator {str} -- what to put between date and time; callers pass
+        "_" when the result needs to be filename-safe. (default: {" "})
+
+    Notes:
+        Colons are avoided (unlike ISO format) since the result is also
+        used in filenames, where colons aren't valid on some platforms.
+
+    Returns:
+        str -- formatted timestamp, or "" if value is None.
+    """
     if value is None:
         return ""
     return value.strftime(f"%Y-%m-%d{separator}%H-%M-%S")
 
 
 def timestamp_to_iso(value: datetime | None) -> str:
-    """Convert supported timestamp values to ISO format for API output."""
+    """Converts a timestamp to an ISO 8601 string, assuming UTC for naive datetimes.
+
+    Arguments:
+        value {datetime | None} -- the timestamp to format.
+
+    Returns:
+        str -- ISO 8601 timestamp, or "" if value is None.
+    """
     timestamp = value
     if timestamp is not None:
         if timestamp.tzinfo is None:
@@ -57,7 +111,19 @@ def timestamp_to_iso(value: datetime | None) -> str:
 
 
 def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
-    """Safely join user-provided file names under a base directory."""
+    """Resolves requested_path under base_dir, re-checking that the result is still contained after safe_join.
+
+    Arguments:
+        base_dir {Path} -- the directory the result must stay under.
+        requested_path {str} -- user-supplied, possibly-nested file path.
+
+    Notes:
+        requested_path comes from the URL, so it must not escape base_dir
+        via traversal sequences or symlinks.
+
+    Returns:
+        Path | None -- the resolved path
+    """
     joined = safe_join(str(base_dir), requested_path)
     if joined is None:
         return None
@@ -72,7 +138,20 @@ def safe_join_under(base_dir: Path, requested_path: str) -> Path | None:
 
 
 def sanitize_relative_redirect_path(raw_url: str | None) -> str | None:
-    """Allow only relative frontend redirect paths and normalize them."""
+    """Sanitizes a redirect target down to a normalized, same-origin relative path.
+
+    Arguments:
+        raw_url {str | None} -- the redirect target as submitted by the client.
+
+    Notes:
+        Guards the OAuth redirect parameter: a scheme/host would allow an
+        open redirect to an external site, and ".." segments would escape
+        the frontend's own path space.
+
+    Returns:
+        str | None -- a normalized, same-origin relative path, or None if
+        raw_url isn't a safe relative path.
+    """
     if raw_url is None:
         return None
 
@@ -93,7 +172,19 @@ def sanitize_relative_redirect_path(raw_url: str | None) -> str | None:
 
 
 def parse_http_url(url_value: str | None) -> SplitResult | None:
-    """Parse and validate HTTP(S) URL values."""
+    """Parses and validates a string as an http(s) URL with a host.
+
+    Arguments:
+        url_value {str | None} -- the URL to validate.
+
+    Notes:
+        Validates FRONTEND_URL at read time, so a misconfigured setting
+        fails immediately instead of later.
+
+    Returns:
+        SplitResult | None -- the parsed URL, or None if it isn't a valid
+        http(s) URL with a host.
+    """
     if not url_value:
         return None
 

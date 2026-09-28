@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router";
 import { Nav } from "react-bootstrap";
 import { useRuns } from "../../hooks/useRuns";
-import { Horizontal } from "./Alignment";
+import { Horizontal, Vertical } from "./Alignment";
 import RunStatus from "./RunStatus";
 import { ArrowRight } from "react-bootstrap-icons";
+import { getRunStatusLabel } from "./utils";
 
 const timeAgo = (timestamp: string) => {
     const now = new Date();
@@ -36,7 +37,12 @@ export default function RecentRuns() {
                     >
                         <Horizontal gap="lg" align="center">
                             <RunStatus status={run.status} />
-                            <span>{run.run_name}</span>
+                            <Vertical gap="xs" grow>
+                                <span>{run.run_name}</span>
+                                <span className="small text-muted">
+                                    {getRunStatusLabel(run.status)}
+                                </span>
+                            </Vertical>
                             <span className="ms-auto small text-muted">
                                 {timeAgo(run.timestamp)}
                             </span>

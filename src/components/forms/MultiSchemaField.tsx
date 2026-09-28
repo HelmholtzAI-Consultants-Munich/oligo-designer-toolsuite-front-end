@@ -5,9 +5,15 @@ import {
     type RJSFSchema,
 } from "@rjsf/utils";
 import { ToolTip } from "../ui/Tooltip";
-import { Card, Form } from "react-bootstrap";
+import { Accordion, Card } from "react-bootstrap";
 import { memo } from "react";
-import { spaceBeforeCapitalLetters } from "./utils";
+import FieldRowLabel from "./FieldRowLabel";
+import GroupHeading from "./GroupHeading";
+import {
+    isEnabledDiscriminated,
+    isSectionLevel,
+    spaceBeforeCapitalLetters,
+} from "./utils";
 
 const {
     fields: { AnyOfField, OneOfField },
@@ -34,13 +40,14 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
         (option) => typeof option === "object" && option.type === "null"
     ) as RJSFSchema | undefined;
 
-    if (schema.anyOf?.length === 2 && constSchema && nullSchema) {
-        // turn const into enum for better handling of optional fields
-        constSchema.enum = [constSchema.const!];
-        constSchema.const = undefined;
-    }
-
+    // a two-option anyOf against null is how our schema spells an optional field
     if (schema.anyOf?.length === 2 && nullSchema) {
+        if (constSchema) {
+            // turn const into enum for better handling of optional fields
+            constSchema.enum = [constSchema.const!];
+            constSchema.const = undefined;
+        }
+
         // return just the non-null option and treat it as optional
         const nonNullSchema = schema.anyOf.find(
             (option) => typeof option === "object" && option.type !== "null"
@@ -52,31 +59,50 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
             description: schema.description, // preserve description from parent schema
         };
 
-        const isEnum = mergedSchema.enum !== undefined;
+        // a checkbox holds two states, but a nullable boolean has three: unchecking one would
+        // send `false`, which the pipeline does not read as "unset", with no way back to it
+        const isNullableBoolean = mergedSchema.type === "boolean";
+
+        // a select and an enum name themselves in the row's label, the other widgets do not
+        const hasOwnLabel =
+            mergedSchema.enum !== undefined || isNullableBoolean;
 
         return (
-            <>
-                {isEnum && (
-                    <Form.Label htmlFor={fieldPathId.$id}>
-                        {schema.title}
-                    </Form.Label>
+            <div className="field-row">
+                {hasOwnLabel && (
+                    <FieldRowLabel
+                        id={fieldPathId.$id}
+                        label={schema.title}
+                        description={schema.description}
+                    />
                 )}
-                {isEnum && schema.description ? (
-                    <ToolTip id={schema.$id!} tip={schema.description} />
-                ) : null}
-                <SchemaField
-                    {...props}
-                    onChange={(value) => {
-                        if (value === "") {
-                            props.onChange(null, fieldPathId.path);
-                        } else {
-                            props.onChange(value, fieldPathId.path);
+                <div className="field-row-control">
+                    <SchemaField
+                        {...props}
+                        onChange={(value) =>
+                            props.onChange(
+                                value === "" ? null : value,
+                                fieldPathId.path
+                            )
                         }
-                    }}
-                    schema={mergedSchema}
-                    uiSchema={uiSchema}
-                />
-            </>
+                        schema={mergedSchema}
+                        uiSchema={{
+                            ...uiSchema,
+                            // a select adds an empty option, which maps back to null above
+                            ...(isNullableBoolean && {
+                                "ui:widget": "select",
+                            }),
+                            // the row above is the label, so the widget must not draw a second
+                            ...(hasOwnLabel && {
+                                "ui:options": {
+                                    ...uiSchema?.["ui:options"],
+                                    label: false,
+                                },
+                            }),
+                        }}
+                    />
+                </div>
+            </div>
         );
     }
 
@@ -85,7 +111,8 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
 
 /**
  * The WrappedOneOfField wraps the default OneOfField.
- * It allows CSS-side hiding of the discriminator selector when the discriminator property is "enabled".
+ * It allows CSS-side hiding of the discriminator selector when the discriminator property is "enabled",
+ * and gives a union standing in for a section the tab's accordion.
  *
  * @param props - default Field props passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props})
  * @returns A React Component that is used to overwrite the default RJSF `OneOfField`
@@ -93,14 +120,37 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
 const WrappedOneOfField = memo(function WrappedOneOfField(
     props: React.ComponentProps<typeof OneOfField>
 ) {
-    const { schema } = props;
+    const { schema, uiSchema, fieldPathId } = props as FieldProps;
 
-    if (schema?.discriminator?.propertyName === "enabled") {
+    if (isEnabledDiscriminated(schema)) {
         // This is a special case for handling "enabled"/"disabled" options in a more user-friendly way
         return (
             <div className="multi-schema-toggle">
                 <OneOfField {...props} />
             </div>
+        );
+    }
+
+    // The accordion item is built here rather than in `MultiSchemaFieldTemplate`, which is
+    // not handed the path id the tab uses as its section key.
+    if (isSectionLevel(uiSchema)) {
+        return (
+            <Accordion.Item eventKey={fieldPathId.$id} className="form-section">
+                <Accordion.Header>
+                    {/* the header is itself a button, so the tip cannot be one */}
+                    <span className="d-inline-flex align-items-center">
+                        {spaceBeforeCapitalLetters(schema.title ?? "")}
+                        <ToolTip
+                            id={fieldPathId.$id}
+                            tip={schema.description}
+                            presentational
+                        />
+                    </span>
+                </Accordion.Header>
+                <Accordion.Body>
+                    <OneOfField {...props} />
+                </Accordion.Body>
+            </Accordion.Item>
         );
     }
 
@@ -115,33 +165,33 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
  * @param props - MultiSchemaFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#multischemafieldtemplate})
  * @returns A React Component that is used to overwrite the default MultiSchemaFieldTemplate
  */
-const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
-    props: MultiSchemaFieldTemplateProps
-) {
-    const { selector, optionSchemaField, schema } = props;
+function MultiSchemaFieldTemplate(props: MultiSchemaFieldTemplateProps) {
+    const { selector, optionSchemaField, schema, uiSchema } = props;
+
+    // when discriminated by "enabled", the card is rendered by `EnabledToggleObjectTemplate`;
+    // at section level, `WrappedOneOfField` has already put this in an accordion item
+    if (isEnabledDiscriminated(schema) || isSectionLevel(uiSchema)) {
+        return (
+            <>
+                <div className="multi-schema-selector">{selector}</div>
+                {optionSchemaField}
+            </>
+        );
+    }
+
     return (
-        <>
-            <Card
-                style={{
-                    marginBottom: "1rem",
-                    backgroundColor: "var(--bs-primary-bg-subtle)",
-                }}
-            >
-                <Card.Body>
-                    {schema.title && (
-                        <span className="super-label">
-                            {spaceBeforeCapitalLetters(schema.title)}
-                        </span>
-                    )}
-                    {schema.description ? (
-                        <ToolTip id={schema.$id!} tip={schema.description} />
-                    ) : null}
-                    <div className="multi-schema-selector">{selector}</div>
-                    {optionSchemaField}
-                </Card.Body>
-            </Card>
-        </>
+        <Card className="multi-schema-card">
+            <Card.Body>
+                {/* RJSF passes this template no field id, and our schemas carry no `$id` */}
+                <GroupHeading
+                    title={schema.title}
+                    description={schema.description}
+                />
+                <div className="multi-schema-selector">{selector}</div>
+                {optionSchemaField}
+            </Card.Body>
+        </Card>
     );
-});
+}
 
 export { WrappedAnyOfField, WrappedOneOfField, MultiSchemaFieldTemplate };

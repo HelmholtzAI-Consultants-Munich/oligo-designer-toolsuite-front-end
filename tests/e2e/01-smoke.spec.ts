@@ -7,7 +7,7 @@ import { ALL_PIPELINES, expectPipelineFields, openPipeline } from "./helpers";
 test("@smoke core pipeline pages render required fields", async ({ page }) => {
     await page.goto("/pipelines");
     await expect(
-        page.getByRole("button", { name: /Use Pipeline/i }).first()
+        page.getByRole("link", { name: /Use Pipeline/i }).first()
     ).toBeVisible();
 
     for (const pipeline of ALL_PIPELINES) {

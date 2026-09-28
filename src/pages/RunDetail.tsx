@@ -20,6 +20,7 @@ import {
     visualizationDisplayNames,
     type VisualizationType,
 } from "../components/ui/utils";
+import { snakeCaseToTitleCase } from "../components/forms/utils";
 import Divider from "../components/ui/Divider";
 import { Horizontal, Vertical } from "../components/ui/Alignment";
 import {
@@ -478,14 +479,16 @@ const RunDetail = () => {
                                 <Vertical.Item className="mt-3">
                                     <h3>{selectedOligoset}</h3>
                                     <p className="mb-0">
-                                        Average Score:{" "}
-                                        {scores?.[selectedGene][
-                                            selectedOligoset
-                                        ]?.average || "N/A"}{" "}
-                                        | Worst Score:{" "}
-                                        {scores?.[selectedGene][
-                                            selectedOligoset
-                                        ]?.worst || "N/A"}
+                                        {Object.entries(
+                                            scores?.[selectedGene]?.[
+                                                selectedOligoset
+                                            ] ?? {}
+                                        )
+                                            .map(
+                                                ([scoreName, value]) =>
+                                                    `${snakeCaseToTitleCase(scoreName)}: ${value}`
+                                            )
+                                            .join(" | ") || "No scores"}
                                     </p>
                                 </Vertical.Item>
 

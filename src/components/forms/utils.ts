@@ -1,5 +1,5 @@
-export const isRootField = (fieldPathId: { $id: string }): boolean =>
-    fieldPathId.$id === "root";
+import { getUiOptions, type RJSFSchema, type UiSchema } from "@rjsf/utils";
+import type { QuickSettingsGroup } from "../../hooks/useQuickSettings";
 
 export const snakeCaseToTitleCase = (str: string): string =>
     str
@@ -10,14 +10,130 @@ export const snakeCaseToTitleCase = (str: string): string =>
 export const spaceBeforeCapitalLetters = (str: string): string =>
     str.replace(/([a-z])([A-Z])/g, "$1 $2");
 
-const EXCLUDED_TABS = new Set(["schema_version"]);
+// These hold only pinned quick settings, so they get no tab and no pane of their own.
+// `TabsLayout` mounts them inside the first tab so their fields still portal into its panels.
+const EXCLUDED_TABS = new Set(["schema_version", "required_parameters"]);
+
+export const isHiddenTab = (tab: string) => EXCLUDED_TABS.has(tab);
+
+/** The `required_parameters` description, which heads a panel rather than a section of its own. */
+export const requiredParametersDescription = (
+    schema: RJSFSchema
+): string | undefined => {
+    const required = schema.properties?.["required_parameters"];
+    return required && typeof required !== "boolean"
+        ? required.description
+        : undefined;
+};
 
 export const excludeHiddenTabs = (tabs: string[]) =>
-    tabs.filter((tab) => !EXCLUDED_TABS.has(tab));
+    tabs.filter((tab) => !isHiddenTab(tab));
+
+/** A section's accordion key, matching the `fieldPathId.$id` RJSF gives that section. */
+export const sectionKey = (tabId: string, name: string): string =>
+    `${tabId}_${name}`;
+
+/** Whether every field a section owns already portals into Quick Settings, leaving it empty. */
+export const isEmptySection = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).allFieldsPortaled === true;
+
+/** Whether a union stands where a section does, and so takes the tab's accordion. */
+export const isSectionLevel = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).sectionLevel === true;
+
+/** Whether a field renders as `<input type="hidden">`, e.g. a discriminator's own const value. */
+export const isHiddenField = (uiSchema: UiSchema | undefined): boolean =>
+    getUiOptions(uiSchema).widget === "hidden";
+
+/** Narrows away the `true`/`false` form a property schema can take, which carries no keywords. */
+const asSchema = (
+    schema: RJSFSchema | boolean | undefined
+): (RJSFSchema & Record<string, unknown>) | undefined =>
+    schema && typeof schema !== "boolean" ? schema : undefined;
 
 /**
- * Helper function that checks if an error message should be removed from the output
- * These errors are caused by unsupported JSON schema discriminator usage and are not helpful to users.
+ * Whether a schema carries one of the backend's `x-` flags, set on a Pydantic `Field` through
+ * `json_schema_extra` and unknown to RJSF's own types.
+ *
+ * @param schema - the field's JSON Schema, unresolved `$ref`s included
+ * @param flag - the flag's keyword, e.g. `x-collapsed`
+ * @returns A boolean that is True if the flag is set
+ */
+export const hasSchemaFlag = (
+    schema: RJSFSchema | boolean | undefined,
+    flag: string
+): boolean => asSchema(schema)?.[flag] === true;
+
+/**
+ * Whether a schema's options are discriminated by an `enabled` boolean, i.e. an optional
+ * filter, which renders as a checkbox rather than a schema picker.
+ *
+ * @param schema - the field's JSON Schema
+ * @returns A boolean that is True if the discriminator is `enabled`
+ */
+export const isEnabledDiscriminated = (
+    schema: RJSFSchema | boolean | undefined
+): boolean =>
+    (asSchema(schema)?.discriminator as { propertyName?: string } | undefined)
+        ?.propertyName === "enabled";
+
+const holdsChildren = (option: RJSFSchema | boolean): boolean => {
+    const field = asSchema(option);
+    return !!field?.$ref || field?.type === "object" || field?.type === "array";
+};
+
+/**
+ * Whether a field lays out its own children (object, list, oneOf, optional model or custom field) and so
+ * needs a whole grid row rather than one compact column.
+ *
+ * @param schema - the field's JSON Schema, unresolved `$ref`s included
+ * @param uiSchema - the field's UiSchema
+ * @returns A boolean that is True if the field spans the full row
+ */
+export const spansFullRow = (
+    schema: RJSFSchema | boolean | undefined,
+    uiSchema: UiSchema | undefined
+): boolean => {
+    const field = asSchema(schema);
+    return (
+        !!uiSchema?.["ui:field"] ||
+        !!field?.$ref ||
+        !!field?.oneOf ||
+        // `X | None` scalars are anyOf too, so only an optional model or list spans the row
+        !!field?.anyOf?.some(holdsChildren) ||
+        field?.type === "object" ||
+        field?.type === "array"
+    );
+};
+
+/**
+ * Which group of the Quick Settings panel a field belongs to, or null to leave it in its own
+ * section. "required" is the ruled-off group holding the inputs a run cannot start without.
+ *
+ * @remarks
+ * `uiSchemaFromJsonSchema` copies the backend's `x-quick-setting` into `ui:options`; the schema
+ * is read as a fallback for the pipelines whose uiSchema is hand-written.
+ *
+ * @param schema - the field's JSON Schema, unresolved `$ref`s included
+ * @param uiSchema - the field's UiSchema
+ * @returns The field's group, or null if it is not a quick setting
+ */
+export const quickSettingGroup = (
+    schema: RJSFSchema | boolean | undefined,
+    uiSchema: UiSchema | undefined
+): QuickSettingsGroup | null => {
+    const option = getUiOptions(uiSchema).quickSetting;
+    if (option === "required") {
+        return "required";
+    }
+    return option === true || hasSchemaFlag(schema, "x-quick-setting")
+        ? "general"
+        : null;
+};
+
+/**
+ * Checks if an error message should be removed from the output. These errors are caused by
+ * unsupported JSON schema discriminator usage and are not helpful to users.
  *
  * TODO: Remove this filter once discriminators in the forms no longer produce these errors alongside the informative ones.
  *

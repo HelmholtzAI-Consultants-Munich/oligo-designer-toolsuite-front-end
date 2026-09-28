@@ -110,15 +110,25 @@ export const handleSubmit = async (
 
             if (!parentField || !filesField) continue;
 
-            parentField[path[path.length - 1]] = filesField.map(
-                (file: File) => file.name
-            );
-            files = filesField.reduce(
-                (acc: Record<string, File>, cur: File) => ({
+            // A codebook or probe table names one file, the other inputs take a list; both
+            // send a key in the payload and the file itself under that key.
+            const fileList: File[] = Array.isArray(filesField)
+                ? filesField
+                : [filesField];
+
+            // Keyed by field and position, not by file name: two fields can hold different
+            // files with the same name, and one would overwrite the other in the upload.
+            const uploadKey = (index: number) => `${path.join(".")}.${index}`;
+
+            parentField[path[path.length - 1]] = Array.isArray(filesField)
+                ? fileList.map((_, index) => uploadKey(index))
+                : uploadKey(0);
+            files = fileList.reduce(
+                (acc: Record<string, File>, cur: File, index: number) => ({
                     ...acc,
-                    ...{ [cur.name]: cur },
+                    [uploadKey(index)]: cur,
                 }),
-                {}
+                files
             );
         }
 

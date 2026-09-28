@@ -2,6 +2,7 @@
 
 import datetime
 from contextlib import contextmanager
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -15,6 +16,8 @@ from backend.utils import utc_now
 from backend.worker import tasks as task_module
 from backend.worker.tasks import (
     _cleanup_expired_anonymous_data,
+    _delete_directory_if_under_root,
+    _delete_file_if_under_root,
     cleanup_anonymous_data,
     generate_monthly_report,
     run_genomic_region_generator,
@@ -482,3 +485,41 @@ def test_cleanup_anonymous_data_task_uses_configured_roots(test_data_roots, cele
         result = cleanup_anonymous_data.delay().get(timeout=CELERY_TASK_TIMEOUT)
 
     assert result["deleted_sessions"] == 0
+
+
+def test_delete_helpers_remove_paths_of_expected_type(tmp_path: Path):
+    """The directory helper deletes a directory and the file helper deletes a file.
+
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory used as the deletion root
+    """
+    directory = tmp_path / "run_output"
+    directory.mkdir()
+    (directory / "result.fa").write_text("result")
+    file = tmp_path / "upload.csv"
+    file.write_text("upload")
+
+    assert _delete_directory_if_under_root(directory, tmp_path) == (True, True)
+    assert _delete_file_if_under_root(file, tmp_path) == (True, True)
+    assert not directory.exists()
+    assert not file.exists()
+
+
+def test_delete_helpers_keep_paths_of_unexpected_type(tmp_path: Path):
+    """A file passed as a directory and a directory passed as a file are both kept.
+
+    Arguments:
+        tmp_path {Path} -- pytest-provided temp directory used as the deletion root
+
+    Notes:
+        Deleting the wrong filesystem type could remove data a DB record still refers to.
+    """
+    directory = tmp_path / "run_output"
+    directory.mkdir()
+    file = tmp_path / "upload.csv"
+    file.write_text("upload")
+
+    assert _delete_file_if_under_root(directory, tmp_path) == (False, False)
+    assert _delete_directory_if_under_root(file, tmp_path) == (False, False)
+    assert directory.exists()
+    assert file.exists()
