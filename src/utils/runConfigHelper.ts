@@ -67,8 +67,8 @@ export async function downloadConfig(run: PipelineRun | undefined) {
     }
 
     downloadFile(
-        BACKEND_URL + `/api/runs/${run._id}/config`,
-        `run-${run.pipeline}_config.json`,
+        BACKEND_URL + `/api/runs/${run._id}/config?format=yaml`,
+        `run-${run.pipeline}_config.yaml`,
         {
             notFound: {
                 title: "No Config Available",

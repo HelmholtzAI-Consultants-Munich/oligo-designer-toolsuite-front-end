@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+import yaml
 from bson import ObjectId
 
 from backend.tests.conftest import create_test_run, post
@@ -236,6 +237,16 @@ def test_get_run_config_success(client, dummy_user, run_id):
     data = response.get_json()
     assert data["_meta"]["pipeline"] == "scrinshot"
     assert data["config"] == {"top_n_sets": 3}
+
+
+def test_get_run_config_as_yaml(client, dummy_user, run_id):
+    """GET /api/runs/<run_id>/config?format=yaml returns the stored config as YAML."""
+    create_test_run(run_id, user_id=dummy_user.id, pipeline_run_config=SAMPLE_RUN_CONFIG)
+
+    response = client.get(f"/api/runs/{run_id}/config?format=yaml")
+    assert response.status_code == 200
+    assert response.mimetype == "application/yaml"
+    assert yaml.safe_load(response.get_data(as_text=True)) == SAMPLE_RUN_CONFIG
 
 
 def test_get_run_config_no_config(client, dummy_user, run_id):

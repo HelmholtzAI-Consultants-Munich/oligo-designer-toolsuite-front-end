@@ -75,6 +75,29 @@ export const schemaErrorMessage = (error: unknown): string =>
         error.response?.data?.error) ||
     "The form could not be loaded. Check your connection and try again.";
 
+export interface PipelinePreset {
+    id: string;
+    label: string;
+    /** an exported form config, applied through the same path as an imported one */
+    payload: unknown;
+}
+
+/**
+ * Fetches the default configs ODT ships for the pipeline, e.g. one taken from a paper.
+ *
+ * @param pipeline - name of the pipeline
+ * @returns A promise of the presets, empty if the installed ODT version ships none
+ */
+export const fetchPipelinePresets = async (
+    pipeline: Pipeline["name"]
+): Promise<PipelinePreset[]> => {
+    const { data } = await axios.get<PipelinePreset[]>(
+        `${BACKEND_URL}/api/pipelines/${pipeline}/presets`,
+        { timeout: SCHEMA_REQUEST_TIMEOUT_MS }
+    );
+    return data;
+};
+
 /** Drops everything cached, so a test can start from a cold cache. */
 export const clearPipelineSchemaCache = () => {
     pending.clear();
