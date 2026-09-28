@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from backend.extensions import db, limiter
+from backend.tests.conftest import get_doc
 
 
 @pytest.fixture(autouse=True)
@@ -36,7 +37,7 @@ def test_create_feedback_persists_and_returns_formatted_entry(client, authentica
     assert body["metadata"] == {"path": "/dashboard"}
     assert body["user_id"] == str(authenticated_user.id)
 
-    doc = db.feedback.find_one({})
+    doc = get_doc(db.feedback, {})
     assert doc["message"] == "Great tool!"
     assert doc["user_id"] == str(authenticated_user.id)
     assert doc["metadata"] == {"path": "/dashboard"}

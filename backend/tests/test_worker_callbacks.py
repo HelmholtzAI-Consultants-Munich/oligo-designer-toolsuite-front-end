@@ -11,13 +11,14 @@ from redis import Redis
 from backend.config import Config
 from backend.exceptions import ODTCloudError, ODTEmptyResultError
 from backend.extensions import db
+from backend.tests.conftest import get_doc, queue_length
 from backend.types import RunStatus
 from backend.worker.callbacks import pipeline_chord_errback
 
 pytestmark = pytest.mark.usefixtures("isolated_redis")
 
 
-def _mock_request(run_id: ObjectId) -> MagicMock:
+def _mock_request(run_id: ObjectId | str) -> MagicMock:
     """Build a minimal stand-in for celery.worker.request.Request carrying only the id the errback reads."""
     return MagicMock(id=str(run_id))
 
@@ -68,7 +69,7 @@ def test_pipeline_chord_errback_unwraps_chord_error_cause(app):
 
         pipeline_chord_errback(_mock_request(run_id), chord_error, None)
 
-        run = db.runs.find_one({"_id": run_id})
+        run = get_doc(db.runs, {"_id": run_id})
         assert run["status"] == RunStatus.EMPTY_RESULT
         assert run["error_message"] == "no oligos found"
 
@@ -84,7 +85,7 @@ def test_pipeline_chord_errback_uses_generic_message_for_bare_chord_error(app):
 
         pipeline_chord_errback(_mock_request(run_id), ChordError("chord failed"), None)
 
-        run = db.runs.find_one({"_id": run_id})
+        run = get_doc(db.runs, {"_id": run_id})
         assert run["status"] == RunStatus.FAILURE
         assert run["error_message"] == "An error occured during genomic region generation."
 
@@ -113,7 +114,7 @@ def test_pipeline_chord_errback_maps_exception_types_to_status(app, exc, expecte
 
         pipeline_chord_errback(_mock_request(run_id), exc, None)
 
-        run = db.runs.find_one({"_id": run_id})
+        run = get_doc(db.runs, {"_id": run_id})
         assert run["status"] == expected_status
         assert run["error_message"] == expected_message
 
@@ -130,7 +131,7 @@ def test_pipeline_chord_errback_clears_queue_accounting_when_run_still_pending(a
         never cleared elsewhere.
     """
     redis_client = Redis.from_url(Config.REDIS_URI)
-    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", "1")
     with app.app_context():
         run_id = db.runs.insert_one(
             {"status": RunStatus.PENDING, "priority": "default", "queue_position": [0, 0]}
@@ -138,8 +139,8 @@ def test_pipeline_chord_errback_clears_queue_accounting_when_run_still_pending(a
 
         pipeline_chord_errback(_mock_request(run_id), RuntimeError("boom"), None)
 
-        assert db.runs.find_one({"_id": run_id})["status"] == RunStatus.FAILURE
-        assert int(redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, "default")) == 0
+        assert get_doc(db.runs, {"_id": run_id})["status"] == RunStatus.FAILURE
+        assert queue_length(redis_client, "default") == 0
 
 
 def test_pipeline_chord_errback_skips_queue_accounting_when_run_already_started(app):
@@ -153,11 +154,11 @@ def test_pipeline_chord_errback_skips_queue_accounting_when_run_already_started(
         so re-running it here would double-decrement the queue length.
     """
     redis_client = Redis.from_url(Config.REDIS_URI)
-    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", "1")
     with app.app_context():
         run_id = db.runs.insert_one({"status": RunStatus.STARTED}).inserted_id
 
         pipeline_chord_errback(_mock_request(run_id), RuntimeError("boom"), None)
 
-        assert db.runs.find_one({"_id": run_id})["status"] == RunStatus.FAILURE
-        assert int(redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, "default")) == 1
+        assert get_doc(db.runs, {"_id": run_id})["status"] == RunStatus.FAILURE
+        assert queue_length(redis_client, "default") == 1

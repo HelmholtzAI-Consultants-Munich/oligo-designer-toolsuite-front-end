@@ -7,6 +7,7 @@ from bson import ObjectId
 
 from backend.database import mongo_database
 from backend.extensions import db
+from backend.tests.conftest import get_doc
 from backend.types import RunStatus
 from backend.worker.database import (
     _parse_run_id,
@@ -41,7 +42,7 @@ def test_update_run_sets_fields_on_existing_run(app):
 
         _update_run(run_id, {"status": RunStatus.SUCCESS})
 
-        assert db.runs.find_one({"_id": run_id})["status"] == RunStatus.SUCCESS
+        assert get_doc(db.runs, {"_id": run_id})["status"] == RunStatus.SUCCESS
 
 
 def test_update_run_by_task_id_updates_the_matching_run(app):
@@ -55,7 +56,7 @@ def test_update_run_by_task_id_updates_the_matching_run(app):
 
         _update_run_by_task_id(str(run_id), {"status": RunStatus.FAILURE})
 
-        assert db.runs.find_one({"_id": run_id})["status"] == RunStatus.FAILURE
+        assert get_doc(db.runs, {"_id": run_id})["status"] == RunStatus.FAILURE
 
 
 def test_update_run_by_task_id_is_a_no_op_for_invalid_task_id(app):
@@ -69,7 +70,7 @@ def test_update_run_by_task_id_is_a_no_op_for_invalid_task_id(app):
 
         _update_run_by_task_id("not-an-object-id", {"status": RunStatus.FAILURE})
 
-        assert db.runs.find_one({"_id": run_id})["status"] == RunStatus.PENDING
+        assert get_doc(db.runs, {"_id": run_id})["status"] == RunStatus.PENDING
 
 
 def test_start_pending_run_flips_status_to_started(app):
@@ -84,7 +85,7 @@ def test_start_pending_run_flips_status_to_started(app):
         ).inserted_id
 
         assert start_pending_run(str(run_id)) is True
-        assert db.runs.find_one({"_id": run_id})["status"] == RunStatus.STARTED
+        assert get_doc(db.runs, {"_id": run_id})["status"] == RunStatus.STARTED
 
 
 def test_start_pending_run_returns_false_for_invalid_task_id():
@@ -108,7 +109,7 @@ def test_start_pending_run_returns_false_when_run_not_pending(app):
         ).inserted_id
 
         assert start_pending_run(str(run_id)) is False
-        assert db.runs.find_one({"_id": run_id})["status"] == RunStatus.STARTED
+        assert get_doc(db.runs, {"_id": run_id})["status"] == RunStatus.STARTED
 
 
 def test_start_pending_run_returns_false_when_update_does_not_modify(app):

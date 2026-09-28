@@ -40,9 +40,13 @@ def region():
         },
         wrap=[FileCacheProxy],
     )
-    cache_region.backend.proxied.writer_client.flushdb()
+    file_cache_proxy = cache_region.backend
+    assert isinstance(file_cache_proxy, FileCacheProxy)
+    redis_backend = file_cache_proxy.proxied
+    assert isinstance(redis_backend, RedisBackend)
+    redis_backend.writer_client.flushdb()
     yield cache_region
-    cache_region.backend.proxied.writer_client.flushdb()
+    redis_backend.writer_client.flushdb()
 
 
 @pytest.fixture

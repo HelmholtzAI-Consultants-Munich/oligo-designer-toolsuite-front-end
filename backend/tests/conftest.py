@@ -7,12 +7,12 @@ import shutil
 import sys
 import types
 import uuid
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from unittest.mock import patch
 
 import pytest
@@ -29,6 +29,7 @@ from celery.contrib.pytest import (
 from celery.contrib.pytest import (
     celery_worker_pool as celery_worker_pool,
 )
+from pymongo.collection import Collection
 from redis import Redis
 
 from backend.app import create_app
@@ -513,6 +514,35 @@ def assert_sanitized_error(response: Any) -> None:
     assert "/uploads/" not in rendered
 
 
+def get_doc(collection: Collection, query: dict[str, Any]) -> dict[str, Any]:
+    """Fetch the single document matching query, failing the test if there is none.
+
+    Arguments:
+        collection {Collection} -- MongoDB collection to search
+        query {dict[str, Any]} -- filter the document must match
+
+    Returns:
+        dict[str, Any] -- the matching document
+    """
+    doc = collection.find_one(query)
+    assert doc is not None, f"no document in {collection.name} matches {query}"
+    return doc
+
+
+def queue_length(redis_client: Redis, priority: str) -> int:
+    """Read a queue-length counter from Redis.
+
+    Arguments:
+        redis_client {Redis} -- synchronous client holding the counters
+        priority {str} -- "high" or "default"
+
+    Returns:
+        int -- the counter's current value
+    """
+    # redis-py types a reply as possibly awaitable, the sync client returns bytes
+    return int(cast(bytes, redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, priority)))
+
+
 def pipeline_runner_module(runner_cls: Any):
     """Swap the real pipeline_runner module for a fake one in sys.modules.
 
@@ -528,12 +558,12 @@ def pipeline_runner_module(runner_cls: Any):
         patch.dict -- context manager that installs the fake module for the test duration
     """
     module = types.ModuleType("backend.worker.pipeline_runner")
-    module.PipelineRunner = runner_cls
+    setattr(module, "PipelineRunner", runner_cls)
     return patch.dict(sys.modules, {"backend.worker.pipeline_runner": module})
 
 
 @contextmanager
-def frozen_today(patch_target: str, year: int, month: int, day: int) -> Iterator[None]:
+def frozen_today(patch_target: str, year: int, month: int, day: int) -> Generator[None]:
     """Freezes datetime.date.today() at a fixed date, as imported by patch_target's module.
 
     Arguments:
@@ -548,7 +578,7 @@ def frozen_today(patch_target: str, year: int, month: int, day: int) -> Iterator
         today() be overridden while keeping all other date arithmetic intact.
 
     Yields:
-        Iterator[None] -- yields with patch_target's today() returning the fixed date
+        Generator[None] -- yields with patch_target's today() returning the fixed date
     """
 
     class FixedDate(datetime.date):

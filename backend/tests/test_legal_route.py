@@ -6,7 +6,7 @@ import pytest
 from bson import ObjectId
 
 from backend.extensions import db
-from backend.tests.conftest import TEST_SESSION_ID, TEST_USER_ID
+from backend.tests.conftest import TEST_SESSION_ID, TEST_USER_ID, get_doc
 from backend.utilities.legal import (
     PRIVACY_DOCUMENT_KEY,
     TERMS_DOCUMENT_KEY,
@@ -58,10 +58,10 @@ def test_accept_terms_for_authenticated_user(client, authenticate_as):
     response = client.post("/api/legal/terms/accept")
 
     assert response.status_code == 200
-    acceptance = db.legal_acceptances.find_one({"user_id": TEST_USER_ID})
+    acceptance = get_doc(db.legal_acceptances, {"user_id": TEST_USER_ID})
     assert acceptance["terms_version"] == get_current_terms_version()
     assert (
-        db.users.find_one({"_id": ObjectId(TEST_USER_ID)})["accepted_terms_version"]
+        get_doc(db.users, {"_id": ObjectId(TEST_USER_ID)})["accepted_terms_version"]
         == acceptance["terms_version"]
     )
 

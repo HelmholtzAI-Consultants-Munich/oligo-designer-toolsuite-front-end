@@ -9,7 +9,7 @@ from glom import assign
 
 from backend.config import CeleryConfig
 from backend.extensions import db
-from backend.tests.conftest import CELERY_TASK_TIMEOUT, pipeline_runner_module
+from backend.tests.conftest import CELERY_TASK_TIMEOUT, get_doc, pipeline_runner_module
 from backend.worker import tasks as task_module
 
 
@@ -44,12 +44,8 @@ def _clear_generated_regions(payload):
     Returns:
         dict -- the same payload with all generated-region database fields set to empty lists
     """
-    assign(payload["formdata"], "target_probe.oligo_generation.files_fasta_probe_database", [])
-    assign(
-        payload["formdata"],
-        "target_probe.specificity_filters.specificity_blastn_filter.files_fasta_reference_database",
-        [],
-    )
+    assign(payload["formdata"], "required_parameters.target_genome", [])
+    assign(payload["formdata"], "required_parameters.reference_genome", [])
     return payload
 
 
@@ -96,8 +92,8 @@ def test_start_pipeline_runs_generated_regions_then_pipeline_task(
     pipeline_runner_cls.return_value.run.assert_called_once()
 
     form_data, output_path, generated_regions = pipeline_runner_cls.return_value.run.call_args.args
-    assert form_data["target_probe"]["oligo_generation"]["file_region_ids"] == "GFB69_RS14600"
-    assert output_path == str(Path(*db.runs.find_one({"_id": run_id})["output_path"]["parts"]))
+    assert form_data["required_parameters"]["targets"] == "GFB69_RS14600"
+    assert output_path == str(Path(*get_doc(db.runs, {"_id": run_id})["output_path"]["parts"]))
     assert len(generated_regions) == expected_generated_region_count
     assert all(paths == ["generated.fna"] for _field, paths in generated_regions)
 

@@ -1,6 +1,7 @@
 """Unit tests for PipelineRunner, isolated from the scheduler and task infrastructure."""
 
 import copy
+import subprocess
 import sys
 import types
 from collections.abc import Iterator
@@ -18,7 +19,7 @@ from backend.exceptions import ODTEmptyResultError, ODTPipelineError
 # PipelineRunner only needs the class interface in these unit tests. Providing
 # this lightweight module avoids importing visualization dependencies here.
 genomic_regions_module = types.ModuleType("backend.worker.genomic_regions_file")
-genomic_regions_module.GenomicRegionsFile = MagicMock()
+setattr(genomic_regions_module, "GenomicRegionsFile", MagicMock())
 sys.modules.setdefault("backend.worker.genomic_regions_file", genomic_regions_module)
 
 
@@ -26,7 +27,7 @@ class PipelineConfigFixture(BaseModel):
     required_value: int
 
 
-# TODO: add "merfish", "seqfish", "scrinshot" once their Pydantic integration is complete.
+# TODO: add the remaining pipelines, each with a PIPELINE_FORM_DATA entry.
 PIPELINE_NAMES = ["oligoseq"]
 
 # Minimal form shape per pipeline consumed by PipelineRunner.
@@ -34,11 +35,12 @@ PIPELINE_NAMES = ["oligoseq"]
 PIPELINE_FORM_DATA = {
     "oligoseq": {
         "general": {"dir_output": "old-output"},
-        "target_probe": {
-            "oligo_generation": {
-                "file_region_ids": "GeneA,GeneB",
-                "files_fasta_probe_database": [],
-            },
+        "required_parameters": {
+            "targets": "GeneA,GeneB",
+            "target_genome": [],
+            "reference_genome": [],
+        },
+        "target_probes": {
             "specificity_filters": {
                 "variant_filter": {"files_vcf_reference_database": []},
             },
@@ -49,20 +51,19 @@ PIPELINE_FORM_DATA = {
 
 @pytest.fixture(params=PIPELINE_NAMES)
 def runner(request):
-    """Build a PipelineRunner instance for each supported pipeline without reading its schema file from disk.
+    """Build a PipelineRunner instance for each supported pipeline without running its constructor.
 
     Arguments:
         request {SubRequest} -- pytest sub-request carrying the current pipeline name parameter
 
     Returns:
-        PipelineRunner -- partially initialised runner with a mock logger and empty schema
+        PipelineRunner -- partially initialised runner with a mock logger
     """
     from backend.worker.pipeline_runner import PipelineRunner
 
     instance = PipelineRunner.__new__(PipelineRunner)
     instance.logger = MagicMock()
     instance.pipeline_name = request.param
-    instance.schema = {}
     return instance
 
 
@@ -83,16 +84,16 @@ def form_data(runner):
     return copy.deepcopy(PIPELINE_FORM_DATA[runner.pipeline_name])
 
 
-def oligo_generation(form_data):
-    """Return the nested oligo_generation section.
+def required_parameters(form_data):
+    """Return the required_parameters section.
 
     Arguments:
         form_data {dict} -- pipeline form data dict
 
     Returns:
-        dict -- the oligo_generation sub-dict from target_probe
+        dict -- the required_parameters sub-dict
     """
-    return form_data["target_probe"]["oligo_generation"]
+    return form_data["required_parameters"]
 
 
 @pytest.fixture
@@ -107,7 +108,7 @@ def populated_regions_file(runner, form_data) -> Iterator[Path]:
         Path -- path to the written gene list file
     """
     runner.populate_temp_file(form_data)
-    path = Path(oligo_generation(form_data)["file_region_ids"])
+    path = Path(required_parameters(form_data)["targets"])
 
     yield path
 
@@ -137,10 +138,10 @@ def test_populate_temp_file_strips_whitespace_around_genes(runner, form_data, tm
     Notes:
         This keeps downstream tools from failing on padded identifiers.
     """
-    oligo_generation(form_data)["file_region_ids"] = "GeneA, GeneB,  GeneC "
+    required_parameters(form_data)["targets"] = "GeneA, GeneB,  GeneC "
 
     runner.populate_temp_file(form_data)
-    path = Path(oligo_generation(form_data)["file_region_ids"])
+    path = Path(required_parameters(form_data)["targets"])
 
     try:
         assert path.read_text() == "GeneA\nGeneB\nGeneC\n"
@@ -153,16 +154,16 @@ def test_populate_temp_file_leaves_none_unchanged(runner, form_data):
 
     Arguments:
         runner {PipelineRunner} -- runner whose populate_temp_file method is under test
-        form_data {dict} -- form data dict with file_region_ids set to None
+        form_data {dict} -- form data dict with targets set to None
 
     Notes:
         This lets downstream config serialization omit them.
     """
-    oligo_generation(form_data)["file_region_ids"] = None
+    required_parameters(form_data)["targets"] = None
 
     runner.populate_temp_file(form_data)
 
-    assert oligo_generation(form_data)["file_region_ids"] is None
+    assert required_parameters(form_data)["targets"] is None
 
 
 def test_write_config_file_creates_output_dir_and_yaml(runner, form_data, tmp_path):
@@ -193,11 +194,11 @@ def test_populate_form_data_path_fields_adds_generated_region_paths(runner, form
         runner {PipelineRunner} -- runner whose populate_form_data_path_fields method is under test
         form_data {dict} -- form data dict whose file list field will receive the generated paths
     """
-    field = "target_probe.oligo_generation.files_fasta_probe_database"
+    field = "required_parameters.target_genome"
 
     runner.populate_form_data_path_fields(form_data, [(field, ["generated.fna"])])
 
-    assert oligo_generation(form_data)["files_fasta_probe_database"] == ["generated.fna"]
+    assert required_parameters(form_data)["target_genome"] == ["generated.fna"]
 
 
 def write_config(tmp_path, data):
@@ -309,8 +310,7 @@ def test_execute_pipeline_maps_unexpected_exception_to_pipeline_error_and_logs(r
     Notes:
         This lets ops diagnose failures from tool output.
     """
-    error = RuntimeError("unexpected")
-    error.stderr = "subprocess stderr output"
+    error = subprocess.CalledProcessError(1, "tool", stderr="subprocess stderr output")
     pipeline = SimpleNamespace(model=PipelineConfigFixture, function=MagicMock(side_effect=error))
 
     with (
@@ -392,7 +392,7 @@ def test_generate_genomic_regions_file_skips_without_probe_yaml(runner, form_dat
         Logging the skip lets callers tell it was intentional rather than a silent
         failure.
     """
-    oligo_generation(form_data)["files_fasta_probe_database"] = ["target.fna"]
+    required_parameters(form_data)["target_genome"] = ["target.fna"]
 
     runner.generate_genomic_regions_file(form_data, str(tmp_path))
 
@@ -415,8 +415,8 @@ def test_generate_genomic_regions_file_writes_visualization_when_probe_yaml_exis
     """
     probes = tmp_path / "probes.yml"
     probes.write_text("probes: []\n")
-    oligo_generation(form_data)["file_region_ids"] = "regions.txt"
-    oligo_generation(form_data)["files_fasta_probe_database"] = ["target.fna"]
+    required_parameters(form_data)["targets"] = "regions.txt"
+    required_parameters(form_data)["target_genome"] = ["target.fna"]
 
     with patch("backend.worker.pipeline_runner.GenomicRegionsFile") as regions_file:
         runner.generate_genomic_regions_file(form_data, str(tmp_path))
@@ -445,8 +445,8 @@ def test_cleanup_temp_files_removes_temp_regions_config_and_upload(runner, form_
     regions.write_text("GeneA\n")
     config.write_text("config")
     upload.write_text("variants")
-    oligo_generation(form_data)["file_region_ids"] = str(regions)
-    form_data["target_probe"]["specificity_filters"]["variant_filter"]["files_vcf_reference_database"] = [
+    required_parameters(form_data)["targets"] = str(regions)
+    form_data["target_probes"]["specificity_filters"]["variant_filter"]["files_vcf_reference_database"] = [
         str(upload)
     ]
 

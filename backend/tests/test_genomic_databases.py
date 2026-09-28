@@ -2,9 +2,11 @@
 
 import gzip
 import hashlib
+import inspect
 import subprocess
+from ftplib import FTP
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -129,7 +131,7 @@ def test_get_subdirs_parses_directories_and_symlinks():
         ]
     )
 
-    assert ConcreteDatabase()._get_subdirs(ftp) == ["dir_b", "link_a"]
+    assert ConcreteDatabase()._get_subdirs(cast(FTP, ftp)) == ["dir_b", "link_a"]
 
 
 def test_get_subdirs_ignores_malformed_lines():
@@ -141,7 +143,7 @@ def test_get_subdirs_ignores_malformed_lines():
     """
     ftp = FakeFTP(["broken", "drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 dir_b"])
 
-    assert ConcreteDatabase()._get_subdirs(ftp) == ["dir_b"]
+    assert ConcreteDatabase()._get_subdirs(cast(FTP, ftp)) == ["dir_b"]
 
 
 def test_filter_allowlist_filters_when_present():
@@ -241,15 +243,14 @@ def test_download_and_process_verifies_checksum_and_unzips(tmp_path):
         This ensures a corrupted download is caught before it propagates.
     """
     gz_path = tmp_path / "file.fna.gz"
-    with gzip.open(gz_path, "wb") as archive:
-        archive.write(b">x\nAC\n")
+    gz_path.write_bytes(gzip.compress(b">x\nAC\n"))
     db = ConcreteDatabase(cache_dir=tmp_path)
 
     with (
         patch.object(db, "_download", return_value=gz_path),
         patch.object(db, "_matches_checksum", return_value=True),
     ):
-        path = BaseGenomicDatabase._download_and_process.__wrapped__(db, "dir", "file.fna.gz", "checksum")
+        path = inspect.unwrap(BaseGenomicDatabase._download_and_process)(db, "dir", "file.fna.gz", "checksum")
 
     assert path == tmp_path / "file.fna"
     assert path.read_bytes() == b">x\nAC\n"
@@ -274,7 +275,7 @@ def test_download_and_process_rejects_bad_checksum(tmp_path):
         patch.object(db, "_matches_checksum", return_value=False),
     ):
         with pytest.raises(RuntimeError, match="Checksum"):
-            BaseGenomicDatabase._download_and_process.__wrapped__(db, "dir", "file.txt", "checksum")
+            inspect.unwrap(BaseGenomicDatabase._download_and_process)(db, "dir", "file.txt", "checksum")
 
     assert download.call_count == 2
 
@@ -404,7 +405,7 @@ def test_ncbi_get_all_releases_dir_prefers_annotation_releases():
     db = NCBIGenomicDatabase()
 
     assert (
-        db._get_all_releases_dir(ftp, "taxon", "species")
+        db._get_all_releases_dir(cast(FTP, ftp), "taxon", "species")
         == "/genomes/refseq/taxon/species/annotation_releases"
     )
 
@@ -415,7 +416,7 @@ def test_ncbi_get_all_releases_dir_falls_back_to_all_assembly_versions():
     db = NCBIGenomicDatabase()
 
     assert (
-        db._get_all_releases_dir(ftp, "taxon", "species")
+        db._get_all_releases_dir(cast(FTP, ftp), "taxon", "species")
         == "/genomes/refseq/taxon/species/all_assembly_versions"
     )
 
@@ -425,7 +426,7 @@ def test_ncbi_get_all_releases_dir_returns_none_when_neither_exists():
     ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 something_else"])
     db = NCBIGenomicDatabase()
 
-    assert db._get_all_releases_dir(ftp, "taxon", "species") is None
+    assert db._get_all_releases_dir(cast(FTP, ftp), "taxon", "species") is None
 
 
 def test_ncbi_fetch_annotations_releases_filters_suppressed():
@@ -447,7 +448,7 @@ def test_ncbi_fetch_annotations_releases_filters_suppressed():
             return_value="/genomes/refseq/taxon/species/all_assembly_versions",
         ),
     ):
-        result = NCBIGenomicDatabase.fetch_annotations_releases.__wrapped__(db, "taxon", "species")
+        result = inspect.unwrap(NCBIGenomicDatabase.fetch_annotations_releases)(db, "taxon", "species")
 
     assert result == ["GCF_1"]
 
@@ -459,7 +460,7 @@ def test_ncbi_fetch_annotations_releases_returns_none_when_no_release_dir():
         patch("backend.genomic_databases.ftplib.FTP", return_value=FakeFTP()),
         patch.object(db, "_get_all_releases_dir", return_value=None),
     ):
-        assert NCBIGenomicDatabase.fetch_annotations_releases.__wrapped__(db, "taxon", "species") is None
+        assert inspect.unwrap(NCBIGenomicDatabase.fetch_annotations_releases)(db, "taxon", "species") is None
 
 
 def test_ncbi_get_assembly_information_parses_report(tmp_path):
@@ -553,7 +554,7 @@ def test_ensembl_get_subdirectories_rewrites_release_dirs_to_fasta():
     ftp = FakeFTP(["drwxr-xr-x 2 ftp ftp 4096 Jan 01 00:00 homo_sapiens"])
     db = EnsemblGenomicDatabase()
 
-    assert db._get_subdirectories(["release-110"], ftp) == {"release-110/fasta": ["homo_sapiens"]}
+    assert db._get_subdirectories(["release-110"], cast(FTP, ftp)) == {"release-110/fasta": ["homo_sapiens"]}
     assert ftp.cwd_calls == ["/pub/release-110/fasta"]
 
 

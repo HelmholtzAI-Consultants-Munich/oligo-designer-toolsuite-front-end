@@ -14,6 +14,7 @@ from backend.queue_accounting import (
     add_pending_run,
     queue_accounting_lock,
 )
+from backend.tests.conftest import get_doc, queue_length
 from backend.types import RunStatus
 
 pytestmark = pytest.mark.usefixtures("isolated_redis")
@@ -69,8 +70,8 @@ def test_add_pending_run_default_priority_reports_length_without_touching_runs(a
 
         assert high_ahead == 1
         assert default_ahead == 2
-        assert db.runs.find_one({"_id": run_id})["queue_position"] == [0, 0]
-        assert int(redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, "default")) == 3
+        assert get_doc(db.runs, {"_id": run_id})["queue_position"] == [0, 0]
+        assert queue_length(redis_client, "default") == 3
 
 
 def test_add_pending_run_high_priority_shifts_pending_default_runs_and_increments_high_length(app):
@@ -93,9 +94,9 @@ def test_add_pending_run_high_priority_shifts_pending_default_runs_and_increment
 
         assert high_ahead == 1
         assert default_ahead == 0
-        assert db.runs.find_one({"_id": pending_default})["queue_position"][0] == 1
-        assert db.runs.find_one({"_id": started_default})["queue_position"][0] == 0
-        assert int(redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, "high")) == 2
+        assert get_doc(db.runs, {"_id": pending_default})["queue_position"][0] == 1
+        assert get_doc(db.runs, {"_id": started_default})["queue_position"][0] == 0
+        assert queue_length(redis_client, "high") == 2
 
 
 def test_remove_pending_run_high_priority_shifts_positions_behind_it(app):
@@ -110,7 +111,7 @@ def test_remove_pending_run_high_priority_shifts_positions_behind_it(app):
         pending run must shift, while runs ahead of the removed one must not.
     """
     redis_client = Redis.from_url(Config.REDIS_URI)
-    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "high", 1)
+    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "high", "1")
     with app.app_context():
         run_ahead = db.runs.insert_one(
             {"status": RunStatus.PENDING, "priority": "high", "queue_position": [1, 0]}
@@ -125,10 +126,10 @@ def test_remove_pending_run_high_priority_shifts_positions_behind_it(app):
 
         _remove_pending_run(redis_client, db, removed_run)
 
-        assert db.runs.find_one({"_id": run_ahead})["queue_position"][0] == 1
-        assert db.runs.find_one({"_id": high_run_behind})["queue_position"][0] == 2
-        assert db.runs.find_one({"_id": default_run_behind})["queue_position"][0] == 2
-        assert int(redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, "high")) == 0
+        assert get_doc(db.runs, {"_id": run_ahead})["queue_position"][0] == 1
+        assert get_doc(db.runs, {"_id": high_run_behind})["queue_position"][0] == 2
+        assert get_doc(db.runs, {"_id": default_run_behind})["queue_position"][0] == 2
+        assert queue_length(redis_client, "high") == 0
 
 
 def test_remove_pending_run_default_priority_shifts_only_pending_default_runs(app):
@@ -138,7 +139,7 @@ def test_remove_pending_run_default_priority_shifts_only_pending_default_runs(ap
         app {Any} -- Flask application instance providing the app context
     """
     redis_client = Redis.from_url(Config.REDIS_URI)
-    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", 1)
+    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", "1")
     with app.app_context():
         default_run_behind = db.runs.insert_one(
             {"status": RunStatus.PENDING, "priority": "default", "queue_position": [0, 2]}
@@ -150,9 +151,9 @@ def test_remove_pending_run_default_priority_shifts_only_pending_default_runs(ap
 
         _remove_pending_run(redis_client, db, removed_run)
 
-        assert db.runs.find_one({"_id": default_run_behind})["queue_position"][1] == 1
-        assert db.runs.find_one({"_id": high_run_same_position})["queue_position"][1] == 2
-        assert int(redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, "default")) == 0
+        assert get_doc(db.runs, {"_id": default_run_behind})["queue_position"][1] == 1
+        assert get_doc(db.runs, {"_id": high_run_same_position})["queue_position"][1] == 2
+        assert queue_length(redis_client, "default") == 0
 
 
 def test_decrement_queue_length_clamps_at_zero_instead_of_going_negative():
@@ -163,9 +164,9 @@ def test_decrement_queue_length_clamps_at_zero_instead_of_going_negative():
         clamp keeps queue-length displays from showing nonsensical negatives.
     """
     redis_client = Redis.from_url(Config.REDIS_URI)
-    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", 0)
+    redis_client.hset(Config.REDIS_QUEUE_LENGTH_KEY, "default", "0")
 
     result = _decrement_queue_length(redis_client, "default")
 
     assert result == 0
-    assert int(redis_client.hget(Config.REDIS_QUEUE_LENGTH_KEY, "default")) == 0
+    assert queue_length(redis_client, "default") == 0

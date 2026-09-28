@@ -6,7 +6,7 @@ import pytest
 from bson import ObjectId
 
 from backend.extensions import db
-from backend.tests.conftest import TEST_USER_ID, frozen_today
+from backend.tests.conftest import TEST_USER_ID, frozen_today, get_doc
 from backend.utilities.legal import TERMS_DOCUMENT_KEY
 from backend.utilities.typed_values import serialize_path
 from backend.utils import utc_now
@@ -283,7 +283,7 @@ def test_admin_update_user_username_success_for_cli_user(client, admin_user, reg
 
     assert response.status_code == 200
     assert response.get_json()["username"] == "new-name"
-    assert db.users.find_one({"_id": regular_user["_id"]})["username"] == "new-name"
+    assert get_doc(db.users, {"_id": regular_user["_id"]})["username"] == "new-name"
 
 
 def test_admin_update_user_rejects_username_for_helmholtz_user(client, admin_user):
@@ -486,7 +486,7 @@ def test_admin_update_pipeline_status_success(client, admin_user):
     response = client.put(f"/api/admin/pipelines/{run_id}", json={"status": "success"})
 
     assert response.status_code == 200
-    assert db.runs.find_one({"_id": run_id})["status"] == "success"
+    assert get_doc(db.runs, {"_id": run_id})["status"] == "success"
 
 
 def test_admin_update_pipeline_status_rejects_invalid_status(client, admin_user):
@@ -818,7 +818,7 @@ def test_admin_bulk_update_user_role_success(client, admin_user, regular_user):
     )
 
     assert response.status_code == 200
-    assert db.users.find_one({"_id": regular_user["_id"]})["role"] == "admin"
+    assert get_doc(db.users, {"_id": regular_user["_id"]})["role"] == "admin"
 
 
 def test_admin_bulk_update_user_role_rejects_invalid_role(client, admin_user, regular_user):
@@ -907,7 +907,7 @@ def test_admin_bulk_update_pipeline_status_success(client, admin_user):
     )
 
     assert response.status_code == 200
-    assert db.runs.find_one({"_id": run_id})["status"] == "success"
+    assert get_doc(db.runs, {"_id": run_id})["status"] == "success"
 
 
 def test_admin_bulk_update_pipeline_status_rejects_invalid_status(client, admin_user):
@@ -984,7 +984,7 @@ def test_admin_bulk_update_user_role_processes_valid_id_and_reports_invalid_one(
     assert response.status_code == 200
     body = response.get_json()
     assert body["updated_count"] == 1
-    assert db.users.find_one({"_id": regular_user["_id"]})["role"] == "admin"
+    assert get_doc(db.users, {"_id": regular_user["_id"]})["role"] == "admin"
     assert body["invalid_ids"] == ["not-an-id"]
 
 
@@ -1005,5 +1005,5 @@ def test_admin_bulk_update_pipeline_status_processes_valid_id_and_reports_invali
     assert response.status_code == 200
     body = response.get_json()
     assert body["updated_count"] == 1
-    assert db.runs.find_one({"_id": run_id})["status"] == "success"
+    assert get_doc(db.runs, {"_id": run_id})["status"] == "success"
     assert body["invalid_ids"] == ["not-an-id"]

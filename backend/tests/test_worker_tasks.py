@@ -10,7 +10,13 @@ from bson import ObjectId
 
 from backend.exceptions import ODTPipelineError
 from backend.extensions import db
-from backend.tests.conftest import CELERY_TASK_TIMEOUT, TEST_SESSION_ID, frozen_today, pipeline_runner_module
+from backend.tests.conftest import (
+    CELERY_TASK_TIMEOUT,
+    TEST_SESSION_ID,
+    frozen_today,
+    get_doc,
+    pipeline_runner_module,
+)
 from backend.utilities.typed_values import serialize_path
 from backend.utils import utc_now
 from backend.worker import tasks as task_module
@@ -200,7 +206,7 @@ def _generate_march_report(celery_worker) -> dict:
     with patch("backend.worker.tasks.mongo_database", _test_mongo_database):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
-    return db.monthly_reports.find_one({"_id": "2026-03"})
+    return get_doc(db.monthly_reports, {"_id": "2026-03"})
 
 
 def test_generate_monthly_report_for_manual_period_writes_identity_and_structure(celery_worker):
@@ -296,7 +302,7 @@ def test_generate_monthly_report_default_uses_previous_month(celery_worker):
     ):
         generate_monthly_report.delay().get(timeout=CELERY_TASK_TIMEOUT)
 
-    report = db.monthly_reports.find_one({"_id": "2026-04"})
+    report = get_doc(db.monthly_reports, {"_id": "2026-04"})
     assert report["generated_by"] == "scheduled"
 
 
@@ -313,7 +319,7 @@ def test_generate_monthly_report_handles_no_runs(celery_worker):
     with patch("backend.worker.tasks.mongo_database", _test_mongo_database):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
-    report = db.monthly_reports.find_one({"_id": "2026-03"})
+    report = get_doc(db.monthly_reports, {"_id": "2026-03"})
     assert report["runs"]["total"] == 0
     assert report["runs"]["success_rate"] is None
     assert report["conversions"]["conversion_rate"] is None
@@ -335,7 +341,7 @@ def test_generate_monthly_report_replaces_existing_report(celery_worker):
         generate_monthly_report.delay(target_year=2026, target_month=3).get(timeout=CELERY_TASK_TIMEOUT)
 
     assert db.monthly_reports.count_documents({"_id": "2026-03"}) == 1
-    assert "old" not in db.monthly_reports.find_one({"_id": "2026-03"})
+    assert "old" not in get_doc(db.monthly_reports, {"_id": "2026-03"})
 
 
 def test_cleanup_anonymous_data_deletes_expired_session_data(test_data_roots):

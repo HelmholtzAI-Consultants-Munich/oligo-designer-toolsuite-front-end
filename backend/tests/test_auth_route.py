@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 from bson import ObjectId
 
 from backend.extensions import db
-from backend.tests.conftest import TEST_USER_ID
+from backend.tests.conftest import TEST_USER_ID, get_doc
 
 
 def test_login_rejects_external_redirect(client):
@@ -130,7 +130,7 @@ def test_helmholtz_callback_reuses_existing_user(client):
 
     assert response.status_code == 302
     assert db.users.count_documents({"helmholtz_sub": "sub-1"}) == 1
-    assert db.users.find_one({"helmholtz_sub": "sub-1"})["_id"] == user_id
+    assert get_doc(db.users, {"helmholtz_sub": "sub-1"})["_id"] == user_id
 
 
 def test_helmholtz_callback_fetches_userinfo_when_missing_from_token(client):

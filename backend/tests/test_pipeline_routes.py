@@ -12,10 +12,10 @@ from glom import assign, glom
 from backend.config import CeleryConfig, Config
 from backend.constants import PIPELINE_FILE_INPUT, PIPELINE_GENOMIC_INPUT
 from backend.extensions import db
-from backend.tests.conftest import TEST_SESSION_ID, TEST_USER_ID, assert_sanitized_error
+from backend.tests.conftest import TEST_SESSION_ID, TEST_USER_ID, assert_sanitized_error, get_doc
 
-# TODO: add ("merfish", "merfish_mock_form_data.json") etc. once each pipeline has
-# Pydantic integration and is re-enabled in EXISTING_PIPELINES (backend/routes/pipelines.py).
+# TODO: add ("merfish", "merfish_mock_form_data.json") etc. once each pipeline has a mock
+# payload in tests/data.
 # When multiple pipelines are active, add @pytest.mark.parametrize("pipeline_name, payload_file",
 # PIPELINE_CASES) to each test and replace the PIPELINE_NAME/PAYLOAD_FILE references with
 # the parametrized variables — mirroring the PIPELINE_NAMES pattern in test_pipeline_runner.py.
@@ -58,7 +58,7 @@ def response_run(response) -> dict:
     Returns:
         dict -- MongoDB run document created by the submission
     """
-    return db.runs.find_one({"_id": ObjectId(response.get_json()["run_id"])})
+    return get_doc(db.runs, {"_id": ObjectId(response.get_json()["run_id"])})
 
 
 @pytest.fixture
@@ -135,23 +135,6 @@ def test_start_pipeline_anonymous_success(anonymous_session, pipeline_payload, m
     output_path = Path(*run["output_path"]["parts"])
     assert output_path.is_dir()
     assert f"user_data/anon/{TEST_SESSION_ID}" in output_path.as_posix()
-
-
-@pytest.mark.parametrize("pipeline_name", ["merfish", "seqfish", "scrinshot"])
-def test_start_pipeline_rejects_disabled_pipeline(multipart_post, pipeline_name):
-    """Disabled pipelines are rejected at the route level.
-
-    Arguments:
-        multipart_post {Callable} -- helper that posts multipart pipeline requests
-        pipeline_name {str} -- one of the parametrized disabled pipeline names
-
-    Notes:
-        This ensures half-implemented pipelines never reach task dispatch.
-    """
-    response = multipart_post(f"/api/{pipeline_name}", {})
-
-    assert response.status_code == 400
-    assert "does not exist" in response.get_json()["error"]
 
 
 def test_start_pipeline_requires_terms_acceptance(
@@ -311,7 +294,7 @@ def test_start_pipeline_rejects_too_many_genes_for_anonymous_user(
     payload = pipeline_payload(PAYLOAD_FILE)
     assign(
         payload["formdata"],
-        "target_probe.oligo_generation.file_region_ids",
+        "required_parameters.targets",
         ",".join(f"Gene{i}" for i in range(Config.GENE_COUNT_THRESHOLD + 1)),
     )
 
@@ -340,7 +323,7 @@ def test_start_pipeline_allows_too_many_genes_for_authenticated_user(
     payload = pipeline_payload(PAYLOAD_FILE)
     assign(
         payload["formdata"],
-        "target_probe.oligo_generation.file_region_ids",
+        "required_parameters.targets",
         ",".join(f"Gene{i}" for i in range(Config.GENE_COUNT_THRESHOLD + 1)),
     )
 
@@ -510,7 +493,7 @@ def test_start_pipeline_rejects_misformatted_genomic_inputs(
         This ensures the task never receives a config it cannot parse.
     """
     payload = copy.deepcopy(pipeline_payload(PAYLOAD_FILE))
-    del payload["formdata"]["target_probe"]["oligo_generation"]["files_fasta_probe_database"]
+    del payload["formdata"]["required_parameters"]["target_genome"]
 
     response = multipart_post(f"/api/{PIPELINE_NAME}", payload)
 
