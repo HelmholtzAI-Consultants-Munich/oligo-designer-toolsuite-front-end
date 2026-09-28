@@ -3,7 +3,7 @@ import { ToolTip } from "../ui/Tooltip";
 import { spaceBeforeCapitalLetters } from "./utils";
 
 interface GroupHeadingProps {
-    id: string;
+    id?: string;
     title?: string;
     description?: ReactNode;
     className?: string;
@@ -12,7 +12,7 @@ interface GroupHeadingProps {
 /**
  * A field group's name, with its description as a tooltip beside it.
  *
- * @param props - the group's `fieldPathId.$id`, title, description and extra classes
+ * @param props - the group's `fieldPathId.$id` (if RJSF provides one), title, description and extra classes
  * @returns A React Component that heads a field group, or null if there is nothing to show
  */
 const GroupHeading = memo(function GroupHeading({

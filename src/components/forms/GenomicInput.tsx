@@ -11,10 +11,12 @@ import { InputList } from "../fastaGenerateForm/InputList";
 import { ToolTip } from "../ui/Tooltip";
 import { FileEarmarkPlus } from "react-bootstrap-icons";
 import { spaceBeforeCapitalLetters } from "./utils";
+import { showToast } from "../../utils/toastUtil";
 
 type ConfigurableGenomicInputProps = FieldProps & {
     formsAllowed: boolean;
     filesAllowed: boolean;
+    accept?: string;
 };
 /**
  * Renders a Component for inputting genomic data, either via uploading a file and/or via configuring a Genomic Region
@@ -23,6 +25,7 @@ type ConfigurableGenomicInputProps = FieldProps & {
  * @param props - FieldProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-widgets-fields/#field-props})
  * @param formsAllowed - whether the Genomic Input allows that Genomic Region Generators Form can be used as input
  * @param filesAllowed - whether the Genomic Input allows that file uploads can be used as input
+ * @param accept - comma-separated list of allowed file extensions (e.g. ".vcf"); all files are allowed if omitted
  * @returns A React Component that can be configured to accept different types of Genomic Input
  */
 const ConfigurableGenomicInput = ({
@@ -38,6 +41,7 @@ const ConfigurableGenomicInput = ({
     onBlur,
     formsAllowed,
     filesAllowed,
+    accept,
     rawErrors,
     registry,
 }: ConfigurableGenomicInputProps) => {
@@ -175,6 +179,7 @@ const ConfigurableGenomicInput = ({
                     <FileUpload
                         id={id}
                         name={name}
+                        accept={accept}
                         onUpload={handleFilesUpload}
                     />
                 )}
@@ -186,6 +191,7 @@ const ConfigurableGenomicInput = ({
 interface FileUploadProps {
     id: string;
     name: string;
+    accept?: string;
     onUpload: (files: File[]) => void;
 }
 
@@ -195,6 +201,8 @@ interface FileUploadProps {
  *
  * @param id - unique ID of the component
  * @param name - name of the component
+ * @param accept - comma-separated list of allowed file extensions (e.g. ".vcf"); files
+ * with other extensions are rejected
  * @param onUpload - callback which is called, when the input
  * is changed (e.g a File is uploaded)
  * @returns A React Component that allows uploading a file.
@@ -202,12 +210,30 @@ interface FileUploadProps {
 export const FileUpload: React.FC<FileUploadProps> = ({
     id,
     name,
+    accept,
     onUpload,
 }) => {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { files: selectedFiles } = e.target;
         if (!selectedFiles) return;
-        onUpload(Array.from(selectedFiles));
+        const files = Array.from(selectedFiles);
+        // The `accept` attribute is only a hint for the file picker, so the extension is checked again here
+        const extensions = accept
+            ?.split(",")
+            .map((ext) => ext.trim().toLowerCase());
+        const isAccepted = (file: File) =>
+            !extensions ||
+            extensions.some((ext) => file.name.toLowerCase().endsWith(ext));
+        const rejected = files.filter((file) => !isAccepted(file));
+        if (rejected.length > 0) {
+            showToast({
+                type: "danger",
+                title: "Invalid file type",
+                content: `Only ${accept} files are allowed. Rejected: ${rejected.map((file) => file.name).join(", ")}`,
+            });
+        }
+        const accepted = files.filter(isAccepted);
+        if (accepted.length > 0) onUpload(accepted);
         e.target.value = ""; // Reset the input so the same file can be uploaded again if needed
     };
 
@@ -220,6 +246,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 className="visually-hidden"
                 id={id}
                 name={name}
+                accept={accept}
                 onChange={(e) => {
                     handleFileChange(e as React.ChangeEvent<HTMLInputElement>);
                 }}
@@ -281,6 +308,9 @@ export const FileInput = (props: FieldProps) => {
             {...props}
             formsAllowed={false}
             filesAllowed={true}
+            accept={
+                props.uiSchema?.["ui:options"]?.accept as string | undefined
+            }
         />
     );
 };

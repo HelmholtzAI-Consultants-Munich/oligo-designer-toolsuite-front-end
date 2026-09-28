@@ -3,8 +3,8 @@
  * reports a fetch that fails instead of leaving the page blank.
  *
  * @remarks
- * The schema is read from a committed fixture rather than the running backend, which vitest has
- * no way to reach. `test_schema_routes.py` fails if that copy drifts from the models.
+ * Vitest cannot reach a backend, so the schema request is answered with a small hand-written
+ * schema. These tests are about fetching, not about any pipeline's fields.
  */
 import { render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
@@ -17,15 +17,15 @@ import {
     clearPipelineSchemaCache,
     type PipelinePreset,
 } from "../pipelineConfig/schemaApi";
-import oligoseqSchema from "./fixtures/oligoseq.schema.json";
+import testSchema from "./fixtures/pipeline.schema.json";
 
 const PRESETS_URL = `${BACKEND_URL}/api/pipelines/oligoseq/presets`;
 
-/** Answers every schema request with the fixture and the presets request with `presets`. */
+/** Answers every schema request with the test schema and the presets request with `presets`. */
 const mockSchemaResponse = (presets: PipelinePreset[] = []) =>
     vi.spyOn(axios, "get").mockImplementation((url: string) =>
         Promise.resolve({
-            data: url === PRESETS_URL ? presets : oligoseqSchema,
+            data: url === PRESETS_URL ? presets : testSchema,
         })
     );
 

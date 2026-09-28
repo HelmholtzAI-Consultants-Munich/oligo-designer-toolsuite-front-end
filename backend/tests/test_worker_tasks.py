@@ -1,8 +1,13 @@
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from backend.worker.tasks import generate_monthly_report
+from backend.worker.tasks import (
+    _delete_directory_if_under_root,
+    _delete_file_if_under_root,
+    generate_monthly_report,
+)
 
 
 def build_mock_client():
@@ -36,3 +41,30 @@ def test_generate_monthly_report_closes_mongo_client_on_failure():
             generate_monthly_report.run(target_year=2026, target_month=3)
 
     client.close.assert_called_once()
+
+
+def test_delete_helpers_remove_paths_of_expected_type(tmp_path: Path):
+    """Test that the directory helper deletes a directory and the file helper deletes a file"""
+    directory = tmp_path / "run_output"
+    directory.mkdir()
+    (directory / "result.fa").write_text("result")
+    file = tmp_path / "upload.csv"
+    file.write_text("upload")
+
+    assert _delete_directory_if_under_root(directory, tmp_path) == (True, True)
+    assert _delete_file_if_under_root(file, tmp_path) == (True, True)
+    assert not directory.exists()
+    assert not file.exists()
+
+
+def test_delete_helpers_keep_paths_of_unexpected_type(tmp_path: Path):
+    """Test that a file passed as directory and a directory passed as file are kept"""
+    directory = tmp_path / "run_output"
+    directory.mkdir()
+    file = tmp_path / "upload.csv"
+    file.write_text("upload")
+
+    assert _delete_file_if_under_root(directory, tmp_path) == (False, False)
+    assert _delete_directory_if_under_root(file, tmp_path) == (False, False)
+    assert directory.exists()
+    assert file.exists()

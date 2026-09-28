@@ -1,0 +1,54 @@
+{
+  "title": "Test Pipeline",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 2,
+      "default": 2
+    },
+    "target_probes": {
+      "title": "Target Probes",
+      "type": "object",
+      "properties": {
+        "oligo_generation": {
+          "title": "Oligo Generation",
+          "type": "object",
+          "properties": {
+            "probe_length_min": {
+              "title": "Probe Length Min",
+              "type": "integer",
+              "default": 26
+            },
+            "probe_split_region": {
+              "title": "Probe Split Region",
+              "type": "integer",
+              "default": 4
+            }
+          }
+        },
+        "property_filters": {
+          "title": "Property Filters",
+          "type": "object",
+          "properties": {
+            "GC_content_filter": {
+              "title": "GC Content Filter",
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "default": true
+                },
+                "GC_content_min": {
+                  "title": "GC Content Min",
+                  "type": "number",
+                  "default": 40
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

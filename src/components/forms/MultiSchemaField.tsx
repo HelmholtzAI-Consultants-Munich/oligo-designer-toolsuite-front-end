@@ -5,8 +5,9 @@ import {
     type RJSFSchema,
 } from "@rjsf/utils";
 import { ToolTip } from "../ui/Tooltip";
-import { Accordion, Card, Form } from "react-bootstrap";
+import { Accordion, Card } from "react-bootstrap";
 import { memo } from "react";
+import FieldRowLabel from "./FieldRowLabel";
 import GroupHeading from "./GroupHeading";
 import {
     isEnabledDiscriminated,
@@ -69,12 +70,11 @@ const WrappedAnyOfField = memo(function WrappedAnyOfField(
         return (
             <div className="field-row">
                 {hasOwnLabel && (
-                    <div className="field-row-label">
-                        <Form.Label htmlFor={fieldPathId.$id} className="mb-0">
-                            {schema.title}
-                        </Form.Label>
-                        <ToolTip id={schema.$id!} tip={schema.description} />
-                    </div>
+                    <FieldRowLabel
+                        id={fieldPathId.$id}
+                        label={schema.title}
+                        description={schema.description}
+                    />
                 )}
                 <div className="field-row-control">
                     <SchemaField
@@ -165,9 +165,7 @@ const WrappedOneOfField = memo(function WrappedOneOfField(
  * @param props - MultiSchemaFieldTemplateProps passed by RJSF (see {@link https://rjsf-team.github.io/react-jsonschema-form/docs/advanced-customization/custom-templates/#multischemafieldtemplate})
  * @returns A React Component that is used to overwrite the default MultiSchemaFieldTemplate
  */
-const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
-    props: MultiSchemaFieldTemplateProps
-) {
+function MultiSchemaFieldTemplate(props: MultiSchemaFieldTemplateProps) {
     const { selector, optionSchemaField, schema, uiSchema } = props;
 
     // when discriminated by "enabled", the card is rendered by `EnabledToggleObjectTemplate`;
@@ -184,8 +182,8 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
     return (
         <Card className="multi-schema-card">
             <Card.Body>
+                {/* RJSF passes this template no field id, and our schemas carry no `$id` */}
                 <GroupHeading
-                    id={schema.$id!}
                     title={schema.title}
                     description={schema.description}
                 />
@@ -194,6 +192,6 @@ const MultiSchemaFieldTemplate = memo(function MultiSchemaFieldTemplate(
             </Card.Body>
         </Card>
     );
-});
+}
 
 export { WrappedAnyOfField, WrappedOneOfField, MultiSchemaFieldTemplate };

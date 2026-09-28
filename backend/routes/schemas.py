@@ -33,7 +33,11 @@ def _serialized_schema(pipeline_name: str) -> tuple[bytes, str]:
 
 
 def warm_pipeline_schemas() -> None:
-    """Builds and serializes every pipeline's schema, so no request is the one that pays for it."""
+    """Builds the schema of every pipeline at start-up.
+
+    Notes:
+        Doing it here means the first user who opens a form does not wait for its schema to be built.
+    """
     for name in FRONT_END_SCHEMAS:
         _serialized_schema(name)
 
@@ -51,7 +55,9 @@ def pipeline_schema(pipeline_name: str) -> Response:
     # with a new ODT version is never served stale.
     response.set_etag(etag)
     response.cache_control.no_cache = True
-    return response.make_conditional(request)
+    # updates the response in place; its return value is typed as werkzeug's base `Response`
+    response.make_conditional(request)
+    return response
 
 
 # The file name prefix of each pipeline's example configs shipped by ODT. A suffix after it names a

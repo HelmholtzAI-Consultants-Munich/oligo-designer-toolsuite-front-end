@@ -7,9 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-26
+
+### Added
+
+- SCRINSHOT, MERFISH, seqFISH+, HCR and CycleHCR probe designers, alongside Oligo-Seq
+- Upload of codebooks and readout/initiator probe tables from the browser
+- Result file downloads (probe tables, order lists and configs) for every pipeline
+- Quick settings panel that gathers each pipeline's most-used parameters at the top of the form
+- Collapsible sections for parameter groups with many sub-parameters
+- Nightly Celery Beat task that deletes cached files Redis no longer references, with a grace period (`CACHE_ORPHAN_GRACE_HOURS`) for files still being written
+- Optional restriction of Helmholtz AAI login to configured group entitlements (`FLASK_HELMHOLTZ_RESTRICT_BY_ENTITLEMENT`, `FLASK_HELMHOLTZ_REQUIRED_ENTITLEMENT`)
+- SBOM generation and Trivy vulnerability scans for published Docker images, plus a weekly re-scan of the latest images
+- `ODT_REF` build argument to build the images against an unreleased ODT commit
+- Docstrings for the backend routes and utilities
+
 ### Changed
 
 - Pipeline form schemas are generated from ODT's Pydantic models when the backend starts and fetched by the frontend at page load, instead of being checked into `schemas/`. Upgrading ODT now updates the forms without regenerating anything, but a pipeline page needs the backend to be reachable in order to render.
+- Redesigned landing page, full-width top navigation bar, simplified sidebar and pipeline overview cards
+- More compact pipeline pages with tabs and sections, and tooltips that open on tap on phones
+- Updated react-jsonschema-form (RJSF) to 6.7
+- Reading a cached file resets its 30-day expiry, file cache keys carry a `file_cache:` prefix and the cache root is read from the config (`RELATIVE_CACHE_PATH`)
+- The VCF field only accepts `.vcf` files
+- The Oligo-Seq variant filter is off by default, as it needs VCF files
+- New ODT Cloud logo and favicon
+
+### Fixed
+
+- Files uploaded to different fields under the same name no longer overwrite each other
+- A submission missing a required file is rejected with a 400 instead of failing on the server
+- A page that crashes while rendering shows a sanitized error instead of a 404
+
+### Security
+
+- File names in a submitted config must refer to files uploaded with the request, so a config can no longer point a pipeline at arbitrary files on the server
+- Bump `immutable` to 5.1.9
 
 ## [0.2.0] - 2026-07-16
 

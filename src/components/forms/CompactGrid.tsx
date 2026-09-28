@@ -1,5 +1,5 @@
 import type { ObjectFieldTemplateProps } from "@rjsf/utils";
-import { Fragment, memo } from "react";
+import { Fragment } from "react";
 import { isHiddenField, quickSettingGroup, spansFullRow } from "./utils";
 
 type CompactGridProps = Pick<
@@ -15,12 +15,13 @@ type CompactGridProps = Pick<
  *
  * @remarks
  * Used by `ObjectFieldTemplate`, `SectionLayout` and `CollapsibleSectionLayout` - the three
- * object layouts that hold a plain grid of fields.
+ * object layouts that hold a plain grid of fields. Not memoized: RJSF rebuilds `properties` on
+ * every render, so a shallow prop comparison would never hit.
  *
  * @param props - the group's `schema`, `uiSchema` and `properties`, plus classes for the grid's gaps
  * @returns A React Component holding the group's fields
  */
-const CompactGrid = memo(function CompactGrid({
+function CompactGrid({
     schema,
     uiSchema,
     properties,
@@ -47,6 +48,6 @@ const CompactGrid = memo(function CompactGrid({
             })}
         </div>
     );
-});
+}
 
 export default CompactGrid;

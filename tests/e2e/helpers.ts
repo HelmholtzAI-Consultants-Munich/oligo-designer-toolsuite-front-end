@@ -203,15 +203,20 @@ export const expandSections = async (page: Page) => {
             await button.click();
         }
     }
-    // recounted each pass: opening a section reveals the collapsed groups nested inside it
+    // No visibility guard here: the click has to wait out the section's opening animation,
+    // where a guard would instead skip the toggle for being hidden mid-flight.
     const collapsed = activeTab.locator(
-        '[aria-controls^="collapsible-section"][aria-expanded="false"]:visible'
+        '[aria-controls^="collapsible-section"][aria-expanded="false"]'
     );
-    for (
-        let guard = 0;
-        guard < MAX_COLLAPSED_SECTIONS && (await collapsed.count()) > 0;
-        guard++
-    ) {
+    // clicking one drops it out of the set; re-count each time, so a group revealed by
+    // opening another is opened too. Capped, so a toggle that stops flipping aria-expanded
+    // fails here instead of at the 20-minute test timeout.
+    for (let clicks = 0; (await collapsed.count()) > 0; clicks++) {
+        if (clicks >= MAX_COLLAPSED_SECTIONS) {
+            throw new Error(
+                `expandSections: collapsed groups did not open after ${MAX_COLLAPSED_SECTIONS} clicks`
+            );
+        }
         await collapsed.first().click();
     }
 };
@@ -476,6 +481,7 @@ const setGenomicInput = async (
 
 /**
  * Fills the inputs a run cannot start without, plus the VCF upload where a pipeline has one.
+ * The variant filter taking the VCF files is off by default, so it is switched on first.
  *
  * @remarks
  * Every pipeline shares these three, and `reference_genome` now covers the readout-probe and
@@ -504,6 +510,8 @@ export const fillRequiredParameters = async (
     await setGenomicInput(page, "reference_genome", genomicInput);
 
     if (options.fastaVcfFiles) {
+        // the upload only renders once the filter is on
+        await page.locator('input[id$="variant_filter_enabled"]').check();
         await page
             .locator("input[name=files_vcf_reference_database]")
             .setInputFiles(options.fastaVcfFiles);

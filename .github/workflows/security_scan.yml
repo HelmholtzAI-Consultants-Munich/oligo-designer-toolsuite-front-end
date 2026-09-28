@@ -1,0 +1,73 @@
+# Re-scans the Docker images we have ALREADY published to the GitHub Container Registry
+# (GHCR, ghcr.io), once a week. Nothing runs on pushes or pull requests.
+#
+# A vulnerability disclosed today affects the image we shipped last month, but nothing
+# rebuilds that image, so nothing would ever re-check it. This workflow does.
+# Findings land in Security -> Code scanning.
+#
+# npm dependencies are not scanned here: Dependabot already reads package-lock.json,
+# and the npm packages are compiled into a static bundle that is not in the image anyway.
+
+name: Security Scan
+
+on:
+  schedule:
+    - cron: "0 3 * * 1" # every Monday, catches CVEs published after we shipped
+  workflow_dispatch: # Allow manual runs for testing
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  published-image-scan:
+    name: Scan published ${{ matrix.image_name }} image
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image_name: [odt-server, odt-worker, odt-web]
+
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Log in to the Container registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Registry references must be lowercase, but the organisation name is not.
+      - name: Compose the image reference
+        id: image
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          OWNER: ${{ github.repository_owner }}
+          IMAGE_NAME: ${{ matrix.image_name }}
+        run: echo "ref=${REGISTRY,,}/${OWNER,,}/${IMAGE_NAME,,}:latest" >> "$GITHUB_OUTPUT"
+
+      - name: Scan published image for vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ steps.image.outputs.ref }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          limit-severities-for-sarif: true # without this the severity filter is ignored for SARIF
+          format: sarif
+          output: trivy-${{ matrix.image_name }}.sarif
+          exit-code: "0" # report only, never block on a CVE we cannot fix today
+
+      - name: Upload results to GitHub code scanning
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
+        with:
+          sarif_file: trivy-${{ matrix.image_name }}.sarif
+          category: trivy-published-${{ matrix.image_name }} # each category is replaced on upload, so keep them distinct

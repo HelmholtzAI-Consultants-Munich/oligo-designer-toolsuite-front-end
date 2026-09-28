@@ -1,7 +1,6 @@
 import type { WidgetProps } from "@rjsf/utils";
 import { Widgets } from "@rjsf/react-bootstrap";
-import { Form } from "react-bootstrap";
-import { ToolTip } from "../ui/Tooltip";
+import FieldRowLabel from "./FieldRowLabel";
 
 const { SelectWidget } = Widgets;
 
@@ -28,12 +27,11 @@ const WrappedSelectWidget = (props: WidgetProps) => {
     return (
         <div className="field-row">
             {showLabel && (
-                <div className="field-row-label">
-                    <Form.Label htmlFor={id} className="mb-0">
-                        {label}
-                    </Form.Label>
-                    <ToolTip id={id} tip={schema.description} />
-                </div>
+                <FieldRowLabel
+                    id={id}
+                    label={label}
+                    description={schema.description}
+                />
             )}
             <div className="field-row-control">
                 <SelectWidget {...props} />

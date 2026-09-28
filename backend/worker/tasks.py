@@ -2,8 +2,10 @@
 
 import calendar
 import datetime
+import errno
 import os
 import shutil
+import time
 from collections.abc import Callable
 from logging import Logger
 from pathlib import Path
@@ -12,10 +14,11 @@ from typing import Any
 from bson import ObjectId
 from celery.utils.log import get_task_logger
 
+from backend.cache import get_cache_root, get_cached_file_paths
 from backend.config import CeleryConfig, Config
 from backend.database import mongo_database
 from backend.genomic_databases import fetch_dropdown_options
-from backend.utils import utc_now
+from backend.utils import resolve_relative_root, utc_now
 from backend.worker.celery import app
 from backend.worker.genomic_region_generator_runner import GenomicRegionGeneratorRunner
 from backend.worker.handlers import PipelineTask
@@ -29,23 +32,23 @@ ANONYMOUS_SESSIONS_COLLECTION = "anonymous_sessions"
 def _get_data_roots() -> tuple[Path, Path]:
     """Get the root directory of the upload and user data folder.
 
+    Raises:
+        ValueError: A configured path does not point to a directory inside of its parent directory.
+
     Returns:
         tuple[pathlib.Path, pathlib.Path] -- (upload root path, user data root path).
     """
     backend_root = Path(__file__).resolve().parent.parent
-    data_access_root = backend_root / os.environ.get(
-        "FLASK_RELATIVE_DATA_ACCESS_PATH",
-        Config.RELATIVE_DATA_ACCESS_PATH,
+    data_access_root = resolve_relative_root(
+        backend_root, "FLASK_RELATIVE_DATA_ACCESS_PATH", Config.RELATIVE_DATA_ACCESS_PATH
     )
-    upload_root = data_access_root / os.environ.get(
-        "FLASK_RELATIVE_UPLOAD_PATH",
-        Config.RELATIVE_UPLOAD_PATH,
+    upload_root = resolve_relative_root(
+        data_access_root, "FLASK_RELATIVE_UPLOAD_PATH", Config.RELATIVE_UPLOAD_PATH
     )
-    userdata_root = data_access_root / os.environ.get(
-        "FLASK_RELATIVE_USERDATA_PATH",
-        Config.RELATIVE_USERDATA_PATH,
+    userdata_root = resolve_relative_root(
+        data_access_root, "FLASK_RELATIVE_USERDATA_PATH", Config.RELATIVE_USERDATA_PATH
     )
-    return upload_root.resolve(strict=False), userdata_root.resolve(strict=False)
+    return upload_root, userdata_root
 
 
 def _deserialize_path(path_value: Any) -> Path | None:
@@ -139,7 +142,7 @@ def _delete_directory_if_under_root(path_value: Any, root: Path) -> tuple[bool, 
     Returns:
         tuple[bool, bool] -- (Record can be deleted, Directory was deleted),
     """
-    return _delete_file_or_directory_if_under_root(path_value, root, False)
+    return _delete_file_or_directory_if_under_root(path_value, root, True)
 
 
 def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]:
@@ -152,9 +155,9 @@ def _delete_file_if_under_root(path_value: Any, root: Path) -> tuple[bool, bool]
         root {Path} -- The root directory path, which should be a top directory of `path_value`.
 
     Returns:
-        tuple[bool, bool] -- (Record can be deleted, Directory was deleted),
+        tuple[bool, bool] -- (Record can be deleted, File was deleted),
     """
-    return _delete_file_or_directory_if_under_root(path_value, root, True)
+    return _delete_file_or_directory_if_under_root(path_value, root, False)
 
 
 def _partition_records_for_deletion(
@@ -543,4 +546,138 @@ def cleanup_anonymous_data() -> dict[str, int]:
         )
 
     print(f"Anonymous cleanup completed: {result}")
+    return result
+
+
+def _changed_at(path: Path) -> float:
+    """Returns when a file or directory, including its metadata, was last changed.
+
+    Notes:
+        The modification time cannot be used, since downloads set it to the remote's
+        `Last-Modified` date, so a just downloaded file would look old.
+
+    Arguments:
+        path {pathlib.Path} -- The file or directory to check, symlinks are not followed.
+
+    Returns:
+        float -- The timestamp of the last change.
+    """
+    return path.lstat().st_ctime
+
+
+def _delete_empty_directory_if_under_root(path: Path, root: Path) -> bool:
+    """Deletes an empty directory if it is located inside a specific root directory.
+
+    Notes:
+        Content created in the directory in the meantime makes the deletion fail
+        instead of being deleted along with the directory.
+
+    Arguments:
+        path {pathlib.Path} -- The path to the directory that should be deleted.
+        root {pathlib.Path} -- The root directory path, which should be a top directory of `path`.
+
+    Returns:
+        bool -- Whether the directory was deleted.
+    """
+    directory = _resolve_path_under_root(path, root)
+    if directory is None:
+        return False
+
+    try:
+        directory.rmdir()
+    except FileNotFoundError:
+        return False
+    except OSError as error:
+        if error.errno in (errno.ENOTEMPTY, errno.EEXIST):
+            return False
+        raise
+    return True
+
+
+def _cleanup_cache_entry(
+    path: Path,
+    cache_root: Path,
+    referenced: set[Path],
+    cutoff: float,
+    result: dict[str, int],
+) -> None:
+    """Recursively deletes a cached entry and its content if the file cache dropped it.
+
+    Notes:
+        Directories are descended into instead of being removed as a whole, so that a
+        directory still holding relevant content survives. A directory is only removed
+        once nothing is left in it.
+
+        Entries that cannot be accessed are logged and counted as failed, so that the
+        remaining entries still get cleaned up.
+
+    Arguments:
+        path {pathlib.Path} -- The file or directory to clean up.
+        cache_root {pathlib.Path} -- The root directory of the file cache, nothing outside of it is touched.
+        referenced {set[pathlib.Path]} -- The paths the file cache still references.
+        cutoff {float} -- Entries changed after this timestamp are kept.
+        result {dict[str, int]} -- Deletion counters, updated in place.
+    """
+    try:
+        resolved = path.resolve()
+
+        # The entry is cached itself or belongs to a cached directory
+        if resolved in referenced or any(parent in referenced for parent in resolved.parents):
+            return
+
+        is_dir = path.is_dir()
+        had_content = False
+        if is_dir:
+            children = sorted(path.iterdir())
+            had_content = bool(children)
+            for child in children:
+                _cleanup_cache_entry(child, cache_root, referenced, cutoff, result)
+
+            # Something relevant is left, so the directory is still needed
+            if any(path.iterdir()):
+                return
+
+        # Keep entries changed within the grace period (`_changed_at(path) > cutoff`), they may
+        # still be written before getting their cache key. Directories emptied above
+        # (`had_content`) skip this check, since deleting their content just changed them.
+        if not had_content and _changed_at(path) > cutoff:
+            return
+
+        if is_dir:
+            if _delete_empty_directory_if_under_root(path, cache_root):
+                result["deleted_dirs"] += 1
+        else:
+            _, deleted = _delete_file_if_under_root(path, cache_root)
+            if deleted:
+                result["deleted_files"] += 1
+    except OSError as error:
+        logger.warning(f"Failed to clean up cache entry {path}: {error!r}")
+        result["failed"] += 1
+
+
+@app.task()
+def cleanup_cache_dirs() -> dict[str, int]:
+    """Deletes cached files and directories that the file cache no longer references.
+
+    Notes:
+        Redis expires keys passively, so a file whose cache key expired stays on disk
+        until this task removes it, see backend.cache.FileCacheProxy.
+
+    Returns:
+        dict[str, int] -- The number of referenced paths, of deleted files and directories and of failed entries.
+    """
+    cache_root = get_cache_root()
+    result = {"referenced": 0, "deleted_files": 0, "deleted_dirs": 0, "failed": 0}
+    if not cache_root.is_dir():
+        logger.warning(f"Cache cleanup skipped, {cache_root} is not a directory.")
+        return result
+
+    referenced = get_cached_file_paths()
+    result["referenced"] = len(referenced)
+    cutoff = time.time() - CeleryConfig.cache_orphan_grace_hours * 3600
+
+    for entry in sorted(cache_root.iterdir()):
+        _cleanup_cache_entry(entry, cache_root, referenced, cutoff, result)
+
+    logger.info(f"Cache cleanup completed: {result}")
     return result
