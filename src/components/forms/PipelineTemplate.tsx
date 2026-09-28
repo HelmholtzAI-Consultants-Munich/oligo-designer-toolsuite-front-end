@@ -88,10 +88,17 @@ const PipelineTemplate: React.FC<Props> = ({
 
     const location = useLocation();
 
+    /**
+     * Checks a config and fills the form with it.
+     *
+     * @param importedConfig - the config to load, e.g. from a file, a past run or a preset
+     * @param successTitle - toast title on success, or `null` to load without a toast
+     * @param errorTitle - toast title when the config is rejected
+     * @returns Whether the config was loaded
+     */
     const applyValidatedConfig = useCallback(
         (
             importedConfig: unknown,
-            // `null` applies the config quietly, e.g. the defaults loaded with the page
             successTitle: string | null,
             errorTitle: string
         ): boolean => {
@@ -129,6 +136,12 @@ const PipelineTemplate: React.FC<Props> = ({
     const [presets, setPresets] = useState<PipelinePreset[]>([]);
     const presetStorageKey = `odt.preset.${pipeline}`;
 
+    /**
+     * Fills the form with a preset and remembers it for the next visit.
+     *
+     * @param preset - the preset to load
+     * @param quiet - load without a toast, used when the page opens
+     */
     const applyPreset = useCallback(
         (preset: PipelinePreset, quiet = false) => {
             // a preset only holds parameters, so the targets and genomes entered so far are kept
@@ -155,6 +168,11 @@ const PipelineTemplate: React.FC<Props> = ({
         [applyValidatedConfig, formData.required_parameters, presetStorageKey]
     );
 
+    /**
+     * Opens a modal where the user picks one of the presets.
+     *
+     * @param options - the presets to choose from
+     */
     const showPresetPicker = useCallback(
         (options: PipelinePreset[]) =>
             showModal({
@@ -180,8 +198,12 @@ const PipelineTemplate: React.FC<Props> = ({
         [applyPreset]
     );
 
-    // A run's imported config wins; otherwise the remembered or only preset is applied, and a
-    // choice between several is asked for.
+    /**
+     * Picks the preset to load when the page opens: the remembered one, the only one, or asks
+     * the user. Does nothing if a past run's config is being loaded.
+     *
+     * @param options - the presets the backend sent
+     */
     const choosePreset = useEffectEvent((options: PipelinePreset[]) => {
         if (location.state?.importedConfig || options.length === 0) return;
         let rememberedId: string | null = null;

@@ -74,14 +74,14 @@ PRESET_FILE_PREFIXES = {
 
 @cache
 def load_presets(pipeline_name: str) -> list[dict]:
-    """Reads the pipeline's example configs shipped with ODT as importable form configs.
+    """Loads the example configs ODT ships for a pipeline, ready to fill its form.
 
     Arguments:
-        pipeline_name {str} -- the pipeline's key in `FRONT_END_SCHEMAS`
+        pipeline_name {str} -- the pipeline, e.g. "hcr"
 
     Returns:
-        {list[dict]} -- one `{id, label, payload}` per config, where `payload` has the shape of an
-        exported form config; empty for an ODT version that does not ship its configs
+        list[dict] -- one preset per YAML file, with an id, a label and the config; empty if
+        the installed ODT has no configs
     """
     try:
         config_dir = files("oligo_designer_toolsuite.configs")
@@ -117,7 +117,14 @@ def load_presets(pipeline_name: str) -> list[dict]:
 
 @schemas_bp.route("/api/pipelines/<pipeline_name>/presets", methods=["GET"])
 def pipeline_presets(pipeline_name: str) -> Response:
-    """Returns the pipeline's default configs to choose from, or 404 for an unknown name."""
+    """Get the default configs a user can pick from for a pipeline.
+
+    Arguments:
+        pipeline_name {str} -- the pipeline, e.g. "hcr"
+
+    Returns:
+        flask.Response -- the list of presets, or 404 if the pipeline does not exist
+    """
     if pipeline_name not in FRONT_END_SCHEMAS:
         abort(HTTPStatus.NOT_FOUND, description=f'Pipeline "{pipeline_name}" does not exist')
     return jsonify(load_presets(pipeline_name))

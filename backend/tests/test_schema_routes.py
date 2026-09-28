@@ -134,6 +134,7 @@ def test_presets_are_empty_without_matching_configs(client, preset_dir):
 
 
 def test_presets_404_for_unknown_pipeline(client):
+    """An unknown pipeline has no presets to serve."""
     assert client.get(PRESETS_ROUTE.format("unknown")).status_code == 404
 
 

@@ -21,7 +21,12 @@ import testSchema from "./fixtures/pipeline.schema.json";
 
 const PRESETS_URL = `${BACKEND_URL}/api/pipelines/oligoseq/presets`;
 
-/** Answers every schema request with the test schema and the presets request with `presets`. */
+/**
+ * Answers the schema request with the test schema and the presets request with `presets`.
+ *
+ * @param presets - the presets the backend should send
+ * @returns The spy, to check which requests were made
+ */
 const mockSchemaResponse = (presets: PipelinePreset[] = []) =>
     vi.spyOn(axios, "get").mockImplementation((url: string) =>
         Promise.resolve({
@@ -29,6 +34,12 @@ const mockSchemaResponse = (presets: PipelinePreset[] = []) =>
         })
     );
 
+/**
+ * Builds a small preset for the tests.
+ *
+ * @param id - the preset's id, also used as its label
+ * @returns A preset that fits the test schema
+ */
 const preset = (id: string): PipelinePreset => ({
     id,
     label: id,
@@ -38,7 +49,11 @@ const preset = (id: string): PipelinePreset => ({
     },
 });
 
-/** Records the modals the form asks for, since the modal host is not mounted here. */
+/**
+ * Records the modals the form opens, since the modal itself is not rendered in these tests.
+ *
+ * @returns The titles of the modals opened so far
+ */
 const recordModals = () => {
     const titles: string[] = [];
     window.addEventListener("modal:show", (event) =>
