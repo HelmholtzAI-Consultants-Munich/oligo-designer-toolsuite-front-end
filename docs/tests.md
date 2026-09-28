@@ -17,15 +17,18 @@ This document explains the test strategy for this software. There are **three** 
 
 ## 1) Backend Unit & API Tests (Pytest)
 
-**Goal:** Verify every Flask API endpoint and backend logic in isolation (fast, deterministic).
+**Goal:** Verify Flask routes, backend logic, worker tasks, and route-to-task integration in an isolated,
+repeatable environment.
 
 ### Scope
 
-- Status codes, JSON schema, and error handling of **all API endpoints**.
+- Status codes, response payloads, validation, and error handling of API endpoints.
 - Auth/session flows (login, logout, protected routes).
-- Validation of complex pipeline payloads (e.g., Scrinshot, MERFISH, SeqFISH).
-- Pipeline submission/scheduling logic (mock long-running jobs & I/O).
-- DB interactions (mock MongoDB in unit tests).
+- Pipeline submission and scheduling for Scrinshot, MERFISH, SeqFISH, and OligoSeq.
+- Celery tasks tested individually and through pipeline routes using `celery.contrib.pytest`.
+- Genomic database, pipeline runner, cleanup, reporting, and administrative behavior.
+- Real MongoDB operations against a uniquely named test database.
+- Real filesystem operations under pytest-managed temporary directories.
 
 ### Running locally
 
@@ -36,33 +39,44 @@ pytest flask
 pytest flask --cov=flask --cov-report=term-missing
 ```
 
-or if using Docker:
+### Running backend tests
+
+Backend tests run in the `odt-server` container. Docker Compose starts the required MongoDB and Redis
+services, and `--build` ensures the container contains the current backend code and test dependencies.
 
 ```bash
-# Start services:
-npm run docker:start
-# or for development with hot reloading:
-npm run docker:watch
-
-# Then run backend tests:
+# Run the complete backend test suite.
 docker compose run --rm --build odt-server pytest
-# with coverage:
-docker compose run --rm --build odt-server pytest --cov=. --cov-report=term-missing
+
+# Run the complete suite with coverage.
+docker compose run --rm --build odt-server \
+  pytest --cov=backend --cov-report=term-missing
+
+# Run one test module.
+docker compose run --rm --build odt-server \
+  pytest backend/tests/test_pipeline_routes.py
+
+# Run one test by name.
+docker compose run --rm --build odt-server \
+  pytest backend/tests/test_pipeline_routes.py -k authenticated_success
 ```
 
-Alternatively, you can start just the database and run tests:
-
-```bash
-docker compose up odt-db -d
-docker compose run --rm --build odt-server pytest
-```
+Run these commands from the repository root. The backend test job in GitHub Actions uses the same pytest
+suite with MongoDB and Redis service containers.
 
 ### Fixtures & notes
 
-- **Never** execute real long-running pipelines in unit tests; **mock** them and assert:
-  - request validation
-  - scheduling trigger
-  - persisted records / status initialization
+- Tests may read static input data from `backend/tests/data`; they must not depend on any other
+  pre-existing files, directories, or database records.
+- Use pytest temporary-path fixtures for test files and directories. Pytest cleans those paths after the
+  test. If application code creates a resource outside a pytest-managed path, its fixture must own that
+  resource and remove it after `yield`.
+- Use only the standard library's `unittest.mock` at external boundaries such as network requests,
+  OAuth providers, and long-running pipeline executables. Do not mock ordinary filesystem access.
+- Celery tests use `celery.contrib.pytest`. Task tests exercise the task body through a test worker, and
+  integration tests verify that Flask pipeline routes dispatch work to that worker.
+- MongoDB collections are cleared around every test, and the uniquely named test database is dropped at
+  the end of the session.
 
 ---
 

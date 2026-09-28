@@ -43,6 +43,7 @@ RUN --mount=type=cache,target=/opt/conda/pkgs,uid=$MAMBA_USER_ID \
 
 # --- Copy Flask server ---
 WORKDIR /app
+
 COPY --chown=$MAMBA_USER:$MAMBA_USER backend backend
 
 ENV FLASK_APP=backend.app

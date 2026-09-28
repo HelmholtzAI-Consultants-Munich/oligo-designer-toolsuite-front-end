@@ -93,16 +93,19 @@ class BaseGenomicDatabase(ABC):
         file_lines: list[str] = []
         ftp.dir(file_lines.append)
 
-        def parse_file_line(line: str) -> tuple[str, str]:
+        def parse_file_line(line: str) -> tuple[str, str] | None:
             """Parses filename and file permissions from a line returned by ftplib.FTP.dir.
 
             Arguments:
                 line {str} -- Line returned from ftplib.FTP.dir.
 
             Returns:
-                tuple[str, str] -- (filename, file permissions).
+                tuple[str, str] | None -- (filename, file permissions), or None if the line is malformed.
             """
-            perms, *_, filename = line.split(maxsplit=8)
+            try:
+                perms, *_, filename = line.split(maxsplit=8)
+            except ValueError:
+                return None
             # Normalize file permissions
             perms = perms.lower()
             # The filename might be a symbolic link (e.g. "current -> release-116")
@@ -131,7 +134,7 @@ class BaseGenomicDatabase(ABC):
 
         dirs = [
             filename
-            for filename, perms in map(parse_file_line, file_lines)
+            for filename, perms in filter(None, map(parse_file_line, file_lines))
             if is_likely_directory(filename, perms)
         ]
 
@@ -746,7 +749,7 @@ class NCBIGenomicDatabase(BaseGenomicDatabase):
             dirs = self._get_subdirs(ftp)
 
         # Manually filter suppressed directories
-        if release_dir == "all_assembly_versions":
+        if release_dir.endswith("all_assembly_versions"):
             dirs = [dir for dir in dirs if dir != "suppressed"]
         return dirs
 
